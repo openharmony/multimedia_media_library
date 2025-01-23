@@ -30,6 +30,7 @@
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
 #include "moving_photo_file_utils.h"
+#include "os_account_manager.h"
 #include "permission_utils.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
@@ -46,6 +47,7 @@ constexpr int32_t URI_MAX_SIZE = 1000;
 constexpr uint32_t URI_PERMISSION_FLAG_READ = 1;
 constexpr uint32_t URI_PERMISSION_FLAG_WRITE = 2;
 constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 3;
+constexpr int32_t DEFUALT_USER_ID = 100;
 
 static map<string, TableType> tableMap = {
     { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
@@ -76,11 +78,27 @@ static sptr<IRemoteObject> InitToken()
     return remoteObj;
 }
 
+static int32_t GetCurrentAccountId()
+{
+    int32_t activeUserId = DEFUALT_USER_ID;
+    ErrCode ret = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(activeUserId);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("fail to get activeUser:%{public}d", ret);
+    }
+    return activeUserId;
+}
+
 void MediaLibraryExtendManager::InitMediaLibraryExtendManager()
 {
-    auto token = InitToken();
-    if (dataShareHelper_ == nullptr && token != nullptr) {
+    int32_t activeUser =  GetCurrentAccountId();
+    if (dataShareHelper_ == nullptr || activeUser != userId_) {
+        auto token = InitToken();
+        if (token == nullptr) {
+            MEDIA_ERR_LOG("fail to get token.");
+            return;
+        }
         dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+        userId_ = activeUser;
     }
 }
 
@@ -179,6 +197,8 @@ static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSha
             permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO)));
             permissionTypes.emplace_back(
+                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO)));
+            permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
             permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
@@ -192,6 +212,8 @@ static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSha
                 to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
             break;
         case URI_PERMISSION_FLAG_READWRITE:
+            permissionTypes.emplace_back(
+                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO)));
             permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
             permissionTypes.emplace_back(
