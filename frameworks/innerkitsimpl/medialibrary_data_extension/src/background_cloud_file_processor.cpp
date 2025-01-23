@@ -88,10 +88,8 @@ void BackgroundCloudFileProcessor::SetDownloadLatestFinished(bool downloadLatest
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
-    if (!prefs) {
-        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
+
     prefs->PutBool(DOWNLOAD_LATEST_FINISHED, downloadLatestFinished);
     prefs->FlushSync();
     MEDIA_INFO_LOG("set preferences %{public}d", downloadLatestFinished);
@@ -103,11 +101,8 @@ bool BackgroundCloudFileProcessor::GetDownloadLatestFinished()
     bool downloadLatestFinished = false;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
-    if (!prefs) {
-        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(prefs, false,
+        "get preferences error: %{public}d", errCode);
     return prefs->GetBool(DOWNLOAD_LATEST_FINISHED, downloadLatestFinished);
 }
 
@@ -116,11 +111,7 @@ void BackgroundCloudFileProcessor::ClearDownloadCnt()
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DOWNLOAD_CNT_CONFIG, errCode);
-    if (!prefs) {
-        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     prefs->Clear();
     prefs->FlushSync();
 }
@@ -130,11 +121,7 @@ void BackgroundCloudFileProcessor::UpdateDownloadCnt(std::string path, int64_t c
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DOWNLOAD_CNT_CONFIG, errCode);
-    if (!prefs) {
-        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     prefs->PutLong(path, cnt);
     prefs->FlushSync();
 }
@@ -145,46 +132,27 @@ int64_t BackgroundCloudFileProcessor::GetDownloadCnt(std::string path)
     int64_t defaultCnt = 0;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DOWNLOAD_CNT_CONFIG, errCode);
-    if (!prefs) {
-        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return defaultCnt;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(prefs, defaultCnt, "get preferences error: %{public}d", errCode);
     return prefs->GetLong(path, defaultCnt);
 }
 
 void BackgroundCloudFileProcessor::DownloadCloudFiles()
 {
-    if (!CloudSyncUtils::IsCloudSyncSwitchOn()) {
-        MEDIA_DEBUG_LOG("Cloud sync switch off, skip DownloadCloudFiles");
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(CloudSyncUtils::IsCloudSyncSwitchOn(),
+        "Cloud sync switch off, skip DownloadCloudFiles");
     MEDIA_DEBUG_LOG("Start downloading cloud files task");
 
     double freeRatio = 0.0;
-    if (!GetStorageFreeRatio(freeRatio)) {
-        MEDIA_WARN_LOG("GetStorageFreeRatio failed, stop downloading cloud files");
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(GetStorageFreeRatio(freeRatio),
+        "GetStorageFreeRatio failed, stop downloading cloud files");
     auto resultSet = QueryCloudFiles(freeRatio);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query cloud files!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query cloud files!");
 
     DownloadFiles downloadFiles;
     ParseDownloadFiles(resultSet, downloadFiles);
-    if (downloadFiles.paths.empty()) {
-        MEDIA_DEBUG_LOG("No cloud files need to be downloaded");
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(!downloadFiles.paths.empty(), "No cloud files need to be downloaded");
     int32_t ret = AddDownloadTask(downloadFiles);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to add download task! err: %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to add download task! err: %{public}d", ret);
 }
 
 void BackgroundCloudFileProcessor::UpdateCloudData()
@@ -275,30 +243,21 @@ bool BackgroundCloudFileProcessor::GetStorageFreeRatio(double &freeRatio)
 {
     struct statvfs diskInfo;
     int ret = statvfs("/data/storage/el2/database", &diskInfo);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Get file system status information failed, err: %{public}d", ret);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Get file system status information failed, err: %{public}d", ret);
 
     double totalSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_blocks);
-    if (totalSize < 1e-9) {
-        MEDIA_ERR_LOG("Get file system total size failed, totalSize=%{public}f", totalSize);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(totalSize >= 1e-9, false,
+        "Get file system total size failed, totalSize=%{public}f", totalSize);
 
     double freeSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_bfree);
     freeRatio = freeSize / totalSize;
-
     return true;
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFiles(double freeRatio)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, nullptr, "uniStore is nullptr!");
 
     int64_t downloadNum;
     int64_t downloadMilliSecond;
@@ -366,16 +325,11 @@ void BackgroundCloudFileProcessor::ParseDownloadFiles(std::shared_ptr<NativeRdb:
 int32_t BackgroundCloudFileProcessor::AddDownloadTask(const DownloadFiles &downloadFiles)
 {
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL, "Failed to get async worker instance!");
 
     auto *taskData = new (std::nothrow) DownloadCloudFilesData(downloadFiles);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for downloading cloud files!");
-        return E_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_NO_MEMORY,
+        "Failed to alloc async data for downloading cloud files!");
 
     auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(DownloadCloudFilesExecutor, taskData);
     asyncWorker->AddTask(asyncTask, false);
@@ -391,9 +345,8 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
     for (const auto &path : downloadFiles.paths) {
         int32_t ret = CloudSyncManager::GetInstance().StartDownloadFile(path);
         MEDIA_DEBUG_LOG("Start to download cloud file, path: %{public}s", path.c_str());
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("Failed to download cloud file, err: %{public}d, path: %{public}s", ret, path.c_str());
-        }
+        CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to download cloud file,"
+            " err: %{public}d, path: %{public}s", ret, path.c_str());
     }
 
     lock_guard<recursive_mutex> lock(mutex_);
@@ -412,9 +365,8 @@ void BackgroundCloudFileProcessor::StopDownloadFiles()
     for (const auto &path : curDownloadPaths_) {
         MEDIA_INFO_LOG("Try to Stop downloading cloud file, the path is %{public}s", path.c_str());
         int32_t ret = CloudSyncManager::GetInstance().StopDownloadFile(path);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("Stop downloading cloud file failed, err: %{public}d, path: %{public}s", ret, path.c_str());
-        }
+        CHECK_AND_PRINT_LOG(ret == E_OK, "Stop downloading cloud file failed,"
+            " err: %{public}d, path: %{public}s", ret, path.c_str());
     }
     curDownloadPaths_.clear();
 }
@@ -542,16 +494,10 @@ void BackgroundCloudFileProcessor::ParseUpdateData(std::shared_ptr<NativeRdb::Re
 int32_t BackgroundCloudFileProcessor::AddUpdateDataTask(const UpdateData &updateData)
 {
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL, "Failed to get async worker instance!");
 
     auto *taskData = new (std::nothrow) UpdateAbnormalData(updateData);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for update cloud data!");
-        return E_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_NO_MEMORY, "Failed to alloc async data for update cloud data!");
 
     auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(UpdateCloudDataExecutor, taskData);
     asyncWorker->AddTask(asyncTask, false);
@@ -587,10 +533,7 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
 
     MEDIA_INFO_LOG("start update %{public}zu cloud files.", updateData.abnormalData.size());
     for (const auto &abnormalData : updateData.abnormalData) {
-        if (!isUpdating_) {
-            MEDIA_INFO_LOG("stop update data, isUpdating_ is %{public}d.", isUpdating_);
-            return;
-        }
+        CHECK_AND_RETURN_LOG(isUpdating_, "stop update data, isUpdating_ is %{public}d.", isUpdating_);
         std::unique_ptr<Metadata> metadata = make_unique<Metadata>();
         metadata->SetFilePath(abnormalData.path);
         metadata->SetFileMediaType(abnormalData.mediaType);
@@ -645,20 +588,15 @@ void BackgroundCloudFileProcessor::UpdateAbnormaldata(std::unique_ptr<Metadata> 
     string whereClause = MediaColumn::MEDIA_ID + " = ?";
     vector<string> whereArgs = { to_string(metadata->GetFileId()) };
     SetAbnormalValuesFromMetaData(metadata, values);
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Update operation failed. rdbStore is null");
-        return ;
-    }
-    if (!isUpdating_) {
-        MEDIA_INFO_LOG("stop update data,isUpdating_ is %{public}d.", isUpdating_);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Update operation failed. rdbStore is null");
+    CHECK_AND_RETURN_LOG(isUpdating_, "stop update data,isUpdating_ is %{public}d.", isUpdating_);
+
     int32_t result = rdbStore->Update(updateCount, tableName, values, whereClause, whereArgs);
-    if (result != NativeRdb::E_OK || updateCount <= 0) {
-        MEDIA_ERR_LOG("Update operation failed. Result %{public}d. Updated %{public}d", result, updateCount);
-        return ;
-    }
+    bool cond = (result != NativeRdb::E_OK || updateCount <= 0);
+    CHECK_AND_RETURN_LOG(!cond, "Update operation failed. Result %{public}d. Updated %{public}d",
+        result, updateCount);
 }
 
 void BackgroundCloudFileProcessor::GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata)
@@ -685,10 +623,8 @@ int32_t BackgroundCloudFileProcessor::GetExtractMetadata(std::unique_ptr<Metadat
     } else {
         err = MetadataExtractor::ExtractAVMetadata(metadata);
     }
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("failed to extract data");
-        return err;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "failed to extract data");
     return E_OK;
 }
 
@@ -708,10 +644,10 @@ void BackgroundCloudFileProcessor::StartTimer()
     if (startTimerId_ > 0) {
         timer_.Unregister(startTimerId_);
     }
+
     uint32_t ret = timer_.Setup();
-    if (ret != Utils::TIMER_ERR_OK) {
-        MEDIA_ERR_LOG("Failed to start background download cloud files timer, err: %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == Utils::TIMER_ERR_OK,
+        "Failed to start background download cloud files timer, err: %{public}d", ret);
     isUpdating_ = true;
     cloudDataTimerId_ = timer_.Register(ProcessCloudData, processInterval_);
     if (!GetDownloadLatestFinished()) {

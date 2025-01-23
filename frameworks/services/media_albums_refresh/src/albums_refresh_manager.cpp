@@ -73,9 +73,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryGoToFirst(
     MediaLibraryTracer tracer;
     tracer.Start("QueryGoToFirst");
     auto resultSet = rdbStore->StepQueryWithoutCheck(predicates, columns);
-    if (resultSet == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, nullptr);
 
     MediaLibraryTracer goToFirst;
     goToFirst.Start("GoToFirstRow");
@@ -195,10 +193,8 @@ static int32_t RefreshAlbumInfoAndUris(
         string updateRefreshAlbumSql = "UPDATE " + ALBUM_REFRESH_TABLE + " SET " + ALBUM_REFRESH_STATUS +
                                        " = 1 WHERE " + REFRESHED_ALBUM_ID + " = " + std::to_string(albumId);
         int32_t ret = rdbStore->ExecuteSql(updateRefreshAlbumSql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("#test Failed to execute update refresh album sql:%{public}s", updateRefreshAlbumSql.c_str());
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "#test Failed to execute update refresh album sql:%{public}s", updateRefreshAlbumSql.c_str());
     }
     string sql;
     int32_t ret = MediaLibraryRdbUtils::FillOneAlbumCountAndCoverUri(rdbStore, albumId, subtype, sql);
@@ -376,10 +372,8 @@ int32_t AlbumsRefreshManager::CovertCloudId2AlbumId(const shared_ptr<MediaLibrar
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     predicates.SetWhereClause(whereClause);
     auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryGoToFirst failed");
-        return -1;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "QueryGoToFirst failed");
     int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
     resultSet->Close();
     return albumId;
@@ -394,10 +388,8 @@ int32_t AlbumsRefreshManager::CovertCloudId2FileId(const shared_ptr<MediaLibrary
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.SetWhereClause(whereClause);
     auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryGoToFirst failed");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "QueryGoToFirst failed");
+
     int32_t fileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
     resultSet->Close();
     return fileId;
@@ -501,10 +493,9 @@ SyncNotifyInfo AlbumsRefreshManager::GetSyncNotifyInfo(CloudSyncNotifyInfo &noti
     info.uriType = uriType;
     info.urisSize = notifyInfo.uris.size();
     info.uris = notifyInfo.uris;
-    if (notifyInfo.data == nullptr) {
-        MEDIA_INFO_LOG("notifyInfo.data is nullptr, notify type: %{public}d", info.notifyType);
-        return info;
-    }
+    CHECK_AND_RETURN_RET_LOG(notifyInfo.data != nullptr, info,
+        "notifyInfo.data is nullptr, notify type: %{public}d", info.notifyType);
+
     std::unordered_map<std::string, std::string> result;
     std::string *cleanedStr = static_cast<std::string *>(const_cast<void *>(notifyInfo.data));
     cleanedStr->erase(remove(cleanedStr->begin(), cleanedStr->end(), '{'), cleanedStr->end());

@@ -65,10 +65,7 @@ void PhotoOtherAlbumTransOperation::BuildOtherAlbumInsertValues(
     const string &bundleName, std::vector<std::pair<int64_t, std::string>> &transAlbum)
 {
     MEDIA_INFO_LOG("Begin build insert values meta data on other album trans");
-    if (upgradeStore == nullptr) {
-        MEDIA_ERR_LOG("fail to get rdbstore");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(upgradeStore != nullptr, "fail to get rdbstore");
     bool isAlbumExist = false;
     for (const auto &transPair : transAlbum) {
         if (transPair.second == albumName) {
@@ -76,10 +73,8 @@ void PhotoOtherAlbumTransOperation::BuildOtherAlbumInsertValues(
             break;
         }
     }
-    if (isAlbumExist) {
-        MEDIA_INFO_LOG("Other album need trans is already exist!");
-        return;
-    }
+
+    CHECK_AND_RETURN_LOG(!isAlbumExist, "Other album need trans is already exist!");
     MEDIA_INFO_LOG("Start build album on other album trans, name is: %{public}s", albumName.c_str());
     NativeRdb::ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SOURCE);
@@ -93,10 +88,7 @@ void PhotoOtherAlbumTransOperation::BuildOtherAlbumInsertValues(
     values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
     int64_t newAlbumId = 0;
     int32_t ret = upgradeStore->Insert(newAlbumId, PhotoAlbumColumns::TABLE, values);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Insert db fail, ret = %{public}d", ret);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Insert db fail, ret = %{public}d", ret);
     transAlbum.emplace_back(make_pair(newAlbumId, albumName));
 }
 
@@ -253,10 +245,8 @@ int32_t PhotoOtherAlbumTransOperation::TransOtherAlbumData(const std::shared_ptr
         return E_DB_FAIL;
     }
 
-    if (!CheckIfNeedTransOtherAlbumData(upgradeStore, otherAlbumId, transAlbum)) {
-        MEDIA_INFO_LOG("No other album data need to trans");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(CheckIfNeedTransOtherAlbumData(upgradeStore, otherAlbumId, transAlbum),
+        E_DB_FAIL, "No other album data need to trans");
     isNeedUpdate = true;
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
     for (auto transInfo: transAlbum) {

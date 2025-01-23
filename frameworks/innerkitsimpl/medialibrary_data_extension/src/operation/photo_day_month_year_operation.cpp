@@ -98,11 +98,9 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(const std::shared_ptr<Media
 {
     MEDIA_INFO_LOG("update photos date start");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return NativeRdb::E_ERROR;
-    }
-
+    bool cond = (rdbStore == nullptr || !rdbStore->CheckRdbStore());
+    CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
     auto resultSet = rdbStore->QueryByStep(QUERY_NEED_UPDATE_FILE_IDS);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, NativeRdb::E_ERROR, "query photos by step failed");
 
@@ -153,14 +151,12 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(const std::shared_ptr
 {
     MEDIA_INFO_LOG("update phots date start");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return NativeRdb::E_ERROR;
-    }
+    bool cond = (rdbStore == nullptr || !rdbStore->CheckRdbStore());
+    CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
 
     auto ret = UpdatePhotosDate(rdbStore);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "update day month year failed, ret=%{public}d", ret);
-
     MEDIA_INFO_LOG("update phots date end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64, startTime,
         (MediaFileUtils::UTCTimeMilliSeconds() - startTime));
     return NativeRdb::E_OK;
@@ -193,12 +189,11 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(NativeRdb::RdbStore &rdbSto
     updateSql << " );";
     int64_t changedRowCount = 0;
     auto errCode = rdbStore.ExecuteForChangedRowCount(changedRowCount, updateSql.str());
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("update photos date failed, errCode: %{public}d, startTime: %{public}" PRId64
-            ", cost: %{public}" PRId64 ", needChangedSize: %{public}zu",
-            errCode, startTime, MediaFileUtils::UTCTimeMilliSeconds() - startTime, needChangedSize);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, errCode,
+        "update photos date failed, errCode: %{public}d, startTime: %{public}" PRId64
+        ", cost: %{public}" PRId64 ", needChangedSize: %{public}zu",
+        errCode, startTime, MediaFileUtils::UTCTimeMilliSeconds() - startTime, needChangedSize);
+
     MEDIA_INFO_LOG("update photos date end, startTime: %{public}" PRId64 ", cost: %{public}" PRId64
         ", needChangedSize: %{public}zu, changedRowCount: %{public}" PRId64,
         startTime, MediaFileUtils::UTCTimeMilliSeconds() - startTime, needChangedSize, changedRowCount);
@@ -209,10 +204,9 @@ int32_t PhotoDayMonthYearOperation::UpdatePhotosDateIdx(const std::shared_ptr<Me
 {
     MEDIA_INFO_LOG("update photos date idx start");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return NativeRdb::E_ERROR;
-    }
+    bool cond = (rdbStore == nullptr || !rdbStore->CheckRdbStore());
+    CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
 
     auto ret = rdbStore->ExecuteSql(PhotoColumn::DROP_SCHPT_DAY_INDEX);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "drop idx date_day failed, ret=%{public}d", ret);

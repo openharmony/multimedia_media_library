@@ -254,9 +254,7 @@ static std::string GetDuplicateAssetsToDeleteCountSql()
 
 std::string DuplicatePhotoOperation::GetSelectColumns(const std::unordered_set<std::string> &columns)
 {
-    if (columns.empty()) {
-        return ASTERISK;
-    }
+    CHECK_AND_RETURN_RET(!columns.empty(), ASTERISK);
 
     std::string selectColumns;
     bool first = true;
@@ -293,10 +291,8 @@ std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetAllDuplicateAs
     bool isQueryCount = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end();
     MEDIA_INFO_LOG("Limit: %{public}d, Offset: %{public}d, isQueryCount: %{public}d", limit, offset, isQueryCount);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetAllDuplicateAssets failed, rdbStore is nullptr");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "GetAllDuplicateAssets failed, rdbStore is nullptr");
+
     MediaLibraryTracer tracer;
     if (isQueryCount) {
         tracer.Start("QueryAllDuplicateAssets_count");
@@ -305,11 +301,9 @@ std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetAllDuplicateAs
     }
 
     tracer.Start("QueryAllDuplicateAssets_records");
-
     std::string sql = GetQueryAllDuplicateAssetsSql();
     std::vector<NativeRdb::ValueObject> bindArgs {};
     AppendLimitOffsetClause(sql, bindArgs, limit, offset);
-
     return rdbStore->QueryByStep(sql, bindArgs);
 }
 
@@ -321,10 +315,8 @@ std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetDuplicateAsset
     bool isQueryCount = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end();
     MEDIA_INFO_LOG("Limit: %{public}d, Offset: %{public}d, isQueryCount: %{public}d", limit, offset, isQueryCount);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetAllDuplicateAssets failed, rdbStore is nullptr");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "GetAllDuplicateAssets failed, rdbStore is nullptr");
+
     MediaLibraryTracer tracer;
     if (isQueryCount) {
         tracer.Start("QueryCanDelDuplicateAssets_count");
@@ -334,13 +326,11 @@ std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetDuplicateAsset
     tracer.Start("QueryCanDelDuplicateAssets_records");
     std::unordered_set<std::string> columnSet{ "file_id", "title", "size", "orientation" };
     columnSet.insert(columns.begin(), columns.end());
-
     std::string sql = GetDuplicateAssetsToDeleteSql();
     std::string selectColumns = GetSelectColumns(columnSet);
     MediaFileUtils::ReplaceAll(sql, SELECT_COLUMNS, selectColumns);
     std::vector<NativeRdb::ValueObject> bindArgs {};
     AppendLimitOffsetClause(sql, bindArgs, limit, offset);
-
     return rdbStore->QueryByStep(sql, bindArgs);
 }
 } // namespace Media
