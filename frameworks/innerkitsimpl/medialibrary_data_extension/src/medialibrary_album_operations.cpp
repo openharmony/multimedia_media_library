@@ -1166,9 +1166,10 @@ int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& source
 {
     size_t pos1 = SOURCE_PATH_PREFIX.length();
     size_t pos2 = sourcePath.find_last_of("/");
-    if (pos2 == string::npos) {
-        return E_INDEX;
-    }
+    CHECK_AND_RETURN_RET_LOG(
+        lPath.find(SOURCE_PATH_PREFIX) != std::string::npos && pos2 != string::npos && pos1 < pos2,
+        E_INDEX,
+        "get no valid source path: %{public}s", sourcePath.c_str());
     lPath = sourcePath.substr(pos1, pos2 - pos1);
     /*
         if lPath from source path is /Pictures/Screenshots,
@@ -1208,14 +1209,8 @@ static bool HasSameLpath(const string &lPath, const string &assetId)
 void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const string& lPath,
                                                bool& isUserAlbum, int64_t& newAlbumId)
 {
-    if (lPath.empty()) {
-        MEDIA_ERR_LOG("lPath empyt, cannot recover album");
-        return;
-    }
-    if (HasSameLpath(lPath, assetId)) {
-        MEDIA_ERR_LOG("Has same lpath, no need to build new one");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!lPath.empty(), "lPath empty, cannot recover album");
+    CHECK_AND_RETURN_LOG(!HasSameLpath(lPath, assetId), "Has same lpath, no need to build new one");
     const string userAlbumMark = "/Users/";
     if (lPath.find(userAlbumMark) != string::npos) {
         isUserAlbum = true;
@@ -1230,7 +1225,11 @@ void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const stri
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     shared_ptr<NativeRdb::ResultSet> albumPluginResultSet = rdbStore->QuerySql(queryExpiredAlbumInfo);
     if (albumPluginResultSet == nullptr || albumPluginResultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        albumName = lPath.substr(lPath.find_last_of("/") + 1);
+        size_t pos = lPath.find_last_of("/");
+        CHECK_AND_RETURN_LOG(
+            pos != string::npos && pos + 1 < lPath.length(),
+            "get album name fail, lpath is %{public}s", lPath.c_str());
+        albumName = lPath.substr(pos + 1);
         if (isUserAlbum) {
             albumType = PhotoAlbumType::USER;
             albumSubType = PhotoAlbumSubType::USER_GENERIC;
