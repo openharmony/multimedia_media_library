@@ -756,8 +756,9 @@ napi_value MediaAlbumChangeRequestNapi::JSDismissAssets(napi_env env, napi_callb
     auto type = photoAlbum->GetPhotoAlbumType();
     auto subtype = photoAlbum->GetPhotoAlbumSubType();
     CHECK_COND_WITH_MESSAGE(env, PhotoAlbum::IsSmartPortraitPhotoAlbum(type, subtype) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(type, subtype) || PhotoAlbum::IsSmartClassifyAlbum(type, subtype),
-        "Only portrait, group photo and classify album can dismiss asset");
+        PhotoAlbum::IsSmartGroupPhotoAlbum(type, subtype) || PhotoAlbum::IsSmartClassifyAlbum(type, subtype) ||
+        PhotoAlbum::IsHighlightAlbum(type, subtype),
+        "Only portrait, highlight, group photo and classify album can dismiss asset");
 
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::DISMISS_ASSET);
     napi_value result = nullptr;
@@ -921,8 +922,9 @@ napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user album, smart portrait album and group photo can set album name");
+        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only user album, highlight, smart portrait album and group photo can set album name");
     photoAlbum->SetAlbumName(albumName);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_ALBUM_NAME);
     RETURN_NAPI_UNDEFINED(env);
@@ -947,8 +949,9 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
         PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user album, smart portrait album and group photo can set album name");
+        PhotoAlbum::IsSmartGroupPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only user album, highlight, smart portrait album and group photo can set album name");
     photoAlbum->SetCoverUri(coverUri);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_COVER_URI);
     RETURN_NAPI_UNDEFINED(env);
@@ -1348,6 +1351,9 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
                 uri = PAH_PORTRAIT_ANAALBUM_ALBUM_NAME;
             } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
                 uri = PAH_GROUP_ANAALBUM_ALBUM_NAME;
+            } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
+                photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+                uri = PAH_HIGHLIGHT_ALBUM_NAME;
             } else {
                 uri = PAH_SET_PHOTO_ALBUM_NAME;
             }
@@ -1359,6 +1365,9 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
                 uri = PAH_PORTRAIT_ANAALBUM_COVER_URI;
             } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
                 uri = PAH_GROUP_ANAALBUM_COVER_URI;
+            } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
+                photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+                uri = PAH_HIGHLIGHT_COVER_URI;
             } else {
                 uri = PAH_UPDATE_PHOTO_ALBUM;
             }
