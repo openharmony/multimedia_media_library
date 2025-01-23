@@ -1838,11 +1838,6 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
     HandleNoOwnerData(rdbStore);
     // Clean duplicative album and rebuild expired album
     RebuildAlbumAndFillCloudValue(rdbStore);
-    bool isOtherAlbumNeedUpdate = false;
-    PhotoOtherAlbumTransOperation::GetInstance().Start().TransOtherAlbumData(rdbStore, isOtherAlbumNeedUpdate);
-    if (isOtherAlbumNeedUpdate) {
-        SetRefreshAlbum(true);
-    }
 
     PhotoAlbumUpdateDateModifiedOperation photoAlbumOperation;
     if (photoAlbumOperation.CheckAlbumDateNeedFix(rdbStore)) {
