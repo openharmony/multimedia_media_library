@@ -51,10 +51,10 @@ public:
     EXPORT int32_t GetTaskStatus();
     EXPORT int32_t GetDownloadType();
     EXPORT bool SetBgDownloadPermission(const bool &flag);
+    EXPORT void CheckStorageAndRecoverDownloadTask();
     static void DeleteAllCloudMediaAssetsAsync();
     static void StartDeleteCloudMediaAssets();
     static void StopDeleteCloudMediaAssets();
-    EXPORT void CheckStorageAndRecoverDownloadTask();
 
 private:
     CloudMediaAssetManager() {}
