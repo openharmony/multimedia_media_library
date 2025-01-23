@@ -64,10 +64,7 @@ static int32_t GetHandleData(CloudSyncHandleData &handleData)
         ++AnalysisHandler::counts_;
         if (AnalysisHandler::counts_.load() > HANDLE_IDLING_TIME) {
             auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-            if (periodWorker == nullptr) {
-                MEDIA_ERR_LOG("failed to get period worker instance");
-                return E_ERR;
-            }
+            CHECK_AND_RETURN_RET_LOG(periodWorker != nullptr, E_ERR, "failed to get period worker instance");
             periodWorker->StopThread(PeriodTaskType::CLOUD_ANALYSIS_ALBUM);
         }
         return E_ERR;
@@ -88,10 +85,8 @@ static vector<string> GetAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStor
     NativeRdb::RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
     predicates.In(PhotoMap::ASSET_ID, fileIds);
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed query AnalysisAlbum");
-        return albumIds;
-    };
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, albumIds, "Failed query AnalysisAlbum");
+
     while (resultSet->GoToNextRow() == E_OK) {
         int32_t albumId = ANALYSIS_ALBUM_OFFSET + get<int32_t>(ResultSetUtils::GetValFromColumn(
             ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID, resultSet, TYPE_INT32));
@@ -110,11 +105,9 @@ void AnalysisHandler::ProcessHandleData(PeriodTaskData *data)
     if (GetHandleData(handleData) != E_OK) {
         return;
     }
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Can not get rdbstore");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Can not get rdbstore");
     vector<string> fileIds;
     std::string insertRefreshAlbum;
     if (handleData.orgInfo.type == ChangeType::OTHER) {
@@ -151,20 +144,15 @@ void AnalysisHandler::ProcessHandleData(PeriodTaskData *data)
 void AnalysisHandler::init()
 {
     auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-    if (periodWorker == nullptr) {
-        MEDIA_ERR_LOG("failed to get period worker instance");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(periodWorker != nullptr, "failed to get period worker instance");
     if (periodWorker->IsThreadRunning(PeriodTaskType::CLOUD_ANALYSIS_ALBUM)) {
         MEDIA_DEBUG_LOG("cloud analysis album is running");
         return;
     }
+
     AnalysisHandler::counts_.store(0);
     PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
-    if (data == nullptr) {
-        MEDIA_ERR_LOG("Failed to new taskdata");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(data != nullptr, "Failed to new taskdata");
     periodWorker->StartTask(PeriodTaskType::CLOUD_ANALYSIS_ALBUM, AnalysisHandler::ProcessHandleData, data);
 }
 
