@@ -36,15 +36,20 @@ enum class ForceRefreshType {
 
 static const uint8_t ALBUM_URI_TYPE = 0;
 static const uint8_t PHOTO_URI_TYPE = 1;
+static const uint8_t OTHER_URI_TYPE = 2;
+
+static const uint16_t TIME_BEGIN_SYNC = 0;
+static const uint16_t TIME_END_SYNC = 1;
+static const uint16_t TIME_IN_SYNC = 2;
 
 struct SyncNotifyInfo {
-    uint16_t taskType;
+    uint16_t taskType = TIME_IN_SYNC;
     uint16_t syncType;
     NotifyType notifyType;
-    uint32_t syncId;
+    std::string syncId;
     uint32_t totalAssets;
     uint32_t totalAlbums;
-    uint8_t uriType;
+    uint8_t uriType = OTHER_URI_TYPE;
     uint8_t reserve;
     uint16_t urisSize;
     std::list<Uri> uris;
