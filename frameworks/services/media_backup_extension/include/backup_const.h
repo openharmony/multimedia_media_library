@@ -104,6 +104,8 @@ const std::string GALLERY_DETAIL_TIME = "detail_time";
 const std::string GALLERY_THUMB_TYPE = "thumbType";
 const std::string GALLERY_ALBUM_ID = "albumId";
 const std::string GALLERY_UNIQUE_ID = "uniqueId";
+const std::string GALLERY_LOCAL_THUMB_PATH_ID = "localThumbPath";
+const std::string GALLERY_LOCAL_BIG_THUMB_PATH_ID = "localBigThumbPath";
 
 // dentryInfo fileType
 const std::string DENTRY_INFO_ORIGIN = "CONTENT";
@@ -325,6 +327,9 @@ struct FileInfo {
     std::string syncStatus{0};
     std::string albumId;
     std::string uniqueId;
+    std::string localThumbPath;
+    std::string localBigThumbPath;
+
     int32_t thumbType {-1};
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
