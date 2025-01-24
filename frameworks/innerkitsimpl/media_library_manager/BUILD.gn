@@ -134,6 +134,7 @@ ohos_shared_library("media_library_extend_manager") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "os_account:os_account_innerkits",
     "samgr:samgr_proxy",
   ]
 

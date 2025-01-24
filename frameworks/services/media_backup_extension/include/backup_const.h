@@ -111,6 +111,7 @@ const std::string DENTRY_INFO_LCD = "LCD";
 const std::string DENTRY_INFO_THM = "THM";
 
 // external column
+const std::string EXTERNAL_FILE_ID = "_id";
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
 const std::string EXTERNAL_DATE_MODIFIED = "date_modified";
 const std::string EXTERNAL_DATE_ADDED = "date_added";
@@ -254,6 +255,7 @@ enum RestoreError {
     PREPARE_PATH_FAILED,
     GALLERY_DATABASE_CORRUPTION,
     UPDATE_PHOTOS_FAILED,
+    UPDATE_FAILED,
     PARSE_TRACK_FAILED,
 };
 
@@ -282,6 +284,7 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::PREPARE_PATH_FAILED, "RESTORE_PREPARE_PATH_FAILED" },
     { RestoreError::GALLERY_DATABASE_CORRUPTION, "RESTORE_GALLERY_DATABASE_CORRUPTION" },
     { RestoreError::UPDATE_PHOTOS_FAILED, "RESTORE_UPDATE_PHOTOS_FAILED"},
+    { RestoreError::UPDATE_FAILED, "RESTORE_UPDATE_FAILED"},
     { RestoreError::PARSE_TRACK_FAILED, "RESTORE_HIGHLIGHT_PARSE_TRACK_FAILED"},
 };
 
@@ -391,6 +394,8 @@ struct FileInfo {
     std::string newAstcDateKey;
     bool isInternal {true};
     int32_t userId {-1};
+    double latitude {0.0};
+    double longitude {0.0};
     std::string storyIds;
     std::string portraitIds;
     bool needUpdate {false};

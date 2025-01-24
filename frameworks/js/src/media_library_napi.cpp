@@ -5012,19 +5012,19 @@ static napi_value ParseArgsGrantPhotoUriPermissionInner(napi_env env, napi_callb
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], uri) ==
         napi_ok, "Failed to get uri");
     int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(uri);
-    NAPI_ASSERT(env, fileId >= 0, "Invalid fileId");
+    NAPI_ASSERT(env, fileId >= 0, "Invalid uri");
     context->valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
 
     // parse permissionType
     int32_t permissionType;
     NAPI_ASSERT(env, ParsePermissionType(env, context->argv[ARGS_TWO], permissionType) ==
-        napi_ok, "Invalid args[2]");
+        napi_ok, "Invalid PermissionType");
     context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     // parse hideSensitiveType
     int32_t hideSensitiveType;
     NAPI_ASSERT(env, ParseHidenSensitiveType(env, context->argv[ARGS_THREE],
-        hideSensitiveType) == napi_ok, "Invalid args[3]");
+        hideSensitiveType) == napi_ok, "Invalid SensitiveType");
     context->valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, hideSensitiveType);
 
     // parsing fileId ensured uri is photo.
@@ -5096,13 +5096,13 @@ static napi_value ParseArgsGrantPhotoUrisForForceSensitive(napi_env env, napi_ca
  
     // parse uris
     vector<string> uris;
-    NAPI_ASSERT(env, ParseGrantMediaUris(env, context->argv[ARGS_ONE], uris) ==
-        napi_ok, "Failed to get object info");
+    NAPI_ASSERT(env, ParseGrantMediaUris(env, context->argv[ARGS_ZERO], uris) ==
+        napi_ok, "Invalid uri");
  
     // parse hideSensitiveType
     int32_t hideSensitiveType;
     NAPI_ASSERT(env, ParseHidenSensitiveType(env, context->argv[ARGS_ONE],
-        hideSensitiveType) == napi_ok, "Invalid args[1]");
+        hideSensitiveType) == napi_ok, "Invalid SensitiveType");
     context->valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, hideSensitiveType);
     NAPI_ASSERT(env, ParseUriTypes(uris, context) == napi_ok, "ParseUriTypes failed");
  
@@ -5125,7 +5125,7 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
     // parse appid or tokenId
     uint32_t tokenId;
     NAPI_ASSERT(env, ParseTokenId(env, context->argv[ARGS_ZERO], tokenId) ==
-        napi_ok, "Invalid args[0]");
+        napi_ok, "Invalid tokenId");
     context->valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
     uint32_t srcTokenId = IPCSkeleton::GetCallingTokenID();
     context->valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, static_cast<int64_t>(srcTokenId));
@@ -5133,13 +5133,13 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
     // parse permissionType
     int32_t permissionType;
     NAPI_ASSERT(env, ParsePermissionType(env, context->argv[ARGS_TWO], permissionType) ==
-        napi_ok, "Invalid args[2]");
+        napi_ok, "Invalid PermissionType");
     context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     // parse hideSensitiveType
     int32_t hideSensitiveType;
     NAPI_ASSERT(env, ParseHidenSensitiveType(env, context->argv[ARGS_THREE], hideSensitiveType) ==
-        napi_ok, "Invalid args[3]");
+        napi_ok, "Invalid SensitiveType");
     context->valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, hideSensitiveType);
 
     // parsing fileId ensured uri is photo.
@@ -5148,7 +5148,7 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
     // parse uris
     vector<string> uris;
     NAPI_ASSERT(env, ParseGrantMediaUris(env, context->argv[ARGS_ONE], uris) ==
-        napi_ok, "Failed to get object info");
+        napi_ok, "Invalid uris");
     NAPI_ASSERT(env, ParseUriTypes(uris, context) == napi_ok, "ParseUriTypes failed");
 
     napi_value result = nullptr;

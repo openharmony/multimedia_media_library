@@ -56,10 +56,8 @@ bool PhotoAlbumUpdateDateModifiedOperation::CheckAlbumDateNeedFix(
     std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
 {
     auto resultSet = rdbStore->QuerySql(SQL_QUERY_COUNT_ALBUM_DATE_NEED_FIX);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Query count of album date need fix failed");
-        return false;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "Query count of album date need fix failed");
 
     if (GetInt32Val("count", resultSet) <= 0) {
         MEDIA_DEBUG_LOG("no album date need fix");
@@ -74,20 +72,16 @@ void PhotoAlbumUpdateDateModifiedOperation::UpdateAlbumDateNeedFix(
     std::shared_ptr<MediaLibraryRdbStore> &rdbStore)
 {
     int32_t errCode = rdbStore->ExecuteSql(SQL_UPDATE_ALBUM_DATE_NEED_FIX);
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fix album date need fix failed, errCode:%{public}d", errCode);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(errCode == NativeRdb::E_OK,
+        "Fix album date need fix failed, errCode:%{public}d", errCode);
     MEDIA_INFO_LOG("album date fix success");
 }
 
 int32_t PhotoAlbumUpdateDateModifiedOperation::UpdateAlbumDateNeedFix(NativeRdb::RdbStore &rdbStore)
 {
     int32_t errCode = rdbStore.ExecuteSql(SQL_UPDATE_ALBUM_DATE_NEED_FIX);
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fix album date need fix failed, errCode:%{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, errCode,
+        "Fix album date need fix failed, errCode:%{public}d", errCode);
     MEDIA_INFO_LOG("album date fix success");
     return NativeRdb::E_OK;
 }

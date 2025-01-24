@@ -799,7 +799,7 @@ bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const Thumbna
         MEDIA_ERR_LOG("update thumbnail_ready failed, err = %{public}d", err);
         return false;
     }
-    
+
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
         MEDIA_ERR_LOG("SendThumbNotify watch is nullptr");

@@ -33,7 +33,7 @@ int32_t TabOldPhotosRestore::Restore(
     }
     for (const auto &fileInfo : fileInfos) {
         std::string executeSql = this->SQL_TAB_OLD_PHOTOS_INSERT;
-        std::vector<NativeRdb::ValueObject> bindArgs = { fileInfo.fileIdOld, fileInfo.oldPath, fileInfo.cloudPath };
+        std::vector<NativeRdb::ValueObject> bindArgs = { fileInfo.localMediaId, fileInfo.oldPath, fileInfo.cloudPath };
         int32_t ret = rdbStorePtr->ExecuteSql(executeSql, bindArgs);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, "
@@ -60,7 +60,7 @@ std::string TabOldPhotosRestore::ToString(const std::vector<NativeRdb::ValueObje
 
 std::string TabOldPhotosRestore::ToString(const FileInfo &fileInfo)
 {
-    return "FileInfo[ fileId: " + std::to_string(fileInfo.fileIdOld) + ", displayName: " + fileInfo.displayName +
+    return "FileInfo[ fileId: " + std::to_string(fileInfo.localMediaId) + ", displayName: " + fileInfo.displayName +
         ", bundleName: " + std::to_string(fileInfo.fileSize) + ", fileType: " +
         std::to_string(fileInfo.fileType) + " ]";
 }

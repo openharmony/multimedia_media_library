@@ -37,6 +37,7 @@
 #include "medialibrary_rdb_utils.h"
 #include "vision_column.h"
 #include "medialibrary_restore.h"
+#include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
 #include "power_mgr_client.h"
 #endif
@@ -73,9 +74,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryGoToFirst(
     MediaLibraryTracer tracer;
     tracer.Start("QueryGoToFirst");
     auto resultSet = rdbStore->StepQueryWithoutCheck(predicates, columns);
-    if (resultSet == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, nullptr);
 
     MediaLibraryTracer goToFirst;
     goToFirst.Start("GoToFirstRow");
@@ -191,14 +190,13 @@ static void ConstructAlbumNotifyUris(SyncNotifyInfo &info, int32_t albumId)
 static int32_t RefreshAlbumInfoAndUris(
     const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t albumId, PhotoAlbumSubType subtype, SyncNotifyInfo &info)
 {
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     if (info.forceRefreshType == ForceRefreshType::NONE) {
         string updateRefreshAlbumSql = "UPDATE " + ALBUM_REFRESH_TABLE + " SET " + ALBUM_REFRESH_STATUS +
                                        " = 1 WHERE " + REFRESHED_ALBUM_ID + " = " + std::to_string(albumId);
         int32_t ret = rdbStore->ExecuteSql(updateRefreshAlbumSql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("#test Failed to execute update refresh album sql:%{public}s", updateRefreshAlbumSql.c_str());
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+            "#test Failed to execute update refresh album sql:%{public}s", updateRefreshAlbumSql.c_str());
     }
     string sql;
     int32_t ret = MediaLibraryRdbUtils::FillOneAlbumCountAndCoverUri(rdbStore, albumId, subtype, sql);
@@ -221,6 +219,19 @@ static int32_t RefreshAlbumInfoAndUris(
             subtype);
     }
     ConstructAlbumNotifyUris(info, albumId);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    VariantMap map;
+    if (subtype == IMAGE || subtype == VIDEO) {
+        map = {{KEY_REFRESH_IMAGEVIDEO_ALBUM_TOTAL_COUNT, 1},
+            {KEY_REFRESH_IMAGEVIDEO_ALBUM_TOTAL_TIME, static_cast<int32_t>(end - start)}};
+    } else if (subtype == USER_GENERIC || subtype == SOURCE_GENERIC) {
+        map = {{KEY_REFRESH_USER_AND_SOURCE_ALBUM_TOTAL_COUNT, albumId},
+            {KEY_REFRESH_USER_AND_SOURCE_ALBUM_TOTAL_TIME, static_cast<int32_t>(end - start)}};
+    } else if (subtype >= ANALYSIS_START) {
+        map = {{KEY_REFRESH_ANALYSIS_ALBUM_TOTAL_COUNT, albumId},
+            {KEY_REFRESH_ANALYSIS_ALBUM_TOTAL_TIME, static_cast<int32_t>(end - start)}};
+    }
+    PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
     return E_SUCCESS;
 }
 
@@ -376,10 +387,8 @@ int32_t AlbumsRefreshManager::CovertCloudId2AlbumId(const shared_ptr<MediaLibrar
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     predicates.SetWhereClause(whereClause);
     auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryGoToFirst failed");
-        return -1;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "QueryGoToFirst failed");
     int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
     resultSet->Close();
     return albumId;
@@ -394,10 +403,8 @@ int32_t AlbumsRefreshManager::CovertCloudId2FileId(const shared_ptr<MediaLibrary
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.SetWhereClause(whereClause);
     auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryGoToFirst failed");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "QueryGoToFirst failed");
+
     int32_t fileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
     resultSet->Close();
     return fileId;
@@ -436,6 +443,26 @@ void AlbumsRefreshManager::RefreshPhotoAlbums(SyncNotifyInfo &info)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Can not get rdb");
+    if (info.taskType == TIME_BEGIN_SYNC) {
+        uint32_t count = 0;
+        vector<string> columns = {PhotoAlbumColumns::ALBUM_COUNT};
+        RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+        predicates.SetWhereClause("album_subtype = " + to_string(PhotoAlbumSubType::VIDEO) +
+                                  " or album_subtype = " + to_string(PhotoAlbumSubType::IMAGE));
+        auto resultSet = rdbStore->Query(predicates, columns);
+        if (resultSet == nullptr) {
+            VariantMap map = {{KEY_TOTAL_PHOTO_COUNT, count}};
+            PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
+            return;
+        }
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            count += GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
+        }
+        resultSet->Close();
+        VariantMap map = {{KEY_TOTAL_PHOTO_COUNT, count}};
+        PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
+        return;
+    }
     MediaLibraryTracer tracer;
     tracer.Start("RefreshPhotoAlbums");
     RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
@@ -459,11 +486,11 @@ static void PrintSyncInfo(SyncNotifyInfo &info)
 {
     MEDIA_DEBUG_LOG(
         "#test info.taskType: %{public}d, info.syncType: %{public}d, info.notifyType: %{public}d, info.syncId: "
-        "%{public}d, info.totalAssets: %{public}d, info.totalAlbums: %{public}d, info.urisSize: %{public}d",
+        "%{public}s, info.totalAssets: %{public}d, info.totalAlbums: %{public}d, info.urisSize: %{public}d",
         info.taskType,
         info.syncType,
         info.notifyType,
-        info.syncId,
+        info.syncId.c_str(),
         info.totalAssets,
         info.totalAlbums,
         info.urisSize);
@@ -501,28 +528,7 @@ SyncNotifyInfo AlbumsRefreshManager::GetSyncNotifyInfo(CloudSyncNotifyInfo &noti
     info.uriType = uriType;
     info.urisSize = notifyInfo.uris.size();
     info.uris = notifyInfo.uris;
-    if (notifyInfo.data == nullptr) {
-        MEDIA_INFO_LOG("notifyInfo.data is nullptr, notify type: %{public}d", info.notifyType);
-        return info;
-    }
-    std::unordered_map<std::string, std::string> result;
-    std::string *cleanedStr = static_cast<std::string *>(const_cast<void *>(notifyInfo.data));
-    cleanedStr->erase(remove(cleanedStr->begin(), cleanedStr->end(), '{'), cleanedStr->end());
-    cleanedStr->erase(remove(cleanedStr->begin(), cleanedStr->end(), '}'), cleanedStr->end());
-    std::istringstream ss(*cleanedStr);
-    std::string keyValuePair;
-    while (std::getline(ss, keyValuePair, ',')) {
-        std::istringstream kvStream(keyValuePair);
-        std::string key;
-        std::string value;
-        if (std::getline(kvStream, key, ':') && std::getline(kvStream, value)) {
-            key.erase(remove(key.begin(), key.end(), ' '), key.end());
-            value.erase(remove(value.begin(), value.end(), ' '), value.end());
-            result[key] = value;
-        }
-    }
-    InitSyncNotifyInfo(info, result);
-    MEDIA_DEBUG_LOG("#test cleanedStr: %{public}s, notifyInfo.type: %{public}d", cleanedStr->c_str(), notifyInfo.type);
+    info.taskType = TIME_IN_SYNC;
     PrintSyncInfo(info);
     return info;
 }
