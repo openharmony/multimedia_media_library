@@ -135,6 +135,9 @@ typedef struct {
     std::string path;
     std::string cloudId;
     std::string displayName;
+    std::string photoImagePath;
+    std::string photoVideoPath;
+    std::string cachePath;
 } ExternalInfo;
 
 class MediaLibraryAssetOperations {
