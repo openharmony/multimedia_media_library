@@ -2449,7 +2449,9 @@ int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredica
     }
     std::string updateAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
         "' WHERE " + ALBUM_ID + " = " + highlightAlbumId;
-    vector<string> updateSqls = { updateAlbumName };
+    std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " + COVER_STATUS + " = 1" +
+        " WHERE " + ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + highlightAlbumId + " LIMIT 1)";
+    vector<string> updateSqls = { updateAlbumName, updateCoverInfoTable };
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
