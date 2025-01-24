@@ -1851,9 +1851,8 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
         fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
 
     if (!(latitude == "0" && longitude == "0") && addressDescription.empty()) {
-        std::packaged_task<bool()> pt([=] {
-            return MediaAnalysisHelper::ParseGeoInfo({ fileId, latitude, longitude }, false);
-        });
+        std::packaged_task<bool()> pt(
+            [=] { return MediaAnalysisHelper::ParseGeoInfo({ fileId + "," + latitude + "," + longitude }, false); });
         std::future<bool> futureResult = pt.get_future();
         ffrt::thread(std::move(pt)).detach();
 
@@ -1909,7 +1908,8 @@ shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicat
             MEDIA_INFO_LOG("No need to query geo info assets");
             return queryResult;
         }
-        std::packaged_task<bool()> pt([&] { return MediaAnalysisHelper::ParseGeoInfo(std::move(geoInfo), true); });
+        std::packaged_task<bool()> pt(
+            [geoInfo = std::move(geoInfo)] { return MediaAnalysisHelper::ParseGeoInfo(std::move(geoInfo), true); });
         std::future<bool> futureResult = pt.get_future();
         ffrt::thread(std::move(pt)).detach();
 
