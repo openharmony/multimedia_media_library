@@ -23,9 +23,9 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 class PhotoDayMonthYearOperation {
 public:
-    static int32_t UpdatePhotosDateAndIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    EXPORT static int32_t UpdatePhotosDateAndIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
-    static int32_t UpdatePhotosDateIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
+    EXPORT static int32_t UpdatePhotosDateIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
     EXPORT static int32_t UpdatePhotosDate(NativeRdb::RdbStore &rdbStore);
 

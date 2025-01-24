@@ -315,7 +315,7 @@ void EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement()
     MEDIA_INFO_LOG("UpdateAlbumsForCloudEnhancement start");
     if (!needUpdateUris.empty()) {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, needUpdateUris);
+        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, needUpdateUris, NotifyAlbumType::SYS_ALBUM);
         needUpdateUris.clear();
     } else {
         MEDIA_INFO_LOG("no uris need to update albums");

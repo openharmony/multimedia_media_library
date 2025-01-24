@@ -206,6 +206,9 @@ ohos_shared_library("medialibrary_nutils") {
   if (media_library_feature_mtp) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
+  if (media_library_feature_take_photo) {
+    defines += [ "MEDIALIBRARY_FEATURE_TAKE_PHOTO" ]
+  }
   if (!media_library_link_opt) {
     sanitize = {
       cfi = true

@@ -24,12 +24,13 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class DuplicatePhotoOperation {
 public:
-    static std::shared_ptr<NativeRdb::ResultSet> GetAllDuplicateAssets(const NativeRdb::RdbPredicates& predicates,
-        const std::vector<std::string>& columns);
-    static std::shared_ptr<NativeRdb::ResultSet> GetDuplicateAssetsToDelete(const NativeRdb::RdbPredicates& predicates,
-        const std::vector<std::string>& columns);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetAllDuplicateAssets(
+        const NativeRdb::RdbPredicates& predicates, const std::vector<std::string>& columns);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetDuplicateAssetsToDelete(
+        const NativeRdb::RdbPredicates& predicates, const std::vector<std::string>& columns);
 
 private:
     static std::string GetSelectColumns(const std::unordered_set<std::string> &columns);

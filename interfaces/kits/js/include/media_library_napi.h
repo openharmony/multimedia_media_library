@@ -96,6 +96,7 @@ public:
         std::list<std::string> extraUris_;
         uint32_t uriSize_ { 0 };
         std::shared_ptr<NativeRdb::ResultSet> sharedAssets_;
+        std::vector<std::shared_ptr<RowObject>> sharedAssetsRowObjVector_;
         std::shared_ptr<NativeRdb::ResultSet> extraSharedAssets_;
     };
 
@@ -119,6 +120,7 @@ public:
     ~ChangeListenerNapi() {};
 
     void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
+    void QueryRdbAndNotifyChange(uv_loop_s *loop, UvChangeMsg *msg, uv_work_t *work);
     int UvQueueWork(uv_loop_s *loop, uv_work_t *work);
     static napi_value SolveOnChange(napi_env env, JsOnChangeCallbackWrapper* wrapper);
     void GetResultSetFromMsg(UvChangeMsg* msg, JsOnChangeCallbackWrapper* wrapper);
@@ -139,6 +141,14 @@ public:
     std::vector<std::shared_ptr<MediaOnNotifyObserver>> observers_;
 private:
     napi_env env_ = nullptr;
+
+    static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr,
+        ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, napi_value& result, bool isPhoto);
+
+    static int ParseSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
+        bool isPhoto);
+    static napi_value BuildSharedPhotoAssetsObj(const napi_env& env,
+        ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto);
 };
 
 class MediaObserver : public AAFwk::DataAbilityObserverStub {

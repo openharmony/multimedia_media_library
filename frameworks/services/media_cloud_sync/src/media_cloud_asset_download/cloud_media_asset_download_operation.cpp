@@ -374,6 +374,13 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
 {
     isUnlimitedTrafficStatusOn_ = CloudSyncUtils::IsUnlimitedTrafficStatusOn();
     MEDIA_INFO_LOG("isUnlimitedTrafficStatusOn_ is %{public}d", static_cast<int32_t>(isUnlimitedTrafficStatusOn_));
+
+    if (!isForeground && !CommonEventUtils::IsWifiConnected()) {
+        MEDIA_WARN_LOG("Failed to init startDownloadTaskStatus, wifi is not connected.");
+        SetTaskStatus(Status::PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE);
+        return;
+    }
+
     if (isForeground && !IsProperFgTemperature()) {
         SetTaskStatus(Status::PAUSE_FOR_TEMPERATURE_LIMIT);
         MEDIA_ERR_LOG("Temperature is not suitable for foreground downloads.");
@@ -391,15 +398,16 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
 int32_t CloudMediaAssetDownloadOperation::SetDeathRecipient()
 {
     auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saMgr == nullptr) {
-        MEDIA_ERR_LOG("Failed to get SystemAbilityManagerClient");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(saMgr != nullptr, E_ERR, "Failed to get SystemAbilityManagerClient.");
+
     cloudRemoteObject_ = saMgr->CheckSystemAbility(CLOUD_MANAGER_MANAGER_ID);
     if (cloudRemoteObject_ == nullptr) {
-        MEDIA_ERR_LOG("Token is null.");
-        return E_ERR;
+        MEDIA_INFO_LOG("try to load CloudFilesService SystemAbility");
+        int32_t minTimeout = 4;
+        cloudRemoteObject_ = saMgr->LoadSystemAbility(CLOUD_MANAGER_MANAGER_ID, minTimeout);
+        CHECK_AND_RETURN_RET_LOG(cloudRemoteObject_ != nullptr, E_ERR, "cloudRemoteObject_ is null.");
     }
+    
     if (!cloudRemoteObject_->AddDeathRecipient(sptr(new CloudDeathRecipient(instance_)))) {
         MEDIA_ERR_LOG("Failed to add death recipient.");
         return E_ERR;
@@ -411,27 +419,25 @@ int32_t CloudMediaAssetDownloadOperation::DoRelativedRegister()
 {
     // register unlimit traffic status
     auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saMgr == nullptr) {
-        MEDIA_ERR_LOG("Failed to get SystemAbilityManagerClient");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(saMgr != nullptr, E_ERR, "Failed to get SystemAbilityManagerClient.");
+
     OHOS::sptr<OHOS::IRemoteObject> remoteObject = saMgr->CheckSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    if (remoteObject == nullptr) {
-        MEDIA_ERR_LOG("Token is null.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(remoteObject != nullptr, E_ERR, "remoteObject is null.");
     cloudHelper_ = DataShare::DataShareHelper::Creator(remoteObject, CLOUD_DATASHARE_URI);
+    CHECK_AND_RETURN_RET_LOG(cloudHelper_ != nullptr, E_ERR, "cloudHelper_ is null.");
+
     cloudMediaAssetObserver_ = std::make_shared<CloudMediaAssetObserver>(instance_);
+    CHECK_AND_RETURN_RET_LOG(cloudMediaAssetObserver_ != nullptr, E_ERR, "cloudMediaAssetObserver_ is null.");
     // observer more than 50, failed to register
     cloudHelper_->RegisterObserverExt(Uri(CLOUD_URI), cloudMediaAssetObserver_, true);
 
     // observer download callback
     downloadCallback_ = std::make_shared<MediaCloudDownloadCallback>(instance_);
+    CHECK_AND_RETURN_RET_LOG(downloadCallback_ != nullptr, E_ERR, "downloadCallback_ is null.");
+
     int32_t ret = SetDeathRecipient();
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("failed to register death recipient, ret: %{public}d.", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to register death recipient, ret: %{public}d.", ret);
+
     MEDIA_INFO_LOG("success to register");
     return ret;
 }
@@ -536,7 +542,8 @@ int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecoverTask(const CloudMe
 
     if (recoverCause == CloudMediaTaskRecoverCause::NETWORK_NORMAL &&
         (pauseCause_ == CloudMediaTaskPauseCause::WIFI_UNAVAILABLE ||
-        pauseCause_ == CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT)) {
+        pauseCause_ == CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT ||
+        pauseCause_ == CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE)) {
         downloadId_ = DOWNLOAD_ID_DEFAULT; // wifi recovery, submit
         return PassiveStatusRecover();
     }
@@ -582,6 +589,11 @@ int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTask
         MEDIA_ERR_LOG("PauseDownloadTask permission denied");
         return E_ERR;
     }
+    if (pauseCause_ == CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE &&
+        pauseCause != CloudMediaTaskPauseCause::USER_PAUSED) {
+        MEDIA_ERR_LOG("PauseDownloadTask permission denied, pauseCause_ is BACKGROUND_TASK_UNAVAILABLE");
+        return E_ERR;
+    }
     MEDIA_INFO_LOG("enter PauseDownloadTask, taskStatus_: %{public}d, pauseCause_: %{public}d, pauseCause: %{public}d",
         static_cast<int32_t>(taskStatus_), static_cast<int32_t>(pauseCause_), static_cast<int32_t>(pauseCause));
 
@@ -606,6 +618,7 @@ void CloudMediaAssetDownloadOperation::ResetParameter()
 
     isThumbnailUpdate_ = true;
     isBgDownloadPermission_ = false;
+    isUnlimitedTrafficStatusOn_ = false;
 
     totalCount_ = 0;
     totalSize_ = 0;
@@ -628,11 +641,10 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
     ResetParameter();
     downloadCallback_ = nullptr;
     cloudRemoteObject_ = nullptr;
-    if (cloudHelper_ == nullptr) {
-        return E_OK;
+    if (cloudHelper_ != nullptr) {
+        cloudHelper_->UnregisterObserverExt(Uri(CLOUD_URI), cloudMediaAssetObserver_);
+        cloudHelper_ = nullptr;
     }
-    cloudHelper_->UnregisterObserverExt(Uri(CLOUD_URI), cloudMediaAssetObserver_);
-    cloudHelper_ = nullptr;
     cloudMediaAssetObserver_ = nullptr;
     return E_OK;
 }

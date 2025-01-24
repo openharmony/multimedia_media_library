@@ -22,6 +22,7 @@
 
 #include "cloud_sync_notify_handler.h"
 #include "media_analysis_helper.h"
+#include "media_file_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_column.h"
 #include "media_log.h"
@@ -30,6 +31,7 @@
 #include "photo_album_column.h"
 #include "albums_refresh_notify.h"
 #include "notify_responsibility_chain_factory.h"
+#include "post_event_utils.h"
 
 using namespace std;
 
@@ -43,41 +45,112 @@ static void HandleCloudNotify(AsyncTaskData *data)
     notifyHandler->MakeResponsibilityChain();
 }
 
+void CloudSyncObserver::DealCloudSync(const ChangeInfo &changeInfo)
+{
+    SyncNotifyInfo info;
+    info.uris = changeInfo.uris_;
+    std::string dataString = (const char *)changeInfo.data_;
+    if (!nlohmann::json::accept(dataString)) {
+        MEDIA_WARN_LOG("Failed to verify the meataData format, metaData is: %{public}s", dataString.c_str());
+        return;
+    }
+    nlohmann::json jsonData = nlohmann::json::parse(dataString);
+    if (jsonData.contains("taskType")) {
+        info.taskType = jsonData["taskType"];
+    }
+    if (jsonData.contains("sycnId")) {
+        info.syncId = jsonData["sycnId"];
+    }
+    if (jsonData.contains("syncType")) {
+        info.syncType = jsonData["syncType"];
+    }
+    if (jsonData.contains("totalAssets")) {
+        info.totalAssets = jsonData["totalAssets"];
+    }
+    if (jsonData.contains("totalAlbums")) {
+        info.totalAlbums = jsonData["totalAlbums"];
+    }
+    if (info.taskType == TIME_BEGIN_SYNC) {
+        PostEventUtils::GetInstance().CreateCloudDownloadSyncStat(info.syncId);
+        VariantMap map = {
+            {KEY_START_DOWNLOAD_TIME, MediaFileUtils::UTCTimeMilliSeconds()}, {KEY_DOWNLOAD_TYPE, info.syncType}};
+        PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
+        AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+    } else if (info.taskType == TIME_END_SYNC) {
+        AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+    }
+}
+ 
+void CloudSyncObserver::DealAlbumGallery(CloudSyncNotifyInfo &notifyInfo)
+{
+    SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, ALBUM_URI_TYPE);
+    AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+    VariantMap map;
+    if (info.notifyType == NOTIFY_ADD) {
+        map = {{KEY_TOTAL_ALBUM_NUM, info.urisSize}, {KEY_ADD_ALBUM_NUM, info.urisSize}};
+    } else if (info.notifyType == NOTIFY_UPDATE) {
+        map = {{KEY_TOTAL_ALBUM_NUM, info.urisSize}, {KEY_UPDATE_ALBUM_NUM, info.urisSize}};
+    } else if (info.notifyType == NOTIFY_REMOVE) {
+        map = {{KEY_TOTAL_ALBUM_NUM, info.urisSize}, {KEY_DELETE_ALBUM_NUM, info.urisSize}};
+    }
+    PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
+}
+ 
+void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
+{
+    if (notifyInfo.type == ChangeType::UPDATE || notifyInfo.type == ChangeType::OTHER) {
+        CloudSyncHandleData handleData;
+        handleData.orgInfo = notifyInfo;
+        shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(GALLERY_PHOTO_DELETE);
+        chain->Handle(handleData);
+    }
+    SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, PHOTO_URI_TYPE);
+    AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+    VariantMap map;
+    if (info.notifyType == NOTIFY_ADD) {
+        map = {{KEY_TOTAL_ASSET_NUM, info.urisSize}, {KEY_ADD_ASSET_NUM, info.urisSize}};
+    } else if (info.notifyType == NOTIFY_UPDATE) {
+        map = {{KEY_TOTAL_ASSET_NUM, info.urisSize}, {KEY_UPDATE_ASSET_NUM, info.urisSize}};
+    } else if (info.notifyType == NOTIFY_REMOVE) {
+        map = {{KEY_TOTAL_ASSET_NUM, info.urisSize}, {KEY_DELETE_ASSET_NUM, info.urisSize}};
+    }
+    PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
+}
+
 void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
 {
     CloudSyncNotifyInfo notifyInfo = {changeInfo.uris_, changeInfo.changeType_, changeInfo.data_};
     string uriString = notifyInfo.uris.front().ToString();
     MEDIA_DEBUG_LOG("#uriString: %{public}s, #uriSize: %{public}zu changeType: %{public}d",
         uriString.c_str(), changeInfo.uris_.size(), changeInfo.changeType_);
+ 
+    if (uriString.find(PhotoAlbumColumns::PHOTO_GALLERY_CLOUD_SYNC_INFO_URI_PREFIX) != string::npos) {
+        DealCloudSync(changeInfo);
+        return;
+    }
+
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos && notifyInfo.type == ChangeType::OTHER) {
         SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, PHOTO_URI_TYPE);
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
+        list<Uri> uriList = { Uri(PhotoColumn::PHOTO_URI_PREFIX) };
+        AlbumsRefreshNotify::SendDeleteUris(uriList);
+        AlbumsRefreshNotify::SendDeleteUris(info.extraUris);
         lock_guard<mutex> lock(syncMutex_);
         if (!isPending_) {
             MEDIA_INFO_LOG("set timer handle index");
-            std::thread([this]() {
-                this->HandleIndex();
-            }).detach();
+            std::thread([this]() { this->HandleIndex(); }).detach();
             isPending_ = true;
         }
     }
 
     if (uriString.find(PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX) != string::npos) {
-        SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, ALBUM_URI_TYPE);
-        AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+        DealAlbumGallery(notifyInfo);
         return;
     }
     
     if (uriString.find(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX) != string::npos) {
-        if (notifyInfo.type == ChangeType::UPDATE || notifyInfo.type == ChangeType::OTHER) {
-            CloudSyncHandleData handleData;
-            handleData.orgInfo = notifyInfo;
-            shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(GALLERY_PHOTO_DELETE);
-            chain->Handle(handleData);
-        }
-        SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, PHOTO_URI_TYPE);
-        AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+        DealPhotoGallery(notifyInfo);
         return;
     }
 

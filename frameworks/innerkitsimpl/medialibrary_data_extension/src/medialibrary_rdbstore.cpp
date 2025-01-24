@@ -2243,10 +2243,9 @@ static void UpdateInsertPhotoUpdateAlbumTrigger(RdbStore &store)
 
 bool MediaLibraryRdbStore::ResetSearchTables()
 {
-    if (!MediaLibraryRdbStore::CheckRdbStore()) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), false,
+        "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+
     static const vector<string> executeSqlStrs = {
         "DROP TABLE IF EXISTS " + SEARCH_TOTAL_TABLE,
         "DROP TRIGGER IF EXISTS " + INSERT_SEARCH_TRIGGER,
@@ -2527,9 +2526,7 @@ void AddShootingModeColumn(RdbStore &store)
         PhotoColumn::PHOTO_SHOOTING_MODE + " TEXT";
     const vector<string> addShootingModeColumn = { addShootringMode };
     int32_t result = ExecSqls(addShootingModeColumn, store);
-    if (result != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Upgrade rdb shooting_mode error %{private}d", result);
-    }
+    CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Upgrade rdb shooting_mode error %{private}d", result);
 }
 
 void AddShootingModeTagColumn(RdbStore &store)
@@ -2542,9 +2539,7 @@ void AddShootingModeTagColumn(RdbStore &store)
     const vector<string> addShootingModeTagColumn = {addShootringModeTag,
         dropExpiredClearMapTrigger, TriggerDeletePhotoClearMap()};
     int32_t result = ExecSqls(addShootingModeTagColumn, store);
-    if (result != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Upgrade rdb shooting_mode error %{private}d", result);
-    }
+    CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Upgrade rdb shooting_mode error %{private}d", result);
 }
 
 static void AddHiddenViewColumn(RdbStore &store)
@@ -2593,9 +2588,7 @@ static void AddLastVisitTimeColumn(RdbStore &store)
         PhotoColumn::PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0",
     };
     int32_t result = ExecSqls(sqls, store);
-    if (result != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Upgrade rdb last_visit_time error %{private}d", result);
-    }
+    CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Upgrade rdb last_visit_time error %{private}d", result);
 }
 
 void AddHiddenTimeColumn(RdbStore &store)
@@ -2634,9 +2627,7 @@ void AddAlbumOrderColumn(RdbStore &store)
     const vector<string> addAlbumOrder = { addAlbumOrderColumn, initOriginOrder,
         albumDeleteTrigger, albumInsertTrigger};
     int32_t result = ExecSqls(addAlbumOrder, store);
-    if (result != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Upgrade rdb album order error %{private}d", result);
-    }
+    CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Upgrade rdb album order error %{private}d", result);
 }
 
 static void AddFormMap(RdbStore &store)
@@ -3422,9 +3413,7 @@ static void ReportFailInfoAsync(AsyncTaskData *data)
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     DfxReporter::ReportStartResult(DfxType::ADD_DATA_UNIQUE_INDEX_FAIL, count, startTime);
     bool ret = system::SetParameter("persist.multimedia.medialibrary.data_unique", "1");
-    if (!ret) {
-        MEDIA_ERR_LOG("Failed to set parameter, ret:%{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret, "Failed to set parameter, ret:%{public}d", ret);
     MEDIA_INFO_LOG("HasDirtyData count:%{public}d", count);
 }
 
@@ -3625,9 +3614,8 @@ static void AddMergeInfoColumnForAlbum(RdbStore &store)
     auto resultSet = store.QuerySql(queryHiddenAlbumId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         int32_t err = ExecSqlWithRetry([&]() { return store.ExecuteSql(CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET); });
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to exec: %{private}s", CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET.c_str());
-        }
+        CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK,
+            "Failed to exec: %{private}s", CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET.c_str());
     }
 }
 
@@ -3635,15 +3623,11 @@ int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(const std::sh
 {
     MEDIA_INFO_LOG("ALBUM_FUSE: Start reconstruct medialibrary storage format task!");
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker ==  nullptr) {
-        MEDIA_ERR_LOG("Failed to get aysnc worker instance!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncWorker !=  nullptr, E_FAIL, "Failed to get aysnc worker instance!");
+
     auto *taskData = new (std::nothrow) CompensateAlbumIdData(store, MediaLibraryRdbStore::reconstructLock_);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for compensate album id");
-        return E_NO_MEMORY;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_NO_MEMORY, "Failed to alloc async data for compensate album id");
+
     auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(ReconstructMediaLibraryStorageFormatWithLock, taskData);
     asyncWorker->AddTask(asyncTask, false);
     return E_OK;
@@ -4543,10 +4527,7 @@ void MediaLibraryRdbStore::SetOldVersion(int32_t oldVersion)
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(RDB_CONFIG, errCode);
-    if (!prefs) {
-        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     prefs->PutInt(RDB_OLD_VERSION, oldVersion);
     prefs->FlushSync();
 }
@@ -4556,10 +4537,7 @@ int32_t MediaLibraryRdbStore::GetOldVersion()
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(RDB_CONFIG, errCode);
-    if (!prefs) {
-        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return oldVersion_;
-    }
+    CHECK_AND_RETURN_RET_LOG(prefs, oldVersion_, "get preferences error: %{public}d", errCode);
     return prefs->GetInt(RDB_OLD_VERSION, oldVersion_);
 }
 
@@ -4568,10 +4546,9 @@ bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &colum
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM pragma_table_info('" + tableName + "') WHERE name = '" +
         columnName + "'";
     auto resultSet = store.QuerySql(querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Get column count failed");
-        return false;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "Get column count failed");
+
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
     MEDIA_DEBUG_LOG("%{private}s in %{private}s: %{public}d", columnName.c_str(), tableName.c_str(), count);
     return count > 0;

@@ -37,6 +37,9 @@ public:
     ~CloudSyncObserver() = default;
 
     void OnChange(const ChangeInfo &changeInfo) override;
+    void DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo);
+    void DealAlbumGallery(CloudSyncNotifyInfo &notifyInfo);
+    void DealCloudSync(const ChangeInfo &changeInfo);
     void HandleIndex();
 
     /* delayed trigger */

@@ -72,7 +72,6 @@ static void NotifySystemAlbumFunc(PhotoAlbumType albumtype, PhotoAlbumSubType su
         } else {
             watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
         }
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
     }
 }
 

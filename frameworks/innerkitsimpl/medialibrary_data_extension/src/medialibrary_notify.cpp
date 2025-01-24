@@ -42,8 +42,11 @@ static const int32_t WAIT_TIME = 2;
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
+atomic<uint16_t> MediaLibraryNotify::thumbCounts_(0);
 atomic<uint16_t> MediaLibraryNotify::counts_(0);
 static const uint16_t IDLING_TIME = 50;
+const static uint16_t THUMB_LOOP = 5;
+const static uint16_t THUMB_NOTIFY_SEQ_NUM = 1;
 
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 {
@@ -160,8 +163,41 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
     return;
 }
 
+static void ExtractDataMapWithNotifyType(NotifyType type, unordered_map<string, NotifyDataMap>& listMap,
+    NotifyDataMap& dataMap)
+{
+    if (listMap.count(PhotoColumn::PHOTO_URI_PREFIX) == 0) {
+        return;
+    }
+    auto iter = listMap.find(PhotoColumn::PHOTO_URI_PREFIX);
+    auto typeIter = iter->second.find(type);
+    if (typeIter == iter->second.end()) {
+        return;
+    }
+    dataMap.emplace(type, typeIter->second);
+    iter->second.erase(type);
+}
+
+// only call this function after clear listMap
+static void InsertDataMapToListMap(NotifyType type, unordered_map<string, NotifyDataMap>& listMap,
+    NotifyDataMap& dataMap)
+{
+    if (dataMap.size() == 0) {
+        return;
+    }
+    if (listMap.count(PhotoColumn::PHOTO_URI_PREFIX) == 0) {
+        listMap.emplace(PhotoColumn::PHOTO_URI_PREFIX, dataMap);
+        return;
+    }
+    auto iter = listMap.find(PhotoColumn::PHOTO_URI_PREFIX);
+    if (iter->second.count(type) == 0) {
+        iter->second.emplace(type, dataMap.at(type));
+    }
+}
+
 static void PushNotification(PeriodTaskData *data)
 {
+    MediaLibraryNotify::thumbCounts_ = (++MediaLibraryNotify::thumbCounts_) % THUMB_LOOP;
     if (data == nullptr) {
         return;
     }
@@ -176,6 +212,7 @@ static void PushNotification(PeriodTaskData *data)
                     MEDIA_ERR_LOG("failed to get period worker instance");
                     return;
                 }
+                MediaLibraryNotify::thumbCounts_ = 0;
                 periodWorker->StopThread(PeriodTaskType::COMMON_NOTIFY);
                 MEDIA_INFO_LOG("notify task close");
             }
@@ -183,8 +220,17 @@ static void PushNotification(PeriodTaskData *data)
         } else {
             MediaLibraryNotify::counts_.store(0);
         }
+        NotifyDataMap thumbAddMap = {};
+        NotifyDataMap thumbUpdateMap = {};
+        if (MediaLibraryNotify::thumbCounts_ != THUMB_NOTIFY_SEQ_NUM) {
+            ExtractDataMapWithNotifyType(NotifyType::NOTIFY_THUMB_ADD, MediaLibraryNotify::nfListMap_, thumbAddMap);
+            ExtractDataMapWithNotifyType(NotifyType::NOTIFY_THUMB_UPDATE, MediaLibraryNotify::nfListMap_,
+                thumbUpdateMap);
+        }
         MediaLibraryNotify::nfListMap_.swap(tmpNfListMap);
         MediaLibraryNotify::nfListMap_.clear();
+        InsertDataMapToListMap(NotifyType::NOTIFY_THUMB_ADD, MediaLibraryNotify::nfListMap_, thumbAddMap);
+        InsertDataMapToListMap(NotifyType::NOTIFY_THUMB_UPDATE, MediaLibraryNotify::nfListMap_, thumbUpdateMap);
     }
     for (auto &[uri, notifyDataMap] : tmpNfListMap) {
         if (notifyDataMap.empty()) {
@@ -223,6 +269,7 @@ static int32_t IsThumbReadyById(const string &fileId)
         resultSet, TYPE_INT32));
     int32_t isHidden = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_HIDDEN,
         resultSet, TYPE_INT32));
+    resultSet->Close();
     return isVisible && isTrashed == 0 && isHidden == 0 && !(subtype == static_cast<int32_t>(PhotoSubType::BURST) &&
         burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::MEMBER));
 }
@@ -245,16 +292,16 @@ static bool SkipThumbNotifyIfNotReady(NotifyTaskData* taskData)
 
 static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData* taskData)
 {
+    if (SkipThumbNotifyIfNotReady(taskData)) {
+        MEDIA_DEBUG_LOG("Skip taskData %{public}s, because not visible", taskData->uri_.c_str());
+        return;
+    }
     NotifyDataMap notifyDataMap;
     list<Uri> sendUris;
     Uri uri(srcUri);
     MEDIA_DEBUG_LOG("AddNotify ,keyUri = %{private}s, uri = %{private}s, "
         "notifyType = %{private}d", keyUri.c_str(), uri.ToString().c_str(), taskData->notifyType_);
     lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
-    if (SkipThumbNotifyIfNotReady(taskData)) {
-        MEDIA_DEBUG_LOG("Skip taskData %{public}s, because not visible", taskData->uri_.c_str());
-        return;
-    }
     if (MediaLibraryNotify::nfListMap_.count(keyUri) == 0) {
         sendUris.emplace_back(uri);
         notifyDataMap.insert(make_pair(taskData->notifyType_, sendUris));

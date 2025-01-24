@@ -259,6 +259,30 @@ struct NapiClassInfo {
     std::vector<napi_property_descriptor> props;
 };
 
+typedef union ColumnUnion {
+    ~ColumnUnion() {};
+    std::string sval_;
+    int ival_;
+    int64_t lval_;
+    double dval_;
+} ColumnUnion;
+
+struct RowObject;
+struct ColumnInfo {
+    std::string columnName_;
+    std::string tmpName_;
+    ColumnUnion tmpNameValue_{};
+    std::string timeInfoKey_;
+    int64_t timeInfoVal_{0};
+    int32_t thumbnailReady_{0};
+    std::shared_ptr<RowObject> coverSharedPhotoAsset_;
+};
+
+struct RowObject {
+    std::vector<std::shared_ptr<ColumnInfo>> columnVector_;
+    std::string dbUri_;
+};
+
 /* Util class used by napi asynchronous methods for making call to js callback function */
 class MediaLibraryNapiUtils {
 public:
@@ -500,8 +524,32 @@ public:
     static napi_status ParsePredicates(napi_env env,
         const napi_value arg, AsyncContext &context, const FetchOptionType &fetchOptType);
 
+    static int ParseNextRowObject(std::shared_ptr<RowObject>& rowObj, std::shared_ptr<NativeRdb::ResultSet>& resultSet,
+        bool isShared);
+    static int ParseNextRowAlbumObject(std::shared_ptr<RowObject>& rowObj,
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+    static napi_value BuildNextRowObject(const napi_env& env, std::shared_ptr<RowObject>& rowObj, bool isShared);
+    static napi_value BuildNextRowAlbumObject(const napi_env& env, std::shared_ptr<RowObject>& rowObj);
+
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
+
+    static napi_value BuildValueByIndex(const napi_env& env, int32_t index, const std::string& name,
+        ColumnUnion& tmpNameValue);
+    static int ParseValueByIndex(std::shared_ptr<ColumnInfo>& columnInfo, int32_t index, const std::string& name,
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+    static int ParseTimeInfo(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo, int32_t index,
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static void BuildTimeInfo(const napi_env& env, const std::string& name, napi_value& result, int32_t index,
+    std::shared_ptr<ColumnInfo>& columnInfo);
+    static int ParseThumbnailReady(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo, int32_t index,
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static void BuildThumbnailReady(const napi_env& env, const std::string& name, napi_value& result, int32_t index,
+    std::shared_ptr<ColumnInfo>& columnInfo);
+    static int ParseCoverSharedPhotoAsset(int32_t index, std::shared_ptr<ColumnInfo>& columnInfo,
+        const std::string& name, const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static int ParseSingleSharedPhotoAssets(std::shared_ptr<ColumnInfo>& columnInfo,
+        std::shared_ptr<NativeRdb::ResultSet>& result);
 };
 
 class NapiScopeHandler {
