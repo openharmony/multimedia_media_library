@@ -757,6 +757,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     info.showDateToken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
     info.dateTaken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
     info.sourcePath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
+    info.localMediaId = GetInt32Val(EXTERNAL_FILE_ID, resultSet);
     return isSuccess;
 }
 

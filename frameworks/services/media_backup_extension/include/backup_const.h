@@ -111,6 +111,7 @@ const std::string DENTRY_INFO_LCD = "LCD";
 const std::string DENTRY_INFO_THM = "THM";
 
 // external column
+const std::string EXTERNAL_FILE_ID = "_id";
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
 const std::string EXTERNAL_DATE_MODIFIED = "date_modified";
 const std::string EXTERNAL_DATE_ADDED = "date_added";
