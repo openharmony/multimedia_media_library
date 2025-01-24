@@ -40,5 +40,11 @@ void AlbumsRefreshNotify::SendBatchUris(NotifyType type, list<Uri> &uris)
     MEDIA_DEBUG_LOG("#testSendBatchUris2, type: %{public}d", type);
     obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(type), uris});
 }
+
+void AlbumsRefreshNotify::SendDeleteUris(list<Uri> &uris)
+{
+    auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
+    obsMgrClient->NotifyChangeExt({ChangeType::DELETE, uris});
+}
 } // namespace Media
-} // namespace OHOS
+} // namespace OHOS

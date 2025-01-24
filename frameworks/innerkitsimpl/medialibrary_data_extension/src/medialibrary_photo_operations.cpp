@@ -57,6 +57,7 @@
 #include "mimetype_utils.h"
 #ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
+#include "multistages_photo_capture_manager.h"
 #include "multistages_moving_photo_capture_manager.h"
 #endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -107,6 +108,8 @@ constexpr int32_t ORIENTATION_180 = 3;
 constexpr int32_t ORIENTATION_270 = 8;
 constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
+const std::string SET_LOCATION_KEY = "set_location";
+const std::string SET_LOCATION_VALUE = "1";
 
 enum ImageFileType : int32_t {
     JPEG = 1,
@@ -800,7 +803,7 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
         watch->Notify(notifyUris[0], NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
         watch->Notify(notifyUris[0], NotifyType::NOTIFY_ALBUM_ADD_ASSET, trashAlbumId);
     } else {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_REMOVE);
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
     }
     vector<int64_t> formIds;
@@ -2215,7 +2218,8 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
     if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,
             "Can not modify %{private}s to %{private}s", sourcePath.c_str(), path.c_str());
-        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        int32_t movingPhotoSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+        if (subtype == movingPhotoSubtype || fileAsset->GetOriginalSubType() == movingPhotoSubtype) {
             string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
             string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePath);
             CHECK_AND_RETURN_RET_LOG(Move(sourceVideoPath, videoPath) == E_OK, E_HAS_FS_ERROR,
@@ -2860,7 +2864,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t 
 }
 
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
-    const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
+    const shared_ptr<FileAsset>& fileAsset, const string& cachePath, bool isWriteGpsAdvanced)
 {
     string editData;
     int32_t id = fileAsset->GetId();
@@ -2885,6 +2889,9 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
 
     ResetOcrInfo(id);
+    if (isWriteGpsAdvanced) {
+        MultiStagesPhotoCaptureManager::UpdateLocation(cmd.GetValueBucket(), true, assetPath, id);
+    }
     ScanFile(assetPath, false, true, true);
     MediaLibraryAnalysisAlbumOperations::UpdatePortraitAlbumCoverSatisfied(id);
     // delete cloud enhacement task
@@ -2899,6 +2906,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
 #endif
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
+    MEDIA_INFO_LOG("SubmitEditCacheExecute success, isWriteGpsAdvanced: %{public}d.", isWriteGpsAdvanced);
     return E_OK;
 }
 
@@ -2922,9 +2930,12 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     int32_t id = fileAsset->GetId();
     bool isEdit = (pending == 0);
 
+    std::string val = cmd.GetQuerySetParam(SET_LOCATION_KEY);
+    bool isWriteGpsAdvanced = val == SET_LOCATION_VALUE;
+
     if (isEdit) {
         CHECK_AND_RETURN_RET(PhotoEditingRecord::GetInstance()->StartCommitEdit(id), E_IS_IN_REVERT);
-        int32_t errCode = SubmitEditCacheExecute(cmd, fileAsset, cachePath);
+        int32_t errCode = SubmitEditCacheExecute(cmd, fileAsset, cachePath, isWriteGpsAdvanced);
         PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
         return errCode;
     } else if (IsCameraEditData(cmd)) {
@@ -2935,7 +2946,11 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
             "Failed to move %{private}s to %{private}s, errCode: %{public}d",
             cachePath.c_str(), assetPath.c_str(), errCode);
     }
+    if (isWriteGpsAdvanced) {
+        MultiStagesPhotoCaptureManager::UpdateLocation(cmd.GetValueBucket(), true, assetPath, id);
+    }
     ScanFile(assetPath, false, true, true);
+    MEDIA_INFO_LOG("SubmitCacheExecute success, isWriteGpsAdvanced: %{public}d.", isWriteGpsAdvanced);
     return E_OK;
 }
 

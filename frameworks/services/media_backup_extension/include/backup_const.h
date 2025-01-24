@@ -104,6 +104,8 @@ const std::string GALLERY_DETAIL_TIME = "detail_time";
 const std::string GALLERY_THUMB_TYPE = "thumbType";
 const std::string GALLERY_ALBUM_ID = "albumId";
 const std::string GALLERY_UNIQUE_ID = "uniqueId";
+const std::string GALLERY_LOCAL_THUMB_PATH_ID = "localThumbPath";
+const std::string GALLERY_LOCAL_BIG_THUMB_PATH_ID = "localBigThumbPath";
 
 // dentryInfo fileType
 const std::string DENTRY_INFO_ORIGIN = "CONTENT";
@@ -111,6 +113,7 @@ const std::string DENTRY_INFO_LCD = "LCD";
 const std::string DENTRY_INFO_THM = "THM";
 
 // external column
+const std::string EXTERNAL_FILE_ID = "_id";
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
 const std::string EXTERNAL_DATE_MODIFIED = "date_modified";
 const std::string EXTERNAL_DATE_ADDED = "date_added";
@@ -254,6 +257,7 @@ enum RestoreError {
     PREPARE_PATH_FAILED,
     GALLERY_DATABASE_CORRUPTION,
     UPDATE_PHOTOS_FAILED,
+    UPDATE_FAILED,
     PARSE_TRACK_FAILED,
 };
 
@@ -282,6 +286,7 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::PREPARE_PATH_FAILED, "RESTORE_PREPARE_PATH_FAILED" },
     { RestoreError::GALLERY_DATABASE_CORRUPTION, "RESTORE_GALLERY_DATABASE_CORRUPTION" },
     { RestoreError::UPDATE_PHOTOS_FAILED, "RESTORE_UPDATE_PHOTOS_FAILED"},
+    { RestoreError::UPDATE_FAILED, "RESTORE_UPDATE_FAILED"},
     { RestoreError::PARSE_TRACK_FAILED, "RESTORE_HIGHLIGHT_PARSE_TRACK_FAILED"},
 };
 
@@ -323,6 +328,9 @@ struct FileInfo {
     std::string syncStatus{0};
     std::string albumId;
     std::string uniqueId;
+    std::string localThumbPath;
+    std::string localBigThumbPath;
+
     int32_t thumbType {-1};
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
@@ -391,6 +399,8 @@ struct FileInfo {
     std::string newAstcDateKey;
     bool isInternal {true};
     int32_t userId {-1};
+    double latitude {0.0};
+    double longitude {0.0};
     std::string storyIds;
     std::string portraitIds;
     bool needUpdate {false};

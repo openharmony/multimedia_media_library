@@ -352,7 +352,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     EXPECT_EQ(ret, E_ERR);
     operation->taskStatus_ = CloudMediaAssetTaskStatus::IDLE;
     ret = instance.StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
     operation->taskStatus_ = CloudMediaAssetTaskStatus::PAUSED;
     ret = instance.StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
     EXPECT_EQ(ret, E_OK);
@@ -367,7 +367,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     operation->taskStatus_ = CloudMediaAssetTaskStatus::DOWNLOADING;
     operation->downloadType_ = CloudMediaDownloadType::DOWNLOAD_FORCE;
     ret = instance.StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_ERR);
     CloudMediaAssetTaskStatus status = static_cast<CloudMediaAssetTaskStatus>(-1);
     operation->taskStatus_ = status;
     ret = instance.StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
@@ -542,9 +542,9 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     EXPECT_EQ(ret, E_ERR);
     operation->taskStatus_ = CloudMediaAssetTaskStatus::IDLE;
     ret = operation->StartDownloadTask(static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_GENTLE));
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
     ret = operation->StartDownloadTask(static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE));
-    EXPECT_EQ(ret, E_ERR);
+    EXPECT_EQ(ret, E_OK);
     operation->taskStatus_ = CloudMediaAssetTaskStatus::IDLE;
 
     ret = operation->DoRecoverExecute();

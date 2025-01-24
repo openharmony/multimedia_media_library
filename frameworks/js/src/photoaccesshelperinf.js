@@ -603,6 +603,12 @@ const PhotoViewMIMETypes = {
   INVALID_TYPE: ''
 };
 
+const SingleSelectionMode = {
+  BROWSER_MODE: 0,
+  SELECT_MODE: 1,
+  BROWSER_AND_SELECT_MODE: 2,
+};
+
 const ErrCode = {
   INVALID_ARGS: 13900020,
   RESULT_ERROR: 13900042,
@@ -677,6 +683,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.recommendationOptions = option.recommendationOptions;
     config.parameters.preselectedUris = option.preselectedUris;
     config.parameters.isPreviewForSingleSelectionSupported = option.isPreviewForSingleSelectionSupported;
+    config.parameters.singleSelectionMode = option.singleSelectionMode;
     config.parameters.isOriginalSupported = option.isOriginalSupported;
     config.parameters.subWindowName = option.subWindowName;
     config.parameters.themeColor = option.themeColor;
@@ -778,6 +785,7 @@ function BaseSelectOptions() {
   this.isSearchSupported = true;
   this.isPhotoTakingSupported = true;
   this.isPreviewForSingleSelectionSupported = true;
+  this.singleSelectionMode = SingleSelectionMode.BROWSER_MODE;
 }
 
 function PhotoSelectOptions() {

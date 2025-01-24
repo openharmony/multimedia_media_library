@@ -115,6 +115,8 @@ private:
                 THEN gallery_album.lPath \
                 ELSE album_v2.lPath \
             END AS lPath, \
+            latitude, \
+            longitude \
             story_id, \
             portrait_id \
         FROM gallery_media \
@@ -140,6 +142,8 @@ private:
         SELECT \
             _id, \
             local_media_id, \
+            localThumbPath, \
+            localBigThumbPath, \
             _data, \
             _display_name, \
             description, \

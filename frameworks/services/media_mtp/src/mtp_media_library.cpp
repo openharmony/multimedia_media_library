@@ -27,7 +27,6 @@
 #include "mtp_packet_tools.h"
 #include "mtp_storage_manager.h"
 #include "image_packer.h"
-#include "image_type.h"
 #include "avmetadatahelper.h"
 
 namespace OHOS {
@@ -47,11 +46,10 @@ const std::string APPDATA_DIR_NAME                   = "/storage/media/local/fil
 const std::string DESKTOP_NAME                       = "/storage/media/local/files/Docs/Desktop";
 const std::string PATH_SEPARATOR                     = "/";
 constexpr uint32_t BASE_USER_RANGE                   = 200000;
+constexpr int32_t NORMAL_WIDTH                       = 256;
+constexpr int32_t NORMAL_HEIGHT                      = 256;
 constexpr int32_t COMPRE_SIZE_LEVEL_2                = 204800;
 const std::string THUMBNAIL_FORMAT                   = "image/jpeg";
-constexpr int32_t SHORT_SIDE_THRESHOLD               = 350;
-constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD       = 1050;
-constexpr int32_t ASPECT_RATIO_THRESHOLD             = 3;
 static constexpr uint8_t THUMBNAIL_MID               = 90;
 static std::unordered_map<uint32_t, std::string> handleToPathMap;
 static std::unordered_map<std::string, uint32_t> pathToHandleMap;
@@ -402,14 +400,8 @@ int32_t MtpMediaLibrary::GetObjectInfo(const std::shared_ptr<MtpOperationContext
     if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MediaType::MEDIA_TYPE_VIDEO) {
         outObjectInfo->thumbCompressedSize = COMPRE_SIZE_LEVEL_2;
         outObjectInfo->thumbFormat = MTP_FORMAT_EXIF_JPEG_CODE;
-        ThumbSize outSize;
-        int32_t ret = GetThumbSizeByFd(context, mediaType, outSize);
-        CHECK_AND_RETURN_RET_LOG(ret == MTP_SUCCESS, MTP_ERROR_STORE_NOT_AVAILABLE,
-            "GetThumbSizeByFd failed, ret %{public}d", ret);
-        outObjectInfo->thumbPixelHeight = outSize.height;
-        outObjectInfo->thumbPixelWidth = outSize.width;
-        MEDIA_DEBUG_LOG("File path[%{public}s], mediaType[%{public}d], height[%{public}d], width[%{public}d]",
-            path.c_str(), mediaType, outSize.height, outSize.width);
+        outObjectInfo->thumbPixelHeight = NORMAL_HEIGHT;
+        outObjectInfo->thumbPixelWidth = NORMAL_WIDTH;
     }
 
     std::error_code ec;
@@ -493,127 +485,6 @@ bool MtpMediaLibrary::CompressImage(PixelMap &pixelMap, std::vector<uint8_t> &da
     return true;
 }
 
-static bool ResizeThumb(int &width, int &height)
-{
-    int maxLen = max(width, height);
-    int minLen = min(width, height);
-    if (minLen == 0 || maxLen < 0) {
-        MEDIA_ERR_LOG("Divisor minLen is 0");
-        return false;
-    }
-    double ratio = static_cast<double>(maxLen) / minLen;
-    if (minLen > SHORT_SIDE_THRESHOLD) {
-        minLen = SHORT_SIDE_THRESHOLD;
-        maxLen = static_cast<int>(SHORT_SIDE_THRESHOLD * ratio);
-        if (maxLen > MAXIMUM_SHORT_SIDE_THRESHOLD) {
-            maxLen = MAXIMUM_SHORT_SIDE_THRESHOLD;
-        }
-        if (height > width) {
-            width = minLen;
-            height = maxLen;
-        } else {
-            width = maxLen;
-            height = minLen;
-        }
-    }
-    if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD && ratio > ASPECT_RATIO_THRESHOLD) {
-        int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
-        if (height > width) {
-            width = minLen;
-            height = newMaxLen;
-        } else {
-            width = newMaxLen;
-            height = minLen;
-        }
-    }
-    return true;
-}
-
-static int32_t GetVideoThumbSizeByFd(shared_ptr<AVMetadataHelper> &avMetadataHelper,
-    const int32_t fd, ThumbSize &outSize)
-{
-    CHECK_AND_RETURN_RET_LOG(avMetadataHelper != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT,
-        "avMetadataHelper is nullptr");
-    std::unordered_map<int32_t, string> resultMap = avMetadataHelper->ResolveMetadata();
-    auto item = resultMap.find(OHOS::Media::AV_KEY_VIDEO_HEIGHT);
-    if (item == resultMap.end()) {
-        MEDIA_ERR_LOG("AV_KEY_VIDEO_HEIGHT not found");
-        return MTP_ERROR_NO_THUMBNAIL_PRESENT;
-    }
-    string strHeight = item->second;
-    if (strHeight.empty() || !std::isdigit(strHeight[0])) {
-        MEDIA_ERR_LOG("strHeight is err");
-        return MTP_ERROR_NO_THUMBNAIL_PRESENT;
-    }
-    int32_t height = static_cast<int32_t>(atoi(strHeight.c_str()));
-    item = resultMap.find(OHOS::Media::AV_KEY_VIDEO_WIDTH);
-    if (item == resultMap.end()) {
-        MEDIA_ERR_LOG("AV_KEY_VIDEO_WIDTH not found");
-        return MTP_ERROR_NO_THUMBNAIL_PRESENT;
-    }
-    string strWidth = item->second;
-    if (strWidth.empty() || !std::isdigit(strWidth[0])) {
-        MEDIA_ERR_LOG("strWidth is err");
-        return MTP_ERROR_NO_THUMBNAIL_PRESENT;
-    }
-    int32_t width = static_cast<int32_t>(atoi(strWidth.c_str()));
-    bool isResized = ResizeThumb(width, height);
-    CHECK_AND_RETURN_RET_LOG(isResized == true, MTP_ERROR_NO_THUMBNAIL_PRESENT,
-        "ResizeThumb failed, isResized %{public}d", isResized);
-    outSize.width = width;
-    outSize.height = height;
-    return MTP_SUCCESS;
-}
-
-int32_t MtpMediaLibrary::GetThumbSizeByFd(const std::shared_ptr<MtpOperationContext> &context,
-    MediaType mediaType, ThumbSize &outSize)
-{
-    int32_t fd = 0;
-    int error = GetFd(context, fd);
-    CondCloseFd(error != MTP_SUCCESS, fd);
-    CHECK_AND_RETURN_RET_LOG(error == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetFd failed");
-    uint32_t errorCode = MTP_SUCCESS;
-    if (mediaType == MediaType::MEDIA_TYPE_IMAGE) {
-        SourceOptions opts;
-        std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
-        CondCloseFd(imageSource == nullptr, fd);
-        CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT, "imageSource is nullptr");
-        ImageInfo imageInfo;
-        error = imageSource->GetImageInfo(imageInfo);
-        CondCloseFd(error != MTP_SUCCESS, fd);
-        CHECK_AND_RETURN_RET_LOG(error == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetImageInfo failed");
-        outSize.width = imageInfo.size.width;
-        outSize.height = imageInfo.size.height;
-        bool isResized = ResizeThumb(outSize.width, outSize.height);
-        CondCloseFd(isResized != true, fd);
-        CHECK_AND_RETURN_RET_LOG(isResized == true, MTP_ERROR_NO_THUMBNAIL_PRESENT,
-            "ResizeThumb failed, isResized %{public}d", isResized);
-    } else if (mediaType == MediaType::MEDIA_TYPE_VIDEO) {
-        shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
-        CondCloseFd(avMetadataHelper == nullptr, fd);
-        CHECK_AND_RETURN_RET_LOG(avMetadataHelper != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT,
-            "avMetadataHelper is nullptr");
-
-        struct stat64 st;
-        int32_t ret = fstat64(fd, &st);
-        CondCloseFd(ret != 0, fd);
-        CHECK_AND_RETURN_RET_LOG(ret == 0, MTP_ERROR_NO_THUMBNAIL_PRESENT,
-            "Get file state failed, err %{public}d", errno);
-
-        int64_t length = static_cast<int64_t>(st.st_size);
-        ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
-        CondCloseFd(ret != 0, fd);
-        CHECK_AND_RETURN_RET_LOG(ret == 0, MTP_ERROR_NO_THUMBNAIL_PRESENT, "SetSource failed, ret %{public}d", ret);
-
-        ret = GetVideoThumbSizeByFd(avMetadataHelper, fd, outSize);
-        CondCloseFd(ret != MTP_SUCCESS, fd);
-        CHECK_AND_RETURN_RET_LOG(ret == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT,
-            "GetVideoThumbSizeByFd failed, ret %{public}d", ret);
-    }
-    CondCloseFd(fd > 0, fd);
-    return MTP_SUCCESS;
-}
-
 int32_t MtpMediaLibrary::GetVideoThumb(const std::shared_ptr<MtpOperationContext> &context,
     std::shared_ptr<UInt8List> &outThumb)
 {
@@ -637,15 +508,11 @@ int32_t MtpMediaLibrary::GetVideoThumb(const std::shared_ptr<MtpOperationContext
     CondCloseFd(ret != 0, fd);
     CHECK_AND_RETURN_RET_LOG(ret == 0, MTP_ERROR_NO_THUMBNAIL_PRESENT, "SetSource failed, ret %{public}d", ret);
 
-    ThumbSize outSize;
-    ret = GetVideoThumbSizeByFd(avMetadataHelper, fd, outSize);
-    CondCloseFd(ret != MTP_SUCCESS, fd);
-    CHECK_AND_RETURN_RET_LOG(ret == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT,
-        "GetVideoThumbSizeByFd failed, ret %{public}d", ret);
-    PixelMapParams param;
-    param.colorFormat = PixelFormat::RGBA_8888;
-    param.dstWidth = outSize.width;
-    param.dstHeight = outSize.height;
+    PixelMapParams param = {
+        .dstWidth = NORMAL_WIDTH,
+        .dstHeight = NORMAL_HEIGHT,
+        .colorFormat = PixelFormat::RGBA_8888
+    };
     shared_ptr<PixelMap> sPixelMap = avMetadataHelper->FetchFrameYuv(0,
         AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC, param);
     CondCloseFd(sPixelMap == nullptr, fd);
@@ -673,20 +540,10 @@ int32_t MtpMediaLibrary::GetPictureThumb(const std::shared_ptr<MtpOperationConte
     CondCloseFd(imageSource == nullptr, fd);
     CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT, "imageSource is nullptr");
 
-    ImageInfo imageInfo;
-    errorCode = imageSource->GetImageInfo(imageInfo);
-    CondCloseFd(errorCode != MTP_SUCCESS, fd);
-    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_NO_THUMBNAIL_PRESENT, "GetImageInfo failed");
     DecodeOptions decodeOpts;
-    int32_t width = imageInfo.size.width;
-    int32_t height = imageInfo.size.height;
-    bool isResized = ResizeThumb(width, height);
-    CondCloseFd(isResized != true, fd);
-    CHECK_AND_RETURN_RET_LOG(isResized == true, MTP_ERROR_NO_THUMBNAIL_PRESENT,
-        "ResizeThumb failed, isResized %{public}d", isResized);
     decodeOpts.desiredSize = {
-        .width = width,
-        .height = height,
+        .width = NORMAL_WIDTH,
+        .height = NORMAL_HEIGHT,
     };
 
     std::unique_ptr<PixelMap> cropPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);

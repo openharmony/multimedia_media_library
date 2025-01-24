@@ -27,6 +27,7 @@
 #include "rdb_helper.h"
 #include "result_set.h"
 #include "tab_old_photos_restore.h"
+#include "geo_knowledge_restore.h"
 #include "highlight_restore.h"
 
 namespace OHOS {
@@ -104,12 +105,16 @@ protected:
     void UpdateFailedFileByFileType(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode);
     void UpdateFailedFiles(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode);
     void UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode);
+
     void UpdateDuplicateNumber(int32_t fileType);
     void DeleteMoveFailedData(std::vector<std::string> &moveFailedData);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode);
+
     bool RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
     bool RestoreLcdAndThumbFromKvdb(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
+    std::string GetThumbFile(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
+
     int32_t BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
         std::string fileType);
     int32_t SetVisiblePhoto(std::vector<FileInfo> &fileInfos);
@@ -200,6 +205,7 @@ protected:
     TabOldPhotosRestore tabOldPhotosRestore_;
     bool needReportFailed_ = false;
     bool isAccountValid_ = false;
+    GeoKnowledgeRestore geoKnowledgeRestore_;
     HighlightRestore highlightRestore_;
 };
 } // namespace Media

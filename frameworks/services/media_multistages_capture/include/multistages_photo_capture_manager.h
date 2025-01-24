@@ -37,7 +37,8 @@ public:
     bool Init();
 
     EXPORT int32_t UpdateDbInfo(MediaLibraryCommand &cmd);
-    void UpdateLocation(const NativeRdb::ValuesBucket &values);
+    static void UpdateLocation(const NativeRdb::ValuesBucket &values, bool isWriteGpsAdvanced,
+        const std::string &path = "", const int32_t &id = 0);
 
     std::shared_ptr<OHOS::NativeRdb::ResultSet> HandleMultiStagesOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
