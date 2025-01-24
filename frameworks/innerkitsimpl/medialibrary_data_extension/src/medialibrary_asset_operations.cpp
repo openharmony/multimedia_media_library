@@ -100,7 +100,7 @@ const string PHOTO_ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
 constexpr int32_t UNKNOWN_VALUE = -1;
 constexpr int32_t LOCAL_PHOTO_POSITION = 1;
 constexpr int32_t BOTH_LOCAL_CLOUD_PHOTO_POSITION = 3;
-constexpr int32_t MAX_PROCESS_NUM = 30;
+constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
 
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
@@ -2482,6 +2482,16 @@ static int64_t GetAssetSize(const std::string &extraPath)
     return static_cast<int64_t>(fileSize);
 }
 
+static void PushMovingPhotoExternalPath(const std::string &path, const std::string &logTarget,
+    vector<string> &attachment)
+{
+    if (path.empty()) {
+        MEDIA_WARN_LOG("%{public}s is invalid.", logTarget.c_str());
+        return;
+    }
+    attachment.push_back(path);
+}
+
 static void GetMovingPhotoExternalInfo(ExternalInfo &exInfo, vector<string> &attachment)
 {
     MEDIA_DEBUG_LOG("GetMovingPhotoExternalInfo start.");
@@ -2490,18 +2500,18 @@ static void GetMovingPhotoExternalInfo(ExternalInfo &exInfo, vector<string> &att
     }
     exInfo.videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(exInfo.path);
     exInfo.extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(exInfo.path);
-    if (!exInfo.videoPath.empty()) {
-        attachment.push_back(exInfo.videoPath);
-    } else {
-        MEDIA_WARN_LOG("videoPath is empty.");
-    }
-    if (!exInfo.extraPath.empty()) {
-        attachment.push_back(exInfo.extraPath);
-    } else {
-        MEDIA_WARN_LOG("extraPath is empty.");
-    }
-    MEDIA_DEBUG_LOG("videoPath is %{public}s, extraPath is %{public}s.", exInfo.videoPath.c_str(),
-        exInfo.extraPath.c_str());
+    exInfo.photoImagePath = MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(exInfo.path);
+    exInfo.photoVideoPath = MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(exInfo.path);
+    exInfo.cachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(exInfo.path);
+    PushMovingPhotoExternalPath(exInfo.videoPath, "videoPath", attachment);
+    PushMovingPhotoExternalPath(exInfo.extraPath, "extraPath", attachment);
+    PushMovingPhotoExternalPath(exInfo.photoImagePath, "photoImagePath", attachment);
+    PushMovingPhotoExternalPath(exInfo.photoVideoPath, "photoVideoPath", attachment);
+    PushMovingPhotoExternalPath(exInfo.cachePath, "cachePath", attachment);
+    MEDIA_INFO_LOG("videoPath is %{public}s, extraPath is %{public}s, photoImagePath is %{public}s, \
+        photoVideoPath is %{public}s, cachePath is %{public}s.", DfxUtils::GetSafePath(exInfo.videoPath).c_str(),
+        DfxUtils::GetSafePath(exInfo.extraPath).c_str(), DfxUtils::GetSafePath(exInfo.photoImagePath).c_str(),
+        DfxUtils::GetSafePath(exInfo.photoVideoPath).c_str(), DfxUtils::GetSafePath(exInfo.cachePath).c_str());
     exInfo.sizeMp4 = GetAssetSize(exInfo.videoPath);
     exInfo.sizeExtra = GetAssetSize(exInfo.extraPath);
     if (exInfo.sizeMp4 <= INVALID_SIZE) {
@@ -2525,23 +2535,12 @@ static void GetEditPhotoExternalInfo(ExternalInfo &exInfo, vector<string> &attac
     exInfo.editDataPath = PhotoFileUtils::GetEditDataPath(exInfo.path);
     exInfo.editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(exInfo.path);
     exInfo.editDataSourcePath = PhotoFileUtils::GetEditDataSourcePath(exInfo.path);
-    if (!exInfo.editDataPath.empty()) {
-        attachment.push_back(exInfo.editDataPath);
-    } else {
-        MEDIA_WARN_LOG("editDataPath is empty.");
-    }
-    if (!exInfo.editDataCameraPath.empty()) {
-        attachment.push_back(exInfo.editDataCameraPath);
-    } else {
-        MEDIA_WARN_LOG("editDataCameraPath is empty.");
-    }
-    if (!exInfo.editDataSourcePath.empty()) {
-        attachment.push_back(exInfo.editDataSourcePath);
-    } else {
-        MEDIA_WARN_LOG("editDataSourcePath is empty.");
-    }
-    MEDIA_DEBUG_LOG("editDataPath is %{public}s, editDataCameraPath is %{public}s, editDataSourcePath is %{public}s",
-        exInfo.editDataPath.c_str(), exInfo.editDataCameraPath.c_str(), exInfo.editDataSourcePath.c_str());
+    PushMovingPhotoExternalPath(exInfo.editDataPath, "editDataPath", attachment);
+    PushMovingPhotoExternalPath(exInfo.editDataCameraPath, "editDataCameraPath", attachment);
+    PushMovingPhotoExternalPath(exInfo.editDataSourcePath, "editDataSourcePath", attachment);
+    MEDIA_INFO_LOG("editDataPath is %{public}s, editDataCameraPath is %{public}s, editDataSourcePath is %{public}s",
+        DfxUtils::GetSafePath(exInfo.editDataPath).c_str(), DfxUtils::GetSafePath(exInfo.editDataCameraPath).c_str(),
+        DfxUtils::GetSafePath(exInfo.editDataSourcePath).c_str());
 }
 
 static CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr)
@@ -2557,7 +2556,7 @@ static CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr)
         CHECK_AND_RETURN_RET_LOG(externalInfo.size > INVALID_SIZE, {}, "failed to get asset size.");
     }
     externalInfo.path = fileAssetPtr->GetPath();
-    MEDIA_DEBUG_LOG("path is %{public}s", externalInfo.path.c_str());
+    MEDIA_INFO_LOG("path is %{public}s", DfxUtils::GetSafePath(externalInfo.path).c_str());
     externalInfo.cloudId = fileAssetPtr->GetCloudId();
     externalInfo.subType = fileAssetPtr->GetPhotoSubType();
     externalInfo.effectMode = fileAssetPtr->GetMovingPhotoEffectMode();
@@ -2778,7 +2777,7 @@ static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds)
             MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
                 MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(albumId) }, true);
         } else {
-            MEDIA_WARN_LOG("Can't find album id in User and Source Album");
+            MEDIA_WARN_LOG("Can't find album id %{public}d in User and Source Album", albumId);
         }
     }
     MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(true);
@@ -2869,14 +2868,30 @@ static int32_t DeleteMovingPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
     if (MovingPhotoFileUtils::IsMovingPhoto(subType, effectMode, originalSubType)) {
         string path = fileAsset->GetPath();
         string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
-        bool res = MediaFileUtils::DeleteFile(videoPath);
-        CHECK_AND_PRINT_LOG(res, "delete video path is %{public}s, errno: %{public}d",
-            videoPath.c_str(), errno);
-
+        if (!MediaFileUtils::DeleteFile(videoPath)) {
+            MEDIA_INFO_LOG("delete video path is %{public}s, errno: %{public}d",
+                DfxUtils::GetSafePath(videoPath).c_str(), errno);
+        }
         string exVideoPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path);
-        res = MediaFileUtils::DeleteFile(exVideoPath);
-        CHECK_AND_PRINT_LOG(res, "delete extra data path is %{public}s, errno: %{public}d",
-            exVideoPath.c_str(), errno);
+        if (!MediaFileUtils::DeleteFile(exVideoPath)) {
+            MEDIA_INFO_LOG("delete extra video path is %{public}s, errno: %{public}d",
+                DfxUtils::GetSafePath(exVideoPath).c_str(), errno);
+        }
+        string sourceImagePath = MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(path);
+        if (!MediaFileUtils::DeleteFile(sourceImagePath)) {
+            MEDIA_INFO_LOG("delete source image path is %{public}s, errno: %{public}d",
+                DfxUtils::GetSafePath(sourceImagePath).c_str(), errno);
+        }
+        string sourceVideoPath = MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(path);
+        if (!MediaFileUtils::DeleteFile(sourceVideoPath)) {
+            MEDIA_INFO_LOG("delete source video path is %{public}s, errno: %{public}d",
+                DfxUtils::GetSafePath(sourceVideoPath).c_str(), errno);
+        }
+        string livePhotoCachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(path);
+        if (!MediaFileUtils::DeleteFile(livePhotoCachePath)) {
+            MEDIA_INFO_LOG("delete live photo cache path is %{public}s, errno: %{public}d",
+                DfxUtils::GetSafePath(livePhotoCachePath).c_str(), errno);
+        }
     }
     return E_OK;
 }
@@ -2890,9 +2905,15 @@ static int32_t DeleteEditPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
         string path = fileAsset->GetPath();
         string editDataPath = PhotoFileUtils::GetEditDataPath(path);
         MEDIA_DEBUG_LOG("edit photo editDataPath path is %{public}s", editDataPath.c_str());
-        bool res = MediaFileUtils::DeleteFile(editDataPath);
-        CHECK_AND_PRINT_LOG(res, "delete edit data path is %{public}s, errno: %{public}d",
-            editDataPath.c_str(), errno);
+        if (!MediaFileUtils::DeleteFile(editDataPath)) {
+            MEDIA_INFO_LOG("delete edit data path is %{public}s, errno: %{public}d",
+                DfxUtils::GetSafePath(editDataPath).c_str(), errno);
+        }
+        string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(path);
+        if (!MediaFileUtils::DeleteFile(editDataCameraPath)) {
+            MEDIA_INFO_LOG("delete edit data camera path is %{public}s, errno: %{public}d",
+                DfxUtils::GetSafePath(editDataCameraPath).c_str(), errno);
+        }
     }
     return E_OK;
 }
