@@ -347,6 +347,10 @@ static int32_t SolvePath(const string &filePath, string &tempPath, string &userI
 
 int32_t MediaLibraryManager::CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet)
 {
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Input resultset is nullptr");
+        return E_FAIL;
+    }
     int count = 0;
     auto ret = resultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
