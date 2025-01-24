@@ -1050,6 +1050,28 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
+bool IThumbnailHelper::DoCreateAstcMthAndYear(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    MEDIA_INFO_LOG("Start DoCreateAstcMthAndYear, id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    data.loaderOpts.decodeInThumbSize = true;
+    data.loaderOpts.desiredType = ThumbnailType::MTH_ASTC;
+    if (!TryLoadSource(opts, data)) {
+        MEDIA_ERR_LOG("DoCreateAstcMthAndYear failed, try load source failed, id: %{public}s", data.id.c_str());
+        return false;
+    }
+    auto pixelMap = data.source.GetPixelMap();
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("DoCreateAstc failed, no available pixelMap, id: %{public}s.", data.id.c_str());
+        return false;
+    }
+    if (!GenThumbnail(opts, data, ThumbnailType::MTH_ASTC) || !GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
+        MEDIA_ERR_LOG("DoCreateAstc failed, GenThumbnail failed, id: %{public}s.", data.id.c_str());
+        return false;
+    }
+    return true;
+}
+
 bool GenerateRotatedThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
 {
     WaitStatus status;
