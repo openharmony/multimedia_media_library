@@ -2757,14 +2757,9 @@ static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &ty
     return E_SUCCESS;
 }
 
-static void NotifyPortraitAlbum(const vector<int32_t> &changedAlbumIds)
+static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds)
 {
     if (changedAlbumIds.size() <= 0) {
-        return;
-    }
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Invalid watch, watch is nullptr");
         return;
     }
     for (int32_t albumId : changedAlbumIds) {
@@ -2778,17 +2773,15 @@ static void NotifyPortraitAlbum(const vector<int32_t> &changedAlbumIds)
         }
         if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
             MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(albumId) });
+                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(albumId) }, true);
         } else if (PhotoAlbum::IsSourceAlbum(type, subType)) {
             MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(albumId) });
+                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(albumId) }, true);
         } else {
-            MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(albumId) });
+            MEDIA_WARN_LOG("Can't find album id in User and Source Album");
         }
-        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
-            PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
     }
+    MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(true);
 }
 
 int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
@@ -2975,7 +2968,7 @@ int32_t MediaLibraryAssetOperations::DeletePermanently(AbsRdbPredicates &predica
 
     //delete both local and cloud image
     DeleteLocalAndCloudPhotos(subFileAssetVector);
-    NotifyPortraitAlbum(std::vector<int32_t>(changedAlbumIds.begin(), changedAlbumIds.end()));
+    NotifyPhotoAlbum(std::vector<int32_t>(changedAlbumIds.begin(), changedAlbumIds.end()));
     return E_OK;
 }
 } // namespace Media
