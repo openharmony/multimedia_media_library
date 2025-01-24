@@ -121,7 +121,7 @@ static void CommandTest(const uint8_t *data, size_t size)
 static void DirOperationTest(const uint8_t *data, size_t size)
 {
     const int32_t int32Count = 2;
-    if (data == nullptr || sizeof(int32_t) * int32Count) {
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
         return;
     }
     int32_t offset = 0;
@@ -140,7 +140,7 @@ static void DirOperationTest(const uint8_t *data, size_t size)
 static void UriPermissionTest(const uint8_t *data, size_t size)
 {
     const int32_t int32Count = 6;
-    if (data == nullptr || sizeof(int32_t) * int32Count) {
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
         return;
     }
     int32_t offset = 0;
