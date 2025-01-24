@@ -102,11 +102,11 @@ public:
         int32_t totalAstcCount);
     EXPORT static bool ConvertToStruct(const nlohmann::json& jsonPhasesStat, PhasesStat& phasesStat,
         int32_t& totalAstcCount);
+    EXPORT void TryToReadAstcInfoFromJsonFile();
+    EXPORT bool ReadAstcInfoFromJsonFile(PhasesStat& phasesStat, int32_t& totalAstcCount);
+    EXPORT bool WriteAstcInfoToJsonFile(const PhasesStat& phasesStat, int32_t totalAstcCount);
 private:
     bool CheckId(const std::string& id);
-    void TryToReadAstcInfoFromJsonFile();
-    bool ReadAstcInfoFromJsonFile(PhasesStat& phasesStat, int32_t& totalAstcCount);
-    bool WriteAstcInfoToJsonFile(const PhasesStat& phasesStat, int32_t totalAstcCount);
     bool WriteJsonFile(const std::string &filePath, const nlohmann::json &j);
     bool ReadJsonFile(const std::string &filePath, nlohmann::json &j);
     PhasesStat phasesStat_{};
