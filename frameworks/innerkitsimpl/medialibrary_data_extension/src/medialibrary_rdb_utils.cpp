@@ -2572,4 +2572,18 @@ void MediaLibraryRdbUtils::TransformAppId2TokenId(const shared_ptr<MediaLibraryR
     MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}u, successcount:%{public}d",
         tokenIdMap.size(), successCount);
 }
+
+void MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(bool shouldNotify)
+{
+    vector<string> systemAlbumsExcludeSource = {
+        to_string(PhotoAlbumSubType::FAVORITE),
+        to_string(PhotoAlbumSubType::VIDEO),
+        to_string(PhotoAlbumSubType::HIDDEN),
+        to_string(PhotoAlbumSubType::TRASH),
+        to_string(PhotoAlbumSubType::IMAGE),
+        to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
+    };
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
+        systemAlbumsExcludeSource, shouldNotify);
+}
 } // namespace OHOS::Media
