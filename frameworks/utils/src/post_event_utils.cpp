@@ -15,6 +15,7 @@
 #include "post_event_utils.h"
 
 #include <unistd.h>
+#include <set>
 
 #include "hisysevent.h"
 #include "ipc_skeleton.h"
@@ -346,6 +347,112 @@ void PostEventUtils::PostCloudEnhanceStat(const VariantMap &stat)
         KEY_CLOUD_ENHANCEMENT_COMPLETE_TYPE, completeType);
     if (ret != 0) {
         MEDIA_ERR_LOG("PostCloudEnhanceStat:%{public}d", ret);
+    }
+}
+
+void PostEventUtils::CreateCloudDownloadSyncStat(std::string& syncId)
+{
+    std::lock_guard<std::mutex> lock(cloudDownloadSyncStatMutex_);
+    cloudDownloadSyncStat_.clear();
+    user_alubm_count_.clear();
+    analysis_alunm_count_.clear();
+    currentSyncId_ = syncId;
+    MEDIA_INFO_LOG("currentSyncId is: %{public}s,", currentSyncId_.c_str());
+}
+ 
+void PostEventUtils::UpdateCloudDownloadSyncStat(VariantMap &syncStat)
+{
+    static const std::set<std::string> KEY_SET = {
+        KEY_START_DOWNLOAD_TIME, KEY_END_DOWNLOAD_TIME, KEY_DOWNLOAD_TYPE, KEY_TOTAL_PHOTO_COUNT};
+    std::lock_guard<std::mutex> lock(cloudDownloadSyncStatMutex_);
+    for (const auto &[key, value] : syncStat) {
+        if (key == KEY_REFRESH_ANALYSIS_ALBUM_TOTAL_COUNT) {
+            analysis_alunm_count_.push_back(get<int32_t>(value));
+        } else if (key == KEY_REFRESH_USER_AND_SOURCE_ALBUM_TOTAL_COUNT) {
+            user_alubm_count_.push_back(get<int32_t>(value));
+        } else if (KEY_SET.count(key) > 0 || cloudDownloadSyncStat_.count(key) == 0) {
+            cloudDownloadSyncStat_[key] = value;
+        } else {
+            cloudDownloadSyncStat_[key] = get<int32_t>(cloudDownloadSyncStat_[key]) + get<int32_t>(value);
+        }
+    }
+}
+ 
+SyncEventStat PostEventUtils::GetSyncEventStat(const VariantMap &stat)
+{
+    SyncEventStat syncEventStat;
+    syncEventStat.startDownloadTime = GetInt64Value(KEY_START_DOWNLOAD_TIME, stat);
+    syncEventStat.endDownloadTime = GetInt64Value(KEY_END_DOWNLOAD_TIME, stat);
+    syncEventStat.downloadType = GetIntValue(KEY_DOWNLOAD_TYPE, stat);
+    syncEventStat.totalPhotoCount = GetIntValue(KEY_TOTAL_PHOTO_COUNT, stat);
+ 
+    syncEventStat.totalAlbumNum = GetIntValue(KEY_TOTAL_ALBUM_NUM, stat);
+    syncEventStat.addAlbumNum = GetIntValue(KEY_ADD_ALBUM_NUM, stat);
+    syncEventStat.updateAlbumNum = GetIntValue(KEY_UPDATE_ALBUM_NUM, stat);
+    syncEventStat.deleteAlbumNum = GetIntValue(KEY_DELETE_ALBUM_NUM, stat);
+ 
+    syncEventStat.totalAssetNum = GetIntValue(KEY_TOTAL_ASSET_NUM, stat);
+    syncEventStat.addAssetNum = GetIntValue(KEY_ADD_ASSET_NUM, stat);
+    syncEventStat.updateAssetNum = GetIntValue(KEY_UPDATE_ASSET_NUM, stat);
+    syncEventStat.deleteAssetNum = GetIntValue(KEY_DELETE_ASSET_NUM, stat);
+ 
+    syncEventStat.avgRefreshImageVideoAlbumTime = GetIntValue(KEY_REFRESH_IMAGEVIDEO_ALBUM_TOTAL_TIME, stat) /
+                                            std::max(GetIntValue(KEY_REFRESH_IMAGEVIDEO_ALBUM_TOTAL_COUNT, stat), 1);
+ 
+    std::set<int32_t> user_set(user_alubm_count_.begin(), user_alubm_count_.end());
+    syncEventStat.refreshUserAndSourceAlbumCount = user_set.size();
+    syncEventStat.avgRefreshUserAndSourceAlbumTime =
+        GetIntValue(KEY_REFRESH_USER_AND_SOURCE_ALBUM_TOTAL_TIME, stat) /
+        std::max(static_cast<int32_t>(user_alubm_count_.size()), 1);
+ 
+    std::set<int32_t> analysis_set(analysis_alunm_count_.begin(), analysis_alunm_count_.end());
+    syncEventStat.refreshAnalysisAlbumCount = analysis_set.size();
+    syncEventStat.avgRefreshAnalysisAlbumTime = GetIntValue(KEY_REFRESH_ANALYSIS_ALBUM_TOTAL_TIME, stat) /
+                                                std::max(static_cast<int32_t>(analysis_alunm_count_.size()), 1);
+    return syncEventStat;
+}
+
+void PostEventUtils::PostCloudDownloadSyncStat(std::string& syncId)
+{
+    if (syncId != currentSyncId_) {
+        MEDIA_ERR_LOG("Invaild syncid! syncid is %{public}s and currentSyncId is %{public}s.",
+            syncId.c_str(),
+            currentSyncId_.c_str());
+        return;
+    }
+    std::unique_lock<std::mutex> lock(cloudDownloadSyncStatMutex_);
+    VariantMap stat;
+    stat.swap(cloudDownloadSyncStat_);
+    lock.unlock();
+    SyncEventStat syncEventStat = PostEventUtils::GetSyncEventStat(stat);
+    if (syncEventStat.totalAlbumNum == 0 && syncEventStat.totalAssetNum == 0 &&
+        syncEventStat.avgRefreshImageVideoAlbumTime == 0 && syncEventStat.avgRefreshUserAndSourceAlbumTime == 0 &&
+        syncEventStat.avgRefreshAnalysisAlbumTime == 0) {
+        return;
+    }
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_CLOUD_SYNC_STAT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        KEY_START_DOWNLOAD_TIME, syncEventStat.startDownloadTime,
+        KEY_END_DOWNLOAD_TIME, syncEventStat.endDownloadTime,
+        KEY_DOWNLOAD_TYPE, syncEventStat.downloadType,
+        KEY_TOTAL_PHOTO_COUNT, syncEventStat.totalPhotoCount,
+        KEY_TOTAL_ALBUM_NUM, syncEventStat.totalAlbumNum,
+        KEY_ADD_ALBUM_NUM, syncEventStat.addAlbumNum,
+        KEY_UPDATE_ALBUM_NUM, syncEventStat.updateAlbumNum,
+        KEY_DELETE_ALBUM_NUM, syncEventStat.deleteAlbumNum,
+        KEY_TOTAL_ASSET_NUM, syncEventStat.totalAssetNum,
+        KEY_ADD_ASSET_NUM, syncEventStat.addAssetNum,
+        KEY_UPDATE_ASSET_NUM, syncEventStat.updateAssetNum,
+        KEY_DELETE_ASSET_NUM, syncEventStat.deleteAssetNum,
+        KEY_AVG_REFRESH_IMAGEVIDEO_ALBUM_TIME, syncEventStat.avgRefreshImageVideoAlbumTime,
+        KEY_REFRESH_USER_AND_SOURCE_ALBUM_COUNT, syncEventStat.refreshUserAndSourceAlbumCount,
+        KEY_AVG_REFRESH_USER_AND_SOURCE_ALBUM_TIME, syncEventStat.avgRefreshUserAndSourceAlbumTime,
+        KEY_REFRESH_ANALYSIS_ALBUM_COUNT, syncEventStat.refreshAnalysisAlbumCount,
+        KEY_AVG_REFRESH_ANALYSIS_ALBUM_TIME, syncEventStat.avgRefreshAnalysisAlbumTime);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("PostCloudDownloadSyncStat:%{public}d", ret);
     }
 }
 

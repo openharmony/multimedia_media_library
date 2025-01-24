@@ -115,6 +115,8 @@ private:
                 THEN gallery_album.lPath \
                 ELSE album_v2.lPath \
             END AS lPath, \
+            latitude, \
+            longitude \
             story_id, \
             portrait_id \
         FROM gallery_media \

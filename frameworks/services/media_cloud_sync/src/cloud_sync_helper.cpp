@@ -101,10 +101,7 @@ bool CloudSyncHelper::InitDataShareHelper()
     DataShare::CreateOptions options;
     options.enabled_ = true;
     dataShareHelper_ = DataShare::DataShareHelper::Creator(uri_, options);
-    if (dataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is nullptr");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, false, "dataShareHelper is nullptr");
     return true;
 }
 
@@ -137,20 +134,13 @@ bool CloudSyncHelper::IsSyncSwitchOpen()
     int64_t status = 0;
     int32_t columnIndex = -1;
     ret = resultSet->GoToFirstRow();
-    if (ret != 0) {
-        MEDIA_ERR_LOG("goto first err");
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == 0, true, "goto first err");
+
     ret = resultSet->GetColumnIndex(SWITCH_STATUS_KEY, columnIndex);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Get Column index err");
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == 0, true, "Get Column index err");
+
     ret = resultSet->GetLong(columnIndex, status);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("get long err");
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == 0, true, "get long err");
     return status == 1;
 }
 
@@ -167,9 +157,7 @@ void CloudSyncHelper::OnTimerCallback()
     MEDIA_INFO_LOG("cloud sync manager start sync");
     auto callback = make_shared<MediaCloudSyncCallback>();
     int32_t ret = CloudSyncManager::GetInstance().StartSync(false, callback);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("cloud sync manager start sync err %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == 0, "cloud sync manager start sync err %{public}d", ret);
 }
 
 void MediaCloudSyncCallback::OnSyncStateChanged(SyncType type, SyncPromptState state)
@@ -182,9 +170,7 @@ void MediaCloudSyncCallback::OnSyncStateChanged(CloudSyncState state, ErrorType 
     MEDIA_INFO_LOG("OnSyncStateChanged CloudSyncState %{public}d, ErrorType %{public}d", state, error);
     unique_lock<mutex> lock(syncStateMutex_);
     bool isSyncing = (state == CloudSyncState::UPLOADING || state == CloudSyncState::DOWNLOADING);
-    if (isSyncing_ == isSyncing) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(isSyncing_ != isSyncing, "OnSyncStateChanged check failed");
     isSyncing_ = isSyncing;
     MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCloudSyncStateChanged(isSyncing_);
 }
