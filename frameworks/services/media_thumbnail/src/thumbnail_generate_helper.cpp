@@ -213,6 +213,23 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
     return E_OK;
 }
 
+int32_t ThumbnailGenerateHelper::CreateAstcMthAndYear(ThumbRdbOpt &opts)
+{
+    ThumbnailData data;
+    int err = 0;
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, opts.fileId, data, err);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CreateAstcMthAndYear query data from fileId failed, id: %{public}s", opts.fileId.c_str());
+        return err;
+    }
+    data.loaderOpts.loadingStates = data.isLocalFile ? SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES :
+        SourceLoader::CLOUD_SOURCE_LOADING_STATES;
+    if (!IThumbnailHelper::DoCreateAstcMthAndYear(opts, data)) {
+        return E_ERR;
+    }
+    return E_OK;
+}
+
 int32_t ThumbnailGenerateHelper::CreateLocalThumbnail(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {

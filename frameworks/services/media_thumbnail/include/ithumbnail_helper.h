@@ -108,6 +108,7 @@ public:
     EXPORT static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
     EXPORT static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
+    EXPORT static bool DoCreateAstcMthAndYear(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
     EXPORT static bool IsPureCloudImage(ThumbRdbOpt &opts);

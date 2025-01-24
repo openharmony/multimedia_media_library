@@ -132,6 +132,9 @@ public:
 
         // if true, create HDR pixelmap
         EXPORT bool isHdr {false};
+
+        // largest thumbnail type for the source to generate
+        ThumbnailType desiredType {ThumbnailType::NOT_DEFINED};
         std::unordered_map<SourceState, SourceState> loadingStates;
     };
 

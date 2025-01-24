@@ -35,6 +35,7 @@ EXPORT Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size 
 EXPORT bool GenDecodeOpts(const Size &sourceSize, const Size &targetSize, DecodeOptions &decodeOpts);
 EXPORT std::unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err);
 EXPORT bool NeedAutoResize(const Size &size);
+EXPORT int32_t ParseDesiredMinSide(const ThumbnailType &type);
 
 const std::unordered_map<SourceState, std::string> STATE_NAME_MAP = {
     { SourceState::BEGIN, "BEGIN" },
@@ -128,6 +129,11 @@ public:
      * Define source loading states sequence for creating thumbnails from local photo.
      */
     static const std::unordered_map<SourceState, SourceState> LOCAL_SOURCE_LOADING_STATES;
+
+    /*
+     * Define source loading states sequence for creating year&month thumbnails from local thumbnails.
+     */
+    static const std::unordered_map<SourceState, SourceState> LOCAL_THUMB_SOURCE_LOADING_STATES;
 
     /*
      * Define source loading states sequence for creating thumbnails from cloud photo.
