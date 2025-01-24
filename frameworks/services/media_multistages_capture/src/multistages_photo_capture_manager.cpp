@@ -95,7 +95,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesPhotoCaptureManager::HandleMul
             break;
         }
         case OperationType::SET_LOCATION: {
-            UpdateLocation(cmd.GetValueBucket());
+            UpdateLocation(cmd.GetValueBucket(), false);
             break;
         }
         case OperationType::CANCEL_PROCESS_IMAGE: {
@@ -216,12 +216,62 @@ int32_t MultiStagesPhotoCaptureManager::UpdateDbInfo(MediaLibraryCommand &cmd)
     return result;
 }
 
-void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucket &values)
+static std::string QueryPathByFileId(const int32_t &fileId)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    std::string where = MediaColumn::MEDIA_ID + " = " + to_string(fileId);
+    queryCmd.GetAbsRdbPredicates()->SetWhereClause(where);
+    
+    std::vector<std::string> columns { MediaColumn::MEDIA_FILE_PATH };
+    auto resultSet = DatabaseAdapter::Query(queryCmd, columns);
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, "", "result set is empty");
+
+    std::string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    return path;
+}
+
+static int32_t WriteGpsInfoAndUpdateDb(const std::string &path, const int32_t &fileId, const double longitude,
+    const double latitude)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("WriteGpsInfoAndUpdateDb, path");
+    auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
+    tracer.Finish();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "write gps info fail");
+
+    std::string originPath = MediaLibraryAssetOperations::GetEditDataSourcePath(path);
+    if (MediaFileUtils::IsFileExists(originPath)) {
+        // write gps info if this photo was edited.
+        tracer.Start("WriteGpsInfoAndUpdateDb, originPath");
+        auto ret = ExifUtils::WriteGpsExifInfo(originPath, longitude, latitude);
+        tracer.Finish();
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "write origin file gps info fail");
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+
+    ValuesBucket updateValues;
+    updateValues.PutDouble(PhotoColumn::PHOTO_LATITUDE, latitude);
+    updateValues.PutDouble(PhotoColumn::PHOTO_LONGITUDE, longitude);
+    cmd.SetValueBucket(updateValues);
+
+    auto result = DatabaseAdapter::Update(cmd);
+    CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK, E_ERR, "update fail fileId: %{public}d", fileId);
+
+    return E_OK;
+}
+
+void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucket &values, bool isWriteGpsAdvanced,
+    const std::string &path, const int32_t &id)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLocation");
-    double longitude = 0;
+    MEDIA_INFO_LOG("UpdateLocation begin, isWriteGpsAdvanced: %{public}d, path: %{public}s, fileId: %{public}d",
+        isWriteGpsAdvanced, MediaFileUtils::DesensitizePath(path).c_str(), id);
     ValueObject valueObject;
+    double longitude = 0;
     if (values.GetObject(PhotoColumn::PHOTO_LONGITUDE, valueObject)) {
         valueObject.GetDouble(longitude);
     }
@@ -229,38 +279,21 @@ void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucke
     if (values.GetObject(PhotoColumn::PHOTO_LATITUDE, valueObject)) {
         valueObject.GetDouble(latitude);
     }
+
+    std::string filePath;
     int32_t fileId = 0;
-    if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
-        valueObject.GetInt(fileId);
+    if (isWriteGpsAdvanced) {
+        filePath = path;
+        fileId = id;
+    } else {
+        if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
+            valueObject.GetInt(fileId);
+        }
+        filePath = QueryPathByFileId(fileId);
     }
-
-    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = MediaColumn::MEDIA_ID + " = " + to_string(fileId);
-    queryCmd.GetAbsRdbPredicates()->SetWhereClause(where);
-    vector<string> columns { MediaColumn::MEDIA_FILE_PATH };
-    auto resultSet = DatabaseAdapter::Query(queryCmd, columns);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != 0);
-    CHECK_AND_RETURN_LOG(!cond, "result set is empty");
-    string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-
-    // update exif info
-    auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "write gps info fail");
-    string originPath = MediaLibraryAssetOperations::GetEditDataSourcePath(path);
-    if (MediaFileUtils::IsFileExists(originPath)) {
-        // write gps info if this photo was edited.
-        auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
-        CHECK_AND_RETURN_LOG(ret == E_OK, "write origin file gps info fail");
-    }
-
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
-    ValuesBucket updateValues;
-    updateValues.PutDouble(MEDIA_DATA_DB_LATITUDE, latitude);
-    updateValues.PutDouble(MEDIA_DATA_DB_LONGITUDE, longitude);
-    cmd.SetValueBucket(updateValues);
-    auto result = DatabaseAdapter::Update(cmd);
-    CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "update fail fileId: %{public}d", fileId);
+    CHECK_AND_RETURN_LOG((!filePath.empty() && fileId > 0), "UpdateLocation invalid value!");
+    WriteGpsInfoAndUpdateDb(filePath, fileId, longitude, latitude);
+    MEDIA_INFO_LOG("UpdateLocation success");
 }
 
 void MultiStagesPhotoCaptureManager::AddImageInternal(int32_t fileId, const string &photoId, int32_t deferredProcType,
