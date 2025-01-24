@@ -1778,6 +1778,311 @@ void MediaLibraryNapiUtils::FixSpecialDateType(string &selections)
     }
 }
 
+napi_value MediaLibraryNapiUtils::BuildValueByIndex(const napi_env& env, int32_t index, const string& name,
+    ColumnUnion& tmpNameValue)
+{
+    int integerVal = 0;
+    string stringVal = "";
+    int64_t longVal = 0;
+    double doubleVal = 0.0;
+    napi_value value = nullptr;
+    auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+    switch (dataType.first) {
+        case TYPE_STRING:
+            stringVal = static_cast<std::string>(tmpNameValue.sval_);
+            napi_create_string_utf8(env, stringVal.c_str(), NAPI_AUTO_LENGTH, &value);
+            break;
+        case TYPE_INT32:
+            integerVal = static_cast<int32_t>(tmpNameValue.ival_);
+            napi_create_int32(env, integerVal, &value);
+            break;
+        case TYPE_INT64:
+            longVal = static_cast<int64_t>(tmpNameValue.lval_);
+            napi_create_int64(env, longVal, &value);
+            break;
+        case TYPE_DOUBLE:
+            doubleVal = static_cast<double>(tmpNameValue.dval_);
+            napi_create_double(env, doubleVal, &value);
+            break;
+        default:
+            NAPI_ERR_LOG("not match dataType %{public}d", dataType.first);
+            break;
+    }
+    return value;
+}
+
+int MediaLibraryNapiUtils::ParseValueByIndex(std::shared_ptr<ColumnInfo>& columnInfo, int32_t index, const string& name,
+    shared_ptr<NativeRdb::ResultSet>& resultSet, const shared_ptr<FileAsset>& asset)
+{
+    int status = -1;
+    int integerVal = 0;
+    string stringVal = "";
+    int64_t longVal = 0;
+    double doubleVal = 0.0;
+    auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+    switch (dataType.first) {
+        case TYPE_STRING:
+            status = resultSet->GetString(index, stringVal);
+            columnInfo->tmpNameValue_.sval_ = stringVal;
+            asset->GetMemberMap().emplace(name, stringVal);
+            break;
+        case TYPE_INT32:
+            status = resultSet->GetInt(index, integerVal);
+            columnInfo->tmpNameValue_.ival_ = integerVal;
+            asset->GetMemberMap().emplace(name, integerVal);
+            break;
+        case TYPE_INT64:
+            status = resultSet->GetLong(index, longVal);
+            columnInfo->tmpNameValue_.lval_ = longVal;
+            asset->GetMemberMap().emplace(name, longVal);
+            break;
+        case TYPE_DOUBLE:
+            status = resultSet->GetDouble(index, doubleVal);
+            columnInfo->tmpNameValue_.dval_ = doubleVal;
+            asset->GetMemberMap().emplace(name, doubleVal);
+            break;
+        default:
+            NAPI_ERR_LOG("not match dataType %{public}d", dataType.first);
+            break;
+    }
+    return status;
+}
+
+int MediaLibraryNapiUtils::ParseTimeInfo(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo,
+    int32_t index, const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
+{
+    int ret = -1;
+    if (TIME_COLUMN.count(name) == 0) {
+        return ret;
+    }
+    int64_t longVal = 0;
+    ret = resultSet->GetLong(index, longVal);
+    int64_t modifieldValue = longVal / 1000;
+    columnInfo->timeInfoVal_ = modifieldValue;
+    auto dataType = MediaLibraryNapiUtils::GetTimeTypeMap().at(name);
+    columnInfo->timeInfoKey_ = dataType.second;
+    return ret;
+}
+
+void MediaLibraryNapiUtils::BuildTimeInfo(const napi_env& env, const std::string& name,
+    napi_value& result, int32_t index,
+    std::shared_ptr<ColumnInfo>& columnInfo)
+{
+    if (TIME_COLUMN.count(name) == 0) {
+        return;
+    }
+    napi_value value = nullptr;
+    napi_create_int64(env, columnInfo->timeInfoVal_, &value);
+    napi_set_named_property(env, result, columnInfo->timeInfoKey_.c_str(), value);
+}
+
+int MediaLibraryNapiUtils::ParseThumbnailReady(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo,
+    int32_t index, const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
+{
+    int ret = -1;
+    if (name != "thumbnail_ready") {
+        return ret;
+    }
+    int64_t longVal = 0;
+    ret = resultSet->GetLong(index, longVal);
+    bool resultVal = longVal > 0;
+    columnInfo->thumbnailReady_ = resultVal ? 1 : 0;
+    return ret;
+}
+
+void MediaLibraryNapiUtils::BuildThumbnailReady(const napi_env& env, const std::string& name,
+    napi_value& result, int32_t index, std::shared_ptr<ColumnInfo>& columnInfo)
+{
+    if (name != "thumbnail_ready") {
+        return;
+    }
+    napi_value value = nullptr;
+    napi_create_int32(env, columnInfo->thumbnailReady_, &value);
+    napi_set_named_property(env, result, "thumbnailReady", value);
+}
+
+napi_value MediaLibraryNapiUtils::BuildNextRowObject(const napi_env& env, std::shared_ptr<RowObject>& rowObj,
+    bool isShared)
+{
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+
+    if (rowObj == nullptr) {
+        NAPI_WARN_LOG("BuildNextRowObject rowObj is nullptr");
+        return result;
+    }
+    napi_value value = nullptr;
+    for (size_t index = 0; index < rowObj->columnVector_.size(); index++) {
+        auto columnInfo = rowObj->columnVector_[index];
+        if (columnInfo == nullptr) {
+            continue;
+        }
+        std::string name = columnInfo->columnName_;
+        // Check if the column name exists in the type map
+        if (MediaLibraryNapiUtils::GetTypeMap().count(name) == 0) {
+            continue;
+        }
+        value = MediaLibraryNapiUtils::BuildValueByIndex(env, index, name, columnInfo->tmpNameValue_);
+        napi_set_named_property(env, result, columnInfo->tmpName_.c_str(), value);
+        if (!isShared) {
+            continue;
+        }
+        BuildTimeInfo(env, name, result, index, columnInfo);
+        BuildThumbnailReady(env, name, result, index, columnInfo);
+    }
+    napi_create_string_utf8(env, rowObj->dbUri_.c_str(), NAPI_AUTO_LENGTH, &value);
+    napi_set_named_property(env, result, MEDIA_DATA_DB_URI.c_str(), value);
+    return result;
+}
+
+napi_value MediaLibraryNapiUtils::BuildNextRowAlbumObject(const napi_env& env,
+    shared_ptr<RowObject>& rowObj)
+{
+    if (rowObj == nullptr) {
+        NAPI_ERR_LOG("BuildNextRowAlbumObject rowObj is nullptr");
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+
+    napi_value value = nullptr;
+    for (size_t index = 0; index < rowObj->columnVector_.size(); index++) {
+        auto columnInfo = rowObj->columnVector_[index];
+        if (columnInfo == nullptr) {
+            continue;
+        }
+        std::string name = columnInfo->columnName_;
+        // Check if the column name exists in the type map
+        if (MediaLibraryNapiUtils::GetTypeMap().count(name) == 0) {
+            continue;
+        }
+        value = MediaLibraryNapiUtils::BuildValueByIndex(env, index, name, columnInfo->tmpNameValue_);
+        napi_set_named_property(env, result, columnInfo->tmpName_.c_str(), value);
+
+        if (name == "cover_uri") {
+            napi_value coverValue = MediaLibraryNapiUtils::BuildNextRowObject(
+                env, columnInfo->coverSharedPhotoAsset_, true);
+            napi_set_named_property(env, result, "coverSharedPhotoAsset", coverValue);
+        }
+    }
+    return result;
+}
+
+int MediaLibraryNapiUtils::ParseCoverSharedPhotoAsset(int32_t index, std::shared_ptr<ColumnInfo>& columnInfo,
+    const string& name, const shared_ptr<NativeRdb::ResultSet>& resultSet)
+{
+    int ret = -1;
+    if (name != "cover_uri") {
+        return ret;
+    }
+    string coverUri = "";
+    ret = resultSet->GetString(index, coverUri);
+    if (ret != NativeRdb::E_OK || coverUri.empty()) {
+        return ret;
+    }
+    vector<string> albumIds;
+    albumIds.emplace_back(GetFileIdFromUriString(coverUri));
+
+    MediaLibraryTracer tracer;
+    tracer.Start("ParseCoverSharedPhotoAsset");
+    string queryUri = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri photoUri(queryUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, albumIds);
+    std::vector<std::string> columns = PHOTO_COLUMN;
+    std::shared_ptr<NativeRdb::ResultSet> result = UserFileClient::QueryRdb(photoUri, predicates, columns);
+    return ParseSingleSharedPhotoAssets(columnInfo, result);
+}
+
+int MediaLibraryNapiUtils::ParseSingleSharedPhotoAssets(std::shared_ptr<ColumnInfo>& columnInfo,
+    std::shared_ptr<NativeRdb::ResultSet>& result)
+{
+    int ret = -1;
+    if (result == nullptr) {
+        NAPI_WARN_LOG("ParseSingleSharedPhotoAssets fail, result is nullptr");
+        return ret;
+    }
+    if (result->GoToNextRow() == NativeRdb::E_OK) {
+        columnInfo->coverSharedPhotoAsset_ = std::make_shared<RowObject>();
+        ret = MediaLibraryNapiUtils::ParseNextRowObject(columnInfo->coverSharedPhotoAsset_, result, true);
+    }
+    result->Close();
+    return ret;
+}
+
+int MediaLibraryNapiUtils::ParseNextRowObject(std::shared_ptr<RowObject>& rowObj,
+    shared_ptr<NativeRdb::ResultSet>& resultSet, bool isShared)
+{
+    if (resultSet == nullptr) {
+        NAPI_WARN_LOG("ParseNextRowObject fail, resultSet is nullptr");
+        return -1;
+    }
+    if (rowObj == nullptr) {
+        NAPI_WARN_LOG("ParseNextRowObject fail, rowObj is nullptr");
+        return -1;
+    }
+    vector<string> columnNames;
+    resultSet->GetAllColumnNames(columnNames);
+
+    int32_t index = -1;
+    auto fileAsset = make_shared<FileAsset>();
+    for (const auto &name : columnNames) {
+        index++;
+        std::shared_ptr<ColumnInfo> columnInfo = std::make_shared<ColumnInfo>();
+        columnInfo->columnName_ = name;
+        // Check if the column name exists in the type map
+        if (MediaLibraryNapiUtils::GetTypeMap().count(name) == 0) {
+            NAPI_WARN_LOG("ParseNextRowObject current name is not in map");
+            continue;
+        }
+        MediaLibraryNapiUtils::ParseValueByIndex(columnInfo, index, name, resultSet, fileAsset);
+        auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+        std::string tmpName = isShared ? dataType.second : name;
+        columnInfo->tmpName_ = tmpName;
+        if (!isShared) {
+            continue;
+        }
+        ParseTimeInfo(name, columnInfo, index, resultSet);
+        ParseThumbnailReady(name, columnInfo, index, resultSet);
+        rowObj->columnVector_.emplace_back(columnInfo);
+    }
+    string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);
+    MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()), "", MEDIA_API_VERSION_V10, extrUri);
+    rowObj->dbUri_ = fileUri.ToString();
+    return 0;
+}
+
+int MediaLibraryNapiUtils::ParseNextRowAlbumObject(std::shared_ptr<RowObject>& rowObj,
+    shared_ptr<NativeRdb::ResultSet>& resultSet)
+{
+    if (resultSet == nullptr) {
+        NAPI_WARN_LOG("ParseNextRowAlbumObject fail, resultSet is nullptr");
+        return -1;
+    }
+    vector<string> columnNames;
+    resultSet->GetAllColumnNames(columnNames);
+
+    int32_t index = -1;
+    auto fileAsset = make_shared<FileAsset>();
+    for (const auto &name : columnNames) {
+        index++;
+        std::shared_ptr<ColumnInfo> columnInfo = std::make_shared<ColumnInfo>();
+        columnInfo->columnName_ = name;
+        // Check if the column name exists in the type map
+        if (MediaLibraryNapiUtils::GetTypeMap().count(name) == 0) {
+            continue;
+        }
+        MediaLibraryNapiUtils::ParseValueByIndex(columnInfo, index, name, resultSet, fileAsset);
+        auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+        columnInfo->tmpName_ = dataType.second;
+        ParseCoverSharedPhotoAsset(index, columnInfo, name, resultSet);
+        rowObj->columnVector_.emplace_back(columnInfo);
+    }
+    return 0;
+}
+
 template <class AsyncContext>
 napi_status MediaLibraryNapiUtils::ParsePredicates(napi_env env, const napi_value arg,
     AsyncContext &context, const FetchOptionType &fetchOptType)
