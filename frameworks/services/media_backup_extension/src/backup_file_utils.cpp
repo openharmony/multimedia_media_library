@@ -704,7 +704,8 @@ int32_t BackupFileUtils::GetUserId(const std::string &path)
     return std::atoi(userIdStr.c_str());
 }
 
-bool BackupFileUtils::HandleRotateImage(const std::string &sourceFile, const std::string &targetPath, int32_t degrees)
+bool BackupFileUtils::HandleRotateImage(const std::string &sourceFile,
+    const std::string &targetPath, int32_t degrees, bool isLcd)
 {
     uint32_t err = E_OK;
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(sourceFile, err);
@@ -713,9 +714,9 @@ bool BackupFileUtils::HandleRotateImage(const std::string &sourceFile, const std
         return false;
     }
     if (imageSource->IsHdrImage()) {
-        return BackupFileUtils::HandleHdrImage(std::move(imageSource), targetPath, degrees);
+        return BackupFileUtils::HandleHdrImage(std::move(imageSource), targetPath, degrees, isLcd);
     } else {
-        return BackupFileUtils::HandleSdrImage(std::move(imageSource), targetPath, degrees);
+        return BackupFileUtils::HandleSdrImage(std::move(imageSource), targetPath, degrees, isLcd);
     }
 }
 
@@ -731,7 +732,7 @@ unique_ptr<ImageSource> BackupFileUtils::LoadImageSource(const std::string &file
 }
 
 bool BackupFileUtils::HandleHdrImage(std::unique_ptr<ImageSource> imageSource,
-    const std::string &targetPath, int32_t degrees)
+    const std::string &targetPath, int32_t degrees, bool isLcd)
 {
     CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "Hdr imagesource null.");
     DecodingOptionsForPicture pictOpts;
@@ -754,10 +755,14 @@ bool BackupFileUtils::HandleHdrImage(std::unique_ptr<ImageSource> imageSource,
     }
     pixelMap->rotate(static_cast<float>(degrees));
     gainMap->rotate(static_cast<float>(degrees));
-    if (!EncodePicture(*picture, targetPath + LCD_FILE_NAME)) {
-        return false;
+
+    if (isLcd) {
+        if (!EncodePicture(*picture, targetPath + LCD_FILE_NAME)) {
+            return false;
+        }
+        return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
     }
-    return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
+    return EncodePicture(*picture, targetPath + THM_FILE_NAME);
 }
 
 bool BackupFileUtils::EncodePicture(Picture &picture, const std::string &outFile)
@@ -780,7 +785,7 @@ bool BackupFileUtils::EncodePicture(Picture &picture, const std::string &outFile
 }
 
 bool BackupFileUtils::HandleSdrImage(std::unique_ptr<ImageSource> imageSource,
-    const std::string &targetPath, int32_t degrees)
+    const std::string &targetPath, int32_t degrees, bool isLcd)
 {
     CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "Sdr imagesource null.");
     DecodeOptions decodeOpts;
@@ -788,10 +793,13 @@ bool BackupFileUtils::HandleSdrImage(std::unique_ptr<ImageSource> imageSource,
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "CreatePixelMap err: %{public}d", err);
     pixelMap->rotate(static_cast<float>(degrees));
-    if (!EncodePixelMap(*pixelMap, targetPath + LCD_FILE_NAME)) {
-        return false;
+    if (isLcd) {
+        if (!EncodePixelMap(*pixelMap, targetPath + LCD_FILE_NAME)) {
+            return false;
+        }
+        return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
     }
-    return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
+    return EncodePixelMap(*pixelMap, targetPath + THM_FILE_NAME);
 }
 
 bool BackupFileUtils::ScalePixelMap(PixelMap &pixelMap, ImageSource &imageSource, const std::string &outFile)

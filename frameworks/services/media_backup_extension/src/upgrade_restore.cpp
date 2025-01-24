@@ -725,6 +725,8 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.albumId = GetStringVal(GALLERY_ALBUM_ID, resultSet);
     info.orientation = GetInt32Val(GALLERY_ORIENTATION, resultSet);
     info.uniqueId = GetStringVal(GALLERY_UNIQUE_ID, resultSet);
+    info.localThumbPath = GetStringVal(GALLERY_LOCAL_THUMB_PATH_ID, resultSet);
+    info.localBigThumbPath = GetStringVal(GALLERY_LOCAL_BIG_THUMB_PATH_ID, resultSet);
 
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     CHECK_AND_RETURN_RET_LOG(isSuccess, isSuccess, "ParseResultSetFromGallery fail");
