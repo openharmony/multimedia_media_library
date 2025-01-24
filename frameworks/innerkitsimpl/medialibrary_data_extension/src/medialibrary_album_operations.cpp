@@ -2443,18 +2443,19 @@ int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredica
     }
     string albumName;
     int err = GetStringVal(values, ALBUM_NAME, albumName);
-    if (err < 0 || coverUri.empty()) {
+    if (err < 0 || albumName.empty()) {
         MEDIA_ERR_LOG("invalid album name");
         return E_INVALID_VALUES;
     }
     std::string updateAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
         "' WHERE " + ALBUM_ID + " = " + highlightAlbumId;
     std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " + COVER_STATUS + " = 1" +
-        " WHERE " + ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + highlightAlbumId + " LIMIT 1)";
+        " WHERE " + ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " +
+        highlightAlbumId + " LIMIT 1)";
     vector<string> updateSqls = { updateAlbumName, updateCoverInfoTable };
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
-        vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
+        vector<int32_t> changeAlbumIds = { atoi(highlightAlbumId.c_str()) };
         NotifyHighlightAlbum(changeAlbumIds);
     }
     return err;
@@ -2641,7 +2642,7 @@ int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationTyp
             return SetCoverUri(values, predicates);
         case OperationType::HIGHLIGHT_ALBUM_NAME:
             return SetHighlightAlbumName(values, predicates);
-        case OperationType::PORTRAIT_COVER_URI:
+        case OperationType::HIGHLIGHT_COVER_URI:
             return SetHighlightCoverUri(values, predicates);
         case OperationType::DISMISS:
         case OperationType::GROUP_ALBUM_NAME:
