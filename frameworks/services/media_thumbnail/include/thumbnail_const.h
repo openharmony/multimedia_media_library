@@ -38,6 +38,7 @@ constexpr int32_t STAMP_PARAM_ONE = 1;
 constexpr int32_t STAMP_PARAM_TWO = 2;
 constexpr int32_t STAMP_PARAM_THREE = 3;
 enum class ThumbnailType : int32_t {
+    NOT_DEFINED = -1,
     LCD,
     THUMB,
     MTH,
@@ -99,6 +100,7 @@ constexpr int32_t WAIT_FOR_MS = 1000;
 constexpr int32_t WAIT_FOR_SECOND = 3;
 
 constexpr float EPSILON = 1e-6;
+constexpr int32_t MONTH_SHORT_SIDE_THRESHOLD = 128;
 constexpr int32_t SHORT_SIDE_THRESHOLD = 350;
 constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 1050;
 constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;

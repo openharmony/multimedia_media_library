@@ -70,6 +70,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_FORM_MAP, OperationObject::PAH_FORM_MAP },
         { GRANT_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
         { PAH_VIDEO, OperationObject::PAH_VIDEO },
+        { MTH_AND_YEAR_ASTC, OperationObject::MTH_AND_YEAR_ASTC },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_OBJ, OperationObject::FILESYSTEM_DIR },
@@ -340,6 +341,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_QUERY_ORDER, OperationType::QUERY_ORDER },
         { OPRN_UPDATE_ORDER, OperationType::UPDATE_ORDER },
         { OPRN_DELETE_LOCAL_ASSETS_PERMANENTLY, OperationType::DELETE_LOCAL_ASSETS_PERMANENTLY },
+        { MTH_AND_YEAR_ASTC, OperationType::MTH_AND_YEAR_ASTC },
     };
     return oprnTypeMap;
 }

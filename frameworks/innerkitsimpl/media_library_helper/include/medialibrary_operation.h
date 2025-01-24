@@ -105,6 +105,7 @@ enum class EXPORT OperationObject : uint32_t {
     CLOUD_MEDIA_ASSET_OPERATE,
     PTP_OPERATION,
     EDIT_DATA_EXISTS,
+    MTH_AND_YEAR_ASTC,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -201,6 +202,7 @@ enum class EXPORT OperationType : uint32_t {
     CUSTOM_RESTORE,
     CUSTOM_RESTORE_CANCEL,
     DELETE_LOCAL_ASSETS_PERMANENTLY,
+    MTH_AND_YEAR_ASTC,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

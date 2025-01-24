@@ -649,6 +649,21 @@ int32_t ThumbnailService::CreateAstcCloudDownload(const string &id, bool isCloud
     return err;
 }
 
+bool ThumbnailService::CreateAstcMthAndYear(const std::string &id)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .fileId = id,
+    };
+    int err = ThumbnailGenerateHelper::CreateAstcMthAndYear(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CreateAstcMthAndYear failed, err: %{public}d", err);
+        return false;
+    }
+    return true;
+}
+
 void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken)
 {
     ThumbnailData data;

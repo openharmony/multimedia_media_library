@@ -920,6 +920,8 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         CHECK_AND_RETURN_RET(ret == MediaLibraryAppUriSensitiveOperations::SUCCEED, ret);
         CHECK_AND_RETURN_RET(!MediaLibraryAppUriSensitiveOperations::BeForceSensitive(cmd, values), ret);
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
+    } else if (cmd.GetOprnObject() == OperationObject::MTH_AND_YEAR_ASTC) {
+        return AstcMthAndYearInsert(cmd, values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
@@ -2365,6 +2367,30 @@ void MediaLibraryDataManager::SubscriberPowerConsumptionDetection()
     subscriber->SetModuleName(MODULE_NAME);
     DevStandbyMgr::StandbyServiceClient::GetInstance().SubscribeStandbyCallback(subscriber);
 #endif
+}
+
+int32_t MediaLibraryDataManager::AstcMthAndYearInsert(MediaLibraryCommand &cmd,
+    const std::vector<DataShare::DataShareValuesBucket> &values)
+{
+    int32_t insertCount = 0;
+    int32_t successCount = 0;
+    for (auto value : values) {
+        for (auto iter = value.valuesMap.begin(); iter != value.valuesMap.end(); iter++) {
+            insertCount++;
+            string idString = iter->first;
+            if (!ThumbnailService::GetInstance()->CreateAstcMthAndYear(idString)) {
+                break;
+            }
+            successCount++;
+        }
+    }
+    if (successCount == 0) {
+        return -1;
+    }
+    if (successCount == insertCount) {
+        return 1;
+    }
+    return E_OK;
 }
 
 static int32_t SearchDateTakenWhenZero(const shared_ptr<MediaLibraryRdbStore> rdbStore, bool &needUpdate,

@@ -251,6 +251,28 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
     return retVal;
 }
 
+int32_t MediaLibraryManager::GetAstcYearAndMonth(const std::vector<string> &uris)
+{
+    if ((uris.empty()) || (uris.size() > URI_MAX_SIZE)) {
+        MEDIA_ERR_LOG("Failed to check uri size");
+        return E_ERR;
+    }
+
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Failed to GetAstcYearAndMonth, datashareHelper is nullptr");
+        return E_ERR;
+    }
+    string abilityUri = MEDIALIBRARY_DATA_URI;
+    Uri astcUri(abilityUri + "/" + MTH_AND_YEAR_ASTC + "/" + MTH_AND_YEAR_ASTC);
+    DataShareValuesBucket bucket;
+    for (auto uri : uris) {
+        bucket.Put(uri, false);
+    }
+    vector<DataShareValuesBucket> values;
+    values.emplace_back(bucket);
+    return sDataShareHelper_->BatchInsert(astcUri, values);
+}
+
 int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 {
     auto dataShareHelper = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);

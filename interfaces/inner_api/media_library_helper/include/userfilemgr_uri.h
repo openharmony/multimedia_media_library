@@ -131,6 +131,7 @@ const std::string URI_CREATE_FILE = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN
 // Thumbnail operations constants
 const std::string DISTRIBUTE_THU_OPRN_GENERATES = "thumbnail_distribute_generate_operation";
 const std::string BUNDLE_PERMISSION_INSERT = "bundle_permission_insert_operation";
+const std::string MTH_AND_YEAR_ASTC = "month_and_year_astc";
 
 // Album operations constants
 const std::string MEDIA_ALBUMOPRN = "album_operation";
