@@ -156,6 +156,8 @@ private:
     int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
         const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates);
     void SubscriberPowerConsumptionDetection();
+    int32_t AstcMthAndYearInsert(MediaLibraryCommand &cmd,
+        const std::vector<DataShare::DataShareValuesBucket> &values);
     std::shared_mutex mgrSharedMutex_;
 #ifdef DISTRIBUTED
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;

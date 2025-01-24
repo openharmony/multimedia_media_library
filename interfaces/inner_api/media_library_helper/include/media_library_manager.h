@@ -252,6 +252,7 @@ public:
     EXPORT static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize);
     EXPORT static int32_t OpenReadOnlyAppSandboxVideo(const string& uri);
     EXPORT static int64_t GetSandboxMovingPhotoTime(const string& uri);
+    EXPORT int32_t GetAstcYearAndMonth(const std::vector<string> &uris);
 
     sptr<IRemoteObject> InitToken();
     int32_t CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet);
