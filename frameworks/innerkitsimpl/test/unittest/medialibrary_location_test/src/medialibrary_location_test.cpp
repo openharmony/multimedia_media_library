@@ -43,10 +43,15 @@ void ClearData()
     MediaLibraryCommand geoKnowledgeCmd(geoKnowledgeUri);
     Uri geoDictionaryUri(URI_GEO_DICTIONARY);
     MediaLibraryCommand geoDictionaryCmd(geoDictionaryUri);
-    MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    dataManager->Delete(geoKnowledgeCmd, predicates);
+    dataManager->Delete(geoDictionaryCmd, predicates);
     string clearPhotos = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
-    MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->ExecuteSql(clearPhotos);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    EXPECT_NE(rdbStore, nullptr);
+    auto ret = rdbStore->ExecuteSql(clearPhotos);
+    EXPECT_EQ(ret, NativeRdb::E_OK);
     num = 0;
 }
 
@@ -355,7 +360,10 @@ int32_t InsertGeoKnowledge(double_t latitude, double_t longitude, const string &
     valuesBucket.Put(SUB_THOROUGHFARE, "2600号");
     valuesBucket.Put(CITY_NAME, "深圳市");
     valuesBucket.Put(ADDRESS_DESCRIPTION, "广东省深圳市南山区粤海街道深圳人才公园");
-    int32_t retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    int32_t retVal = dataManager->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("InsertGeoKnowledge::End, retVal = %{public}d", retVal);
     return retVal;
 }
@@ -383,7 +391,9 @@ HWTEST_F(MediaLibraryLocationTest, Location_QueryGeo_Test_001, TestSize.Level0)
     predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(clause);
     predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, to_string(fileId));
     int errCode = 0;
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    auto queryResultSet = dataManager->Query(cmd, columns, predicates, errCode);
     EXPECT_NE(queryResultSet, nullptr);
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
     EXPECT_NE(resultSet, nullptr);
