@@ -26,6 +26,7 @@
 #include "photo_album_column.h"
 #include "post_event_utils.h"
 #include "medialibrary_unistore_manager.h"
+#include "result_set_utils.h"
 
 using namespace std;
 
@@ -169,22 +170,26 @@ void AlbumsRefreshWorker::GetSystemAlbumIds(SyncNotifyInfo &info, std::vector<st
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Can not get rdb");
-    for (auto it = info.uris.begin(); it != info.uris.end(); ++it) {
-        string uriString = (*it).ToString();
+    vector<string> cloudIds;
+    for (auto uri : info.uris) {
+        string uriString = uri.ToString();
         string cloudId = extractIdByAlbumUriString(uriString);
         if (cloudId.empty()) {
             continue;
         }
-        int32_t ablumId = AlbumsRefreshManager::GetInstance().CovertCloudId2AlbumId(rdbStore, cloudId);
-        if (ablumId == -1) {
-            continue;
-        }
-        albumIds.push_back(std::to_string(ablumId));
-        MEDIA_INFO_LOG("#test GetSystemAlbumIds uri: %{public}s, albumId: %{public}d, cloudId: %{public}s",
-            uriString.c_str(),
-            ablumId,
-            cloudId.c_str());
+        cloudIds.emplace_back(cloudId);
     }
+    if (cloudIds.empty()) {
+        return;
+    }
+    auto resultSet = AlbumsRefreshManager::GetInstance().CovertCloudId2AlbumId(rdbStore, cloudIds);
+    if (resultSet == nullptr) {
+        return;
+    }
+    do {
+        int32_t ablumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+        albumIds.push_back(std::to_string(ablumId));
+    } while (resultSet->GoToNextRow() == E_OK);
 }
 
 void AlbumsRefreshWorker::TryDeleteAlbum(SyncNotifyInfo &info, std::vector<std::string> &albumIds)
