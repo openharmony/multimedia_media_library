@@ -135,12 +135,11 @@ const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
     {EventFwk::CommonEventSupport::COMMON_EVENT_TIME_TICK, StatusEventType::TIME_TICK},
 };
 
-std::tm *GetNowLocalTime()
+bool GetNowLocalTime(std::tm &nowLocalTime)
 {
     auto now = std::chrono::system_clock::now();
     std::time_t nowTime = std::chrono::system_clock::to_time_t(now);
-    std::tm *nowLocalTime = std::localtime(&nowTime);
-    return nowLocalTime;
+    return localtime_r(&nowTime, &nowLocalTime) != nullptr;
 }
 
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
@@ -250,11 +249,11 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    std::tm *nowLocalTime = GetNowLocalTime();
+    std::tm nowLocalTime;
     bool newStatus = false;
     bool isPowerSufficient = batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY;
-    if (nowLocalTime != nullptr && nowLocalTime->tm_hour >= TIME_START_RELEASE_TEMPERATURE_LIMIT &&
-        nowLocalTime->tm_hour < TIME_STOP_RELEASE_TEMPERATURE_LIMIT) {
+    if (GetNowLocalTime(nowLocalTime) && nowLocalTime.tm_hour >= TIME_START_RELEASE_TEMPERATURE_LIMIT &&
+        nowLocalTime.tm_hour < TIME_STOP_RELEASE_TEMPERATURE_LIMIT) {
         newStatus = isScreenOff_ && isCharging_ && isPowerSufficient &&
             newTemperatureLevel_ <= PROPER_DEVICE_TEMPERATURE_LEVEL_43;
     } else {
