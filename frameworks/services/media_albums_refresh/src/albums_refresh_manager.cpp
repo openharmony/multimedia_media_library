@@ -50,6 +50,7 @@ namespace OHOS {
 namespace Media {
 using ChangeType = DataShare::DataShareObserver::ChangeType;
 static int64_t lastRefreshTimestamp_ = 0;
+static int64_t lastAnalysisRefreshTimestamp_ = 0;
 static const int32_t SCREEN_OFF = 0;
 static const int32_t SCREEN_ON = 1;
 static const int32_t E_EMPTY_ALBUM_ID = 1;
@@ -352,13 +353,13 @@ void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<M
     std::vector<RefreshAlbumData> systemAlbums;
     std::vector<RefreshAlbumData> analysisAlbums;
     bool isUpdateAllAnalysis = false;
-    int32_t ret = GetSystemAlbumsFromRefreshAlbumTable(rdbStore, systemAlbums, info.forceRefreshType);
-    info.refershResult = ret;
-    CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get refresh system albumids");
-    ret = GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, isUpdateAllAnalysis, info.forceRefreshType);
-    DeleteAnalysisAlbumIds(rdbStore);
-    info.refershResult = ret;
-    CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get refresh system albumids");
+    info.refershResult = GetSystemAlbumsFromRefreshAlbumTable(rdbStore, systemAlbums, info.forceRefreshType);
+    CHECK_AND_RETURN_LOG(info.refershResult == E_SUCCESS, "failed to get refresh system albumids");
+    info.refershResult = GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, isUpdateAllAnalysis, info.forceRefreshType);
+    if (isUpdateAllAnalysis || !analysisAlbums.empty()) {
+        DeleteAnalysisAlbumIds(rdbStore);
+    }
+    CHECK_AND_RETURN_LOG(info.refershResult == E_SUCCESS, "failed to get refresh system albumids");
     if (systemAlbums.empty() && analysisAlbums.empty()) {
         MEDIA_INFO_LOG("all album are empty");
         info.refershResult = E_EMPTY_ALBUM_ID;
@@ -374,40 +375,35 @@ void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<M
     MEDIA_INFO_LOG("#test RefreshPhotoAlbums4AssetsChange end %{public}d system albums update cost %{public}ld",
         (int)systemAlbums.size(),
         (long)(end - start));
-    HandleAnalysisAlbum(rdbStore, analysisAlbums, isUpdateAllAnalysis);
+    int32_t timeThreshold = GetRefreshTimeThreshold();
+    int32_t delayTime = static_cast<int32_t>(MediaFileUtils::UTCTimeSeconds() - lastAnalysisRefreshTimestamp_);
+    if (delayTime > timeThreshold && !analysisAlbums.empty()) {
+        HandleAnalysisAlbum(rdbStore, analysisAlbums, isUpdateAllAnalysis);
+        lastAnalysisRefreshTimestamp_ = MediaFileUtils::UTCTimeSeconds();
+    }
     info.refershResult = E_SUCCESS;
 }
 
-int32_t AlbumsRefreshManager::CovertCloudId2AlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore, string cloudId)
+shared_ptr<NativeRdb::ResultSet> AlbumsRefreshManager::CovertCloudId2AlbumId(
+    const shared_ptr<MediaLibraryRdbStore> rdbStore, vector<string> &cloudIds)
 {
-    const string whereClause = PhotoAlbumColumns::ALBUM_CLOUD_ID + " = '" + cloudId + "'";
     const vector<string> columns = {
         PhotoAlbumColumns::ALBUM_ID,
     };
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.SetWhereClause(whereClause);
-    auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
-
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "QueryGoToFirst failed");
-    int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
-    resultSet->Close();
-    return albumId;
+    predicates.In(PhotoAlbumColumns::ALBUM_CLOUD_ID, cloudIds);
+    return QueryGoToFirst(rdbStore, predicates, columns);
 }
 
-int32_t AlbumsRefreshManager::CovertCloudId2FileId(const shared_ptr<MediaLibraryRdbStore> rdbStore, string cloudId)
+shared_ptr<NativeRdb::ResultSet> AlbumsRefreshManager::CovertCloudId2FileId(
+    const shared_ptr<MediaLibraryRdbStore> rdbStore, vector<string> &cloudIds)
 {
-    const string whereClause = PhotoColumn::PHOTO_CLOUD_ID + " = '" + cloudId + "'";
     const vector<string> columns = {
         PhotoColumn::MEDIA_ID,
     };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.SetWhereClause(whereClause);
-    auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "QueryGoToFirst failed");
-
-    int32_t fileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
-    resultSet->Close();
-    return fileId;
+    predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIds);
+    return QueryGoToFirst(rdbStore, predicates, columns);
 }
 
 static void ConstructAssetsNotifyUris(const shared_ptr<MediaLibraryRdbStore> rdbStore, SyncNotifyInfo &info)
@@ -415,17 +411,24 @@ static void ConstructAssetsNotifyUris(const shared_ptr<MediaLibraryRdbStore> rdb
     unordered_set<string> uriIds = info.uriIds;
     MEDIA_DEBUG_LOG("#test uriIds size : %{public}zu, notify type : %{public}d", info.uriIds.size(), info.notifyType);
     if (info.notifyType == NOTIFY_ADD) {
-        for (auto it = uriIds.begin(); it != uriIds.end(); ++it) {
-            string cloudId = *it;
-            int32_t fileId = AlbumsRefreshManager::GetInstance().CovertCloudId2FileId(rdbStore, cloudId);
-            string uri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(fileId);
-            MEDIA_DEBUG_LOG(
-                "#test info.notifyType: NOTIFY_ADD, Uri: %{public}s, cloudId: %{public}s, fileId: %{public}d",
-                uri.c_str(),
-                cloudId.c_str(),
-                fileId);
-            info.uris.push_back(Uri(uri));
+        vector<string> cloudIds;
+        for (auto cloudId : uriIds) {
+            if (cloudId.empty()) {
+                continue;
+            }
+            cloudIds.emplace_back(cloudId);
         }
+        auto resultSet = AlbumsRefreshManager::GetInstance().CovertCloudId2FileId(rdbStore, cloudIds);
+        if (resultSet == nullptr) {
+            return;
+        }
+        do {
+            int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+            string uri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(fileId);
+            info.uris.push_back(Uri(uri));
+            MEDIA_DEBUG_LOG(
+                "#test info.notifyType: NOTIFY_ADD, Uri: %{public}s", uri.c_str());
+        } while (resultSet->GoToNextRow() == E_OK);
     } else {
         for (auto it = uriIds.begin(); it != uriIds.end(); ++it) {
             string fileId = *it;

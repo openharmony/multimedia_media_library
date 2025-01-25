@@ -48,10 +48,10 @@ public:
     EXPORT SyncNotifyInfo GetSyncNotifyInfo(CloudSyncNotifyInfo &notifyInfo, uint8_t uriType);
     EXPORT void TryDeleteAlbum(SyncNotifyInfo &info, std::vector<std::string>& albumIds);
     EXPORT void GetSystemAlbumIds(SyncNotifyInfo& info, std::vector<std::string>& albumIds);
-    EXPORT int32_t CovertCloudId2AlbumId(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        std::string cloudId);
-    EXPORT int32_t CovertCloudId2FileId(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        std::string cloudId);
+    EXPORT std::shared_ptr<NativeRdb::ResultSet>  CovertCloudId2AlbumId(
+        const std::shared_ptr<MediaLibraryRdbStore> rdbStore, std::vector<std::string>& cloudIds);
+    EXPORT std::shared_ptr<NativeRdb::ResultSet>  CovertCloudId2FileId(
+        const std::shared_ptr<MediaLibraryRdbStore> rdbStore, std::vector<std::string>& cloudIds);
     EXPORT bool HasRefreshingSystemAlbums();
     EXPORT void RefreshPhotoAlbumsBySyncNotifyInfo(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         SyncNotifyInfo &info);
