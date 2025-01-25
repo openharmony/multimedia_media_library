@@ -974,13 +974,18 @@ std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::Rdb
 int32_t BackupDatabaseUtils::QueryLocalNoAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
 {
     const std::string QUERY_LOCAL_NO_ASTC_COUNT = "SELECT count(1) AS count FROM Photos "
-        "WHERE thumbnail_ready = 0 AND position = 1 AND time_pending = 0";
+        "WHERE " + PhotoColumn::PHOTO_POSITION + " = 1 AND " + PhotoColumn::PHOTO_THUMBNAIL_VISIBLE + " = 0 " +
+        "AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_TIME_PENDING +  "= 0 " +
+        "AND " + MediaColumn::MEDIA_HIDDEN + " = 0 AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0 " +
+        "AND " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 AND " + PhotoColumn::PHOTO_CLEAN_FLAG + " = 0 " +
+        "AND " + PhotoColumn::PHOTO_SYNC_STATUS + " = 0";
     return QueryInt(rdbStore, QUERY_LOCAL_NO_ASTC_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryReadyAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
 {
-    const std::string QUERY_READY_ASTC_COUNT = "SELECT count(1) AS count FROM Photos WHERE thumbnail_ready > 0";
+    const std::string QUERY_READY_ASTC_COUNT = "SELECT count(1) AS count FROM Photos WHERE " +
+        PhotoColumn::PHOTO_THUMBNAIL_VISIBLE + " = 1";
     return QueryInt(rdbStore, QUERY_READY_ASTC_COUNT, CUSTOM_COUNT);
 }
 
