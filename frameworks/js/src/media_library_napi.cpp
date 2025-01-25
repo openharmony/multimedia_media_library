@@ -5473,19 +5473,9 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         JS_ERR_PARAMETER_INVALID);
 
-    vector<OperationItem> operations;
-    operations.push_back({ DataShare::EQUAL_TO, { MediaColumn::MEDIA_DATE_TRASHED, to_string(0) } });
-    operations.push_back({ DataShare::EQUAL_TO, { MediaColumn::MEDIA_TIME_PENDING, to_string(0) } });
-    if (context->assetType == TYPE_PHOTO) {
-        operations.push_back({ DataShare::EQUAL_TO, { MediaColumn::MEDIA_HIDDEN, to_string(0) } });
-        operations.push_back({ DataShare::EQUAL_TO, { PhotoColumn::PHOTO_IS_TEMP, to_string(false) } });
-        operations.push_back({ DataShare::EQUAL_TO,
-            { PhotoColumn::PHOTO_BURST_COVER_LEVEL, to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) } });
-    }
-
     /* Parse the first argument */
     CHECK_ARGS(env,
-        MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context, move(operations)),
+        MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
         JS_INNER_FAIL);
 
     switch (context->assetType) {
@@ -5504,7 +5494,15 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
             return nullptr;
         }
     }
-
+    auto &predicates = context->predicates;
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    if (context->assetType == TYPE_PHOTO) {
+        predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+        predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
+        predicates.EqualTo(
+            PhotoColumn::PHOTO_BURST_COVER_LEVEL, to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
+    }
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
