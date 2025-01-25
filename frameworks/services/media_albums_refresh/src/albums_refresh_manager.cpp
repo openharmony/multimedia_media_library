@@ -384,46 +384,24 @@ void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<M
     info.refershResult = E_SUCCESS;
 }
 
-int32_t AlbumsRefreshManager::CovertCloudId2AlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore, string cloudId)
-shared_ptr<NativeRdb::ResultSet>  AlbumsRefreshManager::CovertCloudId2AlbumId(
-    const shared_ptr<MediaLibraryRdbStore> rdbStore, vector<string>& cloudIds)
+shared_ptr<NativeRdb::ResultSet> AlbumsRefreshManager::CovertCloudId2AlbumId(
+    const shared_ptr<MediaLibraryRdbStore> rdbStore, vector<string> &cloudIds)
 {
-    const string whereClause = PhotoAlbumColumns::ALBUM_CLOUD_ID + " = '" + cloudId + "'";
     const vector<string> columns = {
         PhotoAlbumColumns::ALBUM_ID,
     };
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.SetWhereClause(whereClause);
-    auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryGoToFirst failed");
-        return -1;
-    }
-    int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
-    resultSet->Close();
-    return albumId;
     predicates.In(PhotoAlbumColumns::ALBUM_CLOUD_ID, cloudIds);
     return QueryGoToFirst(rdbStore, predicates, columns);
 }
 
-int32_t AlbumsRefreshManager::CovertCloudId2FileId(const shared_ptr<MediaLibraryRdbStore> rdbStore, string cloudId)
 shared_ptr<NativeRdb::ResultSet> AlbumsRefreshManager::CovertCloudId2FileId(
-    const shared_ptr<MediaLibraryRdbStore> rdbStore, vector<string>& cloudIds)
+    const shared_ptr<MediaLibraryRdbStore> rdbStore, vector<string> &cloudIds)
 {
-    const string whereClause = PhotoColumn::PHOTO_CLOUD_ID + " = '" + cloudId + "'";
     const vector<string> columns = {
         PhotoColumn::MEDIA_ID,
     };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.SetWhereClause(whereClause);
-    auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryGoToFirst failed");
-        return -1;
-    }
-    int32_t fileId = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
-    resultSet->Close();
-    return fileId;
     predicates.In(PhotoColumn::PHOTO_CLOUD_ID, cloudIds);
     return QueryGoToFirst(rdbStore, predicates, columns);
 }
