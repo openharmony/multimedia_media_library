@@ -1350,7 +1350,7 @@ int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath,
 {
     std::string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
-        MEDIA_ERR_LOG("Failed to get real path: %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Failed to get real path: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("Open with privacy type:%{public}d", type);
