@@ -351,10 +351,8 @@ void UpgradeRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
     }
 }
 
-void UpgradeRestore::RestorePhoto()
+void UpgradeRestore::RestorePhotoInner()
 {
-    AnalyzeSource();
-
     std::string dbIntegrityCheck = CheckGalleryDbIntegrity();
     if (dbIntegrityCheck == DB_INTEGRITY_CHECK) {
         bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
@@ -385,6 +383,16 @@ void UpgradeRestore::RestorePhoto()
         ErrorInfo errorInfo(RestoreError::GALLERY_DATABASE_CORRUPTION, 0, "", dbIntegrityCheck);
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
+}
+
+void UpgradeRestore::RestorePhoto()
+{
+    if (!IsRestorePhoto()) {
+        return;
+    }
+    AnalyzeSource();
+
+    RestorePhotoInner();
     StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
         (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);

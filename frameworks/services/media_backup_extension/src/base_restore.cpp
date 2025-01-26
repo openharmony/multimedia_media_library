@@ -123,6 +123,31 @@ void BaseRestore::GetSourceDeviceInfo()
     }
 }
 
+bool BaseRestore::IsRestorePhoto()
+{
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        return true;
+    }
+    nlohmann::json jsonArray = nlohmann::json::parse(restoreInfo_, nullptr, false);
+    if (jsonArray.is_discarded()) {
+        MEDIA_ERR_LOG("IsRestorePhoto parse restoreInfo_ fail.");
+        return true;
+    }
+    for (const auto& item : jsonArray) {
+        if (!item.contains("type") || !item.contains("detail") || item["type"] != STAT_KEY_BACKUP_INFO) {
+            continue;
+        }
+        for (const auto& backupInfo : item["detail"]) {
+            if (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO) {
+                return true;
+            }
+        }
+        MEDIA_INFO_LOG("not restore photo or video");
+        return false;
+    }
+    return true;
+}
+
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
     backupRestoreDir_ = backupRetoreDir;
