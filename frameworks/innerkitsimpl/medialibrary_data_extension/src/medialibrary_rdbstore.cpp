@@ -4143,6 +4143,13 @@ static void FixSourceAlbumUpdateTriggerToUseLPath(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {
+        TabFaCardPhotosTableEventHandler().OnCreate(store);
+    }
+}
+
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
@@ -4207,9 +4214,7 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         AddStageVideoTaskStatus(store);
     }
 
-    if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {
-        TabFaCardPhotosTableEventHandler().OnCreate(store);
-    }
+    UpgradeExtensionPart5(store, oldVersion);
 }
 
 static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
