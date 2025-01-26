@@ -1733,7 +1733,8 @@ static void JSGetThumbnailDataExecute(napi_env env, FileAssetAsyncContext* conte
         path = ROOT_MEDIA_DIR + context->objectPtr->GetRelativePath() + context->objectPtr->GetDisplayName();
     }
 #endif
-    context->napiArrayBuffer = ThumbnailManager::QueryThumbnailData(env, context->objectPtr->GetUri(), context->type, path);
+    context->napiArrayBuffer = ThumbnailManager::QueryThumbnailData(
+        env, context->objectPtr->GetUri(), context->type, path);
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
