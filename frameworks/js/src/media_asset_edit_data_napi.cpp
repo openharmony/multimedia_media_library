@@ -231,9 +231,10 @@ static napi_value GetStringArg(
         OHOS_INVALID_PARAM_CODE);
 
     size_t res = 0;
-    char buffer[maxLen];
-    CHECK_ARGS(env, napi_get_value_string_utf8(env, argv[PARAM0], buffer, maxLen, &res), JS_INNER_FAIL);
-    arg = string(buffer);
+    unique_ptr<char[]> buffer = make_unique<char[]>(maxLen);
+    CHECK_COND(env, buffer != nullptr, JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_get_value_string_utf8(env, argv[PARAM0], buffer.get(), maxLen, &res), JS_INNER_FAIL);
+    arg = string(buffer.get());
     RETURN_NAPI_TRUE(env);
 }
 
