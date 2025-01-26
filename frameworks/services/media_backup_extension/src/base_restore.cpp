@@ -1654,11 +1654,13 @@ void BaseRestore::RestoreThumbnail()
 {
     // restore thumbnail for date fronted 2000 photos
     int32_t localNoAstcCount = BackupDatabaseUtils::QueryLocalNoAstcCount(mediaLibraryRdb_);
-    CHECK_AND_RETURN_LOG(localNoAstcCount > 0, "No need to RestoreThumbnail");
+    CHECK_AND_RETURN_LOG(localNoAstcCount > 0,
+        "No need to RestoreThumbnail, localNoAstcCount:%{public}d", localNoAstcCount);
     int32_t restoreAstcCount = localNoAstcCount < MAX_RESTORE_ASTC_NUM ? localNoAstcCount : MAX_RESTORE_ASTC_NUM;
     uint64_t thumbnailTotalNumber = static_cast<uint64_t>(restoreAstcCount);
     thumbnailTotalNumber_ = thumbnailTotalNumber;
     int32_t readyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
+    CHECK_AND_RETURN_LOG(readyAstcCount >= 0, "ReadyAstcCount:%{public}d is invalid", readyAstcCount);
     uint64_t waitAstcNum = sceneCode_ != UPGRADE_RESTORE_ID ? thumbnailTotalNumber :
         std::min(thumbnailTotalNumber, MAX_UPGRADE_WAIT_ASTC_NUM);
 
@@ -1666,17 +1668,27 @@ void BaseRestore::RestoreThumbnail()
         "waitAstcNum:%{public}" PRIu64, readyAstcCount, restoreAstcCount, waitAstcNum);
     BackupFileUtils::GenerateThumbnailsAfterRestore(restoreAstcCount);
     uint64_t thumbnailProcessedNumber = 0;
-    while (thumbnailProcessedNumber < waitAstcNum) {
+    int32_t timeoutTimes = 0;
+    int64_t startRestoreThumbnailTime = MediaFileUtils::UTCTimeMilliSeconds();
+    bool isNeedWaitRestoreThumbnail = true;
+    while (thumbnailProcessedNumber < waitAstcNum && isNeedWaitRestoreThumbnail) {
         thumbnailProcessedNumber_ = thumbnailProcessedNumber;
         std::this_thread::sleep_for(std::chrono::milliseconds(THUMBNAIL_QUERY_INTERVAL));
         int32_t newReadyAstcCount = BackupDatabaseUtils::QueryReadyAstcCount(mediaLibraryRdb_);
+        CHECK_AND_RETURN_LOG(newReadyAstcCount >= 0, "NewReadyAstcCount:%{public}d is invalid", newReadyAstcCount);
         if (newReadyAstcCount <= readyAstcCount) {
-            MEDIA_WARN_LOG("Stop RestoreThumbnail, oldReadyAstcCount:%{public}d, newReadyAstcCount:%{public}d",
-                readyAstcCount, newReadyAstcCount);
-            break;
+            MEDIA_WARN_LOG("Astc is not added, oldReadyAstcCount:%{public}d, newReadyAstcCount:%{public}d, "
+                "timeoutTimes:%{public}d", readyAstcCount, newReadyAstcCount, timeoutTimes);
+            readyAstcCount = newReadyAstcCount;
+            ++timeoutTimes;
+            isNeedWaitRestoreThumbnail = timeoutTimes <= MAX_RESTORE_THUMBNAIL_TIMEOUT_TIMES ||
+                MediaFileUtils::UTCTimeMilliSeconds() - startRestoreThumbnailTime <= MIN_RESTORE_THUMBNAIL_TIME;
+            continue;
         }
         thumbnailProcessedNumber += static_cast<uint64_t>(newReadyAstcCount - readyAstcCount);
         readyAstcCount = newReadyAstcCount;
+        timeoutTimes = 0;
+        isNeedWaitRestoreThumbnail = true;
     }
     thumbnailProcessedNumber_ = thumbnailProcessedNumber < thumbnailTotalNumber ?
         thumbnailProcessedNumber : thumbnailTotalNumber;
