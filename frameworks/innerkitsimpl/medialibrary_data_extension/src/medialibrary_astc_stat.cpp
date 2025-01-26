@@ -63,10 +63,10 @@ static nlohmann::json ConvertPhaseStatToJson(const PhaseStat &phaseStat, AstcPha
         jsonRetStat[retValue] = retCount;
         jsonPhaseStat["interruptArr"].emplace_back(jsonRetStat);
     }
-    jsonPhaseStat["sceneArr"] = nlohmann::json::array();
     nlohmann::json scenesJson;
     for (const auto &[sceneType, sceneStat] : phaseStat.scenes_) {
-        jsonPhaseStat["sceneArr"].emplace_back(ConvertSceneStatToJson(sceneStat, sceneType));
+        std::string key = "scene" + std::to_string(enum_to_value(sceneType));
+        jsonPhaseStat[key] = ConvertSceneStatToJson(sceneStat, sceneType);
     }
     return jsonPhaseStat;
 }
@@ -75,9 +75,9 @@ bool MediaLibraryAstcStat::ConvertToJson(nlohmann::json& jsonPhasesStat, const P
     int32_t totalAstcCount)
 {
     jsonPhasesStat["totalAstcCount"] = totalAstcCount;
-    jsonPhasesStat["phaseArr"] = nlohmann::json::array();
     for (const auto &[phaseType, phaseStat] : phasesStat.phases_) {
-        jsonPhasesStat["phaseArr"].emplace_back(ConvertPhaseStatToJson(phaseStat, phaseType));
+        std::string key = "phase" + std::to_string(enum_to_value(phaseType));
+        jsonPhasesStat[key] = ConvertPhaseStatToJson(phaseStat, phaseType);
     }
     return true;
 }
@@ -127,8 +127,10 @@ static bool ConvertPhaseStatToStruct(const nlohmann::json &jsonPhaseStat, PhaseS
     if (jsonPhaseStat.contains("interruptArr") && jsonPhaseStat["interruptArr"].is_array()) {
         ConvertRetStatToStruct(jsonPhaseStat, phaseStat);
     }
-    if (jsonPhaseStat.contains("sceneArr") && jsonPhaseStat["sceneArr"].is_array()) {
-        for (const auto& jsonSceneStat : jsonPhaseStat["sceneArr"]) {
+    for (int i = 0; i <= static_cast<int>(AstcGenScene::CHARGING_SCREENOFF); i++) {
+        std::string key = "scene" + std::to_string(i);
+        if (jsonPhaseStat.contains(key)) {
+            const auto& jsonSceneStat = jsonPhaseStat[key];
             SceneStat sceneStat{};
             AstcGenScene sceneType{AstcGenScene::DEFAULT};
             ConvertSceneStatToStruct(jsonSceneStat, sceneStat, sceneType);
@@ -148,8 +150,10 @@ bool MediaLibraryAstcStat::ConvertToStruct(const nlohmann::json &jsonPhasesStat,
     if (jsonPhasesStat.contains("totalAstcCount") && jsonPhasesStat["totalAstcCount"].is_number_integer()) {
         totalAstcCount = jsonPhasesStat["totalAstcCount"].get<int32_t>();
     }
-    if (jsonPhasesStat.contains("phaseArr") && jsonPhasesStat["phaseArr"].is_array()) {
-        for (const auto& jsonPhaseStat : jsonPhasesStat["phaseArr"]) {
+    for (int i = static_cast<int>(AstcPhase::PHASE1); i <= static_cast<int>(AstcPhase::PHASE5); i++) {
+        std::string key = "phase" + std::to_string(i);
+        if (jsonPhasesStat.contains(key)) {
+            const auto& jsonPhaseStat = jsonPhasesStat[key];
             PhaseStat phaseStat{};
             AstcPhase phaseType{AstcPhase::DEFAULT};
             ConvertPhaseStatToStruct(jsonPhaseStat, phaseStat, phaseType);
