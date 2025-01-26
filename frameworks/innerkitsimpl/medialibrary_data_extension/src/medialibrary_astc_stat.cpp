@@ -226,13 +226,17 @@ bool MediaLibraryAstcStat::ReadJsonFile(const std::string &filePath, nlohmann::j
     return !j.is_discarded();
 }
 
-static AstcPhase GetAstcPhase(int32_t totalAstcCount, GenerateScene genScene)
+AstcPhase MediaLibraryAstcStat::GetAstcPhase(int32_t totalAstcCount, GenerateScene genScene)
 {
     AstcPhase phaseKey = AstcPhase::DEFAULT;
     constexpr int32_t phase1MaxCount = 100;
     constexpr int32_t phase2MaxCount = 2000;
     constexpr int32_t phase3MaxCount = 20000;
     constexpr int32_t phase4MaxCount = 200000;
+    if (totalAstcCount == phase1MaxCount || totalAstcCount == phase2MaxCount ||
+        totalAstcCount == phase3MaxCount || totalAstcCount == phase4MaxCount) {
+        GetJsonStr();
+    }
 
     if (totalAstcCount <= phase1MaxCount) {
         phaseKey = AstcPhase::PHASE1;
@@ -388,8 +392,13 @@ void MediaLibraryAstcStat::AddAstcInfo(int64_t startTime, GenerateScene genScene
 
 std::string MediaLibraryAstcStat::GetJson()
 {
-    nlohmann::json jsn;
     std::lock_guard<std::mutex> lock(mutex_);
+    return GetJsonStr();
+}
+
+std::string MediaLibraryAstcStat::GetJsonStr()
+{
+    nlohmann::json jsn;
     ConvertToJson(jsn, phasesStat_, totalAstcCount_);
     MEDIA_INFO_LOG("json %{public}s", jsn.dump().c_str());
     return jsn.dump();

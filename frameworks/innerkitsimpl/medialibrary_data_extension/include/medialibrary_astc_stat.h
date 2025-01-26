@@ -95,6 +95,7 @@ public:
     EXPORT static MediaLibraryAstcStat &GetInstance();
     EXPORT void AddAstcInfo(int64_t startTime, GenerateScene genScene, AstcGenScene sceneKey,
         const std::string &id = "");
+    EXPORT AstcPhase GetAstcPhase(int32_t totalAstcCount, GenerateScene genScene);
     EXPORT void GetInterruptInfo(bool isScreenOff, bool power, bool thermal, bool charging);
     EXPORT std::string GetJson();
     EXPORT void ClearOldData();
@@ -106,6 +107,7 @@ public:
     EXPORT bool ReadAstcInfoFromJsonFile(PhasesStat& phasesStat, int32_t& totalAstcCount);
     EXPORT bool WriteAstcInfoToJsonFile(const PhasesStat& phasesStat, int32_t totalAstcCount);
 private:
+    std::string GetJsonStr();
     bool CheckId(const std::string& id);
     bool WriteJsonFile(const std::string &filePath, const nlohmann::json &j);
     bool ReadJsonFile(const std::string &filePath, nlohmann::json &j);
