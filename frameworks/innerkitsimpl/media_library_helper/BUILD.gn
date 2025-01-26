@@ -51,6 +51,7 @@ ohos_shared_library("media_library") {
     "src/media_file_uri.cpp",
     "src/media_file_utils.cpp",
     "src/media_old_photos_column.cpp",
+    "src/media_facard_photos_column.cpp",
     "src/media_photo_asset_proxy.cpp",
     "src/media_volume.cpp",
     "src/medialibrary_business_record_column.cpp",
