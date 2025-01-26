@@ -387,7 +387,7 @@ static napi_value DecodeThumbnailData(napi_env env, const UniqueFd &uniqueFd, co
  
     ssize_t readBytes = read(uniqueFd.Get(), arrayBufferData, fileLen);
     if (readBytes != fileLen) {
-        NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu", readBytes, fileLen);
+        NAPI_ERR_LOG("read file failed");
         return result;
     }
  
