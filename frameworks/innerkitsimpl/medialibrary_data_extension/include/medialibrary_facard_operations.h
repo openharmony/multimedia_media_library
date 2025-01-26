@@ -58,14 +58,16 @@ public:
         std::string assetChangeUri;
         int assetChangeType;
         AssetChangeInfo(const std::string& uri, int type)
-                : assetChangeUri(uri), assetChangeType(type) {}
+                : assetChangeUri(uri),
+                  assetChangeType(type) {}
         bool operator==(const AssetChangeInfo& other) const 
         {
             return assetChangeUri == other.assetChangeUri && assetChangeType == other.assetChangeType;
         }
     };
     struct AssetChangeInfoHash {
-        std::size_t operator()(const AssetChangeInfo& info) const {
+        std::size_t operator()(const AssetChangeInfo& info) const
+        {
             std::hash<std::string> hashStr;
             std::hash<int> hashInt;
             return hashStr(info.assetChangeUri) ^ (hashInt(info.assetChangeType) << 1);

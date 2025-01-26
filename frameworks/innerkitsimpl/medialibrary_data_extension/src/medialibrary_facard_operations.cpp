@@ -189,7 +189,7 @@ int32_t MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(MediaLibra
     int64_t outRowId = -1;
     lock_guard<mutex> lock(mutex_);
     int32_t errCode = rdbStore->Insert(cmd, outRowId);
-    if (errCode != NativeRdb::E_OK || outRowId < 0) { 
+    if (errCode != NativeRdb::E_OK || outRowId < 0) {
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
