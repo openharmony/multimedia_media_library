@@ -361,8 +361,8 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     SubscriberPowerConsumptionDetection();
     std::map<std::string, std::vector<std::string>> urisMap = MediaLibraryFaCardOperations::GetUris();
     for (const auto& pair : urisMap) {
-        const std::string& formId = pair.first;        
-        const std::vector<std::string>& uris = pair.second;  
+        const std::string& formId = pair.first;
+        const std::vector<std::string>& uris = pair.second;
         for (const std::string& uri : uris) {
             MediaLibraryFaCardOperations::RegisterObserver(formId, uri);
         }
@@ -770,7 +770,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
         case OperationObject::PAH_FORM_MAP:
             return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
         case OperationObject::TAB_FACARD_PHOTO:
-            return MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(cmd); 
+            return MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(cmd);
         case OperationObject::SEARCH_TOTAL: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }

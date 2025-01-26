@@ -55,9 +55,8 @@ std::shared_ptr<AppExecFwk::EventHandler> CardAssetUriObserver::deviceHandler_ =
 std::make_shared<AppExecFwk::EventHandler>(AppExecFwk::EventRunner::Create("MediaLibraryFacard"));
 std::mutex CardAssetUriObserver::mtx;
 std::unordered_set<
-    CardAssetUriObserver::AssetChangeInfo, 
-    CardAssetUriObserver::AssetChangeInfoHash
-> CardAssetUriObserver::assetChanges;
+    CardAssetUriObserver::AssetChangeInfo,
+    CardAssetUriObserver::AssetChangeInfoHash> CardAssetUriObserver::assetChanges;
  
 std::map<std::string, std::vector<std::string>> MediaLibraryFaCardOperations::GetUris()
 {
@@ -125,8 +124,8 @@ void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
                 auto result = AAFwk::AbilityManagerClient::GetInstance()->StartExtensionAbility(
                     want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
                 CardAssetUriObserver::assetChanges.clear();
-                CardAssetUriObserver::isTaskPosted = false;
-            }, "StartExtensionAbility", DELAY_MILLISECONDS);
+                CardAssetUriObserver::isTaskPosted = false;},
+                "StartExtensionAbility", DELAY_MILLISECONDS);
         }
     }
 }
