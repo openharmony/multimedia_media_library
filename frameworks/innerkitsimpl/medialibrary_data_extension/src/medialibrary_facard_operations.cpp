@@ -54,7 +54,10 @@ bool CardAssetUriObserver::isTaskPosted = false;
 std::shared_ptr<AppExecFwk::EventHandler> CardAssetUriObserver::deviceHandler_ =
 std::make_shared<AppExecFwk::EventHandler>(AppExecFwk::EventRunner::Create("MediaLibraryFacard"));
 std::mutex CardAssetUriObserver::mtx;
-std::unordered_set<CardAssetUriObserver::AssetChangeInfo, CardAssetUriObserver::AssetChangeInfoHash> CardAssetUriObserver::assetChanges;
+std::unordered_set<
+    CardAssetUriObserver::AssetChangeInfo, 
+    CardAssetUriObserver::AssetChangeInfoHash
+> CardUriObserver::assetChanges;
  
 std::map<std::string, std::vector<std::string>> MediaLibraryFaCardOperations::GetUris()
 {
@@ -66,7 +69,10 @@ std::map<std::string, std::vector<std::string>> MediaLibraryFaCardOperations::Ge
         MEDIA_ERR_LOG("UniStore is nullptr");
         return resultMap;
     }
-    vector<string> columns = {TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID};
+    vector<string> columns = {
+        TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI,
+        TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID
+    };
     auto queryResult = uniStore->Query(queryFaCardCmd, columns);
     if (queryResult == nullptr) {
         MEDIA_ERR_LOG("Failed to query assetUris!");
@@ -94,20 +100,19 @@ static string GetStringObject(MediaLibraryCommand &cmd, const string &columnName
  
 void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    if (changeInfo.changeType_ == ChangeType::INSERT || 
-        changeInfo.changeType_ == ChangeType::DELETE || 
+    if (changeInfo.changeType_ == ChangeType::INSERT ||
+        changeInfo.changeType_ == ChangeType::DELETE ||
         changeInfo.changeType_ == ChangeType::UPDATE) {
-
         std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
         CardAssetUriObserver::assetChanges.insert(
             AssetChangeInfo(assetChangeUri, static_cast<int>(changeInfo.changeType_)));
- 
         if (!CardAssetUriObserver::isTaskPosted) {
             CardAssetUriObserver::isTaskPosted = true;
+            const int DELAY_MILLISECONDS = 5000;
             CardAssetUriObserver::deviceHandler_->PostTask([this]() {
                 std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
-                std::vector<std::string> assetChangeUris;  
-                std::vector<int> assetChangeTypes; 
+                std::vector<std::string> assetChangeUris;
+                std::vector<int> assetChangeTypes;
                 for (const auto& change : CardAssetUriObserver::assetChanges) {
                     assetChangeUris.push_back(change.assetChangeUri);
                     assetChangeTypes.push_back(change.assetChangeType);
@@ -116,14 +121,12 @@ void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
                 want.SetElementName("com.huawei.hmos.photos", "FACardServiceAbility");
                 want.SetParam("assetChangeUris", assetChangeUris);
                 want.SetParam("assetChangeTypes", assetChangeTypes);
-                
                 int32_t userId = -1;
                 auto result = AAFwk::AbilityManagerClient::GetInstance()->StartExtensionAbility(
                     want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
- 
                 CardAssetUriObserver::assetChanges.clear();
                 CardAssetUriObserver::isTaskPosted = false;
-            }, "StartExtensionAbility", 5000);
+            }, "StartExtensionAbility", DELAY_MILLISECONDS);
         }
     }
 }
@@ -171,7 +174,7 @@ void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
     const std::vector<std::shared_ptr<CardAssetUriObserver>>& formAssetObservers = itAsset->second;
     for (const auto& observer : formAssetObservers) {
         Uri notifyUri(observer->assetChangeUri);
-        dataShareHelper->UnregisterObserverExt(notifyUri, 
+        dataShareHelper->UnregisterObserverExt(notifyUri,
             std::static_pointer_cast<DataShare::DataShareObserver>(observer));
     }
     formAssetObserversMap.erase(formId);
