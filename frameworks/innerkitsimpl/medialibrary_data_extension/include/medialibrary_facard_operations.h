@@ -57,11 +57,10 @@ public:
     struct AssetChangeInfo {
         std::string assetChangeUri;
         int assetChangeType;
- 
         AssetChangeInfo(const std::string& uri, int type)
                 : assetChangeUri(uri), assetChangeType(type) {}
- 
-        bool operator==(const AssetChangeInfo& other) const {
+        bool operator==(const AssetChangeInfo& other) const 
+        {
             return assetChangeUri == other.assetChangeUri && assetChangeType == other.assetChangeType;
         }
     };
