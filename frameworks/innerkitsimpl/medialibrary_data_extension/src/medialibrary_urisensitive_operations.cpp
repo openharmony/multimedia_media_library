@@ -27,6 +27,7 @@
 #include "medialibrary_type_const.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
 #include "media_column.h"
 #include "medialibrary_appstate_observer.h"
@@ -386,8 +387,30 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     return E_OK;
 }
 
+static bool IsOwnerPriviledge(const uint32_t &tokenId, const std::string &fileId)
+{
+    NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    rdbPredicate.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)tokenId);
+    rdbPredicate.EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
+    rdbPredicate.EqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
+        AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
+    vector<string> columns;
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
+    if (resultSet == nullptr) {
+        return false;
+    }
+    int32_t numRows = 0;
+    resultSet->GetRowCount(numRows);
+    return numRows > 0;
+}
+
 int32_t UriSensitiveOperations::QuerySensitiveType(const uint32_t &tokenId, const std::string &fileId)
 {
+    // OwnerPriviledge donot need anonymize
+    if (IsOwnerPriviledge(tokenId, fileId)) {
+        return AppUriSensitiveColumn::SENSITIVE_NO_DESENSITIZE;
+    }
+
     NativeRdb::RdbPredicates rdbPredicate(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     rdbPredicate.BeginWrap();
     rdbPredicate.And()->EqualTo(AppUriSensitiveColumn::TARGET_TOKENID, (int64_t)tokenId);
@@ -411,28 +434,7 @@ int32_t UriSensitiveOperations::QuerySensitiveType(const uint32_t &tokenId, cons
     resultSet->GoToFirstRow();
     return MediaLibraryRdbStore::GetInt(resultSet, AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
 }
-std::string UriSensitiveOperations::QueryAppId(const std::string &fileId)
-{
-    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_ID, fileId);
 
-    vector<string> columns;
-    columns.push_back(MediaColumn::MEDIA_ID);
-    columns.push_back(MediaColumn::MEDIA_OWNER_APPID);
-
-    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        return 0;
-    }
-
-    int32_t numRows = 0;
-    resultSet->GetRowCount(numRows);
-    if (numRows == 0) {
-        return 0;
-    }
-    resultSet->GoToFirstRow();
-    return MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_OWNER_APPID);
-}
 bool UriSensitiveOperations::QueryForceSensitive(const uint32_t &tokenId,
     const std::string &fileId)
 {
