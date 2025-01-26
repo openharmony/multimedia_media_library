@@ -126,8 +126,7 @@ void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
                 auto result = AAFwk::AbilityManagerClient::GetInstance()->StartExtensionAbility(
                     want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
                 CardAssetUriObserver::assetChanges.clear();
-                CardAssetUriObserver::isTaskPosted = false;},
-                "StartExtensionAbility", DELAY_MILLISECONDS);
+                CardAssetUriObserver::isTaskPosted = false;}, "StartExtensionAbility", DELAY_MILLISECONDS);
         }
     }
 }
