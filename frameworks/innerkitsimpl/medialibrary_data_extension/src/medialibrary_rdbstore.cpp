@@ -4145,6 +4145,30 @@ static void FixSourceAlbumUpdateTriggerToUseLPath(RdbStore& store)
 
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 {
+    if (oldVersion < VERSION_ADD_CHECK_FLAG) {
+        AddCheckFlag(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS) {
+        AddHighlightAnalysisProgress(store);
+    }
+
+    if (oldVersion < VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED) {
+        UpdateSourcePhotoAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN) {
+        AddRefreshAlbumStatusColumn(store);
+    }
+
+    if (oldVersion < VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH) {
+        FixSourceAlbumUpdateTriggerToUseLPath(store);
+    }
+
+    if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
+        AddStageVideoTaskStatus(store);
+    }
+
     if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {
         TabFaCardPhotosTableEventHandler().OnCreate(store);
     }
@@ -4189,29 +4213,6 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
         UpdateSearchStatusTriggerForOwnerAlbumId(store);
-    }
-    if (oldVersion < VERSION_ADD_CHECK_FLAG) {
-        AddCheckFlag(store);
-    }
-
-    if (oldVersion < VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS) {
-        AddHighlightAnalysisProgress(store);
-    }
-
-    if (oldVersion < VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED) {
-        UpdateSourcePhotoAlbumTrigger(store);
-    }
-
-    if (oldVersion < VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN) {
-        AddRefreshAlbumStatusColumn(store);
-    }
-
-    if (oldVersion < VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH) {
-        FixSourceAlbumUpdateTriggerToUseLPath(store);
-    }
-
-    if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
-        AddStageVideoTaskStatus(store);
     }
 
     UpgradeExtensionPart5(store, oldVersion);

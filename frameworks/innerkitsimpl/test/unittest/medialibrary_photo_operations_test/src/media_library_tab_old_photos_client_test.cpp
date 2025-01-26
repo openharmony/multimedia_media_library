@@ -53,8 +53,10 @@ void TabOldPhotosClientTest::TearDown(void) {}
 HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_001, TestSize.Level0)
 {
     MediaLibraryManager mediaLibraryManager;
-    std::vector<std::string> queryTabOldPhotosUris = {"file://media/storage/emulated/123"};
-    std::vector<TabOldPhotosClient::RequestUriObj> result = TabOldPhotosClient(mediaLibraryManager).Parse(queryTabOldPhotosUris);
+    std::vector<std::string> queryTabOldPhotosUris =
+    {"file://media/storage/emulated/123"};
+    std::vector<TabOldPhotosClient::RequestUriObj> result =
+    TabOldPhotosClient(mediaLibraryManager).Parse(queryTabOldPhotosUris);
     EXPECT_EQ(result[0].type, TabOldPhotosClient::URI_TYPE_ID_LINK);
     EXPECT_EQ(result[0].oldFileId, 123);
 }
@@ -67,8 +69,10 @@ HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_001, TestSize.Level0)
 HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_002, TestSize.Level0)
 {
     MediaLibraryManager mediaLibraryManager;
-    std::vector<std::string> queryTabOldPhotosUris = {"/storage/emulated/0/DCIM/Camera/IMG_20240923_121826.jpg"};
-    std::vector<TabOldPhotosClient::RequestUriObj> result = TabOldPhotosClient(mediaLibraryManager).Parse(queryTabOldPhotosUris);
+    std::vector<std::string> queryTabOldPhotosUris =
+    {"/storage/emulated/0/DCIM/Camera/IMG_20240923_121826.jpg"};
+    std::vector<TabOldPhotosClient::RequestUriObj> result =
+    TabOldPhotosClient(mediaLibraryManager).Parse(queryTabOldPhotosUris);
     EXPECT_EQ(result[0].type, TabOldPhotosClient::URI_TYPE_PATH);
     EXPECT_EQ(result[0].oldData, "/storage/emulated/0/DCIM/Camera/IMG_20240923_121826.jpg");
 }
@@ -82,7 +86,8 @@ HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_003, TestSize.Level0)
 {
     MediaLibraryManager mediaLibraryManager;
     std::vector<std::string> queryTabOldPhotosUris = {"123"};
-    std::vector<TabOldPhotosClient::RequestUriObj> result = TabOldPhotosClient(mediaLibraryManager).Parse(queryTabOldPhotosUris);
+    std::vector<TabOldPhotosClient::RequestUriObj> result =
+    TabOldPhotosClient(mediaLibraryManager).Parse(queryTabOldPhotosUris);
     EXPECT_EQ(result[0].type, TabOldPhotosClient::URI_TYPE_ID);
     EXPECT_EQ(result[0].oldFileId, 123);
 }

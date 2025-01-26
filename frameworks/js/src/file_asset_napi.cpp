@@ -1770,7 +1770,7 @@ static void JSGetKeyFrameThumbnailExecute(FileAssetAsyncContext* context)
 }
 
 static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
-                                                    FileAssetAsyncContext* context)
+                                               FileAssetAsyncContext* context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSGetThumbnailDataCompleteCallback");
@@ -1875,7 +1875,7 @@ static bool GetNapiObjectFromNapiObject(napi_env env, napi_value configObj, std:
 }
 
 napi_value GetJSArgsForGetThumbnailData(napi_env env, size_t argc, const napi_value argv[],
-                                    unique_ptr<FileAssetAsyncContext> &asyncContext)
+                                        unique_ptr<FileAssetAsyncContext> &asyncContext)
 {
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;

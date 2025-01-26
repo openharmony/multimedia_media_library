@@ -6260,7 +6260,7 @@ static void PhotoAccessSaveGalleryFormInfoExec(napi_env env, void *data)
 }
  
 napi_value MediaLibraryNapi::PhotoAccessSaveGalleryFormInfo(napi_env env, napi_callback_info info)
-{   
+{
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsSaveGalleryFormInfo(env, info, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessSaveGalleryFormInfo",
