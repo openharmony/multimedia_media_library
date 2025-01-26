@@ -369,7 +369,6 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
         appId_ = PermissionUtils::GetAppIdByBundleName(bundleName);
         tokenId_ = PermissionUtils::GetTokenId();
     }
-    string appIdFile = UriSensitiveOperations::QueryAppId(fileId_);
     bool result;
     for (auto &item : PRIVACY_PERMISSION_MAP) {
         const string &perm = item.second;
@@ -388,7 +387,7 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
         } else {
             //collect ranges by hideSensitiveType
             bool isForceSensitive = UriSensitiveOperations::QueryForceSensitive(tokenId_, fileId_);
-            if (!isForceSensitive && (result || appId_ == appIdFile)) {
+            if (!isForceSensitive && result) {
                 continue;
             }
             HideSensitiveType sensitiveType =
