@@ -140,6 +140,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetThumbnailData(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetKeyFrameThumbnail(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperRequestPhoto(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCancelPhotoRequest(napi_env env, napi_callback_info info);
@@ -201,6 +202,8 @@ struct FileAssetAsyncContext : public NapiError {
     std::string editData;
     std::string uri;
     char* editDataBuffer;
+
+    napi_value napiArrayBuffer;
 };
 } // namespace Media
 } // namespace OHOS
