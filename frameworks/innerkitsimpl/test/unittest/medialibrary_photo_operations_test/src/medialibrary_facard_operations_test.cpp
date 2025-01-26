@@ -108,8 +108,8 @@ void CleanTestFaCardTables()
  
 void SetFaCardTables()
 {
-    const std::string CREATE_FACARD_TABLE_SQL = "\
-        CREATE TABLE IF NOT EXISTS tab_facard_photos ( \
+    const std::string CreateFacardTableSql = "\
+        CREATE TABLE IF NOT EXISTS tab_facard_photos \
             form_id     TEXT, \
             asset_uri   TEXT \
         );";
