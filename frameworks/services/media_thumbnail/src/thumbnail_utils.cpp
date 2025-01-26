@@ -342,8 +342,7 @@ bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, 
     MediaLibraryTracer tracer;
     tracer.Start("ImageSource::ScaleTargetPixelMap");
 
-    PostProc postProc;
-    if (!postProc.ScalePixelMapEx(targetSize, *dataSource, option)) {
+    if (!PostProc::ScalePixelMapWithGPU(*(dataSource.get()), targetSize, option, true)) {
         MEDIA_ERR_LOG("Fail to scale to target thumbnail, ScalePixelMapEx failed, targetSize: %{public}d * %{public}d",
             targetSize.width, targetSize.height);
         return false;
@@ -1646,7 +1645,7 @@ void PostProcPixelMapSource(ThumbnailData &data)
             std::shared_ptr<PixelMap> copySource = std::move(copySourcePtr);
             data.source.SetPixelMapEx(copySource);
         }
-        pixelMap->rotate(static_cast<float>(data.orientation));
+        PostProc::RotateInRectangularSteps(*(pixelMap.get()), static_cast<float>(data.orientation), true);
     }
 
     // PixelMap has been rotated, fix the exif orientation to zero degree.
