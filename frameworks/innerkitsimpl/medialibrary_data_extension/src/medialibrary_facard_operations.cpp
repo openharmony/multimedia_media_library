@@ -101,7 +101,9 @@ void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
 {
     if (changeInfo.changeType_ == ChangeType::INSERT ||
         changeInfo.changeType_ == ChangeType::DELETE ||
-        changeInfo.changeType_ == ChangeType::UPDATE) {
+        changeInfo.changeType_ == ChangeType::UPDATE ||
+        changeInfo.changeType_ == ChangeType::OTHER ||
+        changeInfo.changeType_ == ChangeType::INVAILD) {
         std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
         CardAssetUriObserver::assetChanges.insert(
             AssetChangeInfo(assetChangeUri, static_cast<int>(changeInfo.changeType_)));
