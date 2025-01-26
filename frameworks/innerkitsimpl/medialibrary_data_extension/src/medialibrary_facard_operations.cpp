@@ -57,7 +57,7 @@ std::mutex CardAssetUriObserver::mtx;
 std::unordered_set<
     CardAssetUriObserver::AssetChangeInfo, 
     CardAssetUriObserver::AssetChangeInfoHash
-> CardUriObserver::assetChanges;
+> CardAssetUriObserver::assetChanges;
  
 std::map<std::string, std::vector<std::string>> MediaLibraryFaCardOperations::GetUris()
 {
