@@ -72,6 +72,7 @@
 #include "vision_total_column.h"
 #include "file_asset_napi.h"
 #include "form_map.h"
+#include "media_facard_photos_column.h"
 #ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
 #endif
@@ -341,7 +342,10 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getHiddenAlbums", PahGetHiddenAlbums),
             DECLARE_NAPI_FUNCTION("applyChanges", JSApplyChanges),
             DECLARE_NAPI_FUNCTION("saveFormInfo", PhotoAccessSaveFormInfo),
+            DECLARE_NAPI_FUNCTION("saveGalleryFormInfo", PhotoAccessSaveGalleryFormInfo),
             DECLARE_NAPI_FUNCTION("removeFormInfo", PhotoAccessRemoveFormInfo),
+            DECLARE_NAPI_FUNCTION("removeGalleryFormInfo", PhotoAccessRemoveGalleryFormInfo),
+            DECLARE_NAPI_FUNCTION("updateGalleryFormInfo", PhotoAccessUpdateGalleryFormInfo),
             DECLARE_NAPI_FUNCTION("getAssetsSync", PhotoAccessGetPhotoAssetsSync),
             DECLARE_NAPI_FUNCTION("getAlbumsSync", PhotoAccessGetPhotoAlbumsSync),
             DECLARE_NAPI_FUNCTION("getFileAssetsInfo", PhotoAccessGetFileAssetsInfo),
@@ -5841,6 +5845,131 @@ static napi_status CheckFormId(string &formId)
     return napi_ok;
 }
 
+static napi_status ParseUpdateGalleryFormInfoOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
+{
+    const std::string formIdKey = "formId";
+    const std::string assetUrisKey = "assetUris";
+ 
+    bool formIdPresent = false;
+    napi_status result = napi_has_named_property(env, arg, formIdKey.c_str(), &formIdPresent);
+    CHECK_COND_RET(result == napi_ok, result, "failed to check formId property");
+    if (!formIdPresent) {
+        NAPI_ERR_LOG("ParseSaveGalleryFormInfoOption formIdPresent is false");
+        return napi_invalid_arg;
+    }
+ 
+    napi_value formIdValue;
+    result = napi_get_named_property(env, arg, formIdKey.c_str(), &formIdValue);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get formId property");
+ 
+    char formIdBuffer[ARG_BUF_SIZE];
+    size_t formIdLength = 0;
+    result = napi_get_value_string_utf8(env, formIdValue, formIdBuffer, ARG_BUF_SIZE, &formIdLength);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get formId string");
+ 
+    std::string formId = std::string(formIdBuffer);
+    context.formId = formId;
+ 
+    bool urisPresent = false;
+    result = napi_has_named_property(env, arg, assetUrisKey.c_str(), &urisPresent);
+    CHECK_COND_RET(result == napi_ok, result, "failed to check uris property");
+    if (!urisPresent) {
+        NAPI_ERR_LOG("ParseSaveGalleryFormInfoOption urisPresent is false");
+        return napi_invalid_arg;
+    }
+ 
+    napi_value urisValue;
+    result = napi_get_named_property(env, arg, assetUrisKey.c_str(), &urisValue);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get uris property");
+ 
+    bool isArray = false;
+    result = napi_is_array(env, urisValue, &isArray);
+    CHECK_COND_RET(result == napi_ok && isArray, napi_invalid_arg, "uris is not an array");
+ 
+    uint32_t arrayLength = 0;
+    result = napi_get_array_length(env, urisValue, &arrayLength);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get array length");
+ 
+    for (uint32_t i = 0; i < arrayLength; ++i) {
+        napi_value uriValue;
+        result = napi_get_element(env, urisValue, i, &uriValue);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get array element");
+ 
+        char uriBuffer[ARG_BUF_SIZE];
+        size_t uriLength = 0;
+        result = napi_get_value_string_utf8(env, uriValue, uriBuffer, ARG_BUF_SIZE, &uriLength);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get URI string");
+        std::string assetUri = std::string(uriBuffer);
+        OHOS::DataShare::DataShareValuesBucket bucket;
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, formId);
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, assetUri);
+        context.valuesBucketArray.push_back(move(bucket));
+    }
+    return napi_ok;
+}
+ 
+static napi_status ParseSaveGalleryFormInfoOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
+{
+    const std::string formIdKey = "formId";
+    const std::string assetUrisKey = "assetUris";
+ 
+    bool formIdPresent = false;
+    napi_status result = napi_has_named_property(env, arg, formIdKey.c_str(), &formIdPresent);
+    CHECK_COND_RET(result == napi_ok, result, "failed to check formId property");
+    if (!formIdPresent) {
+        NAPI_ERR_LOG("ParseSaveGalleryFormInfoOption formIdPresent is false");
+        return napi_invalid_arg;
+    }
+ 
+    napi_value formIdValue;
+    result = napi_get_named_property(env, arg, formIdKey.c_str(), &formIdValue);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get formId property");
+ 
+    char formIdBuffer[ARG_BUF_SIZE];
+    size_t formIdLength = 0;
+    result = napi_get_value_string_utf8(env, formIdValue, formIdBuffer, ARG_BUF_SIZE, &formIdLength);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get formId string");
+ 
+    std::string formId = std::string(formIdBuffer);
+ 
+    bool urisPresent = false;
+    result = napi_has_named_property(env, arg, assetUrisKey.c_str(), &urisPresent);
+    CHECK_COND_RET(result == napi_ok, result, "failed to check uris property");
+    if (!urisPresent) {
+        NAPI_ERR_LOG("ParseSaveGalleryFormInfoOption urisPresent is false");
+        return napi_invalid_arg;
+    }
+ 
+    napi_value urisValue;
+    result = napi_get_named_property(env, arg, assetUrisKey.c_str(), &urisValue);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get uris property");
+ 
+    bool isArray = false;
+    result = napi_is_array(env, urisValue, &isArray);
+    CHECK_COND_RET(result == napi_ok && isArray, napi_invalid_arg, "uris is not an array");
+ 
+    uint32_t arrayLength = 0;
+    result = napi_get_array_length(env, urisValue, &arrayLength);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get array length");
+ 
+    for (uint32_t i = 0; i < arrayLength; ++i) {
+        napi_value uriValue;
+        result = napi_get_element(env, urisValue, i, &uriValue);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get array element");
+ 
+        char uriBuffer[ARG_BUF_SIZE];
+        size_t uriLength = 0;
+        result = napi_get_value_string_utf8(env, uriValue, uriBuffer, ARG_BUF_SIZE, &uriLength);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get URI string");
+        std::string assetUri = std::string(uriBuffer);
+        OHOS::DataShare::DataShareValuesBucket bucket;
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, formId);
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, assetUri);
+        context.valuesBucketArray.push_back(move(bucket));
+    }
+    return napi_ok;
+}
+
 static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
 {
     const std::string formId = "formId";
@@ -5874,6 +6003,38 @@ static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLi
     return CheckFormId(tempFormId);
 }
 
+static napi_value ParseArgsUpdateGalleryFormInfo(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
+        maxArgs) == napi_ok, "Failed to get object info");
+ 
+    CHECK_COND_WITH_MESSAGE(env, ParseUpdateGalleryFormInfoOption(env, context->argv[ARGS_ZERO], *context) == napi_ok,
+        "Parse formInfo Option failed");
+ 
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+ 
+static napi_value ParseArgsSaveGalleryFormInfo(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
+        maxArgs) == napi_ok, "Failed to get object info");
+ 
+    CHECK_COND_WITH_MESSAGE(env, ParseSaveGalleryFormInfoOption(env, context->argv[ARGS_ZERO], *context) == napi_ok,
+        "Parse formInfo Option failed");
+ 
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 static napi_value ParseArgsSaveFormInfo(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -5888,6 +6049,25 @@ static napi_value ParseArgsSaveFormInfo(napi_env env, napi_callback_info info,
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+static void SaveGalleryFormInfoExec(napi_env env, void *data, ResultNapiType type)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    context->resultNapiType = type;
+    string uri = PAH_STORE_FACARD_PHOTO;
+    Uri createFormIdUri(uri);
+    auto ret = UserFileClient::BatchInsert(createFormIdUri, context->valuesBucketArray);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else if (ret == E_GET_PRAMS_FAIL) {
+            context->error = OHOS_INVALID_PARAM_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        NAPI_INFO_LOG("store formInfo failed, ret: %{public}d", ret);
+    }
 }
 
 static void SaveFormInfoExec(napi_env env, void *data, ResultNapiType type)
@@ -5932,6 +6112,36 @@ static void SaveFormInfoAsyncCallbackComplete(napi_env env, napi_status status, 
     delete context;
 }
 
+static napi_value ParseArgsRemoveGalleryFormInfo(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
+        maxArgs) == napi_ok, "Failed to get object info");
+ 
+    bool present = false;
+    CHECK_COND_WITH_MESSAGE(env, napi_has_named_property(env, context->argv[ARGS_ZERO], "formId", &present) == napi_ok,
+        "Failed to get object info");
+    if (!present) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
+        return nullptr;
+    }
+ 
+    napi_value value;
+    CHECK_COND_WITH_MESSAGE(env, napi_get_named_property(env, context->argv[ARGS_ZERO], "formId", &value) == napi_ok,
+        "failed to get named property");
+    char buffer[ARG_BUF_SIZE];
+    size_t res = 0;
+    CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res) == napi_ok,
+        "failed to get string param");
+    context->formId = string(buffer);
+    CHECK_COND_WITH_MESSAGE(env, CheckFormId(context->formId) == napi_ok, "FormId is invalid");
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -5960,6 +6170,32 @@ static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+static void RemoveGalleryFormInfoExec(napi_env env, void *data, ResultNapiType type)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("RemoveGalleryFormInfoExec");
+ 
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    context->resultNapiType = type;
+    string formId = context->formId;
+    if (formId.empty()) {
+        context->error = OHOS_INVALID_PARAM_CODE;
+        return;
+    }
+    context->predicates.EqualTo(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, formId);
+    string deleteUri = PAH_REMOVE_FACARD_PHOTO;
+    Uri uri(deleteUri);
+    int ret = UserFileClient::Delete(uri, context->predicates);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        NAPI_ERR_LOG("remove formInfo failed, ret: %{public}d", ret);
+    }
 }
 
 static void RemoveFormInfoExec(napi_env env, void *data, ResultNapiType type)
@@ -6024,9 +6260,49 @@ napi_value MediaLibraryNapi::PhotoAccessSaveFormInfo(napi_env env, napi_callback
         PhotoAccessSaveFormInfoExec, SaveFormInfoAsyncCallbackComplete);
 }
 
+static void PhotoAccessSaveGalleryFormInfoExec(napi_env env, void *data)
+{
+    SaveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+ 
+napi_value MediaLibraryNapi::PhotoAccessSaveGalleryFormInfo(napi_env env, napi_callback_info info)
+{   
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsSaveGalleryFormInfo(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessSaveGalleryFormInfo",
+        PhotoAccessSaveGalleryFormInfoExec, SaveFormInfoAsyncCallbackComplete);
+}
+
 static void PhotoAccessRemoveFormInfoExec(napi_env env, void *data)
 {
     RemoveFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+
+static void PhotoAccessRemoveGalleryFormInfoExec(napi_env env, void *data)
+{
+    RemoveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+ 
+static void PhotoAccessUpdateGalleryFormInfoExec(napi_env env, void *data)
+{
+    RemoveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    SaveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+ 
+napi_value MediaLibraryNapi::PhotoAccessRemoveGalleryFormInfo(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsRemoveGalleryFormInfo(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessRemoveGalleryFormInfo",
+        PhotoAccessRemoveGalleryFormInfoExec, RemoveFormInfoAsyncCallbackComplete);
+}
+ 
+napi_value MediaLibraryNapi::PhotoAccessUpdateGalleryFormInfo(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsUpdateGalleryFormInfo(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessRemoveGalleryFormInfo",
+        PhotoAccessUpdateGalleryFormInfoExec, RemoveFormInfoAsyncCallbackComplete);
 }
 
 napi_value MediaLibraryNapi::PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info)

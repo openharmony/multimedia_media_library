@@ -67,6 +67,7 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "tab_old_photos_table_event_handler.h"
+#include "tab_facard_photos_table_event_handler.h"
 #include "vision_column.h"
 #include "vision_ocr_column.h"
 #include "form_map.h"
@@ -1654,6 +1655,9 @@ static int32_t ExecuteSql(RdbStore &store)
     }
     CHECK_AND_RETURN_RET(TabOldPhotosTableEventHandler().OnCreate(store) == NativeRdb::E_OK,
         NativeRdb::E_ERROR);
+    if (TabFaCardPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
     return NativeRdb::E_OK;
 }
 
@@ -4201,6 +4205,10 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
         AddStageVideoTaskStatus(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {
+        TabFaCardPhotosTableEventHandler().OnCreate(store);
     }
 }
 
