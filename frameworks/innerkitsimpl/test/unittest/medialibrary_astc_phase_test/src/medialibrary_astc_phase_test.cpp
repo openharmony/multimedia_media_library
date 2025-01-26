@@ -99,17 +99,13 @@ HWTEST_F(MediaLibraryAstcPhaseUnitTest, AstcPhase_001, TestSize.Level0)
     MEDIA_INFO_LOG("AstcPhase_001::End");
 }
 
-HWTEST_F(MediaLibraryAstcPhaseUnitTest, AstcPhase_002, TestSize.Level0)
+static void checkPhase2Case(MediaLibraryAstcStat& mediaLibraryAstcStat)
 {
-    MEDIA_INFO_LOG("AstcPhase_002::Start");
-    auto& mediaLibraryAstcStat = MediaLibraryAstcStat::GetInstance();
-    for (int i = 0; i < 200; i++) {
-        int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-        mediaLibraryAstcStat.AddAstcInfo(start, OHOS::Media::GenerateScene::BACKGROUND,
-            OHOS::Media::AstcGenScene::NOCHARGING_SCREENOFF);
-    }
-    EXPECT_EQ(mediaLibraryAstcStat.totalAstcCount_, 200);
-    EXPECT_EQ(mediaLibraryAstcStat.phasesStat_.phases_.size(), 2);
+    int32_t astcTestCount = 100;
+    int32_t astcTotalTestCount = 200;
+    int32_t astcTestPhaseCount = 2;
+    EXPECT_EQ(mediaLibraryAstcStat.totalAstcCount_, astcTotalTestCount);
+    EXPECT_EQ(mediaLibraryAstcStat.phasesStat_.phases_.size(), astcTestPhaseCount);
     EXPECT_EQ(mediaLibraryAstcStat.phasesStat_.phases_.count(OHOS::Media::AstcPhase::PHASE1), 1);
     {
         auto& phaseStat = mediaLibraryAstcStat.phasesStat_.phases_[OHOS::Media::AstcPhase::PHASE1];
@@ -121,12 +117,13 @@ HWTEST_F(MediaLibraryAstcPhaseUnitTest, AstcPhase_002, TestSize.Level0)
             auto& scene = phaseStat.scenes_[OHOS::Media::AstcGenScene::NOCHARGING_SCREENOFF];
             EXPECT_EQ(scene.sceneKey_, OHOS::Media::AstcGenScene::NOCHARGING_SCREENOFF);
             EXPECT_LE(scene.duration_, phaseStat.endTime_ - phaseStat.startTime_);
-            EXPECT_EQ(scene.astcCount_, 100);
+            EXPECT_EQ(scene.astcCount_, astcTestCount);
         }
     }
 
     EXPECT_EQ(mediaLibraryAstcStat.phasesStat_.phases_.count(OHOS::Media::AstcPhase::PHASE2), 1);
     {
+        int32_t astcTestCount = 100;
         auto& phaseStat = mediaLibraryAstcStat.phasesStat_.phases_[OHOS::Media::AstcPhase::PHASE2];
         EXPECT_EQ(phaseStat.phase_, OHOS::Media::AstcPhase::PHASE2);
         EXPECT_LE(phaseStat.startTime_, phaseStat.endTime_);
@@ -136,10 +133,26 @@ HWTEST_F(MediaLibraryAstcPhaseUnitTest, AstcPhase_002, TestSize.Level0)
             auto& scene = phaseStat.scenes_[OHOS::Media::AstcGenScene::NOCHARGING_SCREENOFF];
             EXPECT_EQ(scene.sceneKey_, OHOS::Media::AstcGenScene::NOCHARGING_SCREENOFF);
             EXPECT_LE(scene.duration_, phaseStat.endTime_ - phaseStat.startTime_);
-            EXPECT_EQ(scene.astcCount_, 100);
+            EXPECT_EQ(scene.astcCount_, astcTestCount);
         }
     }
+}
 
+HWTEST_F(MediaLibraryAstcPhaseUnitTest, AstcPhase_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("AstcPhase_002::Start");
+    auto& mediaLibraryAstcStat = MediaLibraryAstcStat::GetInstance();
+    for (int i = 0; i < 200; i++) {
+        int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+        mediaLibraryAstcStat.AddAstcInfo(start, OHOS::Media::GenerateScene::BACKGROUND,
+            OHOS::Media::AstcGenScene::NOCHARGING_SCREENOFF);
+    }
+    checkPhase2Case(mediaLibraryAstcStat);
+    MediaLibraryAstcStat newMediaLibraryAstcStat{};
+    mediaLibraryAstcStat.WriteAstcInfoToJsonFile(mediaLibraryAstcStat.phasesStat_,
+        mediaLibraryAstcStat.totalAstcCount_);
+    newMediaLibraryAstcStat.TryToReadAstcInfoFromJsonFile();
+    checkPhase2Case(newMediaLibraryAstcStat);
 
     MEDIA_INFO_LOG("AstcPhase_002::End");
 }
