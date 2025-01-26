@@ -253,6 +253,7 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_GETTER("photoType", JSGetMediaType),
             DECLARE_NAPI_GETTER_SETTER("displayName", JSGetFileDisplayName, JSSetFileDisplayName),
             DECLARE_NAPI_FUNCTION("getThumbnail", PhotoAccessHelperGetThumbnail),
+            DECLARE_NAPI_FUNCTION("getThumbnailData", PhotoAccessHelperGetThumbnailData),
             DECLARE_NAPI_FUNCTION("getKeyFrameThumbnail", PhotoAccessHelperGetKeyFrameThumbnail),
             DECLARE_NAPI_FUNCTION("getReadOnlyFd", JSGetReadOnlyFd),
             DECLARE_NAPI_FUNCTION("setHidden", PhotoAccessHelperSetHidden),
@@ -1720,6 +1721,21 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     return result;
 }
 
+static void JSGetThumbnailDataExecute(napi_env env, FileAssetAsyncContext* context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetThumbnailDataExecute");
+ 
+    string path = context->objectPtr->GetPath();
+#ifndef MEDIALIBRARY_COMPATIBILITY
+    if (path.empty()
+            && !context->objectPtr->GetRelativePath().empty() && !context->objectPtr->GetDisplayName().empty()) {
+        path = ROOT_MEDIA_DIR + context->objectPtr->GetRelativePath() + context->objectPtr->GetDisplayName();
+    }
+#endif
+    context->napiArrayBuffer = ThumbnailManager::QueryThumbnailData(env, context->objectPtr->GetUri(), context->type, path);
+}
+
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
 {
     MediaLibraryTracer tracer;
@@ -1750,6 +1766,35 @@ static void JSGetKeyFrameThumbnailExecute(FileAssetAsyncContext* context)
 
     context->pixelmap = ThumbnailManager::QueryKeyFrameThumbnail(context->objectPtr->GetUri(), context->beginStamp,
         context->type, path);
+}
+
+static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
+                                                    FileAssetAsyncContext* context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetThumbnailDataCompleteCallback");
+ 
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+ 
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+ 
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->data = context->napiArrayBuffer;
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+ 
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+ 
+    delete context;
 }
 
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
@@ -1826,6 +1871,25 @@ static bool GetNapiObjectFromNapiObject(napi_env env, napi_value configObj, std:
     }
 
     return true;
+}
+
+napi_value GetJSArgsForGetThumbnailData(napi_env env, size_t argc, const napi_value argv[],
+                                    unique_ptr<FileAssetAsyncContext> &asyncContext)
+{
+    for (size_t i = PARAM0; i < argc; i++) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[i], &valueType);
+        if (i == PARAM0 && valueType == napi_number) {
+            napi_get_value_int32(env, argv[PARAM0], &asyncContext->type);
+        } else {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid parameter type");
+            return nullptr;
+        }
+    }
+ 
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
 }
 
 napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value argv[],
@@ -4102,6 +4166,31 @@ napi_value FileAssetNapi::PhotoAccessHelperFavorite(napi_env env, napi_callback_
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperFavorite",
         PhotoAccessHelperFavoriteExecute, PhotoAccessHelperFavoriteComplete);
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperGetThumbnailData(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetThumbnailData");
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
+    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_TWO) ==
+        napi_ok, result, "Failed to get object info");
+    result = GetJSArgsForGetThumbnailData(env, asyncContext->argc, asyncContext->argv, asyncContext);
+    ASSERT_NULLPTR_CHECK(env, result);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperGetThumbnailData",
+        [](napi_env env, void *data) {
+            auto context = static_cast<FileAssetAsyncContext*>(data);
+            JSGetThumbnailDataExecute(env, context);
+        },
+        reinterpret_cast<CompleteCallback>(JSGetThumbnailDataCompleteCallback));
+ 
+    return result;
 }
 
 napi_value FileAssetNapi::PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info)
