@@ -53,6 +53,7 @@ class CardAssetUriObserver : public DataShare::DataShareObserver {
 public:
     explicit CardAssetUriObserver(const std::string &assetChangeUri) : assetChangeUri(assetChangeUri) {}
     ~CardAssetUriObserver() override = default;
+    void PostAssetChangeTask();
     void OnChange(const ChangeInfo &changeInfo) override;
     struct AssetChangeInfo {
         std::string assetChangeUri;
