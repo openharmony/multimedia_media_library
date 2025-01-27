@@ -509,5 +509,45 @@ int32_t MediaLibraryExtendManager::ReadPrivateMovingPhoto(string &uri, const Hid
     Uri openMovingPhotoUri(movingPhotoUri);
     return dataShareHelper_->OpenFile(openMovingPhotoUri, MEDIA_FILEMODE_READONLY);
 }
+
+static bool CheckPhotoUri(const string &uri)
+{
+    if (uri.find("..") != string::npos) {
+        return false;
+    }
+    string photoUriPrefix = "file://media/Photo/";
+    return MediaFileUtils::StartsWith(uri, photoUriPrefix);
+}
+
+std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromPhotos(const string &value,
+    vector<string> &columns)
+{
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr, "datashareHelper is nullptr");
+    if (!CheckPhotoUri(value)) {
+        MEDIA_ERR_LOG("Failed to check invalid uri: %{public}s", value.c_str());
+        return nullptr;
+    }
+    Uri queryUri(PAH_QUERY_PHOTO);
+    DataSharePredicates predicates;
+    string fileId = MediaFileUtils::GetIdFromUri(value);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    DatashareBusinessError businessError;
+    return dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
+}
+
+std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromDb(string columnName,
+    const string &value, vector<string> &columns)
+{
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr, "dataShareHelper is null");
+    if (columnName == MEDIA_DATA_DB_URI) {
+        return GetResultSetFromPhotos(value, columns);
+    }
+    Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
+    DataSharePredicates predicates;
+    predicates.EqualTo(columnName, value);
+    predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
+    DatashareBusinessError businessError;
+    return dataShareHelper_->Query(uri, predicates, columns, &businessError);
+}
 } // namespace Media
 } // namespace OHOS
