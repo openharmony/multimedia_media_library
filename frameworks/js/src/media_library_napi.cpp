@@ -5854,7 +5854,6 @@ static napi_status ParseUpdateGalleryFormInfoOption(napi_env env, napi_value arg
     napi_status result = napi_has_named_property(env, arg, formIdKey.c_str(), &formIdPresent);
     CHECK_COND_RET(result == napi_ok, result, "failed to check formId property");
     if (!formIdPresent) {
-        NAPI_ERR_LOG("ParseSaveGalleryFormInfoOption formIdPresent is false");
         return napi_invalid_arg;
     }
     napi_value formIdValue;
@@ -5871,7 +5870,6 @@ static napi_status ParseUpdateGalleryFormInfoOption(napi_env env, napi_value arg
     result = napi_has_named_property(env, arg, assetUrisKey.c_str(), &urisPresent);
     CHECK_COND_RET(result == napi_ok, result, "failed to check uris property");
     if (!urisPresent) {
-        NAPI_ERR_LOG("ParseSaveGalleryFormInfoOption urisPresent is false");
         return napi_invalid_arg;
     }
     napi_value urisValue;
@@ -5880,7 +5878,7 @@ static napi_status ParseUpdateGalleryFormInfoOption(napi_env env, napi_value arg
     bool isArray = false;
     result = napi_is_array(env, urisValue, &isArray);
     CHECK_COND_RET(result == napi_ok && isArray, napi_invalid_arg, "uris is not an array");
- 
+
     uint32_t arrayLength = 0;
     result = napi_get_array_length(env, urisValue, &arrayLength);
     CHECK_COND_RET(result == napi_ok, result, "failed to get array length");
