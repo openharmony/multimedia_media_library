@@ -103,6 +103,7 @@ public:
      */
     EXPORT int32_t CancelPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId,
         const std::vector<string> &uris);
+
     /**
      * @brief open photo or video
      *
@@ -114,6 +115,7 @@ public:
      * @version 1.0
      */
     EXPORT int32_t OpenAsset(string &uri, const string openMode, HideSensitiveType type);
+
     /**
      * @brief Open private moving photo to read
      *
@@ -122,6 +124,27 @@ public:
      * @return read fd for success and <-1> for fail
      */
     EXPORT int32_t ReadPrivateMovingPhoto(string &uri, const HideSensitiveType type);
+
+    /**
+     * @brief query photo by condition of input
+     *
+     * @param value asset uri
+     * @param columns result columns
+     * @return resultset of query
+     */
+    EXPORT std::shared_ptr<DataShare::DataShareResultSet> GetResultSetFromPhotos(const string &value,
+        vector<string> &columns);
+
+    /**
+     * @brief query photo by condition of input
+     *
+     * @param columnName query columnName
+     * @param value query condition
+     * @param columns result columns
+     * @return resultset of query
+     */
+    EXPORT std::shared_ptr<DataShare::DataShareResultSet> GetResultSetFromDb(string columnName,
+        const string &value, vector<string> &columns);
 private:
 
     int32_t userId_;
