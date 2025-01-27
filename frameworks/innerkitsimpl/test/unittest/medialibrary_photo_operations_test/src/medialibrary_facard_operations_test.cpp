@@ -115,7 +115,7 @@ void SetFaCardTables()
         );";
     vector<string> createTableSqlList = {
         PhotoColumn::CREATE_PHOTO_TABLE,
-        CREATE_FACARD_TABLE_SQL
+        createFacardTableSql
     };
     for (auto &createTableSql : createTableSqlList) {
         if (g_rdbStore == nullptr) {
