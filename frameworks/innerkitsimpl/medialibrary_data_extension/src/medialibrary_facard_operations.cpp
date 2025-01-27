@@ -49,6 +49,13 @@ namespace Media {
 std::mutex MediaLibraryFaCardOperations::mutex_;
 const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata";
 static std::map<std::string, std::vector<std::shared_ptr<CardAssetUriObserver>>> formAssetObserversMap;
+static std::map<ChangeType, int> changeTypeMap = {
+    { ChangeType::INSERT, 0 },
+    { ChangeType::DELETE, 1 },
+    { ChangeType::UPDATE, 2 },
+    { ChangeType::OTHER, 3 },
+    { ChangeType::INVAILD, 4 },
+};
  
 bool CardAssetUriObserver::isTaskPosted = false;
 std::shared_ptr<AppExecFwk::EventHandler> CardAssetUriObserver::deviceHandler_ =
@@ -99,11 +106,7 @@ static string GetStringObject(MediaLibraryCommand &cmd, const string &columnName
  
 void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    if (changeInfo.changeType_ == ChangeType::INSERT ||
-        changeInfo.changeType_ == ChangeType::DELETE ||
-        changeInfo.changeType_ == ChangeType::UPDATE ||
-        changeInfo.changeType_ == ChangeType::OTHER ||
-        changeInfo.changeType_ == ChangeType::INVAILD) {
+    if (changeTypeMap.find(changeInfo.changeType_) != changeTypeMap.end()) {
         std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
         CardAssetUriObserver::assetChanges.insert(
             AssetChangeInfo(assetChangeUri, static_cast<int>(changeInfo.changeType_)));
@@ -126,7 +129,8 @@ void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
                 auto result = AAFwk::AbilityManagerClient::GetInstance()->StartExtensionAbility(
                     want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
                 CardAssetUriObserver::assetChanges.clear();
-                CardAssetUriObserver::isTaskPosted = false;}, "StartExtensionAbility", DELAY_MILLISECONDS);
+                CardAssetUriObserver::isTaskPosted = false;
+                }, "StartExtensionAbility", DELAY_MILLISECONDS);
         }
     }
 }
