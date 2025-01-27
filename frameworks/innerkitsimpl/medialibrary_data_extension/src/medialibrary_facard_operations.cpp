@@ -103,35 +103,41 @@ static string GetStringObject(MediaLibraryCommand &cmd, const string &columnName
     }
     return "";
 }
- 
+
+void CardAssetUriObserver::PostAssetChangeTask()
+{
+    if (!CardAssetUriObserver::isTaskPosted) {
+        CardAssetUriObserver::isTaskPosted = true;
+        const int DELAY_MILLISECONDS = 5000;
+        CardAssetUriObserver::deviceHandler_->PostTask([this]() {
+            std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
+            std::vector<std::string> assetChangeUris;
+            std::vector<int> assetChangeTypes;
+            for (const auto& change : CardAssetUriObserver::assetChanges) {
+                assetChangeUris.push_back(change.assetChangeUri);
+                assetChangeTypes.push_back(change.assetChangeType);
+            }
+            AAFwk::Want want;
+            want.SetElementName("com.huawei.hmos.photos", "FACardServiceAbility");
+            want.SetParam("assetChangeUris", assetChangeUris);
+            want.SetParam("assetChangeTypes", assetChangeTypes);
+            int32_t userId = -1;
+            auto result = AAFwk::AbilityManagerClient::GetInstance()->StartExtensionAbility(
+                want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
+            CardAssetUriObserver::assetChanges.clear();
+            CardAssetUriObserver::isTaskPosted = false;
+            }, "StartExtensionAbility", DELAY_MILLISECONDS);
+    }
+}
+
 void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
 {
     if (changeTypeMap.find(changeInfo.changeType_) != changeTypeMap.end()) {
         std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
         CardAssetUriObserver::assetChanges.insert(
             AssetChangeInfo(assetChangeUri, static_cast<int>(changeInfo.changeType_)));
-        if (!CardAssetUriObserver::isTaskPosted) {
-            CardAssetUriObserver::isTaskPosted = true;
-            const int DELAY_MILLISECONDS = 5000;
-            CardAssetUriObserver::deviceHandler_->PostTask([this]() {
-                std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
-                std::vector<std::string> assetChangeUris;
-                std::vector<int> assetChangeTypes;
-                for (const auto& change : CardAssetUriObserver::assetChanges) {
-                    assetChangeUris.push_back(change.assetChangeUri);
-                    assetChangeTypes.push_back(change.assetChangeType);
-                }
-                AAFwk::Want want;
-                want.SetElementName("com.huawei.hmos.photos", "FACardServiceAbility");
-                want.SetParam("assetChangeUris", assetChangeUris);
-                want.SetParam("assetChangeTypes", assetChangeTypes);
-                int32_t userId = -1;
-                auto result = AAFwk::AbilityManagerClient::GetInstance()->StartExtensionAbility(
-                    want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
-                CardAssetUriObserver::assetChanges.clear();
-                CardAssetUriObserver::isTaskPosted = false;
-                }, "StartExtensionAbility", DELAY_MILLISECONDS);
-        }
+
+        PostAssetChangeTask();
     }
 }
  
