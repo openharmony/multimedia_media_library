@@ -1337,6 +1337,20 @@ static bool MergeAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static void GetAlbumUpdateCoverUri(shared_ptr<PhotoAlbum>& photoAlbum, string& uri)
+{
+    if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
+        uri = PAH_PORTRAIT_ANAALBUM_COVER_URI;
+    } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
+        uri = PAH_GROUP_ANAALBUM_COVER_URI;
+    } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
+        photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+        uri = PAH_HIGHLIGHT_COVER_URI;
+    } else {
+        uri = PAH_UPDATE_PHOTO_ALBUM;
+    }
+}
+
 static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumChangeOperation changeOperation,
     string& uri, DataShare::DataShareValuesBucket& valuesBucket, string& property)
 {
@@ -1361,16 +1375,7 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
             valuesBucket.Put(property, photoAlbum->GetAlbumName());
             break;
         case AlbumChangeOperation::SET_COVER_URI:
-            if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
-                uri = PAH_PORTRAIT_ANAALBUM_COVER_URI;
-            } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::GROUP_PHOTO) {
-                uri = PAH_GROUP_ANAALBUM_COVER_URI;
-            } else if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
-                photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-                uri = PAH_HIGHLIGHT_COVER_URI;
-            } else {
-                uri = PAH_UPDATE_PHOTO_ALBUM;
-            }
+            GetAlbumUpdateCoverUri(photoAlbum, uri);
             property = PhotoAlbumColumns::ALBUM_COVER_URI;
             valuesBucket.Put(property, photoAlbum->GetCoverUri());
             break;
