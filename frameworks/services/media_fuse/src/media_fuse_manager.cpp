@@ -311,6 +311,10 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
     uint32_t realFlag = static_cast<uint32_t>(flags) & (O_RDONLY | O_WRONLY | O_RDWR | O_TRUNC | O_APPEND);
     string fileId;
     string target;
+    if (MEDIA_OPEN_MODE_MAP.find(realFlag) == MEDIA_OPEN_MODE_MAP.end()) {
+        MEDIA_ERR_LOG("Open mode err, flag = %{public}u", realFlag);
+        return E_ERR;
+    }
     GetFileIdFromUri(fileId, path);
     GetPathFromFileId(target, fileId);
     fd = OpenFile(target, fileId, MEDIA_OPEN_MODE_MAP.at(realFlag));
