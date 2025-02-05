@@ -261,6 +261,7 @@ enum RestoreError {
     UPDATE_PHOTOS_FAILED,
     UPDATE_FAILED,
     PARSE_TRACK_FAILED,
+    TABLE_LACK_OF_COLUMN,
 };
 
 enum class PhotoRelatedType {
@@ -290,6 +291,7 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::UPDATE_PHOTOS_FAILED, "RESTORE_UPDATE_PHOTOS_FAILED"},
     { RestoreError::UPDATE_FAILED, "RESTORE_UPDATE_FAILED"},
     { RestoreError::PARSE_TRACK_FAILED, "RESTORE_HIGHLIGHT_PARSE_TRACK_FAILED"},
+    { RestoreError::TABLE_LACK_OF_COLUMN, "RESTORE_TABLE_LACK_OF_COLUMN"},
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {

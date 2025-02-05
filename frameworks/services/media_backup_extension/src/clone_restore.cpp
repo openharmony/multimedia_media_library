@@ -254,6 +254,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     InitThumbnailStatus();
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
+    cloneRestoreGeo_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -310,6 +311,7 @@ void CloneRestore::RestorePhoto()
 
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
+    cloneRestoreGeo_.ReportGeoRestoreTask();
     ReportPortraitCloneStat(sceneCode_);
 }
 
@@ -342,6 +344,7 @@ void CloneRestore::RestoreAlbum()
 
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
+    cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
 }
 
 void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount,
@@ -395,6 +398,7 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos);
+    cloneRestoreGeo_.RestoreMaps(fileInfos);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
@@ -1617,6 +1621,8 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
     fileInfo.bundleName = this->photosClone_.FindBundleName(fileInfo);
     fileInfo.photoQuality = this->photosClone_.FindPhotoQuality(fileInfo);
     fileInfo.sourcePath = this->photosClone_.FindSourcePath(fileInfo);
+    fileInfo.latitude = GetDoubleVal("latitude", resultSet);
+    fileInfo.longitude = GetDoubleVal("longitude", resultSet);
 }
 
 bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInfo)
