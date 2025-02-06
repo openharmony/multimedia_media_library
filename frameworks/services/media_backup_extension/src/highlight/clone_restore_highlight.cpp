@@ -643,7 +643,7 @@ void CloneRestoreHighlight::GetHighlightNewAlbumId(HighlightAlbumInfo &info)
     if (info.aiAlbumIdOld.has_value()) {
         auto it = std::find_if(analysisInfos_.begin(), analysisInfos_.end(),
             [info](const AnalysisAlbumInfo &analysisInfo) {
-                return analysisInfo.albumIdOld.has_value() && 
+                return analysisInfo.albumIdOld.has_value() &&
                     analysisInfo.albumIdOld.value() == info.aiAlbumIdOld.value();
             });
         if (it != analysisInfos_.end()) {

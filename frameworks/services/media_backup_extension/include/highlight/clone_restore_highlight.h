@@ -277,7 +277,7 @@ template<typename T>
 void CloneRestoreHighlight::PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
     const std::optional<T>& optionalValue)
 {
-    if(optionalValue.has_value()) {
+    if (optionalValue.has_value()) {
         if constexpr (std::is_same_v<std::decay_t<T>, int32_t>) {
             values.PutInt(columnName, optionalValue.value());
         } else if constexpr (std::is_same_v<std::decay_t<T>, int64_t>) {
@@ -294,7 +294,7 @@ template<typename T>
 void CloneRestoreHighlight::PutIfInIntersection(NativeRdb::ValuesBucket& values, const std::string& columnName,
     const std::optional<T>& optionalValue, const std::unordered_set<std::string> &intersection)
 {
-    if(intersection.count(columnName) > 0) {
+    if (intersection.count(columnName) > 0) {
         PutIfPresent<T>(values, columnName, optionalValue);
         return;
     }
