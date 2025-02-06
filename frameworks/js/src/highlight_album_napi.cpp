@@ -187,11 +187,8 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
     }
-    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
-    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
-    int albumId = photoAlbum->GetAlbumId();
-    int subType = photoAlbum->GetPhotoAlbumSubType();
+    int32_t albumId = context->albumId;
+    PhotoAlbumSubType subType = context->subType;
     Uri uri (uriStr);
     if (subType == PhotoAlbumSubType::HIGHLIGHT) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
@@ -539,7 +536,9 @@ napi_value HighlightAlbumNapi::JSGetHighlightAlbumInfo(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only and smart highlight album can get highlight album info");
-
+    
+    asyncContext->albumId = photoAlbum->GetAlbumId();
+    asyncContext->subType = photoAlbum->GetPhotoAlbumSubType();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetHighlightAlbumInfo",
         JSGetHighlightAlbumInfoExecute, JSGetHighlightAlbumInfoCompleteCallback);
