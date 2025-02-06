@@ -70,6 +70,8 @@ struct HighlightAlbumNapiAsyncContext : public NapiError {
     std::string highlightAlbumInfo;
     std::vector<std::string> assetIdArray;
     std::vector<int32_t> orderPositionArray;
+    int32_t albumId;
+    PhotoAlbumSubType subType;
 
     int32_t highlightAlbumInfoType = HighlightAlbumInfoType::INVALID_INFO;
     int32_t highlightUserActionType = HighlightUserActionType::INVALID_USER_ACTION;
