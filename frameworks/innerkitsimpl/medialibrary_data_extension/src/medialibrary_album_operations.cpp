@@ -2412,7 +2412,7 @@ static void GetHighlightCoverStatus(const string &albumId, int32_t &currentCover
     if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         currentCoverStatus = GetInt32Val(COVER_STATUS, resultSet);
     }
-} 
+}
 
 int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
 {
@@ -2480,7 +2480,7 @@ int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredica
     int32_t newCoverStatus = currentCoverStatus | HIGHLIGHT_COVER_STATUS_TITLE;
     std::string updateAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
         "' WHERE " + ALBUM_ID + " = " + highlightAlbumId;
-    std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " + 
+    std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " +
         COVER_STATUS + " = " + to_string(newCoverStatus) + " WHERE " +
         ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + highlightAlbumId + " LIMIT 1)";
     vector<string> updateSqls = { updateAlbumName, updateCoverInfoTable };
