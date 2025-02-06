@@ -775,9 +775,32 @@ static int32_t GetSystemRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> rdb
     return E_SUCCESS;
 }
 
+static int32_t GetIsUpdateAllAnalysis(const shared_ptr<MediaLibraryRdbStore> rdbStore, bool &isUpdateAllAnalysis)
+{
+    vector<string> columns = { REFRESHED_ALBUM_ID };
+    NativeRdb::RdbPredicates predicates(ALBUM_REFRESH_TABLE);
+    predicates.EqualTo(REFRESHED_ALBUM_ID, -1);
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Failed query RefreshAlbum.");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        isUpdateAllAnalysis = true;
+        MEDIA_INFO_LOG("isUpdateAllAnalysis is true.");
+    }
+    resultSet->Close();
+    return E_SUCCESS;
+}
+
 static int32_t GetAnalysisRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     vector<RefreshAlbumData> &analysisAlbums, bool &isUpdateAllAnalysis)
 {
+    int ret = GetIsUpdateAllAnalysis(rdbStore, isUpdateAllAnalysis);
+    if (ret == E_HAS_DB_ERROR) {
+        return E_HAS_DB_ERROR;
+    } else if (isUpdateAllAnalysis) {
+        MEDIA_INFO_LOG("UpdateAllAnalysis.");
+        return E_SUCCESS;
+    }
+
     vector<string> columns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_SUBTYPE };
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.SetWhereClause(PhotoAlbumColumns::ALBUM_ID + " IN (SELECT " + REFRESHED_ALBUM_ID +
@@ -788,11 +811,7 @@ static int32_t GetAnalysisRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> r
         RefreshAlbumData data;
         data.albumId = GetAlbumId(resultSet);
         data.albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(resultSet));
-        if (data.albumId == -1) {
-            isUpdateAllAnalysis = true;
-        } else {
-            analysisAlbums.push_back(data);
-        }
+        analysisAlbums.push_back(data);
     }
     resultSet->Close();
     return E_SUCCESS;
