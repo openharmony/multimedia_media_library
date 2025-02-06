@@ -454,7 +454,7 @@ void CloneRestoreCVAnalysis::GetSaliencyInsertValue(NativeRdb::ValuesBucket &val
     CloneRestoreHighlight::PutIfInIntersection(value, "saliency_x", info.saliencyX, intersection);
     CloneRestoreHighlight::PutIfInIntersection(value, "saliency_y", info.saliencyY, intersection);
     CloneRestoreHighlight::PutIfInIntersection(value, "saliency_version", info.saliencyVersion, intersection);
-    CloneRestoreHighlight::PutIfInIntersection(value, "analysis_version", info.analysisVerison, intersection);
+    CloneRestoreHighlight::PutIfInIntersection(value, "analysis_version", info.analysisVersion, intersection);
 }
 
 void CloneRestoreCVAnalysis::GetAnalysisRecommendationInfos(CloneRestoreHighlight &cloneHighlight)

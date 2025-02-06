@@ -394,7 +394,7 @@ int32_t CloneRestore::GetHighlightCloudMediaCnt()
         "INNER JOIN AnalysisPhotoMap AS m ON a.album_id = m.map_album"
         "INNER JOIN Photos AS p ON p.file_id = m.map_asset"
         "WHERE a.album_subtype IN (4104, 4105) AND p.position = 2";
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this.mediaRdb_, QUERY_SQL, {});
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this->mediaRdb_, QUERY_SQL, {});
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("query count of highlight cloud media failed.");
         return -1;
