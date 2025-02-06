@@ -744,7 +744,11 @@ bool BaseRestore::RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t 
             fileInfo.orientation, type == MIGRATE_CLOUD_LCD_TYPE), false, "Rotate image fail!");
         type == MIGRATE_CLOUD_LCD_TYPE ? rotateLcdMigrateFileNumber_++ : rotateThmMigrateFileNumber_++;
     } while (0);
-    type == MIGRATE_CLOUD_LCD_TYPE ? lcdMigrateFileNumber_++ : thumbMigrateFileNumber_++;
+    if (fileInfo.localMediaId == -1) {
+        type == MIGRATE_CLOUD_LCD_TYPE ? cloudLcdCount_++ : cloudThumbnailCount_++;
+    } else {
+        type == MIGRATE_CLOUD_LCD_TYPE ? localLcdCount_++ : localThumbnailCount_++;
+    }
     return true;
 }
 
@@ -848,7 +852,7 @@ void BaseRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t
         HandleFailData(fileInfos, dentryFailedThumb, DENTRY_INFO_THM);
     }
     fileMoveCount = SetVisiblePhoto(fileInfos);
-    migrateFileNumber_ += fileMoveCount;
+    successCloudMetaNumber_ = fileMoveCount;
     migrateVideoFileNumber_ += videoFileMoveCount;
     MEDIA_INFO_LOG("END STEP 6 MOVE");
 }
@@ -1001,6 +1005,7 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, rowNum);
     MEDIA_INFO_LOG("the insert result in insertCloudPhoto is %{public}d, the rowNum is %{public}lld", errCode, rowNum);
+    totalCloudMetaNumber_ += rowNum;
     if (errCode != E_OK) {
         if (needReportFailed_) {
             UpdateFailedFiles(fileInfos, RestoreError::INSERT_FAILED);
@@ -1235,7 +1240,8 @@ void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::
         .ReportTask(restoreExInfo)
         .ReportTotal(std::to_string(errorCode_), GetRestoreTotalInfo())
         .ReportTimeCost()
-        .ReportProgress("end", std::to_string(MediaFileUtils::UTCTimeSeconds()));
+        .ReportProgress("end", std::to_string(MediaFileUtils::UTCTimeSeconds()))
+        .ReportUpgradeEnh(std::to_string(errorCode_), GetUpgradeEnhance());
 }
 
 std::string BaseRestore::GetRestoreExInfo()
@@ -1790,6 +1796,20 @@ int32_t BaseRestore::RemoveDentryFileWithConflict(const FileInfo &fileInfo)
         (void)MediaFileUtils::DeleteDir(thumbPath);
     }
     return E_OK;
+}
+
+std::string BaseRestore::GetUpgradeEnhance()
+{
+    std::stringstream upgradeEnhance;
+    upgradeEnhance << localLcdCount_;
+    upgradeEnhance << "," << localThumbnailCount_;
+    upgradeEnhance << "," << cloudLcdCount_;
+    upgradeEnhance << "," << cloudThumbnailCount_;
+    upgradeEnhance << "," << totalCloudMetaNumber_;
+    upgradeEnhance << "," << successCloudMetaNumber_;
+    upgradeEnhance << "," << rotateLcdMigrateFileNumber_;
+    upgradeEnhance << "," << rotateThmMigrateFileNumber_;
+    return upgradeEnhance.str();
 }
 } // namespace Media
 } // namespace OHOS
