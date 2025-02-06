@@ -240,6 +240,17 @@ int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<str
         return deleteRow;
     }
 
+    if (subtype == PhotoAlbumSubType::HIGHLIGHT || subtype == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("RdbStore is nullptr");
+        } else {
+            int32_t updateHighlight = MediaLibraryRdbUtils::UpdateHighlightPlayInfo(rdbStore, albumId);
+            if (updateHighlight < 0) {
+                MEDIA_ERR_LOG("Update highlight playinfo fail");
+            }
+        }
+    }
     vector<string> updateAlbumIds;
     NativeRdb::RdbPredicates rdbPredicate { ANALYSIS_PHOTO_MAP_TABLE };
     GetDismissAssetsPredicates(rdbPredicate, updateAlbumIds,
@@ -277,7 +288,8 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
     string strSubtype = whereArgsId[whereArgsId.size() - 1];
     int32_t subtype = atoi(strSubtype.c_str());
     if (subtype != PhotoAlbumSubType::CLASSIFY && subtype != PhotoAlbumSubType::PORTRAIT &&
-        subtype != PhotoAlbumSubType::GROUP_PHOTO) {
+        subtype != PhotoAlbumSubType::GROUP_PHOTO && subtype != PhotoAlbumSubType::HIGHLIGHT &&
+        subtype != PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         MEDIA_ERR_LOG("Invalid album subtype: %{public}d", subtype);
         return E_INVALID_ARGUMENTS;
     }
