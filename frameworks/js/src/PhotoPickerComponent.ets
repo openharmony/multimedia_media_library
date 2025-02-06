@@ -21,6 +21,7 @@ import { bundleManager } from '@kit.AbilityKit';
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
+const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
 
 @Component
 export struct PhotoPickerComponent {
@@ -376,10 +377,12 @@ export struct PhotoPickerComponent {
       filterType = FILTER_MEDIA_TYPE_IMAGE;
     } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
       filterType = FILTER_MEDIA_TYPE_VIDEO;
+    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
+      filterType = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
     } else {
       filterType = FILTER_MEDIA_TYPE_ALL;
     }
-    console.info('PhotoPickerComponent convertMIMETypeToFilterType' + JSON.stringify(filterType));
+    console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
   }
 }
