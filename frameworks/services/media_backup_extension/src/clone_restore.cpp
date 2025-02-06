@@ -349,10 +349,10 @@ void CloneRestore::GetAccountValid()
         MEDIA_ERR_LOG("new account logins failed");
         return;
     }
-    MEDIA_INFO_LOG("clone the old id is %{public}s, new id is %{public}s", 
+    MEDIA_INFO_LOG("clone the old id is %{public}s, new id is %{public}s",
         BackupFileUtils::GarbleFilePath(oldId, sceneCode_).c_str(),
         BackupFileUtils::GarbleFilePath(newId, sceneCode_).c_str());
-    isAccountValid_ = (oldId != "" && oldId == newId)
+    isAccountValid_ = (oldId != "" && oldId == newId);
 }
 
 void CloneRestore::RestoreAlbum()
@@ -385,18 +385,18 @@ void CloneRestore::RestoreAlbum()
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
     cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
-    RestoreHighlightAlbums(CloudSyncHelper::GetInstance()->IsSyncSwitchOpen);
+    RestoreHighlightAlbums(CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
 }
 
-int32_t GetHighlightCloudMediaCnt()
+int32_t CloneRestore::GetHighlightCloudMediaCnt()
 {
-    const std::string QUERY_SQL = "SLECET COUNT(1) AS count FROM AnalysisAlbum AS a"
+    const std::string QUERY_SQL = "SELECT COUNT(1) AS count FROM AnalysisAlbum AS a"
         "INNER JOIN AnalysisPhotoMap AS m ON a.album_id = m.map_album"
         "INNER JOIN Photos AS p ON p.file_id = m.map_asset"
         "WHERE a.album_subtype IN (4104, 4105) AND p.position = 2";
-    std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this.meidaRdb_, QUERY_SQL, {});
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this.mediaRdb_, QUERY_SQL, {});
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("query count of highlight cloud meida failed.");
+        MEDIA_ERR_LOG("query count of highlight cloud media failed.");
         return -1;
     }
     int32_t cnt = GetInt32Val("count", resultSet);
@@ -405,14 +405,14 @@ int32_t GetHighlightCloudMediaCnt()
     return cnt;
 }
 
-void RestoreHighlightAlbums(bool isSyncSwitchOpen)
+void CloneRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
 {
     int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
     UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
         .Report("Highlight Restore", "",
             "sceneCode_: " + std::to_string(this->sceneCode_) +
             ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
-            ", isAccountValid_ " + std::to_string(isAccountValid_) +
+            ", isAccountValid_:" + std::to_string(isAccountValid_) +
             ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
     if (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen)) {
         cloneRestoreHighlight_.RestoreAlbums();
