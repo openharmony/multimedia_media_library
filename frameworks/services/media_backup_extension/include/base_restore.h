@@ -73,7 +73,7 @@ protected:
     std::vector<NativeRdb::ValuesBucket> GetCloudInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
-    void GetAccountValid();
+    virtual void GetAccountValid();
     void GetSourceDeviceInfo();
     bool IsRestorePhoto();
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
