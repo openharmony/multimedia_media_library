@@ -32,6 +32,7 @@
 #include "backup_database_utils.h"
 #include "photo_album_clone.h"
 #include "photos_clone.h"
+#include "clone_restore_geo.h"
 
 namespace OHOS {
 namespace Media {
@@ -209,6 +210,7 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets;
+    CloneRestoreGeo cloneRestoreGeo_;
 };
 
 template<typename T>
