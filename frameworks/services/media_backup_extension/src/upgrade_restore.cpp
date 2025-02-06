@@ -372,8 +372,8 @@ void UpgradeRestore::RestorePhotoInner()
         if (isAccountValid_ && isSyncSwitchOpen) {
             MEDIA_INFO_LOG("here cloud clone");
             RestoreCloudFromGallery();
-            MEDIA_INFO_LOG("Migrate LCD is :%{public}" PRIu64 ",THM: %{public}" PRIu64
-            ",Rotate LCD %{public}" PRIu64 ",THM: %{public}" PRIu64 ", migrateCloud: %{public}" PRIu64
+            MEDIA_INFO_LOG("Migrate LCD:%{public}" PRIu64 ",THM:%{public}" PRIu64
+            ",Rotate LCD:%{public}" PRIu64 ",THM: %{public}" PRIu64 ", migrateCloud: %{public}" PRIu64
             ", migrateDatabase: %{public}" PRIu64,
             (cloudLcdCount_.load(std::memory_order_relaxed) + localLcdCount_.load(std::memory_order_relaxed)),
             (cloudThumbnailCount_.load(std::memory_order_relaxed) +
