@@ -372,14 +372,10 @@ void UpgradeRestore::RestorePhotoInner()
         if (isAccountValid_ && isSyncSwitchOpen) {
             MEDIA_INFO_LOG("here cloud clone");
             RestoreCloudFromGallery();
-            MEDIA_INFO_LOG("Migrate LCD is :%{public}" PRIu64 ",THM: %{public}" PRIu64
-            ",Rotate LCD %{public}" PRIu64 ",THM: %{public}" PRIu64 ", migrateCloud: %{public}" PRIu64
-            ", migrateDatabase: %{public}" PRIu64,
-            (cloudLcdCount_.load(std::memory_order_relaxed) + localLcdCount_.load(std::memory_order_relaxed)),
-            (cloudThumbnailCount_.load(std::memory_order_relaxed) +
-            localThumbnailCount_.load(std::memory_order_relaxed)),
-            rotateLcdMigrateFileNumber_.load(), rotateThmMigrateFileNumber_.load(),
-            totalCloudMetaNumber_.load(), migrateDatabaseNumber_.load());
+            MEDIA_INFO_LOG("Migrate Lcd is :%{public}" PRIu64 ",Thm: %{public}" PRIu64
+            ",Rotate Lcd %{public}" PRIu64 ",Thm: %{public}" PRIu64,
+            lcdMigrateFileNumber_.load(), thumbMigrateFileNumber_.load(),
+            rotateLcdMigrateFileNumber_.load(), rotateThmMigrateFileNumber_.load());
         }
     } else {
         maxId_ = 0;
