@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
+#include <securec.h>
 
 #include "moving_photo_impl.h"
 #include "media_file_utils.h"
@@ -302,12 +303,14 @@ int32_t MovingPhotoImpl::RequestContentToArrayBuffer()
             imageUri_.c_str(), static_cast<int32_t>(resourceType_));
         return E_HAS_FS_ERROR;
     }
+    memset_s(arrayBufferData_, fileSize, 0, fileSize);
     arrayBufferLength_ = fileSize;
 
     size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), arrayBufferData_, fileSize));
     if (readBytes != fileSize) {
         MEDIA_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, error: %{public}d",
             readBytes, fileSize, errno);
+        free(arrayBufferData_);
         return E_HAS_FS_ERROR;
     }
     return E_OK;
