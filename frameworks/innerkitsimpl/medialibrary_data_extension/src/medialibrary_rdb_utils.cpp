@@ -50,6 +50,7 @@
 #include "location_column.h"
 #include "search_column.h"
 #include "story_cover_info_column.h"
+#include "story_play_info_column.h"
 #include "power_efficiency_manager.h"
 #include "rdb_sql_utils.h"
 #include "medialibrary_restore.h"
@@ -1081,8 +1082,6 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     data.newTotalCount = newCount;
     if (subtype != PhotoAlbumSubType::HIGHLIGHT && subtype != PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         SetCover(fileResult, data, values, hiddenState);
-    } else {
-        RefreshHighlightAlbum(data.albumId);
     }
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
         subtype > PhotoAlbumSubType::ANALYSIS_END)) {
@@ -1478,6 +1477,21 @@ int32_t MediaLibraryRdbUtils::UpdateRemovedAssetToTrash(const shared_ptr<MediaLi
     CHECK_AND_RETURN_RET_LOG(updateRows > 0, E_HAS_DB_ERROR,
         "Failed to remove assets, updateRows: %{public}d", updateRows);
     return updateRows;
+}
+
+int32_t MediaLibraryRdbUtils::UpdateHighlightPlayInfo(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const string &albumId)
+{
+    MEDIA_INFO_LOG("Start update highlight play info on dismiss highlight asset");
+    const std::string UPDATE_HIGHLIGHT_PLAY_INFO = "UPDATE tab_highlight_play_info SET status = 1 "
+        "WHERE album_id = (SELECT id FROM tab_highlight_album WHERE album_id = " + albumId + " LIMIT 1)";
+    
+    int32_t ret = rdbStore->ExecuteSql(UPDATE_HIGHLIGHT_PLAY_INFO);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to execute sql:%{public}s", UPDATE_HIGHLIGHT_PLAY_INFO.c_str());
+        return ret;
+    }
+    return ret;
 }
 
 int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore,

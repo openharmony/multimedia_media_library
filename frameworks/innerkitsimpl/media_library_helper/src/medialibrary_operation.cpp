@@ -287,6 +287,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_PORTRAIT_IS_ME, OperationType::PORTRAIT_IS_ME },
         { OPRN_PORTRAIT_ALBUM_NAME, OperationType::PORTRAIT_ALBUM_NAME },
         { OPRN_PORTRAIT_MERGE_ALBUM, OperationType::PORTRAIT_MERGE_ALBUM },
+        { OPRN_HIGHLIGHT_ALBUM_NAME, OperationType::HIGHLIGHT_ALBUM_NAME },
+        { OPRN_HIGHLIGHT_COVER_URI, OperationType::HIGHLIGHT_COVER_URI },
         { OPRN_DISMISS_ASSET, OperationType::DISMISS_ASSET },
         { OPRN_PORTRAIT_COVER_URI, OperationType::PORTRAIT_COVER_URI },
         { OPRN_SUBMIT_CACHE, OperationType::SUBMIT_CACHE },
