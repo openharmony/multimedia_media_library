@@ -26,6 +26,8 @@
 
 #include "base_restore.h"
 #include "backup_const.h"
+#include "clone_restore_cv_analysis.h"
+#include "clone_restore_highlight.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -177,6 +179,9 @@ private:
     bool BackupKvStore();
     void GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     int32_t GetNoNeedMigrateCount() override;
+    void GetAccountValid() override;
+    int32_t GetHighlightCloudMediaCnt();
+    void RestoreHighlightAlbums(bool isSyncSwitchOpen);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -211,6 +216,8 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets;
     CloneRestoreGeo cloneRestoreGeo_;
+    CloneRestoreHighlight cloneRestoreHighlight_;
+    CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;
 };
 
 template<typename T>

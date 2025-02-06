@@ -57,6 +57,8 @@ ohos_shared_library("mediabackup") {
     "./src/clone_restore.cpp",
     "./src/geo_knowledge/clone_restore_geo.cpp",
     "./src/geo_knowledge/geo_knowledge_restore.cpp",
+    "./src/highlight/clone_restore_cv_analysis.cpp",
+    "./src/highlight/clone_restore_highlight.cpp",
     "./src/highlight/highlight_restore.cpp",
     "./src/log/backup_hi_audit.cpp",
     "./src/log/backup_hi_audit_helper.cpp",
