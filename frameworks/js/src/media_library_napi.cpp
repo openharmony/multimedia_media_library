@@ -101,6 +101,7 @@ const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 10;
 const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 150;
+const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 
@@ -2706,6 +2707,10 @@ void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbac
         uint32_t len = 0;
         if (!parcel->ReadUint32(len)) {
             NAPI_ERR_LOG("Failed to read sub uri list length");
+            return;
+        }
+        if (len > MAX_LEN_LIMIT) {
+            NAPI_ERR_LOG("len exceed the limit.");
             return;
         }
         for (uint32_t i = 0; i < len; i++) {
