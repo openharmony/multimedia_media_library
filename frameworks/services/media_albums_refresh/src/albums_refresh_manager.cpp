@@ -153,7 +153,7 @@ static int32_t GetAnalysisRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> r
     refreshAlbumPredicates.EqualTo(REFRESHED_ALBUM_ID, -1);
     vector<string> columns = { REFRESHED_ALBUM_ID };
     auto resultSet = rdbStore->Query(refreshAlbumPredicates, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow()) {
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == E_OK) {
         resultSet->Close();
         isUpdateAllAnalysis = true;
         return E_OK;
