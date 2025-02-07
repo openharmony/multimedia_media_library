@@ -2882,17 +2882,17 @@ napi_value ChangeListenerNapi::BuildSharedPhotoAssetsObj(const napi_env& env,
 {
     napi_value value = nullptr;
     napi_status status = napi_create_array_with_length(env, wrapper->uriSize_, &value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Create array error!");
-        return value;
-    }
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
+    napi_value tmpValue = nullptr;
+    status = napi_create_array_with_length(env, 0, &tmpValue);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
     if (wrapper->uriSize_ > MAX_QUERY_LIMIT) {
         NAPI_WARN_LOG("BuildSharedPhotoAssetsObj uriSize is over limit");
-        return value;
+        return tmpValue;
     }
     if (wrapper->sharedAssets_ == nullptr) {
         NAPI_WARN_LOG("wrapper sharedAssets is nullptr");
-        return value;
+        return tmpValue;
     }
     size_t elementIndex = 0;
     while (elementIndex < wrapper->sharedAssetsRowObjVector_.size()) {
@@ -2906,13 +2906,13 @@ napi_value ChangeListenerNapi::BuildSharedPhotoAssetsObj(const napi_env& env,
         }
         if (assetValue == nullptr) {
             wrapper->sharedAssets_->Close();
-            return value;
+            return tmpValue;
         }
         status = napi_set_element(env, value, elementIndex++, assetValue);
         if (status != napi_ok) {
             NAPI_ERR_LOG("Set photo asset value failed");
             wrapper->sharedAssets_->Close();
-            return value;
+            return tmpValue;
         }
     }
     wrapper->sharedAssets_->Close();

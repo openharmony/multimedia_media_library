@@ -275,7 +275,7 @@ int32_t MediaScannerObj::Commit()
             mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
         }
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
-            if (data_->GetForAdd()) {
+            if (data_->GetForAdd() && data_->GetBurstCoverLevel() == COVER) {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
             } else {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_UPDATE);

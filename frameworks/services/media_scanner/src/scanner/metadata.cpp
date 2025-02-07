@@ -56,7 +56,7 @@ Metadata::Metadata()
     timePending_(FILE_TIME_PENDING_DEFAULT),
     isTemp_(FILE_IS_TEMP_DEFAULT),
     frontcamera_(FILE_FRONT_CAMERA_DEFAULT),
-    detailTime_(FILE_DETAIL_TIME_DEFAULT)
+    detailTime_(FILE_DETAIL_TIME_DEFAULT), burstCoverLevel_(BURST_COVER_LEVEL_DEFAULT)
 {
     Init();
 }
@@ -110,6 +110,8 @@ void Metadata::Init()
         &Metadata::SetMovingPhotoImagePath);
     memberFuncMap_[PhotoColumn::PHOTO_DETAIL_TIME] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetDetailTime);
+    memberFuncMap_[PhotoColumn::PHOTO_BURST_COVER_LEVEL] = make_pair(ResultSetDataType::TYPE_INT32,
+        &Metadata::SetBurstCoverLevel);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -590,6 +592,16 @@ void Metadata::SetDetailTime(const VariantData &detailTime)
 std::string Metadata::GetDetailTime() const
 {
     return detailTime_;
+}
+
+void Metadata::SetBurstCoverLevel(const VariantData &burstCoverLevel)
+{
+    burstCoverLevel_ = std::get<int32_t>(burstCoverLevel);
+}
+
+int32_t Metadata::GetBurstCoverLevel() const
+{
+    return burstCoverLevel_;
 }
 } // namespace Media
 } // namespace OHOS
