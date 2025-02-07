@@ -151,9 +151,7 @@ void AnalysisHandler::init()
     }
 
     AnalysisHandler::counts_.store(0);
-    PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
-    CHECK_AND_RETURN_LOG(data != nullptr, "Failed to new taskdata");
-    periodWorker->StartTask(PeriodTaskType::CLOUD_ANALYSIS_ALBUM, AnalysisHandler::ProcessHandleData, data);
+    periodWorker->StartTask(PeriodTaskType::CLOUD_ANALYSIS_ALBUM, AnalysisHandler::ProcessHandleData, nullptr);
 }
 
 void AnalysisHandler::MergeTask(const CloudSyncHandleData &handleData)
