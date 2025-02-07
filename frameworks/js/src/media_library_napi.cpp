@@ -6371,9 +6371,9 @@ static std::string GetFaceAnalysisProgress()
         return retJson;
     }
     string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
-    if (retJson == "") {
+    if (retJson == "" || !nlohmann::json::accept(retJson)) {
         ret->Close();
-        NAPI_ERR_LOG("retJson is empty");
+        NAPI_ERR_LOG("retJson is empty or invalid");
         return "";
     }
     nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
