@@ -401,12 +401,7 @@ int32_t MediaLibraryNotify::Init()
         MEDIA_ERR_LOG("failed to get period worker instance");
         return E_ERR;
     }
-    PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
-    if (data == nullptr) {
-        MEDIA_ERR_LOG("Failed to new taskdata");
-        return E_ERR;
-    }
-    periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, data);
+    periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, nullptr);
     MEDIA_INFO_LOG("add notify task");
     return E_OK;
 }
@@ -417,12 +412,7 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
     auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
     if (periodWorker != nullptr && !periodWorker->IsThreadRunning(PeriodTaskType::COMMON_NOTIFY)) {
         MediaLibraryNotify::counts_.store(0);
-        PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
-        if (data == nullptr) {
-            MEDIA_ERR_LOG("Failed to new taskdata");
-            return E_ERR;
-        }
-        periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, data);
+        periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, nullptr);
     }
     unique_ptr<NotifyTaskWorker> &asyncWorker = NotifyTaskWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");
