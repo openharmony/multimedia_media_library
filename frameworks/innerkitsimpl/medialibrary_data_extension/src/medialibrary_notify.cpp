@@ -198,9 +198,6 @@ static void InsertDataMapToListMap(NotifyType type, unordered_map<string, Notify
 static void PushNotification(PeriodTaskData *data)
 {
     MediaLibraryNotify::thumbCounts_ = (++MediaLibraryNotify::thumbCounts_) % THUMB_LOOP;
-    if (data == nullptr) {
-        return;
-    }
     unordered_map<string, NotifyDataMap> tmpNfListMap;
     {
         lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
