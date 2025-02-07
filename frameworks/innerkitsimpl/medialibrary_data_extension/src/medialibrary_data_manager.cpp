@@ -587,6 +587,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_ERR;
     }
+    CHECK_AND_WARN_LOG(MediaLibraryRdbUtils::AnalyzePhotosDataAsync(), "Analyze photos data failed");
 
     return E_OK;
 }

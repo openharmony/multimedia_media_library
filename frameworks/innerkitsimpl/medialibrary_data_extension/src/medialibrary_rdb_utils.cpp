@@ -28,6 +28,7 @@
 #include "media_log.h"
 #include "media_refresh_album_column.h"
 #include "medialibrary_album_fusion_utils.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
@@ -2618,5 +2619,29 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(bool shouldNotify)
     };
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
         systemAlbumsExcludeSource, shouldNotify);
+}
+
+bool MediaLibraryRdbUtils::AnalyzePhotosData()
+{
+    shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "can not get rdb store, failed to analyze photos data");
+    const string analyzeSql = "ANALYZE " + PhotoColumn::PHOTOS_TABLE;
+    MEDIA_INFO_LOG("start analyze photos data");
+    int32_t ret = rdbStore->ExecuteSql(analyzeSql);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "Failed to execute sql, analyze photos data failed");
+    MEDIA_INFO_LOG("end analyze photos data");
+    return true;
+}
+
+bool MediaLibraryRdbUtils::AnalyzePhotosDataAsync()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, false, "can not get async worker, failed to analyze photos data");
+    shared_ptr<MediaLibraryAsyncTask> asyncTask = make_shared<MediaLibraryAsyncTask>(
+        [](AsyncTaskData *data) { MediaLibraryRdbUtils::AnalyzePhotosData(); }, nullptr);
+    CHECK_AND_RETURN_RET_LOG(asyncTask != nullptr, false, "Analyze Photos Data create task fail");
+    asyncWorker->AddTask(asyncTask, false);
+    MEDIA_INFO_LOG("Analyze Photos Data create task success");
+    return true;
 }
 } // namespace OHOS::Media
