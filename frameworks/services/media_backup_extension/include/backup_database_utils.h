@@ -62,7 +62,6 @@ public:
     static void UpdateSdWhereClause(std::string &querySql, bool shouldIncludeSd);
     static bool QueryThumbImage(NativeRdb::RdbStore &rdbStore,
         const std::string &keyValue, std::vector<uint8_t> &blob);
-    static bool SaveImage(std::vector<uint8_t> &data, const std::string &outFile);
     static int32_t GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
         std::vector<uint8_t> &blobVal);
     static std::string GetLandmarksStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);
