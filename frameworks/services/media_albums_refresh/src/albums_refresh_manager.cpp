@@ -499,15 +499,6 @@ static void PrintSyncInfo(SyncNotifyInfo &info)
         info.urisSize);
 }
 
-static void InitSyncNotifyInfo(SyncNotifyInfo &info, unordered_map<string, string> &result)
-{
-    info.syncId = std::atoi(result["syncId"].c_str());
-    info.taskType = std::atoi(result["taskType"].c_str());
-    info.syncType = std::atoi(result["syncType"].c_str());
-    info.totalAssets = std::atoi(result["totalAssets"].c_str());
-    info.totalAlbums = std::atoi(result["totalAlbums"].c_str());
-}
-
 SyncNotifyInfo AlbumsRefreshManager::GetSyncNotifyInfo(CloudSyncNotifyInfo &notifyInfo, uint8_t uriType)
 {
     SyncNotifyInfo info = {0};
