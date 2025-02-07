@@ -214,7 +214,7 @@ void PhotoCustomRestoreOperation::ReportCustomRestoreTask(RestoreTaskInfo &resto
         point.cancelNum = 0;
         point.failedNum = point.totalNum - point.successNum - point.sameNum;
     }
-    point.totalTime = restoreTaskInfo.endTime - restoreTaskInfo.beginTime;
+    point.totalTime = static_cast<uint64_t>(restoreTaskInfo.endTime - restoreTaskInfo.beginTime);
     MEDIA_INFO_LOG("report custom restore finished. cost:%{public}" PRId64, point.totalTime);
     DfxReporter::ReportCustomRestoreFusion(point);
 }
@@ -245,7 +245,7 @@ void PhotoCustomRestoreOperation::HandleBatchCustomRestore(
     if (IsCancelTask(restoreTaskInfo)) {
         return;
     }
-    int32_t fileNum = subFiles.size();
+    int32_t fileNum = static_cast<int32_t>(subFiles.size());
     int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, false);
     SendNotifyMessage(restoreTaskInfo, notifyType, errCode, fileNum);
 }
@@ -485,7 +485,7 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
             insertFiles.push_back(fileInfo);
         }
     }
-    sameFileNum = restoreFiles.size() - insertFiles.size();
+    sameFileNum = static_cast<int32_t>(restoreFiles.size() - insertFiles.size());
     sameNum_.fetch_add(sameFileNum);
     MEDIA_DEBUG_LOG("BatchInsert values size: %{public}d, sameNum:%{public}d",
         static_cast<int32_t>(values.size()), sameFileNum);
