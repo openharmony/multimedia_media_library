@@ -53,6 +53,7 @@ private:
     void RestoreAlbum(std::vector<FileInfo> &fileInfos);
     void UpdateAlbumInfo(FileInfo &info);
     bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
+    void AddAudioFile(FileInfo &tmpInfo);
     void SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo);
     std::string Base32Decode(const std::string &input);
     std::vector<std::string> GetSubString(const std::string &originalString, char delimiter);
