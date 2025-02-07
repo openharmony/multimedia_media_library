@@ -1044,6 +1044,31 @@ static int32_t GetHiddenState(const ValuesBucket &values)
     return hiddenState == 0 ? 0 : 1;
 }
 
+static bool SkipNotifyIfBurstMember(string &notifyUri)
+{
+    string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(notifyUri);
+    if (fileId.empty()) {
+        return false;
+    }
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    vector<string> columns = {
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+    };
+    NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    auto resultSet = uniStore->Query(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("IsAssetReadyById failed");
+        return 0;
+    }
+    int ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, 0, "Failed to GoToFirstRow");
+    int32_t burstCoverLevel = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        resultSet, TYPE_INT32));
+    resultSet->Close();
+    return burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::MEMBER);
+}
+
 static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState)
 {
     auto watch = MediaLibraryNotify::GetInstance();
@@ -1064,7 +1089,10 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
         hiddenAlbumNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     }
     vector<int64_t> formIds;
-    for (const auto &notifyUri : notifyUris) {
+    for (auto &notifyUri : notifyUris) {
+        if (SkipNotifyIfBurstMember(notifyUri)) {
+            continue;
+        }
         watch->Notify(notifyUri, assetNotifyType);
         watch->Notify(notifyUri, albumNotifyType, 0, true);
         watch->Notify(notifyUri, hiddenAlbumNotifyType, hiddenAlbumId);
