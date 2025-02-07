@@ -1182,7 +1182,7 @@ int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& source
     size_t pos1 = SOURCE_PATH_PREFIX.length();
     size_t pos2 = sourcePath.find_last_of("/");
     CHECK_AND_RETURN_RET_LOG(
-        lPath.find(SOURCE_PATH_PREFIX) != std::string::npos && pos2 != string::npos && pos1 < pos2,
+        sourcePath.find(SOURCE_PATH_PREFIX) != std::string::npos && pos2 != string::npos && pos1 < pos2,
         E_INDEX,
         "get no valid source path: %{public}s", sourcePath.c_str());
     lPath = sourcePath.substr(pos1, pos2 - pos1);
