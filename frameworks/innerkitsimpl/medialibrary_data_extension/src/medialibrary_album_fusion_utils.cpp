@@ -1779,12 +1779,10 @@ int32_t MediaLibraryAlbumFusionUtils::RefreshAllAlbums()
 {
     MEDIA_INFO_LOG("Froce refresh all albums start");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
     MEDIA_INFO_LOG("Froce refresh all albums end");
     return E_OK;

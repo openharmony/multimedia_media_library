@@ -150,7 +150,9 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         MediaFileUtils::GetExtraUri(newFileInfo->displayName, newFileInfo->filePath));
     needUpdateUris.emplace_back(newFileUri);
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(newFileUri, NotifyType::NOTIFY_ADD);
+    if (watch != nullptr) {
+        watch->Notify(newFileUri, NotifyType::NOTIFY_ADD);
+    }
     return newFileId;
 }
 
@@ -262,7 +264,9 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     string fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(sourceFileId),
         MediaFileUtils::GetExtraUri(sourceDisplayName, sourceFilePath));
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
+    if (watch != nullptr) {
+        watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
+    }
     MEDIA_INFO_LOG("DealWithSuccessedTask success, photo_id: %{public}s", taskId.c_str());
 }
 
@@ -306,7 +310,9 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     string fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
         MediaFileUtils::GetExtraUri(displayName, filePath));
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
+    if (watch != nullptr) {
+        watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
+    }
     MEDIA_INFO_LOG("DealWithFailedTask success, photo_id: %{public}s", taskId.c_str());
 }
 
@@ -315,7 +321,8 @@ void EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement()
     MEDIA_INFO_LOG("UpdateAlbumsForCloudEnhancement start");
     if (!needUpdateUris.empty()) {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, needUpdateUris, NotifyAlbumType::SYS_ALBUM);
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
+        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, needUpdateUris);
         needUpdateUris.clear();
     } else {
         MEDIA_INFO_LOG("no uris need to update albums");

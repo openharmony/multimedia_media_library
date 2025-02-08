@@ -240,6 +240,7 @@ static void PushNotification(PeriodTaskData *data)
 static int32_t IsThumbReadyById(const string &fileId)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     vector<string> columns = {
         MediaColumn::MEDIA_HIDDEN,
         MediaColumn::MEDIA_DATE_TRASHED,
@@ -323,6 +324,7 @@ static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData
 static int32_t GetAlbumsById(const string &fileId, list<string> &albumIdList)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "rdbstore is nullptr");
     MediaLibraryCommand queryAlbumMapCmd(OperationObject::PAH_PHOTO, OperationType::QUERY);
     queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
     auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoColumn::PHOTO_OWNER_ALBUM_ID});

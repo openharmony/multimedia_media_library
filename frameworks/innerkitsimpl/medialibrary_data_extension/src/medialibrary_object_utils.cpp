@@ -1494,11 +1494,13 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
     }
     if (outRow < 0) {
         MEDIA_ERR_LOG("Failed to obtain CreateFileObj");
+        CloseFileById(srcFileAsset->GetId());
         return outRow;
     }
     shared_ptr<FileAsset> destFileAsset = GetFileAssetFromId(to_string(outRow));
     if (destFileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database");
+        CloseFileById(srcFileAsset->GetId());
         return E_INVALID_URI;
     }
     string destPath = MediaFileUtils::UpdatePath(destFileAsset->GetPath(), destFileAsset->GetUri());
@@ -1512,6 +1514,7 @@ int32_t MediaLibraryObjectUtils::CopyAssetByFd(int32_t srcFd, int32_t srcId, int
     struct stat statSrc;
     if (fstat(srcFd, &statSrc) == -1) {
         CloseFileById(srcId);
+        CloseFileById(destId);
         MEDIA_ERR_LOG("File get stat failed, %{public}d", errno);
         return E_FILE_OPER_FAIL;
     }
