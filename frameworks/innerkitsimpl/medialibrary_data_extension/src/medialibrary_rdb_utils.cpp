@@ -2617,7 +2617,9 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(bool shouldNotify)
         to_string(PhotoAlbumSubType::IMAGE),
         to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
     };
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore,
         systemAlbumsExcludeSource, shouldNotify);
 }
 

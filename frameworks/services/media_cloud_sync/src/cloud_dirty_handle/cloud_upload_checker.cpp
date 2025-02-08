@@ -199,6 +199,7 @@ void CloudUploadChecker::RecordRepairIdList(const vector<int32_t>& repairedIdLis
 int32_t CloudUploadChecker::QueryLcdPhotoCount(int32_t startFileId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     const std::vector<NativeRdb::ValueObject> bindArgs = { startFileId };
     auto resultSet = rdbStore->QuerySql(SQL_PHOTOS_TABLE_QUERY_NO_ORIGIN_BUT_LCD_COUNT, bindArgs);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, 0,
@@ -210,6 +211,7 @@ int32_t CloudUploadChecker::QueryLcdPhotoCount(int32_t startFileId)
 void CloudUploadChecker::QueryLcdAndRepair(int32_t startFileId, int32_t &outFileId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
     const std::vector<NativeRdb::ValueObject> bindArgs = { startFileId };
     auto resultSet = rdbStore->QuerySql(SQL_PHOTOS_TABLE_QUERY_NO_ORIGIN_BUT_LCD_PHOTO, bindArgs);
     CHECK_AND_RETURN_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,

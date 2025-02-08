@@ -347,6 +347,7 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     bool needToInsert = false;
     bool isValid = false;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t err = E_OK;
     std::function<int(void)> func = [&]()->int {

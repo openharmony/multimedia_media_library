@@ -179,6 +179,7 @@ static void NotifyGroupAlbum(const vector<int32_t> &changedAlbumIds)
         return;
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     for (int32_t albumId : changedAlbumIds) {
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(
             PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);

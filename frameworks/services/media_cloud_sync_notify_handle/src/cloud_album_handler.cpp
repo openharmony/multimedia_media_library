@@ -118,6 +118,7 @@ static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
         MEDIA_ERR_LOG("DeletePhotoAlbum failed, errCode = %{public}d, deleteRow = %{public}d", ret, deleteRow);
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     const vector<string> &notifyUris = predicates.GetWhereArgs();
     size_t count = notifyUris.size() - AFTER_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {

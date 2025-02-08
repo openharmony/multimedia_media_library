@@ -421,8 +421,10 @@ void CloudSyncNotifyHandler::HandleAlbumNotFound(const std::list<Uri> &uris)
                 MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {to_string(newAlbumId)});
         }
         auto watch = MediaLibraryNotify::GetInstance();
-        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
-            PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId)), NotifyType::NOTIFY_ADD);
+        if (watch != nullptr) {
+            watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+                PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId)), NotifyType::NOTIFY_ADD);
+        }
     }
     return;
 }
