@@ -239,7 +239,7 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXT
     { "audio/midi", { "mid", "midi", "kar" } },
     { "audio/basic", { "au" } },
     { "audio/x-pn-realaudio", { "rm", "ram" } },
-    { "audio/acc-adts", { "aac" } },
+    { "audio/aac-adts", { "aac" } },
     { "audio/mpeg", { "m4a", "mpga", "mpega" } },
     { "audio/x-mpegurl", { "m3u", "m3u8" } },
     { "audio/ffmpeg", { "ape" } },
