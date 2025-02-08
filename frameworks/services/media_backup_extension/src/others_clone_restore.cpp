@@ -299,12 +299,12 @@ static bool RecoverHiddenOrRecycleFile(std::string &currentPath, FileInfo &tmpIn
 
     size_t lastSlashPos = currentPath.find_last_of('/');
     if (lastSlashPos == std::string::npos) {
-        MEDIA_ERR_LOG("currentPath %{public}s is abnormal", currentPath.c_str());
+        MEDIA_INFO_LOG("currentPath %{public}s is abnormal", currentPath.c_str());
         return false;
     }
     std::string target = currentPath.substr(lastSlashPos + 1);
     if (target.find(".") != std::string::npos) {
-        MEDIA_ERR_LOG("currentPath %{public}s is already decoded", currentPath.c_str());
+        MEDIA_INFO_LOG("currentPath %{public}s is already decoded", currentPath.c_str());
         return false;
     }
     std::vector<std::string> substrings = GetSubStrings(Base32Decode(target), '|');
