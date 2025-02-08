@@ -390,9 +390,9 @@ void CloneRestore::RestoreAlbum()
 
 int32_t CloneRestore::GetHighlightCloudMediaCnt()
 {
-    const std::string QUERY_SQL = "SELECT COUNT(1) AS count FROM AnalysisAlbum AS a"
-        "INNER JOIN AnalysisPhotoMap AS m ON a.album_id = m.map_album"
-        "INNER JOIN Photos AS p ON p.file_id = m.map_asset"
+    const std::string QUERY_SQL = "SELECT COUNT(1) AS count FROM AnalysisAlbum AS a "
+        "INNER JOIN AnalysisPhotoMap AS m ON a.album_id = m.map_album "
+        "INNER JOIN Photos AS p ON p.file_id = m.map_asset "
         "WHERE a.album_subtype IN (4104, 4105) AND p.position = 2";
     std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this->mediaRdb_, QUERY_SQL, {});
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -412,7 +412,7 @@ void CloneRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
         .Report("Highlight Restore", "",
             "sceneCode_: " + std::to_string(this->sceneCode_) +
             ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
-            ", isAccountValid_:" + std::to_string(isAccountValid_) +
+            ", isAccountValid_: " + std::to_string(isAccountValid_) +
             ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
     if (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen)) {
         cloneRestoreHighlight_.RestoreAlbums();
