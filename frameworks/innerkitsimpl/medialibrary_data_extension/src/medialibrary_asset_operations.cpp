@@ -1775,17 +1775,18 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, s
     }
     value.GetInt(isFavorite);
 
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
-        { to_string(PhotoAlbumSubType::FAVORITE) });
+        rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
     CHECK_AND_RETURN_LOG(fileAsset != nullptr, "fileAsset is nullptr");
     if (fileAsset->IsHidden()) {
         MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
-            { to_string(PhotoAlbumSubType::FAVORITE) });
+            rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
     }
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     if (cmd.GetOprnObject() != OperationObject::FILESYSTEM_PHOTO) {
         return;
     }
@@ -1808,6 +1809,7 @@ int32_t MediaLibraryAssetOperations::SendModifyUserCommentNotify(MediaLibraryCom
     }
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(rowId), extraUri),
         NotifyType::NOTIFY_UPDATE);
     return E_OK;
@@ -1843,13 +1845,13 @@ void MediaLibraryAssetOperations::UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     oriAlbumId = GetAlbumIdByPredicates(whereClause, whereArgs);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
 
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId),
-        to_string(oriAlbumId) });
+        rdbStore, { to_string(targetAlbumId), to_string(oriAlbumId) });
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId),
-        to_string(oriAlbumId) });
+        rdbStore, { to_string(targetAlbumId), to_string(oriAlbumId) });
     MEDIA_INFO_LOG("Move Assets, ori album id is %{public}d, target album id is %{public}d", oriAlbumId, targetAlbumId);
 }
 
@@ -2342,12 +2344,15 @@ static void DeleteFiles(AsyncTaskData *data)
         return;
     }
     auto *taskData = static_cast<DeleteFilesTask *>(data);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(PhotoAlbumSubType::TRASH) });
+        rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
 
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
         taskData->notifyUris_, taskData->bundleName_);
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     if (trashAlbumId <= 0) {
         MEDIA_WARN_LOG("Failed to get trash album id: %{public}d", trashAlbumId);
@@ -2770,12 +2775,17 @@ static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds)
             MEDIA_ERR_LOG("Get album type and subType by album id failed");
             continue;
         }
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("Failed to get rdbStore.");
+            continue;
+        }
         if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
             MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(albumId) }, true);
+                rdbStore, { to_string(albumId) }, true);
         } else if (PhotoAlbum::IsSourceAlbum(type, subType)) {
             MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(albumId) }, true);
+                rdbStore, { to_string(albumId) }, true);
         } else {
             MEDIA_WARN_LOG("Can't find album id %{public}d in User and Source Album", albumId);
         }
