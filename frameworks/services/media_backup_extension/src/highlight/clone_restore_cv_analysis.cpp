@@ -27,7 +27,7 @@ const int32_t PAGE_SIZE = 200;
 const int32_t MAX_GENERATE_TIMES = 100000;
 const int32_t GENERATE_GAP = 10;
 const std::vector<std::string> EFFECTLINE_ID = { "fileId", "prefileId" };
-const std::vector<std::string> EFFECTLINE_URI = { "fileUri", "prefileUri"};
+const std::vector<std::string> EFFECTLINE_URI = { "fileUri", "prefileUri" };
 const std::string EFFECTLINE_TYPE_HITCHCOCK = "TYPE_HITCHCOCK";
 const std::string EFFECTLINE_TYPE_UAV = "TYPE_UAV";
 const std::string EFFECTLINE_TYPE_HILIGHT_SLOW = "TYPE_HILIGHT_SLOW";
@@ -597,10 +597,10 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
     std::string oldEffectVideoUri = newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"];
     if (MediaFileUtils::StartsWith(oldEffectVideoUri, PHOTO_URI_PREFIX)) {
         newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"] =
-        GetNewPhotoUriByUri(oldEffectVideoUri, cloneHighlight);
+            GetNewPhotoUriByUri(oldEffectVideoUri, cloneHighlight);
     } else if (MediaFileUtils::StartsWith(oldEffectVideoUri, HIGHLIGHT_ASSET_URI_PREFIX)) {
         newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"] =
-        GetNewEffectVideoUri(oldEffectVideoUri);
+            GetNewEffectVideoUri(oldEffectVideoUri);
     }
 
     if (newPlayInfo["effectline"]["effectline"][effectlineIndex]["effect"] == EFFECTLINE_TYPE_MASK2) {

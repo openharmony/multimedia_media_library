@@ -242,7 +242,7 @@ void CloneRestoreHighlight::UpdateAlbums()
     }
 
     MEDIA_INFO_LOG("update highlight album start.");
-    const std::string updateAlbumSql = "UPDATE AnalysisAlbum SET"
+    const std::string updateAlbumSql = "UPDATE AnalysisAlbum SET "
         "cover_uri = ?, "
         "count = (SELECT count(1) FROM AnalysisPhotoMap AS apm WHERE apm.map_album = AnalysisAlbum.album_id) "
         "WHERE album_id = ?";
@@ -627,7 +627,7 @@ void CloneRestoreHighlight::GetHighlightNewAlbumId(HighlightAlbumInfo &info)
     info.albumIdNew = info.albumIdOld;
     info.aiAlbumIdNew = info.aiAlbumIdOld;
 
-    if (info.albumIdOld .has_value()) {
+    if (info.albumIdOld.has_value()) {
         auto it = std::find_if(analysisInfos_.begin(), analysisInfos_.end(),
             [info](const AnalysisAlbumInfo &analysisInfo) {
                 return analysisInfo.albumIdOld.has_value() &&
@@ -763,7 +763,7 @@ void CloneRestoreHighlight::MoveHighlightWordart(const AnalysisAlbumInfo &info, 
 void CloneRestoreHighlight::MoveHighlightGround(const AnalysisAlbumInfo &info, const std::string &srcDir)
 {
     for (const auto &fileName : HIGHLIGHT_COVER_NAME) {
-        std::string groundPath = srcDir + "/full/" + fileName +".png";
+        std::string groundPath = srcDir + "/full/" + fileName + ".png";
         std::string groundDstDir = "/storage/media/local/files/highlight/cover/" +
             std::to_string(info.highlightIdNew.value()) + "/full";
         if (!MediaFileUtils::IsFileExists(groundPath)) {
