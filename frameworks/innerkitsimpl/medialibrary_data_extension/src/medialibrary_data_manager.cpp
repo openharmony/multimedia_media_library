@@ -583,7 +583,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
         return ret;
     }
     rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (ret != E_OK) {
+    if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_ERR;
     }

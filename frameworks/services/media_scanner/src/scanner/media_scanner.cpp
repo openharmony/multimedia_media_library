@@ -269,6 +269,7 @@ int32_t MediaScannerObj::Commit()
 {
     string tableName;
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
         uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_);
         if (!isSkipAlbumUpdate_) {

@@ -344,6 +344,7 @@ void PhotoCustomRestoreOperation::SendPhotoAlbumNotify(RestoreTaskInfo &restoreT
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {uri});
     MEDIA_DEBUG_LOG("UpdateSourceAlbumByUri finished.");
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     if (notifyType == NOTIFY_FIRST) {
         watch->Notify(restoreTaskInfo.firstFileUri, NOTIFY_ADD);
     } else {
