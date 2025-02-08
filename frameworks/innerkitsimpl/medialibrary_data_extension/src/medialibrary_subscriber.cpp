@@ -187,6 +187,8 @@ bool MedialibrarySubscriber::Subscribe(void)
     for (auto event : events_) {
         matchingSkills.AddEvent(event);
     }
+
+    MEDIA_INFO_LOG("Subscribe: add event.");
     EventFwk::CommonEventSubscribeInfo subscribeInfo(matchingSkills);
 
     std::shared_ptr<MedialibrarySubscriber> subscriber = std::make_shared<MedialibrarySubscriber>(subscribeInfo);

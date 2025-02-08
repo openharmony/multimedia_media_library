@@ -2251,6 +2251,7 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
 
 void MediaLibraryDataManager::SetStartupParameter()
 {
+    MEDIA_INFO_LOG("Start to set parameter.");
     static constexpr uint32_t BASE_USER_RANGE = 200000; // for get uid
     uid_t uid = getuid() / BASE_USER_RANGE;
     const string key = "multimedia.medialibrary.startup." + to_string(uid);
