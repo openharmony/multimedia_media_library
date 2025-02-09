@@ -2582,6 +2582,9 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
     }
 #endif
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
+    MEDIA_INFO_LOG("photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
+        photoId.c_str(), static_cast<int32_t>(picture.use_count()),
+        std::to_string(reinterpret_cast<long long>(picture.get())).c_str());
     return E_OK;
 }
 
@@ -2683,7 +2686,7 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
 #ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId)
 {
-    MEDIA_DEBUG_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
+    MEDIA_INFO_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
     std::shared_ptr<Media::Picture> picture;
     std::string photoId;
     bool isHighQualityPicture = false;
