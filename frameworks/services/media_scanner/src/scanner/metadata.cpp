@@ -61,6 +61,16 @@ Metadata::Metadata()
     Init();
 }
 
+void Metadata::InitV2()
+{
+    memberFuncMap_[PhotoColumn::MEDIA_FILE_PATH] = make_pair(ResultSetDataType::TYPE_STRING,
+        &Metadata::SetMovingPhotoImagePath);
+    memberFuncMap_[PhotoColumn::PHOTO_DETAIL_TIME] = make_pair(ResultSetDataType::TYPE_STRING,
+        &Metadata::SetDetailTime);
+    memberFuncMap_[PhotoColumn::PHOTO_BURST_COVER_LEVEL] = make_pair(ResultSetDataType::TYPE_INT32,
+        &Metadata::SetBurstCoverLevel);
+}
+
 void Metadata::Init()
 {
     memberFuncMap_[MEDIA_DATA_DB_ID] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetFileId);
@@ -106,12 +116,7 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::PHOTO_DIRTY] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetDirty);
     memberFuncMap_[PhotoColumn::PHOTO_FRONT_CAMERA] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetFrontCamera);
-    memberFuncMap_[PhotoColumn::MEDIA_FILE_PATH] = make_pair(ResultSetDataType::TYPE_STRING,
-        &Metadata::SetMovingPhotoImagePath);
-    memberFuncMap_[PhotoColumn::PHOTO_DETAIL_TIME] = make_pair(ResultSetDataType::TYPE_STRING,
-        &Metadata::SetDetailTime);
-    memberFuncMap_[PhotoColumn::PHOTO_BURST_COVER_LEVEL] = make_pair(ResultSetDataType::TYPE_INT32,
-        &Metadata::SetBurstCoverLevel);
+    InitV2();
 }
 
 void Metadata::SetFileId(const VariantData &id)

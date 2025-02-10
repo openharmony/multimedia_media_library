@@ -583,10 +583,11 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
         return ret;
     }
     rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (ret != E_OK) {
+    if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_ERR;
     }
+    CHECK_AND_WARN_LOG(MediaLibraryRdbUtils::AnalyzePhotosDataAsync(), "Analyze photos data failed");
 
     return E_OK;
 }
@@ -2250,6 +2251,7 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
 
 void MediaLibraryDataManager::SetStartupParameter()
 {
+    MEDIA_INFO_LOG("Start to set parameter.");
     static constexpr uint32_t BASE_USER_RANGE = 200000; // for get uid
     uid_t uid = getuid() / BASE_USER_RANGE;
     const string key = "multimedia.medialibrary.startup." + to_string(uid);

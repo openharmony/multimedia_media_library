@@ -458,7 +458,7 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject Read error!");
 
     int fd = 0;
-    errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd) :
+    errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd, true) :
         mtpMedialibraryManager_->GetFdByOpenFile(context_, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject GetFd fail!");
 

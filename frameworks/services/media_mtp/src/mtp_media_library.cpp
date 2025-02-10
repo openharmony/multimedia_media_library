@@ -435,7 +435,7 @@ bool MtpMediaLibrary::IsExistObject(const std::shared_ptr<MtpOperationContext> &
     return ret;
 }
 
-int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd)
+int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd, bool forWrite)
 {
     MEDIA_INFO_LOG("MtpMediaLibrary::GetFd");
     CHECK_AND_RETURN_RET_LOG(context != nullptr,
@@ -452,7 +452,12 @@ int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &conte
         MEDIA_ERR_LOG("MtpMediaLibrary::GetFd normalized realPath failed");
         return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
     }
-    int mode = sf::exists(realPath, ec) ? O_RDWR : O_RDWR | O_CREAT;
+
+    int mode = O_RDONLY;
+    if (forWrite) {
+        mode = sf::exists(realPath, ec) ? O_RDWR : (O_RDWR | O_CREAT);
+    }
+
     outFd = open(realPath.c_str(), mode);
     MEDIA_INFO_LOG("MTP:file %{public}s fd %{public}d", realPath.c_str(), outFd);
     if (outFd > 0) {

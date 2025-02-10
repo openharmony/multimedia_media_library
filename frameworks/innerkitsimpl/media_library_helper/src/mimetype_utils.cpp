@@ -49,6 +49,7 @@ void MimeTypeUtils::CreateMapFromJson()
     }
     json firstFloorObjs;
     jFile >> firstFloorObjs;
+    jFile.close();
     for (auto& firstFloorObj : firstFloorObjs.items()) {
         json secondFloorJsons = json::parse(firstFloorObj.value().dump(), nullptr, false);
         if (secondFloorJsons.is_discarded() || secondFloorJsons.empty()) {

@@ -177,6 +177,7 @@ public:
     int32_t GetBurstCoverLevel() const;
 
     EXPORT void Init();
+    void InitV2();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
     EXPORT std::unordered_map<std::string, std::pair<ResultSetDataType, MetadataFnPtr>> memberFuncMap_;

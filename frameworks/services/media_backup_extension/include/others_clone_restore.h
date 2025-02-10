@@ -53,6 +53,7 @@ private:
     void RestoreAlbum(std::vector<FileInfo> &fileInfos);
     void UpdateAlbumInfo(FileInfo &info);
     bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
+    void AddAudioFile(FileInfo &tmpInfo);
     void SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo);
     int32_t GetAllfilesInCurrentDir(const std::string &path);
     void UpDateFileModifiedTime(FileInfo &fileInfo);

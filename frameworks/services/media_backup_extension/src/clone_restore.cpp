@@ -22,6 +22,7 @@
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
+#include "cloud_sync_helper.h"
 #include "database_report.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
@@ -34,6 +35,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
+#include "ohos_account_kits.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -195,6 +197,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
 {
     MEDIA_INFO_LOG("Start clone restore");
     SetParameterForClone();
+    GetAccountValid();
 #ifdef CLOUD_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
@@ -255,6 +258,8 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeo_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
+    cloneRestoreHighlight_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
+    cloneRestoreCVAnalysis_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -312,7 +317,42 @@ void CloneRestore::RestorePhoto()
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     cloneRestoreGeo_.ReportGeoRestoreTask();
+    cloneRestoreHighlight_.UpdateAlbums();
+    cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
     ReportPortraitCloneStat(sceneCode_);
+}
+
+void CloneRestore::GetAccountValid()
+{
+    string oldId = "";
+    string newId = "";
+    nlohmann::json jsonArr = nlohmann::json::parse(restoreInfo_, nullptr, false);
+    if (jsonArr.is_discarded()) {
+        MEDIA_ERR_LOG("cloud account parse failed");
+        return;
+    }
+    for (const auto& item : jsonArr) {
+        if (!item.contains("type") || !item.contains("detail") || item["type"] != "singleAccountId") {
+            continue;
+        } else {
+            oldId = item["detail"];
+            MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
+            break;
+        }
+    }
+    std::pair<bool, OHOS::AccountSA::OhosAccountInfo> ret =
+        OHOS::AccountSA::OhosAccountKits::GetInstance().QueryOhosAccountInfo();
+    if (ret.first) {
+        OHOS::AccountSA::OhosAccountInfo& resultInfo = ret.second;
+        newId = resultInfo.uid_;
+    } else {
+        MEDIA_ERR_LOG("new account logins failed");
+        return;
+    }
+    MEDIA_INFO_LOG("clone the old id is %{public}s, new id is %{public}s",
+        BackupFileUtils::GarbleFilePath(oldId, sceneCode_).c_str(),
+        BackupFileUtils::GarbleFilePath(newId, sceneCode_).c_str());
+    isAccountValid_ = (oldId != "" && oldId == newId);
 }
 
 void CloneRestore::RestoreAlbum()
@@ -345,6 +385,38 @@ void CloneRestore::RestoreAlbum()
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
     cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
+    RestoreHighlightAlbums(CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
+}
+
+int32_t CloneRestore::GetHighlightCloudMediaCnt()
+{
+    const std::string QUERY_SQL = "SELECT COUNT(1) AS count FROM AnalysisAlbum AS a "
+        "INNER JOIN AnalysisPhotoMap AS m ON a.album_id = m.map_album "
+        "INNER JOIN Photos AS p ON p.file_id = m.map_asset "
+        "WHERE a.album_subtype IN (4104, 4105) AND p.position = 2";
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this->mediaRdb_, QUERY_SQL, {});
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query count of highlight cloud media failed.");
+        return -1;
+    }
+    int32_t cnt = GetInt32Val("count", resultSet);
+    MEDIA_INFO_LOG("GetHighlightCloudMediaCnt is %{public}d", cnt);
+    resultSet->Close();
+    return cnt;
+}
+
+void CloneRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
+{
+    int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
+    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
+        .Report("Highlight Restore", "",
+            "sceneCode_: " + std::to_string(this->sceneCode_) +
+            ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
+            ", isAccountValid_: " + std::to_string(isAccountValid_) +
+            ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
+    if (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen)) {
+        cloneRestoreHighlight_.RestoreAlbums();
+    }
 }
 
 void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount,
@@ -399,6 +471,7 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos);
     cloneRestoreGeo_.RestoreMaps(fileInfos);
+    cloneRestoreHighlight_.RestoreMaps(fileInfos);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;

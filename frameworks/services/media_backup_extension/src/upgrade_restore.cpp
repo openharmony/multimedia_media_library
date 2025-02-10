@@ -54,7 +54,6 @@ namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
-constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int32_t RESTORE_CLOUD_QUERY_COUNT = 200;
 const std::string DB_INTEGRITY_CHECK = "ok";
@@ -814,7 +813,6 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     }
     values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestore_.FindSubtype(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
     values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     // find album_id by lPath.
@@ -829,6 +827,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
         values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.uniqueId);
         values.PutInt(PhotoColumn::PHOTO_POSITION, PHOTO_CLOUD_POSITION);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SYNCED));
+    } else {
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
     }
     return values;
 }

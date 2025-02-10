@@ -198,9 +198,6 @@ static void InsertDataMapToListMap(NotifyType type, unordered_map<string, Notify
 static void PushNotification(PeriodTaskData *data)
 {
     MediaLibraryNotify::thumbCounts_ = (++MediaLibraryNotify::thumbCounts_) % THUMB_LOOP;
-    if (data == nullptr) {
-        return;
-    }
     unordered_map<string, NotifyDataMap> tmpNfListMap;
     {
         lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
@@ -243,6 +240,7 @@ static void PushNotification(PeriodTaskData *data)
 static int32_t IsThumbReadyById(const string &fileId)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     vector<string> columns = {
         MediaColumn::MEDIA_HIDDEN,
         MediaColumn::MEDIA_DATE_TRASHED,
@@ -325,6 +323,7 @@ static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData
 static int32_t GetAlbumsById(const string &fileId, list<string> &albumIdList)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "rdbstore is nullptr");
     MediaLibraryCommand queryAlbumMapCmd(OperationObject::PAH_PHOTO, OperationType::QUERY);
     queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
     auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoColumn::PHOTO_OWNER_ALBUM_ID});
@@ -400,12 +399,7 @@ int32_t MediaLibraryNotify::Init()
         MEDIA_ERR_LOG("failed to get period worker instance");
         return E_ERR;
     }
-    PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
-    if (data == nullptr) {
-        MEDIA_ERR_LOG("Failed to new taskdata");
-        return E_ERR;
-    }
-    periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, data);
+    periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, nullptr);
     MEDIA_INFO_LOG("add notify task");
     return E_OK;
 }
@@ -416,12 +410,7 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
     auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
     if (periodWorker != nullptr && !periodWorker->IsThreadRunning(PeriodTaskType::COMMON_NOTIFY)) {
         MediaLibraryNotify::counts_.store(0);
-        PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
-        if (data == nullptr) {
-            MEDIA_ERR_LOG("Failed to new taskdata");
-            return E_ERR;
-        }
-        periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, data);
+        periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, nullptr);
     }
     unique_ptr<NotifyTaskWorker> &asyncWorker = NotifyTaskWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");

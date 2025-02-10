@@ -116,7 +116,7 @@ private:
                 ELSE album_v2.lPath \
             END AS lPath, \
             latitude, \
-            longitude \
+            longitude, \
             story_id, \
             portrait_id \
         FROM gallery_media \

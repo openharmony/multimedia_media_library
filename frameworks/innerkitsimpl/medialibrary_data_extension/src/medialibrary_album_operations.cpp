@@ -595,6 +595,7 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
         rowId = CreatePhotoAlbum(albumName);
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     if (rowId > 0) {
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(rowId)),
             NotifyType::NOTIFY_ADD);
@@ -620,6 +621,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
 
     int deleteRow = MediaLibraryRdbStore::Delete(predicates);
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     const vector<string> &notifyUris = predicates.GetWhereArgs();
     size_t count = notifyUris.size() - AFTER_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {
@@ -650,6 +652,7 @@ int32_t MediaLibraryAlbumOperations::DeleteHighlightAlbums(RdbPredicates &predic
         return E_HAS_DB_ERROR;
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     const vector<string> &notifyUris = predicates.GetWhereArgs();
     if (changedRows > 0) {
         for (size_t i = 0; i < notifyUris.size(); ++i) {
@@ -666,6 +669,7 @@ static void NotifyPortraitAlbum(const vector<int32_t> &changedAlbumIds)
         return;
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     for (int32_t albumId : changedAlbumIds) {
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(
             PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
@@ -1079,6 +1083,7 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     UpdateAnalysisIndexAfterRename(fileIdsToUpdateIndex);
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
         to_string(newAlbumId)), NotifyType::NOTIFY_UPDATE);
     return ALBUM_SETNAME_OK;
@@ -1158,6 +1163,7 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     if (changedRows > 0 && !needRename) { // No need to notify if album is to be renamed. Rename process will notify
         const vector<string> &notifyIds = rdbPredicates.GetWhereArgs();
         constexpr int32_t notIdArgs = 3;
@@ -1182,7 +1188,7 @@ int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& source
     size_t pos1 = SOURCE_PATH_PREFIX.length();
     size_t pos2 = sourcePath.find_last_of("/");
     CHECK_AND_RETURN_RET_LOG(
-        lPath.find(SOURCE_PATH_PREFIX) != std::string::npos && pos2 != string::npos && pos1 < pos2,
+        sourcePath.find(SOURCE_PATH_PREFIX) != std::string::npos && pos2 != string::npos && pos1 < pos2,
         E_INDEX,
         "get no valid source path: %{public}s", sourcePath.c_str());
     lPath = sourcePath.substr(pos1, pos2 - pos1);
@@ -1199,6 +1205,7 @@ int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& source
 static bool HasSameLpath(const string &lPath, const string &assetId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore.");
     const std::string QUERY_LPATH = "SELECT * FROM PhotoAlbum WHERE lpath = '" + lPath + "'";
     shared_ptr<NativeRdb::ResultSet> albumResultSet = rdbStore->QuerySql(QUERY_LPATH);
     if (albumResultSet == nullptr || albumResultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -1238,6 +1245,7 @@ void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const stri
     string queryExpiredAlbumInfo = "SELECT * FROM album_plugin WHERE lpath = '" +
         lPath + "' AND priority = '1'";
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
     shared_ptr<NativeRdb::ResultSet> albumPluginResultSet = rdbStore->QuerySql(queryExpiredAlbumInfo);
     if (albumPluginResultSet == nullptr || albumPluginResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         size_t pos = lPath.find_last_of("/");
@@ -1287,14 +1295,15 @@ static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &photoResult
         MEDIA_ERR_LOG("Recover album fails");
         return E_INVALID_ARGUMENTS;
     }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     if (isUserAlbum) {
-        MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {to_string(newAlbumId)});
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, {to_string(newAlbumId)});
     } else {
-        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {to_string(newAlbumId)});
+        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore, {to_string(newAlbumId)});
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(
         PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId)), NotifyType::NOTIFY_ADD);
     return E_OK;
@@ -1406,9 +1415,11 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs, NotifyAlbumType::SYS_ALBUM);
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     size_t count = whereArgs.size() - THAN_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {
         string notifyUri = MediaFileUtils::Encode(whereArgs[i]);
@@ -1604,6 +1615,7 @@ static void NotifyOrderChange(vector<int32_t> &changedAlbumIds)
         return;
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     for (int32_t &albumId : changedAlbumIds) {
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(
             PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
