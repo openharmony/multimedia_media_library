@@ -58,10 +58,10 @@ struct FileInfo {
 };
 
 struct UniqueNumber {
-    int32_t imageTotalNumber;
-    int32_t videoTotalNumber;
-    int32_t imageCurrentNumber;
-    int32_t videoCurrentNumber;
+    int32_t imageTotalNumber = 0;
+    int32_t videoTotalNumber = 0;
+    int32_t imageCurrentNumber = 0;
+    int32_t videoCurrentNumber = 0;
 };
 
 const std::string CUSTOM_RESTORE_DIR = ROOT_MEDIA_DIR + CUSTOM_RESTORE_VALUES;

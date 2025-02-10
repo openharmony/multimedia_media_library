@@ -116,7 +116,7 @@ private:
     string bundleName_;
     string appName_;
     string appId_;
-    int32_t tokenId_;
+    int32_t tokenId_ = -1;
 };
 } // namespace Media
 } // namespace OHOS

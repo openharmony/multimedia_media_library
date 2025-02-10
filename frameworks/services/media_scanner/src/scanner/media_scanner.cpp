@@ -269,13 +269,14 @@ int32_t MediaScannerObj::Commit()
 {
     string tableName;
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
         uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_);
         if (!isSkipAlbumUpdate_) {
             mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
         }
-        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
-            if (data_->GetForAdd() && data_->GetBurstCoverLevel() == COVER) {
+        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT && data_->GetBurstCoverLevel() == COVER) {
+            if (data_->GetForAdd()) {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
             } else {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_UPDATE);

@@ -101,6 +101,7 @@ const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 10;
 const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 150;
+const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 
@@ -2708,6 +2709,10 @@ void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbac
             NAPI_ERR_LOG("Failed to read sub uri list length");
             return;
         }
+        if (len > MAX_LEN_LIMIT) {
+            NAPI_ERR_LOG("len exceed the limit.");
+            return;
+        }
         for (uint32_t i = 0; i < len; i++) {
             string subUri = parcel->ReadString();
             if (subUri.empty()) {
@@ -4497,8 +4502,12 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         return;
     }
     SetFileAssetByIdV9(index, "", context);
+    if (context->fileAsset == nullptr) {
+        close(srcFd);
+        NAPI_ERR_LOG("JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
+        return;
+    }
     LogMedialibraryAPI(context->fileAsset->GetUri());
-    CHECK_NULL_PTR_RETURN_VOID(context->fileAsset, "JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
     Uri openFileUri(context->fileAsset->GetUri());
     int32_t destFd = UserFileClient::OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
     if (destFd < 0) {
@@ -6371,9 +6380,9 @@ static std::string GetFaceAnalysisProgress()
         return retJson;
     }
     string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
-    if (retJson == "") {
+    if (retJson == "" || !nlohmann::json::accept(retJson)) {
         ret->Close();
-        NAPI_ERR_LOG("retJson is empty");
+        NAPI_ERR_LOG("retJson is empty or invalid");
         return "";
     }
     nlohmann::json curJsonObj = nlohmann::json::parse(retJson);

@@ -187,6 +187,8 @@ bool MedialibrarySubscriber::Subscribe(void)
     for (auto event : events_) {
         matchingSkills.AddEvent(event);
     }
+
+    MEDIA_INFO_LOG("Subscribe: add event.");
     EventFwk::CommonEventSubscribeInfo subscribeInfo(matchingSkills);
 
     std::shared_ptr<MedialibrarySubscriber> subscriber = std::make_shared<MedialibrarySubscriber>(subscribeInfo);
@@ -568,6 +570,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     Init();
     DoAgingOperation();
+    MediaLibraryRdbUtils::AnalyzePhotosData();
     // update burst from gallery
     int32_t ret = DoUpdateBurstFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");

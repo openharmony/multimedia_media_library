@@ -663,6 +663,35 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     return E_SUCCESS;
 }
 
+static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string &mode)
+{
+    auto ret = false;
+    string unifyMode = mode;
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE || cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
+        cmd.GetTableName() == MEDIALIBRARY_TABLE) {
+        std::vector<std::string> columns;
+        DatashareBusinessError businessError;
+        int errCode = businessError.GetCode();
+        string clientAppId = GetClientAppId();
+        string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
+        if (clientAppId.empty() || fileId.empty()) {
+            return false;
+        }
+        DataSharePredicates predicates;
+        predicates.And()->EqualTo("file_id", fileId);
+        predicates.And()->EqualTo("owner_appid", clientAppId);
+        auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+        auto count = 0;
+        queryResultSet->GetRowCount(count);
+        if (count != 0) {
+            ret = true;
+            CollectPermissionInfo(cmd, unifyMode, true,
+                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
+        }
+    }
+    return ret;
+}
+
 static bool AddOwnerCheck(MediaLibraryCommand &cmd, DataSharePredicates &appidPredicates)
 {
     if (cmd.GetTableName() != PhotoColumn::PHOTOS_TABLE && cmd.GetTableName() != AudioColumn::AUDIOS_TABLE &&
@@ -721,6 +750,14 @@ int MediaDataShareExtAbility::CheckPermissionForOpenFile(const Uri &uri,
     }
     if (err == E_PERMISSION_DENIED) {
         err = UriPermissionOperations::CheckUriPermission(command.GetUriStringWithoutSegment(), unifyMode);
+        if (!CheckIsOwner(uri, command, unifyMode)) {
+            MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
+            CollectPermissionInfo(command, unifyMode, false,
+                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
+            return err;
+        } else {
+            return E_OK;
+        }
     }
     return err;
 }
@@ -940,7 +977,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
             return nullptr;
         }
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
-        if (!AddOwnerCheck(cmd, appidPredicates, columns)) {
+        if (!AddOwnerCheck(cmd, appidPredicates)) {
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
             businessError.SetCode(err);
             return nullptr;

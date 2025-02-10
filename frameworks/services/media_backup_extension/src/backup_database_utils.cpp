@@ -312,20 +312,6 @@ bool BackupDatabaseUtils::QueryThumbImage(NativeRdb::RdbStore &rdbStore,
     return true;
 }
 
-bool BackupDatabaseUtils::SaveImage(std::vector<uint8_t> &data, const std::string &outFile)
-{
-    auto output = data.data();
-    auto writeSize = data.size();
-    const mode_t fileMode = 0644;
-    UniqueFd fd(open(outFile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
-    CHECK_AND_RETURN_RET_LOG(fd.Get() > 0, false, "Open file error: %{public}d", errno);
-    int ret = write(fd.Get(), output, writeSize);
-    CHECK_AND_RETURN_RET_LOG(ret >= 0, false, "Write file error: %{public}d", errno);
-    int32_t errCode = fsync(fd.Get());
-    CHECK_AND_RETURN_RET_LOG(errCode >= 0, false, "Fsync file error: %{public}d", errno);
-    return true;
-}
-
 int32_t BackupDatabaseUtils::GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
     std::vector<uint8_t> &blobVal)
 {

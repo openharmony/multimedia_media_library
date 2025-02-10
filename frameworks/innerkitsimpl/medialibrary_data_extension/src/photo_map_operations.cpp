@@ -132,6 +132,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         }
 
         auto watch = MediaLibraryNotify::GetInstance();
+        CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
         for (const auto &id : updateIds) {
             string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + to_string(id);
             watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
@@ -302,6 +303,7 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
     int32_t deleteRow = DoDismissAssets(subtype, strAlbumId, assetsArray);
     if (deleteRow > 0) {
         auto watch = MediaLibraryNotify::GetInstance();
+        CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
         for (size_t i = 1; i < whereArgsUri.size() - 1; i++) {
             watch->Notify(MediaFileUtils::Encode(whereArgsUri[i]), NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, albumId);
         }
@@ -415,7 +417,9 @@ shared_ptr<OHOS::NativeRdb::ResultSet> QueryGroupPhotoAlbumAssets(const string &
         MediaColumn::MEDIA_TIME_PENDING + " = 0 GROUP BY P." + MediaColumn::MEDIA_ID +
         " HAVING COUNT(" + GROUP_TAG + ") = " + TOTAL_FACES + " AND " +
         " COUNT(DISTINCT " + GROUP_TAG +") = " + to_string(albumTagCount) + ";";
-    return MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->QuerySql(sql);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "rdbstore is nullptr");
+    return rdbStore->QuerySql(sql);
 }
 shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(const RdbPredicates &rdbPredicate,
     const vector<string> &columns)

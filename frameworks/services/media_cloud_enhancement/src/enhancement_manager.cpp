@@ -464,7 +464,9 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
             continue;
         }
         auto watch = MediaLibraryNotify::GetInstance();
-        watch->Notify(fileId2Uri[fileId], NotifyType::NOTIFY_UPDATE);
+        if (watch != nullptr) {
+            watch->Notify(fileId2Uri[fileId], NotifyType::NOTIFY_UPDATE);
+        }
     }
     return errCode;
 }
@@ -560,7 +562,9 @@ int32_t EnhancementManager::HandleCancelOperation(MediaLibraryCommand &cmd)
         }
         CloudEnhancementGetCount::GetInstance().RemoveStartTime(photoId);
         auto watch = MediaLibraryNotify::GetInstance();
-        watch->Notify(fileId2Uri[fileId], NotifyType::NOTIFY_UPDATE);
+        if (watch != nullptr) {
+            watch->Notify(fileId2Uri[fileId], NotifyType::NOTIFY_UPDATE);
+        }
     }
     return E_OK;
 #else
@@ -591,8 +595,7 @@ int32_t EnhancementManager::HandleCancelAllOperation()
         string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
         int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
         if (ceAvailable != static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING)) {
-            MEDIA_INFO_LOG("cloud enhancement task in db not processing, photoId: %{public}s",
-                photoId.c_str());
+            MEDIA_INFO_LOG("cloud enhancement task in db not processing, photoId: %{public}s", photoId.c_str());
             continue;
         }
         string uri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
@@ -610,7 +613,9 @@ int32_t EnhancementManager::HandleCancelAllOperation()
         }
         CloudEnhancementGetCount::GetInstance().RemoveStartTime(photoId);
         auto watch = MediaLibraryNotify::GetInstance();
-        watch->Notify(uri, NotifyType::NOTIFY_UPDATE);
+        if (watch != nullptr) {
+            watch->Notify(uri, NotifyType::NOTIFY_UPDATE);
+        }
     }
     return E_OK;
 #else

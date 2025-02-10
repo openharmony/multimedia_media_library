@@ -144,6 +144,7 @@ const std::string GALLERY_FACE_TABLE_FULL = GALLERY_TABLE_MERGE_FACE + " INNER J
 
 // Path related
 const std::string INTERNAL_PREFIX = "/storage/emulated";
+constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 const std::string APP_TWIN_DATA_PREFIX = "/AppTwinData";
 } // namespace Media
 } // namespace OHOS
