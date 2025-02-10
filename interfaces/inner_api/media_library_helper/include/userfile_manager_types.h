@@ -160,6 +160,11 @@ enum class PhotoPositionType : int32_t {
     LOCAL_AND_CLOUD = 3
 };
 
+enum class PhotoThumbStatusType : int32_t {
+    DOWNLOADED = 0,
+    NOT_DOWNLOADED = 3
+};
+
 enum class CloudEnhancementTaskStage : int32_t {
     TASK_STAGE_EXCEPTION = -1,
     TASK_STAGE_PREPARING,
