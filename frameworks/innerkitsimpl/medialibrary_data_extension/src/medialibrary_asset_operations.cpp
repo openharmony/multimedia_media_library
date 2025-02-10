@@ -963,15 +963,26 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     cmd.SetValueBucket(assetInfo);
 }
 
-static void GetUriPermissionValuesBucket(string &tableName, ValuesBucket &valuesBucket,
-    uint32_t tokenId, int64_t fileId)
+static ValuesBucket GetOwnerPermissionBucket(MediaLibraryCommand &cmd, int64_t fileId, int32_t callingUid)
 {
+    int64_t tokenId = 0;
+    if (callingUid > 0 && PermissionUtils::IsNativeSAApp()) {
+        string bundleName;
+        PermissionUtils::GetClientBundle(callingUid, bundleName);
+        string appId = PermissionUtils::GetAppIdByBundleName(bundleName, callingUid);
+        PermissionUtils::GetMainTokenId(appId, tokenId);
+    }
+    if (tokenId == 0) {
+        tokenId = PermissionUtils::GetTokenId();
+    }
+    string tableName = cmd.GetTableName();
     TableType mediaType;
     if (tableName == PhotoColumn::PHOTOS_TABLE) {
         mediaType = TableType::TYPE_PHOTOS;
     } else {
         mediaType = TableType::TYPE_AUDIOS;
     }
+    ValuesBucket valuesBucket;
     valuesBucket.Put(AppUriPermissionColumn::FILE_ID, static_cast<int32_t>(fileId));
     valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, static_cast<int32_t>(mediaType));
     valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE,
@@ -979,6 +990,7 @@ static void GetUriPermissionValuesBucket(string &tableName, ValuesBucket &values
     valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)tokenId);
     valuesBucket.Put(AppUriPermissionColumn::SOURCE_TOKENID, (int64_t)tokenId);
     valuesBucket.Put(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    return valuesBucket;
 }
 
 int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<TransactionOperations> trans,
@@ -1006,22 +1018,17 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(std::shared_ptr<Transaction
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    uint32_t tokenId = PermissionUtils::GetTokenId();
-    auto fileId = outRowId;
-    string tableName = cmd.GetTableName();
-    ValuesBucket valuesBucket;
-    if (tokenId) {
-        int64_t tmpOutRowId = -1;
-        GetUriPermissionValuesBucket(tableName, valuesBucket, tokenId, fileId);
-        MediaLibraryCommand cmd(Uri(MEDIALIBRARY_GRANT_URIPERM_URI), valuesBucket);
-        errCode = trans->Insert(cmd, tmpOutRowId);
-        if (errCode != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
-            return E_HAS_DB_ERROR;
-        }
-        MEDIA_INFO_LOG("insert uripermission success, rowId = %{public}d", (int)outRowId);
-    }
     MEDIA_INFO_LOG("insert success, rowId = %{public}d", (int)outRowId);
+    auto fileId = outRowId;
+    ValuesBucket valuesBucket = GetOwnerPermissionBucket(cmd, fileId, callingUid);
+    int64_t tmpOutRowId = -1;
+    MediaLibraryCommand cmdPermission(Uri(MEDIALIBRARY_GRANT_URIPERM_URI), valuesBucket);
+    errCode = trans->Insert(cmdPermission, tmpOutRowId);
+    if (errCode != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
+        return E_HAS_DB_ERROR;
+    }
+    MEDIA_INFO_LOG("insert uripermission success, rowId = %{public}d", (int)tmpOutRowId);
     return static_cast<int32_t>(outRowId);
 }
 
