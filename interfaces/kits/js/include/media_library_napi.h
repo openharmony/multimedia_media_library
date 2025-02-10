@@ -234,6 +234,7 @@ private:
     EXPORT static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
     EXPORT static napi_value CreateDeliveryModeEnum(napi_env env);
     EXPORT static napi_value CreateSourceModeEnum(napi_env env);
+    EXPORT static napi_value CreateCompatibleModeEnum(napi_env env);
     EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
 
     EXPORT static napi_value CreateMediaTypeUserFileEnum(napi_env env);
@@ -373,6 +374,7 @@ private:
     static thread_local napi_ref sResourceTypeEnumRef_;
     static thread_local napi_ref sDeliveryModeEnumRef_;
     static thread_local napi_ref sSourceModeEnumRef_;
+    static thread_local napi_ref sCompatibleModeEnumRef_;
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
     static thread_local napi_ref sMovingPhotoEffectModeEnumRef_;
