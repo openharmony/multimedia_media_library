@@ -921,6 +921,30 @@ void BackupDatabaseUtils::UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbSt
     }
 }
 
+void BackupDatabaseUtils::BatchUpdatePhotosToLocal(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::vector<std::string> inColumn)
+{
+    int32_t changeRows = 0;
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+        make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
+    predicates->In(MediaColumn::MEDIA_ID, inColumn);
+    NativeRdb::ValuesBucket updatePostBucket;
+    updatePostBucket.Put(PhotoColumn::PHOTO_CLEAN_FLAG, 0);
+    updatePostBucket.Put(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+    updatePostBucket.PutNull(PhotoColumn::PHOTO_CLOUD_ID);
+    updatePostBucket.PutNull(PhotoColumn::PHOTO_CLOUD_VERSION);
+    updatePostBucket.Put(PhotoColumn::PHOTO_THUMBNAIL_READY, 0);
+    updatePostBucket.Put(PhotoColumn::PHOTO_THUMB_STATUS, static_cast<int32_t>(PhotoThumbStatusType::NOT_DOWNLOADED));
+    updatePostBucket.Put(PhotoColumn::PHOTO_LCD_VISIT_TIME, 0);
+    updatePostBucket.Put(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 0);
+
+    BackupDatabaseUtils::Update(mediaLibraryRdb, changeRows, updatePostBucket, predicates);
+    if (changeRows != static_cast<int32_t>(inColumn.size())) {
+        MEDIA_ERR_LOG("update failed, UpdatePhotoToLocal, expected count %{public}d, but got %{public}d",
+            static_cast<int32_t>(inColumn.size()), changeRows);
+    }
+}
+
 std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
     const std::string &dbTag)
 {
