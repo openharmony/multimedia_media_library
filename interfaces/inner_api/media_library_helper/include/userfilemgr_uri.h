@@ -65,6 +65,7 @@ const std::string OPRN_PORTRAIT_ALBUM_NAME = "album_name";
 const std::string OPRN_PORTRAIT_MERGE_ALBUM = "merge_album";
 const std::string OPRN_HIGHLIGHT_ALBUM_NAME = "highlight_name";
 const std::string OPRN_HIGHLIGHT_COVER_URI = "highlight_cover_uri";
+const std::string OPRN_HIGHLIGHT_SUBTITLE = "highlight_subtitle";
 const std::string OPRN_DISMISS_ASSET = "dismiss_asset";
 const std::string UPDATE_DISMISS_ASSET = "dismiss_asset_update";
 const std::string OPRN_PORTRAIT_COVER_URI = "cover_uri";
@@ -365,6 +366,8 @@ const std::string PAH_HIGHLIGHT_ALBUM_NAME = MEDIALIBRARY_DATA_URI + "/" + PAH_A
     OPRN_HIGHLIGHT_ALBUM_NAME;
 const std::string PAH_HIGHLIGHT_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
     OPRN_HIGHLIGHT_COVER_URI;
+const std::string PAH_HIGHLIGHT_SUBTITLE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
+    OPRN_HIGHLIGHT_SUBTITLE;
 const std::string PAH_DISMISS_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP + "/" +
     OPRN_DISMISS_ASSET;
 const std::string PAH_PORTRAIT_ANAALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
