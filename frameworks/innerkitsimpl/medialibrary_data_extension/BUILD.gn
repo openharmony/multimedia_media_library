@@ -464,10 +464,9 @@ ohos_shared_library("medialibrary_data_extension") {
     external_deps += [ "security_component_manager:libsecurity_component_sdk" ]
   }
 
-  if (defined(global_parts_info) &&
-      defined(
+  if (defined(global_parts_info) && defined(
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service) &&
-      media_library_feature_cloud_enhancement) {
+      media_library_feature_cloud_enhancement && factory != true) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
     sources += [ "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_callback.cpp" ]
   }

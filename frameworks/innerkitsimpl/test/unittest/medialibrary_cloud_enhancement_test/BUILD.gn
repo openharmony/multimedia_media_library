@@ -125,10 +125,10 @@ ohos_unittest("medialibrary_cloud_enhancement_test") {
 
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
-  if (defined(global_parts_info) &&
-      defined(
+  if (defined(global_parts_info) && defined(
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service) &&
-      global_parts_info.device_cloud_gateway_media_cloud_enhance_service) {
+      global_parts_info.device_cloud_gateway_media_cloud_enhance_service &&
+      factory != true) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
     include_dirs += [ "${MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH}/interfaces/inner_api/include/c_api" ]
   }
@@ -240,10 +240,10 @@ ohos_unittest("medialibrary_cloud_enhancement_get_pair_test") {
 
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
-  if (defined(global_parts_info) &&
-      defined(
+  if (defined(global_parts_info) && defined(
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service) &&
-      global_parts_info.device_cloud_gateway_media_cloud_enhance_service) {
+      global_parts_info.device_cloud_gateway_media_cloud_enhance_service &&
+      factory != true) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
   }
 
