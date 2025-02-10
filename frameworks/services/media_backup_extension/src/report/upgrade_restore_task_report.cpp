@@ -125,6 +125,11 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTimeCost()
     return Report("TimeCost", std::to_string(timeCost), "");
 }
 
+UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportRestoreMode(int32_t restoreMode, uint64_t notFoundFileNum)
+{
+    return Report("RestoreMode:NotFoundFileNum", std::to_string(restoreMode), std::to_string(notFoundFileNum));
+}
+
 int32_t UpgradeRestoreTaskReport::PostInfoDfx(const MediaRestoreResultInfo &info)
 {
     int32_t ret = HiSysEventWrite(MEDIA_LIBRARY,
