@@ -3317,6 +3317,17 @@ static void AddStageVideoTaskStatus(RdbStore &store)
     MEDIA_INFO_LOG("end add stage_video_task_status column");
 }
 
+static void AddHighlightUseSubtitle(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add use_subtitle column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " +
+            HIGHLIGHT_USE_SUBTITLE + " INT DEFAULT 0"
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("start add use_subtitle column");
+}
+
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -4139,6 +4150,17 @@ static void FixSourceAlbumUpdateTriggerToUseLPath(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
+        AddStageVideoTaskStatus(store);
+    }
+
+    if (oldVersion < VERSION_HIGHLIGHT_SUBTITLE) {
+        AddHighlightUseSubtitle(store);
+    }
+}
+
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
@@ -4199,9 +4221,7 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         FixSourceAlbumUpdateTriggerToUseLPath(store);
     }
 
-    if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
-        AddStageVideoTaskStatus(store);
-    }
+    UpgradeExtensionPart5(store, oldVersion);
 }
 
 static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
