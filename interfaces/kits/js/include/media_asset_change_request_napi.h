@@ -50,6 +50,7 @@ enum class AssetChangeOperation {
     SAVE_CAMERA_PHOTO,
     ADD_FILTERS,
     DISCARD_CAMERA_PHOTO,
+    SET_ORIENTATION,
     SET_VIDEO_ENHANCEMENT_ATTR,
     SET_SUPPORTED_WATERMARK_TYPE,
 };
@@ -137,6 +138,7 @@ private:
     EXPORT static napi_value JSSetCameraShotKey(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSaveCameraPhoto(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDiscardCameraPhoto(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetOrientation(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetVideoEnhancementAttr(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetSupportedWatermarkType(napi_env env, napi_callback_info info);
     
