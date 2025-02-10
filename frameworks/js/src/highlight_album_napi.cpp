@@ -646,7 +646,7 @@ napi_value HighlightAlbumNapi::JSSetHighlightSubtitle(napi_env env, napi_callbac
     NAPI_CALL(env, napi_get_undefined(env, &result));
     unique_ptr<HighlightAlbumNapiAsyncContext> asyncContext = make_unique<HighlightAlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext,asyncContext->subtitle),
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->subtitle),
         JS_ERR_PARAMETER_INVALID);
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();

@@ -4150,6 +4150,17 @@ static void FixSourceAlbumUpdateTriggerToUseLPath(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
+        AddStageVideoTaskStatus(store);
+    }
+
+    if (oldVersion < VERSION_HIGHLIGHT_SUBTITLE) {
+        AddHighlightUseSubtitle(store);
+    }
+}
+
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_CREATE_TAB_OLD_PHOTOS) {
@@ -4210,13 +4221,7 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         FixSourceAlbumUpdateTriggerToUseLPath(store);
     }
 
-    if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
-        AddStageVideoTaskStatus(store);
-    }
-
-    if (oldVersion < VERSION_HIGHLIGHT_SUBTITLE) {
-        AddHighlightUseSubtitle(store);
-    }
+    UpgradeExtensionPart5(store, oldVersion);
 }
 
 static void UpgradeExtensionPart3(RdbStore &store, int32_t oldVersion)
