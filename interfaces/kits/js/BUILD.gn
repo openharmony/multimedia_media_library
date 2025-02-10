@@ -233,7 +233,7 @@ ohos_shared_library("medialibrary_nutils") {
   if (defined(global_parts_info) &&
       defined(
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service) &&
-      factory != true) {
+      !factory) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
   }
 
