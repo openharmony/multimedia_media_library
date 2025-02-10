@@ -2686,6 +2686,8 @@ int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationTyp
             return SetHighlightAlbumName(values, predicates);
         case OperationType::HIGHLIGHT_COVER_URI:
             return SetHighlightCoverUri(values, predicates);
+        case OperationType::HIGHLIGHT_SUBTITLE:
+            return SetHighlightSubtitle(values, predicates);
         case OperationType::DISMISS:
         case OperationType::GROUP_ALBUM_NAME:
         case OperationType::GROUP_COVER_URI:
