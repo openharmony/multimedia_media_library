@@ -24,6 +24,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
+#include "media_album_change_request_napi.h"
 #include "photo_album.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
