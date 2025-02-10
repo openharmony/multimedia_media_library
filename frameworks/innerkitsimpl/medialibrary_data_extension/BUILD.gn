@@ -270,6 +270,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/hi_audit.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
+    "src/media_param_watcher_ability.cpp",
     "src/medialibrary_album_fusion_utils.cpp",
     "src/medialibrary_album_operations.cpp",
     "src/medialibrary_album_refresh.cpp",
@@ -398,6 +399,7 @@ ohos_shared_library("medialibrary_data_extension") {
   }
 
   external_deps = [
+    "ability_base:base",
     "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_manager",
@@ -424,6 +426,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "init:libbeget_proxy",
     "init:libbegetutil",
     "ipc:ipc_core",
     "ipc:ipc_single",
