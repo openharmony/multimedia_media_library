@@ -403,6 +403,7 @@ int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundleHandle* mediaEnhanc
     int32_t errCode = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
     if (errCode != E_OK) {
         EnhancementTaskManager::RemoveEnhancementTask(photoId);
+        enhancementService_->DestroyBundle(mediaEnhanceBundle);
         return E_ERR;
     }
     if (enhancementService_->AddTask(photoId, mediaEnhanceBundle) != E_OK) {
