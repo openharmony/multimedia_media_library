@@ -2503,6 +2503,47 @@ int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredica
     return err;
 }
 
+int32_t SetHighlightSubtitle(const ValuesBucket &values, const DataSharePredicates &predicates)
+{
+    MEDIA_INFO_LOG("Start set highlight subtitle");
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
+    auto whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.size() == 0) {
+        MEDIA_ERR_LOG("no target highlight album id");
+        return E_INVALID_VALUES;
+    }
+    string highlightAlbumId = whereArgs[0];
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight album name");
+        return E_DB_FAIL;
+    }
+    string albumSubtitle;
+    int err = GetStringVal(values, SUB_TITLE, albumSubtitle);
+    if (err < 0 || albumSubtitle.empty()) {
+        MEDIA_ERR_LOG("invalid album name");
+        return E_INVALID_VALUES;
+    }
+
+    MEDIA_INFO_LOG("New highlight subtitle is: %{public}s, album id is %{public}s",
+        albumSubtitle.c_str(), highlightAlbumId.c_str());
+    int32_t currentCoverStatus = 0;
+    GetHighlightCoverStatus(highlightAlbumId, currentCoverStatus);
+    int32_t newCoverStatus = currentCoverStatus | HIGHLIGHT_COVER_STATUS_TITLE;
+    std::string updateAlbumName = "UPDATE " + HIGHLIGHT_ALBUM_TABLE + " SET " + SUB_TITLE + " = '" + albumSubtitle +
+        "', " + HIGHLIGHT_USE_SUBTITLE + " = 1" + " WHERE " + ALBUM_ID + " = " + highlightAlbumId;
+    std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " +
+        COVER_STATUS + " = " + to_string(newCoverStatus) + " WHERE " +
+        ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + highlightAlbumId + " LIMIT 1)";
+    vector<string> updateSqls = { updateAlbumName, updateCoverInfoTable };
+    err = ExecSqls(updateSqls, uniStore);
+    if (err == E_OK) {
+        vector<int32_t> changeAlbumIds = { atoi(highlightAlbumId.c_str()) };
+        NotifyHighlightAlbum(changeAlbumIds);
+    }
+    return err;
+}
+
 /**
  * set target album is me
  * @param values is_me
