@@ -64,6 +64,38 @@ const int64_t THUMB_DENTRY_SIZE = 2 * 1024 * 1024;
 const int32_t ORIETATION_ZERO = 0;
 const int32_t MIGRATE_CLOUD_THM_TYPE = 0;
 const int32_t MIGRATE_CLOUD_LCD_TYPE = 1;
+const int32_t APP_MAIN_DATA_USER_ID = 0;
+const int32_t APP_TWIN_DATA_USER_ID_START = 128;
+const int32_t APP_TWIN_DATA_USER_ID_END = 147;
+
+static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
+{
+    int32_t restoreMode = RESTORE_MODE_PROC_ALL_DATA;
+    nlohmann::json jsonObj = nlohmann::json::parse(restoreInfo, nullptr, false);
+    if (jsonObj.is_discarded()) {
+        MEDIA_ERR_LOG("parse json failed");
+        return restoreMode;
+    }
+
+    for (auto &obj : jsonObj) {
+        if (!obj.contains("type") || obj.at("type") != "appTwinDataRestoreState" || !obj.contains("detail")) {
+            continue;
+        }
+
+        std::string curMode = obj.at("detail");
+        if (curMode == "0" || curMode == "1" || curMode == "2" || curMode == "3") {
+            restoreMode = std::stoi(curMode);
+        } else {
+            MEDIA_ERR_LOG("invalid restore mode:%{public}s", curMode.c_str());
+        }
+    }
+    return restoreMode;
+}
+
+int32_t BaseRestore::GetRestoreMode()
+{
+    return restoreMode_;
+}
 
 void BaseRestore::GetAccountValid()
 {
@@ -308,6 +340,17 @@ static void RemoveDuplicateDualCloneFiles(const FileInfo &fileInfo)
     }
 }
 
+static bool NeedReportError(int32_t restoreMode, int32_t userId)
+{
+    if (restoreMode == RESTORE_MODE_PROC_MAIN_DATA) {
+        return userId == APP_MAIN_DATA_USER_ID;
+    } else if (restoreMode == RESTORE_MODE_PROC_TWIN_DATA) {
+        return userId >= APP_TWIN_DATA_USER_ID_START && userId <= APP_TWIN_DATA_USER_ID_END;
+    }
+
+    return true;
+}
+
 vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t sceneCode, std::vector<FileInfo> &fileInfos,
     int32_t sourceType)
 {
@@ -315,6 +358,12 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     for (size_t i = 0; i < fileInfos.size(); i++) {
         int32_t errCode = IsFileValid(fileInfos[i], sceneCode);
         if (errCode != E_OK) {
+            if (!NeedReportError(restoreMode_, fileInfos[i].userId)) {
+                MEDIA_WARN_LOG("file not found but no need report, file name:%{public}s",
+                    BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+                notFoundNumber_++;
+                continue;
+            }
             fileInfos[i].needMove = false;
             std::string fileDbCheckInfo = CheckInvalidFile(fileInfos[i], errCode);
             ErrorInfo errorInfo(RestoreError::FILE_INVALID, 1, std::to_string(errCode),
@@ -1224,6 +1273,8 @@ void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::
         .SetSceneCode(this->sceneCode_)
         .SetTaskId(this->taskId_)
         .ReportProgress("start", std::to_string(MediaFileUtils::UTCTimeSeconds()));
+    restoreMode_ = GetRestoreModeFromRestoreInfo(restoreInfo_);
+    MEDIA_INFO_LOG("set restore mode to :%{public}d", restoreMode_);
     StartRestore(backupRetoreDir, upgradePath);
     DatabaseReport()
         .SetSceneCode(this->sceneCode_)
@@ -1656,6 +1707,11 @@ void BaseRestore::GetUpdateUniqueNumberCount()
     MEDIA_INFO_LOG("onProcess Update updateTotalNumber_: %{public}lld", (long long)updateTotalNumber_);
 }
 
+uint64_t BaseRestore::GetNotFoundNumber()
+{
+    return notFoundNumber_;
+}
+
 void BaseRestore::RestoreThumbnail()
 {
     // restore thumbnail for date fronted 2000 photos
@@ -1717,7 +1773,7 @@ std::string BaseRestore::GetRestoreTotalInfo()
     uint64_t duplicate = migratePhotoDuplicateNumber_ + migrateVideoDuplicateNumber_;
     uint64_t failed = static_cast<uint64_t>(GetFailedFiles(STAT_TYPE_PHOTO).size() +
         GetFailedFiles(STAT_TYPE_VIDEO).size());
-    uint64_t error = totalNumber_ - success - duplicate - failed;
+    uint64_t error = totalNumber_ - success - duplicate - failed - notFoundNumber_;
     restoreTotalInfo << failed;
     restoreTotalInfo << ";" << error;
     restoreTotalInfo << ";" << GetNoNeedMigrateCount();

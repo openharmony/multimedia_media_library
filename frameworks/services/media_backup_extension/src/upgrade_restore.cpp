@@ -245,8 +245,14 @@ void UpgradeRestore::RestoreAudio(void)
         }
         RestoreAudioFromFile();
     }
-    (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(audioDbPath_);
+
+    int32_t restoreMode = BaseRestore::GetRestoreMode();
+    if (restoreMode == RESTORE_MODE_PROC_ALL_DATA || restoreMode == RESTORE_MODE_PROC_TWIN_DATA) {
+        (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
+    } else {
+        MEDIA_INFO_LOG("restore mode no need to del external db");
+    }
 }
 
 void UpgradeRestore::RestoreAudioFromFile()
@@ -417,7 +423,17 @@ void UpgradeRestore::RestorePhoto()
     geoKnowledgeRestore_.ReportGeoRestoreTask();
     highlightRestore_.UpdateAlbums();
     ReportPortraitStat(sceneCode_);
-    (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
+
+    int32_t restoreMode = BaseRestore::GetRestoreMode();
+    UpgradeRestoreTaskReport()
+        .SetSceneCode(sceneCode_)
+        .SetTaskId(taskId_)
+        .ReportRestoreMode(restoreMode, BaseRestore::GetNotFoundNumber());
+    if (restoreMode == RESTORE_MODE_PROC_ALL_DATA || restoreMode == RESTORE_MODE_PROC_TWIN_DATA) {
+        (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
+    } else {
+        MEDIA_INFO_LOG("restore mode no need to del gallery db");
+    }
 }
 
 void UpgradeRestore::AnalyzeSource()
@@ -583,6 +599,12 @@ void UpgradeRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
     RestoreThumbnail();
+
+    int32_t restoreMode = BaseRestore::GetRestoreMode();
+    if (restoreMode != RESTORE_MODE_PROC_ALL_DATA && restoreMode != RESTORE_MODE_PROC_TWIN_DATA) {
+        MEDIA_DEBUG_LOG("restore mode no need to del rest data");
+        return;
+    }
 
     std::string photoData = appDataPath_ + "/" + galleryAppName_;
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;
