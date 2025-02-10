@@ -344,6 +344,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_UPDATE_ORDER, OperationType::UPDATE_ORDER },
         { OPRN_DELETE_LOCAL_ASSETS_PERMANENTLY, OperationType::DELETE_LOCAL_ASSETS_PERMANENTLY },
         { MTH_AND_YEAR_ASTC, OperationType::MTH_AND_YEAR_ASTC },
+        { OPRN_HIGHLIGHT_SUBTITLE, OperationType::HIGHLIGHT_SUBTITLE},
     };
     return oprnTypeMap;
 }
