@@ -152,6 +152,8 @@ protected:
     void UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         std::vector<FileInfo>& fileInfos);
     int32_t RemoveDentryFileWithConflict(const FileInfo &fileInfo);
+    int32_t GetRestoreMode();
+    uint64_t GetNotFoundNumber();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
@@ -162,6 +164,7 @@ protected:
     std::atomic<uint64_t> successCloudMetaNumber_{0};
     std::atomic<uint64_t> migrateAudioFileNumber_{0};
     std::atomic<uint64_t> totalNumber_{0};
+    std::atomic<uint64_t> notFoundNumber_{0};
     std::atomic<uint64_t> audioTotalNumber_{0};
     std::atomic<uint64_t> updateTotalNumber_{0};
     std::atomic<uint64_t> localLcdCount_{0};
@@ -214,6 +217,7 @@ protected:
     bool isAccountValid_ = false;
     GeoKnowledgeRestore geoKnowledgeRestore_;
     HighlightRestore highlightRestore_;
+    int32_t restoreMode_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -222,6 +222,11 @@ constexpr int32_t CACHE = 1;
 
 constexpr int32_t DEFAULT_AREA_VERSION = -1;
 
+constexpr int32_t RESTORE_MODE_PROC_ALL_DATA = 0;
+constexpr int32_t RESTORE_MODE_PROC_MAIN_DATA = 1;
+constexpr int32_t RESTORE_MODE_PROC_TWIN_DATA = 2;
+constexpr int32_t RESTORE_MODE_PROC_MIX_DATA = 3;
+
 enum SourceType {
     GALLERY = 0,
     EXTERNAL_CAMERA,
