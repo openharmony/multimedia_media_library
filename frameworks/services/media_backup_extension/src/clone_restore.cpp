@@ -1530,6 +1530,8 @@ static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
         MEDIA_ERR_LOG("Invalid thumPhoto size from db: %{public}" PRId64, size);
         return 0;
     }
+
+    resultSet->Close();
     return static_cast<size_t>(size);
 }
 
@@ -1558,6 +1560,7 @@ size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> med
         int64_t mediaSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
         totalVolume += mediaSize;
     }
+    resultSet->Close();
 
     // other meta data dir size
     size_t EditDataTotalSize {0};
