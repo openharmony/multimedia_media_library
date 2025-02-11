@@ -125,6 +125,8 @@ const std::string ANALYSIS_ALBUM_SUBTYPE = "album_subtype";
 
 const std::string QUERY_FACE_TAG_COUNT = "SELECT count(1) AS count FROM " + VISION_FACE_TAG_TABLE;
 const std::string QUERY_IMAGE_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_IMAGE_FACE_TABLE;
+const std::string CREATE_FACE_TAG_INDEX = "CREATE INDEX face_clone_tag_index ON tab_analysis_face_tag (tag_id)";
+const std::string DROP_FACE_TAG_INDEX = "DROP INDEX face_clone_tag_index ON tab_analysis_face_tag";
 
 const std::string GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY = GALLERY_TAG_NAME + " IS NOT NULL AND " + GALLERY_TAG_NAME +
     " != ''";
