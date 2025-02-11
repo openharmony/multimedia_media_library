@@ -21,8 +21,7 @@
         "media_library_link_opt",
         "media_library_feature_mtp",
         "media_library_feature_back_up",
-        "media_library_feature_cloud_enhancement",
-        "media_library_feature_take_photo"
+        "media_library_feature_cloud_enhancement"
       ],
       "adapted_system_type": [ "small", "standard" ],
       "rom": "10444KB",

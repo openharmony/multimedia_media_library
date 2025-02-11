@@ -1463,11 +1463,7 @@ void MediaAssetManagerNapi::GetPictureNapiObject(const std::string &fileUri, nap
     std::string tempStr = fileUri.substr(PhotoColumn::PHOTO_URI_PREFIX.length());
     std::size_t index = tempStr.find("/");
     std::string fileId = tempStr.substr(0, index);
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     auto pic = PictureHandlerClient::RequestPicture(std::atoi(fileId.c_str()));
-#else
-    auto pic = nullptr;
-#endif
     if (pic == nullptr) {
         NAPI_ERR_LOG("picture is null");
         isPicture = false;
