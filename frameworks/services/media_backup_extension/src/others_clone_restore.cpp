@@ -60,6 +60,8 @@ const std::string VIDEO_SD_MEDIA_INFO_DB_NAME = "video_sd_MediaInfo.db";
 const std::string OTHER_CLONE_FILE_ROOT_PATH = "/storage/media/local/files/.backup/restore";
 const std::string LITE_CLONE_SD_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/";
 const std::string OTHER_CLONE_DB_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/0/";
+const std::string I_PHONE_IMAGE_FILE_PATH = "/storage/media/local/files/.backup/restore/";
+const std::string I_PHONE_VIDEO_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string OTHER_CLONE_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string OTHER_CLONE_DISPLAYNAME = "primaryStr";
 const std::string OTHER_CLONE_DATA = "_data";
@@ -593,10 +595,11 @@ void OthersCloneRestore::HandleRestData()
     RestoreThumbnail();
 }
 
-static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &filePath)
+std::string OthersCloneRestore::ParseSourcePathToLPath(int32_t sceneCode, const std::string &filePath,
+    int32_t fileType)
 {
     std::string lPath = filePath;
-    std::string source = OTHER_CLONE_FILE_PATH;
+    std::string source = GetFileHeadPath(sceneCode, fileType);
     auto findPos = lPath.find(source);
     if (findPos != std::string::npos) {
         lPath.replace(lPath.find(source), source.length(), "");
@@ -639,7 +642,22 @@ static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &
     return lPath;
 }
 
-static void AddGalleryAlbum(std::vector<PhotoAlbumRestore::GalleryAlbumRowData> &galleryAlbumInfos,
+std::string OthersCloneRestore::GetFileHeadPath(int32_t sceneCode, int32_t fileType)
+{
+    if (sceneCode == I_PHONE_CLONE_RESTORE) {
+        if (fileType == MediaType::MEDIA_TYPE_IMAGE) {
+            return I_PHONE_IMAGE_FILE_PATH;
+        }
+        if (fileType == MediaType::MEDIA_TYPE_VIDEO) {
+            return I_PHONE_VIDEO_FILE_PATH;
+        }
+        MEDIA_WARN_LOG("GetFileHeadPath other fileType.");
+        return I_PHONE_IMAGE_FILE_PATH;
+    }
+    return OTHER_CLONE_FILE_PATH;
+}
+
+void OthersCloneRestore::AddGalleryAlbum(std::vector<PhotoAlbumRestore::GalleryAlbumRowData> &galleryAlbumInfos,
     const std::string &lPath)
 {
     auto pathMatch = [outerLPath {lPath}](const auto &galleryAlbumInfo) {
@@ -678,18 +696,9 @@ void OthersCloneRestore::RestoreAlbum(std::vector<FileInfo> &fileInfos)
 {
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfos = this->photoAlbumDao_.GetPhotoAlbums();
     std::vector<PhotoAlbumRestore::GalleryAlbumRowData> galleryAlbumInfos;
-    if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
-        PhotoAlbumRestore::GalleryAlbumRowData galleryAlbum;
-        galleryAlbum.albumName = clonePhoneName_;
-        galleryAlbum.bundleName = clonePhoneName_;
-        galleryAlbum.lPath = I_PHONE_LPATH + clonePhoneName_;
-        galleryAlbum.priority = 1;
-        galleryAlbumInfos.emplace_back(galleryAlbum);
-    } else if (sceneCode_ == OTHERS_PHONE_CLONE_RESTORE || sceneCode_ == LITE_PHONE_CLONE_RESTORE) {
-        for (auto &info : fileInfos) {
-            info.lPath = ParseSourcePathToLPath(sceneCode_, info.filePath);
-            AddGalleryAlbum(galleryAlbumInfos, info.lPath);
-        }
+    for (auto &info : fileInfos) {
+        info.lPath = ParseSourcePathToLPath(sceneCode_, info.filePath, info.fileType);
+        AddGalleryAlbum(galleryAlbumInfos, info.lPath);
     }
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfosToRestore =
         photoAlbumRestore_.GetAlbumsToRestore(albumInfos, galleryAlbumInfos);
@@ -747,18 +756,9 @@ PhotoAlbumDao::PhotoAlbumRowData OthersCloneRestore::FindAlbumInfo(FileInfo &fil
 
 void OthersCloneRestore::UpdateAlbumInfo(FileInfo &info)
 {
-    if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
-        PhotoAlbumDao::PhotoAlbumRowData albumInfo = photoAlbumDao_.GetPhotoAlbum(I_PHONE_LPATH + clonePhoneName_);
-        info.lPath = I_PHONE_LPATH + clonePhoneName_;
-        info.mediaAlbumId = albumInfo.albumId;
-        info.ownerAlbumId = albumInfo.albumId;
-        info.packageName = clonePhoneName_;
-        info.bundleName = clonePhoneName_;
-    } else if (sceneCode_ == OTHERS_PHONE_CLONE_RESTORE || sceneCode_ == LITE_PHONE_CLONE_RESTORE) {
-        PhotoAlbumDao::PhotoAlbumRowData albumInfo = FindAlbumInfo(info);
-        info.mediaAlbumId = albumInfo.albumId;
-        info.ownerAlbumId = albumInfo.albumId;
-    }
+    PhotoAlbumDao::PhotoAlbumRowData albumInfo = FindAlbumInfo(info);
+    info.mediaAlbumId = albumInfo.albumId;
+    info.ownerAlbumId = albumInfo.albumId;
 }
 
 void OthersCloneRestore::AnalyzeSource()

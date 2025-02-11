@@ -65,6 +65,11 @@ private:
     void HandleInsertBatch(int32_t offset);
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(FileInfo &fileInfo);
 
+    static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &filePath, int32_t fileType);
+    static std::string GetFileHeadPath(int32_t sceneCode, int32_t fileType);
+    static void AddGalleryAlbum(std::vector<PhotoAlbumRestore::GalleryAlbumRowData> &galleryAlbumInfos,
+        const std::string &lPath);
+
 private:
     std::mutex cloneMutex_;
     std::string clonePhoneName_;
