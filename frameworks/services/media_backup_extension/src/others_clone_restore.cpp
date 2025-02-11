@@ -302,8 +302,8 @@ static std::vector<std::string> GetSubStrings(const std::string &originalString,
 
 static bool RecoverHiddenOrRecycleFile(std::string &currentPath, FileInfo &tmpInfo, std::string &decodeFileName)
 {
-    size_t hiddenAlbumPos = currentPath.find("hiddenAlbum/bins/0");
-    size_t recyclePos = currentPath.find("recycle/bins/0");
+    size_t hiddenAlbumPos = currentPath.find("hiddenAlbum/bins/");
+    size_t recyclePos = currentPath.find("recycle/bins/");
     bool recycleFlag = false;
     if (hiddenAlbumPos != std::string::npos) {
         tmpInfo.hidden = 1;
