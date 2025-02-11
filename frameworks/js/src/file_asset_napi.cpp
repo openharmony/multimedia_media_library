@@ -1207,7 +1207,7 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateTaken = obj->fileAssetPtr->GetDateTaken();
+        dateTaken = obj->fileAssetPtr->GetDateTaken() / MSEC_TO_SEC;
         napi_create_int64(env, dateTaken, &jsResult);
     }
     return jsResult;
