@@ -100,6 +100,8 @@ private:
     static int32_t RevertMovingPhotoVideo(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &path, const std::string &sourceVideoPath, int32_t subtype);
     static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
+    static void CreateThumbnailFileScan(const std::shared_ptr<FileAsset> &fileAsset, std::string &extraUri,
+        bool orientationUpdated, bool isNeedScan);
     static void ParseCloudEnhancementEditData(std::string& editData);
     static bool IsSetEffectMode(MediaLibraryCommand &cmd);
     static bool IsContainsData(MediaLibraryCommand &cm);
@@ -125,7 +127,10 @@ private:
         const std::string &cachePath, const std::string &destPath);
     static int32_t UpdateMovingPhotoSubtype(int32_t fileId, int32_t currentPhotoSubType);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
-    static int32_t UpdateExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t UpdateOrientationAllExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        std::string &currentOrientation);
+    static int32_t UpdateOrientationExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        bool &orientationUpdated, std::string &currentOrientation);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t BatchSetOwnerAlbumId(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,

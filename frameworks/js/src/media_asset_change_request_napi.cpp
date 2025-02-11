@@ -59,6 +59,8 @@ static const string MEDIA_ASSET_CHANGE_REQUEST_CLASS = "MediaAssetChangeRequest"
 thread_local napi_ref MediaAssetChangeRequestNapi::constructor_ = nullptr;
 std::atomic<uint32_t> MediaAssetChangeRequestNapi::cacheFileId_ = 0;
 
+static const std::array<int, 4> ORIENTATION_ARRAY = {0, 90, 180, 270};
+
 constexpr int64_t CREATE_ASSET_REQUEST_PENDING = -4;
 
 constexpr int32_t YES = 1;
@@ -147,6 +149,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setCameraShotKey", JSSetCameraShotKey),
             DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
             DECLARE_NAPI_FUNCTION("discardCameraPhoto", JSDiscardCameraPhoto),
+            DECLARE_NAPI_FUNCTION("setOrientation", JSSetOrientation),
             DECLARE_NAPI_FUNCTION("setVideoEnhancementAttr", JSSetVideoEnhancementAttr),
             DECLARE_NAPI_FUNCTION("setSupportedWatermarkType", JSSetSupportedWatermarkType),
         } };
@@ -1069,6 +1072,31 @@ napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_i
         changeRequest->creationValuesBucket_.valuesMap[MEDIA_DATA_DB_NAME] = displayName;
         changeRequest->creationValuesBucket_.valuesMap[PhotoColumn::MEDIA_TITLE] = title;
     }
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSetOrientation(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, asyncContext != nullptr, "asyncContext context is null");
+
+    int orientationValue;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, orientationValue) == napi_ok,
+        "Failed to parse args for orientation");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    if (std::find(ORIENTATION_ARRAY.begin(), ORIENTATION_ARRAY.end(), orientationValue) == ORIENTATION_ARRAY.end()) {
+        napi_throw_range_error(env, nullptr, "orientationValue value is invalid.");
+        return nullptr;
+    }
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND_WITH_MESSAGE(env, changeRequest != nullptr, "changeRequest is null");
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND_WITH_MESSAGE(env, fileAsset != nullptr, "fileAsset is null");
+    fileAsset->SetOrientation(orientationValue);
+
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_ORIENTATION);
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -2109,6 +2137,23 @@ static bool SetTitleExecute(MediaAssetChangeRequestAsyncContext& context)
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
+static bool SetOrientationExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetOrientationExecute");
+
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    if (fileAsset == nullptr) {
+        NAPI_ERR_LOG("fileAsset is null");
+        return false;
+    }
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    valuesBucket.Put(PhotoColumn::PHOTO_ORIENTATION, fileAsset->GetOrientation());
+    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+}
+
 static bool SetUserCommentExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
@@ -2342,6 +2387,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_FAVORITE, SetFavoriteExecute },
     { AssetChangeOperation::SET_HIDDEN, SetHiddenExecute },
     { AssetChangeOperation::SET_TITLE, SetTitleExecute },
+    { AssetChangeOperation::SET_ORIENTATION, SetOrientationExecute },
     { AssetChangeOperation::SET_USER_COMMENT, SetUserCommentExecute },
     { AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE, SetEffectModeExecute },
     { AssetChangeOperation::SET_PHOTO_QUALITY_AND_PHOTOID, SetPhotoQualityExecute },
