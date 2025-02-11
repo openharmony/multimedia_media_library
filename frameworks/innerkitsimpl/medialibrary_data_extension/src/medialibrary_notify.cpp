@@ -277,8 +277,7 @@ static bool SkipThumbNotifyIfNotReady(NotifyTaskData* taskData)
     if (taskData == nullptr) {
         return false;
     }
-    if (taskData->notifyType_ != NotifyType::NOTIFY_THUMB_ADD && taskData->notifyType_ !=
-        NotifyType::NOTIFY_THUMB_UPDATE) {
+    if (taskData->notifyType_ != NotifyType::NOTIFY_THUMB_ADD) {
         return false;
     }
     string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(taskData->uri_);
