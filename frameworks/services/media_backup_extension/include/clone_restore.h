@@ -112,7 +112,8 @@ private:
     void InsertAudio(std::vector<FileInfo> &fileInfos);
     int32_t QueryTotalNumberByMediaType(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         MediaType mediaType);
-    std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount);
+    size_t StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
+    std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount, size_t totalSize);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount, int64_t &videoFileMoveCount);
     void RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreAudioBatch(int32_t offset);

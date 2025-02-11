@@ -197,6 +197,7 @@ public:
         int32_t fileId, int32_t mediaType, const std::string &extension, std::string &name);
     EXPORT static int64_t GetTotalSize();
     EXPORT static int64_t GetFreeSize();
+    EXPORT static void StatDirSize(const std::string& rootPath, size_t& totalSize);
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);
