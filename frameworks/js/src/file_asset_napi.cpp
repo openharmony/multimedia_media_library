@@ -4693,7 +4693,7 @@ static void ProcessEditData(FileAssetAsyncContext *context, const UniqueFd &uniq
     struct stat fileInfo;
     if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
         off_t fileSize = fileInfo.st_size;
-        if (fileSize < 0) {
+        if (fileSize < 0 || fileSize + 1 < 0) {
             NAPI_ERR_LOG("fileBuffer error : %{public}ld", static_cast<long>(fileSize));
             context->SaveError(E_FAIL);
             return;
@@ -4707,6 +4707,8 @@ static void ProcessEditData(FileAssetAsyncContext *context, const UniqueFd &uniq
         ssize_t bytes = read(uniqueFd.Get(), context->editDataBuffer, fileSize);
         if (bytes < 0) {
             NAPI_ERR_LOG("Read edit data failed, errno: %{public}d", errno);
+            free(context->editDataBuffer);
+            context->editDataBuffer = nullptr;
             context->SaveError(E_FAIL);
             return;
         }
