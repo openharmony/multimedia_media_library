@@ -2400,7 +2400,7 @@ static int32_t SearchDateTakenWhenZero(const shared_ptr<MediaLibraryRdbStore> rd
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TAKEN, "0");
+    predicates.LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TAKEN, "0");
     vector<string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_MODIFIED};
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to acquire result from visitor query.");
@@ -2435,8 +2435,11 @@ int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
 
     string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_DATE_TAKEN +
         " = " + PhotoColumn::MEDIA_DATE_MODIFIED + "," + PhotoColumn::PHOTO_DETAIL_TIME +
-        " = strftime('%Y:%m:%d %H:%M:%S', date_modified/1000, 'unixepoch', 'localtime')" +
-        " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " = 0";
+        " = strftime('%Y:%m:%d %H:%M:%S', date_modified/1000, 'unixepoch', 'localtime'), " +
+        PhotoColumn::PHOTO_DATE_DAY + " = strftime( '%Y%m%d', date_modified / 1000, 'unixepoch', 'localtime' ), " +
+        PhotoColumn::PHOTO_DATE_MONTH + " = strftime( '%Y%m', date_modified / 1000, 'unixepoch', 'localtime' ), " +
+        PhotoColumn::PHOTO_DATE_YEAR + " = strftime( '%Y', date_modified / 1000, 'unixepoch', 'localtime' )" +
+        " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " <= 0";
     ret = rdbStore_->ExecuteSql(updateSql);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "rdbStore->ExecuteSql failed, ret = %{public}d", ret);
