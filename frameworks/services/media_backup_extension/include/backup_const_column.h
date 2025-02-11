@@ -146,6 +146,9 @@ const std::string GALLERY_FACE_TABLE_FULL = GALLERY_TABLE_MERGE_FACE + " INNER J
 const std::string INTERNAL_PREFIX = "/storage/emulated";
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 const std::string APP_TWIN_DATA_PREFIX = "/AppTwinData";
+const std::string CLONE_STAT_EDIT_DATA_DIR = "/storage/media/local/files/.editData/";
+const std::string CLONE_STAT_RDB_DIR = "/data/storage/el2/database/rdb/";
+const std::string CLONE_STAT_KVDB_DIR = "/data/storage/el2/database/kvdb/";
 } // namespace Media
 } // namespace OHOS
 
