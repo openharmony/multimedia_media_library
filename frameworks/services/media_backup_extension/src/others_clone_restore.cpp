@@ -64,8 +64,8 @@ const std::string OTHER_CLONE_MODIFIED = "date_modified";
 const std::string OTHER_CLONE_TAKEN = "datetaken";
 const std::string OTHER_MUSIC_ROOT_PATH = "/storage/emulated/0/";
 
-static constexpr uint32_t CHAR_ARRAY_LEHGTH = 5;
-static constexpr uint32_t ASCII_CHAR_LEHGTH = 8;
+static constexpr uint32_t CHAR_ARRAY_LENGTH = 5;
+static constexpr uint32_t ASCII_CHAR_LENGTH = 8;
 static constexpr uint32_t DECODE_NAME_IDX = 4;
 static constexpr uint32_t DECODE_SURFIX_IDX = 5;
 static constexpr uint32_t DECODE_TIME_IDX = 3;
@@ -221,7 +221,7 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
     // only SOURCE album has package_name and owner_package.
     values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, fileInfo.packageName);
     values.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, fileInfo.bundleName);
-    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, fileInfo.strong_association);
+    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, fileInfo.strongAssociation);
     if (fileInfo.dateTaken != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.dateTaken);
         values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateTaken);
@@ -245,21 +245,21 @@ static std::string ParseSourcePathToPath(const std::string &sourcePath, const st
     return result;
 }
 
-std::string Base32Decode(const std::string &input)
+static std::string Base32Decode(const std::string &input)
 {
     std::string result;
     uint32_t val = 0;
     uint32_t valbits = 0;
     for (char c : input) {
         if (c >= 'A' && c <= 'Z') {
-            val = (val << CHAR_ARRAY_LEHGTH) + (c - 'A');
-            valbits += CHAR_ARRAY_LEHGTH;
+            val = (val << CHAR_ARRAY_LENGTH) + (c - 'A');
+            valbits += CHAR_ARRAY_LENGTH;
         } else if (c >= '2' && c <= '7') {
-            val = (val << CHAR_ARRAY_LEHGTH) + (c - '2' + 26); //26 : A - Z
-            valbits += CHAR_ARRAY_LEHGTH;
+            val = (val << CHAR_ARRAY_LENGTH) + (c - '2' + 26); //26 : A - Z
+            valbits += CHAR_ARRAY_LENGTH;
         }
-        if (valbits >= ASCII_CHAR_LEHGTH) {
-            valbits -= ASCII_CHAR_LEHGTH;
+        if (valbits >= ASCII_CHAR_LENGTH) {
+            valbits -= ASCII_CHAR_LENGTH;
             result += static_cast<char>(val >> valbits);
             val &= (1 << valbits) - 1;
         }
@@ -267,7 +267,7 @@ std::string Base32Decode(const std::string &input)
     return result;
 }
 
-std::vector<std::string> GetSubString(const std::string &originalString, char delimiter)
+static std::vector<std::string> GetSubStrings(const std::string &originalString, char delimiter)
 {
     std::vector<std::string> substrings;
     size_t start = 0;
@@ -275,7 +275,7 @@ std::vector<std::string> GetSubString(const std::string &originalString, char de
 
     while (end != std::string::npos) {
         substrings.push_back(originalString.substr(start, end - start));
-        start = end + 1:
+        start = end + 1;
         end = originalString.find(delimiter, start);
     }
 
@@ -285,8 +285,8 @@ std::vector<std::string> GetSubString(const std::string &originalString, char de
 
 static bool RecoverHiddenOrRecycleFile(std::string &currentPath, FileInfo &tmpInfo, std::string &decodeFileName)
 {
-    size_t hiddenAlbumPos = currentPath.find("hiddenAlbum/bin/0");
-    size_t recyclePos = currentPath.find("recycle/bin/0");
+    size_t hiddenAlbumPos = currentPath.find("hiddenAlbum/bins/");
+    size_t recyclePos = currentPath.find("recycle/bins/");
     bool recycleFlag = false;
     if (hiddenAlbumPos != std::string::npos) {
         tmpInfo.hidden = 1;
@@ -355,7 +355,7 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
         std::regex pattern(R"(.*_enhanced(\.[^.]+)$)");
         if (std::regex_match(file, pattern)) {
             MEDIA_INFO_LOG("%{private}s is an enhanced image!", file.c_str());
-            tmpInfo.strong_association = STRONG_ASSOCIATION_ENABLE;
+            tmpInfo.strongAssociation = STRONG_ASSOCIATION_ENABLE;
         }
     }
     if (tmpInfo.fileType  == MediaType::MEDIA_TYPE_IMAGE || tmpInfo.fileType  == MediaType::MEDIA_TYPE_VIDEO) {
@@ -375,7 +375,8 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
             MEDIA_WARN_LOG("Not supported audio %{public}s",
                 BackupFileUtils::GarbleFilePath(tmpFile, sceneCode_).c_str());
         } else {
-            MEDIA_WARN_LOG("Not supported file %{public}s", BackupFileUtils::GarbleFilePath(tmpFile, sceneCode_).c_str());
+            MEDIA_WARN_LOG("Not supported file %{public}s",
+                BackupFileUtils::GarbleFilePath(tmpFile, sceneCode_).c_str());
         }
     }
 }
