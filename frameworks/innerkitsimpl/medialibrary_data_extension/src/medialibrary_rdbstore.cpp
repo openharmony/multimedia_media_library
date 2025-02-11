@@ -759,6 +759,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryEditDataExists(
     shared_ptr<NativeRdb::ResultSet> resultSet = Query(predicates, columns);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
     CHECK_AND_RETURN_RET_LOG(!cond, nullptr, "query edit data err");
+
+    CHECK_AND_RETURN_RET_LOG(CheckRdbStore(), nullptr, "rdbStore_ is nullptr. Maybe it didn't init successfully.");
+
     string photoPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
 
     cond = MediaFileUtils::IsFileExists(PhotoFileUtils::GetEditDataPath(photoPath)) ||
