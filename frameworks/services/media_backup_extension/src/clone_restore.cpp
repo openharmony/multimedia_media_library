@@ -1512,6 +1512,60 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     MEDIA_INFO_LOG("move %{public}ld files cost %{public}ld.", (long)fileMoveCount, (long)(end - startMove));
 }
 
+static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
+{
+    const string sql = "SELECT SUM(" + PhotoExtColumn::THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE +
+                       " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
+    auto resultSet = mediaRdb->QuerySql(sql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null!");
+        return 0;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("go to first row failed");
+        return 0;
+    }
+    int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE,
+                                                                resultSet, TYPE_INT64));
+    if (size < 0) {
+        MEDIA_ERR_LOG("Invalid thumPhoto size from db: %{public}" PRId64, size);
+        return 0;
+    }
+    return static_cast<size_t>(size);
+}
+
+size_t CloneRestore::StatClonetotalSize()
+{
+    // media asset size
+    size_t thumbPhotoSize = QueryThumbPhotoSize(mediaLibraryRdb_);
+    string querySizeSql = "SELECT cast(" + std::to_string(thumbPhotoSize) +
+        " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
+    string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME +
+        " UNION " + querySizeSql;
+
+    auto resultSet = mediaLibraryRdb_->QuerySql(mediaVolumeQuery);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to execute media volume query");
+        return 0;
+    }
+
+    int64_t totalVolume = 0;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int64_t mediaSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
+        totalVolume += mediaSize;
+    }
+
+    // other meta data dir size
+    size_t EditDataTotalSize {0};
+    size_t RdbtotalSize {0};
+    size_t KvdbTotalSize {0};
+    MediaFileUtils::StatDirSize(CLONE_STAT_EDIT_DATA_DIR, EditDataTotalSize);
+    MediaFileUtils::StatDirSize(CLONE_STAT_RDB_DIR, RdbtotalSize);
+    MediaFileUtils::StatDirSize(CLONE_STAT_KVDB_DIR, KvdbTotalSize);
+    size_t totalSize = totalVolume + EditDataTotalSize + RdbtotalSize + KvdbTotalSize;
+    return totalSize;
+}
+
 string CloneRestore::GetBackupInfo()
 {
     if (BaseRestore::Init() != E_OK) {
@@ -1529,9 +1583,12 @@ string CloneRestore::GetBackupInfo()
         MediaType::MEDIA_TYPE_VIDEO);
     int32_t audioCount = QueryTotalNumberByMediaType(mediaLibraryRdb_, AudioColumn::AUDIOS_TABLE,
         MediaType::MEDIA_TYPE_AUDIO);
-    MEDIA_INFO_LOG("QueryTotalNumber, photo: %{public}d, video: %{public}d, audio: %{public}d", photoCount, videoCount,
-        audioCount);
-    return GetBackupInfoByCount(photoCount, videoCount, audioCount);
+
+    size_t totalSize = StatClonetotalSize();
+    MEDIA_INFO_LOG("QueryTotalNumber, photo: %{public}d, video: %{public}d, audio: %{public}d, totalSize: "
+        "%{public}lld bytes", photoCount, videoCount, audioCount, static_cast<long long>(totalSize));
+
+    return GetBackupInfoByCount(photoCount, videoCount, audioCount, totalSize);
 }
 
 int32_t CloneRestore::QueryTotalNumberByMediaType(shared_ptr<NativeRdb::RdbStore> rdbStore, const string &tableName,
@@ -1549,7 +1606,7 @@ int32_t CloneRestore::QueryTotalNumberByMediaType(shared_ptr<NativeRdb::RdbStore
     return result;
 }
 
-string CloneRestore::GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount)
+string CloneRestore::GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount, size_t totalSize)
 {
     nlohmann::json jsonObject = {
         {
@@ -1563,6 +1620,10 @@ string CloneRestore::GetBackupInfoByCount(int32_t photoCount, int32_t videoCount
         {
             { STAT_KEY_BACKUP_INFO, STAT_TYPE_AUDIO },
             { STAT_KEY_NUMBER, audioCount }
+        },
+        {
+            { STAT_KEY_BACKUP_INFO, STAT_TYPE_TOTAL_SIZE },
+            { STAT_KEY_NUMBER, totalSize }
         }
     };
     return jsonObject.dump();
