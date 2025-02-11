@@ -92,9 +92,7 @@
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
-#endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -1229,13 +1227,11 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
-#endif
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -1984,10 +1980,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
                 columns);
         case OperationObject::SEARCH_TOTAL:
             return QueryIndex(cmd, columns, predicates);
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
-#endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
