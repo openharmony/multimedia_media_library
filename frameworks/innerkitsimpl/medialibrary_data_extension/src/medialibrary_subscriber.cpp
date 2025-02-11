@@ -74,6 +74,7 @@
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
 #include "medialibrary_astc_stat.h"
+#include "photo_mimetype_operation.h"
 #include "photo_other_album_trans_operation.h"
 #include "background_cloud_file_processor.h"
 
@@ -605,6 +606,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (watch != nullptr) {
         watch->DoAging();
     }
+    PhotoMimetypeOperation::UpdateInvalidMimeType();
 }
 
 static void PauseBackgroundDownloadCloudMedia()
