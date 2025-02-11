@@ -2776,6 +2776,12 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
 void ChangeListenerNapi::QueryRdbAndNotifyChange(uv_loop_s *loop, UvChangeMsg *msg, uv_work_t *work)
 {
     JsOnChangeCallbackWrapper* wrapper = new (std::nothrow) JsOnChangeCallbackWrapper();
+    if (wrapper == nullptr) {
+        NAPI_ERR_LOG("JsOnChangeCallbackWrapper allocation failed");
+        delete msg;
+        delete work;
+        return;
+    }
     wrapper->msg_ = msg;
     MediaLibraryTracer tracer;
     tracer.Start("GetResultSetFromMsg");
