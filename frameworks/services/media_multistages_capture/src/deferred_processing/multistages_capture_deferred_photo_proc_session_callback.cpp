@@ -21,6 +21,7 @@
 
 #include "database_adapter.h"
 #include "file_utils.h"
+#include "media_exif.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "media_log.h"
@@ -36,9 +37,22 @@
 #include "multistages_capture_request_task_manager.h"
 #include "result_set_utils.h"
 #include "media_change_effect.h"
+#include "exif_metadata.h"
 
 using namespace std;
 using namespace OHOS::CameraStandard;
+
+constexpr int32_t ORIENTATION_0 = 1;
+constexpr int32_t ORIENTATION_90 = 6;
+constexpr int32_t ORIENTATION_180 = 3;
+constexpr int32_t ORIENTATION_270 = 8;
+
+static const std::unordered_map<int, int> ORIENTATION_MAP = {
+    {0, ORIENTATION_0},
+    {90, ORIENTATION_90},
+    {180, ORIENTATION_180},
+    {270, ORIENTATION_270}
+};
 
 namespace OHOS {
 namespace Media {
@@ -159,8 +173,60 @@ std::shared_ptr<NativeRdb::ResultSet> QueryPhotoData(const std::string &imageId)
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TYPE, PhotoColumn::PHOTO_IS_TEMP};
+        MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TYPE, PhotoColumn::PHOTO_IS_TEMP,
+        PhotoColumn::PHOTO_ORIENTATION};
     return DatabaseAdapter::Query(cmd, columns);
+}
+
+void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQualityImage(
+    const std::string& imageId, std::shared_ptr<Media::Picture> picture,
+    std::shared_ptr<NativeRdb::ResultSet> resultSet, bool isCloudEnhancementAvailable)
+{
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        MEDIA_INFO_LOG("resultset is empty.");
+        return;
+    }
+    string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+    int32_t orientation = GetInt32Val(PhotoColumn::PHOTO_ORIENTATION, resultSet);
+    if (orientation != 0) {
+        auto metadata = picture->GetExifMetadata();
+        if (metadata == nullptr) {
+            MEDIA_ERR_LOG("metadata is null");
+            return;
+        }
+        auto imageSourceOrientation = ORIENTATION_MAP.find(orientation);
+        if (imageSourceOrientation == ORIENTATION_MAP.end()) {
+            MEDIA_ERR_LOG("imageSourceOrientation value is invalid.");
+            return;
+        }
+        metadata->SetValue(PHOTO_DATA_IMAGE_ORIENTATION, std::to_string(imageSourceOrientation->second));
+    }
+
+    // 裸picture落盘处理
+    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(isEdited, data, picture, fileId, mimeType);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
+        MultiStagesCaptureDfxResult::Report(imageId,
+            static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL),
+            static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+        return;
+    }
+
+    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), isEdited);
+    UpdateHighQualityPictureInfo(imageId, isCloudEnhancementAvailable);
+    MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
+    NotifyIfTempFile(resultSet);
+
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);
+    MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS),
+        static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
+
+    // delete raw file
+    MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
+    MEDIA_INFO_LOG("MultistagesCapture yuv success photoid: %{public}s", imageId.c_str());
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(const std::string &imageId,
@@ -192,32 +258,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         UpdateHighQualityPictureInfo(imageId, isCloudEnhancementAvailable);
         return;
     }
-    string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    string mime_type = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
-    // 裸picture落盘处理
-    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(isEdited,
-        data, picture, fileId, mime_type);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
-        MultiStagesCaptureDfxResult::Report(imageId,
-            static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL),
-            static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
-        return;
-    }
-    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), isEdited);
-
-    UpdateHighQualityPictureInfo(imageId, isCloudEnhancementAvailable);
-    MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
-    NotifyIfTempFile(resultSet);
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);
-    MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS),
-        static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
- 
-    // delete raw file
-    MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
-    MEDIA_INFO_LOG("yuv success photoid: %{public}s", imageId.c_str());
+    ProcessAndSaveHighQualityImage(imageId, picture, resultSet, isCloudEnhancementAvailable);
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::GetCommandByImageId(const std::string &imageId,

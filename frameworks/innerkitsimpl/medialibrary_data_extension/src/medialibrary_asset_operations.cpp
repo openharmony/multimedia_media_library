@@ -86,11 +86,6 @@ const string DEFAULT_AUDIO_NAME = "AUD_";
 constexpr int32_t NO_DESENSITIZE = 3;
 const string PHOTO_ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
 
-constexpr int32_t ORIENTATION_0 = 1;
-constexpr int32_t ORIENTATION_90 = 6;
-constexpr int32_t ORIENTATION_180 = 3;
-constexpr int32_t ORIENTATION_270 = 8;
-
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     int errCode = E_ERR;
@@ -1978,7 +1973,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_PARENT_ID, { IsInt64, IsBelowApi9 } },
     { MediaColumn::MEDIA_RELATIVE_PATH, { IsString, IsBelowApi9 } },
     { MediaColumn::MEDIA_VIRTURL_PATH, { Forbidden } },
-    { PhotoColumn::PHOTO_ORIENTATION, { IsInt64, IsBelowApi9 } },
+    { PhotoColumn::PHOTO_ORIENTATION, { IsInt64 } },
     { PhotoColumn::PHOTO_LATITUDE, { Forbidden } },
     { PhotoColumn::PHOTO_LONGITUDE, { Forbidden } },
     { PhotoColumn::PHOTO_HEIGHT, { Forbidden } },

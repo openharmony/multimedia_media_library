@@ -25,11 +25,13 @@
 #include "duplicate_photo_operation.h"
 #include "file_asset.h"
 #include "file_utils.h"
+#include "image_source.h"
 #include "media_analysis_helper.h"
 #include "image_packer.h"
 #include "iservice_registry.h"
 #include "media_change_effect.h"
 #include "media_column.h"
+#include "media_exif.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -66,6 +68,7 @@
 #include "rdb_predicates.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
+#include "thumbnail_service.h"
 #include "uri.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
@@ -87,6 +90,12 @@ namespace Media {
 static const string ANALYSIS_HAS_DATA = "1";
 constexpr int SAVE_PHOTO_WAIT_MS = 300;
 constexpr int TASK_NUMBER_MAX = 5;
+
+constexpr int32_t ORIENTATION_0 = 1;
+constexpr int32_t ORIENTATION_90 = 6;
+constexpr int32_t ORIENTATION_180 = 3;
+constexpr int32_t ORIENTATION_270 = 8;
+
 enum ImageFileType : int32_t {
     JPEG = 1,
     HEIF = 2
@@ -1210,8 +1219,85 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
     return updateRows;
 }
 
-int32_t MediaLibraryPhotoOperations::UpdateExif(MediaLibraryCommand &cmd,
-    const shared_ptr<FileAsset> &fileAsset)
+static const std::unordered_map<int, int> ORIENTATION_MAP = {
+    {0, ORIENTATION_0},
+    {90, ORIENTATION_90},
+    {180, ORIENTATION_180},
+    {270, ORIENTATION_270}
+};
+
+static int32_t CreateImageSource(
+    const std::shared_ptr<FileAsset> &fileAsset, std::unique_ptr<ImageSource> &imageSource)
+{
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is null");
+        return E_INVALID_VALUES;
+    }
+
+    string filePath = fileAsset->GetFilePath();
+    string extension = MediaFileUtils::GetExtensionFromPath(filePath);
+    SourceOptions opts;
+    opts.formatHint = "image/" + extension;
+    uint32_t err = E_OK;
+    imageSource = ImageSource::CreateImageSource(filePath, opts, err);
+    if (err != E_OK || imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain image exif, err = %{public}d", err);
+        return E_INVALID_VALUES;
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateOrientationAllExif(
+    MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset, string &currentOrientation)
+{
+    std::unique_ptr<ImageSource> imageSource;
+    uint32_t err = E_OK;
+    if (CreateImageSource(fileAsset, imageSource) != E_OK) {
+        return E_INVALID_VALUES;
+    }
+
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_ORIENTATION, currentOrientation);
+    if (err != E_OK) {
+        currentOrientation = "";
+        MEDIA_WARN_LOG("The rotation angle exlf of the image is empty");
+    }
+
+    MEDIA_INFO_LOG("Update image exif information, DisplayName=%{private}s, Orientation=%{private}d",
+        fileAsset->GetDisplayName().c_str(), fileAsset->GetOrientation());
+
+    ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+    if (!values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject)) {
+        return E_OK;
+    }
+    int32_t cmdOrientation;
+    valueObject.GetInt(cmdOrientation);
+
+    auto imageSourceOrientation = ORIENTATION_MAP.find(cmdOrientation);
+    if (imageSourceOrientation == ORIENTATION_MAP.end()) {
+        MEDIA_ERR_LOG("imageSourceOrientation value is invalid.");
+        return E_INVALID_VALUES;
+    }
+
+    string exifStr = fileAsset->GetAllExif();
+    if (!exifStr.empty() && nlohmann::json::accept(exifStr)) {
+        nlohmann::json exifJson = nlohmann::json::parse(exifStr, nullptr, false);
+        exifJson["Orientation"] = imageSourceOrientation->second;
+        exifStr = exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        values.PutString(PhotoColumn::PHOTO_ALL_EXIF, exifStr);
+    }
+
+    err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_ORIENTATION,
+        std::to_string(imageSourceOrientation->second), fileAsset->GetFilePath());
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Modify image property all exif failed, err = %{public}d", err);
+        return E_INVALID_VALUES;
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset> &fileAsset, bool &orientationUpdated, string &currentOrientation)
 {
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("fileAsset is null");
@@ -1219,16 +1305,18 @@ int32_t MediaLibraryPhotoOperations::UpdateExif(MediaLibraryCommand &cmd,
     }
     ValuesBucket &values = cmd.GetValueBucket();
     ValueObject valueObject;
-    int32_t hasOrientation = values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject);
-    int32_t errCode = E_OK;
-    if (hasOrientation) {
-        if (fileAsset->GetMediaType() != MEDIA_TYPE_IMAGE) {
-            MEDIA_ERR_LOG("Only images support rotation.");
-            return E_INVALID_VALUES;
-        }
-        errCode = UpdateAllExif(cmd, fileAsset);
-    } else {
-        CHECK_AND_RETURN_RET_LOG(false, errCode, "The image does not have rotation angle: %{public}d", errCode);
+    if (!values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject)) {
+        MEDIA_INFO_LOG("No need update orientation.");
+        return E_OK;
+    }
+    if ((fileAsset->GetMediaType() != MEDIA_TYPE_IMAGE) ||
+        (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO))) {
+        MEDIA_ERR_LOG("Only images support rotation.");
+        return E_INVALID_VALUES;
+    }
+    int32_t errCode = UpdateOrientationAllExif(cmd, fileAsset, currentOrientation);
+    if (errCode == E_OK) {
+        orientationUpdated = true;
     }
     return errCode;
 }
@@ -1376,11 +1464,68 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
     return updateRows;
 }
 
+static void RevertOrientation(const shared_ptr<FileAsset> &fileAsset, string &currentOrientation)
+{
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is null");
+        return;
+    }
+
+    std::unique_ptr<ImageSource> imageSource;
+    int32_t err = CreateImageSource(fileAsset, imageSource);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to obtain image exif information, err = %{public}d", err);
+        return;
+    }
+
+    uint32_t ret = imageSource->ModifyImageProperty(
+        0,
+        PHOTO_DATA_IMAGE_ORIENTATION,
+        currentOrientation.empty() ? ANALYSIS_HAS_DATA : currentOrientation,
+        fileAsset->GetFilePath()
+    );
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Rollback of exlf information failed, err = %{public}d", ret);
+    }
+}
+
+static void CreateThumbnailFileScaned(const string &uri, const string &path, bool isSync)
+{
+    auto thumbnailService = ThumbnailService::GetInstance();
+    if (thumbnailService == nullptr || uri.empty()) {
+        return;
+    }
+
+    int32_t err = thumbnailService->CreateThumbnailFileScaned(uri, path, isSync);
+    if (err != E_SUCCESS) {
+        MEDIA_ERR_LOG("ThumbnailService CreateThumbnailFileScaned failed: %{public}d", err);
+    }
+}
+
+void MediaLibraryPhotoOperations::CreateThumbnailFileScan(const shared_ptr<FileAsset> &fileAsset, string &extraUri,
+    bool orientationUpdated, bool isNeedScan)
+{
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is null");
+        return;
+    }
+    if (orientationUpdated) {
+        auto watch = MediaLibraryNotify::GetInstance();
+        ScanFile(fileAsset->GetPath(), true, false, true);
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+            to_string(fileAsset->GetId()), extraUri), NotifyType::NOTIFY_THUMB_UPDATE);
+    }
+    if (isNeedScan) {
+        ScanFile(fileAsset->GetPath(), true, true, true);
+        return;
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
         PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, MediaColumn::MEDIA_HIDDEN,
-        PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
+        PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_ALL_EXIF };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, columns);
     if (fileAsset == nullptr) {
@@ -1401,9 +1546,16 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",
         fileAsset->GetDisplayName().c_str());
 
+    bool orientationUpdated = false;
+    string currentOrientation = "";
+    errCode = UpdateOrientationExif(cmd, fileAsset, orientationUpdated, currentOrientation);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update allexif failed, allexif=%{private}s",
+        fileAsset->GetAllExif().c_str());
+
     int32_t rowId = UpdateFileInDb(cmd);
     if (rowId < 0) {
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
+        RevertOrientation(fileAsset, currentOrientation);
         return rowId;
     }
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
@@ -1414,10 +1566,8 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     SendFavoriteNotify(cmd, fileAsset, extraUri);
     SendModifyUserCommentNotify(cmd, fileAsset->GetId(), extraUri);
 
-    if (isNeedScan) {
-        ScanFile(fileAsset->GetPath(), true, true, true);
-        return rowId;
-    }
+    CreateThumbnailFileScan(fileAsset, extraUri, orientationUpdated, isNeedScan);
+
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()),
         extraUri), NotifyType::NOTIFY_UPDATE);
