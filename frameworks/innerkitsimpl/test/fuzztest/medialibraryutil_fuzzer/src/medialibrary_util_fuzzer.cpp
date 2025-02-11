@@ -120,7 +120,7 @@ static void CommandTest(const uint8_t *data, size_t size)
 
 static void DirOperationTest(const uint8_t *data, size_t size)
 {
-    const int32_t int32Count = 2;
+    const int32_t int32Count = 3;
     if (data == nullptr || size < sizeof(int32_t) * int32Count) {
         return;
     }
