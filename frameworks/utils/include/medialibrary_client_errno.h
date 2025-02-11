@@ -29,6 +29,7 @@ constexpr int32_t UFM_SYSCAP_BASE = 202;
 
 constexpr int32_t OHOS_PERMISSION_DENIED_CODE = 201;
 constexpr int32_t OHOS_INVALID_PARAM_CODE = 401;
+constexpr int32_t OHOS_NOT_SUPPORT_TRANSCODER_CODE = 801;
 
 #define MODULE_OFFSET  100000
 #define MODULE_CODE(code) (((code) * MODULE_OFFSET))

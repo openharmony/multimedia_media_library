@@ -158,6 +158,7 @@ thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPrivateAlbumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDeliveryModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sSourceModeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sCompatibleModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sResourceTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPhotoSubType_ = nullptr;
@@ -373,6 +374,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("AnalysisType", CreateAnalysisTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DeliveryMode", CreateDeliveryModeEnum(env)),
         DECLARE_NAPI_PROPERTY("SourceMode", CreateSourceModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("CompatibleMode", CreateCompatibleModeEnum(env)),
         DECLARE_NAPI_PROPERTY("ResourceType", CreateResourceTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightAlbumInfoType", CreateHighlightAlbumInfoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightUserActionType", CreateHighlightUserActionTypeEnum(env)),
@@ -6591,6 +6593,11 @@ napi_value MediaLibraryNapi::CreateSourceModeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateAuthorizationModeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, AuthorizationModeEnum, sAuthorizationModeEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateCompatibleModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, compatibleModeEnum, sCompatibleModeEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
