@@ -35,7 +35,7 @@ public:
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
 
 private:
-    EXPORT int32_t UpdateVideoQuality(const std::string &videoId, const bool isSuccess);
+    EXPORT int32_t UpdateVideoQuality(const std::string &videoId, bool isSuccess);
 };
 } // namespace Media
 } // namespace OHOS
