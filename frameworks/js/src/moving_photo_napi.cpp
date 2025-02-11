@@ -315,14 +315,17 @@ static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext
             context->movingPhotoUri.c_str(), static_cast<int32_t>(context->resourceType));
         return E_HAS_FS_ERROR;
     }
-    context->arrayBufferLength = fileSize;
 
     size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), context->arrayBufferData, fileSize));
     if (readBytes != fileSize) {
         NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
             "error: %{public}d", readBytes, fileSize, errno);
+        free(context->arrayBufferData);
+        context->arrayBufferData = nullptr;
         return E_HAS_FS_ERROR;
     }
+
+    context->arrayBufferLength = fileSize;
     return E_OK;
 }
 
