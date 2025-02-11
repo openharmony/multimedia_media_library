@@ -860,6 +860,7 @@ void SendNewAssetNotify(string newFileAssetUri, const shared_ptr<MediaLibraryRdb
     };
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource, true);
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, { newFileAssetUri });
+    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, { newFileAssetUri });
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {

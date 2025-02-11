@@ -103,6 +103,14 @@ constexpr int32_t BOTH_LOCAL_CLOUD_PHOTO_POSITION = 3;
 constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
 
+struct DeletedFilesParams {
+    vector<string> ids;
+    vector<string> paths;
+    vector<string> dateTakens;
+    vector<int32_t> subTypes;
+    vector<int32_t> isTemps;
+};
+
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     int errCode = E_ERR;
@@ -2343,32 +2351,8 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     return E_OK;
 }
 
-static void DeleteFiles(AsyncTaskData *data)
+static void TaskDataFileProccess(DeleteFilesTask *taskData)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("DeleteFiles");
-    if (data == nullptr) {
-        return;
-    }
-    auto *taskData = static_cast<DeleteFilesTask *>(data);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
-
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
-        taskData->notifyUris_, taskData->bundleName_);
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
-    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-    if (trashAlbumId <= 0) {
-        MEDIA_WARN_LOG("Failed to get trash album id: %{public}d", trashAlbumId);
-        return;
-    }
-    for (const auto &notifyUri : taskData->notifyUris_) {
-        watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
-    }
-
     for (size_t i = 0; i < taskData->paths_.size(); i++) {
         string filePath = taskData->paths_[i];
         if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
@@ -2398,42 +2382,76 @@ static void DeleteFiles(AsyncTaskData *data)
     }
 }
 
-void HandleAudiosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
+static void DeleteFiles(AsyncTaskData *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteFiles");
+    if (data == nullptr) {
+        return;
+    }
+    auto *taskData = static_cast<DeleteFilesTask *>(data);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+        rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
+
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
+        taskData->notifyUris_, taskData->bundleName_);
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (trashAlbumId <= 0) {
+        MEDIA_WARN_LOG("Failed to get trash album id: %{public}d", trashAlbumId);
+        return;
+    }
+    size_t uriSize = taskData->notifyUris_.size() > taskData->isTemps_.size() ? taskData->isTemps_.size() :
+        taskData->notifyUris_.size();
+    for (size_t index = 0; index < uriSize; index++) {
+        if (taskData->isTemps_[index]) {
+            continue;
+        }
+        watch->Notify(MediaFileUtils::Encode(taskData->notifyUris_[index]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET,
+            trashAlbumId);
+    }
+    TaskDataFileProccess(taskData);
+}
+
+void HandleAudiosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, DeletedFilesParams &filesParams)
 {
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        outIds.push_back(
+        filesParams.ids.push_back(
             to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
-        outPaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
-            TYPE_STRING)));
-        outDateTakens.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_TAKEN, resultSet,
-            TYPE_STRING)));
-        outSubTypes.push_back(static_cast<int32_t>(PhotoSubType::DEFAULT));
+        filesParams.paths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH,
+            resultSet, TYPE_STRING)));
+        filesParams.dateTakens.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_TAKEN,
+            resultSet, TYPE_STRING)));
+        filesParams.subTypes.push_back(static_cast<int32_t>(PhotoSubType::DEFAULT));
     }
 }
 
-void HandlePhotosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
+void HandlePhotosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, DeletedFilesParams &filesParams)
 {
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        outIds.push_back(
+        filesParams.ids.push_back(
             to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
-        outPaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
-            TYPE_STRING)));
-        outDateTakens.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_TAKEN, resultSet,
-            TYPE_STRING)));
-        outSubTypes.push_back(
+        filesParams.paths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH,
+            resultSet, TYPE_STRING)));
+        filesParams.dateTakens.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_TAKEN,
+            resultSet, TYPE_STRING)));
+        filesParams.subTypes.push_back(
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32)));
+        filesParams.isTemps.push_back(
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_IS_TEMP, resultSet, TYPE_INT32)));
     }
 }
 
-int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
-    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateTakens, vector<int32_t> &outSubTypes)
+int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates, DeletedFilesParams &filesParams)
 {
     vector<string> columns = {
         MediaColumn::MEDIA_ID,
         MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_DATE_TAKEN
+        MediaColumn::MEDIA_DATE_TAKEN,
+        PhotoColumn::PHOTO_IS_TEMP
     };
 
     if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
@@ -2446,9 +2464,9 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
     }
 
     if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        HandlePhotosResultSet(resultSet, outIds, outPaths, outDateTakens, outSubTypes);
+        HandlePhotosResultSet(resultSet, filesParams);
     } else if (predicates.GetTableName() == AudioColumn::AUDIOS_TABLE) {
-        HandleAudiosResultSet(resultSet, outIds, outPaths, outDateTakens, outSubTypes);
+        HandleAudiosResultSet(resultSet, filesParams);
     } else {
         MEDIA_WARN_LOG("Invalid table name.");
     }
@@ -2709,13 +2727,10 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     if (isAging) {
         MediaLibraryNotify::GetNotifyUris(predicates, agingNotifyUris);
     }
-    vector<string> ids;
-    vector<string> paths;
-    vector<string> dateTakens;
-    vector<int32_t> subTypes;
+    DeletedFilesParams fileParams;
     int32_t deletedRows = 0;
-    GetIdsAndPaths(predicates, ids, paths, dateTakens, subTypes);
-    CHECK_AND_RETURN_RET_LOG(!ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
+    GetIdsAndPaths(predicates, fileParams);
+    CHECK_AND_RETURN_RET_LOG(!fileParams.ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
 
     // notify deferred processing session to remove image
 #ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
@@ -2725,13 +2740,13 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     // delete cloud enhanacement task
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     vector<string> photoIds;
-    EnhancementManager::GetInstance().RemoveTasksInternal(ids, photoIds);
+    EnhancementManager::GetInstance().RemoveTasksInternal(fileParams.ids, photoIds);
 #endif
 
-    deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
+    deletedRows = DeleteDbByIds(predicates.GetTableName(), fileParams.ids, compatible);
     CHECK_AND_RETURN_RET_LOG(deletedRows > 0, deletedRows,
         "Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
-        deletedRows, ids.size());
+        deletedRows, fileParams.ids.size());
 
     MEDIA_INFO_LOG("Delete files in db, deletedRows: %{public}d", deletedRows);
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
@@ -2739,8 +2754,10 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
 
     const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateTakens, subTypes,
+    auto *taskData = new (nothrow) DeleteFilesTask(fileParams.ids, fileParams.paths, notifyUris,
+        fileParams.dateTakens, fileParams.subTypes,
         predicates.GetTableName(), deletedRows, bundleName);
+    taskData->isTemps_.swap(fileParams.isTemps);
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to alloc async data for Delete From Disk!");
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     CHECK_AND_RETURN_RET_LOG(deleteFilesTask != nullptr, E_ERR, "Failed to create async task for deleting files.");

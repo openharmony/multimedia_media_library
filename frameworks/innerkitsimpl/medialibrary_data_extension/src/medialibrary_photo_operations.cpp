@@ -1048,6 +1048,43 @@ static int32_t GetHiddenState(const ValuesBucket &values)
     return hiddenState == 0 ? 0 : 1;
 }
 
+static void SkipNotifyIfBurstMember(vector<string> &notifyUris)
+{
+    vector<string> tempUris;
+    vector<string> ids;
+    unordered_map<string, string> idUriMap;
+    for (auto& uri : notifyUris) {
+        string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(uri);
+        if (fileId.empty()) {
+            return;
+        }
+        ids.push_back(fileId);
+        idUriMap.insert({fileId, uri});
+    }
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID,
+    };
+    NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.In(MediaColumn::MEDIA_ID, ids);
+    rdbPredicates.NotEqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+    auto resultSet = uniStore->Query(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("IsAssetReadyById failed");
+        return;
+    }
+    unordered_map<string, string>::iterator iter;
+    while (resultSet->GoToNextRow() == E_OK) {
+        int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID,
+            resultSet, TYPE_INT32));
+        if ((iter = idUriMap.find(to_string(fileId))) != idUriMap.end()) {
+            tempUris.push_back(iter->second);
+        }
+    }
+    resultSet->Close();
+    notifyUris.swap(tempUris);
+}
+
 static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState)
 {
     auto watch = MediaLibraryNotify::GetInstance();
@@ -1068,7 +1105,8 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
         hiddenAlbumNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     }
     vector<int64_t> formIds;
-    for (const auto &notifyUri : notifyUris) {
+    SkipNotifyIfBurstMember(notifyUris);
+    for (auto &notifyUri : notifyUris) {
         watch->Notify(notifyUri, assetNotifyType);
         watch->Notify(notifyUri, albumNotifyType, 0, true);
         watch->Notify(notifyUri, hiddenAlbumNotifyType, hiddenAlbumId);
