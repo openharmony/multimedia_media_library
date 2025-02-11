@@ -328,10 +328,6 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   private isBackupInfoValid(backupInfo: string): boolean {
     try {
       let jsonObject = JSON.parse(backupInfo);
-      if (jsonObject.length !== STAT_TYPES.length) {
-        console.error(TAG, `backupInfo num ${jsonObject.length} != ${STAT_TYPES.length}`);
-        return false;
-      }
       let hasPhoto = false;
       let hasVideo = false;
       let hasAudio = false;
@@ -354,10 +350,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     if (!this.hasKey(subBackupInfo, STAT_KEY_BACKUP_INFO) || !this.hasKey(subBackupInfo, STAT_KEY_NUMBER)) {
       return false;
     }
-    if (!STAT_TYPES.includes(subBackupInfo[STAT_KEY_BACKUP_INFO])) {
-      console.error(TAG, `SubBackupInfo ${subBackupInfo[STAT_KEY_BACKUP_INFO]} not in ${JSON.stringify(STAT_TYPES)}`);
-      return false;
-    }
+
     return !isNaN(subBackupInfo[STAT_KEY_NUMBER]);
   }
 
