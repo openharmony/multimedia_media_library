@@ -37,7 +37,7 @@ MultiStagesCaptureDeferredVideoProcSessionCallback::~MultiStagesCaptureDeferredV
 {}
 
 int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::UpdateVideoQuality(
-    const std::string &videoId, const bool isSuccess)
+    const std::string &videoId, bool isSuccess)
 {
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     NativeRdb::ValuesBucket updateValues;

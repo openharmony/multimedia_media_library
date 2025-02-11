@@ -156,7 +156,7 @@ std::shared_ptr<NativeRdb::ResultSet> QueryPhotoData(const std::string &imageId)
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
         PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
-        PhotoColumn::PHOTO_ORIENTATION};
+        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE};
     return DatabaseAdapter::Query(cmd, columns);
 }
 
