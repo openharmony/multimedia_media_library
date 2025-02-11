@@ -152,7 +152,8 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
 {
     MediaLibraryTracer tracer;
     tracer.Start("FileUtils::DealPicture");
-    MEDIA_INFO_LOG("DealPicture, path: %{public}s, mime_type: %{public}s", path.c_str(), mime_type.c_str());
+    MEDIA_INFO_LOG("DealPicture, path: %{public}s, mime_type: %{public}s",
+        MediaFileUtils::DesensitizePath(path).c_str(), mime_type.c_str());
     if (picture == nullptr) {
         MEDIA_ERR_LOG("picture is nullptr.");
         return -1;
