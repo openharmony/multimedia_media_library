@@ -304,14 +304,15 @@ int32_t MovingPhotoImpl::RequestContentToArrayBuffer()
         return E_HAS_FS_ERROR;
     }
     memset_s(arrayBufferData_, fileSize, 0, fileSize);
-    arrayBufferLength_ = fileSize;
 
     size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), arrayBufferData_, fileSize));
     if (readBytes != fileSize) {
         MEDIA_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, error: %{public}d",
             readBytes, fileSize, errno);
         free(arrayBufferData_);
+        arrayBufferData_ = nullptr;
         return E_HAS_FS_ERROR;
     }
+    arrayBufferLength_ = fileSize;
     return E_OK;
 }
