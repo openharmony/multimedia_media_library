@@ -1514,6 +1514,11 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
 
 static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
 {
+    if (mediaRdb == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return;
+    }
+
     const string sql = "SELECT SUM(" + PhotoExtColumn::THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE +
                        " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
     auto resultSet = mediaRdb->QuerySql(sql);
@@ -1525,8 +1530,7 @@ static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
         MEDIA_ERR_LOG("go to first row failed");
         return 0;
     }
-    int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE,
-                                                                resultSet, TYPE_INT64));
+    int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, resultSet, TYPE_INT64));
     if (size < 0) {
         MEDIA_ERR_LOG("Invalid thumPhoto size from db: %{public}" PRId64, size);
         return 0;
@@ -1534,16 +1538,21 @@ static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
     return static_cast<size_t>(size);
 }
 
-size_t CloneRestore::StatClonetotalSize()
+size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
 {
+    if (mediaRdb == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return 0;
+    }
+
     // media asset size
-    size_t thumbPhotoSize = QueryThumbPhotoSize(mediaLibraryRdb_);
+    size_t thumbPhotoSize = QueryThumbPhotoSize(mediaRdb);
     string querySizeSql = "SELECT cast(" + std::to_string(thumbPhotoSize) +
         " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
     string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME +
         " UNION " + querySizeSql;
 
-    auto resultSet = mediaLibraryRdb_->QuerySql(mediaVolumeQuery);
+    auto resultSet = mediaRdb->QuerySql(mediaVolumeQuery);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to execute media volume query");
         return 0;
@@ -1584,7 +1593,7 @@ string CloneRestore::GetBackupInfo()
     int32_t audioCount = QueryTotalNumberByMediaType(mediaLibraryRdb_, AudioColumn::AUDIOS_TABLE,
         MediaType::MEDIA_TYPE_AUDIO);
 
-    size_t totalSize = StatClonetotalSize();
+    size_t totalSize = StatClonetotalSize(mediaLibraryRdb_);
     MEDIA_INFO_LOG("QueryTotalNumber, photo: %{public}d, video: %{public}d, audio: %{public}d, totalSize: "
         "%{public}lld bytes", photoCount, videoCount, audioCount, static_cast<long long>(totalSize));
 
