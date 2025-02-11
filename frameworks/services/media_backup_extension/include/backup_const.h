@@ -146,6 +146,7 @@ const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
 const std::string STAT_TYPE_PHOTO = "photo";
 const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
+const std::string STAT_TYPE_TOTAL_SIZE = "totalSize";
 const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
 const std::string STAT_TYPE_UPDATE = "update";
 const std::string STAT_TYPE_OTHER = "other";
