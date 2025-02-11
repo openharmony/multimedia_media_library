@@ -2105,35 +2105,37 @@ void CloneRestore::RestorePortraitClusteringInfo()
         VISION_FACE_TAG_TABLE);
     std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
         EXCLUDED_FACE_TAG_COLUMNS);
+    mediaRdb_->ExecuteSql(CREATE_FACE_TAG_INDEX);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, commonColumns);
         BatchInsertFaceTags(faceTagTbls);
+        if (faceTagTbls.size() < QUERY_COUNT) {
+            break;
+        }
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
+    mediaRdb_->ExecuteSql(DROP_FACE_TAG_INDEX);
 }
 
 vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, std::vector<std::string> &commonColumns)
 {
     vector<FaceTagTbl> result;
-    result.reserve(QUERY_COUNT);
-
+    BackupDatabaseUtils::LeftJoinValues<string>(commonColumns, "vft.");
     std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
     std::string querySql = "SELECT DISTINCT " + inClause +
         " FROM " + VISION_FACE_TAG_TABLE + " vft" +
-        " WHERE EXISTS (" +
-        "   SELECT 1" +
-        "   FROM AnalysisAlbum aa" +
-        "   JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
-        "   JOIN Photos ph ON ph.file_id = apm.map_asset" +
-        "   WHERE aa.tag_id = vft.tag_id" +
-        "   AND ph.position IN (1, 3)" +
-        " )";
+        " LEFT JOIN AnalysisAlbum aa ON aa.tag_id = vft.tag_id" +
+        " LEFT JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
+        " LEFT JOIN Photos ph ON ph.file_id = apm.map_asset"
+        " WHERE ph.position IN (1, 3)";
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSet is null.");
-
+    int resultRowCount = 0;
+    resultSet->GetRowCount(resultRowCount);
+    result.reserve(resultRowCount);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FaceTagTbl faceTagTbl;
         ParseFaceTagResultSet(resultSet, faceTagTbl);
