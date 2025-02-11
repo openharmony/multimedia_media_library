@@ -44,7 +44,13 @@ enum class NotifyMode : int32_t {
     WAIT_FOR_HIGH_QUALITY,
 };
 
+enum class CompatibleMode {
+    ORIGINAL_FORMAT_MODE = 0,
+    COMPATIBLE_FORMAT_MODE = 1,
+};
+
 constexpr const char* ON_DATA_PREPARED_FUNC = "onDataPrepared";
+constexpr const char* ON_PROGRESS_FUNC = "onProgress";
 
 class NapiMediaAssetDataHandler {
 public:
@@ -60,6 +66,10 @@ public:
     void JsOnDataPrepared(napi_env env, napi_value exports, napi_value extraInfo);
     void JsOnDataPrepared(napi_env env, napi_value pictures, napi_value exports, napi_value extraInfo);
 
+    CompatibleMode GetCompatibleMode();
+    void SetCompatibleMode(const CompatibleMode &compatibleMode);
+    std::string GetRequestId();
+    void SetRequestId(std::string requestId);
 private:
     napi_env env_ = nullptr;
     napi_ref dataHandlerRef_ = nullptr;
@@ -68,6 +78,8 @@ private:
     std::string destUri_;
     SourceMode sourceMode_;
     NotifyMode notifyMode_ = NotifyMode::FAST_NOTIFY;
+    CompatibleMode compatibleMode_ {0};
+    std::string requestId_;
 };
 } // Media
 } // OHOS
