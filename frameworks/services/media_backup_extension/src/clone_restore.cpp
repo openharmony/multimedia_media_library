@@ -1516,7 +1516,7 @@ static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
 {
     if (mediaRdb == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
+        return 0;
     }
 
     const string sql = "SELECT SUM(" + PhotoExtColumn::THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE +
