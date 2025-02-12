@@ -2182,7 +2182,7 @@ bool MediaFileUtils::IsValidInteger(const std::string &value)
     while (unsignedStr.size() > 0 && unsignedStr[0] == '-') {
         unsignedStr = unsignedStr.substr(1);
     }
-    for (int32_t i = 0; i < unsignedStr.size(); i++) {
+    for (size_t i = 0; i < unsignedStr.size(); i++) {
         if (!std::isdigit(unsignedStr[i])) {
             MEDIA_INFO_LOG("KeyWord invalid char of:%{public}c", unsignedStr[i]);
             unsignedStr = unsignedStr.substr(0, i);
