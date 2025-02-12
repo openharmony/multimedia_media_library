@@ -156,7 +156,7 @@ private:
     NativeRdb::ValuesBucket CreateValuesBucketFromFaceTagTbl(const FaceTagTbl& faceTagTbl);
     void BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbls);
     void DeleteExistingFaceTagData(const std::string& inClause);
-    std::vector<FaceTagTbl> QueryFaceTagTbl(int32_t offset, std::vector<std::string> &commonColumns);
+    std::vector<FaceTagTbl> QueryFaceTagTbl(int32_t offset, const std::string& inClause);
     void RestorePortraitClusteringInfo();
     void ReportPortraitCloneStat(int32_t sceneCode);
     void AppendExtraWhereClause(std::string& whereClause, const std::string& tableName);
