@@ -113,7 +113,7 @@ private:
     static int32_t AddFiltersExecute(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
         const std::string &cachePath);
     static int32_t SubmitEditCacheExecute(MediaLibraryCommand &cmd,
-        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath, bool isWriteGpsAdvanced);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
