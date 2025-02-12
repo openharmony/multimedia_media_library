@@ -331,7 +331,15 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
     vector<string> &columns)
 {
     if (columnName == MEDIA_DATA_DB_URI) {
-        return GetResultSetFromPhotos(value, columns, token_, sDataShareHelper_);
+        auto resultSet = GetResultSetFromPhotos(value, columns, token_, sDataShareHelper_);
+        if (resultSet == nullptr) {
+            MEDIA_ERR_LOG("resultset is null, reconnect and retry");
+            shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+                DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+            return GetResultSetFromPhotos(value, columns, token_, dataShareHelper);
+        } else {
+            return resultSet;
+        }
     }
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
     DataSharePredicates predicates;
