@@ -457,7 +457,7 @@ int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId,
 
 static bool CheckUri(string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string uriprex = "file://media";
@@ -512,7 +512,7 @@ int32_t MediaLibraryExtendManager::ReadPrivateMovingPhoto(string &uri, const Hid
 
 static bool CheckPhotoUri(const string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string photoUriPrefix = "file://media/Photo/";
