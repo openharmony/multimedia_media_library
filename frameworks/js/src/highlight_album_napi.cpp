@@ -708,40 +708,40 @@ static napi_value ParseArgsDeleteHighlightAlbums(
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
-
+ 
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     CHECK_COND(env, MediaAlbumChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
-
+ 
     vector<napi_value> napiValues;
     napi_valuetype valueType = napi_undefined;
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
     CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
-
+ 
     vector<string> deleteIds;
     for (const auto& napiValue : napiValues) {
         PhotoAlbumNapi* obj = nullptr;
         CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
         CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get album napi object");
         CHECK_COND_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
             PhotoAlbum::IsHighlightAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
-            "Only user and highlight album can be deleted");
+            "Only highlight album can be deleted");
         deleteIds.push_back(to_string(obj->GetAlbumId()));
     }
     context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
     RETURN_NAPI_TRUE(env);
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSDeleteHighlightAlbums(napi_env env, napi_callback_info info)
+napi_value HighlightAlbumNapi::JSDeleteHighlightAlbums(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse highlight args");
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteHighlightAlbums(env, info, asyncContext),
+        "Failed to parse highlight args");
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(
         env, asyncContext, "ChangeRequestDeleteHighlightAlbums",
         DeleteHighlightAlbumsExecute, DeleteHighlightAlbumsCompleteCallback);
