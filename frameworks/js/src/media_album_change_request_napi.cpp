@@ -50,7 +50,6 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
         .props = {
             DECLARE_NAPI_STATIC_FUNCTION("createAlbumRequest", JSCreateAlbumRequest),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAlbums", JSDeleteAlbums),
-            DECLARE_NAPI_STATIC_FUNCTION("deleteHighlightAlbums", JSDeleteHighlightAlbums),
             DECLARE_NAPI_FUNCTION("getAlbum", JSGetAlbum),
             DECLARE_NAPI_FUNCTION("addAssets", JSAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", JSRemoveAssets),
@@ -78,7 +77,6 @@ napi_value MediaAlbumChangeRequestNapi::MediaAnalysisAlbumChangeRequestInit(napi
         .props = {
             DECLARE_NAPI_STATIC_FUNCTION("createAlbumRequest", JSCreateAlbumRequest),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAlbums", JSDeleteAlbums),
-            DECLARE_NAPI_STATIC_FUNCTION("deleteHighlightAlbums", JSDeleteHighlightAlbums),
             DECLARE_NAPI_FUNCTION("getAlbum", JSGetAlbum),
             DECLARE_NAPI_FUNCTION("addAssets", JSAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", JSRemoveAssets),
@@ -443,55 +441,6 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAlbums(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse args");
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(
         env, asyncContext, "ChangeRequestDeleteAlbums", DeleteAlbumsExecute, DeleteAlbumsCompleteCallback);
-}
-
-static void DeleteHighlightAlbumsCompleteCallback(napi_env env, napi_status status, void* data)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("JSDeleteHighlightAlbumsCompleteCallback");
-    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    auto jsContext = make_unique<JSAsyncContextOutput>();
-    jsContext->status = false;
-    napi_get_undefined(env, &jsContext->data);
-    napi_get_undefined(env, &jsContext->error);
-    if (context->error == ERR_DEFAULT) {
-        jsContext->status = true;
-    } else {
-        context->HandleError(env, jsContext->error);
-    }
-
-    if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
-            env, context->deferred, context->callbackRef, context->work, *jsContext);
-    }
-    delete context;
-}
-
-static void DeleteHighlightAlbumsExecute(napi_env env, void* data)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("JSDeleteHighlightAlbumsExecute");
-    NAPI_INFO_LOG("Start delete highlight album(s)");
-
-    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
-    Uri deleteAlbumUri(PAH_DELETE_HIGHLIGHT_ALBUM);
-    int ret = UserFileClient::Delete(deleteAlbumUri, context->predicates);
-    if (ret < 0) {
-        context->SaveError(ret);
-        NAPI_ERR_LOG("Failed to delete highlight albums, err: %{public}d", ret);
-        return;
-    }
-    NAPI_INFO_LOG("Delete highlight album(s): %{public}d", ret);
-}
-
-napi_value MediaAlbumChangeRequestNapi::JSDeleteHighlightAlbums(napi_env env, napi_callback_info info)
-{
-    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse highlight args");
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
-        env, asyncContext, "ChangeRequestDeleteHighlightAlbums",
-        DeleteHighlightAlbumsExecute, DeleteHighlightAlbumsCompleteCallback);
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSAddAssets(napi_env env, napi_callback_info info)
