@@ -46,6 +46,7 @@ PictureManagerThread::PictureManagerThread()
 
 PictureManagerThread::~PictureManagerThread()
 {
+    MEDIA_INFO_LOG("~PictureManagerThread end");
     pictureDataOperations_ = nullptr;
     Stop();
 }
@@ -121,6 +122,7 @@ void PictureManagerThread::Run()
         int32_t taskSize = pictureDataOperations_->GetPendingTaskSize();
         if (lastPendingTaskSize_ != 0 && taskSize == 0) {
             pauseFlag_ = true;
+            MEDIA_INFO_LOG("PictureManagerThread end.");
             return;
         }
         lastPendingTaskSize_ = taskSize;
