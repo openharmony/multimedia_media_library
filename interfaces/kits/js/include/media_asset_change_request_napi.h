@@ -103,13 +103,16 @@ public:
     uint32_t FetchAddCacheFileId();
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
-    int32_t SubmitCache(bool isCreation, bool isSetEffectMode);
+    int32_t SubmitCache(bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced);
     int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
     int32_t PutMediaAssetEditData(DataShare::DataShareValuesBucket& valuesBucket);
     void SetImageFileType(int32_t imageFileType);
     int32_t GetImageFileType();
+
+    void SetIsWriteGpsAdvanced(bool val);
+    bool GetIsWriteGpsAdvanced();
 
     sptr<PhotoProxy> GetPhotoProxyObj();
     void ReleasePhotoProxyObj();
@@ -167,6 +170,7 @@ private:
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
     int32_t imageFileType_;
+    bool isWriteGpsAdvanced_{false};
 };
 
 struct MediaAssetChangeRequestAsyncContext : public NapiError {
