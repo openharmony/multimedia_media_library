@@ -62,7 +62,7 @@ napi_value HighlightAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setHighlightUserActionData", JSSetHighlightUserActionData),
             DECLARE_NAPI_FUNCTION("getHighlightResource", JSGetHighlightResource),
             DECLARE_NAPI_FUNCTION("getOrderPosition", JSGetOrderPosition),
-            DECLARE_NAPI_FUNCTION("setSubtitle", JSSetHighlightSubtitle),
+            DECLARE_NAPI_FUNCTION("setSubTitle", JSSetHighlightSubtitle),
             DECLARE_NAPI_STATIC_FUNCTION("deleteHighlightAlbums", JSDeleteHighlightAlbums),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
