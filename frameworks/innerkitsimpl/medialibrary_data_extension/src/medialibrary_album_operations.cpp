@@ -41,9 +41,7 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
-#endif
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 
@@ -1397,9 +1395,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 
     MediaLibraryAlbumOperations::DealwithNoAlbumAssets(rdbPredicates.GetWhereArgs());
     // notify deferred processing session to restore image
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     MultiStagesCaptureManager::RestorePhotos(rdbPredicates);
-#endif
 
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);

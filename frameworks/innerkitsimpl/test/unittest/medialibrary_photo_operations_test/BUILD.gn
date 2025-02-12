@@ -86,9 +86,6 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "user_file_service:file_access_extension_ability_kit",
   ]
 
-  defines = []
-  defines += [ "MEDIALIBRARY_FEATURE_TAKE_PHOTO" ]
-
   sanitize = {
     cfi = true
     cfi_cross_dso = true
