@@ -2105,9 +2105,11 @@ void CloneRestore::RestorePortraitClusteringInfo()
         VISION_FACE_TAG_TABLE);
     std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
         EXCLUDED_FACE_TAG_COLUMNS);
+    BackupDatabaseUtils::LeftJoinValues<string>(commonColumns, "vft.");
+    std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
     mediaRdb_->ExecuteSql(CREATE_FACE_TAG_INDEX);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, commonColumns);
+        vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, inClause);
         BatchInsertFaceTags(faceTagTbls);
         if (faceTagTbls.size() < QUERY_COUNT) {
             break;
@@ -2118,11 +2120,9 @@ void CloneRestore::RestorePortraitClusteringInfo()
     mediaRdb_->ExecuteSql(DROP_FACE_TAG_INDEX);
 }
 
-vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, std::vector<std::string> &commonColumns)
+vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
 {
     vector<FaceTagTbl> result;
-    BackupDatabaseUtils::LeftJoinValues<string>(commonColumns, "vft.");
-    std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
     std::string querySql = "SELECT DISTINCT " + inClause +
         " FROM " + VISION_FACE_TAG_TABLE + " vft" +
         " LEFT JOIN AnalysisAlbum aa ON aa.tag_id = vft.tag_id" +

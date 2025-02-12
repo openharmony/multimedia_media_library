@@ -131,7 +131,7 @@ public:
     template <typename T>
     static std::string JoinSQLValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
-    static std::vector<T> BackupDatabaseUtils::LeftJoinValues(const std::vector<T>& values,
+    static std::vector<T> LeftJoinValues(std::vector<T>& values,
         std::string_view delimiter);
     template <typename T>
     struct always_false : std::false_type {};
@@ -198,9 +198,9 @@ std::string BackupDatabaseUtils::JoinValues(const std::vector<T>& values, std::s
 }
 
 template <typename T>
-std::vector<T> BackupDatabaseUtils::LeftJoinValues(const std::vector<T>& values, std::string_view delimiter)
+std::vector<T> BackupDatabaseUtils::LeftJoinValues(std::vector<T>& values, std::string_view delimiter)
 {
-    for (const auto& value : values) {
+    for (auto& value : values) {
         value.insert(0, delimiter);
     }
     return values;
