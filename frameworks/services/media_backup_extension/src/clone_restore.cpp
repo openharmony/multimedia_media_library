@@ -2111,7 +2111,7 @@ void CloneRestore::RestorePortraitClusteringInfo()
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, inClause);
         BatchInsertFaceTags(faceTagTbls);
-        if (faceTagTbls.size() < QUERY_COUNT) {
+        if (static_cast<std::int32_t>(faceTagTbls.size()) < QUERY_COUNT) {
             break;
         }
     }
