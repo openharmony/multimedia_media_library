@@ -2117,7 +2117,6 @@ void CloneRestore::RestorePortraitClusteringInfo()
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
-    BackupDatabaseUtils::ExecuteSQL(mediaRdb_, DROP_FACE_TAG_INDEX);
 }
 
 vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
