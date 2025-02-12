@@ -2107,7 +2107,7 @@ void CloneRestore::RestorePortraitClusteringInfo()
         EXCLUDED_FACE_TAG_COLUMNS);
     BackupDatabaseUtils::LeftJoinValues<string>(commonColumns, "vft.");
     std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
-    mediaRdb_->ExecuteSql(CREATE_FACE_TAG_INDEX);
+    BackupDatabaseUtils::ExecuteSQL(mediaRdb_, CREATE_FACE_TAG_INDEX);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, inClause);
         BatchInsertFaceTags(faceTagTbls);
@@ -2117,7 +2117,7 @@ void CloneRestore::RestorePortraitClusteringInfo()
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
-    mediaRdb_->ExecuteSql(DROP_FACE_TAG_INDEX);
+    BackupDatabaseUtils::ExecuteSQL(mediaRdb_, DROP_FACE_TAG_INDEX);
 }
 
 vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
