@@ -532,7 +532,15 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromP
     string fileId = MediaFileUtils::GetIdFromUri(value);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     DatashareBusinessError businessError;
-    return dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
+    auto resultSet = dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultset is null, reconnect and retry");
+        dataShareHelper_ = nullptr;
+        InitMediaLibraryExtendManager();
+        return dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
+    } else {
+        return resultSet;
+    }
 }
 
 std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromDb(string columnName,
@@ -547,7 +555,15 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromD
     predicates.EqualTo(columnName, value);
     predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     DatashareBusinessError businessError;
-    return dataShareHelper_->Query(uri, predicates, columns, &businessError);
+    auto resultSet = dataShareHelper_->Query(uri, predicates, columns, &businessError);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultset is null, reconnect and retry");
+        dataShareHelper_ = nullptr;
+        InitMediaLibraryExtendManager();
+        return dataShareHelper_->Query(uri, predicates, columns, &businessError);
+    } else {
+        return resultSet;
+    }
 }
 } // namespace Media
 } // namespace OHOS
