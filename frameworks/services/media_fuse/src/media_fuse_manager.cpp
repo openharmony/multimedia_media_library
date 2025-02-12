@@ -346,7 +346,7 @@ int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
 {
     int devFd = -1;
     // get user id
-    int32_t userId =  getuid() / BASE_USER_RANGE;
+    int32_t userId =  static_cast<int32_t>(getuid() / BASE_USER_RANGE);
 
     // mount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -366,7 +366,7 @@ int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
 int32_t MediaFuseManager::UMountFuse()
 {
     // get user id
-    int32_t userId =  getuid() / BASE_USER_RANGE;
+    int32_t userId =  static_cast<int32_t>(getuid() / BASE_USER_RANGE);
 
     // umount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
