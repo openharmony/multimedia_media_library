@@ -24,9 +24,7 @@
 #include "directory_ex.h"
 #include "duplicate_photo_operation.h"
 #include "file_asset.h"
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "file_utils.h"
-#endif
 #include "image_source.h"
 #include "media_analysis_helper.h"
 #include "image_packer.h"
@@ -55,11 +53,9 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_uripermission_operations.h"
 #include "mimetype_utils.h"
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
 #include "multistages_photo_capture_manager.h"
 #include "multistages_moving_photo_capture_manager.h"
-#endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -886,9 +882,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     MultiStagesCaptureManager::RemovePhotos(rdbPredicate, true);
-#endif
     std::shared_ptr<AlbumData> albumData = std::make_shared<AlbumData>();
     UpdateSourcePath(rdbPredicate.GetWhereArgs(), albumData);
     ValuesBucket values;
@@ -1000,11 +994,9 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET(ret >= 0, 0);
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
     tracer.Start("MediaLibraryPhotoOperations::SavePicture");
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     if (!fileType.empty()) {
         SavePicture(stoi(fileType), stoi(fileId));
     }
-#endif
     tracer.Finish();
 
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
@@ -1028,12 +1020,10 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryPhotoOperations::SetVideoEnhancementAttr(MediaLibraryCommand &cmd)
 {
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     string videoId = cmd.GetQuerySetParam(PhotoColumn::PHOTO_ID);
     string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
     string filePath = cmd.GetQuerySetParam(MediaColumn::MEDIA_FILE_PATH);
     MultiStagesVideoCaptureManager::GetInstance().AddVideo(videoId, fileId, filePath);
-#endif
     return E_OK;
 }
 
@@ -2613,12 +2603,10 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
     }
 
     MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
         picture = pictureManagerThread->GetDataWithImageId(photoId, isHighQualityPicture, isCleanImmediately);
     }
-#endif
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
     MEDIA_INFO_LOG("photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
         photoId.c_str(), static_cast<int32_t>(picture.use_count()),
@@ -2626,7 +2614,6 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
     return E_OK;
 }
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &cmd)
 {
     const ValuesBucket& values = cmd.GetValueBucket();
@@ -2653,7 +2640,6 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
     }
     return E_OK;
 }
-#endif
 
 int64_t MediaLibraryPhotoOperations::CloneSingleAsset(MediaLibraryCommand &cmd)
 {
@@ -2713,15 +2699,12 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     }
     resultSet->Close();
     string uri = cmd.GetQuerySetParam("uri");
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     SavePicture(fileType, fileId);
-#endif
     string path = MediaFileUri::GetPathFromUri(uri, true);
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
     return E_OK;
 }
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId)
 {
     MEDIA_INFO_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
@@ -2772,7 +2755,6 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     }
     return E_OK;
 }
-#endif
 
 int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
@@ -3205,7 +3187,6 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
     return id;
 }
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, const std::string &path,
     const uint8_t *addr, const long bytes, int32_t fileId)
 {
@@ -3276,7 +3257,6 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
         }
     }
 }
-#endif
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
     const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
@@ -3321,7 +3301,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     return E_OK;
 }
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::Picture> &inPicture,
     const std::string &outputPath, string &editdata, const std::string &mime_type)
 {
@@ -3351,7 +3330,6 @@ int32_t MediaLibraryPhotoOperations::RemoveTempVideo(const std::string &path)
     MEDIA_INFO_LOG("RemoveTempVideo path: %{public}s", DfxUtils::GetSafePath(path).c_str());
     return FileUtils::DeleteTempVideoFile(path);
 }
-#endif
 
 PhotoEditingRecord::PhotoEditingRecord()
 {

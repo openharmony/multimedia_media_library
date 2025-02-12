@@ -100,10 +100,6 @@ ohos_shared_library("media_library_asset_manager") {
 
   defines = [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
-  if (media_library_feature_take_photo) {
-    defines += [ "MEDIALIBRARY_FEATURE_TAKE_PHOTO" ]
-  }
-
   part_name = "media_library"
   subsystem_name = "multimedia"
 }
