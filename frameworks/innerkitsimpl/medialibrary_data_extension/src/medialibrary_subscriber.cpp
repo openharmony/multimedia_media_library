@@ -76,6 +76,7 @@
 #include "medialibrary_astc_stat.h"
 #include "photo_other_album_trans_operation.h"
 #include "background_cloud_file_processor.h"
+#include "enhancement_manager.h"
 
 using namespace OHOS::AAFwk;
 
@@ -409,6 +410,11 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         // when turn off gallery switch or quit account, clear the download lastest finished flag,
         // so we can download lastest images for the subsequent login new account
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
+    }
+
+    if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE ||
+        action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
+        EnhancementManager::GetInstance().HandleNetChange(isWifiConnected_, isCellularNetConnected_);
     }
 }
 
