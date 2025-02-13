@@ -901,7 +901,8 @@ void BaseRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t
         HandleFailData(fileInfos, dentryFailedThumb, DENTRY_INFO_THM);
     }
     fileMoveCount = SetVisiblePhoto(fileInfos);
-    successCloudMetaNumber_ = fileMoveCount;
+    successCloudMetaNumber_ += fileMoveCount;
+    migrateFileNumber_ += fileMoveCount;
     migrateVideoFileNumber_ += videoFileMoveCount;
     MEDIA_INFO_LOG("END STEP 6 MOVE");
 }
