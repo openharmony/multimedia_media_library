@@ -424,7 +424,7 @@ static napi_value ParseArgsSubmitCloudEnhancementTasks(napi_env env, napi_callba
     unique_ptr<CloudEnhancementAsyncContext>& context)
 {
     CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, ARGS_TWO, ARGS_TWO) == napi_ok,
+        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, ARGS_TWO, ARGS_THREE) == napi_ok,
         "Failed to get args");
     CHECK_COND(env, CloudEnhancementNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
 
@@ -436,6 +436,16 @@ static napi_value ParseArgsSubmitCloudEnhancementTasks(napi_env env, napi_callba
     if (napi_get_value_bool(env, context->argv[PARAM1], &hasCloudWatermark) != napi_ok) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
+    }
+
+    int32_t triggerMode = 0;
+    if (context->argc == ARGS_THREE) {
+        CHECK_ARGS(env, napi_typeof(env, context->argv[PARAM2], &valueType), JS_INNER_FAIL);
+        CHECK_COND(env, valueType == napi_number, JS_INNER_FAIL);
+        if (napi_get_value_int32(env, context->argv[PARAM2], &triggerMode) != napi_ok) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return nullptr;
+        }
     }
 
     vector<string> uris;
@@ -456,6 +466,7 @@ static napi_value ParseArgsSubmitCloudEnhancementTasks(napi_env env, napi_callba
     }
     
     context->hasCloudWatermark_ = hasCloudWatermark;
+    context->triggerMode_ = triggerMode;
     context->predicates.In(PhotoColumn::MEDIA_ID, uris);
     context->uris.assign(uris.begin(), uris.end());
     RETURN_NAPI_TRUE(env);
@@ -469,6 +480,7 @@ static void SubmitCloudEnhancementTasksExecute(napi_env env, void* data)
     auto* context = static_cast<CloudEnhancementAsyncContext*>(data);
     string uriStr = PAH_CLOUD_ENHANCEMENT_ADD;
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(context->hasCloudWatermark_));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, MEDIA_TRIGGER_MODE_KEYWORD, to_string(context->triggerMode_));
     Uri addTaskUri(uriStr);
     context->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
     int32_t changeRows = UserFileClient::Update(addTaskUri, context->predicates, context->valuesBucket);

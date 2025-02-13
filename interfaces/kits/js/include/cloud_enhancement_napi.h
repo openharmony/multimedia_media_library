@@ -101,6 +101,7 @@ struct CloudEnhancementAsyncContext : public NapiError {
     int32_t fileId {UNDEFINED};
     std::string displayName;
     bool hasCloudWatermark_;
+    int32_t triggerMode_;
     ResultNapiType resultNapiType;
     NapiAssetType assetType;
     std::unique_ptr<FileAsset> fileAsset;
