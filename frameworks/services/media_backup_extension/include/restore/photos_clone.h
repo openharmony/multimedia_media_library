@@ -61,9 +61,13 @@ public:
     }
 
     std::shared_ptr<NativeRdb::ResultSet> GetPhotosInPhotoMap(int32_t offset, int32_t pageSize);
+    std::shared_ptr<NativeRdb::ResultSet> GetCloudPhotosInPhotoMap(int32_t offset, int32_t pageSize);
     std::shared_ptr<NativeRdb::ResultSet> GetPhotosNotInPhotoMap(int32_t offset, int32_t pageSize);
+    std::shared_ptr<NativeRdb::ResultSet> GetCloudPhotosNotInPhotoMap(int32_t offset, int32_t pageSize);
     int32_t GetPhotosRowCountInPhotoMap();
+    int32_t GetCloudPhotosRowCountInPhotoMap();
     int32_t GetPhotosRowCountNotInPhotoMap();
+    int32_t GetCloudPhotosRowCountNotInPhotoMap();
     std::string FindlPath(const FileInfo &fileInfo);
     int32_t FindAlbumId(const FileInfo &fileInfo);
     std::string FindPackageName(const FileInfo &info);
@@ -117,6 +121,19 @@ private:
             ON PhotoMap.map_asset=Photos.file_id \
         WHERE Photos.position IN (1, 3) AND \
             (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum');";
+    const std::string SQL_CLOUD_PHOTOS_TABLE_COUNT_IN_PHOTO_MAP = "\
+        SELECT COUNT(1) AS count \
+        FROM PhotoAlbum \
+            INNER JOIN PhotoMap \
+            ON PhotoAlbum.album_id=PhotoMap.map_album \
+            INNER JOIN Photos \
+            ON PhotoMap.map_asset=Photos.file_id \
+        WHERE Photos.position = 2 AND \
+            Photos.sync_status = 0 AND \
+            Photos.clean_flag = 0 AND \
+            Photos.time_pending = 0 AND \
+            Photos.is_temp = 0 AND \
+            (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum');";
     const std::string SQL_PHOTOS_TABLE_QUERY_IN_PHOTO_MAP = "\
         SELECT PhotoAlbum.lpath, \
             Photos.* \
@@ -129,12 +146,39 @@ private:
             (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
+    const std::string SQL_CLOUD_PHOTOS_TABLE_QUERY_IN_PHOTO_MAP = "\
+        SELECT PhotoAlbum.lpath, \
+            Photos.* \
+        FROM PhotoAlbum \
+            INNER JOIN PhotoMap \
+            ON PhotoAlbum.album_id=PhotoMap.map_album \
+            INNER JOIN Photos \
+            ON PhotoMap.map_asset=Photos.file_id \
+        WHERE Photos.position = 2 AND \
+            Photos.sync_status = 0 AND \
+            Photos.clean_flag = 0 AND \
+            Photos.time_pending = 0 AND \
+            Photos.is_temp = 0 AND \
+            (PhotoAlbum.album_type != 2048 OR PhotoAlbum.album_name != '.hiddenAlbum') \
+        ORDER BY Photos.file_id \
+        LIMIT ?, ? ;";
     const std::string SQL_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP = "\
         SELECT COUNT(1) AS count \
         FROM Photos \
             LEFT JOIN PhotoAlbum \
             ON Photos.owner_album_id = PhotoAlbum.album_id \
         WHERE position IN (1, 3) AND \
+            (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum');";
+    const std::string SQL_CLOUD_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP = "\
+        SELECT COUNT(1) AS count \
+        FROM Photos \
+            LEFT JOIN PhotoAlbum \
+            ON Photos.owner_album_id = PhotoAlbum.album_id \
+        WHERE position = 2 AND \
+            Photos.sync_status = 0 AND \
+            Photos.clean_flag = 0 AND \
+            Photos.time_pending = 0 AND \
+            Photos.is_temp = 0 AND \
             (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum');";
     const std::string SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP = "\
         SELECT \
@@ -144,6 +188,21 @@ private:
             LEFT JOIN PhotoAlbum \
             ON Photos.owner_album_id=PhotoAlbum.album_id \
         WHERE position IN (1, 3) AND \
+            (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum') \
+        ORDER BY Photos.file_id \
+        LIMIT ?, ? ;";
+    const std::string SQL_CLOUD_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP = "\
+        SELECT \
+            PhotoAlbum.lpath, \
+            Photos.* \
+        FROM Photos \
+            LEFT JOIN PhotoAlbum \
+            ON Photos.owner_album_id=PhotoAlbum.album_id \
+        WHERE position = 2 AND \
+            Photos.sync_status = 0 AND \
+            Photos.clean_flag = 0 AND \
+            Photos.time_pending = 0 AND \
+            Photos.is_temp = 0 AND \
             (COALESCE(PhotoAlbum.album_type, 0) != 2048 OR COALESCE(PhotoAlbum.album_name, '') != '.hiddenAlbum') \
         ORDER BY Photos.file_id \
         LIMIT ?, ? ;";
