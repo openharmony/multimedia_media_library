@@ -99,7 +99,8 @@ bool PhotoCustomRestoreOperation::IsCancelTask(RestoreTaskInfo &restoreTaskInfo)
 
 void PhotoCustomRestoreOperation::CancelTaskFinish(RestoreTaskInfo &restoreTaskInfo)
 {
-    SendNotifyMessage(restoreTaskInfo, NOTIFY_CANCEL, E_OK, 0);
+    UniqueNumber uniqueNumber;
+    SendNotifyMessage(restoreTaskInfo, NOTIFY_CANCEL, E_OK, 0, uniqueNumber);
     std::unique_lock<std::shared_mutex> lock(cancelOprationLock_);
     cancelKeySet_.erase(restoreTaskInfo.keyPath);
 }
@@ -228,18 +229,19 @@ bool PhotoCustomRestoreOperation::HandleFirstRestoreFile(
     RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t index, int32_t &firstRestoreIndex)
 {
     vector<string> subFiles(files.begin() + index, files.begin() + index + 1);
-    int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, true);
+    UniqueNumber uniqueNumber;
+    int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, true, uniqueNumber);
     bool isFirstRestoreSuccess = errCode == E_OK;
     int32_t lastIndex = static_cast<int32_t>(files.size() - 1);
     if (!isFirstRestoreSuccess && index == lastIndex) {
         MEDIA_ERR_LOG("first file restore failed. stop restore task.");
-        SendNotifyMessage(restoreTaskInfo, NOTIFY_FIRST, errCode, 1);
+        SendNotifyMessage(restoreTaskInfo, NOTIFY_FIRST, errCode, 1, uniqueNumber);
     }
     if (isFirstRestoreSuccess) {
         MEDIA_ERR_LOG("first file restore success.");
         firstRestoreIndex = index;
         int notifyType = index == lastIndex ? NOTIFY_LAST : NOTIFY_FIRST;
-        SendNotifyMessage(restoreTaskInfo, notifyType, errCode, 1);
+        SendNotifyMessage(restoreTaskInfo, notifyType, errCode, 1, uniqueNumber);
     }
     return isFirstRestoreSuccess;
 }
@@ -251,8 +253,9 @@ void PhotoCustomRestoreOperation::HandleBatchCustomRestore(
         return;
     }
     int32_t fileNum = static_cast<int32_t>(subFiles.size());
-    int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, false);
-    SendNotifyMessage(restoreTaskInfo, notifyType, errCode, fileNum);
+    UniqueNumber uniqueNumber;
+    int32_t errCode = HandleCustomRestore(restoreTaskInfo, subFiles, false, uniqueNumber);
+    SendNotifyMessage(restoreTaskInfo, notifyType, errCode, fileNum, uniqueNumber);
 }
 
 void PhotoCustomRestoreOperation::InitRestoreTask(RestoreTaskInfo &restoreTaskInfo, int32_t fileNum)
@@ -272,11 +275,11 @@ void PhotoCustomRestoreOperation::InitRestoreTask(RestoreTaskInfo &restoreTaskIn
 }
 
 int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
-    RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst)
+    RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst,
+    UniqueNumber &uniqueNumber)
 {
     MEDIA_DEBUG_LOG("HandleCustomRestore begin. size: %{public}d, isFirst: %{public}d",
         static_cast<int32_t>(filePathVector.size()), isFirst ? 1 : 0);
-    UniqueNumber uniqueNumber;
     vector<FileInfo> restoreFiles = GetFileInfos(filePathVector, uniqueNumber);
     MEDIA_DEBUG_LOG("GetFileInfos finished");
     int32_t errCode = UpdateUniqueNumber(uniqueNumber);
@@ -348,7 +351,8 @@ int32_t PhotoCustomRestoreOperation::UpdatePhotoAlbum(RestoreTaskInfo &restoreTa
     return E_OK;
 }
 
-void PhotoCustomRestoreOperation::SendPhotoAlbumNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType)
+void PhotoCustomRestoreOperation::SendPhotoAlbumNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType,
+    const UniqueNumber &uniqueNumber)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {to_string(PhotoAlbumSubType::IMAGE)});
@@ -363,8 +367,12 @@ void PhotoCustomRestoreOperation::SendPhotoAlbumNotify(RestoreTaskInfo &restoreT
     } else {
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NOTIFY_ADD);
     }
-    watch->Notify(restoreTaskInfo.imageAlbumUri, NotifyType::NOTIFY_UPDATE);
-    watch->Notify(restoreTaskInfo.videoAlbumUri, NotifyType::NOTIFY_UPDATE);
+    if (uniqueNumber.imageTotalNumber > 0) {
+        watch->Notify(restoreTaskInfo.imageAlbumUri, NotifyType::NOTIFY_UPDATE);
+    }
+    if (uniqueNumber.videoTotalNumber > 0) {
+        watch->Notify(restoreTaskInfo.videoAlbumUri, NotifyType::NOTIFY_UPDATE);
+    }
     MEDIA_DEBUG_LOG("PhotoAlbumNotify finished.");
 }
 
@@ -403,11 +411,12 @@ InnerRestoreResult PhotoCustomRestoreOperation::GenerateCustomRestoreNotify(
 }
 
 void PhotoCustomRestoreOperation::SendNotifyMessage(
-    RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum)
+    RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum,
+    const UniqueNumber &uniqueNumber)
 {
     // notify album
     if (errCode == E_OK && successNum_ > 0) {
-        SendPhotoAlbumNotify(restoreTaskInfo, notifyType);
+        SendPhotoAlbumNotify(restoreTaskInfo, notifyType, uniqueNumber);
     }
     if (errCode != E_OK) {
         failNum_.fetch_add(fileNum);
