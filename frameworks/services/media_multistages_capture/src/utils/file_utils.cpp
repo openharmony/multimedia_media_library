@@ -150,8 +150,10 @@ int32_t FileUtils::SavePicture(const string &path, std::shared_ptr<Media::Pictur
 int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &path,
     std::shared_ptr<Media::Picture> &picture, bool isHighQualityPicture)
 {
-    MEDIA_DEBUG_LOG("DealPicture %{public}s", path.c_str());
+    MEDIA_INFO_LOG("DealPicture, path: %{public}s, mime_type: %{public}s",
+        MediaFileUtils::DesensitizePath(path).c_str(), mime_type.c_str());
     if (picture == nullptr) {
+        MEDIA_ERR_LOG("picture is nullptr.");
         return -1;
     }
     Media::ImagePacker imagePacker;
@@ -173,7 +175,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     imagePacker.FinalizePacking();
     size_t size = -1;
     MediaFileUtils::GetFileSize(tempOutputPath, size);
-    MEDIA_DEBUG_LOG("SavePicture end {public}%zu", size);
+    MEDIA_INFO_LOG("SavePicture end size: {public}%zu", size);
     if (size == 0) {
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
