@@ -96,7 +96,8 @@ private:
     void DoCustomRestore(RestoreTaskInfo &restoreTaskInfo);
     void InitRestoreTask(RestoreTaskInfo &restoreTaskInfo, int32_t fileNum);
     void ReleaseCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
-    int32_t HandleCustomRestore(RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst);
+    int32_t HandleCustomRestore(RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst,
+        UniqueNumber &uniqueNumber);
     bool HandleFirstRestoreFile(
         RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t index, int32_t &firstRestoreIndex);
     void HandleBatchCustomRestore(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, vector<string> subFiles);
@@ -112,9 +113,10 @@ private:
     int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     int32_t RenameFiles(vector<FileInfo> &restoreFiles);
     int32_t UpdatePhotoAlbum(RestoreTaskInfo &restoreTaskInfo, FileInfo fileInfo);
-    void SendNotifyMessage(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum);
+    void SendNotifyMessage(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum,
+        const UniqueNumber &uniqueNumber);
     InnerRestoreResult GenerateCustomRestoreNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType);
-    void SendPhotoAlbumNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType);
+    void SendPhotoAlbumNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, const UniqueNumber &uniqueNumber);
     bool IsCancelTask(RestoreTaskInfo &restoreTaskInfo);
     void CancelTaskFinish(RestoreTaskInfo &restoreTaskInfo);
     void ApplyEfficiencyQuota(int32_t fileNum);
