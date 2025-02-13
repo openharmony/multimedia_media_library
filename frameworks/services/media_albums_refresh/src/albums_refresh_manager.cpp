@@ -153,7 +153,7 @@ static int32_t GetAnalysisRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> r
     refreshAlbumPredicates.EqualTo(REFRESHED_ALBUM_ID, -1);
     vector<string> columns = { REFRESHED_ALBUM_ID };
     auto resultSet = rdbStore->Query(refreshAlbumPredicates, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow()) {
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == E_OK) {
         resultSet->Close();
         isUpdateAllAnalysis = true;
         return E_OK;
@@ -497,15 +497,6 @@ static void PrintSyncInfo(SyncNotifyInfo &info)
         info.totalAssets,
         info.totalAlbums,
         info.urisSize);
-}
-
-static void InitSyncNotifyInfo(SyncNotifyInfo &info, unordered_map<string, string> &result)
-{
-    info.syncId = std::atoi(result["syncId"].c_str());
-    info.taskType = std::atoi(result["taskType"].c_str());
-    info.syncType = std::atoi(result["syncType"].c_str());
-    info.totalAssets = std::atoi(result["totalAssets"].c_str());
-    info.totalAlbums = std::atoi(result["totalAlbums"].c_str());
 }
 
 SyncNotifyInfo AlbumsRefreshManager::GetSyncNotifyInfo(CloudSyncNotifyInfo &notifyInfo, uint8_t uriType)

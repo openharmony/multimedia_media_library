@@ -35,6 +35,7 @@ constexpr int32_t RESERVE_ALBUM = 10;
 constexpr int32_t PARENT_ID = 0;
 constexpr int32_t DELETE_LIMIT_TIME = 5000;
 constexpr int32_t ERR_NUM = -1;
+constexpr int32_t MAX_PARCEL_LEN_LIMIT = 5000;
 const string BURST_COVER_LEVEL = "1";
 const string BURST_NOT_COVER_LEVEL = "2";
 const string IS_LOCAL = "2";
@@ -420,6 +421,10 @@ bool MediaSyncObserver::ParseNotifyData(const ChangeInfo &changeInfo, vector<str
         return false;
     }
     MEDIA_DEBUG_LOG("read sub uri list length: %{public}u .", len);
+    if (len > MAX_PARCEL_LEN_LIMIT) {
+        MEDIA_ERR_LOG("len length exceed the limit.");
+        return false;
+    }
     for (uint32_t i = 0; i < len; i++) {
         string subUri = parcel->ReadString();
         if (subUri.empty()) {

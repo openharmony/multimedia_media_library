@@ -93,9 +93,7 @@
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
-#endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -593,10 +591,11 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
         return ret;
     }
     rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (ret != E_OK) {
+    if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_ERR;
     }
+    CHECK_AND_WARN_LOG(MediaLibraryRdbUtils::AnalyzePhotosDataAsync(), "Analyze photos data failed");
 
     return E_OK;
 }
@@ -1243,13 +1242,11 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             std::vector<std::string> columns;
             MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
-#endif
         case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -1998,10 +1995,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
                 columns);
         case OperationObject::SEARCH_TOTAL:
             return QueryIndex(cmd, columns, predicates);
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesPhotoCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
-#endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
         case OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE:
             return EnhancementManager::GetInstance().HandleEnhancementQueryOperation(cmd, columns);
@@ -2265,6 +2260,7 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
 
 void MediaLibraryDataManager::SetStartupParameter()
 {
+    MEDIA_INFO_LOG("Start to set parameter.");
     static constexpr uint32_t BASE_USER_RANGE = 200000; // for get uid
     uid_t uid = getuid() / BASE_USER_RANGE;
     const string key = "multimedia.medialibrary.startup." + to_string(uid);
@@ -2413,7 +2409,7 @@ static int32_t SearchDateTakenWhenZero(const shared_ptr<MediaLibraryRdbStore> rd
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TAKEN, "0");
+    predicates.LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TAKEN, "0");
     vector<string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_MODIFIED};
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to acquire result from visitor query.");
@@ -2448,8 +2444,11 @@ int32_t MediaLibraryDataManager::UpdateDateTakenWhenZero()
 
     string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_DATE_TAKEN +
         " = " + PhotoColumn::MEDIA_DATE_MODIFIED + "," + PhotoColumn::PHOTO_DETAIL_TIME +
-        " = strftime('%Y:%m:%d %H:%M:%S', date_modified/1000, 'unixepoch', 'localtime')" +
-        " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " = 0";
+        " = strftime('%Y:%m:%d %H:%M:%S', date_modified/1000, 'unixepoch', 'localtime'), " +
+        PhotoColumn::PHOTO_DATE_DAY + " = strftime( '%Y%m%d', date_modified / 1000, 'unixepoch', 'localtime' ), " +
+        PhotoColumn::PHOTO_DATE_MONTH + " = strftime( '%Y%m', date_modified / 1000, 'unixepoch', 'localtime' ), " +
+        PhotoColumn::PHOTO_DATE_YEAR + " = strftime( '%Y', date_modified / 1000, 'unixepoch', 'localtime' )" +
+        " WHERE " + MediaColumn::MEDIA_DATE_TAKEN + " <= 0";
     ret = rdbStore_->ExecuteSql(updateSql);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "rdbStore->ExecuteSql failed, ret = %{public}d", ret);

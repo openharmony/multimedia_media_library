@@ -115,6 +115,7 @@ private:
     bool IsBasicInfoValid(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         const std::string &dbName);
     std::string CheckGalleryDbIntegrity();
+    void RestorePhotoInner();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

@@ -20,18 +20,17 @@ namespace OHOS {
 namespace Media {
 class MtpMonitor {
 public:
-    MtpMonitor();
+    MtpMonitor() = default;
     ~MtpMonitor() = default;
     void Start();
     void Stop();
 
 private:
-    void Init();
     void Run();
 
 private:
     std::shared_ptr<MtpOperation> operationPtr_;
-    bool interruptFlag {false};
+    std::atomic<int32_t> errorLimit_ {0};
     std::atomic_bool threadRunning_ {false};
 };
 } // namespace Media

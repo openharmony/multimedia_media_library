@@ -41,7 +41,7 @@ MediaAssetHelperImpl::~MediaAssetHelperImpl() {}
 
 static bool CheckUri(const std::string &uri)
 {
-    if (uri.find("..") != std::string::npos) {
+    if (uri.find("../") != std::string::npos) {
         return false;
     }
     std::string uriprex = "file://media";

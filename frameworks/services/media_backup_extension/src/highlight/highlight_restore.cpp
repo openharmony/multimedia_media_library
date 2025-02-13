@@ -321,7 +321,7 @@ void HighlightRestore::InsertIntoHighlightCoverAndPlayInfo()
         }
         int64_t rowNum = 0;
         int32_t errCode = BatchInsertWithRetry("tab_highlight_cover_info", coverValues, rowNum);
-        if (errCode != E_OK || rowNum != HIGHLIGHT_RATIO.size()) {
+        if (errCode != E_OK || rowNum != (int64_t) HIGHLIGHT_RATIO.size()) {
             info.highlightStatus = HIGHLIGHT_STATUS_FAIL;
             MEDIA_ERR_LOG("InsertIntoHighlightCover fail, %{public}s", info.ToString().c_str());
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
@@ -439,7 +439,19 @@ void HighlightRestore::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
 
 void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo)
 {
-    if ((fileInfo.storyIds.empty() && fileInfo.portraitIds.empty()) || fileInfo.fileIdNew <= 0) {
+    if (fileInfo.fileIdNew <= 0) {
+        return;
+    }
+    int32_t fileIdOld = fileInfo.fileIdOld;
+    auto it = std::find_if(albumInfos_.begin(), albumInfos_.end(),
+        [fileIdOld](const HighlightAlbumInfo &info) { return info.coverId == fileIdOld; });
+    if (it != albumInfos_.end()) {
+        it->coverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
+            std::to_string(fileInfo.fileIdNew), MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath));
+        MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.", it->albumName.c_str(), it->coverUri.c_str());
+    }
+
+    if (fileInfo.storyIds.empty() && fileInfo.portraitIds.empty()) {
         return;
     }
     std::stringstream storyIdss(fileInfo.storyIds);
@@ -467,11 +479,6 @@ void HighlightRestore::UpdateMapInsertValuesByStoryId(std::vector<NativeRdb::Val
     if (it == albumInfos_.end() || it->albumIdNew <= 0 || it->aiAlbumIdNew <= 0) {
         MEDIA_ERR_LOG("no such album of albumIdOld: %{public}d", albumIdOld);
         return;
-    }
-    if (fileInfo.fileIdOld == it->coverId) {
-        it->coverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-            std::to_string(fileInfo.fileIdNew), MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath));
-        MEDIA_INFO_LOG("album %{public}d get coverUri %{public}s.", it->id, it->coverUri.c_str());
     }
     if (fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
         it->effectline.push_back(GetEffectline(fileInfo));

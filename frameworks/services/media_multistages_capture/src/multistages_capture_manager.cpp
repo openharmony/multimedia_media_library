@@ -142,9 +142,7 @@ int32_t MultiStagesCaptureManager::QuerySubType(const string &photoId)
         return static_cast<int32_t>(PhotoSubType::CAMERA);
     }
 
-    int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-    resultSet->Close();
-    return subType;
+    return GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
 }
 } // Media
 } // OHOS

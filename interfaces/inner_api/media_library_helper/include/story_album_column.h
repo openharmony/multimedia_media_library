@@ -57,6 +57,7 @@ const std::string MAP_ASSET_SOURCE = "map_asset_source";
 const std::string MAP_ASSET_DESTINATION = "map_asset_destination";
 const std::string HIGHLIGHT_VIDEO_COUNT_CAN_PACK = "video_count_can_pack";
 const std::string HIGHLIGHT_PIN_TIME = "pin_time";
+const std::string HIGHLIGHT_USE_SUBTITLE = "use_subtitle";
 
 const std::string URI_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_ALBUM_TABLE;
 } // namespace Media

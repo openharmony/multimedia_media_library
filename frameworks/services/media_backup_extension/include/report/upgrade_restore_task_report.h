@@ -43,6 +43,8 @@ public:
     UpgradeRestoreTaskReport &ReportTimeout(uint64_t ongoingTotalNumber);
     UpgradeRestoreTaskReport &ReportTotal(const std::string &errorCode, const std::string &totalInfo);
     UpgradeRestoreTaskReport &ReportTimeCost();
+    UpgradeRestoreTaskReport &ReportUpgradeEnh(const std::string &errorCode, const std::string &info);
+    UpgradeRestoreTaskReport &ReportRestoreMode(int32_t restoreMode, uint64_t notFoundFileNum);
 
 private:
     int32_t PostInfoDfx(const MediaRestoreResultInfo &info);

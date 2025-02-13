@@ -125,6 +125,8 @@ const std::string ANALYSIS_ALBUM_SUBTYPE = "album_subtype";
 
 const std::string QUERY_FACE_TAG_COUNT = "SELECT count(1) AS count FROM " + VISION_FACE_TAG_TABLE;
 const std::string QUERY_IMAGE_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_IMAGE_FACE_TABLE;
+const std::string CREATE_FACE_TAG_INDEX =
+    "CREATE INDEX IF NOT EXISTS face_clone_tag_index ON tab_analysis_face_tag (tag_id)";
 
 const std::string GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY = GALLERY_TAG_NAME + " IS NOT NULL AND " + GALLERY_TAG_NAME +
     " != ''";
@@ -144,7 +146,11 @@ const std::string GALLERY_FACE_TABLE_FULL = GALLERY_TABLE_MERGE_FACE + " INNER J
 
 // Path related
 const std::string INTERNAL_PREFIX = "/storage/emulated";
+constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 const std::string APP_TWIN_DATA_PREFIX = "/AppTwinData";
+const std::string CLONE_STAT_EDIT_DATA_DIR = "/storage/media/local/files/.editData/";
+const std::string CLONE_STAT_RDB_DIR = "/data/storage/el2/database/rdb/";
+const std::string CLONE_STAT_KVDB_DIR = "/data/storage/el2/database/kvdb/";
 } // namespace Media
 } // namespace OHOS
 

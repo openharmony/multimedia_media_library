@@ -342,8 +342,7 @@ bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, 
     MediaLibraryTracer tracer;
     tracer.Start("ImageSource::ScaleTargetPixelMap");
 
-    PostProc postProc;
-    if (!postProc.ScalePixelMapEx(targetSize, *dataSource, option)) {
+    if (!PostProc::ScalePixelMapWithGPU(*(dataSource.get()), targetSize, option, true)) {
         MEDIA_ERR_LOG("Fail to scale to target thumbnail, ScalePixelMapEx failed, targetSize: %{public}d * %{public}d",
             targetSize.width, targetSize.height);
         return false;
@@ -1127,11 +1126,17 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
         MEDIA_DATA_DB_DATE_TAKEN,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
-    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->EndWrap();
-    rdbPredicates.BeginWrap()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")->EndWrap();
-    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
+    rdbPredicates.OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN);
     rdbPredicates.Limit(restoreAstcCount);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, "0");
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, "1");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, "0");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, "0");
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("opts.store is nullptr");
         return false;
@@ -1640,7 +1645,7 @@ void PostProcPixelMapSource(ThumbnailData &data)
             std::shared_ptr<PixelMap> copySource = std::move(copySourcePtr);
             data.source.SetPixelMapEx(copySource);
         }
-        pixelMap->rotate(static_cast<float>(data.orientation));
+        PostProc::RotateInRectangularSteps(*(pixelMap.get()), static_cast<float>(data.orientation), true);
     }
 
     // PixelMap has been rotated, fix the exif orientation to zero degree.

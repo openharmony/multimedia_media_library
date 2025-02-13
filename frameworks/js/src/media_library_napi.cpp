@@ -102,6 +102,7 @@ const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 10;
 const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 150;
+const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 
@@ -2629,9 +2630,9 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, ChangeListenerNapi::J
     napi_create_object(env, &result);
     SetValueArray(env, "uris", msg->changeInfo_.uris_, result);
     if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
-        ChangeListenerNapi::SetSharedAssetArray(env, "sharedalbumassets", wrapper, result, false);
+        ChangeListenerNapi::SetSharedAssetArray(env, "sharedAlbumAssets", wrapper, result, false);
     } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
-        ChangeListenerNapi::SetSharedAssetArray(env, "sharedphotoassets", wrapper, result, true);
+        ChangeListenerNapi::SetSharedAssetArray(env, "sharedPhotoAssets", wrapper, result, true);
     } else {
         NAPI_DEBUG_LOG("other albums notify");
     }
@@ -2712,6 +2713,10 @@ void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbac
             NAPI_ERR_LOG("Failed to read sub uri list length");
             return;
         }
+        if (len > MAX_LEN_LIMIT) {
+            NAPI_ERR_LOG("len exceed the limit.");
+            return;
+        }
         for (uint32_t i = 0; i < len; i++) {
             string subUri = parcel->ReadString();
             if (subUri.empty()) {
@@ -2775,6 +2780,12 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
 void ChangeListenerNapi::QueryRdbAndNotifyChange(uv_loop_s *loop, UvChangeMsg *msg, uv_work_t *work)
 {
     JsOnChangeCallbackWrapper* wrapper = new (std::nothrow) JsOnChangeCallbackWrapper();
+    if (wrapper == nullptr) {
+        NAPI_ERR_LOG("JsOnChangeCallbackWrapper allocation failed");
+        delete msg;
+        delete work;
+        return;
+    }
     wrapper->msg_ = msg;
     MediaLibraryTracer tracer;
     tracer.Start("GetResultSetFromMsg");
@@ -2886,17 +2897,17 @@ napi_value ChangeListenerNapi::BuildSharedPhotoAssetsObj(const napi_env& env,
 {
     napi_value value = nullptr;
     napi_status status = napi_create_array_with_length(env, wrapper->uriSize_, &value);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Create array error!");
-        return value;
-    }
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
+    napi_value tmpValue = nullptr;
+    status = napi_create_array_with_length(env, 0, &tmpValue);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
     if (wrapper->uriSize_ > MAX_QUERY_LIMIT) {
         NAPI_WARN_LOG("BuildSharedPhotoAssetsObj uriSize is over limit");
-        return value;
+        return tmpValue;
     }
     if (wrapper->sharedAssets_ == nullptr) {
         NAPI_WARN_LOG("wrapper sharedAssets is nullptr");
-        return value;
+        return tmpValue;
     }
     size_t elementIndex = 0;
     while (elementIndex < wrapper->sharedAssetsRowObjVector_.size()) {
@@ -2910,13 +2921,13 @@ napi_value ChangeListenerNapi::BuildSharedPhotoAssetsObj(const napi_env& env,
         }
         if (assetValue == nullptr) {
             wrapper->sharedAssets_->Close();
-            return value;
+            return tmpValue;
         }
         status = napi_set_element(env, value, elementIndex++, assetValue);
         if (status != napi_ok) {
             NAPI_ERR_LOG("Set photo asset value failed");
             wrapper->sharedAssets_->Close();
-            return value;
+            return tmpValue;
         }
     }
     wrapper->sharedAssets_->Close();
@@ -4501,8 +4512,12 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         return;
     }
     SetFileAssetByIdV9(index, "", context);
+    if (context->fileAsset == nullptr) {
+        close(srcFd);
+        NAPI_ERR_LOG("JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
+        return;
+    }
     LogMedialibraryAPI(context->fileAsset->GetUri());
-    CHECK_NULL_PTR_RETURN_VOID(context->fileAsset, "JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
     Uri openFileUri(context->fileAsset->GetUri());
     int32_t destFd = UserFileClient::OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
     if (destFd < 0) {
@@ -6639,9 +6654,9 @@ static std::string GetFaceAnalysisProgress()
         return retJson;
     }
     string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
-    if (retJson == "") {
+    if (retJson == "" || !nlohmann::json::accept(retJson)) {
         ret->Close();
-        NAPI_ERR_LOG("retJson is empty");
+        NAPI_ERR_LOG("retJson is empty or invalid");
         return "";
     }
     nlohmann::json curJsonObj = nlohmann::json::parse(retJson);

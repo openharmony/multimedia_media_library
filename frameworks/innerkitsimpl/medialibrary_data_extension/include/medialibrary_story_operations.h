@@ -29,6 +29,7 @@ public:
     static int32_t InsertOperation(MediaLibraryCommand &cmd);
     static int32_t UpdateOperation(MediaLibraryCommand &cmd);
     static int32_t DeleteOperation(MediaLibraryCommand &cmd);
+    static int32_t UpdateSubtitle(MediaLibraryCommand &cmd);
 
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);

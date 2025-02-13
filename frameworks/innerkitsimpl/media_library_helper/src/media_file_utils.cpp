@@ -17,6 +17,7 @@
 #include "media_file_utils.h"
 
 #include <algorithm>
+#include <stack>
 #include <dirent.h>
 #include <fcntl.h>
 #include <fstream>
@@ -234,7 +235,31 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXT
     { "video/x-ms-wmx", { "wmx" } },
     { "video/x-ms-wvx", { "wvx" } },
     { "video/x-sgi-movie", { "movie" } },
-    { "video/x-matroska", { "mpv" } }
+    { "video/x-matroska", { "mpv" } },
+    { "audio/3gpp", { "3gpp" } },
+    { "audio/midi", { "mid", "midi", "kar" } },
+    { "audio/basic", { "au" } },
+    { "audio/x-pn-realaudio", { "rm", "ram" } },
+    { "audio/aac-adts", { "aac" } },
+    { "audio/mpeg", { "m4a", "mpga", "mpega" } },
+    { "audio/x-mpegurl", { "m3u", "m3u8" } },
+    { "audio/ffmpeg", { "ape" } },
+    { "audio/mp4", { "isma" } },
+    { "audio/ac4", { "ac4" } },
+    { "audio/amr-wb", { "awb" } },
+    { "audio/annodex", { "axa" } },
+    { "audio/csound", { "csd", "orc", "sco" } },
+    { "audio/ogg", { "oga", "ogg", "opus", "spx" } },
+    { "audio/prs.sid", { "sid" } },
+    { "audio/x-aiff", { "aif", "aiff", "aifc" } },
+    { "audio/x-gsm", { "gsm"} },
+    { "audio/x-mpegurl", { "m3u" } },
+    { "audio/x-ms-wma", { "wma" } },
+    { "audio/x-ms-wax", { "wax" } },
+    { "audio/x-realaudio", { "ra" } },
+    { "audio/x-scpls", { "pls" } },
+    { "audio/x-sd2", { "sd2" } },
+    { "audio/x-wav", { "wav" } }
 };
 
 vector<string> MediaFileUtils::GetAllTypes(const int32_t extension)
@@ -2212,5 +2237,48 @@ int64_t MediaFileUtils::GetFreeSize()
     CHECK_AND_RETURN_RET_LOG(ret == 0, E_ERR, "Get free size failed, errno:%{public}d", errno);
     int64_t freeSize = static_cast<int64_t>(diskInfo.f_bsize) * static_cast<int64_t>(diskInfo.f_bfree);
     return freeSize;
+}
+
+void MediaFileUtils::StatDirSize(const std::string& rootPath, size_t& totalSize)
+{
+    std::stack<std::string> dirStack;
+    dirStack.push(rootPath);
+
+    while (!dirStack.empty()) {
+        std::string currentPath = dirStack.top();
+        dirStack.pop();
+
+        DIR* dir = opendir(currentPath.c_str());
+        if (dir == nullptr) {
+            MEDIA_ERR_LOG("Failed to open directory: %{public}s", currentPath.c_str());
+            continue;
+        }
+
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+
+            std::string fullPath = currentPath + "/" + entry->d_name;
+            struct stat statBuf;
+            if (stat(fullPath.c_str(), &statBuf) == -1) {
+                MEDIA_ERR_LOG("Failed to get file status: %{public}s", fullPath.c_str());
+                continue;
+            }
+
+            if (S_ISDIR(statBuf.st_mode)) {
+                dirStack.push(fullPath);
+            } else if (S_ISREG(statBuf.st_mode)) {
+                size_t fileSize = 0;
+                MediaFileUtils::GetFileSize(fullPath, fileSize);
+                totalSize += fileSize;
+            }
+        }
+
+        closedir(dir);
+    }
+
+    MEDIA_INFO_LOG("Directory size: %s = %{public}lld bytes", rootPath.c_str(), static_cast<long long>(totalSize));
 }
 } // namespace OHOS::Media

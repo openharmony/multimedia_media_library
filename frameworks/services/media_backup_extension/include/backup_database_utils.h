@@ -62,7 +62,6 @@ public:
     static void UpdateSdWhereClause(std::string &querySql, bool shouldIncludeSd);
     static bool QueryThumbImage(NativeRdb::RdbStore &rdbStore,
         const std::string &keyValue, std::vector<uint8_t> &blob);
-    static bool SaveImage(std::vector<uint8_t> &data, const std::string &outFile);
     static int32_t GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
         std::vector<uint8_t> &blobVal);
     static std::string GetLandmarksStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);
@@ -132,6 +131,9 @@ public:
     template <typename T>
     static std::string JoinSQLValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
+    static std::vector<T> LeftJoinValues(std::vector<T>& values,
+        std::string_view delimiter);
+    template <typename T>
     struct always_false : std::false_type {};
     template <typename T>
     static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
@@ -193,6 +195,15 @@ std::string BackupDatabaseUtils::JoinValues(const std::vector<T>& values, std::s
         }
     }
     return ss.str();
+}
+
+template <typename T>
+std::vector<T> BackupDatabaseUtils::LeftJoinValues(std::vector<T>& values, std::string_view delimiter)
+{
+    for (auto& value : values) {
+        value.insert(0, delimiter);
+    }
+    return values;
 }
 
 template<typename T>

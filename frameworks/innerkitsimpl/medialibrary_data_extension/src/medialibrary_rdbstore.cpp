@@ -760,6 +760,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QueryEditDataExists(
     shared_ptr<NativeRdb::ResultSet> resultSet = Query(predicates, columns);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
     CHECK_AND_RETURN_RET_LOG(!cond, nullptr, "query edit data err");
+
+    CHECK_AND_RETURN_RET_LOG(CheckRdbStore(), nullptr, "rdbStore_ is nullptr. Maybe it didn't init successfully.");
+
     string photoPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
 
     cond = MediaFileUtils::IsFileExists(PhotoFileUtils::GetEditDataPath(photoPath)) ||
@@ -3321,6 +3324,17 @@ static void AddStageVideoTaskStatus(RdbStore &store)
     MEDIA_INFO_LOG("end add stage_video_task_status column");
 }
 
+static void AddHighlightUseSubtitle(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add use_subtitle column");
+    const vector<string> sqls = {
+        "ALTER TABLE " + HIGHLIGHT_ALBUM_TABLE + " ADD COLUMN " +
+            HIGHLIGHT_USE_SUBTITLE + " INT DEFAULT 0"
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("start add use_subtitle column");
+}
+
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -4145,28 +4159,12 @@ static void FixSourceAlbumUpdateTriggerToUseLPath(RdbStore& store)
 
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 {
-    if (oldVersion < VERSION_ADD_CHECK_FLAG) {
-        AddCheckFlag(store);
-    }
-
-    if (oldVersion < VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS) {
-        AddHighlightAnalysisProgress(store);
-    }
-
-    if (oldVersion < VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED) {
-        UpdateSourcePhotoAlbumTrigger(store);
-    }
-
-    if (oldVersion < VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN) {
-        AddRefreshAlbumStatusColumn(store);
-    }
-
-    if (oldVersion < VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH) {
-        FixSourceAlbumUpdateTriggerToUseLPath(store);
-    }
-
     if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
         AddStageVideoTaskStatus(store);
+    }
+
+    if (oldVersion < VERSION_HIGHLIGHT_SUBTITLE) {
+        AddHighlightUseSubtitle(store);
     }
 
     if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {
@@ -4213,6 +4211,26 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
         UpdateSearchStatusTriggerForOwnerAlbumId(store);
+    }
+
+    if (oldVersion < VERSION_ADD_CHECK_FLAG) {
+        AddCheckFlag(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS) {
+        AddHighlightAnalysisProgress(store);
+    }
+
+    if (oldVersion < VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED) {
+        UpdateSourcePhotoAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN) {
+        AddRefreshAlbumStatusColumn(store);
+    }
+
+    if (oldVersion < VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH) {
+        FixSourceAlbumUpdateTriggerToUseLPath(store);
     }
 
     UpgradeExtensionPart5(store, oldVersion);

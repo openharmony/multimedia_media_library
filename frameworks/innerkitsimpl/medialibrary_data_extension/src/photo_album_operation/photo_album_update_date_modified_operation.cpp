@@ -43,7 +43,11 @@ const std::string SQL_UPDATE_ALBUM_DATE_NEED_FIX = "\
             WHEN COALESCE(date_added, 0) = 0 THEN strftime('%s000', 'now') \
             ELSE date_added \
         END, \
-        dirty = 2 \
+        dirty = \
+        CASE \
+            WHEN COALESCE(cloud_id, '') != '' THEN 2 \
+            ELSE dirty \
+        END \
     WHERE album_type != 1024 AND \
         dirty != 4 AND \
         ( \

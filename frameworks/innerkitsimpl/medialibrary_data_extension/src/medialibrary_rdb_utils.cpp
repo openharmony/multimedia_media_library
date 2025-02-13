@@ -28,6 +28,7 @@
 #include "media_log.h"
 #include "media_refresh_album_column.h"
 #include "medialibrary_album_fusion_utils.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
@@ -50,6 +51,7 @@
 #include "location_column.h"
 #include "search_column.h"
 #include "story_cover_info_column.h"
+#include "story_play_info_column.h"
 #include "power_efficiency_manager.h"
 #include "rdb_sql_utils.h"
 #include "medialibrary_restore.h"
@@ -775,9 +777,32 @@ static int32_t GetSystemRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> rdb
     return E_SUCCESS;
 }
 
+static int32_t GetIsUpdateAllAnalysis(const shared_ptr<MediaLibraryRdbStore> rdbStore, bool &isUpdateAllAnalysis)
+{
+    vector<string> columns = { REFRESHED_ALBUM_ID };
+    NativeRdb::RdbPredicates predicates(ALBUM_REFRESH_TABLE);
+    predicates.EqualTo(REFRESHED_ALBUM_ID, -1);
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Failed query RefreshAlbum.");
+    if (resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        isUpdateAllAnalysis = true;
+        MEDIA_INFO_LOG("isUpdateAllAnalysis is true.");
+    }
+    resultSet->Close();
+    return E_SUCCESS;
+}
+
 static int32_t GetAnalysisRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     vector<RefreshAlbumData> &analysisAlbums, bool &isUpdateAllAnalysis)
 {
+    int ret = GetIsUpdateAllAnalysis(rdbStore, isUpdateAllAnalysis);
+    if (ret == E_HAS_DB_ERROR) {
+        return E_HAS_DB_ERROR;
+    } else if (isUpdateAllAnalysis) {
+        MEDIA_INFO_LOG("UpdateAllAnalysis.");
+        return E_SUCCESS;
+    }
+
     vector<string> columns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_SUBTYPE };
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.SetWhereClause(PhotoAlbumColumns::ALBUM_ID + " IN (SELECT " + REFRESHED_ALBUM_ID +
@@ -788,11 +813,7 @@ static int32_t GetAnalysisRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> r
         RefreshAlbumData data;
         data.albumId = GetAlbumId(resultSet);
         data.albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(resultSet));
-        if (data.albumId == -1) {
-            isUpdateAllAnalysis = true;
-        } else {
-            analysisAlbums.push_back(data);
-        }
+        analysisAlbums.push_back(data);
     }
     resultSet->Close();
     return E_SUCCESS;
@@ -1062,8 +1083,6 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     data.newTotalCount = newCount;
     if (subtype != PhotoAlbumSubType::HIGHLIGHT && subtype != PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         SetCover(fileResult, data, values, hiddenState);
-    } else {
-        RefreshHighlightAlbum(data.albumId);
     }
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
         subtype > PhotoAlbumSubType::ANALYSIS_END)) {
@@ -1459,6 +1478,21 @@ int32_t MediaLibraryRdbUtils::UpdateRemovedAssetToTrash(const shared_ptr<MediaLi
     CHECK_AND_RETURN_RET_LOG(updateRows > 0, E_HAS_DB_ERROR,
         "Failed to remove assets, updateRows: %{public}d", updateRows);
     return updateRows;
+}
+
+int32_t MediaLibraryRdbUtils::UpdateHighlightPlayInfo(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const string &albumId)
+{
+    MEDIA_INFO_LOG("Start update highlight play info on dismiss highlight asset");
+    const std::string UPDATE_HIGHLIGHT_PLAY_INFO = "UPDATE tab_highlight_play_info SET status = 1 "
+        "WHERE album_id = (SELECT id FROM tab_highlight_album WHERE album_id = " + albumId + " LIMIT 1)";
+    
+    int32_t ret = rdbStore->ExecuteSql(UPDATE_HIGHLIGHT_PLAY_INFO);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to execute sql:%{public}s", UPDATE_HIGHLIGHT_PLAY_INFO.c_str());
+        return ret;
+    }
+    return ret;
 }
 
 int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore,
@@ -2583,7 +2617,33 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(bool shouldNotify)
         to_string(PhotoAlbumSubType::IMAGE),
         to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
     };
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore,
         systemAlbumsExcludeSource, shouldNotify);
+}
+
+bool MediaLibraryRdbUtils::AnalyzePhotosData()
+{
+    shared_ptr<MediaLibraryRdbStore> rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "can not get rdb store, failed to analyze photos data");
+    const string analyzeSql = "ANALYZE " + PhotoColumn::PHOTOS_TABLE;
+    MEDIA_INFO_LOG("start analyze photos data");
+    int32_t ret = rdbStore->ExecuteSql(analyzeSql);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "Failed to execute sql, analyze photos data failed");
+    MEDIA_INFO_LOG("end analyze photos data");
+    return true;
+}
+
+bool MediaLibraryRdbUtils::AnalyzePhotosDataAsync()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, false, "can not get async worker, failed to analyze photos data");
+    shared_ptr<MediaLibraryAsyncTask> asyncTask = make_shared<MediaLibraryAsyncTask>(
+        [](AsyncTaskData *data) { MediaLibraryRdbUtils::AnalyzePhotosData(); }, nullptr);
+    CHECK_AND_RETURN_RET_LOG(asyncTask != nullptr, false, "Analyze Photos Data create task fail");
+    asyncWorker->AddTask(asyncTask, false);
+    MEDIA_INFO_LOG("Analyze Photos Data create task success");
+    return true;
 }
 } // namespace OHOS::Media

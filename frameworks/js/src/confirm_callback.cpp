@@ -42,6 +42,13 @@ ConfirmCallback::ConfirmCallback(napi_env env)
 }
 #endif
 
+ConfirmCallback::~ConfirmCallback()
+{
+    if (callbackRef != nullptr && env_ != nullptr) {
+        napi_delete_reference(env_, callbackRef);
+    }
+}
+
 void ConfirmCallback::OnRelease(int32_t releaseCode)
 {
     NAPI_INFO_LOG("ReleaseCode is %{public}d.", releaseCode);

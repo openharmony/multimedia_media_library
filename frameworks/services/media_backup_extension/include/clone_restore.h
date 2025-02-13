@@ -26,12 +26,15 @@
 
 #include "base_restore.h"
 #include "backup_const.h"
+#include "clone_restore_cv_analysis.h"
+#include "clone_restore_highlight.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
 #include "backup_database_utils.h"
 #include "photo_album_clone.h"
 #include "photos_clone.h"
+#include "clone_restore_geo.h"
 
 namespace OHOS {
 namespace Media {
@@ -109,7 +112,8 @@ private:
     void InsertAudio(std::vector<FileInfo> &fileInfos);
     int32_t QueryTotalNumberByMediaType(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         MediaType mediaType);
-    std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount);
+    size_t StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
+    std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount, size_t totalSize);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount, int64_t &videoFileMoveCount);
     void RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreAudioBatch(int32_t offset);
@@ -152,7 +156,7 @@ private:
     NativeRdb::ValuesBucket CreateValuesBucketFromFaceTagTbl(const FaceTagTbl& faceTagTbl);
     void BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbls);
     void DeleteExistingFaceTagData(const std::string& inClause);
-    std::vector<FaceTagTbl> QueryFaceTagTbl(int32_t offset, std::vector<std::string> &commonColumns);
+    std::vector<FaceTagTbl> QueryFaceTagTbl(int32_t offset, const std::string& inClause);
     void RestorePortraitClusteringInfo();
     void ReportPortraitCloneStat(int32_t sceneCode);
     void AppendExtraWhereClause(std::string& whereClause, const std::string& tableName);
@@ -176,6 +180,9 @@ private:
     bool BackupKvStore();
     void GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     int32_t GetNoNeedMigrateCount() override;
+    void GetAccountValid() override;
+    int32_t GetHighlightCloudMediaCnt();
+    void RestoreHighlightAlbums(bool isSyncSwitchOpen);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -209,6 +216,9 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets;
+    CloneRestoreGeo cloneRestoreGeo_;
+    CloneRestoreHighlight cloneRestoreHighlight_;
+    CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;
 };
 
 template<typename T>

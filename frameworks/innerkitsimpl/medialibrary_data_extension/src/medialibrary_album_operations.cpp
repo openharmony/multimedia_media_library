@@ -41,14 +41,13 @@
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
-#endif
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 
 #include "result_set_utils.h"
 #include "story_album_column.h"
+#include "story_cover_info_column.h"
 #include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
 #include "media_file_uri.h"
@@ -83,6 +82,8 @@ constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
 constexpr int32_t ALBUM_PRIORITY_DEFAULT = 1;
 constexpr int32_t ALBUM_SETNAME_OK = 1;
 constexpr int32_t HIGHLIGHT_DELETED = -2;
+constexpr int32_t HIGHLIGHT_COVER_STATUS_TITLE = 2;
+constexpr int32_t HIGHLIGHT_COVER_STATUS_COVER = 1;
 const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
 const std::string SOURCE_PATH_PREFIX = "/storage/emulated/0";
 
@@ -592,6 +593,7 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
         rowId = CreatePhotoAlbum(albumName);
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     if (rowId > 0) {
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(rowId)),
             NotifyType::NOTIFY_ADD);
@@ -617,6 +619,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
 
     int deleteRow = MediaLibraryRdbStore::Delete(predicates);
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     const vector<string> &notifyUris = predicates.GetWhereArgs();
     size_t count = notifyUris.size() - AFTER_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {
@@ -647,6 +650,7 @@ int32_t MediaLibraryAlbumOperations::DeleteHighlightAlbums(RdbPredicates &predic
         return E_HAS_DB_ERROR;
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     const vector<string> &notifyUris = predicates.GetWhereArgs();
     if (changedRows > 0) {
         for (size_t i = 0; i < notifyUris.size(); ++i) {
@@ -658,6 +662,19 @@ int32_t MediaLibraryAlbumOperations::DeleteHighlightAlbums(RdbPredicates &predic
 }
 
 static void NotifyPortraitAlbum(const vector<int32_t> &changedAlbumIds)
+{
+    if (changedAlbumIds.size() <= 0) {
+        return;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
+    for (int32_t albumId : changedAlbumIds) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
+    }
+}
+
+static void NotifyHighlightAlbum(const vector<int32_t> &changedAlbumIds)
 {
     if (changedAlbumIds.size() <= 0) {
         return;
@@ -1064,6 +1081,7 @@ static int32_t RenameUserAlbum(int32_t oldAlbumId, const string &newAlbumName)
     UpdateAnalysisIndexAfterRename(fileIdsToUpdateIndex);
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
         to_string(newAlbumId)), NotifyType::NOTIFY_UPDATE);
     return ALBUM_SETNAME_OK;
@@ -1143,6 +1161,7 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     CHECK_AND_PRINT_LOG(changedRows >= 0, "Update photo album failed: %{public}d", changedRows);
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     if (changedRows > 0 && !needRename) { // No need to notify if album is to be renamed. Rename process will notify
         const vector<string> &notifyIds = rdbPredicates.GetWhereArgs();
         constexpr int32_t notIdArgs = 3;
@@ -1167,7 +1186,7 @@ int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& source
     size_t pos1 = SOURCE_PATH_PREFIX.length();
     size_t pos2 = sourcePath.find_last_of("/");
     CHECK_AND_RETURN_RET_LOG(
-        lPath.find(SOURCE_PATH_PREFIX) != std::string::npos && pos2 != string::npos && pos1 < pos2,
+        sourcePath.find(SOURCE_PATH_PREFIX) != std::string::npos && pos2 != string::npos && pos1 < pos2,
         E_INDEX,
         "get no valid source path: %{public}s", sourcePath.c_str());
     lPath = sourcePath.substr(pos1, pos2 - pos1);
@@ -1184,6 +1203,7 @@ int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& source
 static bool HasSameLpath(const string &lPath, const string &assetId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore.");
     const std::string QUERY_LPATH = "SELECT * FROM PhotoAlbum WHERE lpath = '" + lPath + "'";
     shared_ptr<NativeRdb::ResultSet> albumResultSet = rdbStore->QuerySql(QUERY_LPATH);
     if (albumResultSet == nullptr || albumResultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -1223,6 +1243,7 @@ void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const stri
     string queryExpiredAlbumInfo = "SELECT * FROM album_plugin WHERE lpath = '" +
         lPath + "' AND priority = '1'";
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
     shared_ptr<NativeRdb::ResultSet> albumPluginResultSet = rdbStore->QuerySql(queryExpiredAlbumInfo);
     if (albumPluginResultSet == nullptr || albumPluginResultSet->GoToFirstRow() != NativeRdb::E_OK) {
         size_t pos = lPath.find_last_of("/");
@@ -1272,14 +1293,15 @@ static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &photoResult
         MEDIA_ERR_LOG("Recover album fails");
         return E_INVALID_ARGUMENTS;
     }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     if (isUserAlbum) {
-        MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {to_string(newAlbumId)});
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, {to_string(newAlbumId)});
     } else {
-        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {to_string(newAlbumId)});
+        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore, {to_string(newAlbumId)});
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(
         PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId)), NotifyType::NOTIFY_ADD);
     return E_OK;
@@ -1373,9 +1395,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 
     MediaLibraryAlbumOperations::DealwithNoAlbumAssets(rdbPredicates.GetWhereArgs());
     // notify deferred processing session to restore image
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     MultiStagesCaptureManager::RestorePhotos(rdbPredicates);
-#endif
 
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
@@ -1391,9 +1411,11 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs, NotifyAlbumType::SYS_ALBUM);
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     size_t count = whereArgs.size() - THAN_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {
         string notifyUri = MediaFileUtils::Encode(whereArgs[i]);
@@ -1589,6 +1611,7 @@ static void NotifyOrderChange(vector<int32_t> &changedAlbumIds)
         return;
     }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     for (int32_t &albumId : changedAlbumIds) {
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(
             PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
@@ -2378,6 +2401,145 @@ void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryRdbStore> 
     }
 }
 
+static void GetHighlightCoverStatus(const string &albumId, int32_t &currentCoverStatus)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr! failed update index");
+        return;
+    }
+    const std::string queryCoverStatus =
+        "SELECT status FROM " + HIGHLIGHT_COVER_INFO_TABLE + " WHERE album_id = "
+        "(SELECT id FROM tab_highlight_album WHERE album_id = " + albumId + " LIMIT 1)";
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryCoverStatus);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr! failed update index");
+        return;
+    }
+    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        currentCoverStatus = GetInt32Val(COVER_STATUS, resultSet);
+    }
+}
+
+int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
+{
+    MEDIA_INFO_LOG("Start set highlight cover uri");
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
+    auto whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.size() == 0) {
+        MEDIA_ERR_LOG("no target album id");
+        return E_INVALID_VALUES;
+    }
+    string targetAlbumId = whereArgs[0];
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight cover uri");
+        return E_DB_FAIL;
+    }
+    string coverUri;
+    int err = GetStringVal(values, COVER_URI, coverUri);
+    if (err < 0 || coverUri.empty()) {
+        MEDIA_ERR_LOG("invalid album cover uri");
+        return E_INVALID_VALUES;
+    }
+
+    int32_t currentCoverStatus = 0;
+    GetHighlightCoverStatus(targetAlbumId, currentCoverStatus);
+    int32_t newCoverStatus = currentCoverStatus | HIGHLIGHT_COVER_STATUS_COVER;
+    std::string updateAnalysisAlbum = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
+        "' WHERE " + ALBUM_ID + " = " + targetAlbumId;
+    std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE +
+        " SET " + COVER_STATUS + " = " + to_string(newCoverStatus) +
+        " WHERE " + ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + targetAlbumId + " LIMIT 1)";
+    vector<string> updateSqls = { updateAnalysisAlbum, updateCoverInfoTable };
+    err = ExecSqls(updateSqls, uniStore);
+    if (err == E_OK) {
+        vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
+        NotifyHighlightAlbum(changeAlbumIds);
+    }
+    return err;
+}
+
+int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
+{
+    MEDIA_INFO_LOG("Start set highlight album name");
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
+    auto whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.size() == 0) {
+        MEDIA_ERR_LOG("no target highlight album id");
+        return E_INVALID_VALUES;
+    }
+    string highlightAlbumId = whereArgs[0];
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight album name");
+        return E_DB_FAIL;
+    }
+    string albumName;
+    int err = GetStringVal(values, ALBUM_NAME, albumName);
+    if (err < 0 || albumName.empty()) {
+        MEDIA_ERR_LOG("invalid album name");
+        return E_INVALID_VALUES;
+    }
+
+    int32_t currentCoverStatus = 0;
+    GetHighlightCoverStatus(highlightAlbumId, currentCoverStatus);
+    int32_t newCoverStatus = currentCoverStatus | HIGHLIGHT_COVER_STATUS_TITLE;
+    std::string updateAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
+        "' WHERE " + ALBUM_ID + " = " + highlightAlbumId;
+    std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " +
+        COVER_STATUS + " = " + to_string(newCoverStatus) + " WHERE " +
+        ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + highlightAlbumId + " LIMIT 1)";
+    vector<string> updateSqls = { updateAlbumName, updateCoverInfoTable };
+    err = ExecSqls(updateSqls, uniStore);
+    if (err == E_OK) {
+        vector<int32_t> changeAlbumIds = { atoi(highlightAlbumId.c_str()) };
+        NotifyHighlightAlbum(changeAlbumIds);
+    }
+    return err;
+}
+
+int32_t SetHighlightSubtitle(const ValuesBucket &values, const DataSharePredicates &predicates)
+{
+    MEDIA_INFO_LOG("Start set highlight subtitle");
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
+    auto whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.size() == 0) {
+        MEDIA_ERR_LOG("no target highlight album id");
+        return E_INVALID_VALUES;
+    }
+    string highlightAlbumId = whereArgs[0];
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight album name");
+        return E_DB_FAIL;
+    }
+    string albumSubtitle;
+    int err = GetStringVal(values, SUB_TITLE, albumSubtitle);
+    if (err < 0 || albumSubtitle.empty()) {
+        MEDIA_ERR_LOG("invalid album name");
+        return E_INVALID_VALUES;
+    }
+
+    MEDIA_INFO_LOG("New highlight subtitle is: %{public}s, album id is %{public}s",
+        albumSubtitle.c_str(), highlightAlbumId.c_str());
+    int32_t currentCoverStatus = 0;
+    GetHighlightCoverStatus(highlightAlbumId, currentCoverStatus);
+    int32_t newCoverStatus = currentCoverStatus | HIGHLIGHT_COVER_STATUS_TITLE;
+    std::string updateAlbumName = "UPDATE " + HIGHLIGHT_ALBUM_TABLE + " SET " + SUB_TITLE + " = '" + albumSubtitle +
+        "', " + HIGHLIGHT_USE_SUBTITLE + " = 1" + " WHERE " + ALBUM_ID + " = " + highlightAlbumId;
+    std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " +
+        COVER_STATUS + " = " + to_string(newCoverStatus) + " WHERE " +
+        ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + highlightAlbumId + " LIMIT 1)";
+    vector<string> updateSqls = { updateAlbumName, updateCoverInfoTable };
+    err = ExecSqls(updateSqls, uniStore);
+    if (err == E_OK) {
+        vector<int32_t> changeAlbumIds = { atoi(highlightAlbumId.c_str()) };
+        NotifyHighlightAlbum(changeAlbumIds);
+    }
+    return err;
+}
+
 /**
  * set target album is me
  * @param values is_me
@@ -2557,6 +2719,12 @@ int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationTyp
             return SetAlbumName(values, predicates);
         case OperationType::PORTRAIT_COVER_URI:
             return SetCoverUri(values, predicates);
+        case OperationType::HIGHLIGHT_ALBUM_NAME:
+            return SetHighlightAlbumName(values, predicates);
+        case OperationType::HIGHLIGHT_COVER_URI:
+            return SetHighlightCoverUri(values, predicates);
+        case OperationType::HIGHLIGHT_SUBTITLE:
+            return SetHighlightSubtitle(values, predicates);
         case OperationType::DISMISS:
         case OperationType::GROUP_ALBUM_NAME:
         case OperationType::GROUP_COVER_URI:
