@@ -91,7 +91,7 @@ bool CustomRestoreObserverManager::DetachObserver(std::shared_ptr<CustomRestoreC
 {
     MEDIA_DEBUG_LOG("DetachObserver callback");
     if (callback == nullptr) {
-        MEDIA_ERR_LOG("AttachObserver callback is nullptr");
+        MEDIA_ERR_LOG("DetachObserver callback is nullptr");
         return false;
     }
     callbackMap_.Erase(callback);
