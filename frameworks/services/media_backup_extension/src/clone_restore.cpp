@@ -1392,14 +1392,17 @@ void CloneRestore::RestoreAudio(void)
         AudioColumn::AUDIOS_TABLE);
     CHECK_AND_RETURN_LOG(PrepareCommonColumnInfoMap(AudioColumn::AUDIOS_TABLE, srcColumnInfoMap,
         dstColumnInfoMap), "Prepare common column info failed");
+    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
+    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
+    if (totalNumber <= 0) {
+        return;
+    }
+    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
         MEDIA_INFO_LOG("music dir is not exists!!!");
         MediaFileUtils::CreateDirectory(RESTORE_MUSIC_LOCAL_DIR);
     }
-    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
-    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
-    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
