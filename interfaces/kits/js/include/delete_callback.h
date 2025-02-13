@@ -46,6 +46,7 @@ public:
 #else
     explicit DeleteCallback(napi_env env);
 #endif
+    virtual ~DeleteCallback();
     void OnRelease(int32_t releaseCode);
     void OnResult(int32_t resultCode, const OHOS::AAFwk::Want &result);
     void OnReceive(const OHOS::AAFwk::WantParams &request);
