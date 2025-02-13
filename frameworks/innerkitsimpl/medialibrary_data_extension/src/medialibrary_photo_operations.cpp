@@ -1604,6 +1604,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return DegenerateMovingPhoto(cmd);
         case OperationType::SET_OWNER_ALBUM_ID:
             return UpdateOwnerAlbumId(cmd);
+        case OperationType::UPDATE_SUPPORTED_WATERMARK_TYPE:
+            return UpdateSupportedWatermarkType(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
@@ -3607,6 +3609,19 @@ int32_t MediaLibraryPhotoOperations::CancelCustomRestore(MediaLibraryCommand& cm
     RestoreTaskInfo restoreTaskInfo = {.keyPath = keyPath};
     PhotoCustomRestoreOperation::GetInstance().CancelTask(restoreTaskInfo);
     return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(MediaLibraryCommand &cmd)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    auto args = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    int32_t updateRows = -1;
+    int32_t errCode = rdbStore->Update(updateRows, PhotoColumn::PHOTOS_TABLE, cmd.GetValueBucket(), whereClause, args);
+    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Update subtype field failed. errCode:%{public}d,", errCode);
+    return updateRows;
 }
 } // namespace Media
 } // namespace OHOS

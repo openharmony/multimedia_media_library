@@ -345,6 +345,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_DELETE_LOCAL_ASSETS_PERMANENTLY, OperationType::DELETE_LOCAL_ASSETS_PERMANENTLY },
         { MTH_AND_YEAR_ASTC, OperationType::MTH_AND_YEAR_ASTC },
         { OPRN_HIGHLIGHT_SUBTITLE, OperationType::HIGHLIGHT_SUBTITLE},
+        { OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE, OperationType::UPDATE_SUPPORTED_WATERMARK_TYPE },
     };
     return oprnTypeMap;
 }
