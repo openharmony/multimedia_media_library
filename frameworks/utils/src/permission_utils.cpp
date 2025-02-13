@@ -434,7 +434,7 @@ bool PermissionUtils::GetTokenCallerForUid(const int &uid, AccessTokenID &tokenC
 void PermissionUtils::CollectPermissionInfo(const string &permission,
     const bool permGranted, const PermissionUsedType type, const int &uid)
 {
-    AccessTokenID tokenCaller;
+    AccessTokenID tokenCaller = INVALID_TOKENID;
     GetTokenCallerForUid(uid, tokenCaller);
     CollectPermissionRecord(tokenCaller, permission, permGranted, type);
 }
