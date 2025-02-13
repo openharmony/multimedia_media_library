@@ -111,6 +111,7 @@ private:
             gallery_media.albumId, \
             local_media_id, \
             uniqueId, \
+            resolution, \
             CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
                 THEN gallery_album.lPath \
                 ELSE album_v2.lPath \
@@ -172,6 +173,7 @@ private:
             gallery_media.albumId, \
             local_media_id, \
             uniqueId, \
+            resolution, \
             CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
                 THEN gallery_album.lPath \
                 ELSE album_v2.lPath \

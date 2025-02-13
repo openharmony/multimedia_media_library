@@ -170,7 +170,8 @@ bool BaseRestore::IsRestorePhoto()
             continue;
         }
         for (const auto& backupInfo : item["detail"]) {
-            if (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO || backupInfo == "galleryData") {
+            if (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO||
+                backupInfo == STAT_TYPE_GALLERY_DATA) {
                 return true;
             }
         }
