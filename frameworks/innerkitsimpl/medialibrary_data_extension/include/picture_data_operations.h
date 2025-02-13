@@ -16,6 +16,8 @@
 #ifndef OHOS_PHOTO_PICTURE_DATA_OPERATIONS_H
 #define OHOS_PHOTO_PICTURE_DATA_OPERATIONS_H
 
+#include <iostream>
+#include <sstream>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -49,6 +51,7 @@ public:
         expireTime_ = expireTime;
         isCleanImmediately_ = isCleanImmediately;
         isEdited_ = isEdited;
+        MEDIA_INFO_LOG("Constructor picturePair: %{public}s.", this->ToString().c_str());
     }
 
     PicturePair(const PicturePair& other)
@@ -58,6 +61,7 @@ public:
         expireTime_ = other.expireTime_;
         isCleanImmediately_ = other.isCleanImmediately_;
         isEdited_ = other.isEdited_;
+        MEDIA_INFO_LOG("Copy constructor picturePair: %{public}s.", this->ToString().c_str());
     }
 
     PicturePair& operator=(const PicturePair& other)
@@ -69,14 +73,27 @@ public:
             isCleanImmediately_ = other.isCleanImmediately_;
             isEdited_ = other.isEdited_;
         }
+        MEDIA_INFO_LOG("Assignment constructor picturePair: %{public}s.", this->ToString().c_str());
         return *this;
     }
 
     ~PicturePair()
     {
+        MEDIA_INFO_LOG("~PicturePair: %{public}s.", this->ToString().c_str());
         if (picture_) {
             picture_ = nullptr;
         }
+    }
+
+    std::string ToString()
+    {
+        std::stringstream ss;
+        ss << "{"
+           << "\"photoId\": " << this->photoId_
+           << "; \"picture use\": " << static_cast<int32_t>(this->picture_.use_count())
+           << "; \"picture point to addr\": " << std::to_string(reinterpret_cast<long long>(this->picture_.get()))
+           << "}";
+        return ss.str();
     }
 };
 
