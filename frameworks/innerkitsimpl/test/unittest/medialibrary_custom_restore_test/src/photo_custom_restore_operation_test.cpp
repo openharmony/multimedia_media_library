@@ -236,7 +236,8 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_01
     restoreTaskInfo.keyPath = "restoreTaskInfo";
     PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
     vector<string> files = { "test", "test2", "test3", "test4" };
-    auto result = operatorObj.HandleCustomRestore(restoreTaskInfo, files, 2);
+    UniqueNumber uniqueNumber;
+    auto result = operatorObj.HandleCustomRestore(restoreTaskInfo, files, 2, uniqueNumber);
     EXPECT_NE(result, E_OK);
     MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_017 End");
 }
@@ -282,7 +283,8 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_02
     RestoreTaskInfo restoreTaskInfo;
     restoreTaskInfo.keyPath = "restoreTaskInfo";
     PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
-    operatorObj.SendNotifyMessage(restoreTaskInfo, 2, 2, 2);
+    UniqueNumber uniqueNumber;
+    operatorObj.SendNotifyMessage(restoreTaskInfo, 2, 2, 2, uniqueNumber);
     EXPECT_EQ(operatorObj.IsCancelTask(restoreTaskInfo), false);
     MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_022 End");
 }
