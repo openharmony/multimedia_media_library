@@ -105,7 +105,7 @@ static bool ConvertSceneStatToStruct(const nlohmann::json &jsonSceneStat, SceneS
         sceneStat.duration_ = jsonSceneStat["duration"].get<int64_t>();
     }
     if (jsonSceneStat.contains("astc") && jsonSceneStat["astc"].is_number_integer()) {
-        sceneStat.astcCount_ = jsonSceneStat["astc"].get<int32_t>();
+        sceneStat.astcCount_ = static_cast<uint32_t>(jsonSceneStat["astc"].get<int32_t>());
     }
 
     return true;
