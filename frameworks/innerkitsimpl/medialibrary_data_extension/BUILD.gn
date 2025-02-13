@@ -333,6 +333,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/operation/photo_day_month_year_operation.cpp",
     "src/operation/photo_displayname_operation.cpp",
     "src/operation/photo_file_operation.cpp",
+    "src/operation/photo_mimetype_operation.cpp",
     "src/operation/photo_other_album_trans_operation.cpp",
     "src/operation/photo_source_path_operation.cpp",
     "src/photo_album_operation/photo_album_lpath_operation.cpp",
