@@ -38,6 +38,8 @@ struct RestoreTaskInfo {
     std::string firstFileUri;
     std::string appId;
     int32_t albumId;
+    std::string imageAlbumUri;
+    std::string videoAlbumUri;
     std::string sourceDir;
     int64_t beginTime;
     int64_t endTime;
@@ -120,8 +122,9 @@ private:
     int32_t InitPhotoCache(RestoreTaskInfo &restoreTaskInfo);
     void QueryAlbumId(RestoreTaskInfo &restoreTaskInfo);
     void ReportCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
-    int32_t MoveLivePhoto(string originFilePath, string filePath);
+    int32_t MoveLivePhoto(const string &originFilePath, const string &filePath);
     void DeleteDatabaseRecord(int32_t fileId);
+    int32_t GetAlbumUriSubType(int32_t subType, string &albumUri);
 
 private:
     std::atomic<bool> isRunning_{false};
@@ -130,7 +133,7 @@ private:
     std::queue<RestoreTaskInfo> taskQueue_;
     std::unordered_set<std::string> cancelKeySet_;
     std::mutex uniqueNumberLock_;
-    std::mutex cancelOprationLock_;
+    std::shared_mutex cancelOprationLock_;
     std::atomic<int32_t> successNum_{0};
     std::atomic<int32_t> failNum_{0};
     std::atomic<int32_t> sameNum_{0};
