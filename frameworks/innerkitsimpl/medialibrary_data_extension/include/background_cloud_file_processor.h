@@ -17,6 +17,7 @@
 #define OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
 
 #include "abs_shared_result_set.h"
+#include "background_cloud_file_download_callback.h"
 #include "medialibrary_async_worker.h"
 #include "metadata.h"
 #include "rdb_predicates.h"
@@ -43,6 +44,9 @@ public:
     EXPORT static void StopTimer();
     EXPORT static void SetDownloadLatestFinished(bool downloadLatestFinished);
     EXPORT static bool GetDownloadLatestFinished();
+    EXPORT static void HandleSuccessCallback(const DownloadProgressObj &progress);
+    EXPORT static void HandleFailedCallback(const DownloadProgressObj &progress);
+    EXPORT static void HandleStoppedCallback(const DownloadProgressObj &progress);
 
 private:
     typedef struct {
@@ -66,6 +70,15 @@ private:
     typedef struct {
         std::vector<AbnormalData> abnormalData;
     } UpdateData;
+
+    enum DownloadStatus : int32_t {
+        INIT = 0,
+        SUCCESS,
+        NETWORK_UNAVAILABLE,
+        STORAGE_FULL,
+        STOPPED,
+        UNKNOWN,
+    };
 
     class DownloadCloudFilesData : public AsyncTaskData {
     public:
@@ -97,7 +110,9 @@ private:
     static void UpdateDownloadCnt(std::string path, int64_t cnt);
     static int64_t GetDownloadCnt(std::string path);
     static std::shared_ptr<NativeRdb::ResultSet> QueryCloudFiles(double freeRatio);
+    static void CheckAndUpdateDownloadCnt(std::string path, int64_t cnt);
     static void ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet, DownloadFiles &downloadFiles);
+    static void removeFinishedResult(const std::vector<std::string>& downloadingPaths);
     static int32_t AddDownloadTask(const DownloadFiles &downloadFiles);
     static void DownloadCloudFilesExecutor(AsyncTaskData *data);
     static void StopDownloadFiles();
@@ -125,12 +140,14 @@ private:
     static uint32_t cloudDataTimerId_;
     static uint32_t startTimerId_;
     static uint32_t stopTimerId_;
-    static std::vector<std::string> curDownloadPaths_;
     static bool isUpdating_;
     static int32_t cloudUpdateOffset_;
     static int32_t localImageUpdateOffset_;
     static int32_t localVideoUpdateOffset_;
     static int32_t cloudRetryCount_;
+    static std::mutex downloadResultMutex_;
+    static std::unordered_map<std::string, DownloadStatus> downloadResult_;
+    static int64_t downloadId_;
 };
 } // namespace Media
 } // namespace OHOS
