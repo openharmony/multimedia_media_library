@@ -268,12 +268,12 @@ int32_t MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller)
     int err = WrCheckPermission(filePath_, mode_, uid_, tokenCaller);
     bool rslt;
     if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("wr check succ %{public}d", tokenCaller);
+        MEDIA_INFO_LOG("wr check succ");
         return true;
     }
     err = DbCheckPermission(filePath_, mode_, fileId_, appId_, tokenCaller);
     if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("db check succ %{public}d", tokenCaller);
+        MEDIA_INFO_LOG("db check succ");
         rslt = true;
     } else {
         rslt = false;
