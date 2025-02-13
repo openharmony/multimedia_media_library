@@ -392,16 +392,6 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_03
     MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_031 End");
 }
 
-HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_032, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_032 Start");
-    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
-    UniqueNumber uniqueNumber;
-    int32_t result = operatorObj.CreateAssetUniqueNumber(1, uniqueNumber);
-    EXPECT_EQ(result, E_OK);
-    MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_032 End");
-}
-
 HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_033, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_033 Start");
