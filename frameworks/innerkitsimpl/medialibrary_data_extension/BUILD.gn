@@ -280,6 +280,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_UTILS_PATH}/src/common_event_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
+    "src/background_cloud_file_download_callback.cpp",
     "src/background_cloud_file_processor.cpp",
     "src/event_handler/album_plugin_table_event_handler.cpp",
     "src/event_handler/tab_old_photos_table_event_handler.cpp",
