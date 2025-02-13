@@ -1208,7 +1208,7 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateTaken = obj->fileAssetPtr->GetDateTaken();
+        dateTaken = obj->fileAssetPtr->GetDateTaken() / MSEC_TO_SEC;
         napi_create_int64(env, dateTaken, &jsResult);
     }
     return jsResult;
@@ -4783,7 +4783,7 @@ static void ProcessEditData(FileAssetAsyncContext *context, const UniqueFd &uniq
     struct stat fileInfo;
     if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
         off_t fileSize = fileInfo.st_size;
-        if (fileSize < 0) {
+        if (fileSize < 0 || fileSize + 1 < 0) {
             NAPI_ERR_LOG("fileBuffer error : %{public}ld", static_cast<long>(fileSize));
             context->SaveError(E_FAIL);
             return;
@@ -4797,6 +4797,8 @@ static void ProcessEditData(FileAssetAsyncContext *context, const UniqueFd &uniq
         ssize_t bytes = read(uniqueFd.Get(), context->editDataBuffer, fileSize);
         if (bytes < 0) {
             NAPI_ERR_LOG("Read edit data failed, errno: %{public}d", errno);
+            free(context->editDataBuffer);
+            context->editDataBuffer = nullptr;
             context->SaveError(E_FAIL);
             return;
         }

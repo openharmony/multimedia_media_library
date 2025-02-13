@@ -16,6 +16,7 @@
 #define MLOG_TAG "MultiStagesMovingPhotoCaptureManager"
 
 #include "multistages_moving_photo_capture_manager.h"
+#include "multistages_video_capture_manager.h"
 
 #include "media_log.h"
 #include "moving_photo_file_utils.h"
@@ -93,7 +94,6 @@ void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const std::st
     }
 
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    resultSet->Close();
     string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(data);
     MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, videoPath);
     UpdateMultStagesMovingPhotoVideoTaskStatus(photoId, StageVideoTaskStatus::STAGE_TASK_DELIVERED);

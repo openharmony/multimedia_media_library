@@ -96,13 +96,35 @@ static inline string FuzzString(const uint8_t *data, size_t size)
     return {reinterpret_cast<const char*>(data), size};
 }
 
+static inline int8_t FuzzInt8(const uint8_t *data, size_t size)
+{
+    if (data == nullptr || size < sizeof(int8_t)) {
+        return 0;
+    }
+    return static_cast<int8_t>(*data);
+}
+
+static inline int16_t FuzzInt16(const uint8_t *data, size_t size)
+{
+    if (data == nullptr || size < sizeof(int16_t)) {
+        return 0;
+    }
+    return static_cast<int16_t>(*data);
+}
+
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int32_t)) {
+        return 0;
+    }
     return static_cast<int32_t>(*data);
 }
 
 static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return 0;
+    }
     return static_cast<int64_t>(*data);
 }
 
@@ -114,18 +136,35 @@ static inline bool FuzzBool(const uint8_t* data, size_t size)
     return (data[0] % EVEN) == 0;
 }
 
+static inline uint8_t FuzzUInt8(const uint8_t *data, size_t size)
+{
+    if (data == nullptr || size < sizeof(uint8_t)) {
+        return 0;
+    }
+    return *data;
+}
+
 static inline uint16_t FuzzUInt16(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(uint16_t)) {
+        return 0;
+    }
     return static_cast<uint16_t>(*data);
 }
 
 static inline uint32_t FuzzUInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(uint32_t)) {
+        return 0;
+    }
     return static_cast<uint32_t>(*data);
 }
 
 static inline uint64_t FuzzUInt64(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(uint64_t)) {
+        return 0;
+    }
     return static_cast<uint64_t>(*data);
 }
 
@@ -136,6 +175,9 @@ static inline vector<int32_t> FuzzVectorInt32(const uint8_t *data, size_t size)
 
 static inline vector<uint8_t> FuzzVectorUInt8(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(uint8_t)) {
+        return {0};
+    }
     return {*data};
 }
 
@@ -154,59 +196,113 @@ static inline vector<string> FuzzVectorString(const uint8_t *data, size_t size)
     return {FuzzString(data, size)};
 }
 
+static inline MtpManager::MtpMode FuzzMtpMode(const uint8_t* data, size_t size)
+{
+    int32_t mode = FuzzInt32(data, size);
+    if (mode >= static_cast<int32_t>(MtpManager::MtpMode::NONE_MODE) &&
+        mode <= static_cast<int32_t>(MtpManager::MtpMode::PTP_MODE)) {
+        return static_cast<MtpManager::MtpMode>(mode);
+    }
+    return MtpManager::MtpMode::PTP_MODE;
+}
+
 static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t size)
 {
-    return {
-        .operationCode = FuzzUInt16(data, size),
-        .transactionID = FuzzUInt32(data, size),
-        .devicePropertyCode = FuzzUInt32(data, size),
-        .storageID = FuzzUInt32(data, size),
-        .format = FuzzUInt16(data, size),
-        .parent = FuzzUInt32(data, size),
-        .handle = FuzzUInt32(data, size),
-        .property = FuzzUInt32(data, size),
-        .groupCode = FuzzUInt32(data, size),
-        .depth = FuzzUInt32(data, size),
-        .properStrValue = FuzzString(data, size),
-        .properIntValue = FuzzInt64(data, size),
-        .handles = make_shared<UInt32List>(FuzzVectorUInt32(data, size)),
-        .sendObjectFileSize = FuzzUInt32(data, size),
-        .name = FuzzString(data, size),
-        .created = FuzzString(data, size),
-        .modified = FuzzString(data, size),
-        .length = FuzzUInt32(data, size),
+    MtpOperationContext context;
+    const int32_t uInt32Count = 13;
+    const int32_t uInt16Count = 2;
+    if (data == nullptr || size < (sizeof(uint32_t) * uInt32Count +
+        sizeof(uint16_t) * uInt16Count + sizeof(int64_t))) {
+        return context;
+    }
+    int32_t offset = 0;
+    context.operationCode = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    context.transactionID = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.devicePropertyCode = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.storageID = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.format = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    context.parent = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.handle = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.property = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.groupCode = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.depth = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.properStrValue = FuzzString(data, size);
+    offset += sizeof(uint32_t);
+    context.properIntValue = FuzzInt64(data + offset, size);
+    offset += sizeof(uint64_t);
+    context.handles = make_shared<UInt32List>(FuzzVectorUInt32(data, size)),
+    context.name = FuzzString(data, size);
+    context.created = FuzzString(data, size);
+    context.modified = FuzzString(data, size);
 
-        .indata = FuzzBool(data, size),
-        .storageInfoID = FuzzUInt32(data, size),
+    context.indata = FuzzBool(data + offset, size);
+    context.storageInfoID = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
 
-        .sessionOpen = FuzzBool(data, size),
-        .sessionID = FuzzUInt32(data, size),
-        .tempSessionID = FuzzUInt32(data, size),
-        .eventHandle = FuzzUInt32(data, size),
-        .eventProperty = FuzzUInt32(data, size),
-    };
+    context.sessionOpen = FuzzBool(data + offset, size);
+    context.sessionID = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.tempSessionID = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.eventHandle = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    context.eventProperty = FuzzUInt32(data + offset, size);
+    return context;
 }
 
 static ObjectInfo FuzzObjectInfo(const uint8_t* data, size_t size)
 {
-    ObjectInfo objectInfo(FuzzUInt32(data, size));
-    objectInfo.handle = FuzzUInt32(data, size);
-    objectInfo.storageID = FuzzUInt32(data, size);
-    objectInfo.format = FuzzUInt16(data, size);
-    objectInfo.protectionStatus = FuzzUInt16(data, size);
-    objectInfo.compressedSize = FuzzUInt32(data, size);
-    objectInfo.size = FuzzUInt32(data, size);
-    objectInfo.thumbFormat = FuzzUInt16(data, size);
-    objectInfo.thumbCompressedSize = FuzzUInt32(data, size);
-    objectInfo.thumbPixelWidth = FuzzUInt32(data, size);
-    objectInfo.thumbPixelHeight = FuzzUInt32(data, size);
-    objectInfo.imagePixelWidth = FuzzUInt32(data, size);
-    objectInfo.imagePixelHeight = FuzzUInt32(data, size);
-    objectInfo.imagePixelDepth = FuzzUInt32(data, size);
-    objectInfo.parent = FuzzUInt32(data, size);
-    objectInfo.associationType = FuzzUInt16(data, size);
-    objectInfo.associationDesc = FuzzUInt32(data, size);
-    objectInfo.sequenceNumber = FuzzUInt32(data, size);
+    ObjectInfo objectInfo(0);
+    const int32_t uInt32Count = 13;
+    const int32_t uInt16Count = 4;
+    if (data == nullptr || size < (sizeof(uint32_t) * uInt32Count +
+        sizeof(uint16_t) * uInt16Count)) {
+        return objectInfo;
+    }
+    int32_t offset = 0;
+    objectInfo.handle = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.storageID = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.format = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    objectInfo.protectionStatus = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    objectInfo.compressedSize = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.size = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.thumbFormat = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    objectInfo.thumbCompressedSize = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.thumbPixelWidth = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.thumbPixelHeight = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.imagePixelWidth = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.imagePixelHeight = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.imagePixelDepth = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.parent = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.associationType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    objectInfo.associationDesc = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    objectInfo.sequenceNumber = FuzzUInt32(data + offset, size);
 
     objectInfo.name = FuzzString(data, size);
     objectInfo.keywords = FuzzString(data, size);
@@ -228,10 +324,21 @@ static void HeaderDataTest(const uint8_t* data, size_t size)
 
     headerData->Parser(buffer, readSize);
     headerData->Maker(buffer);
-    headerData->SetCode(FuzzUInt16(data, size));
-    headerData->SetContainerLength(FuzzUInt32(data, size));
-    headerData->SetContainerType(FuzzUInt16(data, size));
-    headerData->SetTransactionId(FuzzUInt32(data, size));
+
+    const int32_t uInt32Count = 2;
+    const int32_t uInt16Count = 2;
+    if (data == nullptr || size < (sizeof(uint32_t) * uInt32Count +
+        sizeof(uint16_t) * uInt16Count)) {
+        return;
+    }
+    int32_t offset = 0;
+    headerData->SetCode(FuzzUInt16(data + offset, size));
+    offset += sizeof(uint16_t);
+    headerData->SetContainerLength(FuzzUInt32(data + offset, size));
+    offset += sizeof(uint32_t);
+    headerData->SetContainerType(FuzzUInt16(data + offset, size));
+    offset += sizeof(uint16_t);
+    headerData->SetTransactionId(FuzzUInt32(data + offset, size));
 
     headerData->GetCode();
     headerData->GetContainerLength();
@@ -264,7 +371,6 @@ static void SolveSetObjectPropValueDataTest(const uint8_t* data, size_t size)
         MEDIA_ERR_LOG("context is nullptr");
         return;
     }
-    context->property = FuzzUInt32(data, size);
     string outColName = FuzzString(data, size);
     variant<int64_t, string> outColVal;
     MtpDataUtils::SolveSetObjectPropValueData(context, outColName, outColVal);
@@ -292,7 +398,10 @@ static void GetPropListBySetTest(const uint8_t* data, size_t size)
 
 static void GetPropValueBySetTest(const uint8_t* data, size_t size)
 {
-    uint32_t property = FuzzUInt16(data, size);
+    if (data == nullptr || size < sizeof(uint32_t)) {
+        return;
+    }
+    uint32_t property = FuzzUInt32(data, size);
     PropertyValue outPropValue;
     const shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
     MtpDataUtils::GetPropValueBySet(property, resultSet, outPropValue);
@@ -322,10 +431,15 @@ static void GetPropListTest(const uint8_t* data, size_t size)
 static void GetFormatTest(const uint8_t* data, size_t size)
 {
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
-    uint16_t outFormat = FuzzUInt16(data, size);
+    if (data == nullptr || size < sizeof(uint16_t) + sizeof(uint32_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t outFormat = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     MtpDataUtils::GetFormat(resultSet, outFormat);
 
-    uint32_t handle = FuzzUInt32(data, size);
+    uint32_t handle = FuzzUInt32(data + offset, size);
     shared_ptr<UInt16List> properties =  make_shared<UInt16List>(FuzzVectorUInt16(data, size));
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
 
@@ -395,20 +509,21 @@ static void MtpDriverTest(const uint8_t* data, size_t size)
 
 static void MtpErrorUtilsTest(const uint8_t* data, size_t size)
 {
-    MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
-    MtpErrorUtils::SolveGetObjectInfoError(E_SUCCESS);
-    MtpErrorUtils::SolveSendObjectInfoError(E_SUCCESS);
-    MtpErrorUtils::SolveMoveObjectError(E_SUCCESS);
-    MtpErrorUtils::SolveCopyObjectError(E_SUCCESS);
-    MtpErrorUtils::SolveDeleteObjectError(E_SUCCESS);
-    MtpErrorUtils::SolveObjectPropValueError(E_SUCCESS);
-    MtpErrorUtils::SolveCloseFdError(E_SUCCESS);
+    const int32_t mediaError = FuzzInt32(data, size);
+    MtpErrorUtils::SolveGetHandlesError(mediaError);
+    MtpErrorUtils::SolveGetObjectInfoError(mediaError);
+    MtpErrorUtils::SolveSendObjectInfoError(mediaError);
+    MtpErrorUtils::SolveMoveObjectError(mediaError);
+    MtpErrorUtils::SolveCopyObjectError(mediaError);
+    MtpErrorUtils::SolveDeleteObjectError(mediaError);
+    MtpErrorUtils::SolveObjectPropValueError(mediaError);
+    MtpErrorUtils::SolveCloseFdError(mediaError);
 }
 
 static void MtpManagerTest(const uint8_t* data, size_t size)
 {
     MtpManager::GetInstance().Init();
-    MtpManager::GetInstance().StartMtpService(MtpManager::MtpMode::PTP_MODE);
+    MtpManager::GetInstance().StartMtpService(FuzzMtpMode(data, size));
     MtpManager::GetInstance().IsMtpMode();
     MtpManager::GetInstance().StopMtpService();
 }
@@ -462,7 +577,7 @@ static void GetObjectInfoTest(const uint8_t* data, size_t size)
         MEDIA_ERR_LOG("context is nullptr");
         return;
     }
-    shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(0);
+    shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(FuzzObjectInfo(data, size));
     context->handle = 0;
     mtpMediaLib_->GetObjectInfo(context, objectInfo);
 }
@@ -488,16 +603,29 @@ static void GetThumbTest(const uint8_t* data, size_t size)
         return;
     }
 
-    shared_ptr<UInt8List> outThumb = make_shared<UInt8List>(FuzzVectorUInt8(data, size));
-    mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + FuzzString(data, size) + ".txt", FuzzUInt32(data, size));
+    if (data == nullptr || size < (sizeof(uint32_t) + sizeof(uint8_t))) {
+        return;
+    }
+    int32_t offset = 0;
+    shared_ptr<UInt8List> outThumb = make_shared<UInt8List>(FuzzVectorUInt8(data + offset, size));
+    offset += sizeof(uint8_t);
+    mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + FuzzString(data, size) +
+        ".txt", FuzzUInt32(data + offset, size));
     mtpMediaLib_->GetThumb(context, outThumb);
 }
 static void SendObjectInfoTest(const uint8_t* data, size_t size)
 {
     mtpMediaLib_->Clear();
-    uint32_t outStorageID = FuzzUInt32(data, size);
-    uint32_t outParent = FuzzUInt32(data, size);
-    uint32_t outHandle = FuzzUInt32(data, size);
+    const int32_t uInt32Count = 3;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    uint32_t outStorageID = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t outParent = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t outHandle = FuzzUInt32(data + offset, size);
 
     mtpMediaLib_->SendObjectInfo(nullptr, outStorageID, outParent, outHandle);
 }
@@ -534,10 +662,16 @@ static void CopyObjectTest(const uint8_t* data, size_t size)
         MEDIA_ERR_LOG("context is nullptr");
         return;
     }
-    mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + FuzzString(data, size), FuzzUInt32(data, size));
-
-    uint32_t outObjectHandle = FuzzUInt32(data, size);
-    uint32_t oldHandle = FuzzUInt32(data, size);
+    const int32_t uInt32Count = 3;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    mtpMediaLib_->AddToHandlePathMap(FILE_PATH + "/" + FuzzString(data, size), FuzzUInt32(data + offset, size));
+    offset += sizeof(uint32_t);
+    uint32_t outObjectHandle = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t oldHandle = FuzzUInt32(data + offset, size);
     mtpMediaLib_->CopyObject(context, outObjectHandle, oldHandle);
     mtpMediaLib_->DeleteObject(context);
 }
@@ -604,9 +738,15 @@ static void GetObjectPropValueTest(const uint8_t* data, size_t size)
     uint64_t outIntVal = 0;
     uint128_t outLongVal = { 0 };
     string outStrVal = "";
-    mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data, size));
+    const int32_t uInt32Count = 2;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data + offset, size));
+    offset += sizeof(uint32_t);
     mtpMediaLib_->GetObjectPropValue(context, outIntVal, outLongVal, outStrVal);
-    mtpMediaLib_->DeleteHandlePathMap(FuzzString(data, size), FuzzUInt32(data, size));
+    mtpMediaLib_->DeleteHandlePathMap(FuzzString(data, size), FuzzUInt32(data + offset, size));
 }
 
 static void GetRealPathTest(const uint8_t* data, size_t size)
@@ -636,11 +776,17 @@ static void ObserverDeletePathToMapTest(const uint8_t* data, size_t size)
 static void ModifyHandlePathMapTest(const uint8_t* data, size_t size)
 {
     mtpMediaLib_->Clear();
-    mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data, size));
+    const int32_t uInt32Count = 2;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data + offset, size));
+    offset += sizeof(uint32_t);
 
     mtpMediaLib_->ModifyHandlePathMap(FuzzString(data, size), FuzzString(data, size));
 
-    uint32_t id = FuzzUInt32(data, size) + 1;
+    uint32_t id = FuzzUInt32(data + offset, size);
     mtpMediaLib_->ModifyPathHandleMap(FuzzString(data, size), id);
 }
 
@@ -665,11 +811,17 @@ static void MoveHandlePathMapTest(const uint8_t* data, size_t size)
 static void MoveObjectSubTest(const uint8_t* data, size_t size)
 {
     mtpMediaLib_->Clear();
-    mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data, size));
+    const int32_t uInt32Count = 2;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data + offset, size));
+    offset += sizeof(uint32_t);
 
     mtpMediaLib_->AddToHandlePathMap(FILE_PATH, 1);
     bool isDir = FuzzBool(data, size);
-    uint32_t repeatHandle = FuzzUInt32(data, size);
+    uint32_t repeatHandle = FuzzUInt32(data + offset, size);
     mtpMediaLib_->MoveObjectSub(FILE_PATH, FuzzString(data, size), isDir, repeatHandle);
 }
 
@@ -700,11 +852,6 @@ static void ScanDirWithTypeTest(const uint8_t* data, size_t size)
     string root = FILE_PATH + "/" + FuzzString(data, size);
     mtpMediaLib_->ScanDirWithType(root, out);
     mtpMediaLib_->ScanDirTraverseWithType(root, out);
-}
-
-static void GetSizeFromOfftTest(const uint8_t* data, size_t size)
-{
-    mtpMediaLib_->Clear();
     mtpMediaLib_->GetSizeFromOfft(size);
 }
 
@@ -805,7 +952,6 @@ static void MtpMediaLibraryTest(const uint8_t* data, size_t size)
     GetIdTest(data, size);
     ScanDirNoDepthTest(data, size);
     ScanDirWithTypeTest(data, size);
-    GetSizeFromOfftTest(data, size);
     GetHandlesMapTest(data, size);
     GetExternalStoragesTest(data, size);
     ErasePathInfoTest(data, size);
@@ -815,18 +961,19 @@ static void MtpMediaLibraryTest(const uint8_t* data, size_t size)
 }
 
 // MtpMedialibraryManagerTest start
-static void PtpClearTest(const uint8_t* data, size_t size)
-{
-    shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
-    (void) mtpMedialibraryManager->Clear();
-}
-
 static void PtpGetHandlesTest(const uint8_t* data, size_t size)
 {
     ptpMediaLib_->Clear();
-    int32_t parentId = FuzzInt32(data, size);
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(uint32_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t parentId = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     MediaType mediaType = MediaType::MEDIA_TYPE_IMAGE;
-    vector<int> outHandle = FuzzVectorInt32(data, size);
+    vector<int> outHandle = FuzzVectorInt32(data + offset, size);
+    offset += sizeof(int32_t);
     ptpMediaLib_->GetHandles(parentId, outHandle, mediaType);
 
     ptpMediaLib_->Clear();
@@ -838,7 +985,7 @@ static void PtpGetHandlesTest(const uint8_t* data, size_t size)
     }
 
     uint32_t outId = 0;
-    shared_ptr<UInt32List> outHandles = make_shared<UInt32List>(FuzzVectorUInt32(data, size));
+    shared_ptr<UInt32List> outHandles = make_shared<UInt32List>(FuzzVectorUInt32(data + offset, size));
     ptpMediaLib_->GetIdByPath(FuzzString(data, size), outId);
     context->parent = outId;
     context->storageID = outId;
@@ -854,7 +1001,7 @@ static void PtpGetObjectInfoTest(const uint8_t* data, size_t size)
         MEDIA_ERR_LOG("context is nullptr");
         return;
     }
-    shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(0);
+    shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(FuzzObjectInfo(data, size));
 
     ptpMediaLib_->GetObjectInfo(context, objectInfo);
 }
@@ -889,9 +1036,16 @@ static void PtpGetThumbTest(const uint8_t* data, size_t size)
 static void PtpSendObjectInfoTest(const uint8_t* data, size_t size)
 {
     ptpMediaLib_->Clear();
-    uint32_t outStorageID = FuzzUInt32(data, size);
-    uint32_t outParent = FuzzUInt32(data, size);
-    uint32_t outHandle = FuzzUInt32(data, size);
+    const int32_t uInt32Count = 3;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    uint32_t outStorageID = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t outParent = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t outHandle = FuzzUInt32(data + offset, size);
 
     ptpMediaLib_->SendObjectInfo(nullptr, outStorageID, outParent, outHandle);
 }
@@ -1093,20 +1247,16 @@ static void PtpHaveMovingPhotesHandleTest(const uint8_t* data, size_t size)
 {
     ptpMediaLib_->Clear();
     const shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
-    shared_ptr<UInt32List> outHandles = make_shared<UInt32List>(FuzzVectorUInt32(data, size));
-    const uint32_t parent = FuzzUInt32(data, size);
+    const int32_t uInt32Count = 2;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    shared_ptr<UInt32List> outHandles = make_shared<UInt32List>(FuzzVectorUInt32(data + offset, size));
+    offset += sizeof(uint32_t);
+    const uint32_t parent = FuzzUInt32(data + offset, size);
     ptpMediaLib_->HaveMovingPhotesHandle(resultSet, outHandles, parent);
-}
-
-static void PtpGetSizeFromOfftTest(const uint8_t* data, size_t size)
-{
-    ptpMediaLib_->Clear();
     ptpMediaLib_->GetSizeFromOfft(size);
-}
-
-static void PtpGetBurstKeyFromPhotosInfoTest(const uint8_t* data, size_t size)
-{
-    ptpMediaLib_->Clear();
     ptpMediaLib_->GetBurstKeyFromPhotosInfo();
 }
 
@@ -1121,7 +1271,6 @@ static void PtpGetThumbUriTest(const uint8_t* data, size_t size)
 
 static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
 {
-    PtpClearTest(data, size);
     PtpGetHandlesTest(data, size);
     PtpGetObjectInfoTest(data, size);
     PtpGetFdTest(data, size);
@@ -1131,7 +1280,6 @@ static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
     PtpCopyObjectTest(data, size);
     PtpSetObjectPropValueTest(data, size);
     PtpCloseFdTest(data, size);
-
     PtpGetObjectPropListTest(data, size);
     PtpGetObjectPropValueTest(data, size);
     PtpGetPictureThumbTest(data, size);
@@ -1144,8 +1292,6 @@ static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
     PtpGetPhotosInfoTest(data, size);
     PtpGetAlbumCloudTest(data, size);
     PtpHaveMovingPhotesHandleTest(data, size);
-    PtpGetSizeFromOfftTest(data, size);
-    PtpGetBurstKeyFromPhotosInfoTest(data, size);
     PtpGetThumbUriTest(data, size);
 }
 
@@ -1163,8 +1309,13 @@ static void MtpOperationUtilsContainerTest(const uint8_t* data, size_t size)
     }
 
     shared_ptr<PayloadData> payData = make_shared<CloseSessionData>(context);
-    uint16_t containerType = FuzzUInt16(data, size);
-    int errorCode = FuzzInt32(data, size);
+    if (data == nullptr || size < sizeof(uint16_t) + sizeof(int32_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t containerType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    int errorCode = FuzzInt32(data + offset, size);
     mtpOperUtils_->GetDeviceInfo(payData, containerType, errorCode);
     mtpOperUtils_->GetObjectInfo(payData, containerType, errorCode);
     mtpOperUtils_->GetNumObjects(payData);
@@ -1219,24 +1370,46 @@ static void MtpOperationUtilsHandleTest(const uint8_t* data, size_t size)
     shared_ptr<PayloadData> payData = make_shared<CloseSessionData>(context);
     mtpOperUtils_->SetDevicePropValueResp(payData);
     mtpOperUtils_->ResetDevicePropResp(payData);
-    int32_t payload = FuzzInt32(data, size);
+
+    const int32_t int32Count = 3;
+    const int32_t uInt16Count = 5;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count +
+        sizeof(uint16_t) * uInt16Count + sizeof(uint32_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t payload = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     mtpOperUtils_->ObjectEvent(payData, payload);
 
-    mtpOperUtils_->CheckErrorCode(FuzzInt32(data, size));
-    mtpOperUtils_->SendEventPacket(FuzzUInt32(data, size), FuzzUInt16(data, size));
+    int errorCode = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    mtpOperUtils_->CheckErrorCode(errorCode);
+    uint32_t objectHandle = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint16_t eventCode = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    mtpOperUtils_->SendEventPacket(objectHandle, eventCode);
 
-    int errorCode = FuzzInt32(data, size);
+    errorCode = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     mtpOperUtils_->GetRespCommonData(payData, errorCode);
 
-    uint16_t containerType = FuzzUInt16(data, size);
+    uint16_t containerType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     mtpOperUtils_->GetObjectReferences(payData, containerType, errorCode);
-    
+
     mtpOperUtils_->SetObjectReferences(payData);
     mtpOperUtils_->GetObjectDataDeal();
     mtpOperUtils_->GetObject(payData, errorCode);
 
+    containerType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     mtpOperUtils_->GetThumb(payData, containerType, errorCode);
+    containerType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     mtpOperUtils_->GetPropDesc(payData, containerType, errorCode);
+    containerType = FuzzUInt16(data + offset, size);
     mtpOperUtils_->GetPropValue(payData, containerType, errorCode);
     mtpOperUtils_->HasStorage(errorCode);
 }
@@ -1269,73 +1442,367 @@ static void MtpOperationUtilsTest(const uint8_t* data, size_t size)
 }
 
 // MtpPacketToolTest start
-static void MtpPacketToolIntTest(const uint8_t* data, size_t size)
+static void MtpPacketToolPutTest(const uint8_t* data, size_t size)
 {
-    uint8_t numFirst = *data;
-    MtpPacketTool::GetUInt16(numFirst, numFirst);
-    MtpPacketTool::GetUInt32(numFirst, numFirst, numFirst, numFirst);
-
+    const int32_t uInt16Count = 2;
+    const int32_t uInt32Count = 3;
+    const int32_t uInt64Count = 2;
+    const int32_t int32Count = 3;
+    const int32_t int64Count = 2;
+    if (data == nullptr || size < (sizeof(uint16_t) * uInt16Count +
+        sizeof(uint32_t) * uInt32Count + sizeof(uint64_t) * uInt64Count +
+        sizeof(int8_t) + sizeof(int16_t) + sizeof(int32_t) * int32Count +
+        sizeof(int64_t) * int64Count)) {
+        return;
+    }
     vector<uint8_t> outBuffer = FuzzVectorUInt8(data, size);
-    size_t offset = 0;
-    MtpPacketTool::PutUInt8(outBuffer, FuzzUInt16(data, size));
-    MtpPacketTool::PutUInt16(outBuffer, FuzzUInt16(data, size));
-    MtpPacketTool::PutUInt32(outBuffer, FuzzUInt32(data, size));
-    MtpPacketTool::PutUInt64(outBuffer, FuzzUInt64(data, size));
-    MtpPacketTool::PutUInt128(outBuffer, FuzzUInt64(data, size));
-    uint128_t valueTeat = {FuzzUInt32(data, size), FuzzUInt32(data, size)};
-    MtpPacketTool::PutUInt128(outBuffer, valueTeat);
+    int32_t offset = 0;
+    MtpPacketTool::PutUInt8(outBuffer, FuzzUInt16(data + offset, size));
+    offset += sizeof(uint16_t);
+    MtpPacketTool::PutUInt16(outBuffer, FuzzUInt16(data + offset, size));
+    offset += sizeof(uint16_t);
+    MtpPacketTool::PutUInt32(outBuffer, FuzzUInt32(data + offset, size));
+    offset += sizeof(uint32_t);
+    MtpPacketTool::PutUInt64(outBuffer, FuzzUInt64(data + offset, size));
+    offset += sizeof(uint64_t);
+    MtpPacketTool::PutUInt128(outBuffer, FuzzUInt64(data + offset, size));
+    offset += sizeof(uint64_t);
+    uint32_t valueUInt32First = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t valueUInt32Second = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint128_t valueUInt128 = {valueUInt32First, valueUInt32Second};
+    MtpPacketTool::PutUInt128(outBuffer, valueUInt128);
 
-    MtpPacketTool::GetUInt8(outBuffer, offset);
-    size_t offsetTest = size;
-    vector<uint8_t> buffer = FuzzVectorUInt8(data, size);
-    MtpPacketTool::GetUInt8(buffer, offsetTest, numFirst);
-
-    outBuffer.clear();
-    MtpPacketTool::GetUInt8(outBuffer, offset, numFirst);
-    MtpPacketTool::GetUInt16(outBuffer, offset);
-    uint16_t numFirstTest = FuzzUInt16(data, size);
-    MtpPacketTool::GetUInt16(outBuffer, offsetTest, numFirstTest);
-    MtpPacketTool::GetUInt16(buffer, offsetTest, numFirstTest);
-    MtpPacketTool::GetUInt32(outBuffer, offset);
-
-    uint32_t valueOne = FuzzUInt32(data, size);
-    MtpPacketTool::GetUInt32(buffer, offsetTest, valueOne);
-    MtpPacketTool::GetUInt32(outBuffer, offsetTest, valueOne);
-
-    uint64_t valueTwo = FuzzUInt64(data, size);
-    MtpPacketTool::GetUInt64(buffer, offsetTest, valueTwo);
-    MtpPacketTool::GetUInt64(outBuffer, offsetTest, valueTwo);
-    MtpPacketTool::GetUInt128(buffer, offsetTest, valueTeat);
-    MtpPacketTool::GetUInt128(outBuffer, offsetTest, valueTeat);
+    MtpPacketTool::PutInt8(outBuffer, FuzzInt8(data + offset, size));
+    offset += sizeof(int8_t);
+    MtpPacketTool::PutInt16(outBuffer, FuzzInt16(data + offset, size));
+    offset += sizeof(int16_t);
+    MtpPacketTool::PutInt32(outBuffer, FuzzInt32(data + offset, size));
+    offset += sizeof(int32_t);
+    MtpPacketTool::PutInt64(outBuffer, FuzzInt64(data + offset, size));
+    offset += sizeof(int64_t);
+    MtpPacketTool::PutInt128(outBuffer, FuzzInt64(data + offset, size));
+    offset += sizeof(int64_t);
+    int32_t valueInt32First = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t valueInt32Second = FuzzInt32(data + offset, size);
+    int128_t valueInt128 = {valueInt32First, valueInt32Second};
+    MtpPacketTool::PutInt128(outBuffer, valueInt128);
+    MtpPacketTool::PutString(outBuffer, FuzzString(data, size));
 }
 
-static void MtpPacketToolStringTest(const uint8_t* data, size_t size)
+static void MtpPacketToolGetTest(const uint8_t* data, size_t size)
 {
-    vector<uint8_t> buffer = FuzzVectorUInt8(data, size);
-    MtpPacketTool::PutUInt8(buffer, 0);
-    MtpPacketTool::PutUInt16(buffer, 0);
+    const int32_t uInt8Count = 6;
+    if (data == nullptr || size < sizeof(uint8_t) * uInt8Count) {
+        return;
+    }
+    int32_t offset = 0;
+    uint8_t numFirst = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
+    uint8_t numSecond = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
+    MtpPacketTool::GetUInt16(numFirst, numSecond);
+    numFirst = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
+    numSecond = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
+    uint8_t numThird = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
+    uint8_t numFourth = FuzzUInt8(data + offset, size);
+    MtpPacketTool::GetUInt32(numFirst, numSecond, numThird, numFourth);
+}
 
-    size_t offset = 0;
-    string str = FuzzString(data, size);
-    MtpPacketTool::GetString(buffer, offset, str);
-    string value = FuzzString(data, size);
-    MtpPacketTool::StrToString(value);
+static void MtpPacketToolGetUInt8Test(const uint8_t* data, size_t size)
+{
+    const int32_t uInt16Count = 2;
+    if (data == nullptr || size < sizeof(uint16_t) * uInt16Count + sizeof(uint8_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    vector<uint8_t> buffer;
+    size_t offsetTest = 0;
+    MtpPacketTool::PutUInt8(buffer, FuzzUInt16(data + offset, size));
+    offset += sizeof(uint16_t);
+    MtpPacketTool::GetUInt8(buffer, offsetTest);
+    MtpPacketTool::PutUInt8(buffer, FuzzUInt16(data + offset, size));
+    offset += sizeof(uint16_t);
+    uint8_t valueUInt8 = FuzzUInt8(data + offset, size);
+    MtpPacketTool::GetUInt8(buffer, offsetTest, valueUInt8);
+}
+
+static void MtpPacketToolGetUInt16Test(const uint8_t* data, size_t size)
+{
+    const int32_t uInt16Count = 3;
+    if (data == nullptr || size < sizeof(uint16_t) * uInt16Count) {
+        return;
+    }
+    int32_t offset = 0;
+    vector<uint8_t> buffer;
+    size_t offsetTest = 0;
+    MtpPacketTool::PutUInt16(buffer, FuzzUInt16(data + offset, size));
+    offset += sizeof(uint16_t);
+    MtpPacketTool::GetUInt16(buffer, offsetTest);
+    MtpPacketTool::PutUInt16(buffer, FuzzUInt16(data + offset, size));
+    offset += sizeof(uint16_t);
+    uint16_t valueUInt16 = FuzzUInt16(data + offset, size);
+    MtpPacketTool::GetUInt16(buffer, offsetTest, valueUInt16);
+}
+
+static void MtpPacketToolGetUInt32Test(const uint8_t* data, size_t size)
+{
+    const int32_t uInt32Count = 3;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    vector<uint8_t> buffer;
+    size_t offsetTest = 0;
+    MtpPacketTool::PutUInt32(buffer, FuzzUInt32(data + offset, size));
+    offset += sizeof(uint32_t);
+    MtpPacketTool::GetUInt32(buffer, offsetTest);
+    MtpPacketTool::PutUInt32(buffer, FuzzUInt32(data + offset, size));
+    offset += sizeof(uint32_t);
+    uint32_t valueUInt32 = FuzzUInt32(data + offset, size);
+    MtpPacketTool::GetUInt32(buffer, offsetTest, valueUInt32);
+}
+
+static void MtpPacketToolGetUInt64Test(const uint8_t* data, size_t size)
+{
+    const int32_t uInt64Count = 2;
+    if (data == nullptr || size < sizeof(uint64_t) * uInt64Count) {
+        return;
+    }
+    int32_t offset = 0;
+    vector<uint8_t> buffer;
+    size_t offsetTest = 0;
+    MtpPacketTool::PutUInt64(buffer, FuzzUInt64(data + offset, size));
+    offset += sizeof(uint64_t);
+    uint64_t valueUInt64 = FuzzUInt64(data + offset, size);
+    MtpPacketTool::GetUInt64(buffer, offsetTest, valueUInt64);
+}
+
+static void MtpPacketToolGetUInt128Test(const uint8_t* data, size_t size)
+{
+    const int32_t uInt32Count = 2;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    vector<uint8_t> buffer;
+    size_t offsetTest = 0;
+    uint32_t valueUInt32First = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t valueUInt32Second = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint128_t valueUInt128 = {valueUInt32First, valueUInt32Second};
+    MtpPacketTool::PutUInt128(buffer, valueUInt128);
+    uint128_t outUInt128 = {0, 1};
+    MtpPacketTool::GetUInt128(buffer, offsetTest, outUInt128);
+}
+
+static void MtpPacketToolGetInt8Test(const uint8_t* data, size_t size)
+{
+    const int32_t int8Count = 2;
+    if (data == nullptr || size < sizeof(uint8_t) * int8Count) {
+        return;
+    }
+    int32_t offset = 0;
+    vector<uint8_t> buffer;
+    MtpPacketTool::PutInt8(buffer, FuzzInt8(data + offset, size));
+    offset += sizeof(int8_t);
+    size_t offsetTest = 0;
+    int8_t valueInt8 = FuzzInt8(data + offset, size);
+    MtpPacketTool::GetInt8(buffer, offsetTest, valueInt8);
+}
+
+static void MtpPacketToolGetInt16Test(const uint8_t* data, size_t size)
+{
+    const int32_t int16Count = 2;
+    if (data == nullptr || size < sizeof(int16_t) * int16Count) {
+        return;
+    }
+    int32_t offset = 0;
+    vector<uint8_t> buffer;
+    size_t offsetTest = 0;
+    MtpPacketTool::PutInt16(buffer, FuzzInt16(data + offset, size));
+    offset += sizeof(int16_t);
+    int16_t valueInt16 = FuzzInt16(data + offset, size);
+    MtpPacketTool::GetInt16(buffer, offsetTest, valueInt16);
+}
+
+static void MtpPacketToolGetInt32Test(const uint8_t* data, size_t size)
+{
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    vector<uint8_t> buffer;
+    MtpPacketTool::PutUInt32(buffer, FuzzInt32(data + offset, size));
+    offset += sizeof(int32_t);
+    int32_t valueInt32 = FuzzInt32(data + offset, size);
+    size_t offsetTest = 0;
+    MtpPacketTool::GetInt32(buffer, offsetTest, valueInt32);
+}
+
+static void MtpPacketToolGetInt64Test(const uint8_t* data, size_t size)
+{
+    const int32_t int64Count = 2;
+    if (data == nullptr || size < sizeof(int64_t) * int64Count) {
+        return;
+    }
+    int32_t offset = 0;
+    vector<uint8_t> buffer;
+    MtpPacketTool::PutInt64(buffer, FuzzInt64(data + offset, size));
+    offset += sizeof(int64_t);
+    size_t offsetTest = 0;
+    int64_t valueInt64 = FuzzInt64(data + offset, size);
+    MtpPacketTool::GetInt64(buffer, offsetTest, valueInt64);
+}
+
+static void MtpPacketToolGetInt128Test(const uint8_t* data, size_t size)
+{
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t valueInt32First = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t valueInt32Second = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int128_t valueInt128 = {valueInt32First, valueInt32Second};
+    vector<uint8_t> buffer;
+    MtpPacketTool::PutInt128(buffer, valueInt128);
+    size_t offsetTest = 0;
+    int128_t outInt128 = {0, 1};
+    MtpPacketTool::GetInt128(buffer, offsetTest, outInt128);
+}
+
+static void MtpPacketToolGetStringTest(const uint8_t* data, size_t size)
+{
+    vector<uint8_t> buffer;
+    MtpPacketTool::PutString(buffer, FuzzString(data, size));
+    size_t offsetTest = 0;
+    string str = "";
+    MtpPacketTool::GetString(buffer, offsetTest);
+    MtpPacketTool::PutString(buffer, FuzzString(data, size));
+    MtpPacketTool::GetString(buffer, offsetTest, str);
+    string valueString = FuzzString(data, size);
+    MtpPacketTool::StrToString(valueString);
+}
+
+static void MtpPacketToolToStringTest(const uint8_t* data, size_t size)
+{
+    const int32_t int32Count = 3;
+    const int32_t uInt32Count = 3;
+    if (data == nullptr || size < sizeof(int8_t) + sizeof(uint8_t) +
+        sizeof(int16_t) + sizeof(uint16_t) + sizeof(int32_t) * int32Count +
+        sizeof(uint32_t) * uInt32Count + sizeof(int64_t) +
+        sizeof(uint64_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    string outStr = "";
+    int8_t valueInt8 = FuzzInt8(data + offset, size);
+    offset += sizeof(int8_t);
+    MtpPacketTool::Int8ToString(valueInt8, outStr);
+    uint8_t valueUInt8 = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
+    MtpPacketTool::UInt8ToString(valueUInt8, outStr);
+    int16_t valueInt16 = FuzzInt16(data + offset, size);
+    offset += sizeof(int16_t);
+    MtpPacketTool::Int16ToString(valueInt16, outStr);
+    uint16_t valueUInt16 = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    MtpPacketTool::UInt16ToString(valueUInt16, outStr);
+    int32_t valueInt32 = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    MtpPacketTool::Int32ToString(valueInt32, outStr);
+    uint32_t valueUInt32 = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    MtpPacketTool::UInt32ToString(valueUInt32, outStr);
+    int64_t valueInt64 = FuzzInt64(data + offset, size);
+    offset += sizeof(int64_t);
+    MtpPacketTool::Int64ToString(valueInt64, outStr);
+    uint64_t valueUInt64 = FuzzUInt64(data + offset, size);
+    offset += sizeof(uint64_t);
+    MtpPacketTool::UInt64ToString(valueUInt64, outStr);
+    int32_t valueInt32First = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t valueInt32Second = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int128_t valueInt128 = {valueInt32First, valueInt32Second};
+    MtpPacketTool::Int128ToString(valueInt128, outStr);
+    uint32_t valueUInt32First = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t valueUInt32Second = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint128_t valueUInt128 = {valueUInt32First, valueUInt32Second};
+    MtpPacketTool::UInt128ToString(valueUInt128, outStr);
+}
+
+static void MtpPacketToolGetNameTest(const uint8_t* data, size_t size)
+{
+    const int32_t int32Count = 2;
+    const int32_t uInt16Count = 6;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count +
+        sizeof(uint16_t) * uInt16Count) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t code = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    MtpPacketTool::GetOperationName(code);
+    code = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    MtpPacketTool::GetEventName(code);
+    code = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    MtpPacketTool::GetFormatName(code);
+    code = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    MtpPacketTool::GetObjectPropName(code);
+    code = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    MtpPacketTool::GetEventName(code);
+
+    time_t sec = 0;
+    MtpPacketTool::FormatDateTime(sec);
+    int type = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    MtpPacketTool::GetDataTypeName(type);
+    type = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    MtpPacketTool::GetAssociationName(type);
+
+    uint16_t propCode = FuzzUInt16(data + offset, size);
+    MtpPacketTool::GetObjectPropTypeByPropCode(propCode);
 }
 
 static void MtpPacketToolOtherTest(const uint8_t* data, size_t size)
 {
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(uint8_t)) {
+        return;
+    }
     MtpPacketTool::GetIndentBlank();
     size_t indent = size;
     MtpPacketTool::GetIndentBlank(indent);
     vector<uint8_t> dumpData = FuzzVectorUInt8(data, size);
     MtpPacketTool::Dump(dumpData);
     unique_ptr<char[]> hexBuf;
-    int hexBufSize = FuzzInt32(data, size);
+    int32_t offset = 0;
+    int hexBufSize = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     unique_ptr<char[]> txtBuf;
-    int txtBufSize = FuzzInt32(data, size);
+    int txtBufSize = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     MtpPacketTool::DumpClear(indent, hexBuf, hexBufSize, txtBuf, txtBufSize);
 
-    uint8_t u8 = *data;
+    uint8_t u8 = FuzzUInt8(data + offset, size);
     MtpPacketTool::DumpChar(u8, hexBuf, hexBufSize, txtBuf, txtBufSize);
     MtpPacketTool::DumpShow(hexBuf, hexBufSize, txtBuf, txtBufSize);
 
@@ -1349,27 +1816,25 @@ static void MtpPacketToolOtherTest(const uint8_t* data, size_t size)
     MtpPacketTool::DumpShow(hexBuf, hexBufSize, txtBuf, txtBufSize);
     hexBuf[OFFSET_0] = '\0';
     MtpPacketTool::DumpShow(hexBuf, hexBufSize, txtBuf, txtBufSize);
-    time_t sec = 0;
-    uint16_t code = FuzzUInt16(data, size);
-    MtpPacketTool::FormatDateTime(sec);
-    MtpPacketTool::GetOperationName(code);
-    MtpPacketTool::GetEventName(code);
-    MtpPacketTool::GetFormatName(code);
-    MtpPacketTool::GetObjectPropName(code);
-    MtpPacketTool::GetEventName(code);
-
-    int type = FuzzInt32(data, size);
-    MtpPacketTool::GetDataTypeName(type);
-    MtpPacketTool::GetAssociationName(type);
-
-    uint16_t propCode = FuzzUInt16(data, size);
-    MtpPacketTool::GetObjectPropTypeByPropCode(propCode);
 }
 
 static void MtpPacketToolTest(const uint8_t* data, size_t size)
 {
-    MtpPacketToolIntTest(data, size);
-    MtpPacketToolStringTest(data, size);
+    MtpPacketToolPutTest(data, size);
+    MtpPacketToolGetTest(data, size);
+    MtpPacketToolGetUInt8Test(data, size);
+    MtpPacketToolGetUInt16Test(data, size);
+    MtpPacketToolGetUInt32Test(data, size);
+    MtpPacketToolGetUInt64Test(data, size);
+    MtpPacketToolGetUInt128Test(data, size);
+    MtpPacketToolGetInt8Test(data, size);
+    MtpPacketToolGetInt16Test(data, size);
+    MtpPacketToolGetInt32Test(data, size);
+    MtpPacketToolGetInt64Test(data, size);
+    MtpPacketToolGetInt128Test(data, size);
+    MtpPacketToolGetStringTest(data, size);
+    MtpPacketToolToStringTest(data, size);
+    MtpPacketToolGetNameTest(data, size);
     MtpPacketToolOtherTest(data, size);
 }
 
@@ -1400,10 +1865,17 @@ static void MtpPacketTest(const uint8_t* data, size_t size)
 // PropertyTest start
 static void PropertySetFormEnumTest(const uint8_t* data, size_t size)
 {
-    uint16_t propCode = FuzzUInt16(data, size);
-    uint16_t propType = FuzzUInt16(data, size);
+    const int32_t uInt16Count = 2;
+    if (data == nullptr || size < sizeof(uint16_t) * uInt16Count + sizeof(int32_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t propCode = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    uint16_t propType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     bool propWriteable = FuzzBool(data, size);
-    int value = FuzzInt32(data, size);
+    int value = FuzzInt32(data + offset, size);
     Property property(propCode, propType, propWriteable, value);
 
     property.SetFormRange(0, 0, 0);
@@ -1423,9 +1895,14 @@ static void PropertySetFormEnumTest(const uint8_t* data, size_t size)
 
 static void PropertyWriteTest(const uint8_t* data, size_t size)
 {
-    uint16_t propCode = FuzzUInt16(data, size);
+    if (data == nullptr || size < sizeof(uint16_t) + sizeof(uint8_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t propCode = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     Property property(propCode, MTP_TYPE_UINT8_CODE);
-    vector<uint8_t> buffer = FuzzVectorUInt8(data, size);
+    vector<uint8_t> buffer = FuzzVectorUInt8(data + offset, size);
     property.Write(buffer);
     size_t offsetTest = 0;
     property.Read(buffer, offsetTest);
@@ -1438,108 +1915,168 @@ static void PropertyWriteTest(const uint8_t* data, size_t size)
 
 static void PropertyStringTest(const uint8_t* data, size_t size)
 {
-    uint16_t propCode = FuzzUInt16(data, size);
+    const int32_t uInt8Count = 4;
+    const int32_t uInt32Count = 2;
+    if (data == nullptr || size < sizeof(uint16_t) + sizeof(uint32_t) * uInt32Count +
+        sizeof(uint8_t) * uInt8Count) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t propCode = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     Property property(propCode, MTP_TYPE_AINT8_CODE);
-    uint8_t indent = *data;
+    uint8_t indent = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
     shared_ptr<vector<Property::Value>> values;
     string name = FuzzString(data, size);
     property.DumpValues(indent, values, name);
     values = make_shared<vector<Property::Value>>();
+    indent = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
     property.DumpValues(indent, values, name);
+    indent = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
     property.DumpForm(indent);
     property.SetFormRange(0, 0, 0);
+    indent = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
     property.DumpForm(indent);
 
     shared_ptr<Property::Value> value = make_shared<Property::Value>();
-    uint32_t valueType = FuzzUInt32(data, size);
+    uint32_t valueType = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
     value->Dump(valueType);
+    valueType = FuzzUInt32(data + offset, size);
     string outStr = value->ToString(valueType);
     value->BinToString(valueType, outStr);
 }
 
 static void PropertyReadValueTest(const uint8_t* data, size_t size)
 {
-    uint16_t propCode = FuzzUInt16(data, size);
-    uint16_t propType = FuzzUInt16(data, size);
+    const int32_t uInt16Count = 2;
+    if (data == nullptr || size < sizeof(uint16_t) * uInt16Count + sizeof(int32_t) +
+        sizeof(uint8_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t propCode = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    uint16_t propType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     bool propWriteable = FuzzBool(data, size);
-    int values = FuzzInt32(data, size);
+    int values = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     Property property(propCode, propType, propWriteable, values);
 
-    vector<uint8_t> buffer = FuzzVectorUInt8(data, size);
-    size_t offset = 0;
+    vector<uint8_t> buffer = FuzzVectorUInt8(data + offset, size);
+    size_t offsetTest = 0;
     Property::Value value;
-    property.ReadValue(buffer, offset, value);
+    property.ReadValue(buffer, offsetTest, value);
     property.WriteValue(buffer, value);
-    property.ReadValue(buffer, offset, value);
+    property.ReadValue(buffer, offsetTest, value);
 
-    property.ReadValueEx(buffer, offset, value);
+    property.ReadValueEx(buffer, offsetTest, value);
     property.WriteValue(buffer, value);
     property.WriteValueEx(buffer, value);
-    property.ReadValueEx(buffer, offset, value);
+    property.ReadValueEx(buffer, offsetTest, value);
 }
 
 static void PropertyReadArrayValuesTest(const uint8_t* data, size_t size)
 {
-    uint16_t propCode = FuzzUInt16(data, size);
-    uint16_t propType = FuzzUInt16(data, size);
+    const int32_t uInt16Count = 2;
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(uint16_t) * uInt16Count +
+        sizeof(int32_t) * int32Count + sizeof(uint8_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t propCode = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    uint16_t propType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     bool propWriteable = FuzzBool(data, size);
-    int value = FuzzInt32(data, size);
+    int value = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     Property property(propCode, propType, propWriteable, value);
     shared_ptr<vector<Property::Value>> values;
 
-    vector<uint8_t> buffer = FuzzVectorUInt8(data, size);
+    vector<uint8_t> buffer = FuzzVectorUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
+    value = FuzzInt32(data + offset, size);
     MtpPacketTool::PutInt32(buffer, value);
     property.WriteValueData(buffer);
-    size_t offset = 0;
-    property.ReadArrayValues(buffer, offset, values);
+    size_t offsetTest = 0;
+    property.ReadArrayValues(buffer, offsetTest, values);
 
     Property propertyOne(propCode, propType);
     propertyOne.WriteValueData(buffer);
-    size_t offsetTest = size / 2;
     propertyOne.Write(buffer);
     property.ReadArrayValues(buffer, offsetTest, values);
 }
 
 static void PropertyDumpValueTest(const uint8_t* data, size_t size)
 {
-    uint16_t propCode = FuzzUInt16(data, size);
-    uint16_t propType = FuzzUInt16(data, size);
+    const int32_t uInt16Count = 2;
+    const int32_t uInt8Count = 2;
+    if (data == nullptr || size < sizeof(uint16_t) * uInt16Count + sizeof(int32_t) +
+        sizeof(uint8_t) * uInt8Count + sizeof(uint32_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t propCode = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    uint16_t propType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     bool propWriteable = FuzzBool(data, size);
-    int value = FuzzInt32(data, size);
+    int value = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     Property property(propCode, propType, propWriteable, value);
-    uint8_t indent = *data;
+
+    uint8_t indent = FuzzUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
     string name = FuzzString(data, size);
     shared_ptr<Property::Value> valueTest;
     property.DumpValue(indent, valueTest, name);
     valueTest = make_shared<Property::Value>();
-    uint32_t valueType = FuzzUInt32(data, size);
+    uint32_t valueType = FuzzUInt32(data + offset, size);
     string outStr = FuzzString(data, size);
     valueTest->StrToString(valueType, outStr);
 
     valueTest->str_ = make_shared<string>(FuzzString(data, size));
     valueTest->StrToString(valueType, outStr);
+    indent = FuzzUInt8(data + offset, size);
     property.DumpValue(indent, valueTest, name);
 }
 
 static void PropertyWriteFormDataTest(const uint8_t* data, size_t size)
 {
-    uint16_t propCode = FuzzUInt16(data, size);
-    uint16_t propType = FuzzUInt16(data, size);
+    const int32_t uInt16Count = 2;
+    if (data == nullptr || size < sizeof(uint16_t) * uInt16Count + sizeof(int32_t) +
+        sizeof(uint8_t) + sizeof(int32_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t propCode = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
+    uint16_t propType = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     bool propWriteable = FuzzBool(data, size);
-    int value = FuzzInt32(data, size);
+    int value = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     Property property(propCode, propType, propWriteable, value);
+
     property.SetFormRange(0, 0, 0);
-    vector<uint8_t> buffer = FuzzVectorUInt8(data, size);
-    size_t offset = 0;
-    property.ReadFormData(buffer, offset);
+    vector<uint8_t> buffer = FuzzVectorUInt8(data + offset, size);
+    offset += sizeof(uint8_t);
+    size_t offsetTest = 0;
+    property.ReadFormData(buffer, offsetTest);
 
     property.WriteFormData(buffer);
-    size_t offsetTest = size / 2;
 
     MtpPacketTool::PutInt8(buffer, offsetTest);
     property.ReadFormData(buffer, offsetTest);
 
-    vector<int> values = FuzzVectorInt32(data, size);
+    vector<int> values = FuzzVectorInt32(data + offset, size);
     property.SetFormEnum(values);
     property.ReadFormData(buffer, offsetTest);
     property.WriteFormData(buffer);
@@ -1876,10 +2413,26 @@ static void GetObjectPropValueDataTest(const uint8_t* data, size_t size)
     getObjectPropValueData.Maker(outBuffer);
     getObjectPropValueData.CalculateSize();
 
-    int type = FuzzInt32(data, size);
-    uint64_t int64Value = FuzzUInt64(data, size);
-    uint128_t int128Value = {FuzzUInt32(data, size), FuzzUInt32(data, size),
-        FuzzUInt32(data, size), FuzzUInt32(data, size)};
+    const int32_t uInt32Count = 4;
+    if (data == nullptr || size < sizeof(int32_t) + sizeof(uint32_t) * uInt32Count +
+        sizeof(uint64_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    int type = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    uint64_t int64Value = FuzzUInt64(data + offset, size);
+    offset += sizeof(int64_t);
+    uint32_t valueUInt32First = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t valueUInt32Second = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t valueUInt32Third = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t valueUInt32Fourth = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint128_t int128Value = {valueUInt32First, valueUInt32Second,
+        valueUInt32Third, valueUInt32Fourth};
     string strValue = FuzzString(data, size);
     getObjectPropValueData.SetPropValue(type, int64Value, int128Value, strValue);
 
@@ -2131,8 +2684,13 @@ static void RespCommonDataTest(const uint8_t* data, size_t size)
     respCommonData.Maker(outBuffer);
     respCommonData.CalculateSize();
 
-    int paramIndex = FuzzInt32(data, size);
-    uint32_t value = FuzzUInt32(data, size);
+    if (data == nullptr || size < sizeof(int32_t) + sizeof(uint32_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    int paramIndex = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    uint32_t value = FuzzUInt32(data + offset, size);
     respCommonData.SetParam(paramIndex, value);
 
     respCommonData.Parser(buffer, readSize);
@@ -2177,20 +2735,28 @@ static void SendObjectInfoDataTest(const uint8_t* data, size_t size)
     sendObjectInfoData.Maker(outBuffer);
     sendObjectInfoData.CalculateSize();
 
-    uint32_t storageID = FuzzUInt32(data, size);
-    uint32_t parent = FuzzUInt32(data, size);
-    uint32_t handle = FuzzUInt32(data, size);
+    const int32_t uInt32Count = 3;
+    if (data == nullptr || size < sizeof(uint32_t) * uInt32Count + sizeof(uint8_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint32_t storageID = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t parent = FuzzUInt32(data + offset, size);
+    offset += sizeof(uint32_t);
+    uint32_t handle = FuzzUInt32(data + offset, size);
     sendObjectInfoData.SetSetParam(storageID, parent, handle);
 
     sendObjectInfoData.Parser(buffer, readSize);
     sendObjectInfoData.Maker(outBuffer);
     sendObjectInfoData.CalculateSize();
 
-    size_t offset = 1;
-    buffer.push_back(*data);
-    sendObjectInfoData.ParserData(buffer, offset);
-    sendObjectInfoData.ParserDataForImageInfo(buffer, offset);
-    sendObjectInfoData.ParserDataForFileInfo(buffer, offset);
+    size_t offsetTest = 1;
+    offset += sizeof(uint32_t);
+    buffer.push_back(FuzzUInt8(data + offset, size));
+    sendObjectInfoData.ParserData(buffer, offsetTest);
+    sendObjectInfoData.ParserDataForImageInfo(buffer, offsetTest);
+    sendObjectInfoData.ParserDataForFileInfo(buffer, offsetTest);
 }
 
 static void SetDevicePropValueDataTest(const uint8_t* data, size_t size)
@@ -2216,11 +2782,6 @@ static void SetObjectPropValueDataTest(const uint8_t* data, size_t size)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
-    if (context == nullptr) {
-        MEDIA_ERR_LOG("context is nullptr");
-        return;
-    }
-
     SetObjectPropValueData setObjectPropValueData(context);
     vector<uint8_t> buffer = FuzzVectorUInt8(data, size);
     int32_t readSize = buffer.size();
@@ -2230,21 +2791,46 @@ static void SetObjectPropValueDataTest(const uint8_t* data, size_t size)
     setObjectPropValueData.Maker(outBuffer);
     setObjectPropValueData.CalculateSize();
 
-    uint16_t result = FuzzUInt16(data, size);
+    const int32_t int32Count = 5;
+    const int32_t int64Count = 5;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count +
+        sizeof(int64_t) * int64Count + sizeof(uint16_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    uint16_t result = FuzzUInt16(data + offset, size);
+    offset += sizeof(uint16_t);
     setObjectPropValueData.SetResult(result);
 
     setObjectPropValueData.Parser(buffer, readSize);
     setObjectPropValueData.Maker(outBuffer);
     setObjectPropValueData.CalculateSize();
 
-    size_t offset = 0;
-    int type = FuzzInt32(data, size);
-    int64_t int64Value = FuzzInt64(data, size);
-    setObjectPropValueData.ReadIntValue(buffer, offset, type, int64Value);
-    setObjectPropValueData.ReadInt8Value(buffer, offset, type, int64Value);
-    setObjectPropValueData.ReadInt16Value(buffer, offset, type, int64Value);
-    setObjectPropValueData.ReadInt32Value(buffer, offset, type, int64Value);
-    setObjectPropValueData.ReadInt64Value(buffer, offset, type, int64Value);
+    size_t offsetTest = 0;
+    int type = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int64_t int64Value = FuzzInt64(data + offset, size);
+    offset += sizeof(int64_t);
+    setObjectPropValueData.ReadIntValue(buffer, offsetTest, type, int64Value);
+    type = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int64Value = FuzzInt64(data + offset, size);
+    offset += sizeof(int64_t);
+    setObjectPropValueData.ReadInt8Value(buffer, offsetTest, type, int64Value);
+    type = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int64Value = FuzzInt64(data + offset, size);
+    offset += sizeof(int64_t);
+    setObjectPropValueData.ReadInt16Value(buffer, offsetTest, type, int64Value);
+    type = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int64Value = FuzzInt64(data + offset, size);
+    offset += sizeof(int64_t);
+    setObjectPropValueData.ReadInt32Value(buffer, offsetTest, type, int64Value);
+    type = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int64Value = FuzzInt64(data + offset, size);
+    setObjectPropValueData.ReadInt64Value(buffer, offsetTest, type, int64Value);
 }
 
 static void SetObjectReferencesDataTest(const uint8_t* data, size_t size)

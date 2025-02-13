@@ -29,9 +29,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
-#endif
 #include "medialibrary_errno.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_tracer.h"
@@ -486,9 +484,7 @@ bool MediaAssetManagerImpl::NativeCancelRequest(const std::string &requestId)
     bool hasFastRequestInProcess = IsFastRequestCanceled(requestId, photoId);
     bool hasMapRecordInProcess = IsMapRecordCanceled(requestId, photoId);
     if (hasFastRequestInProcess || hasMapRecordInProcess) {
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
         MultiStagesPhotoCaptureManager::GetInstance().CancelProcessRequest(photoId);
-#endif
     } else {
         MEDIA_ERR_LOG("NativeCancel requestId(%{public}s) not in progress.", requestId.c_str());
         return false;

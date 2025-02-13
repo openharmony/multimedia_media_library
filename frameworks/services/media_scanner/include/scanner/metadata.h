@@ -173,7 +173,11 @@ public:
     void SetOwnerPackage(const VariantData &ownerPackage);
     const std::string GetOwnerPackage() const;
 
+    void SetBurstCoverLevel(const VariantData &burstCoverLevel);
+    int32_t GetBurstCoverLevel() const;
+
     EXPORT void Init();
+    void InitV2();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
     EXPORT std::unordered_map<std::string, std::pair<ResultSetDataType, MetadataFnPtr>> memberFuncMap_;
@@ -260,6 +264,8 @@ private:
     std::string frontcamera_;
 
     std::string detailTime_;
+
+    int32_t burstCoverLevel_;
 };
 } // namespace Media
 } // namespace OHOS

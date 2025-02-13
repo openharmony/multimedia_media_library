@@ -24,9 +24,7 @@
 #include "directory_ex.h"
 #include "duplicate_photo_operation.h"
 #include "file_asset.h"
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "file_utils.h"
-#endif
 #include "image_source.h"
 #include "media_analysis_helper.h"
 #include "image_packer.h"
@@ -55,11 +53,9 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_uripermission_operations.h"
 #include "mimetype_utils.h"
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
 #include "multistages_photo_capture_manager.h"
 #include "multistages_moving_photo_capture_manager.h"
-#endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -680,6 +676,7 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
 void PhotosAddAsset(const int &albumId, const string &assetId, const string &extrUri)
 {
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, assetId, extrUri),
         NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
 }
@@ -776,6 +773,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
         "Delete photo in database failed, errCode=%{public}d", deleteRows);
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     string notifyDeleteUri =
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
         (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
@@ -789,6 +787,7 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
     shared_ptr<AlbumData> albumData)
 {
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     CHECK_AND_RETURN_LOG(trashAlbumId > 0,
         "Skip to send trash photos notify, trashAlbumId=%{public}d", trashAlbumId);
@@ -824,6 +823,7 @@ static void GetPhotoHiddenStatus(std::shared_ptr<AlbumData> data, const string& 
         return;
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
     const std::string queryAssetHiddenInfo = "SELECT hidden FROM Photos WHERE file_id = " + assetId;
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryAssetHiddenInfo);
     if (resultSet == nullptr) {
@@ -885,9 +885,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     MultiStagesCaptureManager::RemovePhotos(rdbPredicate, true);
-#endif
     std::shared_ptr<AlbumData> albumData = std::make_shared<AlbumData>();
     UpdateSourcePath(rdbPredicate.GetWhereArgs(), albumData);
     ValuesBucket values;
@@ -999,11 +997,9 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET(ret >= 0, 0);
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
     tracer.Start("MediaLibraryPhotoOperations::SavePicture");
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     if (!fileType.empty()) {
         SavePicture(stoi(fileType), stoi(fileId));
     }
-#endif
     tracer.Finish();
 
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
@@ -1027,12 +1023,10 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryPhotoOperations::SetVideoEnhancementAttr(MediaLibraryCommand &cmd)
 {
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     string videoId = cmd.GetQuerySetParam(PhotoColumn::PHOTO_ID);
     string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
     string filePath = cmd.GetQuerySetParam(MediaColumn::MEDIA_FILE_PATH);
     MultiStagesVideoCaptureManager::GetInstance().AddVideo(videoId, fileId, filePath);
-#endif
     return E_OK;
 }
 
@@ -1045,6 +1039,43 @@ static int32_t GetHiddenState(const ValuesBucket &values)
     ret = obj.GetInt(hiddenState);
     CHECK_AND_RETURN_RET(ret == E_OK, E_INVALID_VALUES);
     return hiddenState == 0 ? 0 : 1;
+}
+
+static void SkipNotifyIfBurstMember(vector<string> &notifyUris)
+{
+    vector<string> tempUris;
+    vector<string> ids;
+    unordered_map<string, string> idUriMap;
+    for (auto& uri : notifyUris) {
+        string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(uri);
+        if (fileId.empty()) {
+            return;
+        }
+        ids.push_back(fileId);
+        idUriMap.insert({fileId, uri});
+    }
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID,
+    };
+    NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.In(MediaColumn::MEDIA_ID, ids);
+    rdbPredicates.NotEqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+    auto resultSet = uniStore->Query(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("IsAssetReadyById failed");
+        return;
+    }
+    unordered_map<string, string>::iterator iter;
+    while (resultSet->GoToNextRow() == E_OK) {
+        int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID,
+            resultSet, TYPE_INT32));
+        if ((iter = idUriMap.find(to_string(fileId))) != idUriMap.end()) {
+            tempUris.push_back(iter->second);
+        }
+    }
+    resultSet->Close();
+    notifyUris.swap(tempUris);
 }
 
 static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState)
@@ -1067,7 +1098,8 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
         hiddenAlbumNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     }
     vector<int64_t> formIds;
-    for (const auto &notifyUri : notifyUris) {
+    SkipNotifyIfBurstMember(notifyUris);
+    for (auto &notifyUri : notifyUris) {
         watch->Notify(notifyUri, assetNotifyType);
         watch->Notify(notifyUri, albumNotifyType, 0, true);
         watch->Notify(notifyUri, hiddenAlbumNotifyType, hiddenAlbumId);
@@ -1105,6 +1137,7 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM);
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
@@ -1142,6 +1175,7 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
     MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
     if (favAlbumId > 0) {
         NotifyType type = favoriteState ? NotifyType::NOTIFY_ALBUM_ADD_ASSET : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
@@ -1182,6 +1216,7 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
         "Update Photo in database failed, updateRows=%{public}d", updateRows);
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     for (const auto& fileAsset : fileAssetVector) {
         string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
         string assetUri = MediaFileUtils::GetUriByExtrConditions(
@@ -1287,12 +1322,12 @@ int32_t MediaLibraryPhotoOperations::UpdateOrientationExif(MediaLibraryCommand &
 
 void UpdateAlbumOnSystemMoveAssets(const int32_t &oriAlbumId, const int32_t &targetAlbumId)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
-        { to_string(oriAlbumId), to_string(targetAlbumId) });
+        rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) });
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(),
-        { to_string(oriAlbumId), to_string(targetAlbumId) });
+        rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) });
 }
 
 bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
@@ -1369,6 +1404,10 @@ int32_t UpdateSystemRows(MediaLibraryCommand &cmd)
         int32_t oriAlbumId = it->first;
         UpdateAlbumOnSystemMoveAssets(oriAlbumId, targetAlbumId);
         auto watch = MediaLibraryNotify::GetInstance();
+        if (watch == nullptr) {
+            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+            continue;
+        }
         for (const auto &id : it->second) {
             watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(id),
                 NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, oriAlbumId);
@@ -1457,6 +1496,7 @@ void MediaLibraryPhotoOperations::CreateThumbnailFileScan(const shared_ptr<FileA
     CHECK_AND_RETURN_LOG(fileAsset != nullptr, "fileAsset is null");
     if (orientationUpdated) {
         auto watch = MediaLibraryNotify::GetInstance();
+        CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
         ScanFile(fileAsset->GetPath(), true, false, true);
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
             to_string(fileAsset->GetId()), extraUri), NotifyType::NOTIFY_THUMB_UPDATE);
@@ -1534,6 +1574,7 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     CreateThumbnailFileScan(fileAsset, extraUri, orientationUpdated, isNeedScan);
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()),
         extraUri), NotifyType::NOTIFY_UPDATE);
     return rowId;
@@ -1608,6 +1649,7 @@ int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET(errCode != E_OK, rowId);
     SendFavoriteNotify(cmd, fileAsset);
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId())),
         NotifyType::NOTIFY_UPDATE);
     return rowId;
@@ -2564,17 +2606,17 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
     }
 
     MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
         picture = pictureManagerThread->GetDataWithImageId(photoId, isHighQualityPicture, isCleanImmediately);
     }
-#endif
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
+    MEDIA_INFO_LOG("photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
+        photoId.c_str(), static_cast<int32_t>(picture.use_count()),
+        std::to_string(reinterpret_cast<long long>(picture.get())).c_str());
     return E_OK;
 }
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &cmd)
 {
     const ValuesBucket& values = cmd.GetValueBucket();
@@ -2601,7 +2643,6 @@ int32_t MediaLibraryPhotoOperations::FinishRequestPicture(MediaLibraryCommand &c
     }
     return E_OK;
 }
-#endif
 
 int64_t MediaLibraryPhotoOperations::CloneSingleAsset(MediaLibraryCommand &cmd)
 {
@@ -2661,18 +2702,15 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     }
     resultSet->Close();
     string uri = cmd.GetQuerySetParam("uri");
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     SavePicture(fileType, fileId);
-#endif
     string path = MediaFileUri::GetPathFromUri(uri, true);
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
     return E_OK;
 }
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId)
 {
-    MEDIA_DEBUG_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
+    MEDIA_INFO_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
     std::shared_ptr<Media::Picture> picture;
     std::string photoId;
     bool isHighQualityPicture = false;
@@ -2720,7 +2758,6 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     }
     return E_OK;
 }
-#endif
 
 int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
@@ -3153,7 +3190,6 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
     return id;
 }
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, const std::string &path,
     const uint8_t *addr, const long bytes, int32_t fileId)
 {
@@ -3224,7 +3260,6 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
         }
     }
 }
-#endif
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
     const std::string &outputPath, const std::string &editdata, const std::string &photoStatus)
@@ -3269,7 +3304,6 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     return E_OK;
 }
 
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::Picture> &inPicture,
     const std::string &outputPath, string &editdata, const std::string &mime_type)
 {
@@ -3299,7 +3333,6 @@ int32_t MediaLibraryPhotoOperations::RemoveTempVideo(const std::string &path)
     MEDIA_INFO_LOG("RemoveTempVideo path: %{public}s", DfxUtils::GetSafePath(path).c_str());
     return FileUtils::DeleteTempVideoFile(path);
 }
-#endif
 
 PhotoEditingRecord::PhotoEditingRecord()
 {
@@ -3495,6 +3528,7 @@ int32_t MediaLibraryPhotoOperations::DegenerateMovingPhoto(MediaLibraryCommand &
 
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetFilePath());
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()), extraUri),
         NotifyType::NOTIFY_UPDATE);

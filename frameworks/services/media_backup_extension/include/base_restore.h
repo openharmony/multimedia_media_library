@@ -73,8 +73,9 @@ protected:
     std::vector<NativeRdb::ValuesBucket> GetCloudInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
-    void GetAccountValid();
+    virtual void GetAccountValid();
     void GetSourceDeviceInfo();
+    bool IsRestorePhoto();
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
@@ -142,6 +143,7 @@ protected:
     void UpdateDatabase();
     void GetUpdateTotalCount();
     void GetUpdateAllAlbumsCount();
+    std::string GetUpgradeEnhance();
     void GetUpdateUniqueNumberCount();
     void RestoreThumbnail();
     std::string GetRestoreTotalInfo();
@@ -150,16 +152,26 @@ protected:
     void UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         std::vector<FileInfo>& fileInfos);
     int32_t RemoveDentryFileWithConflict(const FileInfo &fileInfo);
+    int32_t GetRestoreMode();
+    uint64_t GetNotFoundNumber();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
     std::atomic<uint64_t> migrateFileNumber_{0};
     std::atomic<uint64_t> migrateVideoFileNumber_{0};
     std::atomic<uint64_t> migrateAudioDatabaseNumber_{0};
+    std::atomic<uint64_t> totalCloudMetaNumber_{0};
+    std::atomic<uint64_t> successCloudMetaNumber_{0};
     std::atomic<uint64_t> migrateAudioFileNumber_{0};
     std::atomic<uint64_t> totalNumber_{0};
+    std::atomic<uint64_t> notFoundNumber_{0};
     std::atomic<uint64_t> audioTotalNumber_{0};
     std::atomic<uint64_t> updateTotalNumber_{0};
+    std::atomic<uint64_t> localLcdCount_{0};
+    std::atomic<uint64_t> localThumbnailCount_{0};
+    std::atomic<uint64_t> cloudLcdCount_{0};
+    std::atomic<uint64_t> cloudThumbnailCount_{0};
+    std::atomic<uint64_t> cloudMetaCount_{0};
     std::atomic<uint64_t> thumbnailTotalNumber_{0};
     std::atomic<uint64_t> otherTotalNumber_{0};
     std::atomic<uint64_t> ongoingTotalNumber_{0};
@@ -177,8 +189,6 @@ protected:
     std::atomic<uint32_t> videoNumber_{0};
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
     std::atomic<uint32_t> audioNumber_{0};
-    std::atomic<uint64_t> lcdMigrateFileNumber_{0};
-    std::atomic<uint64_t> thumbMigrateFileNumber_{0};
     std::atomic<uint64_t> rotateLcdMigrateFileNumber_{0};
     std::atomic<uint64_t> rotateThmMigrateFileNumber_{0};
     std::atomic<int32_t> updateProcessStatus_{ProcessStatus::STOP};
@@ -207,6 +217,7 @@ protected:
     bool isAccountValid_ = false;
     GeoKnowledgeRestore geoKnowledgeRestore_;
     HighlightRestore highlightRestore_;
+    int32_t restoreMode_;
 };
 } // namespace Media
 } // namespace OHOS

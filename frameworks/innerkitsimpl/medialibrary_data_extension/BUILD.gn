@@ -36,6 +36,13 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
   ]
 
+  include_multistages_capture = [
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/deferred_processing",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/dfx",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/utils",
+  ]
+
   include_dfx = [ "${MEDIALIB_SERVICES_PATH}/media_dfx/include" ]
 
   include_cloud_asset_download = [
@@ -74,20 +81,11 @@ config("media_data_extension_public_config") {
   include_dirs += include_fuse
   include_dirs += include_distributed
   include_dirs += include_scanner
+  include_dirs += include_multistages_capture
   include_dirs += include_dfx
   include_dirs += include_cloud_asset_download
   include_dirs += include_cloud_dirty_handle
   include_dirs += include_albums_refresh
-
-  if (media_library_feature_take_photo) {
-    include_multistages_capture = [
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/deferred_processing",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/dfx",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/utils",
-    ]
-    include_dirs += include_multistages_capture
-  }
 
   if (media_library_feature_cloud_enhancement) {
     include_cloud_enhancement = [
@@ -205,6 +203,24 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_rdb_transaction.cpp",
   ]
 
+  media_multistages_capture_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_photo_proc_adapter.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_video_proc_adapter.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_first_visit.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_request_policy.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_result.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_total_time.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_trigger_ratio.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/database_adapter.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/exif_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/file_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/multistages_capture_request_task_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_capture_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_photo_capture_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_video_capture_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_moving_photo_capture_manager.cpp",
+  ]
+
   media_dfx_source = [
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_analyzer.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_collector.cpp",
@@ -271,6 +287,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/hi_audit.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
+    "src/media_param_watcher_ability.cpp",
     "src/medialibrary_album_fusion_utils.cpp",
     "src/medialibrary_album_operations.cpp",
     "src/medialibrary_album_refresh.cpp",
@@ -323,6 +340,9 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/photo_album_operation/photo_album_merge_operation.cpp",
     "src/photo_album_operation/photo_album_update_date_modified_operation.cpp",
     "src/photo_map_operations.cpp",
+    "src/picture_data_operations.cpp",
+    "src/picture_handle_service.cpp",
+    "src/picture_manager_thread.cpp",
     "src/trash_async_worker.cpp",
     "src/video_composition_callback_imp.cpp",
     "src/zip_util.cpp",
@@ -332,6 +352,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_thumbnail_source
   sources += media_cloud_sync_source
   sources += media_rdb_utils_source
+  sources += media_multistages_capture_source
   sources += media_dfx_source
   sources += media_cloud_sync_notify_handle_source
   sources += media_permission_source
@@ -339,32 +360,6 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_cloud_asset_download_source
   sources += media_cloud_dirty_handle_source
   sources += media_albums_refresh_source
-
-  if (media_library_feature_take_photo) {
-    media_multistages_capture_source = [
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_photo_proc_adapter.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_video_proc_adapter.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_first_visit.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_request_policy.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_result.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_total_time.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_trigger_ratio.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/database_adapter.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/exif_utils.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/file_utils.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/multistages_capture_request_task_manager.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_capture_manager.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_photo_capture_manager.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_video_capture_manager.cpp",
-      "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_moving_photo_capture_manager.cpp",
-    ]
-    sources += media_multistages_capture_source
-    sources += [
-      "src/picture_data_operations.cpp",
-      "src/picture_handle_service.cpp",
-      "src/picture_manager_thread.cpp",
-    ]
-  }
 
   if (media_library_feature_cloud_enhancement) {
     media_cloud_enhancement_source = [
@@ -400,6 +395,7 @@ ohos_shared_library("medialibrary_data_extension") {
   }
 
   external_deps = [
+    "ability_base:base",
     "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_manager",
@@ -426,6 +422,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "init:libbeget_proxy",
     "init:libbegetutil",
     "ipc:ipc_core",
     "ipc:ipc_single",
@@ -466,28 +463,22 @@ ohos_shared_library("medialibrary_data_extension") {
     external_deps += [ "security_component_manager:libsecurity_component_sdk" ]
   }
 
-  if (defined(global_parts_info) &&
-      defined(
+  if (defined(global_parts_info) && defined(
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service) &&
-      media_library_feature_cloud_enhancement) {
+      media_library_feature_cloud_enhancement && !factory) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
     sources += [ "${MEDIALIB_SERVICES_PATH}/media_cloud_enhancement/src/enhancement_service/enhancement_service_callback.cpp" ]
   }
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.multimedia_camera_framework) &&
-      global_parts_info.multimedia_camera_framework &&
-      media_library_feature_take_photo) {
+      global_parts_info.multimedia_camera_framework) {
     defines += [ "ABILITY_CAMERA_SUPPORT" ]
     external_deps += [ "camera_framework:camera_framework" ]
     sources += [
       "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_photo_proc_session_callback.cpp",
       "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_video_proc_session_callback.cpp",
     ]
-  }
-
-  if (media_library_feature_take_photo) {
-    defines += [ "MEDIALIBRARY_FEATURE_TAKE_PHOTO" ]
   }
 
   if (media_library_feature_cloud_enhancement) {

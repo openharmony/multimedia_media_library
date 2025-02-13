@@ -792,24 +792,16 @@ static void GetType(string &uri, int32_t &type)
 
 int32_t HandleRequestPicture(MediaLibraryCommand &cmd)
 {
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     std::string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
     int32_t fd;
     PictureHandlerService::OpenPicture(fileId, fd);
     return fd;
-#else
-    return E_HAS_FS_ERROR;
-#endif
 }
 
 int32_t HandlePhotoRequestPictureBuffer(MediaLibraryCommand &cmd)
 {
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     std::string fd = cmd.GetQuerySetParam("fd");
     return PictureHandlerService::RequestBufferHandlerFd(fd);
-#else
-    return E_HAS_FS_ERROR;
-#endif
 }
 
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
@@ -1494,11 +1486,13 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
     }
     if (outRow < 0) {
         MEDIA_ERR_LOG("Failed to obtain CreateFileObj");
+        CloseFileById(srcFileAsset->GetId());
         return outRow;
     }
     shared_ptr<FileAsset> destFileAsset = GetFileAssetFromId(to_string(outRow));
     if (destFileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database");
+        CloseFileById(srcFileAsset->GetId());
         return E_INVALID_URI;
     }
     string destPath = MediaFileUtils::UpdatePath(destFileAsset->GetPath(), destFileAsset->GetUri());
@@ -1512,6 +1506,7 @@ int32_t MediaLibraryObjectUtils::CopyAssetByFd(int32_t srcFd, int32_t srcId, int
     struct stat statSrc;
     if (fstat(srcFd, &statSrc) == -1) {
         CloseFileById(srcId);
+        CloseFileById(destId);
         MEDIA_ERR_LOG("File get stat failed, %{public}d", errno);
         return E_FILE_OPER_FAIL;
     }

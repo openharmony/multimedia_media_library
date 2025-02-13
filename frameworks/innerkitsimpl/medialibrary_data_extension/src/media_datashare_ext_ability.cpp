@@ -43,9 +43,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
-#endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -66,6 +64,7 @@
 #include "userfilemgr_uri.h"
 #include "parameters.h"
 #include "media_tool_permission_handler.h"
+#include "media_param_watcher_ability.h"
 #include "grant_permission_handler.h"
 #include "read_write_permission_handler.h"
 #include "db_permission_handler.h"
@@ -88,6 +87,7 @@ namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
 const std::string PERM_CLOUD_SYNC_MANAGER = "ohos.permission.CLOUDFILE_SYNC_MANAGER";
+constexpr const char *MTP_DISABLE = "persist.edm.mtp_server_disable";
 static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::PAH_PHOTO,
     OperationObject::PAH_ALBUM,
@@ -187,12 +187,16 @@ void MediaDataShareExtAbility::InitPermissionHandler()
 
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     MultiStagesPhotoCaptureManager::GetInstance().Init();
     MultiStagesVideoCaptureManager::GetInstance().Init();
-#endif
 #ifdef MEDIALIBRARY_MTP_ENABLE
-    MtpManager::GetInstance().Init();
+    std::string param(MTP_DISABLE);
+    bool mtpDisable = system::GetBoolParameter(param, false);
+    if (!mtpDisable) {
+        MtpManager::GetInstance().Init();
+    } else {
+        DelayedSingleton<MtpParamWatcher>::GetInstance()->RegisterMtpParamListener();
+    }
 #endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().InitAsync();
@@ -663,6 +667,35 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     return E_SUCCESS;
 }
 
+static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string &mode)
+{
+    auto ret = false;
+    string unifyMode = mode;
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE || cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
+        cmd.GetTableName() == MEDIALIBRARY_TABLE) {
+        std::vector<std::string> columns;
+        DatashareBusinessError businessError;
+        int errCode = businessError.GetCode();
+        string clientAppId = GetClientAppId();
+        string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
+        if (clientAppId.empty() || fileId.empty()) {
+            return false;
+        }
+        DataSharePredicates predicates;
+        predicates.And()->EqualTo("file_id", fileId);
+        predicates.And()->EqualTo("owner_appid", clientAppId);
+        auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+        auto count = 0;
+        queryResultSet->GetRowCount(count);
+        if (count != 0) {
+            ret = true;
+            CollectPermissionInfo(cmd, unifyMode, true,
+                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
+        }
+    }
+    return ret;
+}
+
 static bool AddOwnerCheck(MediaLibraryCommand &cmd, DataSharePredicates &appidPredicates)
 {
     if (cmd.GetTableName() != PhotoColumn::PHOTOS_TABLE && cmd.GetTableName() != AudioColumn::AUDIOS_TABLE &&
@@ -721,6 +754,14 @@ int MediaDataShareExtAbility::CheckPermissionForOpenFile(const Uri &uri,
     }
     if (err == E_PERMISSION_DENIED) {
         err = UriPermissionOperations::CheckUriPermission(command.GetUriStringWithoutSegment(), unifyMode);
+        if (!CheckIsOwner(uri, command, unifyMode)) {
+            MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
+            CollectPermissionInfo(command, unifyMode, false,
+                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
+            return err;
+        } else {
+            return E_OK;
+        }
     }
     return err;
 }
@@ -940,7 +981,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
             return nullptr;
         }
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
-        if (!AddOwnerCheck(cmd, appidPredicates, columns)) {
+        if (!AddOwnerCheck(cmd, appidPredicates)) {
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
             businessError.SetCode(err);
             return nullptr;

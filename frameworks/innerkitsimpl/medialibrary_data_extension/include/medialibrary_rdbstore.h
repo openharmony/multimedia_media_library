@@ -207,6 +207,7 @@ public:
     std::vector<std::string> notifyUris_;
     std::vector<std::string> dateTakens_;
     std::vector<int32_t> subTypes_;
+    std::vector<int32_t> isTemps_;
     std::string table_;
     int32_t deleteRows_;
     std::string bundleName_;

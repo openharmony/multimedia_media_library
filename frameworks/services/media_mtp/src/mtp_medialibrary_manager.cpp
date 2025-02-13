@@ -985,7 +985,7 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     CHECK_AND_RETURN_RET_LOG(insertId > 0,
         MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR), "fail to create assset");
     std::shared_ptr<MtpOperationContext> newFileContext = std::make_shared<MtpOperationContext>();
-    newFileContext->handle = insertId + COMMON_PHOTOS_OFFSET;
+    newFileContext->handle = static_cast<uint32_t>(insertId) + COMMON_PHOTOS_OFFSET;
     newFileContext->parent = context->parent;
     std::shared_ptr<FileAsset> newFileAsset;
     errCode = GetFileAssetFromPhotosInfo(newFileContext, newFileAsset);

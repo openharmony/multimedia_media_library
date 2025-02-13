@@ -31,6 +31,7 @@ const photoAccessHelper = requireNapi('file.photoAccessHelper');
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
+const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
 
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
@@ -411,10 +412,16 @@ export class PhotoPickerComponent extends ViewPU {
 
     convertMIMETypeToFilterType(e) {
         let o;
-        o = e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE ?
-            FILTER_MEDIA_TYPE_IMAGE : e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE ?
-            FILTER_MEDIA_TYPE_VIDEO : FILTER_MEDIA_TYPE_ALL;
-        console.info('PhotoPickerComponent convertMIMETypeToFilterType' + JSON.stringify(o));
+        if (e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
+            o = FILTER_MEDIA_TYPE_IMAGE;
+        } else if (e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
+            o = FILTER_MEDIA_TYPE_VIDEO;
+        } else if (e === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
+            o = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
+        } else {
+            o = FILTER_MEDIA_TYPE_ALL;
+        }
+        console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(o));
         return o;
     }
 

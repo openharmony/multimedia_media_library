@@ -52,7 +52,9 @@ constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
 constexpr int32_t MAX_RESTORE_ASTC_NUM = 2000;
 constexpr uint64_t MAX_UPGRADE_WAIT_ASTC_NUM = 100;
-constexpr uint32_t THUMBNAIL_QUERY_INTERVAL = 3000;
+constexpr uint32_t THUMBNAIL_QUERY_INTERVAL = 1000;
+constexpr int64_t MIN_RESTORE_THUMBNAIL_TIME = 60 * 1000;
+constexpr int32_t MAX_RESTORE_THUMBNAIL_TIMEOUT_TIMES = 10;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 constexpr int32_t MAX_THREAD_NUM = 4;
@@ -64,7 +66,7 @@ const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
 const std::string RESTORE_THUMB_CLOUD_DIR = "/storage/cloud/files/.thumbs/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
-const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/Music/";
+const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/UpdateBackup/";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
 const std::string OTHER_CLONE_PATH = "/storage/media/local/files/.backup/restore/";
@@ -161,6 +163,7 @@ const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
 const std::string STAT_TYPE_PHOTO = "photo";
 const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
+const std::string STAT_TYPE_TOTAL_SIZE = "totalSize";
 const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
 const std::string STAT_TYPE_UPDATE = "update";
 const std::string STAT_TYPE_THUMBNAIL = "thumbnail";
@@ -220,6 +223,11 @@ constexpr int32_t CACHE = 1;
 
 constexpr int32_t DEFAULT_AREA_VERSION = -1;
 
+constexpr int32_t RESTORE_MODE_PROC_ALL_DATA = 0;
+constexpr int32_t RESTORE_MODE_PROC_MAIN_DATA = 1;
+constexpr int32_t RESTORE_MODE_PROC_TWIN_DATA = 2;
+constexpr int32_t RESTORE_MODE_PROC_MIX_DATA = 3;
+
 enum SourceType {
     GALLERY = 0,
     EXTERNAL_CAMERA,
@@ -259,6 +267,7 @@ enum RestoreError {
     UPDATE_PHOTOS_FAILED,
     UPDATE_FAILED,
     PARSE_TRACK_FAILED,
+    TABLE_LACK_OF_COLUMN,
 };
 
 enum class PhotoRelatedType {
@@ -288,6 +297,7 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::UPDATE_PHOTOS_FAILED, "RESTORE_UPDATE_PHOTOS_FAILED"},
     { RestoreError::UPDATE_FAILED, "RESTORE_UPDATE_FAILED"},
     { RestoreError::PARSE_TRACK_FAILED, "RESTORE_HIGHLIGHT_PARSE_TRACK_FAILED"},
+    { RestoreError::TABLE_LACK_OF_COLUMN, "RESTORE_TABLE_LACK_OF_COLUMN"},
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {

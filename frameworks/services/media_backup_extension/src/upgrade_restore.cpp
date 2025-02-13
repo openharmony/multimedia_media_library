@@ -54,7 +54,6 @@ namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
-constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int32_t RESTORE_CLOUD_QUERY_COUNT = 200;
 const std::string DB_INTEGRITY_CHECK = "ok";
@@ -246,8 +245,14 @@ void UpgradeRestore::RestoreAudio(void)
         }
         RestoreAudioFromFile();
     }
-    (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(audioDbPath_);
+
+    int32_t restoreMode = BaseRestore::GetRestoreMode();
+    if (restoreMode == RESTORE_MODE_PROC_ALL_DATA || restoreMode == RESTORE_MODE_PROC_TWIN_DATA) {
+        (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
+    } else {
+        MEDIA_INFO_LOG("restore mode no need to del external db");
+    }
 }
 
 void UpgradeRestore::RestoreAudioFromFile()
@@ -351,10 +356,8 @@ void UpgradeRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
     }
 }
 
-void UpgradeRestore::RestorePhoto()
+void UpgradeRestore::RestorePhotoInner()
 {
-    AnalyzeSource();
-
     std::string dbIntegrityCheck = CheckGalleryDbIntegrity();
     if (dbIntegrityCheck == DB_INTEGRITY_CHECK) {
         bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
@@ -374,10 +377,14 @@ void UpgradeRestore::RestorePhoto()
         if (isAccountValid_ && isSyncSwitchOpen) {
             MEDIA_INFO_LOG("here cloud clone");
             RestoreCloudFromGallery();
-            MEDIA_INFO_LOG("Migrate Lcd is :%{public}" PRIu64 ",Thm: %{public}" PRIu64
-            ",Rotate Lcd %{public}" PRIu64 ",Thm: %{public}" PRIu64,
-            lcdMigrateFileNumber_.load(), thumbMigrateFileNumber_.load(),
-            rotateLcdMigrateFileNumber_.load(), rotateThmMigrateFileNumber_.load());
+            MEDIA_INFO_LOG("Migrate LCD:%{public}" PRIu64 ",THM:%{public}" PRIu64
+            ",Rotate LCD:%{public}" PRIu64 ",THM: %{public}" PRIu64 ", migrateCloud: %{public}" PRIu64
+            ", migrateDatabase: %{public}" PRIu64,
+            (cloudLcdCount_.load(std::memory_order_relaxed) + localLcdCount_.load(std::memory_order_relaxed)),
+            (cloudThumbnailCount_.load(std::memory_order_relaxed) +
+            localThumbnailCount_.load(std::memory_order_relaxed)),
+            rotateLcdMigrateFileNumber_.load(), rotateThmMigrateFileNumber_.load(),
+            totalCloudMetaNumber_.load(), migrateDatabaseNumber_.load());
         }
     } else {
         maxId_ = 0;
@@ -385,6 +392,16 @@ void UpgradeRestore::RestorePhoto()
         ErrorInfo errorInfo(RestoreError::GALLERY_DATABASE_CORRUPTION, 0, "", dbIntegrityCheck);
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
+}
+
+void UpgradeRestore::RestorePhoto()
+{
+    if (!IsRestorePhoto()) {
+        return;
+    }
+    AnalyzeSource();
+
+    RestorePhotoInner();
     StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
         (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
@@ -406,7 +423,17 @@ void UpgradeRestore::RestorePhoto()
     geoKnowledgeRestore_.ReportGeoRestoreTask();
     highlightRestore_.UpdateAlbums();
     ReportPortraitStat(sceneCode_);
-    (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
+
+    int32_t restoreMode = BaseRestore::GetRestoreMode();
+    UpgradeRestoreTaskReport()
+        .SetSceneCode(sceneCode_)
+        .SetTaskId(taskId_)
+        .ReportRestoreMode(restoreMode, BaseRestore::GetNotFoundNumber());
+    if (restoreMode == RESTORE_MODE_PROC_ALL_DATA || restoreMode == RESTORE_MODE_PROC_TWIN_DATA) {
+        (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
+    } else {
+        MEDIA_INFO_LOG("restore mode no need to del gallery db");
+    }
 }
 
 void UpgradeRestore::AnalyzeSource()
@@ -572,6 +599,12 @@ void UpgradeRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
     RestoreThumbnail();
+
+    int32_t restoreMode = BaseRestore::GetRestoreMode();
+    if (restoreMode != RESTORE_MODE_PROC_ALL_DATA && restoreMode != RESTORE_MODE_PROC_TWIN_DATA) {
+        MEDIA_DEBUG_LOG("restore mode no need to del rest data");
+        return;
+    }
 
     std::string photoData = appDataPath_ + "/" + galleryAppName_;
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;
@@ -802,7 +835,6 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     }
     values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestore_.FindSubtype(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
     values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     // find album_id by lPath.
@@ -817,6 +849,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
         values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.uniqueId);
         values.PutInt(PhotoColumn::PHOTO_POSITION, PHOTO_CLOUD_POSITION);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_SYNCED));
+    } else {
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
     }
     return values;
 }

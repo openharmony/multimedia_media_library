@@ -24,6 +24,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
+#include "media_album_change_request_napi.h"
 #include "photo_album.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
@@ -61,6 +62,7 @@ napi_value HighlightAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setHighlightUserActionData", JSSetHighlightUserActionData),
             DECLARE_NAPI_FUNCTION("getHighlightResource", JSGetHighlightResource),
             DECLARE_NAPI_FUNCTION("getOrderPosition", JSGetOrderPosition),
+            DECLARE_NAPI_FUNCTION("setSubtitle", JSSetHighlightSubtitle),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -187,11 +189,8 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
     }
-    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
-    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
-    int albumId = photoAlbum->GetAlbumId();
-    int subType = photoAlbum->GetPhotoAlbumSubType();
+    int32_t albumId = context->albumId;
+    PhotoAlbumSubType subType = context->subType;
     Uri uri (uriStr);
     if (subType == PhotoAlbumSubType::HIGHLIGHT) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
@@ -281,6 +280,48 @@ static void JSSetHighlightUserActionDataCompleteCallback(napi_env env, napi_stat
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSSetHighlightUserActionDataCompleteCallback");
+
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void JSSetHighlightSubtitleExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetHighlightSubtitleExecute");
+
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
+    int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
+    Uri uri(PAH_HIGHLIGHT_SUBTITLE);
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    context->valuesBucket.Put(SUB_TITLE, context->subtitle);
+    int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to set highlight subtitle, err: %{public}d", changedRows);
+        return;
+    }
+}
+
+static void JSSetHighlightSubtitleCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetHighlightSubtitleCompleteCallback");
 
     auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
     auto jsContext = make_unique<JSAsyncContextOutput>();
@@ -539,7 +580,9 @@ napi_value HighlightAlbumNapi::JSGetHighlightAlbumInfo(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only and smart highlight album can get highlight album info");
-
+    
+    asyncContext->albumId = photoAlbum->GetAlbumId();
+    asyncContext->subType = photoAlbum->GetPhotoAlbumSubType();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetHighlightAlbumInfo",
         JSGetHighlightAlbumInfoExecute, JSGetHighlightAlbumInfoCompleteCallback);
@@ -592,6 +635,29 @@ napi_value HighlightAlbumNapi::JSGetHighlightResource(napi_env env, napi_callbac
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetHighlightResource",
         JSGetHighlightResourceExecute, JSGetHighlightResourceCompleteCallback);
+}
+
+napi_value HighlightAlbumNapi::JSSetHighlightSubtitle(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetHighlightSubtitle");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    unique_ptr<HighlightAlbumNapiAsyncContext> asyncContext = make_unique<HighlightAlbumNapiAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->subtitle),
+        JS_ERR_PARAMETER_INVALID);
+
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
+    CHECK_COND_WITH_MESSAGE(env,
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only highlight album can set highlight sub title");
+    
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSSetHighlightSubtitle",
+        JSSetHighlightSubtitleExecute, JSSetHighlightSubtitleCompleteCallback);
 }
 
 shared_ptr<PhotoAlbum> HighlightAlbumNapi::GetPhotoAlbumInstance() const

@@ -284,6 +284,7 @@ int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fi
     }
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     string notifyUri = MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileId),
         (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
 
@@ -328,6 +329,7 @@ int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
 
     // Audio has no favorite album, do not send favorite notify
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileAsset->GetId()),
         extraUri), NotifyType::NOTIFY_UPDATE);
     return rowId;
@@ -373,6 +375,7 @@ int32_t MediaLibraryAudioOperations::UpdateV9(MediaLibraryCommand &cmd)
 
     // Audio has no favorite album, do not send favorite notify
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileAsset->GetId())),
         NotifyType::NOTIFY_UPDATE);
     return rowId;

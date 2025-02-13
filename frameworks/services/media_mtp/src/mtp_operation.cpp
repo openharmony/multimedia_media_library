@@ -26,6 +26,7 @@
 #include "mtp_operation_utils.h"
 #include "mtp_storage_manager.h"
 #include "packet_payload_factory.h"
+#include "parameters.h"
 #include "payload_data/get_device_info_data.h"
 #include "payload_data.h"
 #include "payload_data/send_object_info_data.h"
@@ -35,6 +36,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
+constexpr const char *MTP_DISABLE = "persist.edm.mtp_server_disable";
 MtpOperation::MtpOperation(void)
 {
     Init();
@@ -66,7 +68,15 @@ int32_t MtpOperation::Execute()
 {
     MediaLibraryTracer tracer;
     tracer.Start("MtpOperation::Execute");
+    // 判断param, disable == true, 直接给Initiator返回error_dode
+    std::string param(MTP_DISABLE);
+    bool mtpDisable = system::GetBoolParameter(param, false);
     int errorCode = 0;
+    if (mtpDisable) {
+        SendMakeResponsePacket(errorCode);
+        MEDIA_INFO_LOG("MTP is disable");
+        return errorCode;
+    }
     ResetOperation();
     ReceiveRequestPacket(errorCode);
     CHECK_AND_RETURN_RET_LOG(mtpContextPtr_ != nullptr, errorCode, "mtpContextPtr_ is null");

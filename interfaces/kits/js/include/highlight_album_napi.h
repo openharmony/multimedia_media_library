@@ -48,6 +48,7 @@ private:
     EXPORT static napi_value JSSetHighlightUserActionData(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetHighlightResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetOrderPosition(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetHighlightSubtitle(napi_env env, napi_callback_info info);
 
     napi_env highlightmEnv_;
     std::shared_ptr<PhotoAlbum> highlightAlbumPtr = nullptr;
@@ -70,12 +71,15 @@ struct HighlightAlbumNapiAsyncContext : public NapiError {
     std::string highlightAlbumInfo;
     std::vector<std::string> assetIdArray;
     std::vector<int32_t> orderPositionArray;
+    int32_t albumId;
+    PhotoAlbumSubType subType;
 
     int32_t highlightAlbumInfoType = HighlightAlbumInfoType::INVALID_INFO;
     int32_t highlightUserActionType = HighlightUserActionType::INVALID_USER_ACTION;
 
     int32_t actionData = 0;
     std::string resourceUri;
+    std::string subtitle;
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
     napi_async_work work;

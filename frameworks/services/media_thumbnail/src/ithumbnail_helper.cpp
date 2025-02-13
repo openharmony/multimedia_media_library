@@ -34,6 +34,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "post_event_utils.h"
+#include "post_proc.h"
 #include "result_set_utils.h"
 #include "rdb_predicates.h"
 #include "rdb_helper.h"
@@ -1178,7 +1179,7 @@ bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &dat
     }
     close(fd);
 
-    dataSource->rotate(static_cast<float>(data.orientation));
+    PostProc::RotateInRectangularSteps(*(dataSource.get()), static_cast<float>(data.orientation), true);
     data.source.SetPixelMap(dataSource);
     if (!GenerateRotatedThumbnail(opts, data, thumbType)) {
         MEDIA_ERR_LOG("GenerateRotatedThumbnail failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
