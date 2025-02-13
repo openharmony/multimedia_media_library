@@ -56,6 +56,20 @@ int32_t PhotosClone::GetPhotosRowCountInPhotoMap()
 }
 
 /**
+ * @brief Get Row Count of Cloud Photos in Album.
+ */
+int32_t PhotosClone::GetCloudPhotosRowCountInPhotoMap()
+{
+    std::string querySql = this->SQL_CLOUD_PHOTOS_TABLE_COUNT_IN_PHOTO_MAP;
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
+        "singleCloud Media_Restore: mediaLibraryOriginalRdb_ is null.");
+    auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
+    return GetInt32Val("count", resultSet);
+}
+
+/**
  * @brief Get Row Count of Photos not in Album.
  */
 int32_t PhotosClone::GetPhotosRowCountNotInPhotoMap()
@@ -63,6 +77,20 @@ int32_t PhotosClone::GetPhotosRowCountNotInPhotoMap()
     std::string querySql = this->SQL_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP;
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
         "Media_Restore: mediaLibraryOriginalRdb_ is null.");
+    auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
+    return GetInt32Val("count", resultSet);
+}
+
+/**
+ * @brief Get Row Count of Cloud Photos not in Album.
+ */
+int32_t PhotosClone::GetCloudPhotosRowCountNotInPhotoMap()
+{
+    std::string querySql = this->SQL_CLOUD_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP;
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
+        "singleCloud Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
     CHECK_AND_RETURN_RET(!cond, 0);
@@ -81,6 +109,17 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosInPhotoMap(int32_t o
 }
 
 /**
+ * @brief Query the Cloud Photos Info, which is in PhotoAlbum, from the Original MediaLibrary Database.
+ */
+std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetCloudPhotosInPhotoMap(int32_t offset, int32_t pageSize)
+{
+    std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, nullptr,
+        "singleCloud Media_Restore: mediaLibraryOriginalRdb_ is null.");
+    return this->mediaLibraryOriginalRdb_->QuerySql(this->SQL_CLOUD_PHOTOS_TABLE_QUERY_IN_PHOTO_MAP, bindArgs);
+}
+
+/**
  * @brief Query the Photos Info, which is not in PhotoAlbum, from the Original MediaLibrary Database.
  */
 std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosNotInPhotoMap(int32_t offset, int32_t pageSize)
@@ -91,6 +130,19 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosNotInPhotoMap(int32_
         return nullptr;
     }
     return this->mediaLibraryOriginalRdb_->QuerySql(this->SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP, bindArgs);
+}
+
+/**
+ * @brief Query the Cloud Photos Info, which is not in PhotoAlbum, from the Original MediaLibrary Database.
+ */
+std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetCloudPhotosNotInPhotoMap(int32_t offset, int32_t pageSize)
+{
+    std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
+    if (this->mediaLibraryOriginalRdb_ == nullptr) {
+        MEDIA_ERR_LOG("singleCloud Media_Restore: mediaLibraryOriginalRdb_ is null.");
+        return nullptr;
+    }
+    return this->mediaLibraryOriginalRdb_->QuerySql(this->SQL_CLOUD_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP, bindArgs);
 }
 
 /**
