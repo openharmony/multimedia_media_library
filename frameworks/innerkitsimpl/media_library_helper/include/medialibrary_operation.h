@@ -206,6 +206,7 @@ enum class EXPORT OperationType : uint32_t {
     CUSTOM_RESTORE_CANCEL,
     DELETE_LOCAL_ASSETS_PERMANENTLY,
     MTH_AND_YEAR_ASTC,
+    UPDATE_SUPPORTED_WATERMARK_TYPE,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

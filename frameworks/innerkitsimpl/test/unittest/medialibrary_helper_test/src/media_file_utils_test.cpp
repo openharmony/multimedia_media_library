@@ -1000,5 +1000,17 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAllTypes_Test_003, TestSi
     vector<std::string> allTypesOut = MediaFileUtils::GetAllTypes(extension);
     EXPECT_TRUE(allTypesOut.empty());
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckSupportedWatermarkType_Test_001, TestSize.Level0)
+{
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(-10), false);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(-1), false);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(0), false);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(1), true);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(2), true);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(3), true);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(4), false);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(10), false);
+}
 } // namespace Media
 } // namespace OHOS
