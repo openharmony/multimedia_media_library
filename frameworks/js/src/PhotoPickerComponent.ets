@@ -14,6 +14,10 @@
  */
 
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
+import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
+import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
+import { bundleManager } from '@kit.AbilityKit';
+
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
@@ -50,10 +54,25 @@ export struct PhotoPickerComponent {
       this.onSetMaxSelectCount(data);
     } else if (data?.has('SET_PHOTO_BROWSER_ITEM')) {
       this.onSetPhotoBrowserItem(data);
-    } else if (data?.has('EXIT_PHOTO_BROWSER')) {
+    } else {
+      this.otherOnChange(data);
+    }
+  }
+
+  private otherOnChange(data?: Map<string, Object>) {
+    if (data?.has('EXIT_PHOTO_BROWSER')) {
       this.handleExitPhotoBrowser();
     } else if (data?.has('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY')) {
       this.onSetPhotoBrowserUIElementVisibility(data);
+    } else if (data?.has('CREATE_URI')) {
+      this.onCreateUri(data);
+      console.info('PhotoPickerComponent onChanged: CREATE_URI');
+    } else if (data?.has('REPLACE_URI')) {
+      this.onReplaceUri(data);
+      console.info('PhotoPickerComponent onChanged: REPLACE_URI');
+    } else if (data?.has('SAVE_TRUSTED_PHOTO_ASSETS')) {
+      this.onSaveTrustedPhotoAssets(data);
+      console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
@@ -92,6 +111,38 @@ export struct PhotoPickerComponent {
       'isVisible': photoBrowserUIElementVisibility?.isVisible
     });
     console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY');
+  }
+
+  private onCreateUri(data?: Map<string, Object>): void {
+    let array = data?.get('CREATE_URI') as Array<Object>;
+    this.proxy?.send({
+      selectedMediaUri: array[0],
+      createUri: array[1],
+      date: array[2]
+    });
+    console.info('PhotoPickerComponent onChanged CREATE_URI');
+  }
+
+  private onReplaceUri(data?: Map<string, Object>): void {
+    let array = data?.get('REPLACE_URI') as Array<Object>;
+    this.proxy?.send({
+      oriUri: array[0],
+      replaceUri: array[1],
+      date: array[2]
+    });
+    console.info('PhotoPickerComponent onChanged REPLACE_URI');
+  }
+
+  private onSaveTrustedPhotoAssets(data?: Map<string, Object>): void {
+    let array: Array<object> = data?.get('SAVE_TRUSTED_PHOTO_ASSETS') as Array<object>;
+    this.proxy?.send({
+      replaceUris: array[0],
+      config: array[1],
+      saveMode: array[2],
+      appName: array[3],
+      date: array[4]
+    });
+    console.info('PhotoPickerComponent onChanged SAVE_REPLACE_PHOTO_ASSETS');
   }
 
   build() {
@@ -162,6 +213,15 @@ export struct PhotoPickerComponent {
       this.handlePhotoBrowserChange(wantParam);
     } else if (dataType === 'onVideoPlayStateChanged') {
       this.handleVideoPlayStateChange(wantParam)
+    } else if (dataType === 'replaceCallback') {
+      this.handleReplaceCallback(wantParam);
+    } else if (dataType === 'createCallback') {
+      this.handleCreateCallback(wantParam);
+    } else if (dataType === 'saveCallback') {
+      this.handleSaveCallback(wantParam);
+    } else if (dataType === 'onBackground') {
+      console.info('PhotoPickerComponent onReceive: onBackground');
+      this.revokeIndex = 0;
     } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
@@ -278,6 +338,25 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onReceive: onVideoPlayStateChanged = ' + JSON.stringify(wantParam));
   }
 
+  private handleCreateCallback(wantParam: Record<string, Object>): void {
+    this.pickerController.actionCreateCallback(wantParam['grantUri'] as string, wantParam['date'] as number,
+      wantParam['code'] as number, wantParam['message'] as string);
+    console.info('PhotoPickerComponent onReceive: handleCreateCallback');
+  }
+
+  private handleReplaceCallback(wantParam: Record<string, Object>): void {
+    this.pickerController.actionReplaceCallback(wantParam['date'] as number,
+      { 'name': '', 'code': wantParam['code'] as number, 'message': wantParam['message'] as string });
+    console.info('PhotoPickerComponent onReceive: handleReplaceCallback');
+  }
+
+  private handleSaveCallback(wantParam: Record<string, Object>): void {
+    this.pickerController.actionSaveCallback(wantParam['date'] as number,
+      { 'name': '', 'code': wantParam['code'] as number, 'message': wantParam['error'] as string },
+      wantParam['data'] as Array<string>);
+    console.info('PhotoPickerComponent onReceive: handleSaveCallback');
+  }
+
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
     let filterType: string;
     if (mimeType === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
@@ -303,6 +382,9 @@ export type VideoPlayStateChanged = (state: VideoPlayerState) => {} void;
 @Observed
 export class PickerController {
   data?: Map<string, Object>;
+  replaceCallbackMap: Map<number, Object> = new Map<number, Object>();
+  saveCallbackMap: Map<number, Object> = new Map<number, Object>();
+  createCallbackMap: Map<number, Object> = new Map<number, Object>();
 
   setData(type: DataType, data: Object) {
     if (data === undefined) {
@@ -355,6 +437,100 @@ export class PickerController {
     this.data = new Map([['SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY', photoBrowserUIElementVisibility]]);
     console.info('PhotoPickerComponent SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY ' +
       JSON.stringify(photoBrowserUIElementVisibility));
+  }
+
+  private async getAppName(): Promise<string> {
+    let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_ABILITY | // for appName
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE | // for appName
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO | // for appId
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION; // for appInfo
+    let bundleInfo = bundleManager.getBundleInfoForSelfSync(flags);
+    let labelId = bundleInfo.appInfo.labelId;
+    let appName = '';
+    let moduleName = '';
+    for (let hapInfo of bundleInfo.hapModulesInfo) {
+      if (labelId === hapInfo.labelId) {
+        moduleName = hapInfo.name;
+      }
+    }
+    appName = await getContext(this).createModuleContext(moduleName).resourceManager.getStringValue(labelId);
+    return appName;
+  }
+
+  replacePhotoPickerPreview(selectedMediaUri: string, replaceUri: string, callback: AsyncCallback<void>) {
+    try {
+      let fd = fs.openSync(replaceUri).fd;
+      fs.close(fd);
+    } catch (err) {
+      callback({'code': 13900002, 'message': 'No such file', name: ''});
+      return;
+    }
+    let date = Math.random();
+    this.data = new Map([['CREATE_URI', [selectedMediaUri, replaceUri, date]]]);
+    this.createCallbackMap.set(date, (grantUri: string, code: number, message: string) => {
+      if (code !== 0) {
+        callback({ 'name': '', 'code': code, 'message': message });
+        return;
+      }
+      let createFd = 0;
+      let replaceFd = 0;
+      try {
+        createFd = fs.openSync(grantUri, fs.OpenMode.READ_WRITE).fd;
+        replaceFd = fs.openSync(replaceUri, fs.OpenMode.READ_ONLY).fd;
+        fs.copyFileSync(replaceFd, createFd);
+        this.data = new Map([['REPLACE_URI', [selectedMediaUri, grantUri, date]]]);
+        this.replaceCallbackMap.set(date, callback);
+      } catch (err) {
+        callback({ 'code': 14000011, 'message': 'System inner fail', name: '' });
+      } finally {
+        fs.close(createFd);
+        fs.close(replaceFd);
+      }
+    })
+  }
+
+  saveTrustedPhotoAssets(selectedMediaUris: Array<string>, callback: AsyncCallback<Array<string>>,
+    config?: Array<photoAccessHelper.PhotoCreationConfig>, saveMode?: SaveMode) {
+    if (!selectedMediaUris || selectedMediaUris.length === 0) {
+      callback({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
+      return;
+    }
+    this.getAppName().then((appName: string)=>{
+      let date = Math.random();
+      this.data = new Map([['SAVE_TRUSTED_PHOTO_ASSETS', [selectedMediaUris, config, saveMode, appName, date]]]);
+      this.saveCallbackMap.set(date, callback);
+    })
+    console.info('PhotoPickerComponent SAVE_TRUSTED_PHOTO_ASSETS ');
+  }
+
+  actionCreateCallback(grantUri: string, date: number, code: number, message: string) {
+    if (this.createCallbackMap.has(date)) {
+      let callback = this.createCallbackMap.get(date) as Function;
+      if (callback) {
+        callback(grantUri, code, message);
+        this.createCallbackMap.delete(date);
+      }
+    }
+  }
+
+  actionReplaceCallback(date: number, err: BusinessError) {
+    if (this.replaceCallbackMap.has(date)) {
+      let callback = this.replaceCallbackMap.get(date) as Function;
+      if (callback) {
+        callback(err);
+        this.replaceCallbackMap.delete(date);
+      }
+    }
+  }
+
+  actionSaveCallback(date: number, err: BusinessError, data: Array<string>) {
+    if (this.saveCallbackMap.has(date)) {
+      let callback = this.saveCallbackMap.get(date) as Function;
+      if (callback) {
+        callback(err, data);
+        this.saveCallbackMap.delete(date);
+      }
+    }
   }
 }
 
@@ -470,4 +646,9 @@ export enum VideoPlayerState {
   STOPPED = 3,
   SEEK_START = 4,
   SEEK_FINISH = 5
+}
+
+export enum SaveMode {
+  SAVE_AS = 0,
+  OVERWRITE = 1
 }
