@@ -228,7 +228,31 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXT
     { "video/x-ms-wmx", { "wmx" } },
     { "video/x-ms-wvx", { "wvx" } },
     { "video/x-sgi-movie", { "movie" } },
-    { "video/x-matroska", { "mpv" } }
+    { "video/x-matroska", { "mpv" } },
+    { "audio/3gpp", { "3gpp" } },
+    { "audio/midi", { "mid", "midi", "kar" } },
+    { "audio/basic", { "au" } },
+    { "audio/x-pn-realaudio", { "rm", "ram" } },
+    { "audio/aac-adts", { "aac" } },
+    { "audio/mpeg", { "m4a", "mpga", "mpega" } },
+    { "audio/x-mpegurl", { "m3u", "m3u8" } },
+    { "audio/ffmpeg", { "ape" } },
+    { "audio/mp4", { "isma" } },
+    { "audio/ac4", { "ac4" } },
+    { "audio/amr-wb", { "awb" } },
+    { "audio/annodex", { "axa" } },
+    { "audio/csound", { "csd", "orc", "sco" } },
+    { "audio/ogg", { "oga", "ogg", "opus", "spx" } },
+    { "audio/prs.sid", { "sid" } },
+    { "audio/x-aiff", { "aif", "aiff", "aifc" } },
+    { "audio/x-gsm", { "gsm"} },
+    { "audio/x-mpegurl", { "m3u" } },
+    { "audio/x-ms-wma", { "wma" } },
+    { "audio/x-ms-wax", { "wax" } },
+    { "audio/x-realaudio", { "ra" } },
+    { "audio/x-scpls", { "pls" } },
+    { "audio/x-sd2", { "sd2" } },
+    { "audio/x-wav", { "wav" } }
 };
 
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
