@@ -108,7 +108,7 @@ void CardAssetUriObserver::PostAssetChangeTask()
 {
     if (!CardAssetUriObserver::isTaskPosted) {
         CardAssetUriObserver::isTaskPosted = true;
-        const int DELAY_MILLISECONDS = 5000;
+        const int DELAY_MILLISECONDS = 2000;
         CardAssetUriObserver::deviceHandler_->PostTask([this]() {
             std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
             std::vector<std::string> assetChangeUris;
