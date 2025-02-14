@@ -54,8 +54,11 @@ const std::string PHONE_TYPE = "type";
 const std::string PHONE_DEVICE_TYPE = "deviceType";
 const std::string PHONE_DETAIL = "detail";
 const std::string PHOTO_DB_NAME = "photo_MediaInfo.db";
+const std::string PHOTO_SD_MEDIA_INFO_DB_NAME = "photo_sd_MediaInfo.db";
 const std::string VIDEO_DB_NAME = "video_MediaInfo.db";
+const std::string VIDEO_SD_MEDIA_INFO_DB_NAME = "video_sd_MediaInfo.db";
 const std::string OTHER_CLONE_FILE_ROOT_PATH = "/storage/media/local/files/.backup/restore";
+const std::string LITE_CLONE_SD_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/";
 const std::string OTHER_CLONE_DB_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/0/";
 const std::string OTHER_CLONE_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string OTHER_CLONE_DISPLAYNAME = "primaryStr";
@@ -127,6 +130,9 @@ void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> 
     if (sceneCode == I_PHONE_CLONE_RESTORE) {
         queryExternalMayClonePhoto = "SELECT primaryStr, date_modified, datetaken FROM mediainfo LIMIT " +
             std::to_string(offset) + ", " + std::to_string(QUERY_NUMBER);
+    } else if (sceneCode == LITE_PHONE_CLONE_RESTORE) {
+        queryExternalMayClonePhoto = "SELECT _data, date_modified, datetaken FROM mediainfo LIMIT " +
+            std::to_string(offset) + ", " + std::to_string(QUERY_NUMBER);
     } else {
         queryExternalMayClonePhoto = "SELECT _data, date_modified, datetaken FROM mediainfo LIMIT " +
             std::to_string(offset) + ", " + std::to_string(QUERY_NUMBER);
@@ -143,6 +149,10 @@ void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> 
             tmpDbInfo.displayName = GetStringVal(OTHER_CLONE_DISPLAYNAME, resultSet);
             tmpDbInfo.dateModified = GetDoubleVal(OTHER_CLONE_MODIFIED, resultSet);
             tmpDbInfo.dateTaken = GetDoubleVal(OTHER_CLONE_TAKEN, resultSet);
+        } else if (sceneCode == LITE_PHONE_CLONE_RESTORE) {
+            tmpDbInfo.data = GetStringVal(OTHER_CLONE_DATA, resultSet);
+            tmpDbInfo.dateModified = static_cast<double>(GetInt64Val(OTHER_CLONE_MODIFIED, resultSet));
+            tmpDbInfo.dateTaken = static_cast<double>(GetInt64Val(OTHER_CLONE_TAKEN, resultSet));
         } else {
             tmpDbInfo.data = GetStringVal(OTHER_CLONE_DATA, resultSet);
             tmpDbInfo.dateModified = static_cast<double>(GetInt64Val(OTHER_CLONE_MODIFIED, resultSet));
@@ -156,6 +166,9 @@ void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> 
 void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo)
 {
     std::string dbPath = OTHER_CLONE_DB_PATH + dbName;
+    if (dbName == PHOTO_SD_MEDIA_INFO_DB_NAME || dbName == VIDEO_SD_MEDIA_INFO_DB_NAME) {
+        dbPath = OTHER_CLONE_FILE_ROOT_PATH + "/" + dbName;
+    }
     if (access(dbPath.c_str(), F_OK) != 0) {
         MEDIA_ERR_LOG("Init rdb not exists, dbName = %{public}s", dbName.c_str());
         return;
@@ -192,7 +205,9 @@ int32_t OthersCloneRestore::Init(const std::string &backupRetoreDir, const std::
     int64_t startGetInfo = MediaFileUtils::UTCTimeMilliSeconds();
     GetCloneDbInfos(AUDIO_DB_NAME, audioDbInfo_);
     GetCloneDbInfos(PHOTO_DB_NAME, photoDbInfo_);
+    GetCloneDbInfos(PHOTO_SD_MEDIA_INFO_DB_NAME, photoDbInfo_);
     GetCloneDbInfos(VIDEO_DB_NAME, photoDbInfo_);
+    GetCloneDbInfos(VIDEO_SD_MEDIA_INFO_DB_NAME, photoDbInfo_);
     int64_t startCurrent = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t err = GetAllfilesInCurrentDir(backupRestoreDir_);
     if (err != E_OK) {
@@ -588,10 +603,20 @@ static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &
     } else {
         MEDIA_WARN_LOG("find other clone path error path: %{public}s",
             BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str());
-        source = OTHER_CLONE_FILE_ROOT_PATH;
+        source = LITE_CLONE_SD_FILE_PATH;
         findPos = lPath.find(source);
         if (findPos != std::string::npos) {
             lPath.replace(lPath.find(source), source.length(), "");
+            std::size_t startPos = lPath.find_first_of(FILE_SEPARATOR);
+            if (startPos != std::string::npos) {
+                lPath = lPath.substr(startPos);
+            }
+        } else {
+            source = OTHER_CLONE_FILE_ROOT_PATH;
+            findPos = lPath.find(source);
+            if (findPos != std::string::npos) {
+                lPath.replace(lPath.find(source), source.length(), "");
+            }
         }
     }
     std::size_t startPos = lPath.find_first_of(FILE_SEPARATOR);
@@ -660,7 +685,7 @@ void OthersCloneRestore::RestoreAlbum(std::vector<FileInfo> &fileInfos)
         galleryAlbum.lPath = I_PHONE_LPATH + clonePhoneName_;
         galleryAlbum.priority = 1;
         galleryAlbumInfos.emplace_back(galleryAlbum);
-    } else if (sceneCode_ == OTHERS_PHONE_CLONE_RESTORE) {
+    } else if (sceneCode_ == OTHERS_PHONE_CLONE_RESTORE || sceneCode_ == LITE_PHONE_CLONE_RESTORE) {
         for (auto &info : fileInfos) {
             info.lPath = ParseSourcePathToLPath(sceneCode_, info.filePath);
             AddGalleryAlbum(galleryAlbumInfos, info.lPath);
@@ -739,7 +764,7 @@ void OthersCloneRestore::UpdateAlbumInfo(FileInfo &info)
         info.ownerAlbumId = albumInfo.albumId;
         info.packageName = clonePhoneName_;
         info.bundleName = clonePhoneName_;
-    } else if (sceneCode_ == OTHERS_PHONE_CLONE_RESTORE) {
+    } else if (sceneCode_ == OTHERS_PHONE_CLONE_RESTORE || sceneCode_ == LITE_PHONE_CLONE_RESTORE) {
         PhotoAlbumDao::PhotoAlbumRowData albumInfo = FindAlbumInfo(info);
         info.mediaAlbumId = albumInfo.albumId;
         info.ownerAlbumId = albumInfo.albumId;

@@ -70,6 +70,8 @@ void BackupRestoreService::Init(const RestoreInfo &info)
             info.bundleInfo);
     } else if (info.sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
         restoreService_ = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE, info.mediaAppName);
+    } else if (info.sceneCode == LITE_PHONE_CLONE_RESTORE) {
+        restoreService_ = std::make_unique<OthersCloneRestore>(LITE_PHONE_CLONE_RESTORE, info.mediaAppName);
     } else {
         restoreService_ = std::make_unique<CloneRestore>();
     }
