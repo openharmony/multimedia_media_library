@@ -270,8 +270,8 @@ void PhotoCustomRestoreOperation::InitRestoreTask(RestoreTaskInfo &restoreTaskIn
     std::thread applyEfficiencyQuotaThread([this, fileNum] { ApplyEfficiencyQuota(fileNum); });
     applyEfficiencyQuotaThread.detach();
     QueryAlbumId(restoreTaskInfo);
-    GetAlbumUriSubType(PhotoAlbumSubType::IMAGE, restoreTaskInfo.imageAlbumUri);
-    GetAlbumUriSubType(PhotoAlbumSubType::VIDEO, restoreTaskInfo.videoAlbumUri);
+    GetAlbumUriBySubType(PhotoAlbumSubType::IMAGE, restoreTaskInfo.imageAlbumUri);
+    GetAlbumUriBySubType(PhotoAlbumSubType::VIDEO, restoreTaskInfo.videoAlbumUri);
 }
 
 int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
@@ -355,8 +355,12 @@ void PhotoCustomRestoreOperation::SendPhotoAlbumNotify(RestoreTaskInfo &restoreT
     const UniqueNumber &uniqueNumber)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {to_string(PhotoAlbumSubType::IMAGE)});
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {to_string(PhotoAlbumSubType::VIDEO)});
+    if (uniqueNumber.imageTotalNumber > 0) {
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {to_string(PhotoAlbumSubType::IMAGE)});
+    }
+    if (uniqueNumber.videoTotalNumber > 0) {
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {to_string(PhotoAlbumSubType::VIDEO)});
+    }
     std::string uri = PhotoColumn::PHOTO_URI_PREFIX + to_string(restoreTaskInfo.firstFileId);
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {uri});
     MEDIA_DEBUG_LOG("UpdateSourceAlbumByUri finished.");
@@ -586,11 +590,11 @@ void PhotoCustomRestoreOperation::QueryAlbumId(RestoreTaskInfo &restoreTaskInfo)
     }
 }
 
-int32_t PhotoCustomRestoreOperation::GetAlbumUriSubType(int32_t subType, string &albumUri)
+int32_t PhotoCustomRestoreOperation::GetAlbumUriBySubType(int32_t subType, string &albumUri)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("QueryAlbumId: get rdb store fail!");
+        MEDIA_ERR_LOG("GetAlbumUriBySubType: get rdb store fail!");
         return E_HAS_DB_ERROR;
     }
     const string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
@@ -598,11 +602,11 @@ int32_t PhotoCustomRestoreOperation::GetAlbumUriSubType(int32_t subType, string 
     std::vector<NativeRdb::ValueObject> params = {subType};
     auto resultSet = rdbStore->QuerySql(querySql, params);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("GetAlbumUriSubType: query PhotoAlbum failed! subType=%{public}d", subType);
+        MEDIA_ERR_LOG("GetAlbumUriBySubType: query PhotoAlbum failed! subType=%{public}d", subType);
         return E_HAS_DB_ERROR;
     }
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetAlbumUriSubType first row empty.");
+        MEDIA_ERR_LOG("GetAlbumUriBySubType first row empty.");
         resultSet->Close();
         return E_HAS_DB_ERROR;
     }
@@ -636,12 +640,12 @@ bool PhotoCustomRestoreOperation::IsDuplication(RestoreTaskInfo &restoreTaskInfo
     auto resultSet = rdbStore->QuerySql(querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("IsDuplication: query PhotoAlbum failed!");
-        return E_HAS_DB_ERROR;
+        return false;
     }
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("IsDuplication first row empty.");
         resultSet->Close();
-        return E_HAS_DB_ERROR;
+        return false;
     }
     int32_t count = GetInt32Val("count", resultSet);
     resultSet->Close();
@@ -926,8 +930,8 @@ void PhotoCustomRestoreOperation::CleanTimeoutCustomRestoreTaskDir()
             MEDIA_ERR_LOG("stat syscall err");
             continue;
         }
-        auto dateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_ctim));
-        if ((timestampNow - dateModified) < TIMEOUT_TASK_DIR_CLEAN_INTERVAL) {
+        auto dateCreated = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_ctim));
+        if ((timestampNow - dateCreated) < TIMEOUT_TASK_DIR_CLEAN_INTERVAL) {
             MEDIA_ERR_LOG("no timeout file");
             continue;
         }
