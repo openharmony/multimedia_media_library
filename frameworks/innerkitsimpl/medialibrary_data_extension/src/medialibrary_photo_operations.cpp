@@ -451,7 +451,7 @@ static void UpdateLastVisitTime(MediaLibraryCommand &cmd, const string &id)
 
 static void GetType(string &uri, int32_t &type)
 {
-    int pos = uri.find("type=");
+    size_t pos = uri.find("type=");
     if (pos != uri.npos) {
         type = uri[pos + OFFSET] - ZERO_ASCII;
     }

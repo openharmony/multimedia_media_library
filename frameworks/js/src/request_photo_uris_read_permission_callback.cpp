@@ -38,6 +38,14 @@ RequestPhotoUrisReadPermissionCallback::RequestPhotoUrisReadPermissionCallback(n
     this->uiContent = uiContent;
 }
 
+RequestPhotoUrisReadPermissionCallback::~RequestPhotoUrisReadPermissionCallback()
+{
+    napi_delete_reference(this->env_, this->callbackRef);
+    this->env_ = nullptr;
+    this->callbackRef = nullptr;
+    this->uiContent = nullptr;
+}
+
 void RequestPhotoUrisReadPermissionCallback::OnRelease(int32_t releaseCode)
 {
     NAPI_INFO_LOG("ReleaseCode is %{public}d.", releaseCode);

@@ -108,13 +108,24 @@ enum class DirtyType : int32_t {
 enum class CloudEnhancementAvailableType : int32_t {
     NOT_SUPPORT = 0,
     SUPPORT,
-    PROCESSING,
+    PROCESSING_MANUAL,
     FAILED_RETRY,
     FAILED,
     SUCCESS,
     EDIT,
     TRASH,
+    PROCESSING_AUTO,
     FINISH = 120,
+};
+
+enum class CloudEnhancementIsAutoType : int32_t {
+    NOT_AUTO = 0,
+    AUTO,
+};
+
+enum class CloudEnhancementTriggerModeType : int32_t {
+    TRIGGER_MANUAL = 0,
+    TRIGGER_AUTO,
 };
 
 enum class CEErrorCodeType : int32_t {
@@ -297,6 +308,22 @@ const std::string FAVOURTIE_ALBUM_NAME_VALUES = "FavoritAlbum";
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
 static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
+
+const std::string PHOTO_OPTION_WLAN_ONLY = "WLAN only";
+const std::string PHOTO_OPTION_WLAN_AND_NETWORK = "WLAN and networks";
+const std::string PHOTO_OPTION_CLOSE = "close";
+
+constexpr const char *SETTINGS_DATA_EXT_URI = "datashare:///com.ohos.settingsdata.DataAbility";
+constexpr const char *SETTINGS_DATASHARE_AUTO_OPTION_URI =
+    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true&key=persist.photos.ce.auto.option";
+const std::string SETTINGS_DATASHARE_URI =
+    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true";
+const std::string SETTINGS_DATASHARE_WATER_MARK_URI = SETTINGS_DATASHARE_URI +
+    "&key=persist.photos.ce.watermark.enable";
+const std::string SETTING_KEY = "KEYWORD";
+const std::string SETTING_VALUE = "VALUE";
+const std::string WATER_MARK_ENABLED = "true";
+constexpr int PHOTOS_STORAGE_MANAGER_ID = 5003;
 } // namespace OHOS
 } // namespace Media
 

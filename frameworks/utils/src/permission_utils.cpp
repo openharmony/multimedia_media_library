@@ -257,7 +257,8 @@ int64_t PermissionUtils::GetMainTokenId(const string &appId, int64_t &tokenId)
         MEDIA_ERR_LOG("Get bundle name failed");
         return err;
     }
-    int userId = getuid() / BASE_USER_RANGE;
+    int uid = getuid();
+    int32_t userId = uid / BASE_USER_RANGE;
     OHOS::AppExecFwk::BundleInfo bundleInfo;
     err = bundleMgr_->GetBundleInfoV9(bundleName,
         static_cast<int32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION), bundleInfo, userId);
@@ -433,7 +434,7 @@ bool PermissionUtils::GetTokenCallerForUid(const int &uid, AccessTokenID &tokenC
 void PermissionUtils::CollectPermissionInfo(const string &permission,
     const bool permGranted, const PermissionUsedType type, const int &uid)
 {
-    AccessTokenID tokenCaller;
+    AccessTokenID tokenCaller = INVALID_TOKENID;
     GetTokenCallerForUid(uid, tokenCaller);
     CollectPermissionRecord(tokenCaller, permission, permGranted, type);
 }

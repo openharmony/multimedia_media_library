@@ -2082,6 +2082,58 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type,
     return GetInt32Val(UNIQUE_NUMBER, resultSet);
 }
 
+int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t num, int32_t &startUniqueNumber)
+{
+    if (num == 0) {
+        return E_OK;
+    }
+    string typeString;
+    switch (type) {
+        case MediaType::MEDIA_TYPE_IMAGE:
+            typeString = DEFAULT_IMAGE_NAME;
+            break;
+        case MediaType::MEDIA_TYPE_VIDEO:
+            typeString = DEFAULT_VIDEO_NAME;
+            break;
+        case MediaType::MEDIA_TYPE_AUDIO:
+            typeString = DEFAULT_AUDIO_NAME;
+            break;
+        default:
+            MEDIA_ERR_LOG("This type %{public}d can not get real name", type);
+            return E_INVALID_VALUES;
+    }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    const string updateSql = "UPDATE " + ASSET_UNIQUE_NUMBER_TABLE + " SET " + UNIQUE_NUMBER +
+        "=" + UNIQUE_NUMBER + "+" + to_string(num) + " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
+    const string querySql = "SELECT " + UNIQUE_NUMBER + " FROM " + ASSET_UNIQUE_NUMBER_TABLE +
+        " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
+    lock_guard<mutex> lock(g_uniqueNumberLock);
+    int32_t errCode = rdbStore->ExecuteSql(updateSql);
+    if (errCode < 0) {
+        MEDIA_ERR_LOG("CreateAssetUniqueIds ExecuteSql err, ret=%{public}d", errCode);
+        return errCode;
+    }
+    auto resultSet = rdbStore->QuerySql(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("CreateAssetUniqueIds resultSet is null");
+        return E_HAS_DB_ERROR;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("CreateAssetUniqueIds first row empty");
+        resultSet->Close();
+        return E_HAS_DB_ERROR;
+    }
+    int32_t endUniqueNumber = GetInt32Val(UNIQUE_NUMBER, resultSet);
+    resultSet->Close();
+    startUniqueNumber = endUniqueNumber - num + 1;
+    MEDIA_INFO_LOG("CreateAssetUniqueIds type: %{public}d, num: %{public}d, startUniqueNumber: %{public}d",
+        type, num, startUniqueNumber);
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::CreateAssetRealName(int32_t fileId, int32_t mediaType,
     const string &extension, string &name)
 {
@@ -2204,6 +2256,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_OWNER_ALBUM_ID, { IsInt32 } },
     { PhotoColumn::PHOTO_CE_AVAILABLE, { IsInt32 } },
     { PhotoColumn::SUPPORTED_WATERMARK_TYPE, { IsInt32 } },
+    { PhotoColumn::PHOTO_IS_AUTO, { IsInt32 } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)

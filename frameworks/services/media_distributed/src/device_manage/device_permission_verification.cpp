@@ -38,25 +38,6 @@ bool DevicePermissionVerification::CheckPermission(const std::string &udid)
     return ReqDestDevSecLevel(udid);
 }
 
-void from_json(const nlohmann::json &jsonObject, TrustedRelationshipGroupInfo &groupInfo)
-{
-    if (jsonObject.find(FIELD_GROUP_NAME) != jsonObject.end()) {
-        groupInfo.groupName = jsonObject.at(FIELD_GROUP_NAME).get<std::string>();
-    }
-
-    if (jsonObject.find(FIELD_GROUP_ID) != jsonObject.end()) {
-        groupInfo.groupId = jsonObject.at(FIELD_GROUP_ID).get<std::string>();
-    }
-
-    if (jsonObject.find(FIELD_GROUP_OWNER) != jsonObject.end()) {
-        groupInfo.groupOwner = jsonObject.at(FIELD_GROUP_OWNER).get<std::string>();
-    }
-
-    if (jsonObject.find(FIELD_GROUP_TYPE) != jsonObject.end()) {
-        groupInfo.groupType = jsonObject.at(FIELD_GROUP_TYPE).get<int32_t>();
-    }
-}
-
 bool DevicePermissionVerification::QueryTrustedRelationship(const std::string &udid)
 {
     int ret = InitDeviceAuthService();
