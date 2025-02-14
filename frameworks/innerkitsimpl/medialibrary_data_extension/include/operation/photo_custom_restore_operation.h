@@ -126,7 +126,7 @@ private:
     void ReportCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
     int32_t MoveLivePhoto(const string &originFilePath, const string &filePath);
     void DeleteDatabaseRecord(int32_t fileId);
-    int32_t GetAlbumUriSubType(int32_t subType, string &albumUri);
+    int32_t GetAlbumUriBySubType(int32_t subType, string &albumUri);
 
 private:
     std::atomic<bool> isRunning_{false};
