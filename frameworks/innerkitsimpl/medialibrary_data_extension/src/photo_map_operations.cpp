@@ -175,8 +175,7 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
     if (values.empty()) {
         return E_DB_FAIL;
     }
-    vector<string> uris;
-    std::vector<ValuesBucket> insertValues;
+
     bool isValid = false;
     int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
     if (!isValid || albumId <= 0) {
@@ -184,7 +183,9 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
     }
 
     MEDIA_INFO_LOG("Add highlight assets, id is %{puiblic}d", albumId);
-    for (auto value: values) {
+    vector<string> uris;
+    std::vector<ValuesBucket> insertValues;
+    for (auto value : values) {
         bool isValidValue = false;
         std::string assetUri = value.Get(PhotoMap::ASSET_ID, isValidValue);
         uris.push_back(assetUri);
@@ -210,7 +211,7 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { to_string(albumId) });
 
     auto watch = MediaLibraryNotify::GetInstance();
-    for (auto uri: uris) {
+    for (auto uri : uris) {
         watch->Notify(MediaFileUtils::Encode(uri), NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
     }
     return ret;
