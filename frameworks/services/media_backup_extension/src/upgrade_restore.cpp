@@ -731,6 +731,12 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     }
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
+    info.resolution = GetStringVal(GALLERY_RESOLUTION, resultSet);
+    // For cloud data, prioritize using resolution parsing to obtain the width and height.
+    // If parsing fails, set both width and height to 0
+    if (info.localMediaId == -1) {
+        BackupFileUtils::ParseResolution(info.resolution, info.width, info.height);
+    }
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
     info.firstUpdateTime = GetInt64Val(GALLERY_FIRST_UPDATE_TIME, resultSet);
