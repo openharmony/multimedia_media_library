@@ -1605,7 +1605,7 @@ static void MtpPacketToolGetUInt128Test(const uint8_t* data, size_t size)
 static void MtpPacketToolGetInt8Test(const uint8_t* data, size_t size)
 {
     const int32_t int8Count = 2;
-    if (data == nullptr || size < sizeof(uint8_t) * int8Count) {
+    if (data == nullptr || size < sizeof(int8_t) * int8Count) {
         return;
     }
     int32_t offset = 0;
