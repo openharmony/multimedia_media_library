@@ -80,7 +80,7 @@ int64_t MtpStorageManager::GetFreeSize(const std::string &path)
         return 0;
     }
 
-    return info.free;
+    return info.available;
 }
 
 void MtpStorageManager::AddStorage(shared_ptr<Storage> &storage)

@@ -3189,6 +3189,16 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddIsAutoColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_IS_AUTO + " INT DEFAULT 0 NOT NULL",
+    };
+    MEDIA_INFO_LOG("start add is_auto column for auto cloud enhancement");
+    ExecSqls(sqls, store);
+}
+
 static void AddThumbnailReady(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4165,6 +4175,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_HIGHLIGHT_SUBTITLE) {
         AddHighlightUseSubtitle(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_AUTO) {
+        AddIsAutoColumns(store);
     }
 
     if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {

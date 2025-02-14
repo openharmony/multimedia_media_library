@@ -57,6 +57,10 @@ using ClientDeletePenddingTask = void (*)(Pendding_Task* taskIdList, uint32_t si
 using ClientStopService = int32_t (*)(MediaEnhanceClientHandle* client);
 using ClientCancelTask = int32_t (*)(MediaEnhanceClientHandle* client, const char* taskId);
 using ClientRemoveTask = int32_t (*)(MediaEnhanceClientHandle* client, const char* taskId);
+using ClientPauseAllTasks = int32_t (*)(MediaEnhanceClientHandle* client,
+                                  MediaEnhanceBundleHandle* bundle);
+using ClientResumeAllTasks = int32_t (*)(MediaEnhanceClientHandle* client,
+                                  MediaEnhanceBundleHandle* bundle);
 
 CreateMCEClient createMCEClientFunc = nullptr;
 DestroyMCEClient destroyMCEClientFunc = nullptr;
@@ -70,6 +74,8 @@ ClientDeletePenddingTask clientDeletePenddingTask = nullptr;
 ClientStopService clientStopServiceFunc = nullptr;
 ClientCancelTask clientCancelTaskFunc = nullptr;
 ClientRemoveTask clientRemoveTaskFunc = nullptr;
+ClientPauseAllTasks clientPauseAllTasksFunc = nullptr;
+ClientResumeAllTasks clientResumeAllTasksFunc = nullptr;
 
 CreateMCEBundle createMCEBundleFunc = nullptr;
 DestroyMCEBundle destroyMCEBundleFunc = nullptr;
@@ -162,6 +168,20 @@ void EnhancementServiceAdapter::TaskFuncInit()
         "MediaEnhanceClient_RemoveTask");
     if (clientRemoveTaskFunc == nullptr) {
         MEDIA_ERR_LOG("MediaEnhanceClient_RemoveTask dlsym failed. error:%{public}s", dlerror());
+        return;
+    }
+
+    clientPauseAllTasksFunc = (ClientPauseAllTasks)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        "MediaEnhanceClient_PauseAllTasks");
+    if (clientPauseAllTasksFunc == nullptr) {
+        MEDIA_ERR_LOG("MediaEnhanceClient_PauseAllTasks dlsym failed.error:%{public}s", dlerror());
+        return;
+    }
+
+    clientResumeAllTasksFunc = (ClientResumeAllTasks)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
+        "MediaEnhanceClient_ResumeAllTasks");
+    if (clientResumeAllTasksFunc == nullptr) {
+        MEDIA_ERR_LOG("MediaEnhanceClient_ResumeAllTasks dlsym failed.error:%{public}s", dlerror());
         return;
     }
 }
@@ -269,6 +289,8 @@ EnhancementServiceAdapter::~EnhancementServiceAdapter()
     bundleHandlePutIntFunc = nullptr;
     bundleHandlePutStringFunc = nullptr;
     bundleDeleteRawData = nullptr;
+    clientPauseAllTasksFunc = nullptr;
+    clientResumeAllTasksFunc = nullptr;
     DestroyEnhancementClient();
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
@@ -356,6 +378,15 @@ int32_t EnhancementServiceAdapter::LoadEnhancementService()
         SetResultCallback();
     }
     return E_OK;
+}
+
+bool EnhancementServiceAdapter::IsConnected()
+{
+    if (clientWrapper == nullptr) {
+        MEDIA_WARN_LOG("EnhancementServiceAdapter get mediaEnhanceClient error, make client pointer again");
+        InitEnhancementClient(MediaEnhance_TASK_TYPE::TYPE_CAMERA);
+    }
+    return IsConnected(clientWrapper);
 }
 
 MediaEnhanceBundleHandle* EnhancementServiceAdapter::CreateBundle()
@@ -559,6 +590,42 @@ int32_t EnhancementServiceAdapter::CancelAllTasks()
         return E_ERR;
     }
     return clientStopServiceFunc(clientWrapper);
+}
+
+int32_t EnhancementServiceAdapter::PauseAllTasks(MediaEnhanceBundleHandle* bundle)
+{
+    int32_t ret = LoadEnhancementService();
+    if (ret != E_OK) {
+        return ret;
+    }
+    if (clientPauseAllTasksFunc == nullptr) {
+        clientPauseAllTasksFunc = (ClientPauseAllTasks)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
+            "MediaEnhanceClient_PauseAllTasks");
+    }
+    if (clientPauseAllTasksFunc == nullptr) {
+        MEDIA_ERR_LOG("MediaEnhanceClient_PauseAllTasks dlsym failed. error:%{public}s", dlerror());
+        return E_ERR;
+    }
+    MEDIA_INFO_LOG("MediaEnhanceClient_PauseAllTasks success");
+    return clientPauseAllTasksFunc(clientWrapper, bundle);
+}
+
+int32_t EnhancementServiceAdapter::ResumeAllTasks(MediaEnhanceBundleHandle* bundle)
+{
+    int32_t ret = LoadEnhancementService();
+    if (ret != E_OK) {
+        return ret;
+    }
+    if (clientResumeAllTasksFunc == nullptr) {
+        clientResumeAllTasksFunc = (ClientResumeAllTasks)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
+            "MediaEnhanceClient_ResumeAllTasks");
+    }
+    if (clientResumeAllTasksFunc == nullptr) {
+        MEDIA_ERR_LOG("MediaEnhanceClient_ResumeAllTasks dlsym failed. error:%{public}s", dlerror());
+        return E_ERR;
+    }
+    MEDIA_INFO_LOG("MediaEnhanceClient_ResumeAllTasks success");
+    return clientResumeAllTasksFunc(clientWrapper, bundle);
 }
 
 int32_t EnhancementServiceAdapter::GetPendingTasks(vector<std::string> &taskIdList)

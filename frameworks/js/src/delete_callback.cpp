@@ -38,6 +38,16 @@ DeleteCallback::DeleteCallback(napi_env env)
 }
 #endif
 
+DeleteCallback::~DeleteCallback()
+{
+    napi_delete_reference(this->env_, this->callbackRef);
+    this->env_ = nullptr;
+    this->callbackRef = nullptr;
+#ifdef HAS_ACE_ENGINE_PART
+    this->uiContent = nullptr;
+#endif
+}
+
 void DeleteCallback::OnRelease(int32_t releaseCode)
 {
     CloseModalUIExtension();

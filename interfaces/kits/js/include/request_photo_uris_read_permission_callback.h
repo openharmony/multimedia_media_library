@@ -31,7 +31,7 @@ namespace Media {
 class RequestPhotoUrisReadPermissionCallback {
 public:
     explicit RequestPhotoUrisReadPermissionCallback(napi_env env, Ace::UIContent *uiContent);
-    virtual ~RequestPhotoUrisReadPermissionCallback() = default;
+    virtual ~RequestPhotoUrisReadPermissionCallback();
     void OnRelease(int32_t releaseCode);
     void OnResult(int32_t resultCode, const OHOS::AAFwk::Want &want);
     void OnReceive(const OHOS::AAFwk::WantParams &request);
