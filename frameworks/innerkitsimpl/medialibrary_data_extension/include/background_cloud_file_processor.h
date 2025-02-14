@@ -24,6 +24,7 @@
 #include "timer.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "media_file_uri.h"
 
 namespace OHOS {
 namespace Media {
@@ -50,7 +51,7 @@ public:
 
 private:
     typedef struct {
-        std::vector<std::string> paths;
+        std::vector<std::string> uris;
         MediaType mediaType;
     } DownloadFiles;
 

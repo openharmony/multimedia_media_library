@@ -121,24 +121,24 @@ void BackgroundCloudFileProcessor::ClearDownloadCnt()
     prefs->FlushSync();
 }
 
-void BackgroundCloudFileProcessor::UpdateDownloadCnt(std::string path, int64_t cnt)
+void BackgroundCloudFileProcessor::UpdateDownloadCnt(std::string uri, int64_t cnt)
 {
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DOWNLOAD_CNT_CONFIG, errCode);
     CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
-    prefs->PutLong(path, cnt);
+    prefs->PutLong(uri, cnt);
     prefs->FlushSync();
 }
 
-int64_t BackgroundCloudFileProcessor::GetDownloadCnt(std::string path)
+int64_t BackgroundCloudFileProcessor::GetDownloadCnt(std::string uri)
 {
     int32_t errCode;
     int64_t defaultCnt = 0;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DOWNLOAD_CNT_CONFIG, errCode);
     CHECK_AND_RETURN_RET_LOG(prefs, defaultCnt, "get preferences error: %{public}d", errCode);
-    return prefs->GetLong(path, defaultCnt);
+    return prefs->GetLong(uri, defaultCnt);
 }
 
 void BackgroundCloudFileProcessor::DownloadCloudFiles()
@@ -155,7 +155,7 @@ void BackgroundCloudFileProcessor::DownloadCloudFiles()
 
     DownloadFiles downloadFiles;
     ParseDownloadFiles(resultSet, downloadFiles);
-    CHECK_AND_RETURN_LOG(!downloadFiles.paths.empty(), "No cloud files need to be downloaded");
+    CHECK_AND_RETURN_LOG(!downloadFiles.uris.empty(), "No cloud files need to be downloaded");
     int32_t ret = AddDownloadTask(downloadFiles);
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to add download task! err: %{public}d", ret);
 }
@@ -273,6 +273,7 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFi
     } else if ((freeRatio >= DEVICE_STORAGE_FREE_RATIO_LOW) && (freeRatio < DEVICE_STORAGE_FREE_RATIO_HIGH)) {
         downloadNum = DOWNLOAD_NUM_FREE_RATIO_LOW;
         downloadMilliSecond = DOWNLOAD_DAY_FREE_RATIO_LOW * ONEDAY_TO_SEC * SEC_TO_MSEC;
+        MEDIA_INFO_LOG("freeRatio is %{public}.2f, available disk is low", freeRatio);
     } else {
         MEDIA_WARN_LOG("freeRatio is %{public}.2f less than %{public}.2f, stop downloading cloud files",
                        freeRatio, DEVICE_STORAGE_FREE_RATIO_LOW);
@@ -281,7 +282,8 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFi
 
     auto currentMilliSecond = MediaFileUtils::UTCTimeMilliSeconds();
 
-    string sql = "SELECT " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::PHOTO_POSITION +
+    string sql = "SELECT " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::PHOTO_POSITION + ", " +
+        PhotoColumn::MEDIA_ID + ", " + PhotoColumn::MEDIA_NAME +
         " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
         PhotoColumn::PHOTO_CLEAN_FLAG + " = " + std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
         " AND " + PhotoColumn::MEDIA_FILE_PATH + " IS NOT NULL AND " + PhotoColumn::MEDIA_FILE_PATH + " != '' AND " +
@@ -292,20 +294,20 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFi
     return uniStore->QuerySql(sql);
 }
 
-void BackgroundCloudFileProcessor::CheckAndUpdateDownloadCnt(std::string path, int64_t cnt)
+void BackgroundCloudFileProcessor::CheckAndUpdateDownloadCnt(std::string uri, int64_t cnt)
 {
     bool updateDownloadCntFlag = true;
     unique_lock<mutex> downloadLock(downloadResultMutex_);
-    if (downloadResult_.find(path) != downloadResult_.end()) {
-        if ((downloadResult_[path] == DownloadStatus::NETWORK_UNAVAILABLE) ||
-            (downloadResult_[path] == DownloadStatus::STORAGE_FULL)) {
+    if (downloadResult_.find(uri) != downloadResult_.end()) {
+        if ((downloadResult_[uri] == DownloadStatus::NETWORK_UNAVAILABLE) ||
+            (downloadResult_[uri] == DownloadStatus::STORAGE_FULL)) {
                 updateDownloadCntFlag = false;
             }
     }
     downloadLock.unlock();
 
     if (updateDownloadCntFlag) {
-        UpdateDownloadCnt(path, cnt + 1);
+        UpdateDownloadCnt(uri, cnt + 1);
     }
 }
 
@@ -317,24 +319,36 @@ void BackgroundCloudFileProcessor::ParseDownloadFiles(std::shared_ptr<NativeRdb:
         std::string path =
             get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
         if (path.empty()) {
-            MEDIA_WARN_LOG("Failed to get cloud file uri!");
+            MEDIA_WARN_LOG("Failed to get cloud file path!");
             continue;
         }
 
         int32_t position =
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_POSITION, resultSet, TYPE_INT32));
-        if (position == static_cast<int32_t>(POSITION_CLOUD)) {
-            int64_t cnt = GetDownloadCnt(path);
-            if (cnt < DOWNLOAD_FAIL_MAX_TIMES) {
-                downloadLatestFinished = false;
-                downloadFiles.paths.clear();
-                downloadFiles.paths.push_back(path);
-                downloadFiles.mediaType = MEDIA_TYPE_IMAGE;
+        if (position != static_cast<int32_t>(POSITION_CLOUD))
+            continue;
 
-                CheckAndUpdateDownloadCnt(path, cnt);
+        std::string uri = "";
+        int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_ID, resultSet, TYPE_INT32));
 
-                return;
-            }
+        std::string displayName =
+            get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_NAME, resultSet, TYPE_STRING));
+        if (displayName.empty()) {
+            MEDIA_WARN_LOG("Failed to get cloud file displayName!");
+            continue;
+        }
+        uri = MediaFileUri::GetPhotoUri(to_string(fileId), path, displayName);
+
+        int64_t cnt = GetDownloadCnt(uri);
+        if (cnt < DOWNLOAD_FAIL_MAX_TIMES) {
+            downloadLatestFinished = false;
+            downloadFiles.uris.clear();
+            downloadFiles.uris.push_back(uri);
+            downloadFiles.mediaType = MEDIA_TYPE_IMAGE;
+
+            CheckAndUpdateDownloadCnt(uri, cnt);
+
+            return;
         }
     }
 
@@ -389,21 +403,21 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
     auto *taskData = static_cast<DownloadCloudFilesData *>(data);
     auto downloadFiles = taskData->downloadFiles_;
 
-    MEDIA_DEBUG_LOG("Try to download %{public}zu cloud files.", downloadFiles.paths.size());
+    MEDIA_DEBUG_LOG("Try to download %{public}zu cloud files.", downloadFiles.uris.size());
 
     unique_lock<mutex> downloadLock(downloadResultMutex_);
-    for (const auto &path : downloadFiles.paths) {
-        downloadResult_[path] = DownloadStatus::INIT;
-        MEDIA_INFO_LOG("Start to download cloud file, path: %{public}s", MediaFileUtils::DesensitizePath(path).c_str());
+    for (const auto &uri : downloadFiles.uris) {
+        downloadResult_[uri] = DownloadStatus::INIT;
+        MEDIA_INFO_LOG("Start to download cloud file, uri: %{public}s", MediaFileUtils::DesensitizePath(uri).c_str());
     }
     downloadLock.unlock();
 
-    removeFinishedResult(downloadFiles.paths);
+    removeFinishedResult(downloadFiles.uris);
 
     std::shared_ptr<BackgroundCloudFileDownloadCallback> downloadCallback = nullptr;
     downloadCallback = std::make_shared<BackgroundCloudFileDownloadCallback>();
     CHECK_AND_RETURN_LOG(downloadCallback != nullptr, "downloadCallback is null.");
-    int32_t ret = CloudSyncManager::GetInstance().StartFileCache(downloadFiles.paths, downloadId_,
+    int32_t ret = CloudSyncManager::GetInstance().StartFileCache(downloadFiles.uris, downloadId_,
         FieldKey::FIELDKEY_CONTENT, downloadCallback);
     if (ret != E_OK || downloadId_ == DOWNLOAD_ID_DEFAULT) {
         MEDIA_ERR_LOG("failed to StartFileCache, ret: %{public}d, downloadId_: %{public}s.",
@@ -413,7 +427,7 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
     }
 
     MEDIA_INFO_LOG("Success, downloadId: %{public}d, downloadNum: %{public}d.",
-        static_cast<int32_t>(downloadId_), static_cast<int32_t>(downloadFiles.paths.size()));
+        static_cast<int32_t>(downloadId_), static_cast<int32_t>(downloadFiles.uris.size()));
 
     lock_guard<recursive_mutex> lock(mutex_);
 
@@ -431,7 +445,6 @@ void BackgroundCloudFileProcessor::StopDownloadFiles()
         int32_t ret = CloudSyncManager::GetInstance().StopFileCache(downloadId_);
         MEDIA_INFO_LOG("Stop downloading cloud file, err: %{public}d, downloadId_: %{public}d",
             ret, static_cast<int32_t>(downloadId_));
-        downloadId_ = DOWNLOAD_ID_DEFAULT;
     }
 }
 
@@ -439,7 +452,7 @@ void BackgroundCloudFileProcessor::HandleSuccessCallback(const DownloadProgressO
 {
     lock_guard<mutex> downloadLock(downloadResultMutex_);
     if (progress.downloadId != downloadId_ || downloadResult_.find(progress.path) == downloadResult_.end()) {
-        MEDIA_WARN_LOG("downloadId or path is err, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
+        MEDIA_WARN_LOG("downloadId or uri is err, uri: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
             MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
             to_string(downloadId_).c_str());
         return;
@@ -447,20 +460,20 @@ void BackgroundCloudFileProcessor::HandleSuccessCallback(const DownloadProgressO
 
     downloadResult_[progress.path] = DownloadStatus::SUCCESS;
 
-    MEDIA_INFO_LOG("download success, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
+    MEDIA_INFO_LOG("download success, uri: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
 }
 
 void BackgroundCloudFileProcessor::HandleFailedCallback(const DownloadProgressObj& progress)
 {
     lock_guard<mutex> downloadLock(downloadResultMutex_);
     if (progress.downloadId != downloadId_ || downloadResult_.find(progress.path) == downloadResult_.end()) {
-        MEDIA_WARN_LOG("downloadId or path is err, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
+        MEDIA_WARN_LOG("downloadId or uri is err, uri: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
             MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
             to_string(downloadId_).c_str());
         return;
     }
 
-    MEDIA_ERR_LOG("download failed, error type: %{public}d, path: %{public}s.", progress.downloadErrorType,
+    MEDIA_ERR_LOG("download failed, error type: %{public}d, uri: %{public}s.", progress.downloadErrorType,
         MediaFileUtils::DesensitizePath(progress.path).c_str());
     switch (progress.downloadErrorType) {
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NETWORK_UNAVAILABLE): {
@@ -483,14 +496,15 @@ void BackgroundCloudFileProcessor::HandleStoppedCallback(const DownloadProgressO
 {
     lock_guard<mutex> downloadLock(downloadResultMutex_);
     if (progress.downloadId != downloadId_ || downloadResult_.find(progress.path) == downloadResult_.end()) {
-        MEDIA_WARN_LOG("downloadId or path is err, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
+        MEDIA_WARN_LOG("downloadId or uri is err, uri: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
             MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
             to_string(downloadId_).c_str());
         return;
     }
 
     downloadResult_[progress.path] = DownloadStatus::STOPPED;
-    MEDIA_ERR_LOG("download stopped, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
+    UpdateDownloadCnt(progress.path, 0);
+    MEDIA_ERR_LOG("download stopped, uri: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
 }
 
 void BackgroundCloudFileProcessor::SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo)

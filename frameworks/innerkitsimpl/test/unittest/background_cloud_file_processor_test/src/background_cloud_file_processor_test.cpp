@@ -179,11 +179,11 @@ std::vector<std::string> QueryCurDownloadFiles()
 
     BackgroundCloudFileProcessor::DownloadFiles downloadFiles;
     BackgroundCloudFileProcessor::ParseDownloadFiles(resultSet, downloadFiles);
-    if (downloadFiles.paths.empty()) {
+    if (downloadFiles.uris.empty()) {
         MEDIA_INFO_LOG("No cloud files need to be downloaded");
         return curDownloadFiles;
     }
-    return downloadFiles.paths;
+    return downloadFiles.uris;
 }
 
 void BackgroundCloudFileProcessorTest::SetUpTestCase()
