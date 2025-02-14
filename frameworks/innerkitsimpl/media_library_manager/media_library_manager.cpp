@@ -782,6 +782,7 @@ static int32_t GetAstcsByOffset(const vector<string> &uriBatch, vector<vector<ui
     int32_t start = 0;
     int32_t count = 0;
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    CHECK_AND_RETURN_RET_LOG(!timeIdBatch.empty(), E_INVALID_URI, "GetTimeIdFromUri failed");
     MEDIA_INFO_LOG("GetAstcsByOffset image batch size: %{public}zu, begin: %{public}s, end: %{public}s,"
         "start: %{public}d, count: %{public}d", uriBatch.size(), timeIdBatch.back().c_str(),
         timeIdBatch.front().c_str(), start, count);
@@ -821,6 +822,7 @@ static int32_t GetAstcsBatch(const vector<string> &uriBatch, vector<vector<uint8
     }
     vector<string> timeIdBatch;
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch);
+    CHECK_AND_RETURN_RET_LOG(!timeIdBatch.empty(), E_INVALID_URI, "GetTimeIdFromUri failed");
     MEDIA_INFO_LOG("GetAstcsBatch image batch size: %{public}zu, begin: %{public}s, end: %{public}s",
         uriBatch.size(), timeIdBatch.back().c_str(), timeIdBatch.front().c_str());
 
