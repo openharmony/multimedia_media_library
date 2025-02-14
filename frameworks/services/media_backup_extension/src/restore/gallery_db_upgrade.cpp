@@ -43,6 +43,7 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     int32_t ret = handler.OnUpgrade(store, 0, 0);
     MEDIA_INFO_LOG("GalleryDbUpgrade::OnUpgrade end, ret: %{public}d", ret);
     this->AddPhotoQualityOfGalleryMedia(store);
+    this->AddResolutionOfGalleryMedia(store);
     this->AddRelativeBucketIdOfGalleryAlbum(store);
     this->GarbageAlbumUpgrade(store);
     this->AddIndexOfGalleryAlbum(store);
@@ -63,6 +64,22 @@ int32_t GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &sto
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia failed,"
         "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
     MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia success");
+    return ret;
+}
+
+/**
+ * @brief Add resolution of gallery_media table in gallery.db.
+ */
+ int32_t GalleryDbUpgrade::AddResolutionOfGalleryMedia(NativeRdb::RdbStore &store)
+{
+    if (this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "resolution")) {
+        return NativeRdb::E_OK;
+    }
+    std::string sql = this->SQL_GALLERY_MEDIA_TABLE_ADD_RESOLUTION;
+    int32_t ret = store.ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GalleryDbUpgrade::AddResolutionOfGalleryMedia failed,"
+         "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddResolutionOfGalleryMedia success");
     return ret;
 }
 

@@ -108,6 +108,7 @@ const std::string GALLERY_ALBUM_ID = "albumId";
 const std::string GALLERY_UNIQUE_ID = "uniqueId";
 const std::string GALLERY_LOCAL_THUMB_PATH_ID = "localThumbPath";
 const std::string GALLERY_LOCAL_BIG_THUMB_PATH_ID = "localBigThumbPath";
+const std::string GALLERY_RESOLUTION = "resolution";
 
 // dentryInfo fileType
 const std::string DENTRY_INFO_ORIGIN = "CONTENT";
@@ -165,6 +166,7 @@ const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
 const std::string STAT_TYPE_TOTAL_SIZE = "totalSize";
 const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
+const std::string STAT_TYPE_GALLERY_DATA = "galleryData";
 const std::string STAT_TYPE_UPDATE = "update";
 const std::string STAT_TYPE_THUMBNAIL = "thumbnail";
 const std::string STAT_TYPE_OTHER = "other";
@@ -340,6 +342,7 @@ struct FileInfo {
     std::string uniqueId;
     std::string localThumbPath;
     std::string localBigThumbPath;
+    std::string resolution;
 
     int32_t thumbType {-1};
     int32_t fileIdOld {-1};
