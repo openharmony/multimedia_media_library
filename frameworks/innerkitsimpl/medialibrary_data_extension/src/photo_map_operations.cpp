@@ -187,8 +187,8 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
         uris.push_back(assetUri);
         int32_t photoId = std::stoi(MediaFileUri::GetPhotoId(assetUri));
         DataShare::DataShareValuesBucket pair;
-        pair.Put(PhotoMap::MAP_ALBUM, albumId);
-        pair.Put(PhotoMap::MAP_ASSET, asset);
+        pair.Put(PhotoMap::ALBUM_ID, albumId);
+        pair.Put(PhotoMap::ASSET_ID, asset);
         ValuesBucket valueInsert = RdbDataShareAdapter::RdbUtils::ToValuesBucket(pair);
         insertValues.push_back(valueInsert);
     }
