@@ -139,6 +139,7 @@ public:
     static const std::string PHOTO_CHECK_FLAG EXPORT;
     static const std::string STAGE_VIDEO_TASK_STATUS EXPORT;
     static const std::string PHOTO_IS_AUTO EXPORT;
+    static const std::string PHOTO_MEDIA_SUFFIX EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;

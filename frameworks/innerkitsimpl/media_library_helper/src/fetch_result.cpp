@@ -95,6 +95,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_QUALITY, TYPE_INT32},
         { PhotoColumn::PHOTO_CLOUD_ID, TYPE_STRING},
         { PhotoColumn::PHOTO_IS_AUTO, TYPE_INT32},
+        { PhotoColumn::PHOTO_MEDIA_SUFFIX, TYPE_STRING},
     };
     return RESULT_TYPE_MAP;
 }

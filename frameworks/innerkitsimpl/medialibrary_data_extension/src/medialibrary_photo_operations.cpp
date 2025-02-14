@@ -2012,6 +2012,7 @@ int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, std:
     updateValues.PutString(MediaColumn::MEDIA_FILE_PATH, modifyFilePath);
     updateValues.PutString(MediaColumn::MEDIA_NAME, modifyDisplayName);
     updateValues.PutString(MediaColumn::MEDIA_MIME_TYPE, mimeType);
+    updateValues.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(modifyDisplayName));
     updateCmd.SetValueBucket(updateValues);
     int32_t updateRows = -1;
     int32_t errCode = rdbStore->Update(updateCmd, updateRows);
