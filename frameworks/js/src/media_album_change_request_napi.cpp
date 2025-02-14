@@ -505,8 +505,9 @@ napi_value MediaAlbumChangeRequestNapi::JSAddAssets(napi_env env, napi_callback_
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
     CHECK_COND_WITH_MESSAGE(env,
-        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only user album can add assets");
+        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only user and highlight album can add assets");
 
     vector<string> assetUriArray;
     CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
@@ -1056,20 +1057,38 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     int32_t albumId = photoAlbum->GetAlbumId();
     vector<DataShare::DataShareValuesBucket> valuesBuckets;
-    for (const auto& asset : changeRequest->GetAddAssetArray()) {
-        DataShare::DataShareValuesBucket pair;
-        pair.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
-        pair.Put(PhotoColumn::MEDIA_ID, asset);
-        valuesBuckets.push_back(pair);
+    string batchInsertUri;
+    if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
+        photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+        NAPI_INFO_LOG("Add Assets on highlight album");
+        for (const auto& asset : changeRequest->GetAddAssetArray()) {
+            DataShare::DataShareValuesBucket pair;
+            pair.Put(MAP_ALBUM, albumId);
+            pair.Put(MAP_ASSET, asset);
+            valuesBuckets.push_back(pair);
+        }
+        batchInsertUri = PAH_INSERT_HIGHLIGHT_ALBUM;
+    } else {
+        for (const auto& asset : changeRequest->GetAddAssetArray()) {
+            DataShare::DataShareValuesBucket pair;
+            pair.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+            pair.Put(PhotoColumn::MEDIA_ID, asset);
+            valuesBuckets.push_back(pair);
+        }
+        batchInsertUri = PAH_PHOTO_ALBUM_ADD_ASSET;
     }
 
-    Uri addAssetsUri(PAH_PHOTO_ALBUM_ADD_ASSET);
+    Uri addAssetsUri(batchInsertUri);
     int ret = UserFileClient::BatchInsert(addAssetsUri, valuesBuckets);
     changeRequest->ClearAddAssetArray();
     if (ret < 0) {
         context.SaveError(ret);
         NAPI_ERR_LOG("Failed to add assets into album %{public}d, err: %{public}d", albumId, ret);
         return false;
+    }
+    if (batchInsertUri == PAH_INSERT_HIGHLIGHT_ALBUM) {
+        NAPI_INFO_LOG("Add %{public}d asset(s) into highlight album %{public}d", ret, albumId);
+        return true;
     }
 
     NAPI_INFO_LOG("Add %{public}d asset(s) into album %{public}d", ret, albumId);
