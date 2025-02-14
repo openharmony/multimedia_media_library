@@ -506,7 +506,7 @@ napi_value MediaAlbumChangeRequestNapi::JSAddAssets(napi_env env, napi_callback_
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+            PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only user and highlight album can add assets");
 
     vector<string> assetUriArray;
@@ -1060,7 +1060,7 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     string batchInsertUri;
     if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT ||
         photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-        NAPI_INFO_LOG("Addassets on highlight album");
+        NAPI_INFO_LOG("Add Assets on highlight album");
         for (const auto& asset : changeRequest->GetAddAssetArray()) {
             DataShare::DataShareValuesBucket pair;
             pair.Put(MAP_ALBUM, albumId);
