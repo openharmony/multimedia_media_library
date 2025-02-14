@@ -910,6 +910,8 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         return PhotoMapOperations::AddPhotoAssets(values);
     } else if (cmd.GetOprnObject() == OperationObject::ANALYSIS_PHOTO_MAP) {
         return PhotoMapOperations::AddAnaLysisPhotoAssets(values);
+    } else if (cmd.GetOprnObject() == OperationObject::ADD_ASSET_HIGHLIGHT_ALBUM) {
+        return PhotoMapOperations::AddHighlightPhotoAssets(values);
     } else if (cmd.GetOprnObject() == OperationObject::APP_URI_PERMISSION_INNER) {
         int32_t ret = UriSensitiveOperations::GrantUriSensitive(cmd, values);
         CHECK_AND_RETURN_RET(ret >= 0, ret);
