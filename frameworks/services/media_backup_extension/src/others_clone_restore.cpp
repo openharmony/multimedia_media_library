@@ -233,6 +233,7 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
     // use owner_album_id to mark the album id which the photo is in.
     values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, fileInfo.ownerAlbumId);
     // only SOURCE album has package_name and owner_package.

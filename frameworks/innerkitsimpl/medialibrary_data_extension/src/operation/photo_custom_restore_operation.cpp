@@ -743,6 +743,7 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
     value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
+    value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
     value.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.mediaType);
     value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
     value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());

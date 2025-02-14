@@ -536,6 +536,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
 
     value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
+    value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
     value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
     if (fileInfo.fileSize != 0) {
