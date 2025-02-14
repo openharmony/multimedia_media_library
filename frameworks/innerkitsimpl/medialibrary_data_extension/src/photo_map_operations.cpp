@@ -172,10 +172,13 @@ static int32_t GetPortraitAlbumIds(const string &albumId, vector<string> &portra
 int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValuesBucket> &values)
 {
     MEDIA_INFO_LOG("Add highlight assets start");
+    if (values.empty()) {
+        return E_DB_FAIL;
+    }
     vector<string> uris;
     std::vector<ValuesBucket> insertValues;
     bool isValid = false;
-    int32_t albumId = value.Get(PhotoMap::ALBUM_ID, isValid);
+    int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
     if (!isValid || albumId <= 0) {
         return E_DB_FAIL;
     }
@@ -188,7 +191,7 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
         int32_t photoId = std::stoi(MediaFileUri::GetPhotoId(assetUri));
         DataShare::DataShareValuesBucket pair;
         pair.Put(PhotoMap::ALBUM_ID, albumId);
-        pair.Put(PhotoMap::ASSET_ID, asset);
+        pair.Put(PhotoMap::ASSET_ID, photoId);
         ValuesBucket valueInsert = RdbDataShareAdapter::RdbUtils::ToValuesBucket(pair);
         insertValues.push_back(valueInsert);
     }
