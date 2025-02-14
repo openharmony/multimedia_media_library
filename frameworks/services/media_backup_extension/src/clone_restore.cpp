@@ -877,6 +877,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
     values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
     values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation); // photos need orientation
