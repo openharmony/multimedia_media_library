@@ -2094,16 +2094,16 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t 
     string typeString;
     switch (type) {
         case MediaType::MEDIA_TYPE_IMAGE:
-            typeString = DEFAULT_IMAGE_NAME;
+            typeString = IMAGE_ASSET_TYPE;
             break;
         case MediaType::MEDIA_TYPE_VIDEO:
-            typeString = DEFAULT_VIDEO_NAME;
+            typeString = VIDEO_ASSET_TYPE;
             break;
         case MediaType::MEDIA_TYPE_AUDIO:
-            typeString = DEFAULT_AUDIO_NAME;
+            typeString = AUDIO_ASSET_TYPE;
             break;
         default:
-            MEDIA_ERR_LOG("This type %{public}d can not get real name", type);
+            MEDIA_ERR_LOG("This type %{public}d can not get unique id", type);
             return E_INVALID_VALUES;
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
