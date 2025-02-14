@@ -459,7 +459,7 @@ void AlbumsRefreshManager::RefreshPhotoAlbums(SyncNotifyInfo &info)
             return;
         }
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            count += GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
+            count += static_cast<uint32_t>(GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet));
         }
         resultSet->Close();
         VariantMap map = {{KEY_TOTAL_PHOTO_COUNT, count}};

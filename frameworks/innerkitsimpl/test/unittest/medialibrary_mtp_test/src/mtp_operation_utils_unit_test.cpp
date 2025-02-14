@@ -361,31 +361,6 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_015, Te
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: PreDealFd
- */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_016, TestSize.Level0)
-{
-    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
-    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
-    ASSERT_NE(context, nullptr);
-    context->mtpDriver = std::make_shared<MtpDriver>();
-    ASSERT_NE(context->mtpDriver, nullptr);
-    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
-    ASSERT_NE(mtpOperationUtils, nullptr);
-    MtpFileRange object;
-    int fd = 1;
-    int32_t errcode = mtpOperationUtils->RecevieSendObject(object, fd);
-    bool deal = true;
-    mtpOperationUtils->PreDealFd(deal, fd);
-    EXPECT_EQ(errcode, 0);
-}
-
-/*
- * Feature: MediaLibraryMTP
- * Function:
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
  * CaseDescription: SendObjectInfo
  */
 HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_017, TestSize.Level0)

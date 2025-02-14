@@ -28,6 +28,8 @@ config("ffi_config") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
+    "include",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
   ]
 
   if (media_library_feature_mtp) {
@@ -47,7 +49,7 @@ config("ffi_config") {
 }
 
 ohos_shared_library("cj_photoaccesshelper_ffi") {
-  configs = [ ":ffi_config" ]
+  public_configs = [ ":ffi_config" ]
 
   include_dirs = [
     "include",

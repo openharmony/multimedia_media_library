@@ -43,9 +43,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
 #include "multistages_capture_manager.h"
-#endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -89,7 +87,7 @@ namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
 const std::string PERM_CLOUD_SYNC_MANAGER = "ohos.permission.CLOUDFILE_SYNC_MANAGER";
-constexpr const char *MTP_DISABLE = "persist.edm.mtp_disable";
+constexpr const char *MTP_DISABLE = "persist.edm.mtp_server_disable";
 static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::PAH_PHOTO,
     OperationObject::PAH_ALBUM,
@@ -189,10 +187,8 @@ void MediaDataShareExtAbility::InitPermissionHandler()
 
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     MultiStagesPhotoCaptureManager::GetInstance().Init();
     MultiStagesVideoCaptureManager::GetInstance().Init();
-#endif
 #ifdef MEDIALIBRARY_MTP_ENABLE
     std::string param(MTP_DISABLE);
     bool mtpDisable = system::GetBoolParameter(param, false);

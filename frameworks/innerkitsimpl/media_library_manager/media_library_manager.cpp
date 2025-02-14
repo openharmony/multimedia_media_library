@@ -187,7 +187,7 @@ string MediaLibraryManager::CreateAsset(const string &displayName)
 
 static bool CheckUri(string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string uriprex = "file://media";
@@ -196,7 +196,7 @@ static bool CheckUri(string &uri)
 
 static bool CheckPhotoUri(const string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string photoUriPrefix = "file://media/Photo/";
@@ -331,7 +331,15 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
     vector<string> &columns)
 {
     if (columnName == MEDIA_DATA_DB_URI) {
-        return GetResultSetFromPhotos(value, columns, token_, sDataShareHelper_);
+        auto resultSet = GetResultSetFromPhotos(value, columns, token_, sDataShareHelper_);
+        if (resultSet == nullptr) {
+            MEDIA_ERR_LOG("resultset is null, reconnect and retry");
+            shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+                DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+            return GetResultSetFromPhotos(value, columns, token_, dataShareHelper);
+        } else {
+            return resultSet;
+        }
     }
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
     DataSharePredicates predicates;
@@ -774,6 +782,7 @@ static int32_t GetAstcsByOffset(const vector<string> &uriBatch, vector<vector<ui
     int32_t start = 0;
     int32_t count = 0;
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    CHECK_AND_RETURN_RET_LOG(!timeIdBatch.empty(), E_INVALID_URI, "GetTimeIdFromUri failed");
     MEDIA_INFO_LOG("GetAstcsByOffset image batch size: %{public}zu, begin: %{public}s, end: %{public}s,"
         "start: %{public}d, count: %{public}d", uriBatch.size(), timeIdBatch.back().c_str(),
         timeIdBatch.front().c_str(), start, count);
@@ -813,6 +822,7 @@ static int32_t GetAstcsBatch(const vector<string> &uriBatch, vector<vector<uint8
     }
     vector<string> timeIdBatch;
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch);
+    CHECK_AND_RETURN_RET_LOG(!timeIdBatch.empty(), E_INVALID_URI, "GetTimeIdFromUri failed");
     MEDIA_INFO_LOG("GetAstcsBatch image batch size: %{public}zu, begin: %{public}s, end: %{public}s",
         uriBatch.size(), timeIdBatch.back().c_str(), timeIdBatch.front().c_str());
 

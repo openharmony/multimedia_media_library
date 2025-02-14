@@ -74,8 +74,10 @@
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
 #include "medialibrary_astc_stat.h"
+#include "photo_mimetype_operation.h"
 #include "photo_other_album_trans_operation.h"
 #include "background_cloud_file_processor.h"
+#include "enhancement_manager.h"
 
 using namespace OHOS::AAFwk;
 
@@ -410,6 +412,11 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         // so we can download lastest images for the subsequent login new account
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
     }
+
+    if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE ||
+        action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
+        EnhancementManager::GetInstance().HandleNetChange(isWifiConnected_, isCellularNetConnected_);
+    }
 }
 
 int64_t MedialibrarySubscriber::GetNowTime()
@@ -605,6 +612,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (watch != nullptr) {
         watch->DoAging();
     }
+    PhotoMimetypeOperation::UpdateInvalidMimeType();
 }
 
 static void PauseBackgroundDownloadCloudMedia()

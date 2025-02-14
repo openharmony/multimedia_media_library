@@ -1392,14 +1392,17 @@ void CloneRestore::RestoreAudio(void)
         AudioColumn::AUDIOS_TABLE);
     CHECK_AND_RETURN_LOG(PrepareCommonColumnInfoMap(AudioColumn::AUDIOS_TABLE, srcColumnInfoMap,
         dstColumnInfoMap), "Prepare common column info failed");
+    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
+    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
+    if (totalNumber <= 0) {
+        return;
+    }
+    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
         MEDIA_INFO_LOG("music dir is not exists!!!");
         MediaFileUtils::CreateDirectory(RESTORE_MUSIC_LOCAL_DIR);
     }
-    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
-    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
-    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -2105,35 +2108,36 @@ void CloneRestore::RestorePortraitClusteringInfo()
         VISION_FACE_TAG_TABLE);
     std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
         EXCLUDED_FACE_TAG_COLUMNS);
+    BackupDatabaseUtils::LeftJoinValues<string>(commonColumns, "vft.");
+    std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
+    BackupDatabaseUtils::ExecuteSQL(mediaRdb_, CREATE_FACE_TAG_INDEX);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, commonColumns);
+        vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, inClause);
         BatchInsertFaceTags(faceTagTbls);
+        if (static_cast<std::int32_t>(faceTagTbls.size()) < QUERY_COUNT) {
+            break;
+        }
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
 }
 
-vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, std::vector<std::string> &commonColumns)
+vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
 {
     vector<FaceTagTbl> result;
-    result.reserve(QUERY_COUNT);
-
-    std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
     std::string querySql = "SELECT DISTINCT " + inClause +
         " FROM " + VISION_FACE_TAG_TABLE + " vft" +
-        " WHERE EXISTS (" +
-        "   SELECT 1" +
-        "   FROM AnalysisAlbum aa" +
-        "   JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
-        "   JOIN Photos ph ON ph.file_id = apm.map_asset" +
-        "   WHERE aa.tag_id = vft.tag_id" +
-        "   AND ph.position IN (1, 3)" +
-        " )";
+        " LEFT JOIN AnalysisAlbum aa ON aa.tag_id = vft.tag_id" +
+        " LEFT JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
+        " LEFT JOIN Photos ph ON ph.file_id = apm.map_asset"
+        " WHERE ph.position IN (1, 3)";
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSet is null.");
-
+    int resultRowCount = 0;
+    resultSet->GetRowCount(resultRowCount);
+    result.reserve(resultRowCount);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FaceTagTbl faceTagTbl;
         ParseFaceTagResultSet(resultSet, faceTagTbl);

@@ -784,7 +784,7 @@ static bool IsDocumentUri(const std::string &uriString)
 
 static void GetType(string &uri, int32_t &type)
 {
-    int pos = uri.find("type=");
+    size_t pos = uri.find("type=");
     if (pos != uri.npos) {
         type = uri[pos + OFFSET] - ZERO_ASCII;
     }
@@ -792,24 +792,16 @@ static void GetType(string &uri, int32_t &type)
 
 int32_t HandleRequestPicture(MediaLibraryCommand &cmd)
 {
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     std::string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
     int32_t fd;
     PictureHandlerService::OpenPicture(fileId, fd);
     return fd;
-#else
-    return E_HAS_FS_ERROR;
-#endif
 }
 
 int32_t HandlePhotoRequestPictureBuffer(MediaLibraryCommand &cmd)
 {
-#ifdef MEDIALIBRARY_FEATURE_TAKE_PHOTO
     std::string fd = cmd.GetQuerySetParam("fd");
     return PictureHandlerService::RequestBufferHandlerFd(fd);
-#else
-    return E_HAS_FS_ERROR;
-#endif
 }
 
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
