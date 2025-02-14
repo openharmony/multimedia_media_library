@@ -160,7 +160,7 @@ static void CheckAccessTokenPermissionExecute(uint32_t tokenId, uint32_t checkFl
     isWritable = checkWriteResult == PermissionState::PERMISSION_GRANTED;
 }
 static void CheckAccessTokenPermission(uint32_t tokenId, uint32_t checkFlag,
-    TableType mediaType, int32_t &queryFlag)
+    TableType mediaType, int64_t &queryFlag)
 {
     bool isReadable = false;
     bool isWritable = false;
@@ -183,7 +183,7 @@ static void CheckAccessTokenPermission(uint32_t tokenId, uint32_t checkFlag,
     }
 }
 
-static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSharePredicates &predicates,
+static void MakePredicatesForCheckPhotoUriPermission(int64_t &checkFlag, DataSharePredicates &predicates,
     uint32_t targetTokenId, TableType mediaType, vector<string> &fileIds)
 {
     predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
@@ -220,7 +220,7 @@ static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSha
                 to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
             break;
         default:
-            MEDIA_ERR_LOG("error flag object: %{public}d", checkFlag);
+            MEDIA_ERR_LOG("error flag object: %{public}ld", (long)checkFlag);
             return;
     }
     predicates.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
@@ -315,8 +315,8 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
     if (ret != E_SUCCESS) {
         return E_ERR;
     }
-    int32_t queryPhotoFlag = URI_PERMISSION_FLAG_READWRITE;
-    int32_t queryAudioFlag = URI_PERMISSION_FLAG_READWRITE;
+    int64_t queryPhotoFlag = URI_PERMISSION_FLAG_READWRITE;
+    int64_t queryAudioFlag = URI_PERMISSION_FLAG_READWRITE;
     if (photoFileIds.empty()) {
         queryPhotoFlag = -1;
     } else {
@@ -457,7 +457,7 @@ int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId,
 
 static bool CheckUri(string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string uriprex = "file://media";
@@ -512,7 +512,7 @@ int32_t MediaLibraryExtendManager::ReadPrivateMovingPhoto(string &uri, const Hid
 
 static bool CheckPhotoUri(const string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string photoUriPrefix = "file://media/Photo/";
@@ -532,7 +532,15 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromP
     string fileId = MediaFileUtils::GetIdFromUri(value);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     DatashareBusinessError businessError;
-    return dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
+    auto resultSet = dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultset is null, reconnect and retry");
+        dataShareHelper_ = nullptr;
+        InitMediaLibraryExtendManager();
+        return dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
+    } else {
+        return resultSet;
+    }
 }
 
 std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromDb(string columnName,
@@ -547,7 +555,15 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromD
     predicates.EqualTo(columnName, value);
     predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     DatashareBusinessError businessError;
-    return dataShareHelper_->Query(uri, predicates, columns, &businessError);
+    auto resultSet = dataShareHelper_->Query(uri, predicates, columns, &businessError);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultset is null, reconnect and retry");
+        dataShareHelper_ = nullptr;
+        InitMediaLibraryExtendManager();
+        return dataShareHelper_->Query(uri, predicates, columns, &businessError);
+    } else {
+        return resultSet;
+    }
 }
 } // namespace Media
 } // namespace OHOS

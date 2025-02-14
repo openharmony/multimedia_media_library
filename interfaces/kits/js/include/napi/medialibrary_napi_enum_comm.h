@@ -250,6 +250,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("SUPPORTED_WATERMARK_TYPE",  PhotoColumn::SUPPORTED_WATERMARK_TYPE),
     std::make_pair("LATITUDE",                  PhotoColumn::PHOTO_LATITUDE),
     std::make_pair("LONGITUDE",                 PhotoColumn::PHOTO_LONGITUDE),
+    std::make_pair("IS_AUTO",                   PhotoColumn::PHOTO_IS_AUTO),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

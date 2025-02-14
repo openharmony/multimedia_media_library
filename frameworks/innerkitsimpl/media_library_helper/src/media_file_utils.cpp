@@ -2183,7 +2183,7 @@ bool MediaFileUtils::IsValidInteger(const std::string &value)
     while (unsignedStr.size() > 0 && unsignedStr[0] == '-') {
         unsignedStr = unsignedStr.substr(1);
     }
-    for (int32_t i = 0; i < unsignedStr.size(); i++) {
+    for (size_t i = 0; i < unsignedStr.size(); i++) {
         if (!std::isdigit(unsignedStr[i])) {
             MEDIA_INFO_LOG("KeyWord invalid char of:%{public}c", unsignedStr[i]);
             unsignedStr = unsignedStr.substr(0, i);
@@ -2280,5 +2280,19 @@ void MediaFileUtils::StatDirSize(const std::string& rootPath, size_t& totalSize)
     }
 
     MEDIA_INFO_LOG("Directory size: %s = %{public}lld bytes", rootPath.c_str(), static_cast<long long>(totalSize));
+}
+
+std::string MediaFileUtils::GetMimeTypeFromDisplayName(const std::string &displayName)
+{
+    std::string mimeType = "";
+    CHECK_AND_RETURN_RET_LOG(!displayName.empty(), mimeType, "displayName is empty.");
+    std::string extension;
+    string::size_type currentPos = displayName.rfind('.');
+    if (currentPos != std::string::npos) {
+        extension = displayName.substr(currentPos + 1);
+    }
+    CHECK_AND_RETURN_RET_LOG(!extension.empty(), mimeType, "extension is empty.");
+    mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
+    return mimeType;
 }
 } // namespace OHOS::Media

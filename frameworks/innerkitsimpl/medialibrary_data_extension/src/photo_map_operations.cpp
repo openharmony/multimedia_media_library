@@ -169,6 +169,54 @@ static int32_t GetPortraitAlbumIds(const string &albumId, vector<string> &portra
     return E_OK;
 }
 
+int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValuesBucket> &values)
+{
+    MEDIA_INFO_LOG("Add highlight assets start");
+    if (values.empty()) {
+        return E_DB_FAIL;
+    }
+
+    bool isValid = false;
+    int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
+    if (!isValid || albumId <= 0) {
+        return E_DB_FAIL;
+    }
+
+    MEDIA_INFO_LOG("Add highlight assets, id is %{puiblic}d", albumId);
+    vector<string> uris;
+    std::vector<ValuesBucket> insertValues;
+    for (auto value : values) {
+        bool isValidValue = false;
+        std::string assetUri = value.Get(PhotoMap::ASSET_ID, isValidValue);
+        uris.push_back(assetUri);
+        int32_t photoId = std::stoi(MediaFileUri::GetPhotoId(assetUri));
+        DataShare::DataShareValuesBucket pair;
+        pair.Put(PhotoMap::ALBUM_ID, albumId);
+        pair.Put(PhotoMap::ASSET_ID, photoId);
+        ValuesBucket valueInsert = RdbDataShareAdapter::RdbUtils::ToValuesBucket(pair);
+        insertValues.push_back(valueInsert);
+    }
+
+    int64_t outRowId = -1;
+    int32_t ret = MediaLibraryRdbStore::BatchInsert(outRowId, ANALYSIS_PHOTO_MAP_TABLE, insertValues);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Batch insert highlight assets fail, err = %{public}d", ret);
+        return ret;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { to_string(albumId) });
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (auto uri : uris) {
+        watch->Notify(MediaFileUtils::Encode(uri), NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
+    }
+    return ret;
+}
+
 int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesBucket> &values)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();

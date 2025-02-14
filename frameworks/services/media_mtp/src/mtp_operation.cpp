@@ -36,7 +36,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
-constexpr const char *MTP_DISABLE = "persist.edm.mtp_disable";
+constexpr const char *MTP_DISABLE = "persist.edm.mtp_server_disable";
 MtpOperation::MtpOperation(void)
 {
     Init();

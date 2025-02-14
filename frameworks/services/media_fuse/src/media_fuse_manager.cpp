@@ -268,12 +268,12 @@ int32_t MediafusePermCheckInfo::CheckPermission(uint32_t &tokenCaller)
     int err = WrCheckPermission(filePath_, mode_, uid_, tokenCaller);
     bool rslt;
     if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("wr check succ %{public}d", tokenCaller);
+        MEDIA_INFO_LOG("wr check succ");
         return true;
     }
     err = DbCheckPermission(filePath_, mode_, fileId_, appId_, tokenCaller);
     if (err == E_SUCCESS) {
-        MEDIA_INFO_LOG("db check succ %{public}d", tokenCaller);
+        MEDIA_INFO_LOG("db check succ");
         rslt = true;
     } else {
         rslt = false;
@@ -346,7 +346,7 @@ int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
 {
     int devFd = -1;
     // get user id
-    int32_t userId =  getuid() / BASE_USER_RANGE;
+    int32_t userId =  static_cast<int32_t>(getuid() / BASE_USER_RANGE);
 
     // mount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -366,7 +366,7 @@ int32_t MediaFuseManager::MountFuse(std::string &mountpoint)
 int32_t MediaFuseManager::UMountFuse()
 {
     // get user id
-    int32_t userId =  getuid() / BASE_USER_RANGE;
+    int32_t userId =  static_cast<int32_t>(getuid() / BASE_USER_RANGE);
 
     // umount fuse
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();

@@ -22,6 +22,7 @@ namespace OHOS {
 namespace Media {
 const std::string MEDIALIBRARY_DATA_URI = "datashare:///media";
 const std::string MEDIA_OPERN_KEYWORD = "operation";
+const std::string MEDIA_TRIGGER_MODE_KEYWORD = "trigger_mode";
 const std::string MEDIA_MOVING_PHOTO_OPRN_KEYWORD = "moving_photo_operation";
 const std::string MEDIA_QUERYOPRN = "query_operation";
 const std::string OPRN_CREATE = "create";
@@ -104,6 +105,7 @@ const std::string OPRN_FIND_ALL_DUPLICATE_ASSETS = "all_duplicate_assets";
 const std::string URI_FIND_ALL_DUPLICATE_ASSETS = "/" + OPRN_FIND_ALL_DUPLICATE_ASSETS;
 const std::string OPRN_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE = "can_del_duplicate_assets";
 const std::string URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE = "/" + OPRN_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE;
+const std::string OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE = "update_supported_watermark_type";
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
@@ -266,6 +268,7 @@ const std::string PAH_MULTISTAGES_CAPTURE = "phaccess_multistages_capture_operat
 const std::string PAH_HIGHLIGHT_COVER = "phaccess_highlight_cover_operation";
 const std::string PAH_HIGHLIGHT_PLAY = "phaccess_highlight_play_operation";
 const std::string PAH_HIGHLIGHT_DELETE = "phaccess_highlight_delete";
+const std::string PAH_HIGHLIGHT_ADD_ASSETS = "phaccess_highlight_add_assets";
 const std::string PAH_BATCH_THUMBNAIL_OPERATE = "phaccess_batch_thumbnail_operation";
 const std::string PAH_CLOUD_ENHANCEMENT_OPERATE = "cloud_enhancement_operation";
 const std::string SEARCH_INDEX_CONSTRUCTION_STATUS = "phaccess_search_index_construction_operation";
@@ -304,6 +307,8 @@ const std::string PAH_CLONE_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/
 const std::string PAH_CUSTOM_RESTORE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CUSTOM_RESTORE;
 const std::string PAH_CUSTOM_RESTORE_CANCEL =
     MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CUSTOM_RESTORE_CANCEL;
+const std::string PAH_UPDATE_PHOTO_SUPPORTED_WATERMARK_TYPE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" +
+    OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE;
 
 // MultiStages capture related operation uri
 const std::string PAH_SET_PHOTO_QUALITY = MEDIALIBRARY_DATA_URI + "/ "+ PAH_PHOTO + "/" + OPRN_SET_PHOTO_QUALITY;
@@ -416,6 +421,7 @@ const std::string PAH_QUERY_ANA_TOTAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TO
 const std::string PAH_QUERY_MULTI_CROP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MULTI_CROP + "/" + OPRN_QUERY;
 const std::string PAH_UPDATE_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FACE + "/" + OPRN_UPDATE;
 const std::string PAH_DELETE_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_DELETE + "/" + OPRN_DELETE;
+const std::string PAH_INSERT_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_ADD_ASSETS;
 
 // PhotoAccessHelper moving photo
 const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +
