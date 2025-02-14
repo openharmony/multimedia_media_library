@@ -809,6 +809,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     if (fileInfo.firstUpdateTime != 0) {
         values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.firstUpdateTime);

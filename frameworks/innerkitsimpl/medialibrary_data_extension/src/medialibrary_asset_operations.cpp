@@ -950,6 +950,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
+        assetInfo.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, extension);
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
         HandlePhotoInfo(cmd, assetInfo, fileAsset);
@@ -1245,6 +1246,9 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Input displayName invalid %{private}s", newDisplayName.c_str());
     values.PutString(MediaColumn::MEDIA_TITLE, newTitle);
     values.PutString(MediaColumn::MEDIA_NAME, newDisplayName);
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(newDisplayName));
+    }
     isNameChanged = true;
     return E_OK;
 }

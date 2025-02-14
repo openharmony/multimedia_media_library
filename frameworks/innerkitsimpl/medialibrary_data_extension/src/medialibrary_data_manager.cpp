@@ -369,11 +369,33 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     return E_OK;
 }
 
+static void FillMediaSuffixForHistoryData(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("start to fill media suffix for history data");
+
+    // Calculate the substring after the last dot in the display_name. If there is no dot, return an empty string.
+    const string calculatedSuffix = "CASE WHEN (INSTR(display_name, '.') > 0) THEN "
+        "REPLACE(display_name, RTRIM(display_name, REPLACE(display_name, '.', '')), '') ELSE '' END";
+    const string sql = "UPDATE " + PhotoColumn::PHOTOS_TABLE +
+                 " SET " + PhotoColumn::PHOTO_MEDIA_SUFFIX + " = " + calculatedSuffix +
+                 " WHERE " + PhotoColumn::PHOTO_MEDIA_SUFFIX + " IS NULL";
+    int ret = store->ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("FillMediaSuffixForHistoryData failed: execute sql failed");
+    }
+    MEDIA_INFO_LOG("end fill media suffix for history data");
+}
+
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
         MediaLibraryRdbStore::UpdatePhotoQualityCloned(rdbStore);
         rdbStore->SetOldVersion(VERSION_FIX_PHOTO_QUALITY_CLONED);
+    }
+
+    if (oldVersion < VERSION_ADD_MEDIA_SUFFIX_COLUMN) {
+        FillMediaSuffixForHistoryData(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_MEDIA_SUFFIX_COLUMN);
     }
 }
 
