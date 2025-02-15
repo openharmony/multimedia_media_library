@@ -580,7 +580,7 @@ napi_value HighlightAlbumNapi::JSGetHighlightAlbumInfo(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only and smart highlight album can get highlight album info");
-    
+
     asyncContext->albumId = photoAlbum->GetAlbumId();
     asyncContext->subType = photoAlbum->GetPhotoAlbumSubType();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
