@@ -59,7 +59,7 @@ int32_t MediaAnalysisCallbackStub::PortraitCoverSelectionCompleted(const std::st
         return ERR_NULL_OBJECT;
     }
 
-    if (!MediaLibraryCommonUtils::CanStrConvertInt32(albumId)){
+    if (!MediaLibraryCommonUtils::CanStrConvertInt32(albumId)) {
         MEDIA_ERR_LOG("PortraitCoverSelectionCompleted Can not convert albumId to Int");
         return ERR_INVALID_DATA;
     }
