@@ -1888,8 +1888,113 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibra
     ForEachRow(rdbStore, datas, true, UpdateSysAlbumIfNeeded);
 }
 
+static void AddSystemAlbum(set<string> &systemAlbum, shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    int minMediaType = GetIntValFromColumn(resultSet, "Min(" + MediaColumn::MEDIA_TYPE + ")");
+    int maxMediaType = GetIntValFromColumn(resultSet, "Max(" + MediaColumn::MEDIA_TYPE + ")");
+    int favorite = GetIntValFromColumn(resultSet, "Max(" + MediaColumn::MEDIA_IS_FAV + ")");
+    int cloud = GetIntValFromColumn(resultSet, "Max(" + PhotoColumn::PHOTO_ASSOCIATE_FILE_ID + ")");
+    if (minMediaType == MEDIA_TYPE_IMAGE) {
+        systemAlbum.insert(to_string(PhotoAlbumSubType::IMAGE));
+    }
+    if (maxMediaType == MEDIA_TYPE_VIDEO) {
+        systemAlbum.insert(to_string(PhotoAlbumSubType::VIDEO));
+    }
+    if (favorite > 0) {
+        systemAlbum.insert(to_string(PhotoAlbumSubType::FAVORITE));
+    }
+    if (cloud > 0) {
+        systemAlbum.insert(to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT));
+    }
+    MEDIA_INFO_LOG("AddSystemAlbum minMediaType:%{public}d, maxMediaType:%{public}d, favorite:%{public}d,"
+        " cloud:%{public}d,", minMediaType, maxMediaType, favorite, cloud);
+}
+
+static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &uris,
+    AlbumOperationType albumOperationType, set<string> &systemAlbum, set<string> &hiddenSystemAlbum)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetSystemAlbumByUris");
+    string idArgs;
+    for (size_t i = 0; i < uris.size(); i++) {
+        string fileId = GetPhotoId(uris[i]);
+        if (fileId.size() > 0) {
+            idArgs.append("'").append(fileId).append("'").append(",");
+        }
+        if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
+            continue;
+        }
+        if (idArgs.size() == 0) {
+            continue;
+        }
+        idArgs = idArgs.substr(0, idArgs.size() - 1);
+        RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+        predicates.SetWhereClause(PhotoColumn::MEDIA_ID + " in(" + idArgs + ") GROUP by hidden");
+        const vector<string> columns = {
+            MediaColumn::MEDIA_HIDDEN,
+            "Min(" + MediaColumn::MEDIA_TYPE + ")",
+            "Max(" + MediaColumn::MEDIA_TYPE + ")",
+            "Max(" + MediaColumn::MEDIA_IS_FAV + ")",
+            "Max(" + PhotoColumn::PHOTO_ASSOCIATE_FILE_ID + ")",
+        };
+        auto resultSet = rdbStore->Query(predicates, columns);
+        if (resultSet == nullptr) {
+            MEDIA_ERR_LOG("Failed to query Systemalbum info!");
+            continue;
+        }
+        while (resultSet->GoToNextRow() == E_OK) {
+            int hidden = GetIntValFromColumn(resultSet, 0);
+            if (hidden == 0) {
+                AddSystemAlbum(systemAlbum, resultSet);
+            } else {
+                AddSystemAlbum(hiddenSystemAlbum, resultSet);
+            }
+            if (albumOperationType == AlbumOperationType::DELETE_PHOTO ||
+                albumOperationType == AlbumOperationType::RECOVER_PHOTO) {
+                systemAlbum.insert(to_string(PhotoAlbumSubType::TRASH));
+            }
+            if (albumOperationType == UNHIDE_PHOTO || hidden > 0) {
+                systemAlbum.insert(to_string(PhotoAlbumSubType::HIDDEN));
+            }
+        }
+        resultSet->Close();
+        idArgs.clear();
+    }
+}
+
+void MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    AlbumOperationType albumOperationType, const vector<string> &uris, NotifyAlbumType type)
+{
+    if (uris.empty() || albumOperationType == AlbumOperationType::DEFAULT) {
+        vector<string> systemAlbumsExcludeSource = {
+            to_string(PhotoAlbumSubType::FAVORITE),
+            to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::HIDDEN),
+            to_string(PhotoAlbumSubType::TRASH),
+            to_string(PhotoAlbumSubType::IMAGE),
+            to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
+        };
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource,
+            type & NotifyAlbumType::SYS_ALBUM);
+        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);
+    } else {
+        set<string> systemAlbumSet;
+        set<string> hiddenSystemAlbumSet;
+        GetSystemAlbumByUris(rdbStore, uris, albumOperationType, systemAlbumSet, hiddenSystemAlbumSet);
+        vector<string> systemAlbum;
+        vector<string> hiddenSystemAlbum;
+        systemAlbum.assign(systemAlbumSet.begin(), systemAlbumSet.end());
+        hiddenSystemAlbum.assign(hiddenSystemAlbumSet.begin(), hiddenSystemAlbumSet.end());
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbum,
+            type & NotifyAlbumType::SYS_ALBUM);
+        if (!hiddenSystemAlbum.empty()) {
+            MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore, hiddenSystemAlbum);
+        }
+    }
+}
+
 void MediaLibraryRdbUtils::UpdateAllAlbums(shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &uris,
-    NotifyAlbumType type, bool isBackUpAndRestore)
+    NotifyAlbumType type, bool isBackUpAndRestore, AlbumOperationType albumOperationType)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateAllAlbums");
@@ -1900,17 +2005,7 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(shared_ptr<MediaLibraryRdbStore> rdbS
             "Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
     }
 
-    vector<string> systemAlbumsExcludeSource = {
-        to_string(PhotoAlbumSubType::FAVORITE),
-        to_string(PhotoAlbumSubType::VIDEO),
-        to_string(PhotoAlbumSubType::HIDDEN),
-        to_string(PhotoAlbumSubType::TRASH),
-        to_string(PhotoAlbumSubType::IMAGE),
-        to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT),
-    };
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource,
-        type & NotifyAlbumType::SYS_ALBUM);
-    MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);
+    MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, albumOperationType, uris, type);
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, uris);
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, uris);
     if (!isBackUpAndRestore) {
