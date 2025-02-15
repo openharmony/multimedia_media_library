@@ -262,7 +262,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
             values.PutNull(PhotoColumn::PHOTO_LONGITUDE);
             values.PutNull(PhotoColumn::PHOTO_LATITUDE);
         }
-        if (skipPhoto) {
+        if (skipPhoto && !metadata.GetUserComment().empty()) {
             values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
         }
         values.PutString(PhotoColumn::PHOTO_ALL_EXIF, metadata.GetAllExif());
