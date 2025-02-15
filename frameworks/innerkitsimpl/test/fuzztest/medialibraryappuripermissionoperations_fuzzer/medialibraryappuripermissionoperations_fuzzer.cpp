@@ -48,6 +48,9 @@ static const int32_t E_ERR = -1;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int32_t)) {
+        return 0;
+    }
     return static_cast<int32_t>(*data);
 }
 
@@ -210,9 +213,14 @@ static void Init()
 }
 } // namespace OHOS
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
     OHOS::Init();
+    return 0;
+}
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
     OHOS::AppUriPermissionOperationsFuzzer(data, size);
     return 0;
 }

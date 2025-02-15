@@ -43,6 +43,9 @@ const int32_t URI_DEFAULT = 0;
 const int32_t BatchInsertNumber = 5;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int32_t)) {
+        return 0;
+    }
     return static_cast<int32_t>(*data);
 }
 
