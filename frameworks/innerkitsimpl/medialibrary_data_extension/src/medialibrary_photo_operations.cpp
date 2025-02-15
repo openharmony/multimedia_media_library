@@ -3325,7 +3325,10 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, bool
 {
     MEDIA_INFO_LOG("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
         DfxUtils::GetSafePath(path).c_str(), isEdited, isMovingPhoto);
-    return FileUtils::SaveVideo(path, isEdited, isMovingPhoto);
+    if (isMovingPhoto) {
+        return FileUtils::SaveMovingPhotoVideo(path);
+    }
+    return FileUtils::SaveVideo(path, isEdited);
 }
 
 int32_t MediaLibraryPhotoOperations::RemoveTempVideo(const std::string &path)
