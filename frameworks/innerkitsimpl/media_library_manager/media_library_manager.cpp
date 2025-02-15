@@ -188,7 +188,7 @@ string MediaLibraryManager::CreateAsset(const string &displayName)
 
 static bool CheckUri(string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string uriprex = "file://media";
@@ -197,7 +197,7 @@ static bool CheckUri(string &uri)
 
 static bool CheckPhotoUri(const string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string photoUriPrefix = "file://media/Photo/";
