@@ -901,7 +901,8 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 #endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM, false,
+        AlbumOperationType::DELETE_PHOTO);
     CHECK_AND_WARN_LOG(static_cast<size_t>(updatedRows) == notifyUris.size(),
         "Try to notify %{public}zu items, but only %{public}d items updated.", notifyUris.size(), updatedRows);
     TrashPhotosSendNotify(notifyUris, albumData);
@@ -1135,7 +1136,8 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM, false,
+        hiddenState != 0 ? AlbumOperationType::HIDE_PHOTO : AlbumOperationType::UNHIDE_PHOTO);
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
 }
