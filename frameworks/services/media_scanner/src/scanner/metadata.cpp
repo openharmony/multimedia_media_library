@@ -69,6 +69,8 @@ void Metadata::InitV2()
         &Metadata::SetDetailTime);
     memberFuncMap_[PhotoColumn::PHOTO_BURST_COVER_LEVEL] = make_pair(ResultSetDataType::TYPE_INT32,
         &Metadata::SetBurstCoverLevel);
+    memberFuncMap_[PhotoColumn::PHOTO_OWNER_ALBUM_ID] = make_pair(ResultSetDataType::TYPE_INT32,
+        &Metadata::SetAlbumId);
 }
 
 void Metadata::Init()

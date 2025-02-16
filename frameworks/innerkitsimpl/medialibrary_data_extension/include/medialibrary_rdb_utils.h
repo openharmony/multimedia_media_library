@@ -62,11 +62,15 @@ public:
         const std::vector<std::string> &userAlbumIds = {}, bool shouldNotify = false);
     EXPORT static void UpdateSourceAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &sourceAlbumIds = {}, bool shouldNotify = false);
+    EXPORT static void UpdateCommonAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::vector<std::string> &albumIds = {}, bool shouldNotify = false);
     static void UpdateUserAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &uris, bool shouldNotify = false);
     EXPORT static void UpdateAnalysisAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &uris);
     static void UpdateSourceAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::vector<std::string> &uris, bool shouldNotify = false);
+    static void UpdateCommonAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &uris, bool shouldNotify = false);
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);

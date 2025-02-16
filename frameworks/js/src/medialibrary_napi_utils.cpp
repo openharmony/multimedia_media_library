@@ -175,6 +175,23 @@ napi_status MediaLibraryNapiUtils::GetProperty(napi_env env, const napi_value ar
     return napi_ok;
 }
 
+napi_status MediaLibraryNapiUtils::GetStringArrayFromInt32(napi_env env, napi_value arg, vector<string> &array)
+{
+    bool isArray = false;
+    uint32_t len = 0;
+    CHECK_STATUS_RET(napi_is_array(env, arg, &isArray), "Failed to check array type");
+    CHECK_COND_RET(isArray, napi_array_expected, "Expected array type");
+    CHECK_STATUS_RET(napi_get_array_length(env, arg, &len), "Failed to get array length");
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value item = nullptr;
+        int32_t val;
+        CHECK_STATUS_RET(napi_get_element(env, arg, i, &item), "Failed to get array item");
+        CHECK_STATUS_RET(GetInt32(env, item, val), "Failed to get string buffer");
+        array.push_back(to_string(val));
+    }
+    return napi_ok;
+}
+
 napi_status MediaLibraryNapiUtils::GetStringArray(napi_env env, napi_value arg, vector<string> &array)
 {
     bool isArray = false;
@@ -228,8 +245,8 @@ napi_status MediaLibraryNapiUtils::hasFetchOpt(napi_env env, const napi_value ar
         hasFetchOpt = false;
         return napi_ok;
     }
-    CHECK_STATUS_RET(napi_has_named_property(env, arg, "selections", &hasFetchOpt),
-        "Failed to get property selections");
+    CHECK_STATUS_RET(napi_has_named_property(env, arg, "predicates", &hasFetchOpt),
+        "Failed to get property predicates");
     return napi_ok;
 }
 
