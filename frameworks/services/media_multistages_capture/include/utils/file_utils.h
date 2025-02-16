@@ -33,7 +33,8 @@ public:
         const std::string &mime_type, bool isEdited = false);
     EXPORT static int DealPicture(const std::string &mime_type, const std::string &path,
         std::shared_ptr<Media::Picture> &picture);
-    EXPORT static int32_t SaveVideo(const std::string &filePath, bool isEdited = false, bool isMovingPhoto = false);
+    EXPORT static int32_t SaveVideo(const std::string &filePath, bool isEdited = false);
+    EXPORT static int32_t SaveMovingPhotoVideo(const std::string &filePath);
     EXPORT static int32_t DeleteTempVideoFile(const std::string &filePath);
     EXPORT static int DeleteFile(const std::string &fileName);
     EXPORT static bool IsFileExist(const std::string &fileName);
