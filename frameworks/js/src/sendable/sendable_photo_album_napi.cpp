@@ -530,13 +530,21 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
     ConvertColumnsForPortrait(context);
     ConvertColumnsForFeaturedSinglePortrait(context);
     int32_t errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    int32_t userId = -1;
+    if (context->objectInfo != nullptr) {
+        shared_ptr<PhotoAlbum> photoAlbum =  context->objectInfo->GetPhotoAlbumInstance();
+        if (photoAlbum != nullptr) {
+            userId = photoAlbum->GetUserId();
+        }
+    }
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode, userId);
     if (resultSet == nullptr) {
         context->SaveError(errCode);
         return;
     }
     context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    context->fetchResult->SetUserId(userId);
 }
 
 static void GetPhotoMapQueryResult(napi_env env, SendablePhotoAlbumNapiAsyncContext *context,
@@ -776,7 +784,14 @@ static void PhotoAccessHelperGetFaceIdExec(napi_env env, void *data)
     vector<string> fetchColumn = { GROUP_TAG };
     int errCode = 0;
 
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    int32_t userId = -1;
+    if (context->objectInfo != nullptr) {
+        shared_ptr<PhotoAlbum> photoAlbum =  objectInfo->GetPhotoAlbumInstance();
+        if (photoAlbum != nullptr) {
+            userId = photoAlbum->GetUserId();
+        }
+    }
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
         if (errCode == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;

@@ -104,7 +104,7 @@ public:
     uint32_t FetchAddCacheFileId();
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
-    int32_t SubmitCache(bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced);
+    int32_t SubmitCache(bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced, const int32_t userId = -1);
     int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
@@ -192,6 +192,7 @@ struct MediaAssetChangeRequestAsyncContext : public NapiError {
     std::string appName;
     std::string realPath;
     int32_t fd;
+    int32_t userId_ = -1;
 };
 } // namespace Media
 } // namespace OHOS
