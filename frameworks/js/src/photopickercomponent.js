@@ -28,6 +28,7 @@ const photoAccessHelper = requireNapi('file.photoAccessHelper');
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
+const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
 
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
