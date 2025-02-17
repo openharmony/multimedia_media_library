@@ -230,7 +230,11 @@ public:
         member_[name] = value;
     }
 
+    EXPORT void SetUserId(int32_t userId);
+    EXPORT int32_t GetUserId();
+
 private:
+    int32_t userId_;
     std::string albumUri_;
     ResultNapiType resultNapiType_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;

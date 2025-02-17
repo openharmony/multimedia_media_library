@@ -67,6 +67,8 @@ public:
     EXPORT std::unique_ptr<T> GetNextObject();
     EXPORT std::unique_ptr<T> GetLastObject();
     EXPORT std::unique_ptr<T> GetObject();
+    EXPORT void SetUserId(int32_t userId);
+    EXPORT int32_t GetUserId();
 
 private:
     EXPORT std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::ResultSet> &resultSet);
@@ -90,6 +92,7 @@ private:
     ResultNapiType resultNapiType_;
     std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
     FetchResType fetchResType_;
+    int32_t userId_;
     bool hiddenOnly_ = false;
     bool locationOnly_ = false;
 };

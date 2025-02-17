@@ -1067,13 +1067,21 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
     int32_t errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    int32_t userId = -1;
+    if (context->objectInfo != nullptr) {
+        shared_ptr<PhotoAlbum> photoAlbum =  context->objectInfo->GetPhotoAlbumInstance();
+        if (photoAlbum != nullptr) {
+            userId = photoAlbum->GetUserId();
+        }
+    }
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode, userId);
     if (resultSet == nullptr) {
         context->SaveError(E_HAS_DB_ERROR);
         return;
     }
     context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    context->fetchResult->SetUserId(userId);
 }
 
 static napi_value JSPhotoAccessGetPhotoAssetsExecuteSync(napi_env env, PhotoAlbumNapiAsyncContext& asyncContext)
@@ -1097,7 +1105,15 @@ static napi_value JSPhotoAccessGetPhotoAssetsExecuteSync(napi_env env, PhotoAlbu
     size_t len = fileAssetArray.size();
     napi_create_array_with_length(env, len, &jsFileArray);
     size_t i = 0;
+    int32_t userId = -1;
+    if (context->objectInfo != nullptr) {
+        shared_ptr<PhotoAlbum> photoAlbum =  context->objectInfo->GetPhotoAlbumInstance();
+        if (photoAlbum != nullptr) {
+            userId = photoAlbum->GetUserId();
+        }
+    }
     for (i = 0; i < len; i++) {
+        fileAssetArray[i]->SetUserId(userId);
         napi_value jsFileAsset = FileAssetNapi::CreateFileAsset(env, fileAssetArray[i]);
         if ((jsFileAsset == nullptr) || (napi_set_element(env, jsFileArray, i, jsFileAsset) != napi_ok)) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
