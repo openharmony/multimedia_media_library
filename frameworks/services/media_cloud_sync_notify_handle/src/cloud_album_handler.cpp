@@ -26,6 +26,7 @@
 #include "medialibrary_notify.h"
 #include "rdb_predicates.h"
 #include "media_file_utils.h"
+#include "photo_query_filter.h"
 
 using namespace std;
 
@@ -68,10 +69,7 @@ static int32_t GetCloudAlbumCount(const string &id)
 
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, id);
-    predicates.And()->EqualTo(PhotoColumn::MEDIA_HIDDEN, 0);
-    predicates.And()->EqualTo(PhotoColumn::MEDIA_DATE_TRASHED, 0);
-    predicates.And()->EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG,
-        to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_VISIBLE, predicates);
 
     auto resultSet = MediaLibraryRdbStore::Query(predicates, columnInfo);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
@@ -143,7 +141,7 @@ void CloudAlbumHandler::DeleteOrUpdateCloudAlbums(const vector<string> &ids)
                 MEDIA_INFO_LOG("delete Album {%{public}s} fail", id.c_str());
             }
         } else {
-            MEDIA_INFO_LOG("Album {%{public}s} not empty, count %{public}d", id.c_str(), count);
+            MEDIA_INFO_LOG("Album {%{public}s} not empty, setcount %{public}d", id.c_str(), count);
             UpdateCloudAlbum(id, count);
         }
     }

@@ -66,6 +66,7 @@ ohos_shared_library("media_library") {
     "src/photo_album_column.cpp",
     "src/photo_file_utils.cpp",
     "src/photo_map_column.cpp",
+    "src/photo_query_filter.cpp",
     "src/smart_album_asset.cpp",
   ]
 

@@ -21,6 +21,7 @@
 #include "media_log.h"
 #include "medialibrary_type_const.h"
 #include "photo_map_column.h"
+#include "photo_query_filter.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
 
@@ -223,7 +224,11 @@ void PhotoAlbumColumns::GetPortraitAlbumPredicates(const int32_t albumId, RdbPre
     onClause = "ag." + GROUP_TAG + " = " + ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG;
     clauses = { onClause };
     predicates.InnerJoin(tempTable)->On(clauses);
-    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
+    if (hiddenState) {
+        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_HIDDEN, predicates);
+    } else {
+        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_VISIBLE, predicates);
+    }
     predicates.Distinct();
     return;
 }
@@ -233,8 +238,11 @@ void PhotoAlbumColumns::GetAnalysisAlbumPredicates(const int32_t albumId,
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
+    if (hiddenState) {
+        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_HIDDEN, predicates);
+    } else {
+        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_VISIBLE, predicates);
+    }
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
 }
 
