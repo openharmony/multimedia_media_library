@@ -20,6 +20,7 @@
 
 #include "cloud_sync_observer.h"
 
+#include "cloud_media_asset_manager.h"
 #include "cloud_sync_notify_handler.h"
 #include "media_analysis_helper.h"
 #include "media_file_utils.h"
@@ -95,7 +96,7 @@ void CloudSyncObserver::DealAlbumGallery(CloudSyncNotifyInfo &notifyInfo)
     }
     PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
 }
- 
+
 void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
 {
     if (notifyInfo.type == ChangeType::UPDATE || notifyInfo.type == ChangeType::OTHER) {
@@ -115,6 +116,9 @@ void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
         map = {{KEY_TOTAL_ASSET_NUM, info.urisSize}, {KEY_DELETE_ASSET_NUM, info.urisSize}};
     }
     PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
+    if (notifyInfo.type == ChangeType::DELETE) {
+        CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
+    }
 }
 
 void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)

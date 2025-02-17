@@ -70,6 +70,8 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
             if (pictureType == LOW_QUALITY_PICTURE) {
                 bool isEdited = IsPictureEdited(iter->first);
                 FileUtils::SavePicture(iter->first, (iter->second)->picture_, isEdited, true);
+                MEDIA_INFO_LOG("end SavePicture, photoId: %{public}s, isEdited: %{public}d",
+                    (iter->first).c_str(), static_cast<int32_t>(isEdited));
             }
             MEDIA_INFO_LOG("enter CleanDateByPictureMap %{public}s enter", (iter->first).c_str());
             iter->second = nullptr;
