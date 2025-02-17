@@ -763,8 +763,9 @@ static void GetFileAssetsNative(napi_env env, void *data)
     NAPI_DEBUG_LOG("queryUri is = %{private}s", queryUri.c_str());
     Uri uri(queryUri);
     int errCode = 0;
-    std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
-        UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    int userId = context->fetchResult != nullptr ? context->fetchResult->GetUserId() : -1;
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
+        context->predicates, context->fetchColumn, errCode, userId);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetFileAssetsNative called, UserFileClient::Query errorCode is = %{public}d", errCode);
         context->SaveError(errCode);

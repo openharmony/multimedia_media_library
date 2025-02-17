@@ -219,10 +219,11 @@ public:
     static void ReplaceSelection(std::string &selection, std::vector<std::string> &selectionArgs,
         const std::string &key, const std::string &keyInstead, const int32_t mode = ReplaceSelectionMode::DEFAULT);
     static void OnThumbnailGenerated(napi_env env, napi_value cb, void *context, void *data);
+    int32_t GetUserId();
+    void SetUserId(const int32_t &userId);
 
     EXPORT MediaLibraryNapi();
     EXPORT ~MediaLibraryNapi();
-
     static std::mutex sUserFileClientMutex_;
 
 private:
@@ -372,6 +373,7 @@ private:
     static bool CheckRef(napi_env env,
         napi_ref ref, ChangeListenerNapi &listObj, bool isOff, const std::string &uri);
     napi_env env_;
+    int32_t userId_ = -1;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;

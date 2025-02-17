@@ -26,7 +26,7 @@ public:
     MediaChangeRequestNapi() = default;
     virtual ~MediaChangeRequestNapi() = default;
 
-    static bool InitUserFileClient(napi_env env, napi_callback_info info);
+    static bool InitUserFileClient(napi_env env, napi_callback_info info, const int32_t userId = -1);
     virtual napi_value ApplyChanges(napi_env env, napi_callback_info info) = 0;
 };
 } // namespace Media
