@@ -151,6 +151,7 @@ const std::string APP_TWIN_DATA_PREFIX = "/AppTwinData";
 const std::string CLONE_STAT_EDIT_DATA_DIR = "/storage/media/local/files/.editData/";
 const std::string CLONE_STAT_RDB_DIR = "/data/storage/el2/database/rdb/";
 const std::string CLONE_STAT_KVDB_DIR = "/data/storage/el2/database/kvdb/";
+const std::string CLONE_STAT_HIGHLIGHT_DIR = "/storage/media/local/files/highlight/";
 } // namespace Media
 } // namespace OHOS
 
