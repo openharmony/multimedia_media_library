@@ -64,6 +64,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ALBUM, OperationObject::PAH_ALBUM },
         { PAH_MAP, OperationObject::PAH_MAP },
         { PAH_ANA_ALBUM, OperationObject::ANALYSIS_PHOTO_ALBUM },
+        { PAH_HIGHLIGHT_ADD_ASSETS, OperationObject::ADD_ASSET_HIGHLIGHT_ALBUM },
         { PAH_ANA_MAP, OperationObject::ANALYSIS_PHOTO_MAP },
         { TOOL_PHOTO, OperationObject::TOOL_PHOTO },
         { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
@@ -201,6 +202,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::CONVERT_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
         { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
+        { OperationObject::ADD_ASSET_HIGHLIGHT_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
         { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
         { OperationObject::ANALYSIS_ADDRESS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::ANALYSIS_ADDRESS_ASSETS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
@@ -349,6 +351,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_DELETE_LOCAL_ASSETS_PERMANENTLY, OperationType::DELETE_LOCAL_ASSETS_PERMANENTLY },
         { MTH_AND_YEAR_ASTC, OperationType::MTH_AND_YEAR_ASTC },
         { OPRN_HIGHLIGHT_SUBTITLE, OperationType::HIGHLIGHT_SUBTITLE},
+        { OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE, OperationType::UPDATE_SUPPORTED_WATERMARK_TYPE },
     };
     return oprnTypeMap;
 }

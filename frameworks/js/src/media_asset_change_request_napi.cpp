@@ -2424,9 +2424,24 @@ static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    if (fileAsset == nullptr) {
+        NAPI_ERR_LOG("Fail to get fileAsset");
+        return false;
+    }
+    NAPI_ERR_LOG("enter SetSupportedWatermarkTypeExecute: %{public}d", fileAsset->GetSupportedWatermarkType());
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+    
+    string uri = PAH_UPDATE_PHOTO_SUPPORTED_WATERMARK_TYPE;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(uri);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update supported_watermark_type of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {

@@ -45,7 +45,7 @@ public:
     EXPORT static bool CheckRdbStore();
     EXPORT virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
     EXPORT virtual int32_t BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
-        const std::vector<NativeRdb::ValuesBucket>& values) override;
+        std::vector<NativeRdb::ValuesBucket>& values) override;
     EXPORT virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
     EXPORT virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows) override;
     EXPORT std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
@@ -58,7 +58,7 @@ public:
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) override;
 
     EXPORT static int32_t BatchInsert(int64_t &outRowId, const std::string &table,
-        const std::vector<NativeRdb::ValuesBucket> &values);
+        std::vector<NativeRdb::ValuesBucket> &values);
     EXPORT static void BuildValuesSql(const NativeRdb::ValuesBucket &values,
         std::vector<NativeRdb::ValueObject> &bindArgs, std::string &sql);
     EXPORT static void BuildQuerySql(const NativeRdb::AbsRdbPredicates &predicates,
@@ -120,7 +120,7 @@ public:
         const std::vector<std::string> &columns = {});
     EXPORT int Update(int &changedRows, const NativeRdb::ValuesBucket &row,
         const NativeRdb::AbsRdbPredicates &predicates);
-    EXPORT int Insert(int64_t &outRowId, const std::string &table, const NativeRdb::ValuesBucket &row);
+    EXPORT int Insert(int64_t &outRowId, const std::string &table, NativeRdb::ValuesBucket &row);
     EXPORT int Delete(int &deletedRows, const std::string &table, const std::string &whereClause,
         const std::vector<std::string> &args);
     EXPORT int Delete(int &deletedRows, const NativeRdb::AbsRdbPredicates &predicates);

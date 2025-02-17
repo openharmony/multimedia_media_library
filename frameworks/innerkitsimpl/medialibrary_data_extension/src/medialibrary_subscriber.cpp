@@ -68,6 +68,7 @@
 #include "thumbnail_generate_worker_manager.h"
 #include "userfilemgr_uri.h"
 #include "common_timer_errors.h"
+#include "parameters.h"
 #ifdef HAS_WIFI_MANAGER_PART
 #include "wifi_device.h"
 #endif
@@ -112,6 +113,9 @@ const int32_t THUMB_ASTC_ENOUGH = 20000;
 bool MedialibrarySubscriber::isCellularNetConnected_ = false;
 bool MedialibrarySubscriber::isWifiConnected_ = false;
 bool MedialibrarySubscriber::currentStatus_ = false;
+// BetaVersion will upload the DB, and the true uploadDBFlag indicates that uploading is enabled.
+const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
+std::atomic<bool> uploadDBFlag(true);
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -197,8 +201,16 @@ bool MedialibrarySubscriber::Subscribe(void)
     return EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
 }
 
+static bool IsBetaVersion()
+{
+    static const string versionType = system::GetParameter(KEY_HIVIEW_VERSION_TYPE, "unknown");
+    static bool isBetaVersion = versionType.find("beta") != std::string::npos;
+    return isBetaVersion;
+}
+
 static void UploadDBFile()
 {
+    uploadDBFlag.store(false);
     int64_t begin = MediaFileUtils::UTCTimeMilliSeconds();
     static const std::string databaseDir = MEDIA_DB_DIR + "/rdb";
     static const std::vector<std::string> dbFileName = { "/media_library.db",
@@ -218,27 +230,34 @@ static void UploadDBFile()
     if (totalFileSize > MAX_FILE_SIZE_MB) {
         MEDIA_WARN_LOG("DB file over 10GB are not uploaded, totalFileSize is %{public}ld MB",
             static_cast<long>(totalFileSize));
+        uploadDBFlag.store(true);
         return ;
     }
     if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateDirectory(destPath)) {
         MEDIA_ERR_LOG("Create dir failed, dir=%{private}s", destPath.c_str());
+        uploadDBFlag.store(true);
         return ;
     }
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
         MEDIA_ERR_LOG("dataManager is nullptr");
+        uploadDBFlag.store(true);
         return;
     }
     dataManager->UploadDBFileInner(totalFileSize);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("Handle %{public}ld MB DBFile success, cost %{public}ld ms", (long)(totalFileSize),
         (long)(end - begin));
+    uploadDBFlag.store(true);
 }
 
 void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
-        UploadDBFile();
+        if (IsBetaVersion() && uploadDBFlag.load()) {
+            MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile");
+            UploadDBFile();
+        }
         DfxManager::GetInstance()->HandleHalfDayMissions();
         MediaLibraryRestore::GetInstance().CheckBackup();
     }

@@ -40,6 +40,7 @@ namespace Media {
 using namespace std;
 
 const std::string ALBUM_LPATH = "lpath";
+const std::string ALBUM_BUNDLE_NAME = "bundle_name";
 
 const vector<string> CHAR2HEX_TABLE = {
     "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F",
@@ -173,6 +174,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_CE_AVAILABLE,
     PhotoColumn::PHOTO_LCD_VISIT_TIME,
     PhotoColumn::PHOTO_DETAIL_TIME,
+    PhotoColumn::PHOTO_MEDIA_SUFFIX,
     TabOldPhotosColumn::MEDIA_OLD_ID,
     TabOldPhotosColumn::MEDIA_OLD_FILE_PATH,
     TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI,
@@ -187,6 +189,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     // PhotoAlbum table columns
     COMPAT_ALBUM_SUBTYPE,
     ALBUM_LPATH,
+    ALBUM_BUNDLE_NAME,
 
     // Analysis table columns
     TAG_ID,

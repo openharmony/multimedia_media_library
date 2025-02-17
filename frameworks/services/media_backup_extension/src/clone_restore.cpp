@@ -877,6 +877,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
     values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
     values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation); // photos need orientation
@@ -891,6 +892,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
         values.PutString(MediaColumn::MEDIA_OWNER_APPID, "");
     }
     values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
+    values.PutInt(PhotoColumn::STAGE_VIDEO_TASK_STATUS, static_cast<int32_t>(StageVideoTaskStatus::NO_NEED_TO_STAGE));
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
@@ -1392,14 +1394,17 @@ void CloneRestore::RestoreAudio(void)
         AudioColumn::AUDIOS_TABLE);
     CHECK_AND_RETURN_LOG(PrepareCommonColumnInfoMap(AudioColumn::AUDIOS_TABLE, srcColumnInfoMap,
         dstColumnInfoMap), "Prepare common column info failed");
+    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
+    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
+    if (totalNumber <= 0) {
+        return;
+    }
+    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
         MEDIA_INFO_LOG("music dir is not exists!!!");
         MediaFileUtils::CreateDirectory(RESTORE_MUSIC_LOCAL_DIR);
     }
-    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
-    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
-    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));

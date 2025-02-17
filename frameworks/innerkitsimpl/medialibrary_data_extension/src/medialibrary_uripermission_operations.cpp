@@ -171,7 +171,7 @@ int32_t UriPermissionOperations::InsertOperation(MediaLibraryCommand &cmd)
 }
 
 int32_t UriPermissionOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
-    const std::vector<ValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
+    std::vector<ValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
