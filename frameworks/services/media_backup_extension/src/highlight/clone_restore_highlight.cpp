@@ -722,15 +722,17 @@ void CloneRestoreHighlight::GetHighlightInsertValue(NativeRdb::ValuesBucket &val
 
 void CloneRestoreHighlight::MoveHighlightCovers()
 {
+    std::unordered_set<int32_t> hasMovedAlbums;
     for (const auto &info : analysisInfos_) {
         if (!info.albumIdNew.has_value() || !info.oldCoverUri.has_value() || !info.highlightIdOld.has_value() ||
             !info.highlightIdNew.has_value()) {
             continue;
         }
 
-        if (!info.oldCoverUri.has_value()) {
+        if (hasMovedAlbums.count(info.highlightIdOld.value()) > 0) {
             continue;
         }
+        hasMovedAlbums.insert(info.highlightIdOld.value());
         std::string srcDir = coverPath_ + std::to_string(info.highlightIdOld.value()) + "/";
         MoveHighlightWordart(info, srcDir);
         MoveHighlightGround(info, srcDir);
