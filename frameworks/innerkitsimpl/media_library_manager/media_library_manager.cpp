@@ -535,8 +535,13 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     size_t pos = str.find(MULTI_USER_URI_FLAG);
     std::string userId = "";
     if (pos != std::string::npos) {
-        userId = str.substr(pos + MULTI_USER_URI_FLAG.length());
-        MEDIA_DEBUG_LOG("OpenThumbnail for other user is %{public}s", userId.c_str());
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == std::string::npos) {
+            end = str.length();
+        }
+        userId = str.substr(pos, end - pos);
+        MEDIA_ERR_LOG("OpenThumbnail for other user is %{public}s", userId.c_str());
     }
     shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ? DataShare::DataShareHelper::Creator(token_,
         MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) : sDataShareHelper_;
@@ -941,6 +946,21 @@ int32_t MediaLibraryManager::OpenReadOnlyAppSandboxVideo(const string& uri)
 
 int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const string &option)
 {
+    std::string str = uri;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    std::string userId = "";
+    if (pos != std::string::npos) {
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == std::string::npos) {
+            end = str.length();
+        }
+        userId = str.substr(pos, end - pos);
+        MEDIA_INFO_LOG("ReadMovingPhotoVideo for other user is %{public}s", userId.c_str());
+    }
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ?
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) :
+        sDataShareHelper_;
     if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
         return OpenReadOnlyAppSandboxVideo(uri);
     }
@@ -949,12 +969,12 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const strin
         return E_ERR;
     }
 
-    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_ERR,
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR,
         "Failed to read video of moving photo, datashareHelper is nullptr");
     string videoUri = uri;
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, option);
     Uri openVideoUri(videoUri);
-    return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+    return dataShareHelper->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
 }
 
 int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)

@@ -1268,7 +1268,7 @@ static void PhotoAccessHelperRequestSourceExecute(napi_env env, void *data)
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
     Uri uri(fileUri);
-    int32_t retVal = UserFileClient::OpenFile(uri, "r");
+    int32_t retVal = UserFileClient::OpenFile(uri, "r", context->objectPtr->GetUserId());
     if (retVal <= 0) {
         if (retVal == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;

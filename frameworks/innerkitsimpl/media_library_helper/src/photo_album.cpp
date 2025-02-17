@@ -337,5 +337,15 @@ bool PhotoAlbum::IsAnalysisAlbum(const PhotoAlbumType albumType, const PhotoAlbu
     return (albumType == PhotoAlbumType::SMART) && (albumSubType >= PhotoAlbumSubType::ANALYSIS_START &&
             albumSubType <= PhotoAlbumSubType::ANALYSIS_END);
 }
+
+void PhotoAlbum::SetUserId(int32_t userId)
+{
+    targetUserId_ = userId;
+}
+ 
+int32_t PhotoAlbum::GetUserId()
+{
+    return targetUserId_;
+}
 }  // namespace Media
 }  // namespace OHOS
