@@ -192,17 +192,12 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     return ret;
 }
 
-int32_t FileUtils::SaveVideo(const std::string &filePath, bool isEdited, bool isMovingPhoto)
+int32_t FileUtils::SaveVideo(const std::string &filePath, bool isEdited)
 {
     string tempPath = filePath.substr(0, filePath.rfind('.')) + "_tmp" + filePath.substr(filePath.rfind('.'));
     string targetPath = filePath;
     if (isEdited) {
         targetPath = MediaLibraryAssetOperations::GetEditDataSourcePath(filePath);
-    }
-
-    if (isMovingPhoto) {
-        tempPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(tempPath);
-        targetPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(targetPath);
     }
 
     if (!IsFileExist(tempPath)) {
@@ -213,6 +208,33 @@ int32_t FileUtils::SaveVideo(const std::string &filePath, bool isEdited, bool is
         MEDIA_ERR_LOG("file not exist: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
     }
  
+    MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s",
+        DfxUtils::GetSafePath(targetPath).c_str(), DfxUtils::GetSafePath(tempPath).c_str());
+    return rename(tempPath.c_str(), targetPath.c_str());
+}
+
+int32_t FileUtils::SaveMovingPhotoVideo(const std::string &filePath)
+{
+    string tempPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(
+        filePath.substr(0, filePath.rfind('.')) + "_tmp" + filePath.substr(filePath.rfind('.')));
+    string targetPath;
+
+    string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
+    string editVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(
+        MediaLibraryAssetOperations::GetEditDataSourcePath(filePath));
+
+    if (!IsFileExist(tempPath)) {
+        MEDIA_ERR_LOG("file not exist: %{public}s", DfxUtils::GetSafePath(tempPath).c_str());
+    }
+
+    if (IsFileExist(editVideoPath)) {
+        targetPath = editVideoPath;
+    } else if (IsFileExist(videoPath)) {
+        targetPath = videoPath;
+    } else {
+        MEDIA_ERR_LOG("file not exist: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
+    }
+
     MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s",
         DfxUtils::GetSafePath(targetPath).c_str(), DfxUtils::GetSafePath(tempPath).c_str());
     return rename(tempPath.c_str(), targetPath.c_str());

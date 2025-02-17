@@ -57,10 +57,12 @@ private:
     typedef struct {
         int32_t fileId;
         std::string path;
+        std::string displayName;
         int64_t size;
         int32_t width;
         int32_t height;
         std::string mimeType;
+        std::string mediaSuffix;
         int32_t duration;
         MediaType mediaType;
         bool isCloud;

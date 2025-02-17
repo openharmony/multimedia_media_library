@@ -56,17 +56,21 @@ string ScannerUtils::GetFileNameFromUri(const string &path)
     return "";
 }
 
-// Get file extension from the given filepath uri
-string ScannerUtils::GetFileExtension(const string &path)
+// Get file extension from the given filepath or displayName
+string ScannerUtils::GetFileExtension(const string &pathOrDisplayName)
 {
-    if (!path.empty()) {
-        size_t dotIndex = path.rfind(".");
+    if (!pathOrDisplayName.empty()) {
+        size_t dotIndex = pathOrDisplayName.rfind(".");
+        string extension {};
         if (dotIndex != string::npos) {
-            return path.substr(dotIndex + 1);
+            extension = pathOrDisplayName.substr(dotIndex + 1);
+            CHECK_AND_WARN_LOG(!extension.empty(), "Extension is empty, path/displayName: %{public}s",
+                pathOrDisplayName.c_str());
+            return extension;
         }
     }
 
-    MEDIA_ERR_LOG("Failed to obtain file extension because given pathname is empty");
+    MEDIA_ERR_LOG("Failed to obtain file extension because given path/displayName is empty");
     return "";
 }
 

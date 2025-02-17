@@ -75,6 +75,7 @@ enum class EXPORT OperationObject : uint32_t {
     CONVERT_PHOTO,
     ANALYSIS_PHOTO_ALBUM,
     ANALYSIS_PHOTO_MAP,
+    ADD_ASSET_HIGHLIGHT_ALBUM,
     PAH_FORM_MAP,
     SEARCH_TOTAL,  // search
     INDEX_CONSTRUCTION_STATUS,  //Search Index Build Status
@@ -207,6 +208,7 @@ enum class EXPORT OperationType : uint32_t {
     CUSTOM_RESTORE_CANCEL,
     DELETE_LOCAL_ASSETS_PERMANENTLY,
     MTH_AND_YEAR_ASTC,
+    UPDATE_SUPPORTED_WATERMARK_TYPE,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

@@ -66,10 +66,7 @@ MultiStagesCaptureDeferredPhotoProcSessionCallback::~MultiStagesCaptureDeferredP
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    if (resultSet == nullptr) {
-        MEDIA_WARN_LOG("resultSet is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
     string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
@@ -77,14 +74,14 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(shared
     resultSet->Close();
 
     auto watch = MediaLibraryNotify::GetInstance();
-    if (watch != nullptr) {
-        string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
-        auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
-            static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
-        MEDIA_DEBUG_LOG("MultistagesCapture notify %{public}s",
-            MediaFileUtils::GetUriWithoutDisplayname(notifyUri).c_str());
-        watch->Notify(MediaFileUtils::GetUriWithoutDisplayname(notifyUri), NOTIFY_UPDATE);
-    }
+    CHECK_AND_RETURN_LOG(watch != nullptr, "get instance notify failed NotifyIfTempFile abortion");
+
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
+        static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
+    MEDIA_DEBUG_LOG("MultistagesCapture notify %{public}s",
+        MediaFileUtils::GetUriWithoutDisplayname(notifyUri).c_str());
+    watch->Notify(MediaFileUtils::GetUriWithoutDisplayname(notifyUri), NOTIFY_UPDATE);
 }
 
 int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const string &photoId)
@@ -105,10 +102,7 @@ int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(c
     updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
     updateCmd.SetValueBucket(updateValuesDirty);
     auto isDirtyResult = DatabaseAdapter::Update(updateCmd);
-    if (isDirtyResult < 0) {
-        MEDIA_WARN_LOG("update dirty flag fail, photoId: %{public}s", photoId.c_str());
-    }
-
+    CHECK_AND_PRINT_LOG(isDirtyResult >= 0, "update dirty flag fail, photoId: %{public}s", photoId.c_str());
     return updatePhotoQualityResult;
 }
 

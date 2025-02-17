@@ -23,6 +23,7 @@
 #include "result_set_utils.h"
 #include "media_file_utils.h"
 #include "photo_asset_info.h"
+#include "scanner_utils.h"
 
 namespace OHOS::Media {
 PhotoAssetCopyOperation &PhotoAssetCopyOperation::SetTargetPhotoInfo(
@@ -80,6 +81,7 @@ void PhotoAssetCopyOperation::CopyPhotoAsset(
     if (!displayName.empty()) {
         values.PutString(MediaColumn::MEDIA_NAME, displayName);
         values.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
+        values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(displayName));
     } else {
         MEDIA_ERR_LOG("Failed to get display name. Object: %{public}s", photoAssetInfo.ToString().c_str());
         return;

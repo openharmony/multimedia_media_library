@@ -199,6 +199,15 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_nutils"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/kits/cj/include",
+                "header_files": [
+                  "photo_asset_helper.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/interfaces/kits/cj:cj_photoaccesshelper_ffi"
             }
         ],
         "test": [

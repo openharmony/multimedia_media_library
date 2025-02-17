@@ -16,10 +16,15 @@
 #define MLOG_TAG "PictureDataOperations"
 
 #include "picture_data_operations.h"
+
 #include "file_utils.h"
+#include "media_column.h"
 #include "media_log.h"
+#include "medialibrary_data_manager_utils.h"
+#include "medialibrary_unistore_manager.h"
 #include "parameter.h"
 #include "parameters.h"
+#include "result_set_utils.h"
 
 using namespace std;
 namespace OHOS {
@@ -39,6 +44,21 @@ PictureDataOperations::~PictureDataOperations()
     highQualityPictureImageId.clear();
 }
 
+static bool IsPictureEdited(const string &photoId)
+{
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(photoId), false, "photoId is invalid");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore");
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_ID, photoId);
+    vector<string> columns { PhotoColumn::PHOTO_EDIT_TIME };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, false,
+        "resultSet is empty");
+    bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
+    return isEdited;
+}
+
 void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap,
     PictureType pictureType)
 {
@@ -48,7 +68,8 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
         bool isNeedDeletePicture = ((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_);
         if (isNeedDeletePicture || ((iter->second)->expireTime_ + SAVE_PICTURE_TIMEOUT_SEC) < now) {
             if (pictureType == LOW_QUALITY_PICTURE) {
-                FileUtils::SavePicture(iter->first, (iter->second)->picture_, false, true);
+                bool isEdited = IsPictureEdited(iter->first);
+                FileUtils::SavePicture(iter->first, (iter->second)->picture_, isEdited, true);
             }
             MEDIA_INFO_LOG("enter CleanDateByPictureMap %{public}s enter", (iter->first).c_str());
             iter->second = nullptr;

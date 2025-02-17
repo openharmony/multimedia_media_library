@@ -250,6 +250,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     values.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
 
     if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO) {
+        values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(metadata.GetFileName()));
         values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata.GetFileHeight());
         values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata.GetFileWidth());
         values.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata.GetOrientation());
@@ -261,7 +262,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
             values.PutNull(PhotoColumn::PHOTO_LONGITUDE);
             values.PutNull(PhotoColumn::PHOTO_LATITUDE);
         }
-        if (skipPhoto) {
+        if (skipPhoto && !metadata.GetUserComment().empty()) {
             values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
         }
         values.PutString(PhotoColumn::PHOTO_ALL_EXIF, metadata.GetAllExif());
@@ -309,7 +310,7 @@ static void GetTableNameByPath(int32_t mediaType, string &tableName, const strin
     }
 }
 
-bool MediaScannerDb::InsertData(const ValuesBucket values, const string &tableName, int64_t &rowNum)
+bool MediaScannerDb::InsertData(ValuesBucket values, const string &tableName, int64_t &rowNum)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {

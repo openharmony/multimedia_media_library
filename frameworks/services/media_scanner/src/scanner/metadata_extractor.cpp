@@ -319,7 +319,7 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
     data->SetAllExif(exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
 
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, propertyStr);
-    if (err == 0) {
+    if (err == 0 && !propertyStr.empty()) {
         data->SetUserComment(GetCompatibleUserComment(propertyStr));
     }
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_PHOTO_MODE, propertyStr);

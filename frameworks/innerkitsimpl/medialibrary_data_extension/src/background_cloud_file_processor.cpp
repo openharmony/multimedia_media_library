@@ -523,9 +523,9 @@ void BackgroundCloudFileProcessor::SetPredicates(NativeRdb::RdbPredicates &predi
 std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateData(bool isCloud, bool isVideo)
 {
     const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_TYPE, MediaColumn::MEDIA_SIZE,
+        MediaColumn::MEDIA_TYPE, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_NAME,
         PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_HEIGHT,
-        MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_DURATION };
+        MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_DURATION, PhotoColumn::PHOTO_MEDIA_SUFFIX };
 
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.BeginWrap()
@@ -544,6 +544,10 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         ->EqualTo(MediaColumn::MEDIA_MIME_TYPE, "")
         ->Or()
         ->IsNull(MediaColumn::MEDIA_MIME_TYPE)
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_MEDIA_SUFFIX, "")
+        ->Or()
+        ->IsNull(PhotoColumn::PHOTO_MEDIA_SUFFIX)
         ->Or()
         ->BeginWrap()
         ->EqualTo(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))
@@ -582,23 +586,29 @@ void BackgroundCloudFileProcessor::ParseUpdateData(std::shared_ptr<NativeRdb::Re
             get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DURATION, resultSet, TYPE_INT32));
         std::string path =
             get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
+        std::string displayName =
+            get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_NAME, resultSet, TYPE_STRING));
         if (path.empty()) {
             MEDIA_WARN_LOG("Failed to get data path");
             continue;
         }
         std::string mimeType =
             get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_MIME_TYPE, resultSet, TYPE_STRING));
+        std::string suffix =
+            get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_MEDIA_SUFFIX, resultSet, TYPE_STRING));
         int32_t mediaType =
             get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_TYPE, resultSet, TYPE_INT32));
 
         AbnormalData abnormalData;
         abnormalData.fileId = fileId;
         abnormalData.path = path;
+        abnormalData.displayName = displayName;
         abnormalData.size = size;
         abnormalData.width = width;
         abnormalData.height = height;
         abnormalData.duration = duration;
         abnormalData.mimeType = mimeType;
+        abnormalData.mediaSuffix = suffix;
         abnormalData.isCloud = isCloud;
         abnormalData.isVideo = isVideo;
 
@@ -666,6 +676,7 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
         metadata->SetFileSize(abnormalData.size);
         metadata->SetFileMimeType(abnormalData.mimeType);
         GetSizeAndMimeType(metadata);
+        metadata->SetFileExtension(ScannerUtils::GetFileExtension(abnormalData.displayName));
         if (abnormalData.size == 0 || abnormalData.mimeType.empty()) {
             int64_t fileSize = metadata->GetFileSize();
             string mimeType =  metadata->GetFileMimeType();
@@ -701,6 +712,7 @@ static void SetAbnormalValuesFromMetaData(std::unique_ptr<Metadata> &metadata, N
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata->GetFileHeight());
     values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata->GetFileWidth());
     values.PutString(MediaColumn::MEDIA_MIME_TYPE, metadata->GetFileMimeType());
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, metadata->GetFileExtension());
 }
 
 void BackgroundCloudFileProcessor::UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName)
