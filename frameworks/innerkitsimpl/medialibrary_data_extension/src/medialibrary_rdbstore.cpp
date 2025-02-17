@@ -4211,6 +4211,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_MEDIA_SUFFIX_COLUMN) {
         AddMediaSuffixColumn(store);
     }
+        
+    if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN) {
+        UpdateSourcePhotoAlbumTrigger(store);
+    }
 }
 
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
