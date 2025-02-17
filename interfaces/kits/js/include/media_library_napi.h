@@ -300,6 +300,7 @@ private:
     EXPORT static napi_value CheckShortTermPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateAssetsHasPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateAssetWithShortTermPermission(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateAssetsForAppWithAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value ShowAssetsCreationDialog(napi_env env, napi_callback_info info);
     EXPORT static napi_value RequestPhotoUrisReadPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
@@ -489,6 +490,9 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::string indexProgress;
     std::shared_ptr<PickerCallBack> pickerCallBack;
     std::vector<std::string> analysisDatas;
+    uint32_t tokenId;
+    std::vector<std::string> albumIds;
+    std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

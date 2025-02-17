@@ -359,6 +359,7 @@ public:
         std::string &propValue);
     static napi_status GetArrayProperty(napi_env env, napi_value arg, const std::string &propName,
         std::vector<std::string> &array);
+    static napi_status GetStringArrayFromInt32(napi_env env, napi_value arg, std::vector<std::string> &array);
     static napi_status GetStringArray(napi_env env, napi_value arg, std::vector<std::string> &array);
     static void UriAddTableName(std::string &uri, const std::string tableName);
     static std::string GetFileIdFromUri(const std::string &uri);
@@ -530,10 +531,9 @@ public:
         std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     static napi_value BuildNextRowObject(const napi_env& env, std::shared_ptr<RowObject>& rowObj, bool isShared);
     static napi_value BuildNextRowAlbumObject(const napi_env& env, std::shared_ptr<RowObject>& rowObj);
-
-private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
 
+private:
     static napi_value BuildValueByIndex(const napi_env& env, int32_t index, const std::string& name,
         ColumnUnion& tmpNameValue);
     static int ParseValueByIndex(std::shared_ptr<ColumnInfo>& columnInfo, int32_t index, const std::string& name,
