@@ -885,8 +885,8 @@ static inline int32_t CheckTitle(const string &title)
         return -EINVAL;
     }
     
-    static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(title, TITLE_REGEX_CHECK)) {
+    static const string titleRegexCheck = R"([\\/:*?"<>|])";
+    if (RegexCheck(title, titleRegexCheck)) {
         MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
         return -EINVAL;
     }
@@ -938,7 +938,7 @@ int32_t MediaFileUtils::CheckFileDisplayName(const string &displayName)
     if (displayName.at(0) == '.') {
         return -EINVAL;
     }
-    static const string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
+    static const string TITLE_REGEX_CHECK = R"([\\/:*?"<>|])";
     if (RegexCheck(displayName, TITLE_REGEX_CHECK)) {
         MEDIA_ERR_LOG("Failed to check displayName regex: %{private}s", displayName.c_str());
         return -EINVAL;
