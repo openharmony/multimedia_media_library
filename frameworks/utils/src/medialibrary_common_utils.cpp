@@ -342,7 +342,7 @@ void MediaLibraryCommonUtils::AppendSelections(std::string &selections)
     selections = "(" + selections + ")";
 }
 
-bool MediaLibraryCommonUtils::CanStrConvertInt32(const std::string &str)
+bool MediaLibraryCommonUtils::CanConvertStrToInt32(const std::string &str)
 {
     std::istringstream iss(str);
     int32_t num = 0;
