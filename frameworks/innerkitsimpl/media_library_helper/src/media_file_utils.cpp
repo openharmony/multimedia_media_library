@@ -2295,4 +2295,12 @@ std::string MediaFileUtils::GetMimeTypeFromDisplayName(const std::string &displa
     mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
     return mimeType;
 }
+
+std::string MediaFileUtils::DesensitizeUri(const std::string &fileUri)
+{
+    string result = fileUri;
+    size_t slashIndex = result.rfind('/');
+    CHECK_AND_RETURN_RET(slashIndex != std::string::npos, result);
+    return result.replace(slashIndex + 1, result.length() - slashIndex - 1, "*");
+}
 } // namespace OHOS::Media
