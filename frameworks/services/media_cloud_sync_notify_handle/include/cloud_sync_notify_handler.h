@@ -57,7 +57,7 @@ private:
     void HandleDeleteEvent(const std::list<Uri> &uris);
     void HandleTimeUpdateEvent(const std::list<Uri> &uris);
     void HandleExtraEvent(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
-    void HandleDirtyDataFix(const std::list<Uri> &uris, const CloudSyncErrType &type);
+    EXPORT void HandleDirtyDataFix(const std::list<Uri> &uris, const CloudSyncErrType &type);
     void HandleContentNotFound(const std::list<Uri> &uris);
     void HandleThumbnailNotFound(const std::list<Uri> &uris);
     void HandleLCDNotFound(const std::list<Uri> &uris);
