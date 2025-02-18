@@ -33,16 +33,21 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_manager/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
   ]
 
   sources = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_album_operations.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/display_name_info.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_album_copy_meta_data_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_asset_copy_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_burst_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_displayname_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_lpath_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_merge_operation.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "../../../media_library_manager/src/media_library_tab_old_photos_client.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/media_library_tab_old_photos_client_test.cpp",
@@ -52,6 +57,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "./src/medialibrary_photo_edit_test.cpp",
     "./src/medialibrary_photo_operations_test.cpp",
     "./src/operation/display_name_info_test.cpp",
+    "./src/operation/photo_album_copy_meta_data_operation_test.cpp",
     "./src/operation/photo_asset_copy_operation_test.cpp",
     "./src/operation/photo_burst_operation_test.cpp",
     "./src/operation/photo_displayname_operation_test.cpp",
@@ -90,6 +96,9 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "relational_store:rdb_data_share_adapter",
     "user_file_service:file_access_extension_ability_kit",
   ]
+
+  defines = []
+  defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
   sanitize = {
     cfi = true
