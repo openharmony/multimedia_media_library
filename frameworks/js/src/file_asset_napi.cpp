@@ -2748,6 +2748,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::SUPPORTED_WATERMARK_TYPE,
         PhotoColumn::PHOTO_IS_AUTO,
+        PhotoColumn::PHOTO_IS_RECENT_SHOW,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };

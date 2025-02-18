@@ -127,6 +127,8 @@ public:
 
     EXPORT bool IsFavorite() const;
     EXPORT void SetFavorite(bool isFavorite);
+    EXPORT bool IsRecentShow() const;
+    EXPORT void SetRecentShow(bool isRecentShow);
     EXPORT int64_t GetDateTrashed() const;
     EXPORT void SetDateTrashed(int64_t dateTrashed);
 
