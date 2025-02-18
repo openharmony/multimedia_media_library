@@ -38,7 +38,7 @@ struct PhotoCreationConfig {
 class ConfirmCallback {
 public:
     explicit ConfirmCallback(napi_env env, Ace::UIContent *uiContent);
-    virtual ~ConfirmCallback() = default;
+    ~ConfirmCallback();
     void OnRelease(int32_t releaseCode);
     void OnResult(int32_t resultCode, const OHOS::AAFwk::Want &want);
     void OnReceive(const OHOS::AAFwk::WantParams &request);
