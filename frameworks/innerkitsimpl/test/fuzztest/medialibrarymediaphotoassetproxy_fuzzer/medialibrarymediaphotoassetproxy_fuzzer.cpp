@@ -44,6 +44,9 @@ std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int32_t)) {
+        return 0;
+    }
     return static_cast<int32_t>(*data);
 }
 
@@ -95,8 +98,16 @@ void CreateDataHelper(int32_t systemAbilityId)
 
 static shared_ptr<Media::PhotoAssetProxy> Init(const uint8_t *data, size_t size)
 {
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return nullptr;
+    }
+    int offset = 0;
+    uint32_t callingUid = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t userId = FuzzInt32(data + offset, size);
     shared_ptr<Media::PhotoAssetProxy> photoAssetProxy = make_shared<Media::PhotoAssetProxy>(sDataShareHelper_,
-        FuzzCameraShotType(data, size), FuzzInt32(data, size), FuzzInt32(data, size));
+        FuzzCameraShotType(data, size), callingUid, userId);
     return photoAssetProxy;
 }
 
@@ -161,11 +172,16 @@ static void RdbStoreInit()
 }
 } // namespace OHOS
 
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
+{
+    OHOS::RdbStoreInit();
+    return 0;
+}
+
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::RdbStoreInit();
     OHOS::MediaLibraryMediaPhotoAssetProxyTest(data, size);
     return 0;
 }
