@@ -19,17 +19,17 @@
 #include "userfile_client.h"
 
 namespace OHOS::Media {
-bool MediaChangeRequestNapi::InitUserFileClient(napi_env env, napi_callback_info info)
+bool MediaChangeRequestNapi::InitUserFileClient(napi_env env, napi_callback_info info, const int32_t userId)
 {
-    if (UserFileClient::IsValid()) {
+    if (UserFileClient::IsValid(userId)) {
         return true;
     }
 
     std::unique_lock<std::mutex> helperLock(MediaLibraryNapi::sUserFileClientMutex_);
-    if (!UserFileClient::IsValid()) {
-        UserFileClient::Init(env, info);
+    if (!UserFileClient::IsValid(userId)) {
+        UserFileClient::Init(env, info, userId);
     }
     helperLock.unlock();
-    return UserFileClient::IsValid();
+    return UserFileClient::IsValid(userId);
 }
 } // namespace OHOS::Media

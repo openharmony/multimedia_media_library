@@ -1566,7 +1566,7 @@ size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> med
         totalVolume += mediaSize;
     }
     resultSet->Close();
-
+    size_t totalAssetSize = static_cast<size_t>(totalVolume);
     // other meta data dir size
     size_t editDataTotalSize {0};
     size_t rdbTotalSize {0};
@@ -1576,7 +1576,7 @@ size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> med
     MediaFileUtils::StatDirSize(CLONE_STAT_RDB_DIR, rdbTotalSize);
     MediaFileUtils::StatDirSize(CLONE_STAT_KVDB_DIR, kvdbTotalSize);
     MediaFileUtils::StatDirSize(CLONE_STAT_HIGHLIGHT_DIR, highlightTotalSize);
-    size_t totalSize = totalVolume + editDataTotalSize + rdbTotalSize + kvdbTotalSize + highlightTotalSize;
+    size_t totalSize = totalAssetSize + editDataTotalSize + rdbTotalSize + kvdbTotalSize + highlightTotalSize;
     return totalSize;
 }
 

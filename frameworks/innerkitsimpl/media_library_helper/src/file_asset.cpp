@@ -684,6 +684,16 @@ int32_t FileAsset::GetPhotoIndex() const
     return GetInt32Member(PHOTO_INDEX);
 }
 
+int32_t FileAsset::GetUserId()
+{
+    return userId_;
+}
+ 
+void FileAsset::SetUserId(int32_t userId)
+{
+    userId_ = userId;
+}
+
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
 {
     lock_guard<mutex> lock(resultTypeMapMutex_);

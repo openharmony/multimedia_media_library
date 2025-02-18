@@ -112,6 +112,9 @@ public:
     EXPORT static bool IsHighlightAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsAnalysisAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
 
+    EXPORT void SetUserId(int32_t userId);
+    EXPORT int32_t GetUserId();
+
 private:
     int32_t albumId_;
     PhotoAlbumType type_;
@@ -139,6 +142,7 @@ private:
     ResultNapiType resultNapiType_ = ResultNapiType::TYPE_MEDIALIBRARY;
     bool hiddenOnly_ = false;
     bool locationOnly_ = false;
+    int32_t targetUserId_;
 };
 } // namespace Media
 } // namespace OHOS
