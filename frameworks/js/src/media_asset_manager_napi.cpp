@@ -209,13 +209,11 @@ static void DeleteRecordNoLock(const std::string &requestUri, const std::string 
 
 static void DeleteInProcessMapRecord(const std::string &requestUri, const std::string &requestId)
 {
-    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     DeleteRecordNoLock(requestUri, requestId);
 }
 
 static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler* &handler)
 {
-    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     for (auto record : inProcessUriMap) {
         if (record.second.find(requestId) != record.second.end()) {
             handler = record.second[requestId];
@@ -286,6 +284,7 @@ static ProgressHandler* InsertProgressHandler(napi_env env, MediaAssetManagerAsy
 
 static void DeleteDataHandler(NotifyMode notifyMode, const std::string &requestUri, const std::string &requestId)
 {
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
     NAPI_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode, requestUri.c_str(), requestId.c_str());
     if (notifyMode == NotifyMode::WAIT_FOR_HIGH_QUALITY) {
@@ -1673,6 +1672,7 @@ static bool IsFastRequestCanceled(const std::string &requestId, std::string &pho
 static bool IsMapRecordCanceled(const std::string &requestId, std::string &photoId, napi_env env)
 {
     AssetHandler *assetHandler = nullptr;
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     if (!IsInProcessInMapRecord(requestId, assetHandler)) {
         NAPI_ERR_LOG("requestId(%{public}s) not in progress.", requestId.c_str());
         return false;
