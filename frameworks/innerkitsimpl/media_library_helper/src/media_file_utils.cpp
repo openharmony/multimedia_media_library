@@ -1177,12 +1177,27 @@ string MediaFileUtils::StrCreateTimeSafely(const string &format, int64_t time)
     return strTime;
 }
 
-string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
+std::string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";
     int64_t times = time / MSEC_TO_SEC;
-    auto tm = localtime(&times);
-    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
+    struct tm localTm;
+
+    if (localtime_noenv_r(&times, &localTm) == nullptr) {
+        MEDIA_ERR_LOG("localtime_noenv_r error: %{public}d", errno);
+        if (time < 0) {
+            MEDIA_ERR_LOG("Time value is negative: %{public}lld", static_cast<long long>(time));
+        }
+        return strTime;
+    }
+
+    if (strftime(strTime, sizeof(strTime), format.c_str(), &localTm) == 0) {
+        MEDIA_ERR_LOG("strftime error: %{public}d", errno);
+    }
+
+    if (time < 0) {
+        MEDIA_ERR_LOG("Time value is negative: %{public}lld", static_cast<long long>(time));
+    }
     return strTime;
 }
 
