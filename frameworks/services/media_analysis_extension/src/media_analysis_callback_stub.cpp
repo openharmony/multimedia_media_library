@@ -17,6 +17,7 @@
 
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "medialibrary_common_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "photo_album_column.h"
@@ -56,6 +57,11 @@ int32_t MediaAnalysisCallbackStub::PortraitCoverSelectionCompleted(const std::st
     if (watch == nullptr) {
         MEDIA_ERR_LOG("PortraitCoverSelectionCompleted Can not get MediaLibraryNotify Instance");
         return ERR_NULL_OBJECT;
+    }
+
+    if (!MediaLibraryCommonUtils::CanConvertStrToInt32(albumId)) {
+        MEDIA_ERR_LOG("PortraitCoverSelectionCompleted Can not convert albumId to Int");
+        return ERR_INVALID_DATA;
     }
 
     int32_t ret =
