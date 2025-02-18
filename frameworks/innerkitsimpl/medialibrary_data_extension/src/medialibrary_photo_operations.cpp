@@ -1461,6 +1461,37 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
     return updateRows;
 }
 
+static int32_t GetRecentShowState(const ValuesBucket& values)
+{
+    ValueObject obj;
+    bool isValid = values.GetObject(PhotoColumn::PHOTO_IS_RECENT_SHOW, obj);
+    CHECK_AND_RETURN_RET(isValid, E_INVALID_VALUES);
+
+    int32_t recentShowState = -1;
+    int ret = obj.GetInt(recentShowState);
+    bool cond = (ret != E_OK || (recentShowState != 0 && recentShowState != 1));
+    CHECK_AND_RETURN_RET(!cond, E_INVALID_VALUES);
+    return recentShowState;
+}
+
+int32_t MediaLibraryPhotoOperations::BatchSetRecentShow(MediaLibraryCommand &cmd)
+{
+    int32_t recentShowState = GetRecentShowState(cmd.GetValueBucket());
+    CHECK_AND_RETURN_RET_LOG(recentShowState >= 0, recentShowState, "Failed to get recentShowState");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
+
+    RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+    vector<string> notifyUris = predicates.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_IS_RECENT_SHOW, recentShowState);
+    int32_t updatedRows = rdbStore->UpdateWithDateTime(values, predicates);
+    CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Failed to set recentShow, err: %{public}d",
+        updatedRows);
+    return updatedRows;
+}
+
 static void RevertOrientation(const shared_ptr<FileAsset> &fileAsset, string &currentOrientation)
 {
     CHECK_AND_RETURN_LOG(fileAsset != nullptr, "fileAsset is null");
@@ -1594,6 +1625,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return BatchSetUserComment(cmd);
         case OperationType::BATCH_UPDATE_OWNER_ALBUM_ID:
             return BatchSetOwnerAlbumId(cmd);
+        case OperationType::BATCH_UPDATE_RECENT_SHOW:
+            return BatchSetRecentShow(cmd);
         case OperationType::DISCARD_CAMERA_PHOTO:
             return DiscardCameraPhoto(cmd);
         case OperationType::SAVE_CAMERA_PHOTO:

@@ -47,6 +47,7 @@ napi_value MediaAssetsChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setFavorite", JSSetFavorite),
             DECLARE_NAPI_FUNCTION("setHidden", JSSetHidden),
             DECLARE_NAPI_FUNCTION("setUserComment", JSSetUserComment),
+            DECLARE_NAPI_FUNCTION("setIsRecentShow", JSSetIsRecentShow),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -144,6 +145,11 @@ string MediaAssetsChangeRequestNapi::GetUpdatedUserComment() const
     return userComment_;
 }
 
+bool MediaAssetsChangeRequestNapi::GetRecentShowStatus() const
+{
+    return isRecentShow_;
+}
+
 bool MediaAssetsChangeRequestNapi::CheckChangeOperations(napi_env env)
 {
     if (assetsChangeOperations_.empty()) {
@@ -236,6 +242,29 @@ napi_value MediaAssetsChangeRequestNapi::JSSetUserComment(napi_env env, napi_cal
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAssetsChangeRequestNapi::JSSetIsRecentShow(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetsChangeRequestAsyncContext>();
+    bool isRecentShow;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, isRecentShow) == napi_ok,
+        "Failed to parse args");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+
+    auto changeRequest = asyncContext->objectInfo;
+    changeRequest->isRecentShow_ = isRecentShow;
+    for (const auto& fileAsset : changeRequest->fileAssets_) {
+        fileAsset->SetRecentShow(isRecentShow);
+    }
+    changeRequest->assetsChangeOperations_.push_back(AssetsChangeOperation::BATCH_SET_RECENT_SHOW);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 static bool SetAssetsPropertyExecute(
     MediaAssetsChangeRequestAsyncContext& context, const AssetsChangeOperation& changeOperation)
 {
@@ -260,6 +289,10 @@ static bool SetAssetsPropertyExecute(
         case AssetsChangeOperation::BATCH_SET_USER_COMMENT:
             uri = PAH_BATCH_UPDATE_USER_COMMENT;
             valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, changeRequest->GetUpdatedUserComment());
+            break;
+        case AssetsChangeOperation::BATCH_SET_RECENT_SHOW:
+            uri = PAH_BATCH_UPDATE_RECENT_SHOW;
+            valuesBucket.Put(PhotoColumn::PHOTO_IS_RECENT_SHOW, changeRequest->GetRecentShowStatus() ? YES : NO);
             break;
         default:
             context.SaveError(E_FAIL);
