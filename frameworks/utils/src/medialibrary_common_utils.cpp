@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <regex>
+#include <sstream>
 #include <unordered_set>
 #include "medialibrary_errno.h"
 #include "medialibrary_db_const.h"
@@ -342,6 +343,14 @@ void MediaLibraryCommonUtils::AppendSelections(std::string &selections)
         return;
     }
     selections = "(" + selections + ")";
+}
+
+bool MediaLibraryCommonUtils::CanConvertStrToInt32(const std::string &str)
+{
+    std::istringstream iss(str);
+    int32_t num = 0;
+    iss >> num;
+    return iss.eof() && !iss.fail();
 }
 } // namespace Media
 } // namespace OHOS

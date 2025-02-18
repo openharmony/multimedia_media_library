@@ -218,7 +218,7 @@ private:
     int32_t dynamicRangeType_;
 
     // video, audio, image
-    int64_t dateTaken_;
+    int64_t dateTaken_ {0};
 
     // image
     double longitude_;

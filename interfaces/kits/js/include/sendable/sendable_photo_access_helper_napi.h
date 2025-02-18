@@ -55,6 +55,8 @@ public:
         const std::string &key, const std::string &keyInstead, const int32_t mode =
             SendableReplaceSelectionMode::SENDABLE_DEFAULT);
     static void OnThumbnailGenerated(napi_env env, napi_value cb, void *context, void *data);
+    int32_t GetUserId();
+    void SetUserId(const int32_t &userId);
 
     EXPORT SendablePhotoAccessHelper();
     EXPORT ~SendablePhotoAccessHelper();
@@ -85,6 +87,7 @@ private:
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
 
     napi_env env_;
+    int32_t userId_ = -1;
 
     static thread_local napi_ref photoAccessHelperConstructor_;
     static thread_local napi_ref sMediaTypeEnumRef_;

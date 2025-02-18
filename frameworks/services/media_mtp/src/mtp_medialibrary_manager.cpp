@@ -98,12 +98,15 @@ std::shared_ptr<MtpMedialibraryManager> MtpMedialibraryManager::GetInstance()
 
 void MtpMedialibraryManager::Init(const sptr<IRemoteObject> &token, const std::shared_ptr<MtpOperationContext> &context)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (dataShareHelper_ == nullptr) {
         dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     }
     if (mediaPhotoObserver_ == nullptr) {
         mediaPhotoObserver_ = std::make_shared<MediaSyncObserver>();
     }
+    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "fail to get dataShareHelper");
+    CHECK_AND_RETURN_LOG(mediaPhotoObserver_ != nullptr, "fail to get mediaPhotoObserver");
     getThumbToken_ = token;
     mediaPhotoObserver_->context_ = context;
     mediaPhotoObserver_->dataShareHelper_ = dataShareHelper_;
@@ -115,6 +118,7 @@ void MtpMedialibraryManager::Init(const sptr<IRemoteObject> &token, const std::s
 void MtpMedialibraryManager::Clear()
 {
     MEDIA_INFO_LOG("MtpMediaLibrary::Ptp Clear is called");
+    std::lock_guard<std::mutex> lock(mutex_);
     if (mediaPhotoObserver_ != nullptr) {
         mediaPhotoObserver_->StopNotifyThread();
     }

@@ -419,9 +419,7 @@ bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_
     }
     FileInfo fileInfo = fileInfoMap.at(faceInfo.hash);
     if (fileInfo.width == 0 || fileInfo.height == 0) {
-        MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, invalid width %{public}d or height %{public}d",
-            faceInfo.faceId.c_str(), fileInfo.width, fileInfo.height);
-        return false;
+        return true;
     }
     float scale = GetLandmarksScale(fileInfo.width, fileInfo.height);
     CHECK_AND_RETURN_RET_LOG(scale != 0, false,
@@ -750,6 +748,14 @@ void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb:
     const std::vector<FileIdPair>& fileIdPair)
 {
     std::string fileIdNewFilterClause = GetFileIdNewFilterClause(mediaLibraryRdb, fileIdPair);
+    std::string deleteAnalysisPhotoMapSql =
+        "DELETE FROM AnalysisPhotoMap WHERE map_asset IN ("
+        "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " + VISION_IMAGE_FACE_TABLE +
+        " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause +
+        ") AND map_album IN (SELECT album_id FROM AnalysisAlbum WHERE album_type = 4096 AND album_subtype = 4102)";
+
+    // 删除 AnalysisPhotoMap 表中的重复记录
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteAnalysisPhotoMapSql);
 
     std::string deleteFaceSql = "DELETE FROM " + VISION_IMAGE_FACE_TABLE +
         " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
