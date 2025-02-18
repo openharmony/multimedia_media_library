@@ -30,6 +30,7 @@ public:
     static int32_t GenKeySHA256(const std::string &input, std::string &key);
     static bool CheckWhereClause(const std::string &whereClause);
     static void AppendSelections(std::string &selections);
+    static bool CanConvertStrToInt32(const std::string &str);
 private:
     COMPILE_HIDDEN MediaLibraryCommonUtils() = delete;
     COMPILE_HIDDEN ~MediaLibraryCommonUtils() = delete;

@@ -227,6 +227,18 @@ bool FetchResult<T>::GetLocationOnly() const
     return locationOnly_;
 }
 
+template<class T>
+void FetchResult<T>::SetUserId(int32_t userId)
+{
+    userId_ = userId;
+}
+ 
+template<class T>
+int32_t FetchResult<T>::GetUserId()
+{
+    return userId_;
+}
+
 template <class T>
 unique_ptr<T> FetchResult<T>::GetObjectAtPosition(int32_t index)
 {

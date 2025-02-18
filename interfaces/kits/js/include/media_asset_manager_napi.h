@@ -85,6 +85,7 @@ struct MediaAssetManagerAsyncContext : NapiError {
     size_t argc = ARGS_FIVE;
     napi_value argv[ARGS_FIVE] = {nullptr};
     int fileId = -1; // default value of request file id
+    int userId = -1;
     std::string photoUri;
     std::string photoId;
     std::string displayName;
@@ -136,7 +137,7 @@ public:
     ~MediaAssetManagerNapi() = default;
     EXPORT static napi_value Init(napi_env env, napi_value exports);
     static MultiStagesCapturePhotoStatus QueryPhotoStatus(int fileId, const string& photoUri,
-        std::string &photoId, bool hasReadPermission);
+        std::string &photoId, bool hasReadPermission, int32_t userId);
     static void NotifyMediaDataPrepared(AssetHandler *assetHandler);
     static void NotifyOnProgress(int32_t type, int32_t progress, std::string requestId);
     static void NotifyDataPreparedWithoutRegister(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
@@ -155,7 +156,7 @@ public:
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalizeHint);
-    static bool InitUserFileClient(napi_env env, napi_callback_info info);
+    static bool InitUserFileClient(napi_env env, napi_callback_info info, const int32_t userId = -1);
     static napi_status ParseRequestMediaArgs(napi_env env, napi_callback_info info,
         unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static napi_status ParseEfficentRequestMediaArgs(napi_env env, napi_callback_info info,

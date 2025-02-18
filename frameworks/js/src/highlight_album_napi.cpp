@@ -649,6 +649,7 @@ napi_value HighlightAlbumNapi::JSSetHighlightSubtitle(napi_env env, napi_callbac
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->subtitle),
         JS_ERR_PARAMETER_INVALID);
 
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckAlbumName(asyncContext->subtitle) == E_OK, "Invalid subtitle");
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
     CHECK_COND_WITH_MESSAGE(env,

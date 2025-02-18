@@ -607,5 +607,32 @@ string MediaFileUri::GetPathFromUri(const string &uri, bool isPhoto)
     }
     return path;
 }
+
+string MediaFileUri::GetPhotoUri(const std::string &fileId, const std::string &path, const std::string &displayName)
+{
+    std::string uri = "";
+    CHECK_AND_RETURN_RET_LOG(!fileId.empty(), uri, "Failed to get fileId");
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), uri, "Failed to get path");
+    CHECK_AND_RETURN_RET_LOG(!displayName.empty(), uri, "Failed to get displayName");
+
+    std::string tmpStr;
+    size_t lastSlashPos = path.find_last_of('/');
+    if (lastSlashPos != std::string::npos) {
+        tmpStr = path.substr(lastSlashPos + 1);
+    } else {
+        tmpStr = path;
+    }
+
+    std::string fileNameWithoutSuffix;
+    size_t lastDotPos = tmpStr.find_last_of('.');
+    if (lastDotPos!= std::string::npos) {
+        fileNameWithoutSuffix = tmpStr.substr(0, lastDotPos);
+    } else {
+        fileNameWithoutSuffix = tmpStr;
+    }
+
+    uri = PhotoColumn::PHOTO_URI_PREFIX + fileId + "/" + fileNameWithoutSuffix + "/" +displayName;
+    return uri;
+}
 } // namespace Media
 } // namespace OHOS

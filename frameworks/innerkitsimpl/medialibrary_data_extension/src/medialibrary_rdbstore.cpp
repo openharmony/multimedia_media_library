@@ -4216,6 +4216,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
         AddMediaSuffixColumn(store);
     }
 
+    if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN) {
+        UpdateSourcePhotoAlbumTrigger(store);
+    }
+
     if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {
         TabFaCardPhotosTableEventHandler().OnCreate(store);
     }
