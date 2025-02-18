@@ -74,7 +74,7 @@ struct ProgressHandler {
     napi_ref progressRef;
     ProgressHandler(napi_env env, napi_threadsafe_function func, const std::string &requestId,
         RetProgressValue &retProgressValue, napi_ref progressRef) : env(env), progressFunc(func),
-        requestId(requestId), retProgressValue(retProgressValue), progressRef(progressRef) {}
+        requestId(requestId), progressRef(progressRef) {}
 };
 
 struct MediaAssetManagerAsyncContext : NapiError {
