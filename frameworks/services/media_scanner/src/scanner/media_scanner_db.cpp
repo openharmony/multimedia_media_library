@@ -1072,6 +1072,7 @@ std::string MediaScannerDb::MakeFileUri(const std::string &mediaTypeUri, const M
 {
     return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()),
         MediaFileUtils::GetExtraUri(metadata.GetFileName(), metadata.GetFilePath())) + "?api_version=10" +
+        "&date_modified=" + to_string(metadata.GetFileDateModified()) +
         "&date_taken=" + to_string(metadata.GetDateTaken());
 }
 } // namespace Media
