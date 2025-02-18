@@ -37,6 +37,7 @@ const std::string EFFECTLINE_TYPE_MASK2 = "TYPE_MASK2";
 const std::string HIGHLIGHT_ASSET_URI_PREFIX = "file://media/highlight/video/";
 const std::string HIGHLIGHT_ASSET_URI_SUFFIX = "?oper=highlight";
 const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
+const std::string GARBLE_DST_PATH = "/storage/media/local/files";
 
 const std::unordered_map<std::string, std::unordered_set<std::string>> NEEDED_COLUMNS_MAP = {
     { "tab_analysis_label",
@@ -118,19 +119,14 @@ void CloneRestoreCVAnalysis::Init(int32_t sceneCode, const std::string &taskId,
     mediaLibraryRdb_ = mediaLibraryRdb;
     mediaRdb_ = mediaRdb;
     assetPath_ = backupRestoreDir + "/storage/media/local/files/highlight/video/";
+    garblePath_ = backupRestoreDir + GARBLE_DST_PATH;
     failCnt_ = 0;
 }
 
 void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight)
 {
-    if (mediaRdb_ == nullptr || mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
-    }
-
-    if (!cloneHighlight.IsCloneHighlight()) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
+    CHECK_AND_RETURN_LOG(cloneHighlight.IsCloneHighlight(), "clone highlight flag is false.");
 
     MEDIA_INFO_LOG("restore highlight cv analysis album start.");
     GetAssetMapInfos(cloneHighlight);
@@ -554,11 +550,7 @@ void CloneRestoreCVAnalysis::GetRecommendationInsertValue(NativeRdb::ValuesBucke
 std::string CloneRestoreCVAnalysis::ParsePlayInfo(const std::string &oldPlayInfo, CloneRestoreHighlight &cloneHighlight)
 {
     nlohmann::json newPlayInfo = nlohmann::json::parse(oldPlayInfo, nullptr, false);
-    if (newPlayInfo.is_discarded()) {
-        MEDIA_ERR_LOG("parse json string failed");
-        return "";
-    }
-
+    CHECK_AND_RETURN_RET_LOG(!newPlayInfo.is_discarded(), "", "parse json string failed.");
     if (newPlayInfo["effectline"].contains("effectline")) {
         for (size_t effectlineIndex = 0; effectlineIndex < newPlayInfo["effectline"]["effectline"].size();
             effectlineIndex++) {
@@ -637,9 +629,7 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
 
 std::string CloneRestoreCVAnalysis::GetNewEffectVideoUri(const std::string &oldVideoUri)
 {
-    if (oldVideoUri == "") {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(oldVideoUri != "", "");
     int32_t rightIndex = oldVideoUri.rfind("/");
     int32_t leftIndex = oldVideoUri.rfind("/", rightIndex - 1);
     int32_t oldAssetId = std::atoi((oldVideoUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
@@ -662,9 +652,7 @@ std::string CloneRestoreCVAnalysis::GetNewEffectVideoUri(const std::string &oldV
 std::string CloneRestoreCVAnalysis::GetNewTransitionVideoUri(const std::string &oldVideoUri,
     CloneRestoreHighlight &cloneHighlight)
 {
-    if (oldVideoUri == "") {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(oldVideoUri != "", "");
     int32_t rightIndex = oldVideoUri.rfind("/");
     int32_t leftIndex = oldVideoUri.rfind("/", rightIndex - 1);
     int32_t oldAssetId = std::atoi((oldVideoUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
@@ -693,9 +681,7 @@ std::string CloneRestoreCVAnalysis::GetNewTransitionVideoUri(const std::string &
 std::string CloneRestoreCVAnalysis::GetNewPhotoUriByUri(const std::string &oldUri,
     CloneRestoreHighlight &cloneHighlight)
 {
-    if (oldUri == "") {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(oldUri != "", "");
     int32_t rightIndex = oldUri.rfind("/", oldUri.rfind("/") - 1);
     int32_t leftIndex = oldUri.rfind("/", rightIndex - 1);
     int32_t oldPhotoId = std::atoi((oldUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
@@ -710,7 +696,8 @@ void CloneRestoreCVAnalysis::MoveAnalysisAssets(const std::string &srcPath, cons
     int32_t errCode = BackupFileUtils::MoveFile(srcPath.c_str(), dstPath.c_str(), sceneCode_);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("move file failed, srcPath:%{public}s, dstPath:%{public}s, errcode:%{public}d",
-            srcPath.c_str(), dstPath.c_str(), errCode);
+            BackupFileUtils::GarbleFilePath(srcPath, sceneCode_, garblePath_).c_str(),
+            BackupFileUtils::GarbleFilePath(dstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
     }
 }
 

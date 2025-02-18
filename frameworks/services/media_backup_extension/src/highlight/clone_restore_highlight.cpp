@@ -25,9 +25,10 @@
 namespace OHOS::Media {
 const int32_t PAGE_SIZE = 200;
 const std::vector<std::string> HIGHLIGHT_RATIO_WORD_ART = { "1_1", "3_2", "3_4", "microcard", "medium_card",
-    "big_card" };
+    "big_card", "screen_0_ver", "screen_0_hor" };
 const std::vector<std::string> HIGHLIGHT_COVER_NAME = { "foreground", "background"};
 const std::string MUSIC_DIR_DST_PATH = "/storage/media/local/files/highlight/music";
+const std::string GARBLE_DST_PATH = "/storage/media/local/files";
 
 const std::unordered_map<std::string, std::unordered_set<std::string>> NEEDED_COLUMNS_MAP = {
     { "AnalysisAlbum",
@@ -181,17 +182,14 @@ void CloneRestoreHighlight::Init(int32_t sceneCode, const std::string &taskId,
     mediaRdb_ = mediaRdb;
     coverPath_ = backupRestoreDir + "/storage/media/local/files/highlight/cover/";
     musicDir_ = backupRestoreDir + "/storage/media/local/files/highlight/music";
+    garblePath_ = backupRestoreDir + GARBLE_DST_PATH;
     albumPhotoCounter_.clear();
     failCnt_ = 0;
 }
 
 void CloneRestoreHighlight::RestoreAlbums()
 {
-    if (mediaRdb_ == nullptr || mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
     MEDIA_INFO_LOG("restore highlight album start.");
     isCloneHighlight_ = true;
     isMapOrder_ = IsMapColumnOrderExist();
@@ -209,10 +207,7 @@ void CloneRestoreHighlight::RestoreAlbums()
 
 void CloneRestoreHighlight::RestoreMaps(std::vector<FileInfo> &fileInfos)
 {
-    if (!isCloneHighlight_) {
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(isCloneHighlight_, "clone highlight flag is false.");
     MEDIA_INFO_LOG("restore highlight map start.");
     std::vector<NativeRdb::ValuesBucket> values;
     BatchQueryPhoto(fileInfos);
@@ -237,10 +232,7 @@ void CloneRestoreHighlight::RestoreMaps(std::vector<FileInfo> &fileInfos)
 
 void CloneRestoreHighlight::UpdateAlbums()
 {
-    if (!isCloneHighlight_) {
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(isCloneHighlight_, "clone highlight flag is false.");
     MEDIA_INFO_LOG("update highlight album start.");
     const std::string updateAlbumSql = "UPDATE AnalysisAlbum SET "
         "cover_uri = ?, "
@@ -307,11 +299,7 @@ int32_t CloneRestoreHighlight::GetMaxAlbumId(const std::string &tableName, const
     int32_t maxAlbumId = 1;
     const std::string querySql = "SELECT MAX(" + idName + ") " + idName + " FROM " + tableName;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("query resultSql is null.");
-        return -1;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "query resultSql is null.");
     if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         auto albumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, idName);
         if (albumId.has_value()) {
@@ -443,10 +431,7 @@ void CloneRestoreHighlight::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
     }
     querySql << ")";
     auto resultSet = mediaLibraryRdb_->QuerySql(querySql.str(), params);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val("file_id", resultSet);
         std::string data = GetStringVal("data", resultSet);
@@ -722,15 +707,17 @@ void CloneRestoreHighlight::GetHighlightInsertValue(NativeRdb::ValuesBucket &val
 
 void CloneRestoreHighlight::MoveHighlightCovers()
 {
+    std::unordered_set<int32_t> hasMovedAlbums;
     for (const auto &info : analysisInfos_) {
         if (!info.albumIdNew.has_value() || !info.oldCoverUri.has_value() || !info.highlightIdOld.has_value() ||
             !info.highlightIdNew.has_value()) {
             continue;
         }
 
-        if (!info.oldCoverUri.has_value()) {
+        if (hasMovedAlbums.count(info.highlightIdOld.value()) > 0) {
             continue;
         }
+        hasMovedAlbums.insert(info.highlightIdOld.value());
         std::string srcDir = coverPath_ + std::to_string(info.highlightIdOld.value()) + "/";
         MoveHighlightWordart(info, srcDir);
         MoveHighlightGround(info, srcDir);
@@ -742,20 +729,21 @@ void CloneRestoreHighlight::MoveHighlightWordart(const AnalysisAlbumInfo &info, 
     for (const auto &ratio : HIGHLIGHT_RATIO_WORD_ART) {
         std::string srcPath = srcDir + ratio + "/wordart.png";
         if (!MediaFileUtils::IsFileExists(srcPath)) {
-            MEDIA_ERR_LOG("cover %{public}s not exist", srcPath.c_str());
             continue;
         }
         std::string dstDir = "/storage/media/local/files/highlight/cover/" +
             std::to_string(info.highlightIdNew.value()) + "/" + ratio;
         if (!MediaFileUtils::CreateDirectory(dstDir)) {
-            MEDIA_ERR_LOG("create %{public}s failed", dstDir.c_str());
+            MEDIA_ERR_LOG("create %{public}s failed",
+                BackupFileUtils::GarbleFilePath(dstDir, sceneCode_, GARBLE_DST_PATH).c_str());
             continue;
         }
         std::string dstPath = dstDir + "/wordart.png";
         int32_t errCode = BackupFileUtils::MoveFile(srcPath.c_str(), dstPath.c_str(), sceneCode_);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("move file failed, srcPath:%{public}s, dstPath:%{public}s, errCode:%{public}d",
-                srcPath.c_str(), dstPath.c_str(), errCode);
+                BackupFileUtils::GarbleFilePath(srcPath, sceneCode_, garblePath_).c_str(),
+                BackupFileUtils::GarbleFilePath(dstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
         }
     }
 }
@@ -771,7 +759,8 @@ void CloneRestoreHighlight::MoveHighlightGround(const AnalysisAlbumInfo &info, c
         }
 
         if (!MediaFileUtils::CreateDirectory(groundDstDir)) {
-            MEDIA_ERR_LOG("create %{public}s failed", groundDstDir.c_str());
+            MEDIA_ERR_LOG("create %{public}s failed",
+                BackupFileUtils::GarbleFilePath(groundDstDir, sceneCode_, GARBLE_DST_PATH).c_str());
             continue;
         }
 
@@ -779,17 +768,18 @@ void CloneRestoreHighlight::MoveHighlightGround(const AnalysisAlbumInfo &info, c
         int32_t errCode = BackupFileUtils::MoveFile(groundPath.c_str(), groundDstPath.c_str(), sceneCode_);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("move file failed, srcPath:%{public}s, dstPath:%{public}s, errCode:%{public}d",
-                groundPath.c_str(), groundDstPath.c_str(), errCode);
+                BackupFileUtils::GarbleFilePath(groundPath, sceneCode_, garblePath_).c_str(),
+                BackupFileUtils::GarbleFilePath(groundDstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
         }
     }
 }
 
 int32_t CloneRestoreHighlight::MoveHighlightMusic(const std::string &srcDir, const std::string &dstDir)
 {
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dstDir), E_FAIL,
-        "create dstDir %{public}s failed", dstDir.c_str());
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(srcDir), E_OK,
-        "%{public}s doesn't exist, skip.", srcDir.c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dstDir), E_FAIL, "create dstDir %{public}s failed",
+        BackupFileUtils::GarbleFilePath(dstDir, sceneCode_, GARBLE_DST_PATH).c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(srcDir), E_OK, "%{public}s doesn't exist, skip.",
+        BackupFileUtils::GarbleFilePath(srcDir, sceneCode_, garblePath_).c_str());
     for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
         std::string srcFilePath = dirEntry.path();
         if (MediaFileUtils::IsDirectory(srcFilePath)) {
@@ -802,7 +792,8 @@ int32_t CloneRestoreHighlight::MoveHighlightMusic(const std::string &srcDir, con
             int32_t errCode = BackupFileUtils::MoveFile(srcFilePath.c_str(), dstFilePath.c_str(), sceneCode_);
             if (errCode != E_OK) {
                 MEDIA_ERR_LOG("move file failed, srcPath:%{public}s, dstPath:%{public}s, errCode:%{public}d",
-                    srcFilePath.c_str(), dstFilePath.c_str(), errCode);
+                    BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_, garblePath_).c_str(),
+                    BackupFileUtils::GarbleFilePath(dstFilePath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
             }
         }
     }
