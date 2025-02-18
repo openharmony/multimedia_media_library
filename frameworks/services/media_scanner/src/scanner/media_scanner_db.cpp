@@ -471,7 +471,7 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList, const string &
             {KEY_OPT_TYPE, OptType::SCAN}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         MEDIA_ERR_LOG("rdbStore is nullptr");
-        return E_ERR;
+        return false;
     }
 
     NativeRdb::RdbPredicates rdbPredicate(tableName);

@@ -1181,7 +1181,11 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri
     }
     ssize_t imgLen = lseek(imageFd, 0, SEEK_END);
     void* buffer = nullptr;
-    napi_create_arraybuffer(env, imgLen, &buffer, &arrayBuffer);
+    if (napi_create_arraybuffer(env, imgLen, &buffer, &arrayBuffer) != napi_ok) {
+        NAPI_ERR_LOG("create napi arraybuffer failed");
+        close(imageFd);
+        return;
+    }
     lseek(imageFd, 0, SEEK_SET);
     ssize_t readRet = read(imageFd, buffer, imgLen);
     close(imageFd);

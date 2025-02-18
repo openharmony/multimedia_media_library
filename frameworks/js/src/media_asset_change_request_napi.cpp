@@ -2224,14 +2224,14 @@ static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
-static void DiscardHighQualityPhoto(MediaAssetChangeRequestAsyncContext& context)
+static void DiscardHighQualityPhoto(const shared_ptr<FileAsset> fileAsset)
 {
+    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "fileAsset is nullptr");
     std::string uriStr = PAH_REMOVE_MSC_TASK;
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(uriStr);
     DataShare::DataSharePredicates predicates;
     int errCode = 0;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
     std::vector<std::string> columns { to_string(fileAsset->GetId()) };
     UserFileClient::Query(uri, predicates, columns, errCode);
 }
@@ -2242,6 +2242,12 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     tracer.Start("SaveCameraPhotoExecute");
     NAPI_INFO_LOG("Begin SaveCameraPhotoExecute");
 
+    auto objInfo = context.objectInfo;
+    CHECK_COND_RET(objInfo != nullptr, false, "Failed to check objInfo");
+
+    auto fileAsset = objInfo->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "Failed to check fileAsset");
+
     auto changeOpreations = context.assetChangeOperations;
     bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_RESOURCE) != changeOpreations.end();
@@ -2249,7 +2255,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     if (containsAddResource && !MediaLibraryNapiUtils::IsSystemApp()) {
         // remove high quality photo
         NAPI_INFO_LOG("discard high quality photo because add resource by third app");
-        DiscardHighQualityPhoto(context);
+        DiscardHighQualityPhoto(fileAsset);
 
         // set dirty flag when third-party hap calling addResource to save camera photo
         MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_DIRTY,
@@ -2260,15 +2266,6 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     bool needScan = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_FILTERS) == changeOpreations.end();
 
-    if (context.objectInfo == nullptr) {
-        NAPI_ERR_LOG("objectInfo is nullptr");
-        return false;
-    }
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    if (fileAsset == nullptr) {
-        NAPI_ERR_LOG("fileAsset is nullptr");
-        return false;
-    }
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(needScan));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetUri());
@@ -2276,7 +2273,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
         to_string(fileAsset->GetPhotoSubType()));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE,
-        to_string(context.objectInfo->GetImageFileType()));
+        to_string(objInfo->GetImageFileType()));
     Uri uri(uriStr);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
