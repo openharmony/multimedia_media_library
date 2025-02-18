@@ -264,6 +264,7 @@ private:
     std::vector<int32_t> oldAlbumIds_;
     std::string coverPath_;
     std::string musicDir_;
+    std::string garblePath_;
     SafeMap<int32_t, int32_t> photoIdMap_;
     SafeMap<int32_t, std::string> photoUriMap_;
     std::mutex counterMutex_;
