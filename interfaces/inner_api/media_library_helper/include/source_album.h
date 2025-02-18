@@ -250,7 +250,7 @@ const std::string SOURCE_ALBUM_SQL = "CREATE TRIGGER IF NOT EXISTS insert_source
                 AND album_type = 2048 \
                 AND album_subtype = 2049 \
                 AND album_id = NEW.owner_album_id \
-            ) = 0 \
+            ) = 0 AND NEW.owner_album_id = 0 \
     BEGIN \
         INSERT INTO PhotoAlbum \
         ( \

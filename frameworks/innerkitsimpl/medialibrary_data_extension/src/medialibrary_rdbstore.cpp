@@ -4194,6 +4194,16 @@ static void AddMediaSuffixColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddIsRecentShow(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_IS_RECENT_SHOW  +
+            " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("add is_recent_show column start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
@@ -4214,6 +4224,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
         
     if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN) {
         UpdateSourcePhotoAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN) {
+        AddIsRecentShow(store);
     }
 }
 
