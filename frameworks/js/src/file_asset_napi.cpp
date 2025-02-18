@@ -392,7 +392,6 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &i
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     sFileAsset_ = std::move(iAsset);
-
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
 
@@ -2063,7 +2062,8 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
     Uri uri(analysisInfo.uriStr);
     std::vector<std::string> fetchColumn = analysisInfo.fetchColumn;
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    int userId = context->objectPtr != nullptr ? context->objectPtr->GetUserId() : -1;
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
     context->analysisData = context->analysisType == ANALYSIS_FACE ?
         MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn) :
         MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
@@ -2072,7 +2072,7 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
         DataShare::DataSharePredicates predicates;
         std::vector<std::string> fetchColumn = { analysisInfo.fieldStr };
         predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-        auto fieldValue = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+        auto fieldValue = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
         string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(fieldValue, fetchColumn);
         if (strstr(value.c_str(), ANALYSIS_INIT_VALUE.c_str()) == NULL) {
             context->analysisData = ANALYSIS_STATUS_ANALYZED;
@@ -3730,7 +3730,7 @@ static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
             to_string(context->objectPtr->GetTimePending()));
     }
     Uri openFileUri(fileUri);
-    int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
+    int32_t retVal = UserFileClient::OpenFile(openFileUri, mode, context->objectPtr->GetUserId());
     if (retVal <= 0) {
         context->SaveError(retVal);
         NAPI_ERR_LOG("File open asset failed, ret: %{public}d", retVal);
@@ -3784,7 +3784,6 @@ napi_value FileAssetNapi::PhotoAccessHelperOpen(napi_env env, napi_callback_info
         return nullptr;
     }
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
-
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperOpen",
         PhotoAccessHelperOpenExecute, PhotoAccessHelperOpenCallbackComplete);
 }
@@ -3886,7 +3885,7 @@ napi_value FileAssetNapi::PhotoAccessHelperClose(napi_env env, napi_callback_inf
         PhotoAccessHelperCloseExecute, PhotoAccessHelperCloseCallbackComplete);
 }
 
-static shared_ptr<FileAsset> getFileAsset(const std::string fileAssetId)
+static shared_ptr<FileAsset> getFileAsset(const std::string fileAssetId, const int32_t userId)
 {
     DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileAssetId);
@@ -3894,7 +3893,7 @@ static shared_ptr<FileAsset> getFileAsset(const std::string fileAssetId)
         MediaColumn::MEDIA_TITLE, MediaColumn::MEDIA_TYPE };
     int32_t errCode = 0;
     Uri uri(PAH_QUERY_PHOTO_MAP);
-    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode, userId);
     if (resultSet == nullptr) {
         NAPI_INFO_LOG("Failed to get file asset, err: %{public}d", errCode);
         return nullptr;
@@ -3915,15 +3914,17 @@ static void CloneAssetHandlerCompleteCallback(napi_env env, napi_status status, 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
+    int32_t userId = -1;
     if (context->error == ERR_DEFAULT) {
         napi_value jsFileAsset = nullptr;
         int64_t assetId = context->assetId;
+        userId = context->objectInfo != nullptr ? context->objectInfo->GetFileAssetInstance()->GetUserId() : userId;
         if (assetId == 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "Clone file asset failed");
             napi_get_undefined(env, &jsContext->data);
         } else {
-            shared_ptr<FileAsset> newFileAsset = getFileAsset(to_string(assetId));
+            shared_ptr<FileAsset> newFileAsset = getFileAsset(to_string(assetId), userId);
             CHECK_NULL_PTR_RETURN_VOID(newFileAsset, "newFileAset is null.");
 
             newFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);

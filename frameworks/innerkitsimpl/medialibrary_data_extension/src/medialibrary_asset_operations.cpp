@@ -791,6 +791,19 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
     outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
 }
 
+static void HandleOwnerAlbumId(MediaLibraryCommand &cmd, ValuesBucket &outValues)
+{
+    string ownerAlbumId;
+    ValueObject valueOwnerAlbumId;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_OWNER_ALBUM_ID, valueOwnerAlbumId)) {
+        valueOwnerAlbumId.GetString(ownerAlbumId);
+    }
+    if (!ownerAlbumId.empty()) {
+        outValues.PutString(PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumId);
+        MEDIA_INFO_LOG("insert ownerAlbumId: %{public}s", ownerAlbumId.c_str());
+    }
+}
+
 static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &fileAsset, ValuesBucket &outValues)
 {
     if (!fileAsset.GetOwnerPackage().empty() && PermissionUtils::IsNativeSAApp()) {
@@ -837,6 +850,7 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
     if (!packageName.empty()) {
         outValues.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
     }
+    HandleOwnerAlbumId(cmd, outValues);
 }
 
 static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, const std::string displayName)
@@ -971,11 +985,15 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 static ValuesBucket GetOwnerPermissionBucket(MediaLibraryCommand &cmd, int64_t fileId, int32_t callingUid)
 {
     int64_t tokenId = 0;
-    if (callingUid > 0 && PermissionUtils::IsNativeSAApp()) {
-        string bundleName;
-        PermissionUtils::GetClientBundle(callingUid, bundleName);
-        string appId = PermissionUtils::GetAppIdByBundleName(bundleName, callingUid);
-        PermissionUtils::GetMainTokenId(appId, tokenId);
+    string tokenIdFromClient = cmd.GetQuerySetParam("tokenId");
+    tokenId = static_cast<int64_t>(std::atoi(tokenIdFromClient.c_str()));
+    if (tokenId == 0) {
+        if (callingUid > 0 && PermissionUtils::IsNativeSAApp()) {
+            string bundleName;
+            PermissionUtils::GetClientBundle(callingUid, bundleName);
+            string appId = PermissionUtils::GetAppIdByBundleName(bundleName, callingUid);
+            PermissionUtils::GetMainTokenId(appId, tokenId);
+        }
     }
     if (tokenId == 0) {
         tokenId = PermissionUtils::GetTokenId();

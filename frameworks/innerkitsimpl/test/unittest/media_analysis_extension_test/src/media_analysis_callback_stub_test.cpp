@@ -105,5 +105,19 @@ HWTEST_F(MediaAnalysisCallbackStubTest, OnRemoteRequest_004, TestSize.Level0)
     data.WriteString(albumId);
     EXPECT_EQ(stub->OnRemoteRequest(code, data, reply, option), ERR_INVALID_DATA);
 }
+
+// Scenario5: Test when albumId can not convert Int
+HWTEST_F(MediaAnalysisCallbackStubTest, OnRemoteRequest_005, TestSize.Level0)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_ASYNC);
+    uint32_t code =
+        static_cast<uint32_t>(MediaAnalysisCallbackInterfaceCode::PORTRAIT_COVER_SELECTION_COMPLETED_CALLBACK);
+    std::string albumId = "testAlbumId";
+    data.WriteInterfaceToken(MediaAnalysisCallbackStub::GetDescriptor());
+    data.WriteString(albumId);
+    EXPECT_EQ(stub->OnRemoteRequest(code, data, reply, option), ERR_INVALID_DATA);
+}
 } // namespace Media
 } // namespace OHOS

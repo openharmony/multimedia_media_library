@@ -885,8 +885,8 @@ static inline int32_t CheckTitle(const string &title)
         return -EINVAL;
     }
     
-    static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(title, TITLE_REGEX_CHECK)) {
+    static const string titleRegexCheck = R"([\\/:*?"<>|])";
+    if (RegexCheck(title, titleRegexCheck)) {
         MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
         return -EINVAL;
     }
@@ -938,7 +938,7 @@ int32_t MediaFileUtils::CheckFileDisplayName(const string &displayName)
     if (displayName.at(0) == '.') {
         return -EINVAL;
     }
-    static const string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
+    static const string TITLE_REGEX_CHECK = R"([\\/:*?"<>|])";
     if (RegexCheck(displayName, TITLE_REGEX_CHECK)) {
         MEDIA_ERR_LOG("Failed to check displayName regex: %{private}s", displayName.c_str());
         return -EINVAL;
@@ -1177,12 +1177,27 @@ string MediaFileUtils::StrCreateTimeSafely(const string &format, int64_t time)
     return strTime;
 }
 
-string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
+std::string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";
     int64_t times = time / MSEC_TO_SEC;
-    auto tm = localtime(&times);
-    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
+    struct tm localTm;
+
+    if (localtime_noenv_r(&times, &localTm) == nullptr) {
+        MEDIA_ERR_LOG("localtime_noenv_r error: %{public}d", errno);
+        if (time < 0) {
+            MEDIA_ERR_LOG("Time value is negative: %{public}lld", static_cast<long long>(time));
+        }
+        return strTime;
+    }
+
+    if (strftime(strTime, sizeof(strTime), format.c_str(), &localTm) == 0) {
+        MEDIA_ERR_LOG("strftime error: %{public}d", errno);
+    }
+
+    if (time < 0) {
+        MEDIA_ERR_LOG("Time value is negative: %{public}lld", static_cast<long long>(time));
+    }
     return strTime;
 }
 

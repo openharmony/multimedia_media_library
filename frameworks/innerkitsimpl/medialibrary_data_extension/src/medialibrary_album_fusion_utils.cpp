@@ -42,6 +42,7 @@
 #include "photo_album_lpath_operation.h"
 #include "photo_album_update_date_modified_operation.h"
 #include "photo_other_album_trans_operation.h"
+#include "photo_album_copy_meta_data_operation.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -908,7 +909,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     RdbPredicates newPredicates(PhotoColumn::PHOTOS_TABLE);
     newPredicates.EqualTo(PhotoColumn::MEDIA_ID, newAssetId);
     vector<string> columns = {
-        PhotoColumn::MEDIA_FILE_PATH
+        PhotoColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_HIDDEN
     };
     shared_ptr<NativeRdb::ResultSet> newResultSet = rdbStore->Query(newPredicates, columns);
     if (newResultSet == nullptr || newResultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -918,6 +919,10 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
 
     string newFileAssetUri = MediaFileUtils::GetFileAssetUri(GetStringVal(MediaColumn::MEDIA_FILE_PATH, newResultSet),
         displayName, newAssetId);
+    int32_t isHidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, newResultSet);
+    if (isHidden == 1) {
+        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);
+    }
     SendNewAssetNotify(newFileAssetUri, rdbStore);
     MEDIA_INFO_LOG("End clone asset, newAssetId = %{public}lld", (long long)newAssetId);
     return newAssetId;
@@ -1146,72 +1151,6 @@ void MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, albumDataAdded);
 }
 
-static int32_t BuildAlbumInsertValues(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-    NativeRdb::ValuesBucket &values, const int32_t &oldAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet)
-{
-    MEDIA_ERR_LOG("Begin build inset values Meta Data!");
-    for (auto it = albumColumnTypeMap.begin(); it != albumColumnTypeMap.end(); ++it) {
-        string columnName = it->first;
-        ResultSetDataType columnType = it->second;
-        ParsingAndFillValue(values, columnName, columnType, resultSet);
-    }
-
-    std::string lPath = "";
-    std::string bundle_name = "";
-    int32_t album_type = -1;
-    std::string album_name = "";
-    ValueObject valueObject;
-    if (values.GetObject(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, valueObject)) {
-        valueObject.GetString(bundle_name);
-        if (bundle_name == "com.huawei.ohos.screenshot") {
-            bundle_name = "com.huawei.hmos.screenshot";
-            values.Delete(PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
-            values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
-        }
-        if (bundle_name == "com.huawei.ohos.screenrecorder") {
-            bundle_name = "com.huawei.hmos.screenrecorder";
-            values.Delete(PhotoAlbumColumns::ALBUM_BUNDLE_NAME);
-            values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, bundle_name);
-        }
-    }
-    if (values.GetObject(PhotoAlbumColumns::ALBUM_TYPE, valueObject)) {
-        valueObject.GetInt(album_type);
-    }
-    if (values.GetObject(PhotoAlbumColumns::ALBUM_NAME, valueObject)) {
-        valueObject.GetString(album_name);
-    }
-    if (album_type == OHOS::Media::PhotoAlbumType::SOURCE) {
-        QuerySourceAlbumLPath(upgradeStore, lPath, bundle_name, album_name);
-    } else {
-        lPath = "/Pictures/Users/" + album_name;
-        MEDIA_INFO_LOG("Album type is user type and lPath is %{public}s!!!", lPath.c_str());
-    }
-    values.PutInt(PhotoAlbumColumns::ALBUM_PRIORITY, 1);
-    values.PutString(PhotoAlbumColumns::ALBUM_LPATH, lPath);
-    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
-    return E_OK;
-}
-
-static int64_t QueryExistsAlbumId(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
-    NativeRdb::ValuesBucket values, int64_t &newAlbumId)
-{
-    std::string lPath = "";
-    ValueObject valueObject;
-    if (values.GetObject(PhotoAlbumColumns::ALBUM_LPATH, valueObject)) {
-        valueObject.GetString(lPath);
-    }
-    std::string queryExistsAlbumId = "SELECT album_id from PhotoAlbum where lpath ='" + lPath + "' and dirty !='4'";
-    shared_ptr<NativeRdb::ResultSet> existsAlbumResult = upgradeStore->QuerySql(queryExistsAlbumId);
-    if (existsAlbumResult != nullptr && existsAlbumResult->GoToFirstRow() == NativeRdb::E_OK) {
-        if (existsAlbumResult->GetLong(0, newAlbumId)!= NativeRdb::E_OK) {
-            return E_HAS_DB_ERROR;
-        }
-        MEDIA_INFO_LOG("There is an album matches new scheme, no need to insert, "
-            "albumId : %{public}" PRId64, newAlbumId);
-    }
-    return E_OK;
-}
-
 static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
     std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &oldAlbumId, int64_t &newAlbumId)
 {
@@ -1221,19 +1160,22 @@ static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upg
         return E_INVALID_ARGUMENTS;
     }
     NativeRdb::ValuesBucket values;
-    int32_t err = BuildAlbumInsertValues(upgradeStore, values, oldAlbumId, resultSet);
-    int32_t ret = upgradeStore->Insert(newAlbumId, PhotoAlbumColumns::TABLE, values);
-    if (ret != NativeRdb::E_OK) {
-        if (ret == NativeRdb::E_SQLITE_CONSTRAINT) {
-            QueryExistsAlbumId(upgradeStore, values, newAlbumId);
-        } else {
-            MEDIA_ERR_LOG("Insert copyed album failed, ret = %{public}d", ret);
-            return E_HAS_DB_ERROR;
-        }
+    for (auto it = albumColumnTypeMap.begin(); it != albumColumnTypeMap.end(); ++it) {
+        std::string columnName = it->first;
+        ResultSetDataType columnType = it->second;
+        ParsingAndFillValue(values, columnName, columnType, resultSet);
+    }
+
+    newAlbumId =
+        PhotoAlbumCopyMetaDataOperation()
+            .SetRdbStore(upgradeStore)
+            .CopyAlbumMetaData(values);
+    if (newAlbumId <= 0) {
+        return E_HAS_DB_ERROR;
     }
     MEDIA_ERR_LOG("Insert copyed album success,oldAlbumId is = %{public}d newAlbumId is %{public}" PRId64,
         oldAlbumId, newAlbumId);
-    return ret;
+    return E_OK;
 }
 
 static int32_t BatchDeleteAlbumAndUpdateRelation(const int32_t &oldAlbumId, const int64_t &newAlbumId,

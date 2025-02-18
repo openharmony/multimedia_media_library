@@ -61,7 +61,8 @@ struct BundleInfo {
     std::string bundleName;
     std::string packageName;
     std::string appId;
-    uint32_t tokenId;
+    uint32_t tokenId {0};
+    std::string ownerAlbumId;
 };
 
 class PermissionUtils {
