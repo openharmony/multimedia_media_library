@@ -116,7 +116,9 @@ void MediaAssetManagerCallback::OnError(int32_t errCode, const std::string &erro
 {
     std::lock_guard<std::mutex> lock(transCoderMapMutex_);
     auto tcm = transCoderMap_.find(requestId_);
-    transCoderMap_.erase(tcm);
+    if (tcm != transCoderMap_.end()) {
+        transCoderMap_.erase(tcm);
+    }
     NAPI_ERR_LOG("MediaAssetManagerCallback OnInfo errorMsg:%{public}s", errorMsg.c_str());
     int32_t type = INFO_TYPE_ERROR;
     if (callback_) {
