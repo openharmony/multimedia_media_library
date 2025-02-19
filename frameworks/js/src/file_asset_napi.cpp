@@ -1732,8 +1732,7 @@ static void JSGetThumbnailDataExecute(napi_env env, FileAssetAsyncContext* conte
         path = ROOT_MEDIA_DIR + context->objectPtr->GetRelativePath() + context->objectPtr->GetDisplayName();
     }
 #endif
-    context->napiArrayBuffer = ThumbnailManager::QueryThumbnailData(
-        env, context->objectPtr->GetUri(), context->type, path);
+    context->path = path;
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
@@ -1768,6 +1767,17 @@ static void JSGetKeyFrameThumbnailExecute(FileAssetAsyncContext* context)
         context->type, path);
 }
 
+static napi_value GetReference(napi_env env, napi_ref ref)
+{
+    napi_value obj = nullptr;
+    napi_status status = napi_get_reference_value(env, ref, &obj);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "napi_get_reference_value fail");
+        return nullptr;
+    }
+    return obj;
+}
+
 static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
                                                FileAssetAsyncContext* context)
 {
@@ -1775,14 +1785,17 @@ static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
     tracer.Start("JSGetThumbnailDataCompleteCallback");
  
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
- 
+
+    context->napiArrayBufferRef = ThumbnailManager::QueryThumbnailData(
+        env, context->objectPtr->GetUri(), context->type, context->path);
+
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
  
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
     if (context->error == ERR_DEFAULT) {
-        jsContext->data = context->napiArrayBuffer;
+        jsContext->data = GetReference(env, context->napiArrayBufferRef);
         jsContext->status = true;
     } else {
         context->HandleError(env, jsContext->error);
@@ -1793,7 +1806,8 @@ static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
     }
- 
+
+    napi_delete_reference(env, context->napiArrayBufferRef);
     delete context;
 }
 
