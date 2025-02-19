@@ -472,14 +472,14 @@ static int32_t GetKeyFramePixelMapFromServer(const string &uriStr, const string 
     return UserFileClient::OpenFile(openUri, "R");
 }
 
-napi_value ThumbnailManager::QueryThumbnailData(napi_env env, const string &uriStr, const int &type, const string &path)
+napi_ref ThumbnailManager::QueryThumbnailData(napi_env env, const string &uriStr, const int &type, const string &path)
 {
     const int32_t KEY_LCD = 1;
     const int32_t KEY_THM = 2;
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnailData uri:" + uriStr);
  
-    napi_value result = nullptr;
+    napi_ref result = nullptr;
     ThumbnailType thumbnailType = ThumbnailType::LCD;
     if (type == KEY_LCD) {
         thumbnailType = ThumbnailType::LCD;
@@ -498,7 +498,10 @@ napi_value ThumbnailManager::QueryThumbnailData(napi_env env, const string &uriS
         }
     }
     tracer.Finish();
-    return DecodeThumbnailData(env, uniqueFd, size);
+    napi_ref g_ref;
+    const int32_t NUM = 1;
+    napi_create_reference(env, DecodeThumbnailData(env, uniqueFd, size), NUM, &g_ref);
+    return g_ref;
 }
 
 unique_ptr<PixelMap> ThumbnailManager::QueryThumbnail(const string &uriStr, const Size &size, const string &path)
