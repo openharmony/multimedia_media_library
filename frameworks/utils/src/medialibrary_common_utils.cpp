@@ -177,6 +177,11 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_MEDIA_SUFFIX,
     TabOldPhotosColumn::MEDIA_OLD_ID,
     TabOldPhotosColumn::MEDIA_OLD_FILE_PATH,
+    MEDIA_DATA_DB_ALL_EXIF,
+    MEDIA_DATA_DB_SHOOTING_MODE,
+    MEDIA_DATA_DB_SHOOTING_MODE_TAG,
+    MEDIA_DATA_DB_PHOTOS_LATITUDE,
+    MEDIA_DATA_DB_PHOTOS_LONGITUDE,
 
     // Photos table columns
     COMPAT_HIDDEN,

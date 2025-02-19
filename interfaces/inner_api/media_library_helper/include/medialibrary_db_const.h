@@ -296,6 +296,11 @@ const std::string MEDIA_DATA_DB_CLOUD_ID = "cloud_id";
 const std::string MEDIA_DATA_DB_META_DATE_MODIFIED = "meta_date_modified";
 const std::string MEDIA_DATA_DB_SYNC_STATUS = "sync_status";
 const std::string MEDIA_DATA_DB_THUMBNAIL_READY = "thumbnail_ready";
+const std::string MEDIA_DATA_DB_ALL_EXIF = "all_exif";
+const std::string MEDIA_DATA_DB_SHOOTING_MODE = "shooting_mode";
+const std::string MEDIA_DATA_DB_SHOOTING_MODE_TAG = "shooting_mode_tag";
+const std::string MEDIA_DATA_DB_PHOTOS_LATITUDE = "photos.latitude";
+const std::string MEDIA_DATA_DB_PHOTOS_LONGITUDE = "photos.longitude";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
