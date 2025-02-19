@@ -55,7 +55,9 @@ public:
     EXPORT int32_t HandleAddOperation(MediaLibraryCommand &cmd, const bool hasCloudWatermark, int triggerMode = 0);
     EXPORT int32_t AddServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
         const std::string &photoId, const bool hasCloudWatermark, const bool isAuto = false);
-    EXPORT int32_t HandleAutoAddOperation();
+    EXPORT int32_t HandleAutoAddOperation(const bool isReboot = false);
+    EXPORT int32_t AddAutoServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
+        const std::string &photoId);
 #endif
 
     EXPORT int32_t HandleEnhancementUpdateOperation(MediaLibraryCommand &cmd);
@@ -88,9 +90,12 @@ private:
     const EnhancementManager &operator=(const EnhancementManager &manager) = delete;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     void GenerateAddServicePredicates(bool isAuto, NativeRdb::RdbPredicates &servicePredicates);
+    void GenerateAddAutoServicePredicates(bool isReboot, NativeRdb::RdbPredicates &servicePredicates);
+    void GenerateCancelOperationPredicates(int32_t fileId, NativeRdb::RdbPredicates &servicePredicates);
     int32_t HandleNetChangeInner(const bool isWifiStateChanged, const bool isCellularStateChanged);
     sptr<PhotosAutoOptionObserver> photosAutoOptionObserver_ = nullptr;
     sptr<PhotosWaterMarkObserver> photosWaterMarkObserver_ = nullptr;
+    bool isAutoTaskEnabled();
 #endif
     void InitPhotosSettingsMonitor();
     bool isCameraIdle_ = true;
@@ -98,7 +103,7 @@ private:
     bool isWifiConnected_ = false;
     bool isCellularNetConnected_ = false;
     bool shouldAddWaterMark_ = true;
-    
+
     static std::mutex mutex_;
 };
 } // namespace Media
