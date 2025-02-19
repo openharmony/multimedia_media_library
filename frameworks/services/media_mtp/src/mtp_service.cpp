@@ -53,7 +53,6 @@ void MtpService::StopService()
         CHECK_AND_RETURN_LOG(monitorPtr_ != nullptr, "MtpService::StopService monitorPtr_ is nullptr");
         monitorPtr_->Stop();
         isMonitorRun_ = false;
-        monitorPtr_.reset();
         // after stop mtp service, clear the unordered_map memory of the MtpMediaLibrary
         MtpMediaLibrary::GetInstance()->Clear();
     }
