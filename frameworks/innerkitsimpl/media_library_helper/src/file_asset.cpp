@@ -326,6 +326,16 @@ void FileAsset::SetFavorite(bool isFavorite)
     member_[MEDIA_DATA_DB_IS_FAV] = isFavorite;
 }
 
+bool FileAsset::IsRecentShow() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_RECENT_SHOW);
+}
+
+void FileAsset::SetRecentShow(bool isRecentShow)
+{
+    member_[PhotoColumn::PHOTO_IS_RECENT_SHOW] = isRecentShow;
+}
+
 double FileAsset::GetLatitude()
 {
     return GetDoubleMember(MEDIA_DATA_DB_LATITUDE);

@@ -151,6 +151,7 @@ private:
     // new media_liabrary.db
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string assetPath_;
+    std::string garblePath_;
     std::vector<std::pair<int32_t, int32_t>> assetMapDatas_;
     std::vector<std::pair<int32_t, int32_t>> sdMapDatas_;
     std::unordered_map<int32_t, int32_t> fileIdMap_;

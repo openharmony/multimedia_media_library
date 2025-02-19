@@ -7391,7 +7391,8 @@ static void SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<DataShareResult
         TYPE_STRING)));
     photoAlbumData->SetAlbumName(get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_NAME,
         resultSet, TYPE_STRING)));
-
+    photoAlbumData->SetDateAdded(get<int64_t>(ResultSetUtils::GetValFromColumn(
+        PhotoAlbumColumns::ALBUM_DATE_ADDED, resultSet, TYPE_INT64)));
     photoAlbumData->SetDateModified(get<int64_t>(ResultSetUtils::GetValFromColumn(
         PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet, TYPE_INT64)));
     photoAlbumData->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
