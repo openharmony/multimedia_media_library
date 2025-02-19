@@ -109,11 +109,15 @@ private:
 
     static void DownloadCloudFiles();
     static bool GetStorageFreeRatio(double &freeRatio);
+    static void SetLastDownloadMilliSecond(int64_t lastDownloadMilliSecond);
+    static int64_t GetLastDownloadMilliSecond();
     static void ClearDownloadCnt();
     static void UpdateDownloadCnt(std::string path, int64_t cnt);
     static int64_t GetDownloadCnt(std::string path);
     static std::shared_ptr<NativeRdb::ResultSet> QueryCloudFiles(double freeRatio);
     static void CheckAndUpdateDownloadCnt(std::string path, int64_t cnt);
+    static void GetDownloadNum(int64_t &downloadNum);
+    static void DownloadLatestFinished();
     static void ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet, DownloadFiles &downloadFiles);
     static void removeFinishedResult(const std::vector<std::string>& downloadingPaths);
     static int32_t AddDownloadTask(const DownloadFiles &downloadFiles);

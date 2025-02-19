@@ -87,6 +87,10 @@ const std::string BACKGROUND_CLOUD_FILE_CONFIG = "/data/storage/el2/base/prefere
 const std::string DOWNLOAD_CNT_CONFIG = "/data/storage/el2/base/preferences/download_count_config.xml";
 
 const std::string DOWNLOAD_LATEST_FINISHED = "download_latest_finished";
+const std::string LAST_DOWNLOAD_MILLISECOND = "last_download_millisecond";
+// when kernel hibernates, the timer expires longer, and the number of download images needs to be compensated
+int32_t MIN_DOWNLOAD_NUM = 1;
+int32_t MAX_DOWNLOAD_NUM = 5;
 
 void BackgroundCloudFileProcessor::SetDownloadLatestFinished(bool downloadLatestFinished)
 {
@@ -109,6 +113,28 @@ bool BackgroundCloudFileProcessor::GetDownloadLatestFinished()
     CHECK_AND_RETURN_RET_LOG(prefs, false,
         "get preferences error: %{public}d", errCode);
     return prefs->GetBool(DOWNLOAD_LATEST_FINISHED, downloadLatestFinished);
+}
+
+void BackgroundCloudFileProcessor::SetLastDownloadMilliSecond(int64_t lastDownloadMilliSecond)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
+
+    prefs->PutLong(LAST_DOWNLOAD_MILLISECOND, lastDownloadMilliSecond);
+    prefs->FlushSync();
+}
+
+int64_t BackgroundCloudFileProcessor::GetLastDownloadMilliSecond()
+{
+    int32_t errCode;
+    int64_t lastDownloadMilliSecond = 0;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(BACKGROUND_CLOUD_FILE_CONFIG, errCode);
+    CHECK_AND_RETURN_RET_LOG(prefs, false,
+        "get preferences error: %{public}d", errCode);
+    return prefs->GetLong(LAST_DOWNLOAD_MILLISECOND, lastDownloadMilliSecond);
 }
 
 void BackgroundCloudFileProcessor::ClearDownloadCnt()
@@ -311,10 +337,51 @@ void BackgroundCloudFileProcessor::CheckAndUpdateDownloadCnt(std::string uri, in
     }
 }
 
+void BackgroundCloudFileProcessor::GetDownloadNum(int64_t &downloadNum)
+{
+    int64_t currentMilliSecond = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t lastDownloadMilliSecond = GetLastDownloadMilliSecond();
+
+    int64_t minutes = (currentMilliSecond - lastDownloadMilliSecond) / downloadInterval_;
+    if (minutes <= MIN_DOWNLOAD_NUM) {
+        downloadNum = MIN_DOWNLOAD_NUM;
+    } else if (minutes >= MAX_DOWNLOAD_NUM) {
+        downloadNum = MAX_DOWNLOAD_NUM;
+    } else {
+        downloadNum = minutes;
+    }
+}
+
+void BackgroundCloudFileProcessor::DownloadLatestFinished()
+{
+    SetDownloadLatestFinished(true);
+    ClearDownloadCnt();
+
+    unique_lock<mutex> downloadLock(downloadResultMutex_);
+    downloadResult_.clear();
+    downloadLock.unlock();
+
+    lock_guard<recursive_mutex> lock(mutex_);
+    if (startTimerId_ > 0) {
+        timer_.Unregister(startTimerId_);
+        startTimerId_ = 0;
+    }
+    if (stopTimerId_ > 0) {
+        timer_.Unregister(stopTimerId_);
+        stopTimerId_ = 0;
+    }
+}
+
 void BackgroundCloudFileProcessor::ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     DownloadFiles &downloadFiles)
 {
+    int64_t downloadNum;
+    GetDownloadNum(downloadNum);
+    auto currentMilliSecond = MediaFileUtils::UTCTimeMilliSeconds();
+    SetLastDownloadMilliSecond(currentMilliSecond);
+
     bool downloadLatestFinished = true;
+    downloadFiles.uris.clear();
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string path =
             get<std::string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
@@ -342,33 +409,19 @@ void BackgroundCloudFileProcessor::ParseDownloadFiles(std::shared_ptr<NativeRdb:
         int64_t cnt = GetDownloadCnt(uri);
         if (cnt < DOWNLOAD_FAIL_MAX_TIMES) {
             downloadLatestFinished = false;
-            downloadFiles.uris.clear();
             downloadFiles.uris.push_back(uri);
             downloadFiles.mediaType = MEDIA_TYPE_IMAGE;
 
             CheckAndUpdateDownloadCnt(uri, cnt);
 
-            return;
+            if ((int64_t)downloadFiles.uris.size() >= downloadNum) {
+                break;
+            }
         }
     }
 
     if (downloadLatestFinished) {
-        SetDownloadLatestFinished(downloadLatestFinished);
-        ClearDownloadCnt();
-
-        unique_lock<mutex> downloadLock(downloadResultMutex_);
-        downloadResult_.clear();
-        downloadLock.unlock();
-
-        lock_guard<recursive_mutex> lock(mutex_);
-        if (startTimerId_ > 0) {
-            timer_.Unregister(startTimerId_);
-            startTimerId_ = 0;
-        }
-        if (stopTimerId_ > 0) {
-            timer_.Unregister(stopTimerId_);
-            stopTimerId_ = 0;
-        }
+        DownloadLatestFinished();
     }
 }
 
@@ -799,6 +852,8 @@ void BackgroundCloudFileProcessor::StartTimer()
     isUpdating_ = true;
     cloudDataTimerId_ = timer_.Register(ProcessCloudData, processInterval_);
     if (!GetDownloadLatestFinished()) {
+        auto currentMilliSecond = MediaFileUtils::UTCTimeMilliSeconds();
+        SetLastDownloadMilliSecond(currentMilliSecond);
         startTimerId_ = timer_.Register(DownloadCloudFiles, downloadInterval_);
     }
 }
