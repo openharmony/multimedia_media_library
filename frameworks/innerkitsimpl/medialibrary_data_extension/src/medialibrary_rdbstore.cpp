@@ -393,6 +393,25 @@ void MediaLibraryRdbStore::AddReadyCountIndex(const shared_ptr<MediaLibraryRdbSt
     MEDIA_INFO_LOG("end add ready count index");
 }
 
+void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return;
+    }
+
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
+        PhotoColumn::DROP_INDEX_SCHPT_READY,
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+
+    MEDIA_INFO_LOG("start update idx_schpt_media_type_ready and idx_schpt_thumbnail_ready");
+    ExecSqls(sqls, *rdbStore->GetRaw().get());
+    MEDIA_INFO_LOG("end update idx_schpt_media_type_ready and idx_schpt_thumbnail_ready");
+}
+
 int32_t MediaLibraryRdbStore::Init()
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
