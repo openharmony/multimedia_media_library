@@ -87,13 +87,13 @@ PhotoCustomRestoreOperation &PhotoCustomRestoreOperation::Start()
 void PhotoCustomRestoreOperation::CancelTask(RestoreTaskInfo restoreTaskInfo)
 {
     MEDIA_INFO_LOG("cancel custom restore task. keyPath: %{public}s", restoreTaskInfo.keyPath.c_str());
-    std::unique_lock<std::shared_mutex> lock(cancelOprationLock_);
+    std::unique_lock<std::shared_mutex> lockGuard(cancelOprationLock_);
     cancelKeySet_.insert(restoreTaskInfo.keyPath);
 }
 
 bool PhotoCustomRestoreOperation::IsCancelTask(RestoreTaskInfo &restoreTaskInfo)
 {
-    std::shared_lock<std::shared_mutex> lock(cancelOprationLock_);
+    std::shared_lock<std::shared_mutex> lockGuard(cancelOprationLock_);
     return cancelKeySet_.count(restoreTaskInfo.keyPath) > 0;
 }
 
@@ -101,7 +101,7 @@ void PhotoCustomRestoreOperation::CancelTaskFinish(RestoreTaskInfo &restoreTaskI
 {
     UniqueNumber uniqueNumber;
     SendNotifyMessage(restoreTaskInfo, NOTIFY_CANCEL, E_OK, 0, uniqueNumber);
-    std::unique_lock<std::shared_mutex> lock(cancelOprationLock_);
+    std::unique_lock<std::shared_mutex> lockGuard(cancelOprationLock_);
     cancelKeySet_.erase(restoreTaskInfo.keyPath);
 }
 
@@ -346,8 +346,8 @@ int32_t PhotoCustomRestoreOperation::UpdatePhotoAlbum(RestoreTaskInfo &restoreTa
         restoreTaskInfo.uri = restoreTaskInfo.firstFileUri;
     } else {
         restoreTaskInfo.uri = PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(albumId);
-        restoreTaskInfo.albumId = albumId;
     }
+    restoreTaskInfo.albumId = albumId;
     return E_OK;
 }
 
@@ -371,6 +371,9 @@ void PhotoCustomRestoreOperation::SendPhotoAlbumNotify(RestoreTaskInfo &restoreT
     } else {
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NOTIFY_ADD);
     }
+    std::string albumUri =
+        MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(restoreTaskInfo.albumId));
+    watch->Notify(albumUri, NotifyType::NOTIFY_UPDATE);
     if (uniqueNumber.imageTotalNumber > 0) {
         watch->Notify(restoreTaskInfo.imageAlbumUri, NotifyType::NOTIFY_UPDATE);
     }
@@ -724,6 +727,39 @@ int32_t PhotoCustomRestoreOperation::UpdateUniqueNumber(UniqueNumber &uniqueNumb
     return E_OK;
 }
 
+static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
+{
+    int64_t dateTaken = metadata->GetDateTaken();
+    if (dateTaken != 0) {
+        value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+        value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+            MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateTaken));
+        value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+            MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateTaken));
+        value.PutString(PhotoColumn::PHOTO_DATE_DAY,
+            MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken));
+        return;
+    }
+    int64_t dateAdded = metadata->GetFileDateAdded();
+    if (dateAdded == 0) {
+        int64_t dateModified = metadata->GetFileDateModified();
+        if (dateModified == 0) {
+            dateTaken = MediaFileUtils::UTCTimeMilliSeconds();
+        } else {
+            dateTaken = dateModified;
+        }
+    } else {
+        dateTaken = dateAdded;
+    }
+    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+    value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateTaken));
+    value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateTaken));
+    value.PutString(PhotoColumn::PHOTO_DATE_DAY,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateTaken));
+}
+
 NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo)
 {
@@ -744,6 +780,8 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     FillMetadata(data);
     fileInfo.size = data->GetFileSize();
     fileInfo.orientation = data->GetOrientation();
+    InsertDateTaken(data, value);
+    value.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
     value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
@@ -753,7 +791,6 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
     value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
-    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
@@ -765,6 +802,9 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
+    value.PutString(PhotoColumn::PHOTO_USER_COMMENT, data->GetUserComment());
+    value.PutInt(PhotoColumn::PHOTO_QUALITY, 0);
+    value.PutString(PhotoColumn::PHOTO_DETAIL_TIME, data->GetDetailTime());
     return value;
 }
 
@@ -846,6 +886,22 @@ int32_t PhotoCustomRestoreOperation::GetFileMetadata(std::unique_ptr<Metadata> &
     return E_OK;
 }
 
+static void UpdateCoverPosition(const string &filePath, int64_t coverPosition)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("UpdateCoverPosition: get rdb store fail!");
+        return;
+    }
+    string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_COVER_POSITION +
+        " = ? WHERE " + PhotoColumn::MEDIA_FILE_PATH + " = ?;";
+    std::vector<NativeRdb::ValueObject> params = {coverPosition, filePath};
+    int32_t errCode = rdbStore->ExecuteSql(updateSql, params);
+    if (errCode < 0) {
+        MEDIA_ERR_LOG("UpdateCoverPosition: execute update cover_position failed, ret = %{public}d", errCode);
+    }
+}
+
 int32_t PhotoCustomRestoreOperation::RenameFiles(vector<FileInfo> &restoreFiles)
 {
     int32_t renameNum = 0;
@@ -855,7 +911,7 @@ int32_t PhotoCustomRestoreOperation::RenameFiles(vector<FileInfo> &restoreFiles)
                 MEDIA_ERR_LOG("MoveFile failed. srcFile:%{public}s, destFile:%{public}s",
                     fileInfo.originFilePath.c_str(),
                     fileInfo.filePath.c_str());
-                DeleteDatabaseRecord(fileInfo.fileId);
+                DeleteDatabaseRecord(fileInfo.filePath);
             } else {
                 renameNum++;
             }
@@ -865,14 +921,14 @@ int32_t PhotoCustomRestoreOperation::RenameFiles(vector<FileInfo> &restoreFiles)
             MEDIA_ERR_LOG("MoveFile failed. srcFile:%{public}s, destFile:%{public}s",
                 fileInfo.originFilePath.c_str(),
                 fileInfo.filePath.c_str());
-            DeleteDatabaseRecord(fileInfo.fileId);
+            DeleteDatabaseRecord(fileInfo.filePath);
         } else {
             renameNum++;
         }
     }
     return renameNum;
 }
- 
+
 int32_t PhotoCustomRestoreOperation::MoveLivePhoto(const string &originFilePath, const string &filePath)
 {
     string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
@@ -888,15 +944,30 @@ int32_t PhotoCustomRestoreOperation::MoveLivePhoto(const string &originFilePath,
         (void)MediaFileUtils::DeleteFile(filePath);
         (void)MediaFileUtils::DeleteFile(videoPath);
         (void)MediaFileUtils::DeleteDir(extraPathDir);
+        return ret;
     }
+    uint64_t coverPosition = 0;
+    uint32_t version = 0;
+    uint32_t frameIndex = 0;
+    bool hasCinemagraphInfo = false;
+    string absExtraDataPath;
+    if (!PathToRealPath(extraDataPath, absExtraDataPath)) {
+        MEDIA_WARN_LOG("file is not real path: %{private}s, errno: %{public}d", extraDataPath.c_str(), errno);
+        UpdateCoverPosition(filePath, static_cast<int64_t>(coverPosition));
+        return E_OK;
+    }
+    UniqueFd extraDataFd(open(absExtraDataPath.c_str(), O_RDONLY));
+    (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
+    (void)MovingPhotoFileUtils::GetCoverPosition(videoPath, frameIndex, coverPosition);
+    UpdateCoverPosition(filePath, static_cast<int64_t>(coverPosition));
     return ret;
 }
- 
-void PhotoCustomRestoreOperation::DeleteDatabaseRecord(int32_t fileId)
+
+void PhotoCustomRestoreOperation::DeleteDatabaseRecord(const string &filePath)
 {
     string deleteSql =
-        "DELETE FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_ID + " = ?;";
-    std::vector<NativeRdb::ValueObject> params = {fileId};
+        "DELETE FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_FILE_PATH + " = ?;";
+    std::vector<NativeRdb::ValueObject> params = {filePath};
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return;

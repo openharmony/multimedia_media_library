@@ -68,7 +68,7 @@ struct UniqueNumber {
 
 const std::string CUSTOM_RESTORE_DIR = ROOT_MEDIA_DIR + CUSTOM_RESTORE_VALUES;
 const int MAX_RESTORE_FILE_NUM = 200;
-const int MAX_RESTORE_THREAD_NUM = 3;
+const int MAX_RESTORE_THREAD_NUM = 2;
 const int RESTORE_URI_TYPE_PHOTO = 1;
 const int RESTORE_URI_TYPE_ALBUM = 2;
 const int PROGRESS_MULTI_NUM = 100;
@@ -125,7 +125,7 @@ private:
     void QueryAlbumId(RestoreTaskInfo &restoreTaskInfo);
     void ReportCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
     int32_t MoveLivePhoto(const string &originFilePath, const string &filePath);
-    void DeleteDatabaseRecord(int32_t fileId);
+    void DeleteDatabaseRecord(const string &filePath);
     int32_t GetAlbumUriBySubType(int32_t subType, string &albumUri);
 
 private:
