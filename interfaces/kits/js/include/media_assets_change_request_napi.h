@@ -31,6 +31,7 @@ enum class AssetsChangeOperation {
     BATCH_SET_FAVORITE,
     BATCH_SET_HIDDEN,
     BATCH_SET_USER_COMMENT,
+    BATCH_SET_RECENT_SHOW,
 };
 
 class MediaAssetsChangeRequestNapi : public MediaChangeRequestNapi {
@@ -44,6 +45,7 @@ public:
     bool GetFavoriteStatus() const;
     bool GetHiddenStatus() const;
     std::string GetUpdatedUserComment() const;
+    bool GetRecentShowStatus() const;
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
 
 private:
@@ -53,13 +55,14 @@ private:
     EXPORT static napi_value JSSetFavorite(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetUserComment(napi_env env, napi_callback_info info);
-
+    EXPORT static napi_value JSSetIsRecentShow(napi_env env, napi_callback_info info);
     bool CheckChangeOperations(napi_env env);
 
     static thread_local napi_ref constructor_;
     bool isFavorite_;
     bool isHidden_;
     std::string userComment_;
+    bool isRecentShow_;
     std::vector<std::shared_ptr<FileAsset>> fileAssets_;
     std::vector<AssetsChangeOperation> assetsChangeOperations_;
 };

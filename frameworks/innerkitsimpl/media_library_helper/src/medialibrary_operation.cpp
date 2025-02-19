@@ -303,6 +303,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_BATCH_UPDATE_FAV, OperationType::BATCH_UPDATE_FAV },
         { OPRN_BATCH_UPDATE_USER_COMMENT, OperationType::BATCH_UPDATE_USER_COMMENT },
         { OPRN_BATCH_UPDATE_OWNER_ALBUM_ID, OperationType::BATCH_UPDATE_OWNER_ALBUM_ID },
+        { OPRN_BATCH_UPDATE_RECENT_SHOW, OperationType::BATCH_UPDATE_RECENT_SHOW },
         { OPRN_SET_PHOTO_QUALITY, OperationType::SET_PHOTO_QUALITY },
         { OPRN_ADD_IMAGE, OperationType::ADD_IMAGE },
         { OPRN_PROCESS_IMAGE, OperationType::PROCESS_IMAGE },
