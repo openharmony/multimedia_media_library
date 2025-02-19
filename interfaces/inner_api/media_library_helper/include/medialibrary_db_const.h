@@ -233,6 +233,7 @@ const std::string ML_URI_TIME_ID = "&time_id=";
 const std::string ML_URI_OFFSET = "&offset=";
 const std::string ML_URI_DATE_ADDED = "date_added";
 const std::string ML_URI_DATE_TAKEN = "date_taken";
+const std::string ML_URI_DATE_MODIFIED = "date_modified";
 const std::string ML_URI_AUTHORITY = "media";
 const std::string ML_DATA_SHARE_SCHEME = "datashare";
 const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";

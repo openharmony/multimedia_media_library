@@ -441,31 +441,7 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_
     return true;
 }
 
-bool CheckAfterPacking(const std::string &tempOutputPath, const std::string &outputPath)
-{
-    size_t size = -1;
-    MediaFileUtils::GetFileSize(tempOutputPath, size);
-    if (size == 0 && !MediaFileUtils::DeleteFile(tempOutputPath)) {
-        MEDIA_ERR_LOG("CompressPicture failed, failed to delete temp filters file: %{public}s",
-            DfxUtils::GetSafePath(tempOutputPath).c_str());
-        return false;
-    }
-    int ret = rename(tempOutputPath.c_str(), outputPath.c_str());
-    if (ret != E_SUCCESS) {
-        MEDIA_ERR_LOG("CompressPicture failed, failed to rename temp filters file: %{public}s",
-            DfxUtils::GetSafePath(tempOutputPath).c_str());
-        return false;
-    }
-    if (MediaFileUtils::IsFileExists(tempOutputPath)) {
-        MEDIA_INFO_LOG("file: %{public}s exists, needs to be deleted", DfxUtils::GetSafePath(tempOutputPath).c_str());
-        if (!MediaFileUtils::DeleteFile(tempOutputPath)) {
-            MEDIA_ERR_LOG("delete file: %{public}s failed", DfxUtils::GetSafePath(tempOutputPath).c_str());
-        }
-    }
-    return true;
-}
-
-bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx)
+bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, string &tempOutputPath)
 {
     CHECK_AND_RETURN_RET_LOG(
         THUMBNAIL_QUALITY_SET.count(data.thumbnailQuality),
@@ -481,14 +457,6 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx)
             DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
-    Media::ImagePacker imagePacker;
-    PackOption option = {
-        .format = THUMBNAIL_FORMAT,
-        .quality = data.thumbnailQuality,
-        .numberHint = NUMBER_HINT_1,
-        .desiredDynamicRange = EncodeDynamicRange::AUTO,
-        .needsPackProperties = false
-    };
     int ret = SaveFileCreateDir(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX, outputPath);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("CompressPicture failed, SaveFileCreateDir failed, path: %{public}s, isSourceEx: %{public}d",
@@ -501,18 +469,63 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx)
             DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
         return false;
     }
-    string tempOutputPath = outputPath.substr(0, lastSlash) + "/temp_" + outputPath.substr(lastSlash + 1);
+    tempOutputPath = outputPath.substr(0, lastSlash) + "/temp_" + data.dateModified + "_" +
+        outputPath.substr(lastSlash + 1);
     ret = MediaFileUtils::CreateAsset(tempOutputPath);
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("CompressPicture failed, failed to create temp filter file: %{public}s, isSourceEx: %{public}d",
             DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
         return false;
     }
+    Media::ImagePacker imagePacker;
+    PackOption option = {
+        .format = THUMBNAIL_FORMAT,
+        .quality = data.thumbnailQuality,
+        .numberHint = NUMBER_HINT_1,
+        .desiredDynamicRange = EncodeDynamicRange::AUTO,
+        .needsPackProperties = false
+    };
     imagePacker.StartPacking(tempOutputPath, option);
     imagePacker.AddPicture(*(picture));
     imagePacker.FinalizePacking();
-    CheckAfterPacking(tempOutputPath, outputPath);
     return true;
+}
+
+bool ThumbnailUtils::SaveAfterPacking(const string &path, const string &tempOutputPath)
+{
+    size_t size = -1;
+    MediaFileUtils::GetFileSize(tempOutputPath, size);
+    if (size == 0 && !MediaFileUtils::DeleteFile(tempOutputPath)) {
+        MEDIA_ERR_LOG("SaveAfterPacking failed, failed to delete temp filters file: %{public}s",
+            DfxUtils::GetSafePath(tempOutputPath).c_str());
+        return false;
+    }
+    auto outputPath = GetThumbnailPath(path, THUMBNAIL_LCD_SUFFIX);
+    int ret = rename(tempOutputPath.c_str(), outputPath.c_str());
+    if (ret != E_SUCCESS) {
+        MEDIA_ERR_LOG("SaveAfterPacking failed, failed to rename temp filters file: %{public}s",
+            DfxUtils::GetSafePath(tempOutputPath).c_str());
+        return false;
+    }
+    if (MediaFileUtils::IsFileExists(tempOutputPath)) {
+        MEDIA_INFO_LOG("file: %{public}s exists, needs to be deleted", DfxUtils::GetSafePath(tempOutputPath).c_str());
+        if (!MediaFileUtils::DeleteFile(tempOutputPath)) {
+            MEDIA_ERR_LOG("SaveAfterPacking delete failed: %{public}s", DfxUtils::GetSafePath(tempOutputPath).c_str());
+        }
+    }
+    return true;
+}
+
+void ThumbnailUtils::CancelAfterPacking(const string &tempOutputPath)
+{
+    if (MediaFileUtils::IsFileExists(tempOutputPath)) {
+        MEDIA_INFO_LOG("CancelAfterPacking: %{public}s exists, needs deleted",
+            DfxUtils::GetSafePath(tempOutputPath).c_str());
+        if (!MediaFileUtils::DeleteFile(tempOutputPath)) {
+            MEDIA_ERR_LOG("CancelAfterPacking delete failed: %{public}s",
+                DfxUtils::GetSafePath(tempOutputPath).c_str());
+        }
+    }
 }
 
 shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
@@ -521,6 +534,7 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailSet(ThumbRdbOpt &opts)
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_MODIFIED,
     };
 
     vector<string> selectionArgs;
@@ -543,6 +557,7 @@ shared_ptr<ResultSet> ThumbnailUtils::QueryThumbnailInfo(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_MODIFIED,
     };
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnailInfo");
@@ -764,6 +779,7 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_ORIENTATION,
+        MEDIA_DATA_DB_DATE_MODIFIED,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0");
@@ -808,6 +824,7 @@ bool ThumbnailUtils::QueryLocalNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailDat
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_MODIFIED,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0");
@@ -970,6 +987,7 @@ bool ThumbnailUtils::QueryLocalNoThumbnailInfos(ThumbRdbOpt &opt, vector<Thumbna
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_THUMBNAIL_READY,
+        MEDIA_DATA_DB_DATE_MODIFIED,
         PhotoColumn::PHOTO_LCD_VISIT_TIME,
     };
     RdbPredicates rdbPredicates(opt.table);
@@ -1012,9 +1030,8 @@ bool ThumbnailUtils::QueryLocalNoThumbnailInfos(ThumbRdbOpt &opt, vector<Thumbna
 bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_MODIFIED,
     };
     RdbPredicates rdbPredicates(opts.table);
     if (opts.table == PhotoColumn::PHOTOS_TABLE) {
@@ -1076,6 +1093,7 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_DATE_MODIFIED,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, std::to_string(
@@ -1124,6 +1142,7 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
         MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_DATE_MODIFIED,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.OrderByDesc(MediaColumn::MEDIA_DATE_TAKEN);
@@ -1170,7 +1189,7 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DATE_TAKEN, MEDIA_DATA_DB_DATE_MODIFIED,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.BeginWrap()
@@ -2200,6 +2219,8 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
             err = resultSet->GetLong(index, data.thumbnailReady);
         } else if (columnValue == PhotoColumn::PHOTO_LCD_VISIT_TIME) {
             err = resultSet->GetLong(index, data.lcdVisitTime);
+        } else if (columnValue == MEDIA_DATA_DB_DATE_MODIFIED) {
+            ParseStringResult(resultSet, index, data.dateModified, err);
         }
     }
 }
@@ -2407,6 +2428,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         MEDIA_DATA_DB_ORIENTATION,
         MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_DATE_MODIFIED,
     };
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("opts.store is nullptr");
@@ -2511,6 +2533,7 @@ void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
         outData.path = opts.path;
         outData.id = opts.row;
         outData.dateTaken = opts.dateTaken;
+        outData.dateModified = opts.dateModified;
         outData.fileUri = opts.fileUri;
         outData.stats.uri = outData.fileUri;
         return;
@@ -2689,7 +2712,7 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
     vector<string> column = {
         MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_HEIGHT, MEDIA_DATA_DB_WIDTH,
         MEDIA_DATA_DB_POSITION, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_DATE_TAKEN, MEDIA_DATA_DB_DATE_MODIFIED,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     if (!IsMobileNetworkEnabled()) {
@@ -2786,6 +2809,7 @@ bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbS
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_DATE_TAKEN,
+        MEDIA_DATA_DB_DATE_MODIFIED,
     };
     RdbPredicates rdbPredicates(table);
     rdbPredicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "3");

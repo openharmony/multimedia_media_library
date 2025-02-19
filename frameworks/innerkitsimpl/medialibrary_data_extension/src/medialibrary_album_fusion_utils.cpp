@@ -628,8 +628,10 @@ static int32_t GenerateThumbnail(const int32_t &assetId, const std::string &targ
     GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
     int64_t dateTaken = 0;
     GetLongValueFromResultSet(resultSet, MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
+    int64_t dateModified = 0;
+    GetLongValueFromResultSet(resultSet, MediaColumn::MEDIA_DATE_MODIFIED, dateModified);
     std::string uri = PHOTO_URI_PREFIX + to_string(assetId) + MediaFileUtils::GetExtraUri(displayName, targetPath) +
-        "?api_version=10&date_taken=" + to_string(dateTaken);
+        "?api_version=10&date_modified=" + to_string(dateModified) + "&date_taken=" + to_string(dateTaken);
     MEDIA_INFO_LOG("Begin generate thumbnail %{public}s, ", uri.c_str());
     int32_t err = ThumbnailService::GetInstance()->CreateThumbnailFileScaned(uri, targetPath, isSyncGenerateThumbnail);
     if (err != E_SUCCESS) {
