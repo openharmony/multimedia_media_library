@@ -98,7 +98,6 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
 
 void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
 {
-    bool verifyFlag = false;
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto dateTakenPos = uriString.rfind('/');
@@ -116,15 +115,9 @@ void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
             MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
             continue;
         }
-        if (!verifyFlag) {
-            verifyFlag = true;
-        }
 
         ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateTaken(fileId, dateTaken);
         MediaLibraryPhotoOperations::HasDroppedThumbnailSize(fileId);
-    }
-    if (verifyFlag) {
-        CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
     }
 }
 
