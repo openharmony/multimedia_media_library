@@ -171,6 +171,24 @@ string ThumbnailUriUtils::GetDateTakenFromUri(const string &uri)
     return "";
 }
 
+string ThumbnailUriUtils::GetDateModifiedFromUri(const string &uri)
+{
+    size_t index = uri.find(ML_URI_DATE_MODIFIED);
+    if (index == std::string::npos) {
+        MEDIA_ERR_LOG("GetDateModifiedFromUri find index for dateModified failed: %{private}s", uri.c_str());
+        return "";
+    }
+
+    string pairString = uri.substr(index + 1);
+    size_t startIndex = pairString.find('=');
+    size_t endIndex = pairString.find('&');
+    if (startIndex == std::string::npos || endIndex == std::string::npos || endIndex - startIndex - 1 <= 0) {
+        MEDIA_ERR_LOG("GetDateModifiedFromUri failed to parse pairString: %{private}s", pairString.c_str());
+        return "";
+    }
+    return pairString.substr(startIndex + 1, endIndex - startIndex - 1);
+}
+
 string ThumbnailUriUtils::GetFileUriFromUri(const string &uri)
 {
     auto index = uri.find('?');

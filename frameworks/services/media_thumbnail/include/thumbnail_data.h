@@ -150,7 +150,6 @@ public:
     }
 
     EXPORT int32_t mediaType {-1};
-    EXPORT int64_t dateModified {0};
     EXPORT int32_t orientation {0};
     EXPORT int32_t photoHeight {0};
     EXPORT int32_t photoWidth {0};
@@ -161,6 +160,7 @@ public:
     EXPORT bool isLocalFile {true};
     EXPORT bool isOpeningCloudFile {false};
     EXPORT bool isNeedStoreSize {true};
+    EXPORT bool needCheckWaitStatus {false};
     EXPORT ThumbnailSource source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
@@ -169,6 +169,7 @@ public:
     EXPORT std::vector<uint8_t> lcd;
     EXPORT std::string dateAdded;
     EXPORT std::string dateTaken;
+    EXPORT std::string dateModified;
     EXPORT std::string displayName;
     EXPORT std::string fileUri;
     EXPORT std::string id;
