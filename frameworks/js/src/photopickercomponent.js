@@ -24,6 +24,9 @@ var __decorate = this && this.__decorate || function (e, o, t, i) {
     }
     return r > 3 && l && Object.defineProperty(o, t, l), l;
 };
+const fs = requireNapi('file.fs');
+const fileUri = requireNapi('file.fileuri');
+const bundleManager = requireNapi('bundle.bundleManager');
 const photoAccessHelper = requireNapi('file.photoAccessHelper');
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
@@ -104,8 +107,23 @@ export class PhotoPickerComponent extends ViewPU {
             this.onSetPhotoBrowserItem(o);
         } else if (null == o ? void 0 : o.has('EXIT_PHOTO_BROWSER')) {
             this.handleExitPhotoBrowser();
-        } else if (null == o ? void 0 : o.has('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY')) {
+        } else {
+            this.otherOnChange(o);
+        }
+    }
+
+    otherOnChange(o) {
+        if (null == o ? void 0 : o.has('SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY')) {
             this.onSetPhotoBrowserUIElementVisibility(o);
+        } else if (null == o ? void 0 : o.has('CREATE_URI')) {
+            this.onCreateUri(o);
+            console.info('PhotoPickerComponent onChanged: CREATE_URI');
+        } else if (null == o ? void 0 : o.has('REPLACE_URI')) {
+            this.onReplaceUri(o);
+            console.info('PhotoPickerComponent onChanged: REPLACE_URI');
+        } else if (null == o ? void 0 : o.has('SAVE_REPLACE_PHOTO_ASSETS')) {
+            this.onSaveTrustedPhotoAssets(o);
+            console.info('PhotoPickerComponent onChanged: SAVE_REPLACE_PHOTO_ASSETS');
         } else {
             console.info('PhotoPickerComponent onChanged: other case');
         }
@@ -143,6 +161,38 @@ export class PhotoPickerComponent extends ViewPU {
             isVisible: null == e ? void 0 : e.isVisible
         });
         console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY');
+    }
+
+    onCreateUri(o) {
+        let e = null == o ? void 0 : o.get('CREATE_URI');
+        this.proxy.send({
+            selectedMediaUri: null == e ? void 0 : e[0],
+            createUri: null == e ? void 0 : e[1],
+            date: null == e ? void 0 : e[2]
+        });
+        console.info('PhotoPickerComponent onChanged CREATE_URI ');
+    }
+
+    onReplaceUri(o) {
+        let e = null == o ? void 0 : o.get('REPLACE_URI');
+        this.proxy.send({
+            oriUri: null == e ? void 0 : e[0],
+            replaceUri: null == e ? void 0 : e[1],
+            date: null == e ? void 0 : e[2]
+        });
+        console.info('PhotoPickerComponent onChanged REPLACE_URI');
+    }
+
+    onSaveTrustedPhotoAssets(o) {
+        let e = null == o ? void 0 : o.get('SAVE_REPLACE_PHOTO_ASSETS');
+        this.proxy.send({
+            replaceUris: null == e ? void 0 : e[0],
+            config: null == e ? void 0 : e[1],
+            saveMode: null == e ? void 0 : e[2],
+            appName: null == e ? void 0 : e[3],
+            date: null == e ? void 0 : e[4]
+        });
+        console.info('PhotoPickerComponent onChanged SAVE_REPLACE_PHOTO_ASSETS');
     }
 
     initialRender() {
@@ -221,6 +271,12 @@ export class PhotoPickerComponent extends ViewPU {
                 this.onPickerControllerReady();
                 console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
             }
+        } else if ('replaceCallback' === o) {
+            this.handleReplaceCallback(e);
+        } else if ('createCallback' === o) {
+            this.handleCreateCallback(e);
+        } else if ('saveCallback' === o) {
+            this.handleSaveCallback(e);
         } else if ('onPhotoBrowserChanged' === o) {
             this.handlePhotoBrowserChange(e);
         } else if ('onVideoPlayStateChanged' === o) {
@@ -318,6 +374,21 @@ export class PhotoPickerComponent extends ViewPU {
         }
     }
 
+    handleCreateCallback(e) {
+        this.pickerController.actionCreateCallback(e.grantUri, e.date, e.code, e.message);
+        console.info('PhotoPickerComponent onReceive: handleCreateCallback');
+    }
+
+    handleReplaceCallback(e) {
+        this.pickerController.actionReplaceCallback(e.date, {'name': '', 'code': e.code, 'message': e.message});
+        console.info('PhotoPickerComponent onReceive: handleReplaceCallback');
+    }
+
+    handleSaveCallback(e) {
+        this.pickerController.actionSaveCallback(e.date, {'name': '', 'code': e.code, 'message': e.message}, e.data);
+        console.info('PhotoPickerComponent onReceive: handleSaveCallback');
+    }
+
     convertMIMETypeToFilterType(e) {
         let o;
         o = e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE ?
@@ -332,6 +403,11 @@ export class PhotoPickerComponent extends ViewPU {
     }
 }
 let PickerController = class {
+    constructor() {
+        this.replaceCallbackMap = new Map();
+        this.saveCallbackMap = new Map();
+        this.createCallbackMap = new Map();
+    }
     setData(e, o) {
         if (o === undefined) {
             return;
@@ -374,6 +450,99 @@ let PickerController = class {
     exitPhotoBrowser() {
         this.data = new Map([['EXIT_PHOTO_BROWSER', true]]);
         console.info('PhotoPickerComponent EXIT_PHOTO_BROWSER ');
+    }
+
+    async getAppName() {
+        let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_ABILITY |
+            bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE |
+            bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO |
+            bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION;
+        let c2 = bundleManager.getBundleInfoForSelfSync(flags);
+        let labelId = c2.appInfo.labelId;
+        let appName = '';
+        let moduleName = '';
+        for (let d2 of c2.hapModulesInfo) {
+            if (labelId === d2.labelId) {
+                moduleName = d2.name;
+            }
+        }
+        appName = await getContext(this).createModuleContext(moduleName).resourceManager.getStringValue(labelId);
+        return appName;
+    }
+
+    replacePhotoPickerPreview(e, o, callback) {
+        try {
+            let fd = fs.openSync(o).fd;
+            fs.close(fd);
+        } catch (err) {
+            callback({'code': 13900002, 'message': 'No such file', name: ''});
+            return;
+        }
+        let date = Math.random();
+        this.data = new Map([['CREATE_URI', [e, o, date]]]);
+        this.createCallbackMap.set(date, (grantUri, code, message)=>{
+            if (code !== 0) {
+                callback({'code': code, 'message': message, name: ''});
+                return;
+            }
+            let createFd = 0;
+            let replaceFd = 0;
+            try {
+                createFd = fs.openSync(grantUri, fs.OpenMode.READ_WRITE).fd;
+                replaceFd = fs.openSync(o, fs.OpenMode.READ_ONLY).fd;
+                fs.copyFileSync(replaceFd, createFd);
+                this.data = new Map([['REPLACE_URI', [e, grantUri, date]]]);
+                this.replaceCallbackMap.set(date, callback);
+            } catch (err) {
+                callback({'code': 14000011, 'message': 'System inner fail', name: ''});
+            } finally {
+                fs.close(createFd);
+                fs.close(replaceFd);
+            }
+        });
+    }
+
+    saveTrustedPhotoAssets(e, callback, config, saveMode) {
+        if (!e || e.length === 0) {
+            callback({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
+            return;
+        }
+        this.getAppName().then((appName) => {
+            let date = Math.random();
+            this.data = new Map([['SAVE_REPLACE_PHOTO_ASSETS', [e, config, saveMode, appName, date]]]);
+            this.saveCallbackMap.set(date, callback);
+            console.info('PhotoPickerComponent SAVE_TRUSTED_PHOTO_ASSETS ');
+        });
+    }
+
+    actionCreateCallback(grantUri, date, code, message) {
+        if (this.createCallbackMap.has(date)) {
+            let callback = this.createCallbackMap.get(date);
+            if (callback) {
+                callback(grantUri, code, message);
+                this.createCallbackMap.delete(date);
+            }
+        }
+    }
+
+    actionReplaceCallback(date, err) {
+        if (this.replaceCallbackMap.has(date)) {
+            let callback = this.replaceCallbackMap.get(date);
+            if (callback) {
+                callback(err);
+                this.replaceCallbackMap.delete(date);
+            }
+        }
+    }
+    
+    actionSaveCallback(date, err, data) {
+        if (this.saveCallbackMap.has(date)) {
+            let callback = this.saveCallbackMap.get(date);
+            if (callback) {
+                callback(err, data);
+                this.saveCallbackMap.delete(date);
+            }
+        }
     }
 
     setPhotoBrowserUIElementVisibility(e, o) {
@@ -482,6 +651,12 @@ export var VideoPlayerState;
     e[e.SEEK_FINISH = 4] = 'SEEK_FINISH';
 }(VideoPlayerState || (VideoPlayerState = {}));
 
+export var SaveMode;
+!function(e) {
+    e[e.SAVE_AS = 0] = 'SAVE_AS';
+    e[e.OVERWRITE = 1] = 'OVERWRITE';
+}(SaveMode || (SaveMode = {}));
+
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
-    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement, 
-    VideoPlayerState };
+    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
+    VideoPlayerState, SaveMode};
