@@ -18,12 +18,17 @@
 
 #include "dataobs_mgr_client.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS::Media {
 const std::string CustomRestoreNotify::NOTIFY_URI_PREFIX = "file://media/custom_restore/";
 int32_t CustomRestoreNotify::Notify(std::string keyPath, const InnerRestoreResult &restoreResult)
 {
     auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
+    if (obsMgrClient == nullptr) {
+        MEDIA_ERR_LOG("obsMgrClient is nullptr");
+        return E_DATA_OBS_MGR_CLIENT_IS_NULL;
+    }
     AAFwk::ChangeInfo::VBucket vBucket;
     vBucket["stage"] = restoreResult.stage;
     vBucket["errCode"] = restoreResult.errCode;
