@@ -116,6 +116,8 @@ private:
         const std::string &dbName);
     std::string CheckGalleryDbIntegrity();
     void RestorePhotoInner();
+    int32_t GetGalleryMaxFileId();
+    void PrcoessContinuousShootingPhotos();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -143,6 +145,7 @@ private:
     std::vector<int> galleryFailedOffsets;
     std::vector<int> externalFailedOffsets;
     int32_t maxId_{-1};
+    int32_t maxfileId_{-1};
 };
 } // namespace Media
 } // namespace OHOS

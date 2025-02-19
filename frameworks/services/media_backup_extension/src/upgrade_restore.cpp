@@ -400,7 +400,7 @@ void UpgradeRestore::RestorePhoto()
         return;
     }
     AnalyzeSource();
-
+    maxfileId_ = GetGalleryMaxFileId();
     RestorePhotoInner();
     StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
@@ -434,6 +434,7 @@ void UpgradeRestore::RestorePhoto()
     } else {
         MEDIA_INFO_LOG("restore mode no need to del gallery db");
     }
+    PrcoessContinuousShootingPhotos();
 }
 
 void UpgradeRestore::AnalyzeSource()
@@ -1406,6 +1407,23 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
     MEDIA_INFO_LOG("end handle gallery integrity check, cost %{public}lld, size %{public}s.", \
         (long long)(dbIntegrityCheckTime), dbSize.c_str());
     return dbIntegrityCheck;
+}
+
+int32_t UpgradeRestore::GetGalleryMaxFileId()
+{
+    auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_,SQL_GET_MAX_FILE_ID);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_WARN_LOG("Media_Restore: GetGalleryMaxFileId resultSet is null. querySql: %{public}s", querySql.c_str());
+        return -1;
+    }
+    maxFileId = GetInt32Val("max_file_id", resultSet);
+    return maxFileId;
+}
+
+void UpgradeRestore::PrcoessContinuousShootingPhotos()
+{
+    BackupDatabaseUtils::UpdateContinuousShootingPhotos(galleryRdb_, maxfileId_);
+    MEDIA_INFO_LOG(" prcoess continous shooting photos end");
 }
 } // namespace Media
 } // namespace OHOS
