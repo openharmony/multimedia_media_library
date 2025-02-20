@@ -1410,8 +1410,8 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
 
 void UpgradeRestore::PrcoessContinuousShootingPhotos()
 {
-    BackupDatabaseUtils::UpdateContinuousShootingPhotos(galleryRdb_, maxfileId_);
-    MEDIA_INFO_LOG(" prcoess continous shooting photos end");
+    BackupDatabaseUtils::UpdateContinuousShootingPhotos(mediaLibraryRdb_);
+    MEDIA_INFO_LOG("prcoess continous shooting photos end");
 }
 } // namespace Media
 } // namespace OHOS
