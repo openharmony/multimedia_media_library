@@ -78,7 +78,9 @@
 #include "photo_mimetype_operation.h"
 #include "photo_other_album_trans_operation.h"
 #include "background_cloud_file_processor.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#endif
 
 using namespace OHOS::AAFwk;
 
@@ -432,10 +434,12 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         BackgroundCloudFileProcessor::SetDownloadLatestFinished(false);
     }
 
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE ||
         action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
         EnhancementManager::GetInstance().HandleNetChange(isWifiConnected_, isCellularNetConnected_);
     }
+#endif
 }
 
 int64_t MedialibrarySubscriber::GetNowTime()

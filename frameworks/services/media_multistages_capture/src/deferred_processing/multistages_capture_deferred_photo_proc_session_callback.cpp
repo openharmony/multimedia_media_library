@@ -37,7 +37,9 @@
 #include "result_set_utils.h"
 #include "media_change_effect.h"
 #include "exif_metadata.h"
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#endif
 
 using namespace std;
 using namespace OHOS::CameraStandard;
@@ -374,7 +376,9 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnStateChanged(const DpsStatusCode state)
 {
     MEDIA_INFO_LOG("OnStateChanged, status: %{public}d", state);
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().HandleStateChangedOperation(state == DpsStatusCode::SESSION_STATE_IDLE);
+#endif
 }
 } // namespace Media
 } // namespace OHOS
