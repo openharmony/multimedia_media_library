@@ -663,7 +663,7 @@ const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count",
 const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operation", "rename_operation", "group_tag",
     "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};
 const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
-const std::string SQL_SELECT_ERROR_CONTINOUS_PHOTOS = "SELECT p1.file_id FROM   Photos p1 \
+const std::string SQL_SELECT_ERROR_CONTINOUS_PHOTOS = "SELECT p1.file_id FROM Photos p1 \
         LEFT JOIN Photos p2 ON p1.burst_key = p2.burst_key \
         AND p2.burst_cover_level =1 WHERE p1.burst_key IS NOT NULL AND p2.burst_key IS NULL";
 const std::string SQL_SELECT_CLONE_FILE_IDS = "SELECT file_id FROM tab_old_photos";
