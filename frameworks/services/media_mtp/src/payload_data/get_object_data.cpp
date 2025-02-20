@@ -51,6 +51,8 @@ int GetObjectData::Parser(const std::vector<uint8_t> &buffer, int32_t readSize)
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
     context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
+    context_->offset = 0;
+    context_->length = 0;
     return MTP_SUCCESS;
 }
 

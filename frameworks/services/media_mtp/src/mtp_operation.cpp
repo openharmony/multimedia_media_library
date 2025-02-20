@@ -193,7 +193,8 @@ void MtpOperation::ReceiveI2Rdata(int &errorCode)
 
 void MtpOperation::SendR2Idata(int &errorCode)
 {
-    if (mtpContextPtr_->operationCode == MTP_OPERATION_GET_OBJECT_CODE) {
+    if (mtpContextPtr_->operationCode == MTP_OPERATION_GET_OBJECT_CODE ||
+        mtpContextPtr_->operationCode == MTP_OPERATION_GET_PARTIAL_OBJECT_CODE) {
         SendObjectData(errorCode);
         return;
     }
