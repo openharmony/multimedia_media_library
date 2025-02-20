@@ -138,7 +138,7 @@ public:
     template <typename T>
     static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &columnName);
-    static void UpdateContinuousShootingPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    static void UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

@@ -433,7 +433,7 @@ void UpgradeRestore::RestorePhoto()
     } else {
         MEDIA_INFO_LOG("restore mode no need to del gallery db");
     }
-    PrcoessContinuousShootingPhotos();
+    PrcoessBurstPhotos();
 }
 
 void UpgradeRestore::AnalyzeSource()
@@ -1408,10 +1408,10 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
     return dbIntegrityCheck;
 }
 
-void UpgradeRestore::PrcoessContinuousShootingPhotos()
+void UpgradeRestore::PrcoessBurstPhotos()
 {
-    BackupDatabaseUtils::UpdateContinuousShootingPhotos(mediaLibraryRdb_);
-    MEDIA_INFO_LOG("prcoess continous shooting photos end");
+    BackupDatabaseUtils::UpdateBurstPhotos(mediaLibraryRdb_);
+    MEDIA_INFO_LOG("prcoess burst photos end");
 }
 } // namespace Media
 } // namespace OHOS
