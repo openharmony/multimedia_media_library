@@ -40,6 +40,7 @@ public:
     void DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo);
     void DealAlbumGallery(CloudSyncNotifyInfo &notifyInfo);
     void DealCloudSync(const ChangeInfo &changeInfo);
+    void DealGalleryDownload(CloudSyncNotifyInfo &notifyInfo);
     void HandleIndex();
 
     /* delayed trigger */

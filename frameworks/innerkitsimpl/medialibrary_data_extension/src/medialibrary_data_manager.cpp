@@ -340,6 +340,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     galleryRebuildObserver_= std::make_shared<CloudSyncObserver>();
     cloudGalleryPhotoObserver_ = std::make_shared<CloudSyncObserver>();
+    cloudGalleryDownloadObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(
         Uri(PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX),
@@ -350,6 +351,8 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
         cloudPhotoAlbumObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX),
         cloudGalleryPhotoObserver_, true);
+    shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::PHOTO_GALLERY_DOWNLOAD_URI_PREFIX),
+        cloudGalleryDownloadObserver_, true);
 
     HandleUpgradeRdbAsync();
     CloudSyncSwitchManager cloudSyncSwitchManager;
@@ -564,6 +567,8 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         Uri(PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
     shareHelper->UnregisterObserverExt(
         Uri(PhotoAlbumColumns::PHOTO_GALLERY_CLOUD_SYNC_INFO_URI_PREFIX), cloudPhotoAlbumObserver_);
+    shareHelper->UnregisterObserverExt(
+        Uri(PhotoAlbumColumns::PHOTO_GALLERY_DOWNLOAD_URI_PREFIX), cloudGalleryDownloadObserver_);
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
     MEDIA_INFO_LOG("CloseKvStore success");
