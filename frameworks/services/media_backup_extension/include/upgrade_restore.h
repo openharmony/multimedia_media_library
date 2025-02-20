@@ -116,7 +116,7 @@ private:
         const std::string &dbName);
     std::string CheckGalleryDbIntegrity();
     void RestorePhotoInner();
-    void PrcoessContinuousShootingPhotos();
+    void PrcoessBurstPhotos();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
