@@ -70,6 +70,7 @@ private:
     EXPORT static napi_value JSGetPhotoAlbumSubType(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetDateModified(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetDateModifiedSystem(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetDateAdded(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetLatitude(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetLongitude(napi_env env, napi_callback_info info);
