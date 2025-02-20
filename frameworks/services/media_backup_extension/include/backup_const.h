@@ -664,8 +664,8 @@ const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operatio
     "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};
 const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
 const std::string SQL_SELECT_ERROR_CONTINOUS_PHOTOS = "SELECT p1.file_id FROM Photos p1 \
-        LEFT JOIN Photos p2 ON p1.burst_key = p2.burst_key \
-        AND p2.burst_cover_level =1 WHERE p1.burst_key IS NOT NULL AND p2.burst_key IS NULL";
+        WHERE p1.burst_key IS NOT NULL AND NOT EXISTS ( \
+        SELECT 1 FROM Photos p2 WHERE p2.burst_key = p1.burst_key AND p2.burst_cover_level = 1)";
 const std::string SQL_SELECT_CLONE_FILE_IDS = "SELECT file_id FROM tab_old_photos";
 } // namespace Media
 } // namespace OHOS
