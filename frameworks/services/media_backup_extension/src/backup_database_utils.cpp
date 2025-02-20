@@ -1013,8 +1013,7 @@ void BackupDatabaseUtils::UpdateBurstPhotos(const std::shared_ptr<NativeRdb::Rdb
 {
     const string updateSql =
         "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1," + 
-        PhotoColumn::PHOTO_BURST_KEY + " = NULL " + 
-        "WHERE file_id IN (" + SQL_SELECT_ERROR_BURST_PHOTOS  + ")" +
+        PhotoColumn::PHOTO_BURST_KEY + " = NULL WHERE " + SQL_SELECT_ERROR_BURST_PHOTOS +
         "AND file_id IN (" + SQL_SELECT_CLONE_FILE_IDS + ")";
     int32_t erroCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     CHECK_AND_PRINT_LOG(erroCode >= 0, "execute update continuous shooting photos, ret=%{public}d", erroCode);
