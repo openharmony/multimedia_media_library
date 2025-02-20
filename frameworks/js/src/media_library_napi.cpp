@@ -350,6 +350,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getFileAssetsInfo", PhotoAccessGetFileAssetsInfo),
             DECLARE_NAPI_FUNCTION("startCreateThumbnailTask", PhotoAccessStartCreateThumbnailTask),
             DECLARE_NAPI_FUNCTION("stopCreateThumbnailTask", PhotoAccessStopCreateThumbnailTask),
+            DECLARE_NAPI_FUNCTION("startThumbnailCreationTask", PhotoAccessStartCreateThumbnailTask),
+            DECLARE_NAPI_FUNCTION("stopThumbnailCreationTask", PhotoAccessStopCreateThumbnailTask),
             DECLARE_NAPI_FUNCTION("createAssetsForApp", PhotoAccessHelperAgentCreateAssets),
             DECLARE_NAPI_FUNCTION("createAssetsHasPermission", CreateAssetsHasPermission),
             DECLARE_NAPI_FUNCTION("grantPhotoUriPermission", PhotoAccessGrantPhotoUriPermission),
