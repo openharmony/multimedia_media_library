@@ -29,6 +29,8 @@ public:
         START_BACKGROUND_TASK = 33,
         PORTRAIT_COVER_SELECTION = 34,
         HIGHLIGHT_COVER_GENERATE = 35,
+        PARSE_GEO_INFO = 36,
+        PARSE_GEO_INFO_LIST = 37,
     };
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");
