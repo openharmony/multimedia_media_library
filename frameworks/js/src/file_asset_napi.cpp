@@ -1992,59 +1992,43 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_MULTI_CROP, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { MOVEMENT_CROP, MOVEMENT_VERSION } } },
 };
 
-static void GetPredicatesByCondition(DataShare::DataSharePredicates &predicates,
-    int32_t analysisType, int fileId)
-{
-    if (analysisType == ANALYSIS_DETAIL_ADDRESS) {
-        predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + '.' +MediaColumn::MEDIA_ID, to_string(fileId));
-    } else {
-        predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
-    }
-}
-
-static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
+static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSGetThumbnailExecute");
-    string fieldStr;
-    string uriStr;
-    std::vector<std::string> fetchColumn;
-    DataShare::DataSharePredicates predicates;
-    if (ANALYSIS_SOURCE_INFO_MAP.find(context->analysisType) != ANALYSIS_SOURCE_INFO_MAP.end()) {
-        fieldStr = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).fieldStr;
-        uriStr = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).uriStr;
-        fetchColumn = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).fetchColumn;
-        if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
-            string language = Global::I18n::LocaleConfig::GetSystemLanguage();
-            vector<string> onClause = {
-                PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
-                GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
-                PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE +
-                " AND " + GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \"" + language + "\""
-            };
-            predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
-        }
-        if (context->analysisType == ANALYSIS_HUMAN_FACE_TAG) {
-            string onClause = VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = " + VISION_FACE_TAG_TABLE + "." + TAG_ID;
-            predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
-        }
-    } else {
+    if (ANALYSIS_SOURCE_INFO_MAP.find(context->analysisType) == ANALYSIS_SOURCE_INFO_MAP.end()) {
         NAPI_ERR_LOG("Invalid analysisType");
         return;
     }
-    int fileId = context->objectInfo->GetFileId();
-    Uri uri (uriStr);
-    GetPredicatesByCondition(predicates, context->analysisType, fileId);
+    auto &analysisInfo = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType);
+    DataShare::DataSharePredicates predicates;
+    if (context->analysisType == ANALYSIS_HUMAN_FACE_TAG) {
+        string onClause = VISION_IMAGE_FACE_TABLE + "." + TAG_ID + " = " + VISION_FACE_TAG_TABLE + "." + TAG_ID;
+        predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
+    }
+    string fileId = to_string(context->objectInfo->GetFileId());
+    if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
+            GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
+            GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
+        predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
+        predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, fileId);
+    } else {
+        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    }
+    Uri uri(analysisInfo.uriStr);
+    std::vector<std::string> fetchColumn = analysisInfo.fetchColumn;
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
     context->analysisData = context->analysisType == ANALYSIS_FACE ?
         MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn) :
         MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
-    if (strcmp(context->analysisData.c_str(), ANALYSIS_NO_RESULTS.c_str()) == 0) {
+    if (context->analysisData == ANALYSIS_NO_RESULTS) {
         Uri uri(PAH_QUERY_ANA_TOTAL);
         DataShare::DataSharePredicates predicates;
-        std::vector<std::string> fetchColumn = { fieldStr };
-        predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+        std::vector<std::string> fetchColumn = { analysisInfo.fieldStr };
+        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
         auto fieldValue = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
         string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(fieldValue, fetchColumn);
         if (strstr(value.c_str(), ANALYSIS_INIT_VALUE.c_str()) == NULL) {
