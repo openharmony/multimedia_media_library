@@ -511,7 +511,6 @@ struct FaceInfo {
     std::string faceId;
     std::string tagIdOld;
     std::string tagIdNew;
-    std::string landmarks;
 };
 
 struct AnalysisAlbumTbl {
