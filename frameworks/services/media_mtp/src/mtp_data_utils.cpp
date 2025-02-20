@@ -953,6 +953,9 @@ void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &
         value = displayName.substr(0, displayName_pos) + "." + filename.substr(filename_pos + 1);
         prop.currentValue->str_ = make_shared<std::string>(value);
     }
+    if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
+        prop.currentValue->bin_.i64 = movingType.parent;
+    }
 
     struct stat statInfo;
     if (stat(path.c_str(), &statInfo) != 0) {
@@ -967,9 +970,6 @@ void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &
     }
     if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
         prop.currentValue->bin_.i64 = statInfo.st_ctime;
-    }
-    if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
-        prop.currentValue->bin_.i64 = movingType.parent;
     }
 }
 
