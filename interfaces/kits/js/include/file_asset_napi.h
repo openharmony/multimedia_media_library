@@ -204,7 +204,7 @@ struct FileAssetAsyncContext : public NapiError {
     std::string path;
     char* editDataBuffer;
 
-    napi_value napiArrayBufferRef;
+    napi_ref napiArrayBufferRef;
 };
 } // namespace Media
 } // namespace OHOS
