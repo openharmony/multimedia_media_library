@@ -37,6 +37,7 @@
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "photo_day_month_year_operation.h"
 
 namespace OHOS {
 namespace Media {
@@ -47,6 +48,7 @@ static constexpr int32_t UPDATE_BATCH_CLOUD_SIZE = 2;
 static constexpr int32_t UPDATE_BATCH_LOCAL_VIDEO_SIZE = 50;
 static constexpr int32_t UPDATE_BATCH_LOCAL_IMAGE_SIZE = 200;
 static constexpr int32_t MAX_RETRY_COUNT = 2;
+static constexpr int32_t UPDATE_DAY_MONTH_YEAR_BATCH_SIZE = 200;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
@@ -100,11 +102,10 @@ void BackgroundCloudFileProcessor::UpdateCloudData()
 {
     MEDIA_DEBUG_LOG("Start update cloud data task");
     std::vector<QueryOption> queryList = {{false, true}, {false, false}, {true, true}};
-    std::shared_ptr<NativeRdb::ResultSet> resultSet;
     int32_t count = 0;
     UpdateData updateData;
     for (auto option : queryList) {
-        resultSet = QueryUpdateData(option.isCloud, option.isVideo);
+        std::shared_ptr<NativeRdb::ResultSet> resultSet = QueryUpdateData(option.isCloud, option.isVideo);
         if (resultSet == nullptr || resultSet->GetRowCount(count) != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to query data, %{public}d, %{public}d", option.isCloud, option.isVideo);
             continue;
@@ -127,10 +128,59 @@ void BackgroundCloudFileProcessor::UpdateCloudData()
     }
 }
 
+void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYearExecutor(AsyncTaskData *data)
+{
+    auto *taskData = static_cast<UpdateAbnormalDayMonthYearData *>(data);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("taskData is nullptr!");
+        return;
+    }
+
+    std::vector<std::string> fileIds = taskData->fileIds_;
+    auto ret = PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(fileIds);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to update abnormal day month year data task! err: %{public}d", ret);
+    }
+}
+
+void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYear()
+{
+    MEDIA_DEBUG_LOG("Start update abnormal day month year data task");
+
+    auto [ret, needUpdateFileIds] =
+        PhotoDayMonthYearOperation::QueryNeedUpdateFileIds(UPDATE_DAY_MONTH_YEAR_BATCH_SIZE);
+
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query abnormal day month year data! err: %{public}d", ret);
+        return;
+    }
+
+    if (needUpdateFileIds.empty()) {
+        MEDIA_DEBUG_LOG("No abnormal day month year data need to update");
+        return;
+    }
+
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Failed to get async worker instance!");
+        return;
+    }
+
+    auto *taskData = new (std::nothrow) UpdateAbnormalDayMonthYearData(needUpdateFileIds);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to alloc async data for update abnormal day month year data!");
+        return;
+    }
+
+    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(UpdateAbnormalDayMonthYearExecutor, taskData);
+    asyncWorker->AddTask(asyncTask, false);
+}
+
 void BackgroundCloudFileProcessor::ProcessCloudData()
 {
     UpdateCloudData();
     DownloadCloudFiles();
+    UpdateAbnormalDayMonthYear();
 }
 
 bool BackgroundCloudFileProcessor::IsStorageInsufficient()

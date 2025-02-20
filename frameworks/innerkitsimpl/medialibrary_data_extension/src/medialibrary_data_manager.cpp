@@ -358,6 +358,12 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         PhotoDayMonthYearOperation::UpdatePhotosDateAndIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_PHOTOS_DATE_AND_IDX);
     }
+
+    if (oldVersion < VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX) {
+        PhotoDayMonthYearOperation::UpdatePhotosDateIdx(rdbStore);
+        MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX);
+    }
 }
 
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
