@@ -155,7 +155,7 @@ int MtpDriver::SendObj(MtpFileRange &mfr)
     MEDIA_DEBUG_LOG("MtpDriver::SendObj start");
     struct UsbFnMtpFileSlice mfs = {
         .fd = mfr.fd,
-        .offset = 0,
+        .offset = mfr.offset,
         .length = mfr.length,
         .command = mfr.command,
         .transactionId = mfr.transaction_id,
