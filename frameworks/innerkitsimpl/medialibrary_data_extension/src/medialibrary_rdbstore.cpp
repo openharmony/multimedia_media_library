@@ -4198,7 +4198,7 @@ static void AddIsRecentShow(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_IS_RECENT_SHOW  +
-            " INT DEFAULT 0",
+            " INT NOT NULL DEFAULT 1",
     };
     MEDIA_INFO_LOG("add is_recent_show column start");
     ExecSqls(sqls, store);
