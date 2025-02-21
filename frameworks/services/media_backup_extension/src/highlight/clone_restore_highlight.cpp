@@ -363,7 +363,7 @@ void CloneRestoreHighlight::InsertIntoAnalysisAlbum()
         int32_t errCode = BatchInsertWithRetry("AnalysisAlbum", values, rowNum);
         if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-            MEDIA_ERR_LOG("insert into AnalysisAlbum fail, num: %{public}ld", failNums);
+            MEDIA_ERR_LOG("insert into AnalysisAlbum fail, num: %{public}ld", (long) failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into AnalysisAlbum fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -512,7 +512,7 @@ int32_t CloneRestoreHighlight::BatchInsertWithRetry(const std::string &tableName
     std::function<int(void)> func = [&]()->int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
+            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long) rowNum);
         }
         return errCode;
     };
@@ -641,7 +641,7 @@ void CloneRestoreHighlight::InsertIntoHighlightAlbum()
         int32_t errCode = BatchInsertWithRetry("tab_highlight_album", values, rowNum);
         if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-            MEDIA_ERR_LOG("insert into tab_highlight_album fail, num: %{public}ld", failNums);
+            MEDIA_ERR_LOG("insert into tab_highlight_album fail, num: %{public}ld", (long) failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_highlight_album fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -898,7 +898,7 @@ void CloneRestoreHighlight::InsertIntoHighlightCoverInfo()
         int32_t errCode = BatchInsertWithRetry("tab_highlight_cover_info", values, rowNum);
         if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-            MEDIA_ERR_LOG("insert into tab_highlight_cover_info fail, num: %{public}ld", failNums);
+            MEDIA_ERR_LOG("insert into tab_highlight_cover_info fail, num: %{public}ld", (long) failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_highlight_cover_info fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -1012,7 +1012,7 @@ void CloneRestoreHighlight::InsertIntoHighlightPlayInfo()
         int32_t errCode = BatchInsertWithRetry("tab_highlight_play_info", values, rowNum);
         if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-            MEDIA_ERR_LOG("insert into tab_highlight_play_info fail, num: %{public}ld", failNums);
+            MEDIA_ERR_LOG("insert into tab_highlight_play_info fail, num: %{public}ld", (long) failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_highlight_play_info fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -1075,7 +1075,7 @@ void CloneRestoreHighlight::ReportCloneRestoreHighlightTask()
         .Report("Highlight Photos", std::to_string(ERR_STATUS),
         "max: " + std::to_string(maxCnt) + ", mean: " + std::to_string(meanCnt));
 
-    MEDIA_INFO_LOG("Highlight restore failCnt_: %{public}ld", failCnt_);
+    MEDIA_INFO_LOG("Highlight restore failCnt_: %{public}ld", (long) failCnt_);
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
         .Report("Highlight restore", std::to_string(ERR_STATUS), "failCnt_: " + std::to_string(failCnt_));
 }
