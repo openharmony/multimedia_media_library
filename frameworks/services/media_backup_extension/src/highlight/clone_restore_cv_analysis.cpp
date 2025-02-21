@@ -621,6 +621,9 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
         for (size_t uriIndex = 0;
             uriIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]].size();
             uriIndex++) {
+            if (uriIndex >= newFileIds.size()) {
+                break;
+            }
             std::string newFileUri = cloneHighlight.GetNewHighlightPhotoUri(newFileIds[uriIndex]);
             newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex] = newFileUri;
         }
