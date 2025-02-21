@@ -72,6 +72,22 @@ const string BURST_COVER_LEVEL = "1";
 const string EMPTY_COLUMN_NAME = "0";
 const string PARENT_ID_STRING = "0";
 const std::string MOVING_PHOTO_SUFFIX = ".mp4";
+namespace {
+std::vector<std::string> g_photoColumns = {
+    MediaColumn::MEDIA_ID + " + " + to_string(COMMON_PHOTOS_OFFSET) + " as " + MEDIA_DATA_DB_ID,
+    MediaColumn::MEDIA_SIZE,
+    MediaColumn::MEDIA_NAME,
+    PhotoColumn::PHOTO_OWNER_ALBUM_ID +" as " + PARENT,
+    MediaColumn::MEDIA_DATE_ADDED,
+    MediaColumn::MEDIA_DURATION,
+    MediaColumn::MEDIA_TYPE,
+    MediaColumn::MEDIA_FILE_PATH,
+    PhotoColumn::PHOTO_SUBTYPE,
+    PhotoColumn::MEDIA_DATE_MODIFIED,
+    PhotoColumn::PHOTO_THUMB_SIZE,
+};
+const std::string ZERO = "0";
+} // namespace
 
 std::shared_ptr<MtpMedialibraryManager> MtpMedialibraryManager::instance_ = nullptr;
 std::mutex MtpMedialibraryManager::mutex_;
@@ -294,18 +310,6 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr,
         "MtpMedialibraryManager::GetPhotosInfo fail to get datasharehelper");
     Uri uri(PAH_QUERY_PHOTO);
-    vector<string> columns;
-    columns.push_back(MediaColumn::MEDIA_ID + " + " + to_string(COMMON_PHOTOS_OFFSET) + " as " + MEDIA_DATA_DB_ID);
-    columns.push_back(MediaColumn::MEDIA_SIZE);
-    columns.push_back(MediaColumn::MEDIA_NAME);
-    columns.push_back(PhotoColumn::PHOTO_OWNER_ALBUM_ID +" as " + PARENT);
-    columns.push_back(MediaColumn::MEDIA_DATE_ADDED);
-    columns.push_back(MediaColumn::MEDIA_DURATION);
-    columns.push_back(MediaColumn::MEDIA_TYPE);
-    columns.push_back(MediaColumn::MEDIA_FILE_PATH);
-    columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
-    columns.push_back(PhotoColumn::MEDIA_DATE_MODIFIED);
-    columns.push_back(PhotoColumn::PHOTO_THUMB_SIZE);
     DataShare::DataSharePredicates predicates;
     if (isHandle) {
         vector<string> burstKeys = GetBurstKeyFromPhotosInfo();
@@ -329,7 +333,7 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
         int32_t file_id = static_cast<int32_t>(context->handle % COMMON_PHOTOS_OFFSET);
         predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(file_id));
     }
-    return dataShareHelper_->Query(uri, predicates, columns);
+    return dataShareHelper_->Query(uri, predicates, g_photoColumns);
 }
 
 vector<string> MtpMedialibraryManager::GetBurstKeyFromPhotosInfo()
@@ -408,6 +412,59 @@ int32_t MtpMedialibraryManager::GetHandles(const shared_ptr<MtpOperationContext>
     resultSet = GetPhotosInfo(context, true);
     errCode = HaveMovingPhotesHandle(resultSet, outHandles, context->parent);
     return MtpErrorUtils::SolveGetHandlesError(errCode);
+}
+
+int32_t MtpMedialibraryManager::GetAllHandles(
+    const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt32List> &out)
+{
+    CHECK_AND_RETURN_RET_LOG((context != nullptr && dataShareHelper_ != nullptr && out != nullptr),
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "context is nullptr");
+    auto resultSet = GetAlbumInfo(context, true);
+    auto albumHandles = PtpAlbumHandles::GetInstance();
+    if (albumHandles != nullptr) {
+        albumHandles->AddAlbumHandles(resultSet);
+    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, E_SUCCESS,
+        "have no handles");
+    do {
+        int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        out->push_back(id);
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    DataShare::DataSharePredicates predicates;
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, ZERO);
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, ZERO);
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, ZERO);
+
+    auto burstKeys = GetBurstKeyFromPhotosInfo();
+    if (!burstKeys.empty()) {
+        predicates.BeginWrap()
+            ->BeginWrap()
+            ->NotIn(PhotoColumn::PHOTO_BURST_KEY, burstKeys)
+            ->Or()->IsNull(PhotoColumn::PHOTO_BURST_KEY)
+            ->EndWrap()
+            ->Or()->EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL)
+            ->EndWrap();
+    }
+
+    Uri uri(PAH_QUERY_PHOTO);
+    resultSet = dataShareHelper_->Query(uri, predicates, g_photoColumns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, E_SUCCESS,
+        "have no handles");
+    do {
+        uint32_t id = static_cast<uint32_t>(GetInt32Val(MediaColumn::MEDIA_ID, resultSet));
+        out->push_back(id);
+        if (id < COMMON_PHOTOS_OFFSET) {
+            continue;
+        }
+        int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            uint32_t videoId = id + (COMMON_MOVING_OFFSET - COMMON_PHOTOS_OFFSET);
+            out->push_back(videoId);
+        }
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    return MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
 }
 
 int32_t MtpMedialibraryManager::GetObjectInfo(const shared_ptr<MtpOperationContext> &context,

@@ -64,6 +64,7 @@ public:
     static int32_t GetBatteryLevel();
     static std::string GetPropertyInner(const std::string &property, const std::string &defValue);
     static bool SetPropertyInner(const std::string &property, const std::string &value);
+    static void SetIsDevicePropSet();
 
 private:
     uint16_t CheckErrorCode(int errorCode);
