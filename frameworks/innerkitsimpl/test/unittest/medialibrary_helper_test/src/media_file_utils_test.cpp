@@ -236,7 +236,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_004, T
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_005, TestSize.Level0)
 {
     string displayName = "test.test.jpg";
-    EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName), 0);
+    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_006, TestSize.Level0)
