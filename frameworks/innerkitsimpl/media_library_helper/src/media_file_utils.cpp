@@ -60,6 +60,7 @@ const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
 constexpr unsigned short MAX_RECURSION_DEPTH = 4;
 constexpr size_t DEFAULT_TIME_SIZE = 32;
+constexpr int32_t CROSS_POLICY_ERR = 18;
 const int32_t HMFS_MONITOR_FL = 2;
 const int32_t INTEGER_MAX_LENGTH = 10;
 const std::string LISTENING_BASE_PATH = "/storage/media/local/files/";
@@ -629,14 +630,17 @@ void MediaFileUtils::RecoverMediaTempDir()
     }
 }
 
-bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
+bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath, bool isSupportCrossPolicy)
 {
     bool errRet = false;
-
-    if (IsFileExists(oldPath) && !IsFileExists(newPath)) {
-        errRet = (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
+    if (!IsFileExists(oldPath) || IsFileExists(newPath)) {
+        return errRet;
     }
 
+    errRet = (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
+    if (!errRet && isSupportCrossPolicy && errno == CROSS_POLICY_ERR) {
+        errRet = CopyFileAndDelSrc(oldPath, newPath);
+    }
     return errRet;
 }
 
