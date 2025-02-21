@@ -235,7 +235,13 @@ const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<s
         MEDIA_ERR_LOG("Invalid input: args must contain at least 1 strings");
         return "";
     }
+
     std::string albumId = args[0].c_str();
+    if (!all_of(albumId.begin(), albumId.end(), ::isdigit)) {
+        MEDIA_ERR_LOG("Invalid albunId PhotoAlbumNotifyFunc Abortion");
+        return "";
+    }
+
     MEDIA_DEBUG_LOG("albumId = %{public}s", albumId.c_str());
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, "", "Failed to get MediaLibraryNotify");
