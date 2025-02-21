@@ -409,7 +409,7 @@ void CloneRestoreHighlight::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
         params.emplace_back(fileInfo.cloudPath);
     }
     querySql << ")";
-    auto resultSet = mediaLibraryRdb_->QuerySql(querySql.str(), params);
+    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql.str(), params);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val("file_id", resultSet);
