@@ -92,10 +92,10 @@ private:
     void GenerateAddServicePredicates(bool isAuto, NativeRdb::RdbPredicates &servicePredicates);
     void GenerateAddAutoServicePredicates(bool isReboot, NativeRdb::RdbPredicates &servicePredicates);
     void GenerateCancelOperationPredicates(int32_t fileId, NativeRdb::RdbPredicates &servicePredicates);
-    int32_t HandleNetChangeInner(const bool isWifiStateChanged, const bool isCellularStateChanged);
     sptr<PhotosAutoOptionObserver> photosAutoOptionObserver_ = nullptr;
     sptr<PhotosWaterMarkObserver> photosWaterMarkObserver_ = nullptr;
-    bool isAutoTaskEnabled();
+    bool IsAutoTaskEnabled();
+    int32_t HandleCancelAllAutoOperation();
 #endif
     void InitPhotosSettingsMonitor();
     bool isCameraIdle_ = true;
