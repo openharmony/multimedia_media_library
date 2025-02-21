@@ -128,7 +128,7 @@ void CloudUploadChecker::HandlePhotoInfos(std::vector<CheckedPhotoInfo> photoInf
             RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
             predicates.EqualTo(MediaColumn::MEDIA_ID, photoInfo.fileId);
             ValuesBucket values;
-            values.PutInt(MediaColumn::MEDIA_SIZE, static_cast<int64_t>(fst.st_size));
+            values.PutLong(MediaColumn::MEDIA_SIZE, static_cast<int64_t>(fst.st_size));
             int32_t updateCount = 0;
             auto err = rdbStore->Update(updateCount, values, predicates);
             if (err != NativeRdb::E_OK) {
@@ -264,7 +264,7 @@ void CloudUploadChecker::QueryLcdAndRepair(int32_t startFileId, int32_t &outFile
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
         struct stat fst{};
         if (stat(path.c_str(), &fst) == 0) {
-            values.PutInt(MediaColumn::MEDIA_SIZE, static_cast<int64_t>(fst.st_size));
+            values.PutLong(MediaColumn::MEDIA_SIZE, static_cast<int64_t>(fst.st_size));
         } else {
             MEDIA_ERR_LOG("stat syscall failed, file_id=%{public}d, errno=%{public}d", fileId, errno);
         }
