@@ -17,6 +17,8 @@
 
 #include "cloud_upload_checker.h"
 
+#include <sys/stat.h>
+
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "medialibrary_unistore_manager.h"
@@ -101,9 +103,11 @@ void CloudUploadChecker::HandleNoOriginPhoto()
 
 void CloudUploadChecker::HandlePhotoInfos(std::vector<CheckedPhotoInfo> photoInfos)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
     std::vector<std::string> noLcdList;
     vector<int32_t> repairedIdList;
-    for (CheckedPhotoInfo& photoInfo: photoInfos) {
+    for (CheckedPhotoInfo &photoInfo : photoInfos) {
         if (MediaFileUtils::IsFileExists(photoInfo.path)) {
             continue;
         }
@@ -111,8 +115,26 @@ void CloudUploadChecker::HandlePhotoInfos(std::vector<CheckedPhotoInfo> photoInf
         if (MediaFileUtils::IsFileExists(lcdPath)) {
             MEDIA_INFO_LOG("lcd path exists but origin failed not, file_id: %{public}d", photoInfo.fileId);
             bool ret = MediaFileUtils::CopyFileUtil(lcdPath, photoInfo.path);
-            CHECK_AND_PRINT_LOG(ret, "copy lcd to origin photo failed, file_id: %{public}d, ret: %{public}d",
-                photoInfo.fileId, ret);
+            if (!ret) {
+                MEDIA_ERR_LOG(
+                    "copy lcd to origin photo failed, file_id: %{public}d, ret: %{public}d", photoInfo.fileId, ret);
+                continue;
+            }
+            struct stat fst{};
+            if (stat(photoInfo.path.c_str(), &fst) != 0) {
+                MEDIA_ERR_LOG("stat syscall failed, file_id=%{public}d, errno=%{public}d", photoInfo.fileId, errno);
+                continue;
+            }
+            RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+            predicates.EqualTo(MediaColumn::MEDIA_ID, photoInfo.fileId);
+            ValuesBucket values;
+            values.PutInt(MediaColumn::MEDIA_SIZE, static_cast<int64_t>(fst.st_size));
+            int32_t updateCount = 0;
+            auto err = rdbStore->Update(updateCount, values, predicates);
+            if (err != NativeRdb::E_OK) {
+                MEDIA_ERR_LOG("repair from lcd failed, file_id=%{public}d, err=%{public}d", photoInfo.fileId, err);
+                continue;
+            }
             repairedIdList.emplace_back(photoInfo.fileId);
         } else {
             noLcdList.push_back(to_string(photoInfo.fileId));
@@ -240,6 +262,12 @@ void CloudUploadChecker::QueryLcdAndRepair(int32_t startFileId, int32_t &outFile
         predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
         ValuesBucket values;
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
+        struct stat fst{};
+        if (stat(path.c_str(), &fst) == 0) {
+            values.PutInt(MediaColumn::MEDIA_SIZE, static_cast<int64_t>(fst.st_size));
+        } else {
+            MEDIA_ERR_LOG("stat syscall failed, file_id=%{public}d, errno=%{public}d", fileId, errno);
+        }
         int32_t updateCount = 0;
         int32_t err = rdbStore->Update(updateCount, values, predicates);
         MEDIA_INFO_LOG(

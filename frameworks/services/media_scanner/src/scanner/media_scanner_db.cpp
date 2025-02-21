@@ -273,6 +273,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutLong(PhotoColumn::PHOTO_COVER_POSITION, metadata.GetCoverPosition());
         values.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, metadata.GetFrontCamera());
         values.PutString(PhotoColumn::PHOTO_DETAIL_TIME, metadata.GetDetailTime());
+        values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
 
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
@@ -1072,6 +1073,7 @@ std::string MediaScannerDb::MakeFileUri(const std::string &mediaTypeUri, const M
 {
     return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()),
         MediaFileUtils::GetExtraUri(metadata.GetFileName(), metadata.GetFilePath())) + "?api_version=10" +
+        "&date_modified=" + to_string(metadata.GetFileDateModified()) +
         "&date_taken=" + to_string(metadata.GetDateTaken());
 }
 } // namespace Media
