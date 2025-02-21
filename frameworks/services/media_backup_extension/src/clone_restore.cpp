@@ -313,13 +313,6 @@ void CloneRestore::RestorePhoto()
         RestorePhotoBatch(offset);
     }
     this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
-
-    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
-    cloneRestoreGeo_.ReportGeoRestoreTask();
-    cloneRestoreHighlight_.UpdateAlbums();
-    cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
-    ReportPortraitCloneStat(sceneCode_);
 }
 
 void CloneRestore::GetAccountValid()
@@ -470,8 +463,6 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos);
-    cloneRestoreGeo_.RestoreMaps(fileInfos);
-    cloneRestoreHighlight_.RestoreMaps(fileInfos);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
@@ -1330,6 +1321,12 @@ void CloneRestore::RestoreGallery()
         (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
     MEDIA_INFO_LOG("Start update group tags");
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
+    cloneRestoreGeo_.ReportGeoRestoreTask();
+    cloneRestoreHighlight_.UpdateAlbums();
+    cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
+    ReportPortraitCloneStat(sceneCode_);
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
@@ -1672,6 +1669,8 @@ void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos)
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("query new file_id cost %{public}ld, insert %{public}ld maps cost %{public}ld",
         (long)(startInsert - startQuery), (long)mapRowNum, (long)(end - startInsert));
+    cloneRestoreGeo_.RestoreMaps(fileInfos);
+    cloneRestoreHighlight_.RestoreMaps(fileInfos);
 }
 
 void CloneRestore::SetFileIdReference(const vector<FileInfo> &fileInfos, string &selection,

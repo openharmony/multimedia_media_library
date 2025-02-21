@@ -137,7 +137,7 @@ void CloneRestoreCVAnalysis::GetAssetMapInfos(CloneRestoreHighlight &cloneHighli
     int32_t offset = 0;
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
-        auto resultSet = mediaRdb_->QuerySql(QUERY_SQL, params);
+        auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
         if (resultSet == nullptr) {
             MEDIA_ERR_LOG("resultSet is nullptr");
             break;
@@ -181,7 +181,7 @@ void CloneRestoreCVAnalysis::GetAssetAlbumInfos(CloneRestoreHighlight &cloneHigh
     int32_t offset = 0;
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
-        auto resultSet = mediaRdb_->QuerySql(QUERY_SQL, params);
+        auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
         if (resultSet == nullptr) {
             MEDIA_ERR_LOG("resultSet is nullptr");
             break;
