@@ -917,8 +917,8 @@ int32_t PhotoCustomRestoreOperation::RenameFiles(vector<FileInfo> &restoreFiles)
             }
             continue;
         }
-        if (!MediaFileUtils::MoveFile(fileInfo.originFilePath, fileInfo.filePath)) {
-            MEDIA_ERR_LOG("MoveFile failed. srcFile:%{public}s, destFile:%{public}s",
+        if (!MediaFileUtils::MoveFile(fileInfo.originFilePath, fileInfo.filePath, true)) {
+            MEDIA_ERR_LOG("MoveFile failed. errno:%{public}d, srcFile:%{public}s, destFile:%{public}s", errno,
                 fileInfo.originFilePath.c_str(),
                 fileInfo.filePath.c_str());
             DeleteDatabaseRecord(fileInfo.filePath);
