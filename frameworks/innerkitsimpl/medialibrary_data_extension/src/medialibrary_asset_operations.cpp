@@ -56,6 +56,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_urisensitive_operations.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
@@ -322,6 +323,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     int32_t errCode = DropAllTables(rdbStore);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Drop table failed, errCode=%{public}d", errCode);
     errCode = rdbStore->DataCallBackOnCreate();
+    UriSensitiveOperations::DeleteAllSensitiveAsync();
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "DataCallBackOnCreate failed, errCode=%{public}d", errCode);
 
     MediaLibraryRdbStore::ResetAnalysisTables();

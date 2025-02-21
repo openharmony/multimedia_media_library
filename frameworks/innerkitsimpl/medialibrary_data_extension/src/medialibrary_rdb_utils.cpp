@@ -2072,21 +2072,20 @@ static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetSystemAlbumByUris");
-    string idArgs;
-    for (size_t i = 0; i < uris.size(); i++) {
-        string fileId = GetPhotoId(uris[i]);
-        if (fileId.size() > 0) {
-            idArgs.append("'").append(fileId).append("'").append(",");
-        }
-        if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
-            continue;
-        }
-        if (idArgs.size() == 0) {
-            continue;
-        }
-        idArgs = idArgs.substr(0, idArgs.size() - 1);
+    vector<string> fileIds;
+    for (auto uri : uris) {
+        string fileId = GetPhotoId(uri);
+        fileIds.push_back(fileId);
+    }
+    size_t queryTime = (fileIds.size() + ALBUM_UPDATE_THRESHOLD -1) / ALBUM_UPDATE_THRESHOLD;
+    for (size_t i = 0; i < queryTime; i++) {
+        size_t start = i * ALBUM_UPDATE_THRESHOLD;
+        size_t end = (start + ALBUM_UPDATE_THRESHOLD) < fileIds.size() ?
+            (start + ALBUM_UPDATE_THRESHOLD) : fileIds.size();
+        std::vector<string> childVector(fileIds.begin() + start, fileIds.begin() + end);
         RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-        predicates.SetWhereClause(PhotoColumn::MEDIA_ID + " in(" + idArgs + ") GROUP by hidden");
+        predicates.In(PhotoColumn::MEDIA_ID, childVector);
+        predicates.GroupBy({MediaColumn::MEDIA_HIDDEN});
         const vector<string> columns = {
             MediaColumn::MEDIA_HIDDEN,
             "Min(" + MediaColumn::MEDIA_TYPE + ")",
@@ -2101,11 +2100,8 @@ static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore
         }
         while (resultSet->GoToNextRow() == E_OK) {
             int hidden = GetIntValFromColumn(resultSet, 0);
-            if (hidden == 0) {
-                AddSystemAlbum(systemAlbum, resultSet);
-            } else {
-                AddSystemAlbum(hiddenSystemAlbum, resultSet);
-            }
+            AddSystemAlbum(systemAlbum, resultSet);
+            AddSystemAlbum(hiddenSystemAlbum, resultSet);
             if (albumOperationType == AlbumOperationType::DELETE_PHOTO ||
                 albumOperationType == AlbumOperationType::RECOVER_PHOTO) {
                 systemAlbum.insert(to_string(PhotoAlbumSubType::TRASH));
@@ -2115,7 +2111,6 @@ static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore
             }
         }
         resultSet->Close();
-        idArgs.clear();
     }
 }
 
