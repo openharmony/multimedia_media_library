@@ -2443,7 +2443,7 @@ static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext
         NAPI_ERR_LOG("Fail to get fileAsset");
         return false;
     }
-    NAPI_ERR_LOG("enter SetSupportedWatermarkTypeExecute: %{public}d", fileAsset->GetSupportedWatermarkType());
+    NAPI_INFO_LOG("enter SetSupportedWatermarkTypeExecute: %{public}d", fileAsset->GetSupportedWatermarkType());
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
     

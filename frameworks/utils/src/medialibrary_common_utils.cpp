@@ -180,6 +180,11 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     TabOldPhotosColumn::MEDIA_OLD_FILE_PATH,
     TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI,
     TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID,
+    MEDIA_DATA_DB_ALL_EXIF,
+    MEDIA_DATA_DB_SHOOTING_MODE,
+    MEDIA_DATA_DB_SHOOTING_MODE_TAG,
+    MEDIA_DATA_DB_PHOTOS_LATITUDE,
+    MEDIA_DATA_DB_PHOTOS_LONGITUDE,
 
     // Photos table columns
     COMPAT_HIDDEN,

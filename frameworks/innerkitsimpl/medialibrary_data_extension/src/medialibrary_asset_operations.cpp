@@ -2441,6 +2441,11 @@ static void TaskDataFileProccess(DeleteFilesTask *taskData)
                 MEDIA_WARN_LOG("Failed to delete video file, errno: %{public}d, path: %{private}s", errno,
                     videoPath.c_str());
             }
+            string livePhotoPath = MovingPhotoFileUtils::GetLivePhotoCachePath(filePath);
+            if (MediaFileUtils::IsFileExists(livePhotoPath) && !MediaFileUtils::DeleteFile(livePhotoPath)) {
+                MEDIA_WARN_LOG("Failed to delete cache live photo, errno: %{public}d, path: %{private}s", errno,
+                    livePhotoPath.c_str());
+            }
         }
     }
     for (size_t i = 0; i < taskData->ids_.size(); i++) {
