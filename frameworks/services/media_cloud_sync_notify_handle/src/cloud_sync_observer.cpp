@@ -59,8 +59,8 @@ void CloudSyncObserver::DealCloudSync(const ChangeInfo &changeInfo)
     if (jsonData.contains("taskType")) {
         info.taskType = jsonData["taskType"];
     }
-    if (jsonData.contains("sycnId")) {
-        info.syncId = jsonData["sycnId"];
+    if (jsonData.contains("syncId")) {
+        info.syncId = jsonData["syncId"];
     }
     if (jsonData.contains("syncType")) {
         info.syncType = jsonData["syncType"];
@@ -103,7 +103,11 @@ void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
         CloudSyncHandleData handleData;
         handleData.orgInfo = notifyInfo;
         shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(GALLERY_PHOTO_DELETE);
-        chain->Handle(handleData);
+        if (chain != nullptr) {
+            chain->Handle(handleData);
+        } else {
+            MEDIA_ERR_LOG("uri OR type is Invalid");
+        }
     }
     SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, PHOTO_URI_TYPE);
     AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
