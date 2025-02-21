@@ -36,6 +36,7 @@ public:
     void Clear();
     int32_t GetHandles(int32_t parentId, std::vector<int> &outHandles, MediaType mediaType = MEDIA_TYPE_DEFAULT);
     int32_t GetHandles(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt32List> &outHandles);
+    int32_t GetAllHandles(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt32List> &out);
     int32_t GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<ObjectInfo> &outObjectInfo);
     int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd, const std::string &mode);

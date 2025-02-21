@@ -86,6 +86,7 @@ const std::string PUBLIC_DOC = "/storage/media/local/files/Docs";
 static constexpr uint32_t HEADER_LEN = 12;
 static constexpr uint32_t READ_LEN = 1024;
 static constexpr uint32_t SEND_OBJECT_FILE_MAX_SIZE = 0xFFFFFFFF;
+static bool g_isDevicePropSet = false;
 
 MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context) : context_(context)
 {
@@ -100,6 +101,7 @@ MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &cont
             "MtpMedialibraryManager failed, mtpMedialibraryManager_ is null");
         mtpMedialibraryManager_->Init(token, context);
     }
+    g_isDevicePropSet = false;
 }
 
 MtpOperationUtils::~MtpOperationUtils()
@@ -175,6 +177,10 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
     if (ret != MTP_SUCCESS) {
         return CheckErrorCode(ret);
     }
+    // Determine whether the device is a Mac computer
+    // WIN/MAC parent is 0, Linux parent is 0xffffffff
+    // WIN set device prop, MAC/Linux do not set device prop
+    bool isMac = (context_->parent == 0 && !g_isDevicePropSet) ? true : false;
     if (context_->parent == MTP_ALL_HANDLE_ID) {
         context_->parent = 0;
     }
@@ -189,7 +195,8 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
             MtpFileObserver::GetInstance().AddFileInotify(path, realPath, context_);
         }
     } else {
-        errorCode = mtpMedialibraryManager_->GetHandles(context_, objectHandles);
+        errorCode = isMac ? mtpMedialibraryManager_->GetAllHandles(context_, objectHandles) :
+            mtpMedialibraryManager_->GetHandles(context_, objectHandles);
     }
     if (errorCode != MTP_SUCCESS) {
         MEDIA_ERR_LOG("GetObjectHandles GetHandles fail!");
@@ -1040,5 +1047,11 @@ bool MtpOperationUtils::SetPropertyInner(const std::string &property, const std:
 {
     return OHOS::system::SetParameter(property, defValue);
 }
+
+void MtpOperationUtils::SetIsDevicePropSet()
+{
+    g_isDevicePropSet = true;
+}
+
 } // namespace Media
 } // namespace OHOS
