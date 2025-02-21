@@ -243,6 +243,7 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
         OperationObject::ACTIVE_DEVICE,
         OperationObject::MISCELLANEOUS,
         OperationObject::TAB_OLD_PHOTO,
+        OperationObject::TAB_FACARD_PHOTO,
         OperationObject::CONVERT_PHOTO,
     };
 

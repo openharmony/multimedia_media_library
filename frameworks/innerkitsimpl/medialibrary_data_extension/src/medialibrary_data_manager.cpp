@@ -52,6 +52,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_old_photos_column.h"
+#include "media_facard_photos_column.h"
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
@@ -110,6 +111,7 @@
 #include "value_object.h"
 #include "post_event_utils.h"
 #include "medialibrary_formmap_operations.h"
+#include "medialibrary_facard_operations.h"
 #include "ithumbnail_helper.h"
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
@@ -355,6 +357,14 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     CloudSyncSwitchManager cloudSyncSwitchManager;
     cloudSyncSwitchManager.RegisterObserver();
     SubscriberPowerConsumptionDetection();
+    std::map<std::string, std::vector<std::string>> urisMap = MediaLibraryFaCardOperations::GetUris();
+    for (const auto& pair : urisMap) {
+        const std::string& formId = pair.first;
+        const std::vector<std::string>& uris = pair.second;
+        for (const std::string& uri : uris) {
+            MediaLibraryFaCardOperations::RegisterObserver(formId, uri);
+        }
+    }
 
     refCnt_++;
 
@@ -780,6 +790,8 @@ int32_t MediaLibraryDataManager::SolveInsertCmdSub(MediaLibraryCommand &cmd)
             return MediaLibraryLocationOperations::InsertOperation(cmd);
         case OperationObject::PAH_FORM_MAP:
             return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
+        case OperationObject::TAB_FACARD_PHOTO:
+            return MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(cmd);
         case OperationObject::SEARCH_TOTAL: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
@@ -1045,6 +1057,9 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         }
         case OperationObject::PAH_FORM_MAP: {
             return MediaLibraryFormMapOperations::RemoveFormIdOperations(rdbPredicate);
+        }
+        case OperationObject::TAB_FACARD_PHOTO: {
+            return MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(rdbPredicate);
         }
         default:
             break;

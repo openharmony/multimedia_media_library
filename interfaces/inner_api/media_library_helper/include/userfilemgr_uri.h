@@ -501,6 +501,10 @@ const std::string MEDIALIBRARY_REMOTEFILE_URI = MEDIALIBRARY_DATA_URI + '/' + "r
 const std::string TAB_OLD_PHOTO = "tab_old_photos_operation";
 const std::string QUERY_TAB_OLD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_OLD_PHOTO + "/" + OPRN_QUERY;
 
+const std::string TAB_FACARD_PHOTO = "tab_facard_photos_operation";
+const std::string PAH_STORE_FACARD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_FACARD_PHOTO + "/" + OPRN_STORE_FORM_ID;
+const std::string PAH_REMOVE_FACARD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_FACARD_PHOTO + "/" + OPRN_REMOVE_FORM_ID;
+
 // cloud media asset manager
 const std::string CLOUD_MEDIA_ASSET_OPERATE = "cloud_media_asset_operate";
 

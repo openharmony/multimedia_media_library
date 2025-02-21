@@ -320,7 +320,10 @@ private:
     EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbumsSync(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessSaveGalleryFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessRemoveGalleryFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessUpdateGalleryFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetFileAssetsInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info);

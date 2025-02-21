@@ -25,6 +25,7 @@
 #include "media_directory_type_column.h"
 #include "media_log.h"
 #include "media_old_photos_column.h"
+#include "media_facard_photos_column.h"
 #include "media_smart_album_column.h"
 #include "openssl/sha.h"
 #include "vision_aesthetics_score_column.h"
@@ -177,6 +178,8 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_MEDIA_SUFFIX,
     TabOldPhotosColumn::MEDIA_OLD_ID,
     TabOldPhotosColumn::MEDIA_OLD_FILE_PATH,
+    TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI,
+    TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID,
     MEDIA_DATA_DB_ALL_EXIF,
     MEDIA_DATA_DB_SHOOTING_MODE,
     MEDIA_DATA_DB_SHOOTING_MODE_TAG,
