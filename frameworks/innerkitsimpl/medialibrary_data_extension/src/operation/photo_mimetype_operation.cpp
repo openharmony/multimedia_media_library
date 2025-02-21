@@ -77,7 +77,7 @@ int32_t PhotoMimetypeOperation::HandleUpdateInvalidMimeType(const std::shared_pt
         values.Put(MediaColumn::MEDIA_MIME_TYPE, invalidPair.first);
         AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
         predicates.In(MediaColumn::MEDIA_ID, invalidPair.second);
-        int32_t totalCount = invalidPair.second.size();
+        int32_t totalCount = static_cast<int32_t>(invalidPair.second.size());
         int32_t changedRows = -1;
         int32_t ret = rdbStore->Update(changedRows, values, predicates);
         if (ret != E_OK || changedRows != totalCount) {
