@@ -215,7 +215,7 @@ void CloneRestoreCVAnalysis::InsertIntoAssetMap()
     int32_t errCode = BatchInsertWithRetry("tab_analysis_album_asset_map", values, rowNum);
     if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
         int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-        MEDIA_ERR_LOG("insert into assetMap failed, num:%{public}ld", failNums);
+        MEDIA_ERR_LOG("insert into assetMap failed, num:%{public}ld", (long) failNums);
         ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
             "insert into AssetMap fail. num:" + std::to_string(failNums));
         failCnt_ += failNums;
@@ -236,7 +236,7 @@ void CloneRestoreCVAnalysis::InsertIntoSdMap()
     int32_t errCode = BatchInsertWithRetry("tab_analysis_asset_sd_map", values, rowNum);
     if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
         int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-        MEDIA_ERR_LOG("insert into sdMap failed, num:%{public}ld", failNums);
+        MEDIA_ERR_LOG("insert into sdMap failed, num:%{public}ld", (long) failNums);
         ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
             "insert into sdMap fail. num:" + std::to_string(failNums));
         failCnt_ += failNums;
@@ -256,7 +256,7 @@ int32_t CloneRestoreCVAnalysis::BatchInsertWithRetry(const std::string &tableNam
     std::function<int(void)> func = [&]()->int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
+            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long) rowNum);
         }
         return errCode;
     };
@@ -327,7 +327,7 @@ void CloneRestoreCVAnalysis::InsertIntoAnalysisLabel()
         int32_t errCode = BatchInsertWithRetry("tab_analysis_label", values, rowNum);
         if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-            MEDIA_ERR_LOG("insert into tab_analysis_label fail, num: %{public}ld", failNums);
+            MEDIA_ERR_LOG("insert into tab_analysis_label fail, num: %{public}ld", (long) failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_analysis_label fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -425,7 +425,7 @@ void CloneRestoreCVAnalysis::InsertIntoAnalysisSaliency()
         int32_t errCode = BatchInsertWithRetry("tab_analysis_saliency_detect", values, rowNum);
         if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-            MEDIA_ERR_LOG("insert into tab_analysis_saliency_detect fail, num: %{public}ld", failNums);
+            MEDIA_ERR_LOG("insert into tab_analysis_saliency_detect fail, num: %{public}ld", (long) failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_analysis_saliency_detect fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -515,7 +515,7 @@ void CloneRestoreCVAnalysis::InsertIntoAnalysisRecommendation()
         int32_t errCode = BatchInsertWithRetry("tab_analysis_recommendation", values, rowNum);
         if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
             int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-            MEDIA_ERR_LOG("insert into tab_analysis_recommendation fail, num: %{public}ld", failNums);
+            MEDIA_ERR_LOG("insert into tab_analysis_recommendation fail, num: %{public}ld", (long) failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_analysis_recommendation fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -769,7 +769,7 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
 void CloneRestoreCVAnalysis::ReportCloneRestoreCVAnalysisTask()
 {
     const int32_t ERR_STATUS = 1;
-    MEDIA_INFO_LOG("Highlight restore failCnt_: %{public}ld", failCnt_);
+    MEDIA_INFO_LOG("Highlight restore failCnt_: %{public}ld", (long) failCnt_);
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
         .Report("Highlight restore", std::to_string(ERR_STATUS), "failCnt_: " + std::to_string(failCnt_));
 }
