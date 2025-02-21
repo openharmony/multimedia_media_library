@@ -67,6 +67,7 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "tab_old_photos_table_event_handler.h"
+#include "tab_facard_photos_table_event_handler.h"
 #include "vision_column.h"
 #include "vision_ocr_column.h"
 #include "form_map.h"
@@ -1680,6 +1681,9 @@ static int32_t ExecuteSql(RdbStore &store)
     }
     CHECK_AND_RETURN_RET(TabOldPhotosTableEventHandler().OnCreate(store) == NativeRdb::E_OK,
         NativeRdb::E_ERROR);
+    if (TabFaCardPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
     return NativeRdb::E_OK;
 }
 
@@ -4221,13 +4225,17 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_MEDIA_SUFFIX_COLUMN) {
         AddMediaSuffixColumn(store);
     }
-        
+
     if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN) {
         UpdateSourcePhotoAlbumTrigger(store);
     }
 
     if (oldVersion < VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN) {
         AddIsRecentShow(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {
+        TabFaCardPhotosTableEventHandler().OnCreate(store);
     }
 }
 
@@ -4271,6 +4279,7 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
         UpdateSearchStatusTriggerForOwnerAlbumId(store);
     }
+
     if (oldVersion < VERSION_ADD_CHECK_FLAG) {
         AddCheckFlag(store);
     }
