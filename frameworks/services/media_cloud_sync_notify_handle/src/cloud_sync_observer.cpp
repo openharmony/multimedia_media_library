@@ -105,7 +105,7 @@ void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
         shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(GALLERY_PHOTO_DELETE);
         if (chain != nullptr) {
             chain->Handle(handleData);
-        }else {
+        } else {
             MEDIA_ERR_LOG("uri OR type is Invalid");
         }
     }
