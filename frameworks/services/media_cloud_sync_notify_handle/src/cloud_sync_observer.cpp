@@ -124,6 +124,10 @@ void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
 void CloudSyncObserver::DealGalleryDownload(CloudSyncNotifyInfo &notifyInfo)
 {
     if (notifyInfo.type == ChangeType::OTHER) {
+        if (notifyInfo.uris.empty()) {
+            MEDIA_ERR_LOG("gallery download notify uri empty");
+            return;
+        }
         string uriString = notifyInfo.uris.front().ToString();
         string downloadString = "gallery/download";
         string::size_type pos = uriString.find(downloadString);
@@ -137,7 +141,9 @@ void CloudSyncObserver::DealGalleryDownload(CloudSyncNotifyInfo &notifyInfo)
         CloudSyncHandleData handleData;
         handleData.orgInfo = notifyInfo;
         shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(TRANSPARENT);
-        chain->Handle(handleData);
+        if (chain != nullptr) {
+            chain->Handle(handleData);
+        }
     }
 }
 
