@@ -417,8 +417,9 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         }
     } else if (action == EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE) {
         int netType = want.GetIntParam("NetType", -1);
-        bool cellularNetConnected = eventData.GetCode() == NET_CONN_STATE_CONNECTED;
-        isCellularNetConnected_ = netType == BEARER_CELLULAR ? cellularNetConnected : isCellularNetConnected_;
+        bool isNetConnected = eventData.GetCode() == NET_CONN_STATE_CONNECTED;
+        MEDIA_INFO_LOG("netType: %{public}d, isConnected: %{public}d.", netType, static_cast<int32_t>(isNetConnected));
+        isCellularNetConnected_ = netType == BEARER_CELLULAR ? isNetConnected : isCellularNetConnected_;
         UpdateCloudMediaAssetDownloadTaskStatus();
     } else if (BACKGROUND_OPERATION_STATUS_MAP.count(action) != 0) {
         UpdateBackgroundOperationStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
