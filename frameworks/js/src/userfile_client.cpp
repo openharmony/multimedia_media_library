@@ -183,7 +183,7 @@ void UserFileClient::Init(const sptr<IRemoteObject> &token, bool isSetHelper, co
             MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(dataShareHelper);
         }
         if (dataShareHelper != nullptr) {
-            if(!IsValid(userId)) {
+            if (!IsValid(userId)) {
                 dataShareHelperMap_.EnsureInsert(userId, dataShareHelper);
             } else {
                 NAPI_ERR_LOG("dataShareHelperMap has userId and value");
@@ -199,7 +199,7 @@ void UserFileClient::Init(napi_env env, napi_callback_info info, const int32_t u
     if (GetDataShareHelperByUser(userId) == nullptr) {
         std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = GetDataShareHelper(env, info, userId);
         if (dataShareHelper != nullptr) {
-            if(!IsValid(userId)) {
+            if (!IsValid(userId)) {
                 dataShareHelperMap_.EnsureInsert(userId, dataShareHelper);
             } else {
                 NAPI_ERR_LOG("dataShareHelperMap has userId and value");
