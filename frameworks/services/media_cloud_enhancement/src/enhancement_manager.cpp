@@ -566,7 +566,7 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
         }
         MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
         enhancementService_->PutInt(mediaEnhanceBundle, MediaEnhance_Bundle_Key::TRIGGER_TYPE,
-            isAuto ? MediaEnhance_Trigger_Type::TRIGGER_LOW_LEVEL : MediaEnhance_Trigger_Type::TRIGGER_HIGH_LEVEL);
+            MediaEnhance_Trigger_Type::TRIGGER_HIGH_LEVEL);
         enhancementService_->PutInt(mediaEnhanceBundle, MediaEnhance_Bundle_Key::TRIGGER_MODE, triggerMode);
         FillBundleWithWaterMarkInfo(mediaEnhanceBundle, mimeType, dynamicRangeType, hasCloudWatermark);
         errCode = AddServiceTask(mediaEnhanceBundle, fileId, photoId, hasCloudWatermark, isAuto);
@@ -584,7 +584,7 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
 int32_t EnhancementManager::HandleAutoAddOperation(const bool isReboot)
 {
     MEDIA_INFO_LOG("HandleAutoAddOperation");
-    if (!isAutoTaskEnabled()) {
+    if (!IsAutoTaskEnabled()) {
         return E_ERR;
     }
     int32_t errCode = E_OK;
@@ -671,31 +671,7 @@ int32_t EnhancementManager::AddAutoServiceTask(MediaEnhanceBundleHandle* mediaEn
     return E_OK;
 }
 
-int32_t EnhancementManager::HandleNetChangeInner(const bool isWifiStateChanged, const bool isCellularStateChanged)
-{
-    if (photosAutoOption_ == PHOTO_OPTION_WLAN_ONLY) { // wifi only
-        return isWifiConnected_ ? HandleAutoAddOperation() : HandleCancelAllOperation();
-    } else if (isWifiStateChanged && !isCellularStateChanged) { // wifi and network
-        if (isCellularNetConnected_) {
-            return E_OK;
-        } else {
-            return isWifiConnected_ ? HandleAutoAddOperation() : HandleCancelAllOperation();
-        }
-    } else if (!isWifiStateChanged && isCellularStateChanged) {
-        if (isWifiConnected_) {
-            return E_OK;
-        } else {
-            return isCellularNetConnected_ ? HandleAutoAddOperation() : HandleCancelAllOperation();
-        }
-    } else if (!isWifiConnected_ && !isCellularNetConnected_) { // wifi and network state all changed
-        return HandleCancelAllOperation();
-    } else if (isWifiConnected_ && isCellularNetConnected_) {
-        return HandleAutoAddOperation();
-    }
-    return E_OK;
-}
-
-bool EnhancementManager::isAutoTaskEnabled()
+bool EnhancementManager::IsAutoTaskEnabled()
 {
     MEDIA_INFO_LOG("camera state: %{public}s, photos option: %{public}s, WiFi: %{public}s, CellularNet: %{public}s",
         isCameraIdle_ ? "true" : "false", photosAutoOption_.c_str(), isWifiConnected_ ? "true" : "false",
@@ -715,6 +691,56 @@ bool EnhancementManager::isAutoTaskEnabled()
         return isWifiConnected_;
     }
     return false;
+}
+
+int32_t EnhancementManager::HandleCancelAllAutoOperation()
+{
+    RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
+    vector<string> columns = { MediaColumn::MEDIA_ID, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE };
+    servicePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO));
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
+    if (CheckResultSet(resultSet) != E_OK) {
+        MEDIA_INFO_LOG("no auto processing photo");
+        return E_ERR;
+    }
+    while (resultSet->GoToNextRow() == E_OK) {
+        int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+        int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
+        MEDIA_INFO_LOG("HandleCancelAllAutoOperation fileId: %{public}d, photoId: %{public}s, ceAvailable: %{public}d",
+            fileId, photoId.c_str(), ceAvailable);
+        if (ceAvailable != static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO)) {
+            MEDIA_INFO_LOG("auto cloud enhancement task in db not processing, photoId: %{public}s",
+                photoId.c_str());
+            continue;
+        }
+        if (!EnhancementTaskManager::InProcessingTask(photoId)) {
+            MEDIA_INFO_LOG("auto task in cache not processing, photoId: %{public}s",
+                photoId.c_str());
+            continue;
+        }
+        if (!LoadService() || enhancementService_->CancelTask(photoId) != E_OK) {
+            MEDIA_ERR_LOG("cancel auto task error, photo_id: %{public}s", photoId.c_str());
+            continue;
+        }
+        EnhancementTaskManager::RemoveEnhancementTask(photoId);
+        RdbPredicates updatePredicates(PhotoColumn::PHOTOS_TABLE);
+        updatePredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+        updatePredicates.And();
+        updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+            static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO));
+        ValuesBucket rdbValues;
+        rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
+            static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
+        int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, updatePredicates);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("update ce_available failed");
+            continue;
+        }
+        CloudEnhancementGetCount::GetInstance().RemoveStartTime(photoId);
+    }
+    return E_OK;
 }
 #endif
 
@@ -1012,25 +1038,24 @@ int32_t EnhancementManager::HandleStateChangedOperation(const bool isCameraIdle)
 
 int32_t EnhancementManager::HandleNetChange(const bool isWifiConnected, const bool isCellularNetConnected)
 {
-    bool isWifiStateChanged = isWifiConnected_ ^ isWifiConnected;
-    bool isCellularStateChanged = isCellularNetConnected_ ^ isCellularNetConnected;
+    bool isWifiStateChanged = (isWifiConnected_ != isWifiConnected);
+    bool isCellularStateChanged = (isCellularNetConnected_ != isCellularNetConnected);
     if (!isWifiStateChanged && !isCellularStateChanged) {
         MEDIA_INFO_LOG("HandleNetChange net not changed");
         return E_OK;
     }
     MEDIA_INFO_LOG("HandleNetChange, IsWifiConnected: %{public}d, IsCellularNetConnected: %{public}d",
         isWifiConnected, isCellularNetConnected);
+
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    if (!IsAutoTaskEnabled()) {
+        isWifiConnected_ = isWifiConnected;
+        isCellularNetConnected_ = isCellularNetConnected;
+        return HandleAutoAddOperation();
+    }
     isWifiConnected_ = isWifiConnected;
     isCellularNetConnected_ = isCellularNetConnected;
-
-    if ((photosAutoOption_ == PHOTO_OPTION_CLOSE) || !isCameraIdle_) {
-        MEDIA_INFO_LOG("HandleNetChange option is not allowed");
-        return E_OK;
-    } else if ((photosAutoOption_ == PHOTO_OPTION_WLAN_ONLY) && !isWifiStateChanged) {
-        return E_OK;
-    }
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    return HandleNetChangeInner(isWifiStateChanged, isCellularStateChanged);
+    return E_OK;
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
     return E_ERR;
@@ -1043,29 +1068,16 @@ int32_t EnhancementManager::HandlePhotosAutoOptionChange(const std::string &phot
         MEDIA_INFO_LOG("HandlePhotosAutoOptionChange option not changed");
         return E_OK;
     }
-    auto prePhotosAutoOption = photosAutoOption_;
-    photosAutoOption_ = photosAutoOption;
-
-    if ((!isWifiConnected_ && !isCellularNetConnected_) || !isCameraIdle_) {
-        MEDIA_INFO_LOG("HandlePhotosAutoOptionChange option is not allowed");
-        return E_OK;
-    }
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    if (isWifiConnected_) {
-        if (prePhotosAutoOption == PHOTO_OPTION_CLOSE) {
-            return HandleAutoAddOperation();
-        } else {
-            return (photosAutoOption_ == PHOTO_OPTION_CLOSE) ?
-                HandleCancelAllOperation() : E_OK;
-        }
-    } else if (isCellularNetConnected_) { // only CellularNetConnected
-        if (prePhotosAutoOption == PHOTO_OPTION_WLAN_AND_NETWORK) {
-            return HandleCancelAllOperation();
-        } else {
-            return photosAutoOption_ == PHOTO_OPTION_WLAN_AND_NETWORK ?
-                HandleAutoAddOperation() : E_OK;
-        }
+    if (photosAutoOption == PHOTO_OPTION_CLOSE) {
+        MEDIA_INFO_LOG("photos option turn to close");
+        photosAutoOption_ = photosAutoOption;
+        return HandleCancelAllAutoOperation();
+    } else if (!IsAutoTaskEnabled()) {
+        photosAutoOption_ = photosAutoOption;
+        return HandleAutoAddOperation();
     }
+    photosAutoOption_ = photosAutoOption;
     return E_OK;
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
