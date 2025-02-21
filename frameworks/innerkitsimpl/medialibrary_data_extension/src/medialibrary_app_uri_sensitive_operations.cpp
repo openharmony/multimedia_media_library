@@ -40,7 +40,7 @@ namespace Media {
 const int MediaLibraryAppUriSensitiveOperations::ERROR = -1;
 const int MediaLibraryAppUriSensitiveOperations::SUCCEED = 0;
 const int MediaLibraryAppUriSensitiveOperations::ALREADY_EXIST = 1;
-const int MediaLibraryAppUriSensitiveOperations::NO_DATA = 0;
+const int MediaLibraryAppUriSensitiveOperations::NO_DATA_EXIST = 0;
 
 int32_t MediaLibraryAppUriSensitiveOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
@@ -205,7 +205,7 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriSensitiveOperation
     fetchColumns.push_back(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
 
     shared_ptr<ResultSet> resultSet = QueryOperation(sensitivePredicates, fetchColumns);
-    resultFlag = (resultSet == nullptr ? NO_DATA : ALREADY_EXIST);
+    resultFlag = (resultSet == nullptr ? NO_DATA_EXIST : ALREADY_EXIST);
     return resultSet;
 }
 

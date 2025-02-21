@@ -59,7 +59,7 @@ private:
     /**
      * query newData before insert, use this method.
      * @param resultFlag ERROR: query newData error.
-     *                   NO_DATA: newData not exist in database.
+     *                   NO_DATA_EXIST: newData not exist in database.
      *                   ALREADY_EXIST: newData already exist in database.
      */
     static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryNewData(
