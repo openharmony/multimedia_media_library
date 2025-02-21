@@ -447,7 +447,7 @@ void AlbumsRefreshManager::RefreshPhotoAlbums(SyncNotifyInfo &info)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Can not get rdb");
     if (info.taskType == TIME_BEGIN_SYNC) {
-        uint32_t count = 0;
+        int32_t count = 0;
         vector<string> columns = {PhotoAlbumColumns::ALBUM_COUNT};
         RdbPredicates predicates(PhotoAlbumColumns::TABLE);
         predicates.SetWhereClause("album_subtype = " + to_string(PhotoAlbumSubType::VIDEO) +
@@ -459,7 +459,7 @@ void AlbumsRefreshManager::RefreshPhotoAlbums(SyncNotifyInfo &info)
             return;
         }
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            count += static_cast<uint32_t>(GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet));
+            count += GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
         }
         resultSet->Close();
         VariantMap map = {{KEY_TOTAL_PHOTO_COUNT, count}};
