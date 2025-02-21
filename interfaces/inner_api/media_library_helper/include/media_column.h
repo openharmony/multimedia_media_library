@@ -318,36 +318,5 @@ public:
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;
 };
 
-
-
-class PhotoQueryFilter {
-public:
-    enum class Option {
-        CUSTOM_FILTER,
-        FILTER_VISIBLE,
-        FILTER_HIDDEN,
-        FILTER_TRASHED,
-    };
-
-    enum class ConfigType {
-        INCLUDE,
-        EXCLUDE,
-        IGNORE,
-    };
-
-    struct Config {
-        ConfigType hiddenConfig = ConfigType::EXCLUDE;
-        ConfigType trashedConfig = ConfigType::EXCLUDE;
-        ConfigType tempConfig = ConfigType::EXCLUDE;
-        ConfigType pendingConfig = ConfigType::EXCLUDE;
-        ConfigType burstCoverOnly = ConfigType::INCLUDE;
-        ConfigType syncStatusConfig = ConfigType::EXCLUDE;
-        ConfigType cleanFlagConfig = ConfigType::EXCLUDE;
-    };
-
-    static std::string GetSqlWhereClause(const PhotoQueryFilter::Option option) EXPORT;
-    static std::string GetSqlWhereClause(const PhotoQueryFilter::Config& config) EXPORT;
-};
-
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_
