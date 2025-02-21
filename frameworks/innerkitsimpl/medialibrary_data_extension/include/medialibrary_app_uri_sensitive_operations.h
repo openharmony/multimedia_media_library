@@ -42,7 +42,7 @@ public:
     EXPORT static const int ERROR;
     EXPORT static const int SUCCEED;
     EXPORT static const int ALREADY_EXIST;
-    EXPORT static const int NO_DATA;
+    EXPORT static const int NO_DATA_EXIST;
 
     EXPORT static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchInsert(MediaLibraryCommand &cmd,
@@ -54,7 +54,7 @@ private:
     /**
      * query newData before insert, use this method.
      * @param resultFlag ERROR: query newData error.
-     *                   NO_DATA: newData not exist in database.
+     *                   NO_DATA_EXIST: newData not exist in database.
      *                   ALREADY_EXIST: newData already exist in database.
      */
     static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryNewData(

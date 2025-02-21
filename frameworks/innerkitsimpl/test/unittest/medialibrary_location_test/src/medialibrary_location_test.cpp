@@ -18,10 +18,12 @@
 
 #include "datashare_result_set.h"
 #include "get_self_permissions.h"
+#include "locale_config.h"
 #include "location_column.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
@@ -31,15 +33,26 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-void ClearLocationData()
+static std::atomic<int> num{ 0 };
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
+void ClearData()
 {
     DataShare::DataSharePredicates predicates;
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
     MediaLibraryCommand geoKnowledgeCmd(geoKnowledgeUri);
     Uri geoDictionaryUri(URI_GEO_DICTIONARY);
     MediaLibraryCommand geoDictionaryCmd(geoDictionaryUri);
-    MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    dataManager->Delete(geoKnowledgeCmd, predicates);
+    dataManager->Delete(geoDictionaryCmd, predicates);
+    string clearPhotos = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    EXPECT_NE(rdbStore, nullptr);
+    auto ret = rdbStore->ExecuteSql(clearPhotos);
+    EXPECT_EQ(ret, NativeRdb::E_OK);
+    num = 0;
 }
 
 void MediaLibraryLocationTest::SetUpTestCase(void)
@@ -50,8 +63,9 @@ void MediaLibraryLocationTest::SetUpTestCase(void)
 
 void MediaLibraryLocationTest::TearDownTestCase(void)
 {
-    ClearLocationData();
+    ClearData();
     MEDIA_INFO_LOG("Location_Test::End");
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryLocationTest::SetUp(void)
@@ -60,7 +74,7 @@ void MediaLibraryLocationTest::SetUp(void)
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
     MediaLibraryUnitTestUtils::Init();
-    ClearLocationData();
+    ClearData();
 }
 
 void MediaLibraryLocationTest::TearDown(void) {}
@@ -269,6 +283,128 @@ HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoDictionary_Test_001, TestSi
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ((retVal == 1), true);
     MEDIA_INFO_LOG("Location_DeleteGeoDictionary_Test_001::retVal = %{public}d. End", retVal);
+}
+
+int64_t GetTimestamp()
+{
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+    ++num;
+    return seconds.count() + num.load();
+}
+
+string GetTitle(int64_t &timestamp)
+{
+    ++num;
+    return "IMG_" + to_string(timestamp) + "_" + to_string(num.load());
+}
+
+int64_t InsertPhoto(double_t latitude, double_t longitude)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    EXPECT_NE(rdbStore, nullptr);
+    int64_t fileId = -1;
+    int64_t timestamp = GetTimestamp();
+    string title = GetTitle(timestamp);
+    string displayName = title + ".jpg";
+    string path = "/storage/cloud/files/photo/1/" + displayName;
+    int32_t position = 2;
+    int64_t imageSize = 10 * 1000 * 1000;
+    int32_t imageDuration = 2560;
+    int32_t imageWidth = 1920;
+    int32_t imageHeight = 1080;
+    string imageMimeType = "image/jpeg";
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, MEDIA_TYPE_IMAGE);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, position);
+    valuesBucket.PutLong(MediaColumn::MEDIA_SIZE, imageSize);
+    valuesBucket.PutInt(MediaColumn::MEDIA_DURATION, imageDuration);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_WIDTH, imageWidth);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_HEIGHT, imageHeight);
+    valuesBucket.PutString(MediaColumn::MEDIA_MIME_TYPE, imageMimeType);
+    valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, path);
+    valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
+    valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, timestamp);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, timestamp);
+    valuesBucket.PutDouble(LATITUDE, latitude);
+    valuesBucket.PutDouble(LONGITUDE, longitude);
+    valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
+    valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
+    valuesBucket.PutInt(MediaColumn::MEDIA_TIME_PENDING, 0);
+    int32_t ret = rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
+    return fileId;
+}
+
+int32_t InsertGeoKnowledge(double_t latitude, double_t longitude, const string &language)
+{
+    MEDIA_INFO_LOG("InsertGeoKnowledge::Start");
+    Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
+    MediaLibraryCommand cmd(geoKnowledgeUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(LATITUDE, latitude);
+    valuesBucket.Put(LONGITUDE, longitude);
+    const int64_t locationKey = 131048514448;
+    valuesBucket.Put(LOCATION_KEY, locationKey);
+    valuesBucket.Put(LANGUAGE, language);
+    valuesBucket.Put(COUNTRY, "中国");
+    valuesBucket.Put(CITY_ID, "1064019431304993816");
+    valuesBucket.Put(ADMIN_AREA, "广东省");
+    valuesBucket.Put(LOCALITY, "深圳市");
+    valuesBucket.Put(SUB_LOCALITY, "南山区");
+    valuesBucket.Put(THOROUGHFARE, "科苑南路");
+    valuesBucket.Put(SUB_THOROUGHFARE, "2600号");
+    valuesBucket.Put(CITY_NAME, "深圳市");
+    valuesBucket.Put(ADDRESS_DESCRIPTION, "广东省深圳市南山区粤海街道深圳人才公园");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    int32_t retVal = dataManager->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("InsertGeoKnowledge::End, retVal = %{public}d", retVal);
+    return retVal;
+}
+
+HWTEST_F(MediaLibraryLocationTest, Location_QueryGeo_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Location_QueryGeo_Test_001::Start");
+    double_t latitude = 22.5142917630556;
+    double_t longitude = 113.946701049722;
+    int64_t fileId = InsertPhoto(latitude, longitude);
+    EXPECT_GT(fileId, 0);
+    string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+    int32_t retVal = InsertGeoKnowledge(latitude, longitude, language);
+    EXPECT_GT(retVal, 0);
+
+    Uri cmdUri(PAH_QUERY_ANA_ADDRESS);
+    MediaLibraryCommand cmd(cmdUri);
+    vector<string> columns{ PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE,
+        ADDRESS_DESCRIPTION };
+    DataShare::DataSharePredicates predicates;
+    vector<string> clause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
+        GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
+        PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE + " AND " + GEO_KNOWLEDGE_TABLE +
+        "." + LANGUAGE + " = \'" + language + "\'" };
+    predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(clause);
+    predicates.EqualTo(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, to_string(fileId));
+    int errCode = 0;
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(dataManager, nullptr);
+    auto queryResultSet = dataManager->Query(cmd, columns, predicates, errCode);
+    EXPECT_NE(queryResultSet, nullptr);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
+    double_t queryLatitude = GetDoubleVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, resultSet);
+    EXPECT_EQ(queryLatitude, latitude);
+    double_t queryLongitude = GetDoubleVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, resultSet);
+    EXPECT_EQ(queryLongitude, longitude);
+    string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, resultSet);
+    EXPECT_EQ(addressDescription.empty(), false);
+    MEDIA_INFO_LOG("Location_QueryGeo_Test_001::End");
 }
 } // namespace OHOS
 } // namespace Media

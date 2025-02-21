@@ -18,6 +18,7 @@
 #include "medialibrary_data_manager.h"
 
 #include <cstdlib>
+#include <future>
 #include <shared_mutex>
 #include <unordered_set>
 #include <sstream>
@@ -39,8 +40,11 @@
 #include "dfx_utils.h"
 #include "directory_ex.h"
 #include "efficiency_resource_info.h"
+#include "ffrt_inner.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
+#include "location_column.h"
+#include "media_analysis_helper.h"
 #include "media_column.h"
 #include "media_datashare_ext_ability.h"
 #include "media_directory_type_column.h"
@@ -1717,6 +1721,58 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
     return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
 }
 
+shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, const vector<string> &columns)
+{
+    auto queryResult = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+    if (queryResult == nullptr) {
+        MEDIA_ERR_LOG("Query Geographic Information Failed, queryResult is nullptr");
+        return queryResult;
+    }
+
+    const vector<string> &whereArgs = rdbPredicates.GetWhereArgs();
+    if (whereArgs.empty() || whereArgs.front().empty()) {
+        MEDIA_ERR_LOG("Query Geographic Information can not get fileId");
+        return queryResult;
+    }
+
+    string fileId = whereArgs.front();
+    if (queryResult->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Query Geographic Information Failed, fileId: %{public}s", fileId.c_str());
+        return queryResult;
+    }
+
+    string latitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult);
+    string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
+    string addressDescription = GetStringVal(ADDRESS_DESCRIPTION, queryResult);
+    MEDIA_INFO_LOG(
+        "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, addressDescription: %{private}s",
+        fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
+
+    if (!(latitude == "0" && longitude == "0") && addressDescription.empty()) {
+        std::packaged_task<bool()> pt(
+            [=] { return MediaAnalysisHelper::ParseGeoInfo({ fileId + "," + latitude + "," + longitude }, false); });
+        std::future<bool> futureResult = pt.get_future();
+        ffrt::thread(std::move(pt)).detach();
+
+        bool parseResult = false;
+        const int timeout = 2;
+        std::future_status futureStatus = futureResult.wait_for(std::chrono::seconds(timeout));
+        if (futureStatus == std::future_status::ready) {
+            parseResult = futureResult.get();
+        } else {
+            MEDIA_ERR_LOG("ParseGeoInfo Failed, fileId: %{public}s, futureStatus: %{public}d", fileId.c_str(),
+                static_cast<int>(futureStatus));
+        }
+
+        if (parseResult) {
+            queryResult = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
+        }
+        MEDIA_INFO_LOG("ParseGeoInfo completed, fileId: %{public}s, parseResult: %{public}d", fileId.c_str(),
+            parseResult);
+    }
+    return queryResult;
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -1761,6 +1817,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::TAB_OLD_PHOTO:
             return MediaLibraryTabOldPhotosOperations().Query(
                 RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);
+        case OperationObject::ANALYSIS_ADDRESS:
+            return QueryGeo(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
