@@ -25,6 +25,7 @@
 #include "napi_remote_object.h"
 #include "rdb_store.h"
 #include "uri.h"
+#include "safe_map.h"
 
 namespace OHOS {
 namespace Media {
@@ -70,7 +71,7 @@ private:
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info,
         const int32_t userId = -1);
     static int32_t userId_;
-    static std::map<int32_t, std::shared_ptr<DataShare::DataShareHelper>> dataShareHelperMap_;
+    static SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> dataShareHelperMap_;
 };
 }
 }
