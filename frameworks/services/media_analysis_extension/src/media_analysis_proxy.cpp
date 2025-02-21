@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,8 +21,9 @@
  
 namespace OHOS {
 namespace Media {
-MediaAnalysisProxy::MediaAnalysisProxy(const sptr<IRemoteObject> &object)
-    : IRemoteProxy<IMediaAnalysisService>(object)
+std::mutex MediaAnalysisProxy::mutex_;
+
+MediaAnalysisProxy::MediaAnalysisProxy(const sptr<IRemoteObject> &object) : IRemoteProxy<IMediaAnalysisService>(object)
 {
     MEDIA_INFO_LOG("creat MediaAnalysisProxy instance");
 }
@@ -31,37 +32,38 @@ MediaAnalysisProxy::~MediaAnalysisProxy()
 {
     MEDIA_INFO_LOG("destroy MediaAnalysisProxy instance");
 }
-bool MediaAnalysisProxy::SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply,
-    MessageOption &option)
+
+bool MediaAnalysisProxy::SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
-    int32_t minTimeout = 4;
     auto saMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saMgr == nullptr) {
-        MEDIA_ERR_LOG("Get samgr fail, samgr is nullptr");
+        MEDIA_ERR_LOG("Get samgr failed, samgr is nullptr, code: %{public}d", code);
         return false;
     }
-    sptr<IRemoteObject> remoteObject = saMgr->CheckSystemAbility(SAID);
-    if (remoteObject != nullptr) {
-        MEDIA_INFO_LOG("Active task: sa already running");
-        return false;
+    int32_t minTimeout = 4;
+    sptr<IRemoteObject> remoteObject;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        remoteObject = saMgr->CheckSystemAbility(SAID);
+        if (remoteObject == nullptr) {
+            int ret = SetParameter("persist.multimedia.media_analysis_service.startactively", "1");
+            if (ret != 0) {
+                MEDIA_ERR_LOG("Failed to set parameter startactively, ret:%{public}d, code: %{public}d", ret, code);
+            }
+            remoteObject = saMgr->LoadSystemAbility(SAID, minTimeout);
+            if (remoteObject == nullptr) {
+                MEDIA_ERR_LOG("Failed to send transact %{public}d due to remote object is null", code);
+                return false;
+            }
+        }
     }
 
-    int ret = SetParameter("persist.multimedia.media_analysis_service.startactively", "1");
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Failed to set parameter startactively, result:%{public}d", ret);
-    }
-    sptr<IRemoteObject> remote = saMgr->LoadSystemAbility(SAID, minTimeout);
-    if (remote == nullptr) {
-        MEDIA_ERR_LOG("fail to send transact %{public}d due to remote object", code);
-        return false;
-    }
-    
-    int32_t result = remote->SendRequest(code, data, reply, option);
+    int32_t result = remoteObject->SendRequest(code, data, reply, option);
     if (result != NO_ERROR) {
-        MEDIA_ERR_LOG("receive error transact code %{public}d in transact cmd %{public}d", result, code);
+        MEDIA_ERR_LOG("receive error transact result: %{public}d, code: %{public}d", result, code);
         return false;
     }
-    MEDIA_INFO_LOG("send request success");
+    MEDIA_INFO_LOG("send request success, code: %{public}d", code);
     return true;
 }
 } // namespace Media

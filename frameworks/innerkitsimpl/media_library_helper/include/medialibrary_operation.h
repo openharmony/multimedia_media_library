@@ -97,6 +97,7 @@ enum class EXPORT OperationObject : uint32_t {
     TAB_OLD_PHOTO,
     PTP_OPERATION,
     CLOUD_MEDIA_ASSET_OPERATE,
+    ANALYSIS_ADDRESS,
 };
 
 enum class EXPORT OperationType : uint32_t {
