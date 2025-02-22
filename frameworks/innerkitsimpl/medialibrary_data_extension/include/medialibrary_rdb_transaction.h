@@ -74,6 +74,8 @@ public:
         const NativeRdb::AbsRdbPredicates &predicates);
     EXPORT int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows);
     EXPORT int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows);
+    EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryByStep(const NativeRdb::AbsRdbPredicates &predicates,
+        const std::vector<std::string> &columns, bool preCount);
 
 private:
     std::shared_ptr<OHOS::NativeRdb::Transaction> transaction_ = nullptr;
