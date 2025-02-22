@@ -852,7 +852,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     return fd;
 }
 
-void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api)
+void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api,
+    bool isCameraShotMovingPhoto)
 {
     string tableName;
     if (MediaFileUtils::IsFileTablePath(path)) {
@@ -872,7 +873,7 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
     }
-    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb, api);
+    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb, api, isCameraShotMovingPhoto);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }

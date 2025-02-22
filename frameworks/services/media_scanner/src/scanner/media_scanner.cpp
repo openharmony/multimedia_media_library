@@ -48,6 +48,9 @@ MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<
         dir_ = path;
     } else if (type_ == FILE) {
         path_ = path;
+    } else if (type_ == CAMERA_SHOT_MOVING_PHOTO) {
+        path_ = path;
+        isCameraShotMovingPhoto_ = true;
     }
     // when path is /Photo, it means update or clone scene
     skipPhoto_ = path.compare("/storage/cloud/files/Photo") != 0;
@@ -123,6 +126,7 @@ void MediaScannerObj::Scan()
 {
     switch (type_) {
         case FILE:
+        case CAMERA_SHOT_MOVING_PHOTO:
             ScanFile();
             break;
         case DIRECTORY:
@@ -311,7 +315,7 @@ int32_t MediaScannerObj::GetMediaInfo()
     string mimePrefix = data_->GetFileMimeType().substr(0, pos) + "/*";
     if (find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(),
         mimePrefix) != EXTRACTOR_SUPPORTED_MIME.end()) {
-        return MetadataExtractor::Extract(data_);
+        return MetadataExtractor::Extract(data_, isCameraShotMovingPhoto_);
     }
 
     return E_OK;

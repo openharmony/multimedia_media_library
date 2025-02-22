@@ -47,7 +47,8 @@ const std::string LIVE_PHOTO_VERSION_AND_FRAME_NUM = "VersionAndFrameNum";
 constexpr int32_t HEX_BASE = 16;
 constexpr int64_t AUTO_PLAY_DURATION_MS = 600;
 
-static string GetVersionPositionTag(uint32_t frame, bool hasExtraData, const string& data = "")
+static string GetVersionPositionTag(uint32_t frame, bool hasExtraData,
+    const string& data = "", bool isCameraShotMovingPhoto = false)
 {
     string buffer;
     bool hasCinemagraph{false};
@@ -61,7 +62,7 @@ static string GetVersionPositionTag(uint32_t frame, bool hasExtraData, const str
     } else if (hasExtraData) {
         return buffer;
     } else {
-        buffer += "v3_f";
+        buffer += isCameraShotMovingPhoto ? "v6_f" : "v3_f";
     }
     buffer += to_string(frame);
     if (hasCinemagraph) {
@@ -271,7 +272,7 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
 }
 
 int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const string& videoPath,
-    uint32_t frameIndex, int64_t coverPosition, off_t &fileSize)
+    uint32_t frameIndex, int64_t coverPosition, off_t &fileSize, bool isCameraShotMovingPhoto)
 {
     string absImagePath;
     if (!PathToRealPath(imagePath, absImagePath)) {
@@ -296,7 +297,7 @@ int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const str
         MEDIA_ERR_LOG("failed to open extra data, errno:%{public}d", errno);
         return E_ERR;
     }
-    if (AddStringToFile(extraDataFd, GetVersionPositionTag(frameIndex, false)) == E_ERR) {
+    if (AddStringToFile(extraDataFd, GetVersionPositionTag(frameIndex, false, "", isCameraShotMovingPhoto)) == E_ERR) {
         MEDIA_ERR_LOG("write version position tag err");
         return E_ERR;
     }
