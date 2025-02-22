@@ -103,6 +103,7 @@ const int32_t SLEEP_TIME = 10;
 const int64_t MAX_INT64 = 9223372036854775807;
 const int32_t MAX_QUERY_LIMIT = 150;
 const int32_t MAX_CREATE_ASSET_LIMIT = 500;
+const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
 const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
@@ -3840,6 +3841,7 @@ static void AddDefaultColumnsForNonAnalysisAlbums(MediaLibraryAsyncContext& cont
         context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
         context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
         context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_LPATH);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
     }
 }
 
@@ -5410,7 +5412,7 @@ static napi_status ParseCreateConfig(napi_env env, napi_value arg,
     return napi_ok;
 }
 
-static napi_value ParseCreateSource(napi_env env, napi_value arg, BundleInfo bundleInfo)
+static napi_value ParseCreateSource(napi_env env, napi_value arg, BundleInfo &bundleInfo)
 {
     napi_value valueBundleName = MediaLibraryNapiUtils::GetPropertyValueByName(env, arg,
         CONFIRM_BOX_BUNDLE_NAME.c_str());
@@ -7524,7 +7526,20 @@ static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, v
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
-    if (context->error != ERR_DEFAULT  || (context->fetchPhotoAlbumResult == nullptr && context->albumMap.empty())) {
+    if (context->error == ERR_DEFAULT && context->albumMap.empty() && context->albumIds.size() > 0) {
+        napi_status status;
+        napi_value mapNapiValue {nullptr};
+        status = napi_create_map(env, &mapNapiValue);
+        if (status != napi_ok || mapNapiValue == nullptr) {
+            CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+            context->HandleError(env, jsContext->error);
+        } else {
+            jsContext->data = mapNapiValue;
+            jsContext->status = true;
+            CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+        }
+    } else if (context->error != ERR_DEFAULT  ||
+        (context->fetchPhotoAlbumResult == nullptr && context->albumMap.empty())) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
         context->HandleError(env, jsContext->error);
     } else {
@@ -8222,6 +8237,11 @@ static napi_value GetAlbumIds(napi_env env, unique_ptr<MediaLibraryAsyncContext>
         return nullptr;
     }
     MediaLibraryNapiUtils::GetStringArrayFromInt32(env, context->argv[PARAM0], context->albumIds);
+    if (context->albumIds.empty() || context->albumIds.size() > MAX_QUERY_ALBUM_LIMIT) {
+        NAPI_ERR_LOG("the size of albumid is invalid");
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     NAPI_INFO_LOG("GetAlbumIds: %{public}d", static_cast<int32_t>(context->albumIds.size()));
@@ -8236,6 +8256,10 @@ static napi_value HandleOneArgAlbum(napi_env env, unique_ptr<MediaLibraryAsyncCo
     if (hasFetchOpt) {
         return GetAlbumFetchOption(env, context, hasCallback);
     } else {
+        if (!MediaLibraryNapiUtils::IsSystemApp()) {
+            NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+            return nullptr;
+        }
         return GetAlbumIds(env, context, hasCallback);
     }
 }
