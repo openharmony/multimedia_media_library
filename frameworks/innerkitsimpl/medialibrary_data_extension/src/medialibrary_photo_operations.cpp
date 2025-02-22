@@ -3492,7 +3492,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(Me
     string uri = columns[0]; // 0 in columns predicates uri
     string path = MediaFileUri::GetPathFromUri(uri, true);
     string fileId = MediaFileUri::GetPhotoId(uri);
-    MediaLibraryObjectUtils::ScanFileAsync(path, fileId, MediaLibraryApi::API_10);
+    MediaLibraryObjectUtils::ScanFileAsync(path, fileId, MediaLibraryApi::API_10, true);
     return nullptr;
 }
 

@@ -646,7 +646,8 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
     return E_OK;
 }
 
-int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> &data)
+int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> &data,
+    bool isCameraShotMovingPhoto)
 {
     // if video of moving photo does not exist, just return
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(data->GetFilePath());
@@ -670,8 +671,8 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
     uint32_t frameIndex = MovingPhotoFileUtils::GetFrameIndex(videoData->GetCoverPosition(),
         UniqueFd(open(videoPath.c_str(), O_RDONLY)));
     off_t extraDataSize{0};
-    if (MovingPhotoFileUtils::GetExtraDataLen(data->GetFilePath(),
-        videoPath, frameIndex, videoData->GetCoverPosition(), extraDataSize) != E_OK) {
+    if (MovingPhotoFileUtils::GetExtraDataLen(data->GetFilePath(), videoPath,
+            frameIndex, videoData->GetCoverPosition(), extraDataSize, isCameraShotMovingPhoto) != E_OK) {
         MEDIA_WARN_LOG("Failed to get extra data file size");
     }
     data->SetFileSize(data->GetFileSize() + videoData->GetFileSize() + extraDataSize);
@@ -688,13 +689,13 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
     return E_OK;
 }
 
-int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data)
+int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data, bool isCameraShotMovingPhoto)
 {
     if (data->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
         int32_t ret = ExtractImageMetadata(data);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to extract image metadata");
         if (IsMovingPhoto(data)) {
-            return CombineMovingPhotoMetadata(data);
+            return CombineMovingPhotoMetadata(data, isCameraShotMovingPhoto);
         }
         return ret;
     } else {

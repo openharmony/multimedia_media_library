@@ -31,7 +31,7 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 class MetadataExtractor {
 public:
-    EXPORT static int32_t Extract(std::unique_ptr<Metadata> &data);
+    EXPORT static int32_t Extract(std::unique_ptr<Metadata> &data, bool isCameraShotMovingPhoto = false);
     EXPORT static int32_t ExtractAVMetadata(std::unique_ptr<Metadata> &data, int32_t scene = 0);
     EXPORT static int32_t ExtractImageMetadata(std::unique_ptr<Metadata> &data);
     static int32_t ExtractImageExif(std::unique_ptr<ImageSource> &imageSource, std::unique_ptr<Metadata> &data);
@@ -42,7 +42,7 @@ private:
 
     EXPORT static void FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
         std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data);
-    static int32_t CombineMovingPhotoMetadata(std::unique_ptr<Metadata> &data);
+    static int32_t CombineMovingPhotoMetadata(std::unique_ptr<Metadata> &data, bool isCameraShotMovingPhoto = false);
 };
 } // namespace Media
 } // namespace OHOS
