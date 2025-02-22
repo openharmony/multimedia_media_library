@@ -112,10 +112,10 @@ static void RemoveFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
 static std::string EncodeDisplayName(const std::string &displayName)
 {
     std::set<char> CHAR_FILTERS = {
-        '.', '\\', '/', ':',
-        '*', '?', '"', '\'',
-        '`', '<', '>', '|',
-        '{', '}', '[', ']' };
+        '\\', '/', ':',
+        '*', '?', '"',
+        '<', '>', '|',
+    };
     std::string encodedStr = "";
     for (char c : displayName) {
         if (CHAR_FILTERS.find(c) != CHAR_FILTERS.end()) {

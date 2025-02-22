@@ -716,7 +716,8 @@ static napi_value ParseArgsCreateAssetCommon(
     }
 
     string displayName = title + "." + extension;
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName) == E_OK, "Failed to check displayName");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName, true) == E_OK,
+        "Failed to check displayName");
     context->valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
     RETURN_NAPI_TRUE(env);
 }
@@ -812,7 +813,7 @@ static napi_value ParseArgsCreateAssetFromFileUri(napi_env env, napi_callback_in
 napi_value MediaAssetChangeRequestNapi::CreateAssetRequestFromRealPath(napi_env env, const string& realPath)
 {
     string displayName = MediaFileUtils::GetFileName(realPath);
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName) == E_OK, "Invalid fileName");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName, true) == E_OK, "Invalid fileName");
     string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
     auto emptyFileAsset = make_unique<FileAsset>();
@@ -1099,7 +1100,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_i
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
     string extension = MediaFileUtils::SplitByChar(fileAsset->GetDisplayName(), '.');
     string displayName = title + "." + extension;
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName) == E_OK, "Invalid title");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName, true) == E_OK, "Invalid title");
 
     fileAsset->SetTitle(title);
     fileAsset->SetDisplayName(displayName);
