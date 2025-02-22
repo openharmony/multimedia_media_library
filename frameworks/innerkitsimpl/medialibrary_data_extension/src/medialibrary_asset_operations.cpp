@@ -1519,10 +1519,10 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     string fileId = MediaFileUtils::GetIdFromUri(fileAsset->GetUri());
     MEDIA_DEBUG_LOG("Asset Operation:OpenAsset, type is %{public}d", type);
     int32_t fd = OpenFileWithPrivacy(path, lowerMode, fileId, type);
-    MEDIA_INFO_LOG("OpenAsset Operation:OpenFileWithPrivacy, userId: %{public}d, uri: %{public}s, path: %{private}s",
-        fileAsset->GetUserId(), fileAsset->GetUri().c_str(), fileAsset->GetPath().c_str());
     if (fd < 0) {
-        MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
+        MEDIA_ERR_LOG("OpenAsset Operation:OpenFileWithPrivacy, userId: %{public}d, uri: %{public}s, path: " +
+            "%{private}s, open file fd %{public}d, errno %{public}d", fileAsset->GetUserId(),
+            fileAsset->GetUri().c_str(), fileAsset->GetPath().c_str(), fd, errno);
         return E_HAS_FS_ERROR;
     }
     tracer.Start("AddWatchList");
