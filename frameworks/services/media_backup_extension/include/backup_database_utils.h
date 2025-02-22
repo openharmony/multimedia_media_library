@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,6 +37,8 @@ public:
     static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
         const std::string &dbPath, const std::string &bundleName, bool isMediaLibary,
             int32_t area = DEFAULT_AREA_VERSION);
+    static int32_t InitReadOnlyRdb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
+        const std::string &dbPath, const std::string &bundleName);
     static int32_t QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
         const std::string &column);
     static int32_t Update(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &changeRows,
@@ -58,16 +60,15 @@ public:
     static std::string GarbleInfoName(const std::string &infoName);
     static void UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap = false);
     static void UpdateSdWhereClause(std::string &querySql, bool shouldIncludeSd);
+    static bool QueryThumbImage(NativeRdb::RdbStore &rdbStore,
+        const std::string &keyValue, std::vector<uint8_t> &blob);
     static int32_t GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
         std::vector<uint8_t> &blobVal);
-    static std::string GetLandmarksStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    static std::string GetLandmarksStr(const std::vector<uint8_t> &bytes);
     static uint32_t GetUint32ValFromBytes(const std::vector<uint8_t> &bytes, size_t start);
     static void UpdateAnalysisTotalStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static void UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static bool SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
         std::unordered_map<std::string, std::string> &tagIdMap);
-    static bool SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
     static bool SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
     static bool SetTagIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, std::string> &tagIdMap);
     static bool SetAlbumIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, int32_t> &albumIdMap);
@@ -110,20 +111,31 @@ public:
         const std::unordered_map<std::string, std::vector<std::string>>& groupTagMap);
     static void UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::vector<FileInfo> &fileInfos);
+    static void BatchUpdatePhotosToLocal(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        const std::vector<std::string> inColumn);
     static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
     static std::string CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
         const std::string &dbTag = "");
-
+    static int32_t QueryLocalNoAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static int32_t QueryReadyAstcCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static std::unordered_map<int32_t, int32_t> QueryMediaTypeCount(
+        const std::shared_ptr<NativeRdb::RdbStore>& rdbStore, const std::string& querySql);
+    static std::shared_ptr<NativeRdb::ResultSet> QuerySql(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::string &querySql, const std::vector<NativeRdb::ValueObject> &params);
     template <typename T>
     static std::string JoinValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
     static std::string JoinSQLValues(const std::vector<T>& values, std::string_view delimiter);
     template <typename T>
+    static std::vector<T> LeftJoinValues(std::vector<T>& values,
+        std::string_view delimiter);
+    template <typename T>
     struct always_false : std::false_type {};
     template <typename T>
     static std::optional<T> GetOptionalValue(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::string &columnName);
+    static void UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
@@ -181,6 +193,15 @@ std::string BackupDatabaseUtils::JoinValues(const std::vector<T>& values, std::s
         }
     }
     return ss.str();
+}
+
+template <typename T>
+std::vector<T> BackupDatabaseUtils::LeftJoinValues(std::vector<T>& values, std::string_view delimiter)
+{
+    for (auto& value : values) {
+        value.insert(0, delimiter);
+    }
+    return values;
 }
 
 template<typename T>

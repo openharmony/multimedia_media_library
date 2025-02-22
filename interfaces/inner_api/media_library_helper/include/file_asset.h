@@ -73,6 +73,9 @@ public:
     EXPORT int64_t GetSize() const;
     EXPORT void SetSize(int64_t size);
 
+    EXPORT const std::string &GetCloudId() const;
+    EXPORT void SetCloudId(const std::string &cloudId);
+
     EXPORT int64_t GetDateAdded() const;
     EXPORT void SetDateAdded(int64_t dataAdded);
 
@@ -124,6 +127,8 @@ public:
 
     EXPORT bool IsFavorite() const;
     EXPORT void SetFavorite(bool isFavorite);
+    EXPORT bool IsRecentShow() const;
+    EXPORT void SetRecentShow(bool isRecentShow);
     EXPORT int64_t GetDateTrashed() const;
     EXPORT void SetDateTrashed(int64_t dateTrashed);
 
@@ -214,6 +219,9 @@ public:
     EXPORT int32_t GetSupportedWatermarkType() const;
     EXPORT void SetSupportedWatermarkType(int32_t watermarkType);
 
+    EXPORT int32_t GetIsAuto() const;
+    EXPORT void SetIsAuto(int32_t isAuto);
+
     EXPORT const std::string &GetStrMember(const std::string &name) const;
     EXPORT int32_t GetInt32Member(const std::string &name) const;
     EXPORT int64_t GetInt64Member(const std::string &name) const;
@@ -224,12 +232,17 @@ public:
         member_[name] = value;
     }
 
+    EXPORT void SetUserId(int32_t userId);
+    EXPORT int32_t GetUserId();
+
 private:
+    int32_t userId_;
     std::string albumUri_;
     ResultNapiType resultNapiType_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
     std::mutex openStatusMapMutex_;
     std::shared_ptr<std::unordered_map<int32_t, int32_t>> openStatusMap_;
+    std::mutex resultTypeMapMutex_;
     std::unordered_map<std::string, ResultSetDataType> resultTypeMap_;
 };
 } // namespace Media

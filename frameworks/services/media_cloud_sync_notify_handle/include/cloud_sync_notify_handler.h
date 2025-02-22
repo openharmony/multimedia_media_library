@@ -18,6 +18,7 @@
 
 #include "datashare_helper.h"
 #include "cloud_sync_observer.h"
+#include "medialibrary_type_const.h"
 
 namespace OHOS {
 namespace Media {
@@ -49,10 +50,20 @@ public:
     CloudSyncNotifyInfo notifyInfo_;
 
 private:
+    static std::string GetfileIdFromPastDirtyDataFixUri(std::string uriString);
+    static int32_t QueryFilePathFromFileId(const std::string &id, std::string &filePath);
+    static int32_t QueryAlbumLpathFromFileId(const std::string &id, std::string &lpath);
     void HandleInsertEvent(const std::list<Uri> &uris);
     void HandleDeleteEvent(const std::list<Uri> &uris);
     void HandleTimeUpdateEvent(const std::list<Uri> &uris);
     void HandleExtraEvent(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
+    EXPORT void HandleDirtyDataFix(const std::list<Uri> &uris, const CloudSyncErrType &type);
+    void HandleContentNotFound(const std::list<Uri> &uris);
+    void HandleThumbnailNotFound(const std::list<Uri> &uris);
+    void HandleLCDNotFound(const std::list<Uri> &uris);
+    void HandleLCDSizeTooLarge(const std::list<Uri> &uris);
+    void HandleContentSizeIsZero(const std::list<Uri> &uris);
+    void HandleAlbumNotFound(const std::list<Uri> &uris);
 };
 } //namespace Media
 } //namespace OHOS

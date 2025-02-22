@@ -32,6 +32,8 @@ struct CheckedPhotoInfo {
 class CloudUploadChecker {
 public:
     static void HandleNoOriginPhoto();
+    static void RepairNoOriginButLcd();
+    static void RepairNoDetailTime();
 
 private:
     static int32_t GetPhotoCount(int32_t startFileId);
@@ -39,6 +41,9 @@ private:
     static std::string GetQuerySql(int32_t startFileId, std::string mediaColumns);
     static void HandlePhotoInfos(std::vector<CheckedPhotoInfo>);
     static void UpdateDirty(std::vector<std::string> idList, int32_t dirtyType);
+    static int32_t QueryLcdPhotoCount(int32_t startFileId);
+    static void QueryLcdAndRepair(int32_t startFileId, int32_t &outFileId);
+    static void RecordRepairIdList(const std::vector<int32_t>& repairedIdList);
 };
 } // namespace Media
 } // namespace OHOS

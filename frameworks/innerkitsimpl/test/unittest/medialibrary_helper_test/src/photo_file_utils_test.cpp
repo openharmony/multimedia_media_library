@@ -170,9 +170,11 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_001, TestS
 
     EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg"), true);
     EXPECT_EQ(MediaFileUtils::CreateFile("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg/THM.jpg"), true);
-    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), true);
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), false);
     EXPECT_EQ(MediaFileUtils::CreateFile("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg/LCD.jpg"), true);
-    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), true);
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), false);
+    EXPECT_EQ(MediaFileUtils::DeleteDir("/storage/cloud/files/Photo/1/"), true);
+    EXPECT_EQ(MediaFileUtils::DeleteDir("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg"), true);
 }
 } // namespace Media
 } // namespace OHOS

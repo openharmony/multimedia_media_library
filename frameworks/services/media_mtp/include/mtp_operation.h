@@ -28,7 +28,8 @@ class MtpOperation {
 public:
     MtpOperation();
     ~MtpOperation() = default;
-    void Execute();
+    int32_t Execute();
+    void Stop();
 
 private:
     void Init();

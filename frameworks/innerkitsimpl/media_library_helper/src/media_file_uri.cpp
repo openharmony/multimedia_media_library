@@ -23,7 +23,6 @@
 #include "photo_album_column.h"
 #include "string_ex.h"
 #include "userfilemgr_uri.h"
-#include "medialibrary_common_utils.h"
 
 using namespace std;
 namespace OHOS {
@@ -525,7 +524,7 @@ void MediaFileUri::GetTimeIdFromUri(const std::vector<std::string> &uriBatch, st
             timeIdBatch.emplace_back(uri.substr(indexStart + ML_URI_TIME_ID.length(), timeIdLen));
         }
         if (indexEnd + ML_URI_OFFSET.length() <= uri.size()) {
-            offset.emplace_back(MediaLibraryCommonUtils::SafeStoi(uri.substr(indexEnd + ML_URI_OFFSET.length())));
+            offset.emplace_back(stoi(uri.substr(indexEnd + ML_URI_OFFSET.length())));
         }
     }
     if (offset.size() != BATCH_SIZE_START_AND_END) {
@@ -607,6 +606,33 @@ string MediaFileUri::GetPathFromUri(const string &uri, bool isPhoto)
         return "";
     }
     return path;
+}
+
+string MediaFileUri::GetPhotoUri(const std::string &fileId, const std::string &path, const std::string &displayName)
+{
+    std::string uri = "";
+    CHECK_AND_RETURN_RET_LOG(!fileId.empty(), uri, "Failed to get fileId");
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), uri, "Failed to get path");
+    CHECK_AND_RETURN_RET_LOG(!displayName.empty(), uri, "Failed to get displayName");
+
+    std::string tmpStr;
+    size_t lastSlashPos = path.find_last_of('/');
+    if (lastSlashPos != std::string::npos) {
+        tmpStr = path.substr(lastSlashPos + 1);
+    } else {
+        tmpStr = path;
+    }
+
+    std::string fileNameWithoutSuffix;
+    size_t lastDotPos = tmpStr.find_last_of('.');
+    if (lastDotPos!= std::string::npos) {
+        fileNameWithoutSuffix = tmpStr.substr(0, lastDotPos);
+    } else {
+        fileNameWithoutSuffix = tmpStr;
+    }
+
+    uri = PhotoColumn::PHOTO_URI_PREFIX + fileId + "/" + fileNameWithoutSuffix + "/" +displayName;
+    return uri;
 }
 } // namespace Media
 } // namespace OHOS

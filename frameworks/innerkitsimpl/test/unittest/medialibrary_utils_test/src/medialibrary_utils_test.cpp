@@ -941,7 +941,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level0)
     height = 57600;
     result = ThumbnailUtils::ResizeLcd(width, height);
     EXPECT_TRUE(result);
-    EXPECT_EQ(width, 273);
+    EXPECT_EQ(width, 274);
     EXPECT_EQ(height, 4096);
 
     width = 3840;

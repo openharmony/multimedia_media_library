@@ -132,6 +132,9 @@ public:
 
         // if true, create HDR pixelmap
         EXPORT bool isHdr {false};
+
+        // largest thumbnail type for the source to generate
+        ThumbnailType desiredType {ThumbnailType::NOT_DEFINED};
         std::unordered_map<SourceState, SourceState> loadingStates;
     };
 
@@ -147,16 +150,17 @@ public:
     }
 
     EXPORT int32_t mediaType {-1};
-    EXPORT int64_t dateModified {0};
     EXPORT int32_t orientation {0};
     EXPORT int32_t photoHeight {0};
     EXPORT int32_t photoWidth {0};
+    EXPORT uint8_t thumbnailQuality {THUMBNAIL_MID};
 
     // Loaded lcd source can be resized to generate thumbnail in order
     EXPORT bool needResizeLcd {false};
     EXPORT bool isLocalFile {true};
     EXPORT bool isOpeningCloudFile {false};
     EXPORT bool isNeedStoreSize {true};
+    EXPORT bool needCheckWaitStatus {false};
     EXPORT ThumbnailSource source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
@@ -165,6 +169,7 @@ public:
     EXPORT std::vector<uint8_t> lcd;
     EXPORT std::string dateAdded;
     EXPORT std::string dateTaken;
+    EXPORT std::string dateModified;
     EXPORT std::string displayName;
     EXPORT std::string fileUri;
     EXPORT std::string id;
@@ -181,7 +186,8 @@ public:
     EXPORT Size thumbDesiredSize;
     EXPORT GenerateStats stats;
     EXPORT SourceLoaderOptions loaderOpts;
-    EXPORT bool isThumbExisted {false};
+    EXPORT int64_t thumbnailReady { -1 };
+    EXPORT int64_t lcdVisitTime { -1 };
 };
 } // namespace Media
 } // namespace OHOS

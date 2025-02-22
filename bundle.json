@@ -17,7 +17,12 @@
         "SystemCapability.FileManagement.UserFileManager.DistributedCore",
         "SystemCapability.FileManagement.PhotoAccessHelper.Core"
       ],
-      "features": ["media_library_link_opt"],
+      "features": [
+        "media_library_link_opt",
+        "media_library_feature_mtp",
+        "media_library_feature_back_up",
+        "media_library_feature_cloud_enhancement"
+      ],
       "adapted_system_type": [ "small", "standard" ],
       "rom": "10444KB",
       "ram": "35093KB",
@@ -113,14 +118,14 @@
           "service_group": [
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_manager",
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_handler:media_library_handler",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:userfilemanager_mimetypes.json",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_scanner:scanner",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_tool:mediatool",
-            "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:mediabackup",
-            "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp",
-            "//foundation/multimedia/media_library/frameworks/services/media_mtp:mtpservice",
-            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_ext_hap"
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_ext_hap",
+            "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:media_backup_package",
+            "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp_package"
           ]
         },
         "inner_kits": [
@@ -142,6 +147,15 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_extend_manager"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
+                "header_files": [
+                  "media_library_custom_restore.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_custom_restore"
             },
             {
               "header": {
@@ -185,6 +199,15 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_nutils"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/kits/cj/include",
+                "header_files": [
+                  "photo_asset_helper.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/interfaces/kits/cj:cj_photoaccesshelper_ffi"
             }
         ],
         "test": [

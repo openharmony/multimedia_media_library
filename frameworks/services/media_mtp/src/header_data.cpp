@@ -41,6 +41,10 @@ int HeaderData::Parser(vector<uint8_t> &buffer, uint32_t readSize)
         MEDIA_ERR_LOG("readSize incorrect : < PACKET_HEADER_LENGETH!");
         return MTP_ERROR_PACKET_INCORRECT;
     }
+    if (buffer.size() < PACKET_HEADER_LENGETH) {
+        MEDIA_ERR_LOG("buffer size incorrect : < PACKET_HEADER_LENGETH!");
+        return MTP_ERROR_PACKET_INCORRECT;
+    }
 
     int offset = 0;
     containerLength_ = MtpPacketTool::GetUInt32(buffer[offset], buffer[offset + OFFSET_1],

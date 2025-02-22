@@ -17,9 +17,15 @@
 
 #include <pthread.h>
 
+#ifdef HAS_BATTERY_MANAGER_PART
+#include "battery_srv_client.h"
+#endif
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "media_log.h"
+#ifdef HAS_THERMAL_MANAGER_PART
+#include "thermal_mgr_client.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -27,6 +33,51 @@ static constexpr int32_t THREAD_NUM_FOREGROUND = 4;
 static constexpr int32_t THREAD_NUM_BACKGROUND = 2;
 constexpr size_t TASK_INSERT_COUNT = 15;
 constexpr size_t CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL = 270000;
+
+void ThumbnailGeneratorWrapper::BeforeExecute()
+{
+    if (executeParam_ == nullptr) {
+        return;
+    }
+    if (executeParam_->affinity_ != CpuAffinityType::CPU_IDX_DEFAULT) {
+        CpuUtils::SetSelfThreadAffinity(executeParam_->affinity_);
+    }
+}
+
+bool ThumbnailGeneratorWrapper::IsPreconditionFullfilled()
+{
+    if (executeParam_ == nullptr) {
+        return true;
+    }
+    if (executeParam_->tempLimit_ != -1) {
+        #ifdef HAS_THERMAL_MANAGER_PART
+        auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
+        if (executeParam_->tempLimit_ < static_cast<int32_t>(thermalMgrClient.GetThermalLevel())) {
+            MEDIA_INFO_LOG("task stop because of temp limit %{public}d", executeParam_->tempLimit_);
+            return false;
+        }
+        #endif
+    }
+    if (executeParam_->batteryLimit_ != -1) {
+        #ifdef HAS_BATTERY_MANAGER_PART
+        auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
+        if (batteryClient.GetCapacity() < executeParam_->batteryLimit_) {
+            MEDIA_INFO_LOG("task stop because of battery limit %{public}d", executeParam_->batteryLimit_);
+            return false;
+        }
+        #endif
+    }
+    return true;
+}
+
+void ThumbnailGeneratorWrapper::operator() (std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (!IsPreconditionFullfilled()) {
+        return;
+    }
+    BeforeExecute();
+    executor_(data);
+}
 
 ThumbnailGenerateWorker::~ThumbnailGenerateWorker()
 {
@@ -51,14 +102,17 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
     std::string threadName;
     taskType_ = taskType;
     CpuAffinityType cpuAffinityType;
+    CpuAffinityType cpuAffinityTypeLowPriority;
     if (taskType == ThumbnailTaskType::FOREGROUND) {
         threadNum = THREAD_NUM_FOREGROUND;
         threadName = THREAD_NAME_FOREGROUND;
         cpuAffinityType = CpuAffinityType::CPU_IDX_9;
+        cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_3;
     } else if (taskType == ThumbnailTaskType::BACKGROUND) {
         threadNum = THREAD_NUM_BACKGROUND;
         threadName = THREAD_NAME_BACKGROUND;
         cpuAffinityType = CpuAffinityType::CPU_IDX_9;
+        cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_9;
     } else {
         MEDIA_ERR_LOG("invalid task type");
         return E_ERR;
@@ -69,6 +123,7 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
         std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus =
             std::make_shared<ThumbnailGenerateThreadStatus>(i);
         threadStatus->cpuAffinityType = cpuAffinityType;
+        threadStatus->cpuAffinityTypeLowPriority = cpuAffinityTypeLowPriority;
         std::thread thread([this, threadStatus] { this->StartWorker(threadStatus); });
         pthread_setname_np(thread.native_handle(), threadName.c_str());
         threads_.emplace_back(std::move(thread));
@@ -157,9 +212,9 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
         if (!WaitForTask(threadStatus)) {
             continue;
         }
-        CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
         std::shared_ptr<ThumbnailGenerateTask> task;
         if (!highPriorityTaskQueue_.Empty() && highPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
             if (NeedIgnoreTask(task->data_->requestId_)) {
                 continue;
             }
@@ -170,6 +225,7 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
         }
 
         if (!midPriorityTaskQueue_.Empty() && midPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityType);
             if (NeedIgnoreTask(task->data_->requestId_)) {
                 continue;
             }
@@ -180,6 +236,7 @@ void ThumbnailGenerateWorker::StartWorker(std::shared_ptr<ThumbnailGenerateThrea
         }
 
         if (!lowPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            CpuUtils::SetSelfThreadAffinity(threadStatus->cpuAffinityTypeLowPriority);
             if (NeedIgnoreTask(task->data_->requestId_)) {
                 continue;
             }
@@ -242,7 +299,7 @@ void ThumbnailGenerateWorker::NotifyTaskFinished(int32_t requestId)
         return;
     }
     std::string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
-    watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
+    watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_UPDATE);
 }
 
 void ThumbnailGenerateWorker::ClearWorkerThreads()
@@ -322,6 +379,12 @@ void ThumbnailGenerateWorker::TryCloseTimer()
         timerId_ = 0;
         MEDIA_INFO_LOG("ThumbnailGenerateWorker timer Shutdown, taskType:%{public}d", taskType_);
     }
+}
+
+bool ThumbnailGenerateWorker::IsLowerQueueEmpty()
+{
+    MEDIA_DEBUG_LOG("lower queue size %{public}d", lowPriorityTaskQueue_.Size());
+    return lowPriorityTaskQueue_.Empty();
 }
 } // namespace Media
 } // namespace OHOS

@@ -24,6 +24,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
+#include "media_album_change_request_napi.h"
 #include "photo_album.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
@@ -34,12 +35,15 @@
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
 #include "user_photography_info_column.h"
+#include "vision_photo_map_column.h"
 
 using namespace std;
 
 namespace OHOS::Media {
 static const string HIGHLIGHT_ALBUM_CLASS = "HighlightAlbum";
+static const string ANALYSIS_ALBUM_CLASS = "AnalysisAlbum";
 thread_local napi_ref HighlightAlbumNapi::constructor_ = nullptr;
+thread_local napi_ref HighlightAlbumNapi::analysisAlbumConstructor_ = nullptr;
 
 using CompleteCallback = napi_async_complete_callback;
 
@@ -57,6 +61,21 @@ napi_value HighlightAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getHighlightAlbumInfo", JSGetHighlightAlbumInfo),
             DECLARE_NAPI_FUNCTION("setHighlightUserActionData", JSSetHighlightUserActionData),
             DECLARE_NAPI_FUNCTION("getHighlightResource", JSGetHighlightResource),
+            DECLARE_NAPI_FUNCTION("getOrderPosition", JSGetOrderPosition),
+            DECLARE_NAPI_FUNCTION("setSubTitle", JSSetHighlightSubtitle),
+        } };
+    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+    return exports;
+}
+
+napi_value HighlightAlbumNapi::AnalysisAlbumInit(napi_env env, napi_value exports)
+{
+    NapiClassInfo info = {
+        .name = ANALYSIS_ALBUM_CLASS,
+        .ref = &analysisAlbumConstructor_,
+        .constructor = Constructor,
+        .props = {
+            DECLARE_NAPI_FUNCTION("getOrderPosition", JSGetOrderPosition),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -124,8 +143,8 @@ static const map<int32_t, struct HighlightAlbumInfo> HIGHLIGHT_ALBUM_INFO_MAP = 
         REMARKS, HIGHLIGHT_STATUS, RATIO, BACKGROUND, FOREGROUND, WORDART, IS_COVERED, COLOR,
         RADIUS, SATURATION, BRIGHTNESS, BACKGROUND_COLOR_TYPE, SHADOW_LEVEL, TITLE_SCALE_X,
         TITLE_SCALE_Y, TITLE_RECT_WIDTH, TITLE_RECT_HEIGHT, BACKGROUND_SCALE_X, BACKGROUND_SCALE_Y,
-        BACKGROUND_RECT_WIDTH, BACKGROUND_RECT_HEIGHT, LAYOUT_INDEX, COVER_ALGO_VERSION, COVER_KEY,
-        HIGHLIGHT_IS_MUTED, HIGHLIGHT_IS_FAVORITE, HIGHLIGHT_THEME } } },
+        BACKGROUND_RECT_WIDTH, BACKGROUND_RECT_HEIGHT, LAYOUT_INDEX, COVER_ALGO_VERSION, COVER_KEY, COVER_STATUS,
+        HIGHLIGHT_IS_MUTED, HIGHLIGHT_IS_FAVORITE, HIGHLIGHT_THEME, HIGHLIGHT_PIN_TIME, HIGHLIGHT_USE_SUBTITLE } } },
     { PLAY_INFO, { PAH_QUERY_HIGHLIGHT_PLAY, { ID, HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
         MUSIC, FILTER, HIGHLIGHT_PLAY_INFO, IS_CHOSEN, PLAY_INFO_VERSION, PLAY_INFO_ID } } },
 };
@@ -170,11 +189,8 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
     }
-    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
-    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
-    int albumId = photoAlbum->GetAlbumId();
-    int subType = photoAlbum->GetPhotoAlbumSubType();
+    int32_t albumId = context->albumId;
+    PhotoAlbumSubType subType = context->subType;
     Uri uri (uriStr);
     if (subType == PhotoAlbumSubType::HIGHLIGHT) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
@@ -284,6 +300,48 @@ static void JSSetHighlightUserActionDataCompleteCallback(napi_env env, napi_stat
     delete context;
 }
 
+static void JSSetHighlightSubtitleExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetHighlightSubtitleExecute");
+
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
+    int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
+    Uri uri(PAH_HIGHLIGHT_SUBTITLE);
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    context->valuesBucket.Put(SUB_TITLE, context->subtitle);
+    int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to set highlight subtitle, err: %{public}d", changedRows);
+        return;
+    }
+}
+
+static void JSSetHighlightSubtitleCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetHighlightSubtitleCompleteCallback");
+
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
 static int32_t GetFdForArrayBuffer(std::string uriStr)
 {
     int32_t fd = 0;
@@ -369,6 +427,142 @@ static void JSGetHighlightResourceCompleteCallback(napi_env env, napi_status sta
     delete context;
 }
 
+static void JSGetOrderPositionExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetOrderPositionExecute");
+
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    // make fetch column
+    std::vector<std::string> fetchColumn{MAP_ASSET, ORDER_POSITION};
+
+    // make where predicates
+    DataShare::DataSharePredicates predicates;
+    const std::vector<std::string> &assetIdArray = context->assetIdArray;
+    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
+    int albumId = photoAlbum->GetAlbumId();
+    const string mapTable = ANALYSIS_PHOTO_MAP_TABLE;
+    predicates.EqualTo(mapTable + "." + MAP_ALBUM, albumId)->And()->In(mapTable + "." + MAP_ASSET, assetIdArray);
+
+    // start query, deal with result
+    Uri uri(PAH_QUERY_ORDER_ANA_ALBUM);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("Query failed, error code: %{public}d", errCode);
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+    int count = 0;
+    int ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK || count <= 0) {
+        NAPI_ERR_LOG("GetRowCount failed, error code: %{public}d, count: %{public}d", ret, count);
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+    unordered_map<std::string, int32_t> idOrderMap;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t mapAsset = get<int32_t>(ResultSetUtils::GetValFromColumn(MAP_ASSET, resultSet, TYPE_INT32));
+        int32_t orderPosition = get<int32_t>(ResultSetUtils::GetValFromColumn(ORDER_POSITION, resultSet, TYPE_INT32));
+        idOrderMap[std::to_string(mapAsset)] = orderPosition;
+    }
+    context->orderPositionArray.clear();
+    for (string& assetId : context->assetIdArray) {
+        context->orderPositionArray.push_back(idOrderMap[assetId]);
+    }
+    NAPI_INFO_LOG("GetOrderPosition: result size: %{public}d, orderPositionArray size: %{public}d",
+                  count,
+                  static_cast<int>(context->orderPositionArray.size())
+                  );
+}
+
+static void JSGetOrderPositionCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetOrderPositionCompleteCallback");
+
+    auto *context = static_cast<HighlightAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+
+    size_t positionSize = context->orderPositionArray.size();
+    size_t assetSize = context->assetIdArray.size();
+    if (positionSize != assetSize) {
+        NAPI_ERR_LOG("GetOrderPosition failed, position size: %{public}d, asset size: %{public}d",
+                     static_cast<int>(positionSize), static_cast<int>(assetSize));
+        context->HandleError(env, jsContext->error);
+        napi_get_undefined(env, &jsContext->data);
+    } else {
+        napi_value jsArray = nullptr;
+        napi_create_array_with_length(env, positionSize, &jsArray);
+        for (size_t i = 0; i < positionSize; i++) {
+            napi_value element;
+            napi_create_int32(env, context->orderPositionArray[i], &element);
+            napi_set_element(env, jsArray, i, element);
+        }
+        jsContext->data = jsArray;
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred,
+                                                   context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value HighlightAlbumNapi::JSGetOrderPosition(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetOrderPosition");
+
+    // make undefined
+    napi_value undefinedObject = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &undefinedObject));
+
+    // make async context, if error then return undefined
+    unique_ptr<HighlightAlbumNapiAsyncContext> asyncContext = make_unique<HighlightAlbumNapiAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, undefinedObject, "asyncContext context is null");
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_ONE) == napi_ok,
+        "Failed to get object info");
+
+    // get this album, check it is an analysis album
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "Failed to get photo album instance");
+    CHECK_COND_WITH_MESSAGE(env,
+        PhotoAlbum::IsAnalysisAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only analysis album can get asset order positions");
+
+    // get assets, check duplicated
+    vector<string> assetIdArray;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseAssetIdArray(env, asyncContext->argv[PARAM0], assetIdArray),
+        "Failed to parse assets");
+    NAPI_INFO_LOG("GetOrderPosition: get assets id size: %{public}d", static_cast<int>(assetIdArray.size()));
+    CHECK_COND_WITH_MESSAGE(
+        env, assetIdArray.size() > 0, "The getOrderPosition operation needs at least one asset id");
+    std::set<std::string> idSet(assetIdArray.begin(), assetIdArray.end());
+    CHECK_COND_WITH_MESSAGE(
+        env, assetIdArray.size() == idSet.size(), "The getOrderPosition operation has same assets");
+    asyncContext->assetIdArray = std::move(assetIdArray);
+
+    // make async task
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "JSGetOrderPosition", JSGetOrderPositionExecute, JSGetOrderPositionCompleteCallback);
+}
+
 napi_value HighlightAlbumNapi::JSGetHighlightAlbumInfo(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -387,6 +581,8 @@ napi_value HighlightAlbumNapi::JSGetHighlightAlbumInfo(napi_env env, napi_callba
         PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only and smart highlight album can get highlight album info");
 
+    asyncContext->albumId = photoAlbum->GetAlbumId();
+    asyncContext->subType = photoAlbum->GetPhotoAlbumSubType();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetHighlightAlbumInfo",
         JSGetHighlightAlbumInfoExecute, JSGetHighlightAlbumInfoCompleteCallback);
@@ -439,6 +635,30 @@ napi_value HighlightAlbumNapi::JSGetHighlightResource(napi_env env, napi_callbac
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetHighlightResource",
         JSGetHighlightResourceExecute, JSGetHighlightResourceCompleteCallback);
+}
+
+napi_value HighlightAlbumNapi::JSSetHighlightSubtitle(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetHighlightSubtitle");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    unique_ptr<HighlightAlbumNapiAsyncContext> asyncContext = make_unique<HighlightAlbumNapiAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->subtitle),
+        JS_ERR_PARAMETER_INVALID);
+
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckAlbumName(asyncContext->subtitle) == E_OK, "Invalid subtitle");
+    auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
+    CHECK_COND_WITH_MESSAGE(env,
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only highlight album can set highlight sub title");
+    
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSSetHighlightSubtitle",
+        JSSetHighlightSubtitleExecute, JSSetHighlightSubtitleCompleteCallback);
 }
 
 shared_ptr<PhotoAlbum> HighlightAlbumNapi::GetPhotoAlbumInstance() const

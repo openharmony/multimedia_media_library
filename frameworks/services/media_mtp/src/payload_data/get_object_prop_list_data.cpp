@@ -46,7 +46,6 @@ int GetObjectPropListData::Parser(const std::vector<uint8_t> &buffer, int32_t re
     }
 
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    MtpPacketTool::Dump(buffer, offset);
 
     context_->handle = MtpPacketTool::GetUInt32(buffer, offset);
     context_->format = MtpPacketTool::GetUInt32(buffer, offset);
@@ -74,7 +73,6 @@ int GetObjectPropListData::Maker(std::vector<uint8_t> &outBuffer)
         WriteProperty(outBuffer, prop);
     }
 
-    MtpPacketTool::Dump(outBuffer);
     return MTP_SUCCESS;
 }
 

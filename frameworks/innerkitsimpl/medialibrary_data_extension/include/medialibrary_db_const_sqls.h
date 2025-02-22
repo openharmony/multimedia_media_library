@@ -284,13 +284,13 @@ const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW IF NOT EXISTS " + ASSETMAP
 const std::string CREATE_FILES_DELETE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS delete_trigger AFTER UPDATE ON " +
                         MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN new.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED)) +
-                        " and OLD.cloud_id is NULL AND is_caller_self_func() = 'true'" +
+                        " and OLD.position = 1 AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " DELETE FROM " + MEDIALIBRARY_TABLE + " WHERE file_id = old.file_id;" +
                         " END;";
 
 const std::string CREATE_FILES_FDIRTY_TRIGGER = "CREATE TRIGGER IF NOT EXISTS fdirty_trigger AFTER UPDATE ON " +
-                        MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL AND" +
+                        MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN OLD.position <> 1 AND" +
                         " new.date_modified <> old.date_modified AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " UPDATE " + MEDIALIBRARY_TABLE + " SET dirty = " +
@@ -300,7 +300,7 @@ const std::string CREATE_FILES_FDIRTY_TRIGGER = "CREATE TRIGGER IF NOT EXISTS fd
                         " END;";
 
 const std::string CREATE_FILES_MDIRTY_TRIGGER = "CREATE TRIGGER IF NOT EXISTS mdirty_trigger AFTER UPDATE ON " +
-                        MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
+                        MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN OLD.position <> 1" +
                         " AND new.date_modified = old.date_modified AND old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_SYNCED)) +
                         " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +

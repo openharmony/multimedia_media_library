@@ -160,6 +160,11 @@ enum class PhotoPositionType : int32_t {
     LOCAL_AND_CLOUD = 3
 };
 
+enum class PhotoThumbStatusType : int32_t {
+    DOWNLOADED = 0,
+    NOT_DOWNLOADED = 3
+};
+
 enum class CloudEnhancementTaskStage : int32_t {
     TASK_STAGE_EXCEPTION = -1,
     TASK_STAGE_PREPARING,
@@ -200,7 +205,8 @@ enum NotifyType {
     NOTIFY_ALBUM_REMOVE_ASSET,
     NOTIFY_ALBUM_DISMISS_ASSET,
     NOTIFY_THUMB_ADD,
-    NOTIFY_THUMB_UPDATE
+    NOTIFY_THUMB_UPDATE,
+    NOTIFY_INVALID
 };
 
 enum class RequestPhotoType : int32_t {

@@ -30,6 +30,23 @@
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+enum NotifyAlbumType : uint16_t {
+    NO_NOTIFY = 0x00,
+    SYS_ALBUM = 0x01,
+    SYS_ALBUM_HIDDEN = 0X02,
+    USER_ALBUM = 0X04,
+    SOURCE_ALBUM = 0X08,
+    ANA_ALBUM = 0X10,
+};
+
+enum AlbumOperationType : int32_t {
+    DEFAULT = 0,
+    DELETE_PHOTO,
+    RECOVER_PHOTO,
+    HIDE_PHOTO,
+    UNHIDE_PHOTO,
+};
+
 struct AlbumCounts {
     int count;
     int hiddenCount;
@@ -40,17 +57,21 @@ struct AlbumCounts {
 class MediaLibraryRdbUtils {
 public:
     EXPORT static void UpdateSystemAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::vector<std::string> &subtypes = {});
+        const std::vector<std::string> &subtypes = {}, bool shouldNotify = false);
     EXPORT static void UpdateUserAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::vector<std::string> &userAlbumIds = {});
+        const std::vector<std::string> &userAlbumIds = {}, bool shouldNotify = false);
     EXPORT static void UpdateSourceAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::vector<std::string> &sourceAlbumIds = {});
+        const std::vector<std::string> &sourceAlbumIds = {}, bool shouldNotify = false);
+    EXPORT static void UpdateCommonAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::vector<std::string> &albumIds = {}, bool shouldNotify = false);
     static void UpdateUserAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::vector<std::string> &uris);
+        const std::vector<std::string> &uris, bool shouldNotify = false);
     EXPORT static void UpdateAnalysisAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &uris);
     static void UpdateSourceAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::vector<std::string> &uris);
+        const std::vector<std::string> &uris, bool shouldNotify = false);
+    static void UpdateCommonAlbumByUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::vector<std::string> &uris, bool shouldNotify = false);
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
     EXPORT static void UpdateSysAlbumHiddenState(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
@@ -60,7 +81,8 @@ public:
     EXPORT static void UpdateAnalysisAlbumByFile(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &fileIds, const std::vector<int> &albumTypes);
     EXPORT static void UpdateAllAlbums(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-        const std::vector<std::string> &uris = {});
+        const std::vector<std::string> &uris = {}, NotifyAlbumType type = NotifyAlbumType::NO_NOTIFY,
+        bool isBackUpAndRestore = false, AlbumOperationType albumOperationType = AlbumOperationType::DEFAULT);
 
     EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         std::function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler,
@@ -70,6 +92,9 @@ public:
 
     EXPORT static void UpdateSystemAlbumCountInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &subtypes = {});
+    EXPORT static void UpdateSystemAlbumsByUris(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        AlbumOperationType albumOperationType, const std::vector<std::string> &uris = {},
+        NotifyAlbumType type = NotifyAlbumType::NO_NOTIFY);
     EXPORT static void UpdateUserAlbumCountInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &userAlbumIds = {});
     EXPORT static void UpdateAnalysisAlbumCountInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
@@ -94,6 +119,14 @@ public:
         const std::vector<std::string> &whereIdArgs);
     EXPORT static int32_t UpdateThumbnailRelatedDataToDefault(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const int64_t fileId);
+    EXPORT static void TransformAppId2TokenId(const std::shared_ptr<MediaLibraryRdbStore> &store);
+    EXPORT static int32_t FillOneAlbumCountAndCoverUri(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        int32_t albumId, PhotoAlbumSubType subtype, std::string &sql);
+    EXPORT static void UpdateSystemAlbumExcludeSource(bool shouldNotify = false);
+    EXPORT static int32_t UpdateHighlightPlayInfo(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::string &albumId);
+    static bool AnalyzePhotosData();
+    static bool AnalyzePhotosDataAsync();
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;

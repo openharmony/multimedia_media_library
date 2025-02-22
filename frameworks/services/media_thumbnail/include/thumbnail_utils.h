@@ -47,6 +47,7 @@ struct ThumbRdbOpt {
     EXPORT std::string uri;
     EXPORT std::string dateAdded;
     EXPORT std::string dateTaken;
+    EXPORT std::string dateModified;
     EXPORT std::string fileUri;
     EXPORT std::string fileId;
     EXPORT Size screenSize;
@@ -60,8 +61,8 @@ public:
     EXPORT static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size,
         std::unique_ptr<PixelMap> &pixelMap);
     EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
-        bool isHigh = false, bool isAstc = false, bool forceSdr = true);
-    EXPORT static bool CompressPicture(ThumbnailData &data, bool isSourceEx);
+        bool isAstc = false, bool forceSdr = true, const uint8_t quality = THUMBNAIL_MID);
+    EXPORT static bool CompressPicture(ThumbnailData &data, bool isSourceEx, std::string &tempOutputPath);
     EXPORT static bool CopyPictureSource(std::shared_ptr<Picture> &picture, std::shared_ptr<Picture> &copySource);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
@@ -90,6 +91,8 @@ public:
     EXPORT static bool LoadSourceImage(ThumbnailData &data);
     EXPORT static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
 
+    EXPORT static bool SaveAfterPacking(const std::string &path, const std::string &tempOutputPath);
+    EXPORT static void CancelAfterPacking(const std::string &tempOutputPath);
     EXPORT static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
@@ -110,10 +113,13 @@ public:
         std::vector<ThumbnailData> &infos, int &err);
 #endif
     EXPORT static bool QueryNoLcdInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryLocalNoLcdInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos,
         bool isWifiConnected, int &err);
-    EXPORT static bool QueryNoAstcInfosRestored(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryNoAstcInfosRestored(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err,
+        const int32_t &restoreAstcCount);
+    EXPORT static bool QueryLocalNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoAstcInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
     EXPORT static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
@@ -153,6 +159,7 @@ public:
     EXPORT static bool CheckCloudThumbnailDownloadFinish(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr);
     EXPORT static bool QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
         const std::string &table, std::vector<ThumbnailData> &infos);
+    EXPORT static bool CheckRemainSpaceMeetCondition(const int32_t &freeSizePercentLimit);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);

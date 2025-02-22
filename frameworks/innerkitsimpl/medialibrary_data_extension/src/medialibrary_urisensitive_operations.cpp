@@ -27,6 +27,7 @@
 #include "medialibrary_type_const.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
 #include "media_column.h"
 #include "medialibrary_appstate_observer.h"
@@ -83,7 +84,7 @@ static void DeleteAllSensitiveOperation(AsyncTaskData *data)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriSensitive update operation, rdbStore is null.");
+        MEDIA_ERR_LOG("UriSensitive delete operation fail, rdbStore is null.");
         return;
     }
     
@@ -160,7 +161,7 @@ int32_t UriSensitiveOperations::InsertOperation(MediaLibraryCommand &cmd)
 }
 
 int32_t UriSensitiveOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
-    const std::vector<ValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
+    std::vector<ValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -190,7 +191,6 @@ static void QueryUriSensitive(MediaLibraryCommand &cmd, const std::vector<DataSh
     DataSharePredicates predicates;
     bool isValid;
     int64_t targetTokenId = values.at(0).Get(AppUriSensitiveColumn::TARGET_TOKENID, isValid);
-    int64_t srcTokenId = values.at(0).Get(AppUriSensitiveColumn::SOURCE_TOKENID, isValid);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("UriSensitive query operation, rdbStore is null.");
@@ -202,7 +202,6 @@ static void QueryUriSensitive(MediaLibraryCommand &cmd, const std::vector<DataSh
     }
     predicates.In(AppUriSensitiveColumn::FILE_ID, predicateInColumns);
     predicates.And()->EqualTo(AppUriSensitiveColumn::TARGET_TOKENID, (int64_t)targetTokenId);
-    predicates.And()->EqualTo(AppUriSensitiveColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
     resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
     return;
@@ -342,12 +341,13 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
     std::vector<string> audiosValues;
     std::vector<int32_t> dbOperation;
     std::shared_ptr<OHOS::NativeRdb::ResultSet> resultSet;
-    std::vector<ValuesBucket>  batchInsertBucket;
+    std::vector<ValuesBucket> batchInsertBucket;
     bool photoNeedToUpdate = false;
     bool audioNeedToUpdate = false;
     bool needToInsert = false;
     bool isValid = false;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     int32_t err = E_OK;
     std::function<int(void)> func = [&]()->int {
@@ -384,15 +384,34 @@ int32_t UriSensitiveOperations::GrantUriSensitive(MediaLibraryCommand &cmd,
         return err;
     };
     err = trans->RetryTrans(func);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GrantUriSensitive: tans finish fail!, ret:%{public}d", err);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GrantUriSensitive: tans finish fail!, ret:%{public}d", err);
     return E_OK;
+}
+
+static bool IsOwnerPriviledge(const uint32_t &tokenId, const std::string &fileId)
+{
+    NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    rdbPredicate.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)tokenId);
+    rdbPredicate.EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
+    rdbPredicate.EqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
+        AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
+    vector<string> columns;
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
+    if (resultSet == nullptr) {
+        return false;
+    }
+    int32_t numRows = 0;
+    resultSet->GetRowCount(numRows);
+    return numRows > 0;
 }
 
 int32_t UriSensitiveOperations::QuerySensitiveType(const uint32_t &tokenId, const std::string &fileId)
 {
+    // OwnerPriviledge donot need anonymize
+    if (IsOwnerPriviledge(tokenId, fileId)) {
+        return AppUriSensitiveColumn::SENSITIVE_NO_DESENSITIZE;
+    }
+
     NativeRdb::RdbPredicates rdbPredicate(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     rdbPredicate.BeginWrap();
     rdbPredicate.And()->EqualTo(AppUriSensitiveColumn::TARGET_TOKENID, (int64_t)tokenId);
@@ -416,28 +435,7 @@ int32_t UriSensitiveOperations::QuerySensitiveType(const uint32_t &tokenId, cons
     resultSet->GoToFirstRow();
     return MediaLibraryRdbStore::GetInt(resultSet, AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
 }
-std::string UriSensitiveOperations::QueryAppId(const std::string &fileId)
-{
-    NativeRdb::RdbPredicates rdbPredicate(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicate.And()->EqualTo(MediaColumn::MEDIA_ID, fileId);
 
-    vector<string> columns;
-    columns.push_back(MediaColumn::MEDIA_ID);
-    columns.push_back(MediaColumn::MEDIA_OWNER_APPID);
-
-    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        return 0;
-    }
-
-    int32_t numRows = 0;
-    resultSet->GetRowCount(numRows);
-    if (numRows == 0) {
-        return 0;
-    }
-    resultSet->GoToFirstRow();
-    return MediaLibraryRdbStore::GetString(resultSet, MediaColumn::MEDIA_OWNER_APPID);
-}
 bool UriSensitiveOperations::QueryForceSensitive(const uint32_t &tokenId,
     const std::string &fileId)
 {

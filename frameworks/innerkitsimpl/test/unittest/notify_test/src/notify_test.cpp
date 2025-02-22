@@ -34,6 +34,7 @@
 #include "medialibrary_errno.h"
 #define private public
 #include "medialibrary_notify.h"
+#include "cloud_sync_notify_handler.h"
 #undef private
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unittest_utils.h"
@@ -44,7 +45,6 @@
 #include "result_set_utils.h"
 #include "system_ability_definition.h"
 #include "analysis_handler.h"
-#include "cloud_sync_notify_handler.h"
 #include "notify_handler.h"
 #include "uri_convert_handler.h"
 #include "userfile_manager_types.h"
@@ -57,6 +57,7 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
+using ChangeType = DataShare::DataShareObserver::ChangeType;
 
 enum DefaultAlbumId: int32_t {
     FAVORITE_ALBUM = 1,
@@ -74,6 +75,16 @@ static constexpr int64_t DATE_ADD = 6666666;
 static constexpr int64_t DATE_MODIFY = 6666667;
 shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
+const std::array<CloudSyncErrType, 7> allErrorTypes = {
+    CloudSyncErrType::OTHER_ERROR,
+    CloudSyncErrType::CONTENT_NOT_FOUND,
+    CloudSyncErrType::THM_NOT_FOUND,
+    CloudSyncErrType::LCD_NOT_FOUND,
+    CloudSyncErrType::LCD_SIZE_IS_TOO_LARGE,
+    CloudSyncErrType::CONTENT_SIZE_IS_ZERO,
+    CloudSyncErrType::ALBUM_NOT_FOUND
+};
 
 void CheckGetAlbumIdBySubType(PhotoAlbumSubType photoAlbumSubType, DefaultAlbumId defaultAlbumId)
 {
@@ -235,7 +246,7 @@ static void CheckInfo(shared_ptr<TestObserver> obs, const std::string &uriPrefix
             EXPECT_EQ(obs->changeInfo_.uris_.begin()->ToString(), PhotoColumn::PHOTO_URI_PREFIX + uriPostfix);
         }
     } else {
-        EXPECT_TRUE(false);
+        EXPECT_NE(obs, nullptr);
     }
 }
 
@@ -485,14 +496,14 @@ HWTEST_F(NotifyTest, cloud_notify_001, TestSize.Level0)
 
 /**
  * @tc.name: cloud_notify_002
- * @tc.desc: test cloud notify for ChangeType::DELETE
+ * @tc.desc: test cloud notify for ChangeType::INSERT
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(NotifyTest, cloud_notify_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("cloud_notify_002 enter");
-    CheckCloudSyncNotify(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX, "2", DataShareObserver::ChangeType::DELETE);
+    CheckCloudSyncNotify(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX, "2", DataShareObserver::ChangeType::INSERT);
     MEDIA_INFO_LOG("cloud_notify_002 exit");
 }
 
@@ -524,27 +535,27 @@ HWTEST_F(NotifyTest, cloud_notify_004, TestSize.Level0)
 
 /**
  * @tc.name: cloud_notify_005
- * @tc.desc: test cloud notify for ChangeType::UPDATE
+ * @tc.desc: test cloud notify for ChangeType::INSERT
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(NotifyTest, cloud_notify_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("cloud_notify_005 enter");
-    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "5", DataShareObserver::ChangeType::UPDATE);
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "5", DataShareObserver::ChangeType::INSERT);
     MEDIA_INFO_LOG("cloud_notify_005 exit");
 }
 
 /**
  * @tc.name: cloud_notify_006
- * @tc.desc: test cloud notify for ChangeType::OTHER
+ * @tc.desc: test cloud notify for ChangeType::INSERT
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(NotifyTest, cloud_notify_006, TestSize.Level0)
 {
     MEDIA_INFO_LOG("cloud_notify_006 enter");
-    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "6", DataShareObserver::ChangeType::OTHER);
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "6", DataShareObserver::ChangeType::INSERT);
     MEDIA_INFO_LOG("cloud_notify_006 exit");
 }
 
@@ -576,27 +587,27 @@ HWTEST_F(NotifyTest, cloud_notify_008, TestSize.Level0)
 
 /**
  * @tc.name: cloud_notify_009
- * @tc.desc: test cloud notify for ChangeType::UPDATE
+ * @tc.desc: test cloud notify for ChangeType::INSERT
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(NotifyTest, cloud_notify_009, TestSize.Level0)
 {
     MEDIA_INFO_LOG("cloud_notify_009 enter");
-    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::UPDATE);
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::INSERT);
     MEDIA_INFO_LOG("cloud_notify_009 exit");
 }
 
 /**
  * @tc.name: cloud_notify_010
- * @tc.desc: test cloud notify for ChangeType::OTHER
+ * @tc.desc: test cloud notify for ChangeType::INSERT
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(NotifyTest, cloud_notify_010, TestSize.Level0)
 {
     MEDIA_INFO_LOG("cloud_notify_010 enter");
-    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::OTHER);
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::INSERT);
     MEDIA_INFO_LOG("cloud_notify_010 exit");
 }
 
@@ -636,8 +647,9 @@ HWTEST_F(NotifyTest, handle_empty_data_002, TestSize.Level0)
     MEDIA_INFO_LOG("handle_empty_data_002 enter");
     CloudSyncHandleData emptyHandleData;
     emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
-    UriConvertHandler handler;
-    handler.Handle(emptyHandleData);
+    auto handler = make_shared<NotifyHandler>();
+    EXPECT_NE(handler, nullptr);
+    handler->Handle(emptyHandleData);
     MEDIA_INFO_LOG("handle_empty_data_002 exit");
 }
 
@@ -652,8 +664,9 @@ HWTEST_F(NotifyTest, handle_empty_data_003, TestSize.Level0)
     MEDIA_INFO_LOG("handle_empty_data_003 enter");
     CloudSyncHandleData emptyHandleData;
     emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
-    NotifyHandler handler;
-    handler.Handle(emptyHandleData);
+    auto handler = make_shared<NotifyHandler>();
+    EXPECT_NE(handler, nullptr);
+    handler->Handle(emptyHandleData);
     MEDIA_INFO_LOG("handle_empty_data_003 exit");
 }
 
@@ -668,8 +681,120 @@ HWTEST_F(NotifyTest, handle_special_change_type_001, TestSize.Level0)
     MEDIA_INFO_LOG("handle_special_change_type_001 enter");
     CloudSyncHandleData specialHandleData;
     specialHandleData.notifyInfo[static_cast<DataShare::DataShareObserver::ChangeType>(-1)] = {};
-    NotifyHandler handler;
-    handler.Handle(specialHandleData);
+    auto handler = make_shared<NotifyHandler>();
+    EXPECT_NE(handler, nullptr);
+    handler->Handle(specialHandleData);
     MEDIA_INFO_LOG("handle_special_change_type_001 exit");
+}
+
+HWTEST_F(NotifyTest, HandleDirtyDataFix_test_empty_list, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("HandleDirtyDataFix_test_empty_list enter");
+    CloudSyncNotifyInfo info;
+    auto handler = make_shared<CloudSyncNotifyHandler>(info);
+    EXPECT_NE(handler, nullptr);
+
+    std::list<Uri> uris;
+    for (const auto& type : allErrorTypes) {
+        handler->HandleDirtyDataFix(uris, type);
+    }
+    MEDIA_INFO_LOG("HandleDirtyDataFix_test_empty_list leave");
+}
+
+HWTEST_F(NotifyTest, HandleDirtyDataFix_test_empty_uri, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("HandleDirtyDataFix_test_empty_uri enter");
+    CloudSyncNotifyInfo info;
+    auto handler = make_shared<CloudSyncNotifyHandler>(info);
+    EXPECT_NE(handler, nullptr);
+
+    string uriStr;
+    Uri uri(uriStr);
+    std::list<Uri> uris;
+    uris.push_back(uri);
+
+    for (const auto& type : allErrorTypes) {
+        handler->HandleDirtyDataFix(uris, type);
+    }
+    MEDIA_INFO_LOG("HandleDirtyDataFix_test_empty_uri leave");
+}
+
+HWTEST_F(NotifyTest, HandleDirtyDataFix_test_normal_uri, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("HandleDirtyDataFix_test_normal_uri enter");
+    CloudSyncNotifyInfo info;
+    auto handler = make_shared<CloudSyncNotifyHandler>(info);
+    EXPECT_NE(handler, nullptr);
+
+    string uriStr = PhotoColumn::PHOTO_URI_PREFIX + to_string(OBS_TMP_ID);
+    Uri uri(uriStr);
+    std::list<Uri> uris;
+    uris.push_back(uri);
+
+    for (const auto& type : allErrorTypes) {
+        handler->HandleDirtyDataFix(uris, type);
+    }
+    MEDIA_INFO_LOG("HandleDirtyDataFix_test_normal_uri leave");
+}
+
+HWTEST_F(NotifyTest, MakeResponsibilityChain_test_empty_list, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MakeResponsibilityChain_test_empty_list enter");
+    CloudSyncNotifyInfo info;
+    auto handler = make_shared<CloudSyncNotifyHandler>(info);
+    EXPECT_NE(handler, nullptr);
+    handler->MakeResponsibilityChain();
+    MEDIA_INFO_LOG("MakeResponsibilityChain_test_empty_list leave");
+}
+
+HWTEST_F(NotifyTest, MakeResponsibilityChain_test_empty_uri, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MakeResponsibilityChain_test_empty_uri enter");
+    CloudSyncNotifyInfo info;
+    string uriStr;
+    Uri uri(uriStr);
+    info.uris.push_back(uri);
+
+    auto handler = make_shared<CloudSyncNotifyHandler>(info);
+    EXPECT_NE(handler, nullptr);
+    handler->MakeResponsibilityChain();
+    MEDIA_INFO_LOG("MakeResponsibilityChain_test_empty_uri leave");
+}
+
+HWTEST_F(NotifyTest, MakeResponsibilityChain_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MakeResponsibilityChain_test enter");
+    CloudSyncNotifyInfo info;
+    string uriStr = "file://cloudsync/Photo/HeightError/1";
+    Uri uri1(uriStr);
+    info.uris.push_back(uri1);
+
+    auto handler = make_shared<CloudSyncNotifyHandler>(info);
+    EXPECT_NE(handler, nullptr);
+    handler->MakeResponsibilityChain();
+
+    info.uris.clear();
+    uriStr = "file://cloudsync/Photo/DownloadSuccessed/1";
+    Uri uri2(uriStr);
+    info.uris.push_back(uri2);
+    handler->notifyInfo_ = info;
+    handler->MakeResponsibilityChain();
+
+    info.uris.clear();
+    uriStr = "file://cloudsync/Photo/1";
+    Uri uri3(uriStr);
+    info.uris.push_back(uri3);
+    info.type = ChangeType::INSERT;
+    handler->notifyInfo_ = info;
+    handler->MakeResponsibilityChain();
+
+    info.uris.clear();
+    uriStr = "file://cloudsync/PhotoAlbum/1";
+    Uri uri4(uriStr);
+    info.uris.push_back(uri4);
+    info.type = ChangeType::DELETE;
+    handler->notifyInfo_ = info;
+    handler->MakeResponsibilityChain();
+    MEDIA_INFO_LOG("MakeResponsibilityChain_test enter");
 }
 } // namespace OHOS::Media

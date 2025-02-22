@@ -23,6 +23,7 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
+#include "medialibrary_napi_utils_ext.h"
 #include "medialibrary_tracer.h"
 #include "photo_map_column.h"
 #include "result_set_utils.h"
@@ -61,6 +62,7 @@ napi_value SendablePhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value expo
         DECLARE_NAPI_GETTER("albumType", JSGetPhotoAlbumType),
         DECLARE_NAPI_GETTER("albumSubtype", JSGetPhotoAlbumSubType),
         DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
+        DECLARE_NAPI_GETTER("lpath", JSGetAlbumLPath),
         DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
         DECLARE_NAPI_FUNCTION("getAssets", JSPhotoAccessGetPhotoAssets),
         DECLARE_NAPI_FUNCTION("convertToPhotoAlbum", ConvertToPhotoAlbum),
@@ -198,6 +200,11 @@ double SendablePhotoAlbumNapi::GetLatitude() const
 double SendablePhotoAlbumNapi::GetLongitude() const
 {
     return photoAlbumPtr->GetLongitude();
+}
+
+const string& SendablePhotoAlbumNapi::GetLPath() const
+{
+    return photoAlbumPtr->GetLPath();
 }
 
 shared_ptr<PhotoAlbum> SendablePhotoAlbumNapi::GetPhotoAlbumInstance() const
@@ -358,6 +365,19 @@ napi_value SendablePhotoAlbumNapi::JSGetCoverUri(napi_env env, napi_callback_inf
     return jsResult;
 }
 
+napi_value SendablePhotoAlbumNapi::JSGetAlbumLPath(napi_env env, napi_callback_info info)
+{
+    CHECK_COND_LOG_THROW_RETURN_RET(env, SendableMediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
+        "Get lpath permission denied: not a system app", nullptr, "Get album lpath failed: not a system app");
+    CHECK_COND(env, SendableMediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED);
+    SendablePhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetLPath().c_str(), NAPI_AUTO_LENGTH, &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
 napi_value GetStringArg(napi_env env, napi_callback_info info, SendablePhotoAlbumNapi **obj, string &output)
 {
     size_t argc = ARGS_ONE;
@@ -510,13 +530,21 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
     ConvertColumnsForPortrait(context);
     ConvertColumnsForFeaturedSinglePortrait(context);
     int32_t errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    int32_t userId = -1;
+    if (context->objectInfo != nullptr) {
+        shared_ptr<PhotoAlbum> photoAlbum =  context->objectInfo->GetPhotoAlbumInstance();
+        if (photoAlbum != nullptr) {
+            userId = photoAlbum->GetUserId();
+        }
+    }
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode, userId);
     if (resultSet == nullptr) {
         context->SaveError(errCode);
         return;
     }
     context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    context->fetchResult->SetUserId(userId);
 }
 
 static void GetPhotoMapQueryResult(napi_env env, SendablePhotoAlbumNapiAsyncContext *context,
@@ -712,7 +740,7 @@ napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env en
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
     ConvertColumnsForFeaturedSinglePortrait(context);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
         context->predicates, context->fetchColumn);
     CHECK_NULLPTR_RET(resultSet);
 
@@ -736,10 +764,15 @@ napi_value SendablePhotoAlbumNapi::JSPhotoAccessGetSharedPhotoAssets(napi_env en
 static void PhotoAccessHelperGetFaceIdExec(napi_env env, void *data)
 {
     auto *context = static_cast<SendablePhotoAlbumNapiAsyncContext *>(data);
-    auto jsContext = make_unique<SendableJSAsyncContextOutput>();
-    jsContext->status = false;
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    PhotoAlbumSubType albumSubType = context->objectInfo->GetPhotoAlbumInstance()->GetPhotoAlbumSubType();
+    auto *objectInfo = context->objectInfo;
+    CHECK_NULL_PTR_RETURN_VOID(objectInfo, "objectInfo is null");
+
+    auto photoAlbumInstance = objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbumInstance, "photoAlbumInstance is null");
+
+    PhotoAlbumSubType albumSubType = photoAlbumInstance->GetPhotoAlbumSubType();
     if (albumSubType != PhotoAlbumSubType::PORTRAIT && albumSubType != PhotoAlbumSubType::GROUP_PHOTO) {
         NAPI_WARN_LOG("albumSubType: %{public}d, not support getFaceId", albumSubType);
         return;
@@ -747,11 +780,18 @@ static void PhotoAccessHelperGetFaceIdExec(napi_env env, void *data)
 
     Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, context->objectInfo->GetAlbumId());
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, objectInfo->GetAlbumId());
     vector<string> fetchColumn = { GROUP_TAG };
     int errCode = 0;
 
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    int32_t userId = -1;
+    if (context->objectInfo != nullptr) {
+        shared_ptr<PhotoAlbum> photoAlbum =  objectInfo->GetPhotoAlbumInstance();
+        if (photoAlbum != nullptr) {
+            userId = photoAlbum->GetUserId();
+        }
+    }
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
         if (errCode == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;

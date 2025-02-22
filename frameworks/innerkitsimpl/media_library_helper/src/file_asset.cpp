@@ -136,6 +136,16 @@ void FileAsset::SetSize(int64_t size)
     member_[MEDIA_DATA_DB_SIZE] = size;
 }
 
+const string &FileAsset::GetCloudId() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_CLOUD_ID);
+}
+
+void FileAsset::SetCloudId(const string &cloudId)
+{
+    member_[PhotoColumn::PHOTO_CLOUD_ID] = cloudId;
+}
+
 int64_t FileAsset::GetDateAdded() const
 {
     return GetInt64Member(MEDIA_DATA_DB_DATE_ADDED);
@@ -314,6 +324,16 @@ bool FileAsset::IsFavorite() const
 void FileAsset::SetFavorite(bool isFavorite)
 {
     member_[MEDIA_DATA_DB_IS_FAV] = isFavorite;
+}
+
+bool FileAsset::IsRecentShow() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_RECENT_SHOW);
+}
+
+void FileAsset::SetRecentShow(bool isRecentShow)
+{
+    member_[PhotoColumn::PHOTO_IS_RECENT_SHOW] = isRecentShow;
 }
 
 double FileAsset::GetLatitude()
@@ -597,6 +617,16 @@ void FileAsset::SetSupportedWatermarkType(int32_t watermarkType)
     member_[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = watermarkType;
 }
 
+int32_t FileAsset::GetIsAuto() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_AUTO);
+}
+
+void FileAsset::SetIsAuto(int32_t isAuto)
+{
+    member_[PhotoColumn::PHOTO_IS_AUTO] = isAuto;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
@@ -664,8 +694,19 @@ int32_t FileAsset::GetPhotoIndex() const
     return GetInt32Member(PHOTO_INDEX);
 }
 
+int32_t FileAsset::GetUserId()
+{
+    return userId_;
+}
+ 
+void FileAsset::SetUserId(int32_t userId)
+{
+    userId_ = userId;
+}
+
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)
 {
+    lock_guard<mutex> lock(resultTypeMapMutex_);
     if (resultTypeMap_.count(colName) != 0) {
         return;
     }

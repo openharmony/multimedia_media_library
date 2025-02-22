@@ -136,6 +136,11 @@ public:
     static const std::string PHOTO_DETAIL_TIME EXPORT;
     static const std::string SUPPORTED_WATERMARK_TYPE EXPORT;
     static const std::string PHOTO_METADATA_FLAGS EXPORT;
+    static const std::string PHOTO_CHECK_FLAG EXPORT;
+    static const std::string STAGE_VIDEO_TASK_STATUS EXPORT;
+    static const std::string PHOTO_IS_AUTO EXPORT;
+    static const std::string PHOTO_MEDIA_SUFFIX EXPORT;
+    static const std::string PHOTO_IS_RECENT_SHOW EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -146,12 +151,19 @@ public:
     static const std::string PHOTO_DATE_MONTH_INDEX EXPORT;
     static const std::string PHOTO_DATE_DAY_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_ADDED_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_ALBUM_GENERAL_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_ALBUM_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_PHOTO_DATEADDED_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_ADDED_ALBUM_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_MEDIA_TYPE_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_DAY_INDEX EXPORT;
     static const std::string PHOTO_HIDDEN_TIME_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_HIDDEN_TIME_INDEX EXPORT;
     static const std::string PHOTO_FAVORITE_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_READY_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX EXPORT;
+    static const std::string LATITUDE_INDEX EXPORT;
+    static const std::string LONGITUDE_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query
@@ -198,10 +210,13 @@ public:
     static const std::string UPDATE_READY_ON_THUMBNAIL_UPGRADE EXPORT;
     static const std::string UPDATA_PHOTOS_DATA_UNIQUE EXPORT;
     static const std::string UPDATE_LCD_STATUS_NOT_UPLOADED EXPORT;
+    static const std::string UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL EXPORT;
+    static const std::string UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID EXPORT;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
     static const std::string DROP_INDEX_SCTHP_ADDTIME EXPORT;
+    static const std::string DROP_INDEX_SCHPT_ADDTIME_ALBUM EXPORT;
     static const std::string INDEX_CAMERA_SHOT_KEY EXPORT;
     static const std::string INDEX_SCHPT_READY EXPORT;
     static const std::string DROP_INDEX_SCHPT_READY EXPORT;
@@ -211,6 +226,12 @@ public:
     static const std::string DROP_SCHPT_YEAR_COUNT_READY_INDEX;
     static const std::string DROP_SCHPT_MONTH_COUNT_READY_INDEX;
     static const std::string DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX;
+    static const std::string CREATE_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX;
+    static const std::string INDEX_SCHPT_ALBUM_GENERAL;
+    static const std::string INDEX_SCHPT_ALBUM;
+    static const std::string INDEX_SCTHP_PHOTO_DATEADDED;
+    static const std::string INDEX_LATITUDE;
+    static const std::string INDEX_LONGITUDE;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;
@@ -234,10 +255,13 @@ public:
 
     // cloud sync uri
     static const std::string PHOTO_CLOUD_URI_PREFIX EXPORT;
+    static const std::string PHOTO_CLOUD_TRIGGER_PREFIX EXPORT;
+    static const std::string PHOTO_GALLERY_CLOUD_URI_PREFIX EXPORT;
 
     // cloud notify uri
     static const std::string PHOTO_HEIGHT_ERROR_URI_PREFIX EXPORT;
     static const std::string PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX EXPORT;
+    static const std::string PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX EXPORT;
     // yuv uri
     static const std::string PHOTO_REQUEST_PICTURE EXPORT;
     static const std::string PHOTO_REQUEST_PICTURE_BUFFER EXPORT;

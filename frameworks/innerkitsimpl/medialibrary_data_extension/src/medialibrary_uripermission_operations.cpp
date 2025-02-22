@@ -171,7 +171,7 @@ int32_t UriPermissionOperations::InsertOperation(MediaLibraryCommand &cmd)
 }
 
 int32_t UriPermissionOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
-    const std::vector<ValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
+    std::vector<ValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -251,7 +251,7 @@ static void GetSingleDbOperation(const vector<DataShareValuesBucket> &values, ve
     int32_t permissionType = values.at(index).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
     if ((fileId == querySingleResultSet.at(FILE_ID_INDEX)) && (uriType == querySingleResultSet.at(URI_TYPE_INDEX))) {
         if ((querySingleResultSet.at(PERMISSION_TYPE_INDEX) == AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE) ||
-            (permissionType == querySingleResultSet.at(PERMISSION_TYPE_INDEX))) {
+            (permissionType <= querySingleResultSet.at(PERMISSION_TYPE_INDEX))) {
             dbOperation[index] = NO_DB_OPERATION;
         } else {
             dbOperation[index] = UPDATE_DB_OPERATION;

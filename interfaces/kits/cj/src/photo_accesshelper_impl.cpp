@@ -277,10 +277,10 @@ shared_ptr<FetchResult<FileAsset>> PhotoAccessHelperImpl::GetAssets(COptions opt
         return nullptr;
     }
     string queryUri;
-    if (extraInfo.uri == URI_ALL_DUPLICATE_ASSETS) {
-        queryUri = PAH_ALL_DUPLICATE_ASSETS;
-    } else if (extraInfo.uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
-        queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
+    if (extraInfo.uri == URI_FIND_ALL_DUPLICATE_ASSETS) {
+        queryUri = PAH_FIND_ALL_DUPLICATE_ASSETS;
+    } else if (extraInfo.uri == URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE) {
+        queryUri = PAH_FIND_DUPLICATE_ASSETS_TO_DELETE;
     } else {
         queryUri = PAH_QUERY_PHOTO;
     }
@@ -343,10 +343,10 @@ shared_ptr<FetchResult<FileAsset>> PhotoAccessHelperImpl::GetBurstAssets(char* c
         return nullptr;
     }
     string queryUri = PAH_QUERY_PHOTO;
-    if (extraInfo.uri == URI_ALL_DUPLICATE_ASSETS) {
-        queryUri = PAH_ALL_DUPLICATE_ASSETS;
-    } else if (extraInfo.uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
-        queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
+    if (extraInfo.uri == URI_FIND_ALL_DUPLICATE_ASSETS) {
+        queryUri = PAH_FIND_ALL_DUPLICATE_ASSETS;
+    } else if (extraInfo.uri == URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE) {
+        queryUri = PAH_FIND_DUPLICATE_ASSETS_TO_DELETE;
     } else {
         queryUri = PAH_QUERY_PHOTO;
     }
@@ -956,6 +956,7 @@ static void SetRequestInfo(PhotoSelectOptions &option, AAFwk::Want &request)
     request.SetParam("isPhotoTakingSupported", option.isPhotoTakingSupported);
     request.SetParam("isSearchSupported", option.isSearchSupported);
     request.SetParam("isPreviewForSingleSelectionSupported", option.isPreviewForSingleSelectionSupported);
+    request.SetParam("singleSelectionMode", static_cast<int32_t>(option.singleSelectionMode));
     request.SetParam("isEditSupported", option.isEditSupported);
     request.SetParam("isOriginalSupported", option.isOriginalSupported);
 }

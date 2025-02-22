@@ -30,6 +30,12 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+enum class TaskDeleteState : int32_t {
+    IDLE = 0,
+    ACTIVE_DELETE = 1,
+    BACKGROUND_DELETE = 2
+};
+
 class CloudMediaAssetManager {
 public:
     EXPORT static CloudMediaAssetManager& GetInstance();
@@ -45,6 +51,7 @@ public:
     EXPORT int32_t GetTaskStatus();
     EXPORT int32_t GetDownloadType();
     EXPORT bool SetBgDownloadPermission(const bool &flag);
+    EXPORT void CheckStorageAndRecoverDownloadTask();
     static void DeleteAllCloudMediaAssetsAsync();
     static void StartDeleteCloudMediaAssets();
     static void StopDeleteCloudMediaAssets();
@@ -60,14 +67,13 @@ private:
     EXPORT static int32_t ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
         std::vector<std::string> &dateTakens);
     static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
-    static void ResetDeleteParameter();
     int32_t UpdateCloudMeidaAssets();
 
 private:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;
-    static std::mutex mutex_;
-    static bool isDeleteAssets_;
-    static bool isBgDeletePermission_;
+    static std::atomic<TaskDeleteState> doDeleteTask_;
+    static std::mutex deleteMutex_;
+    static std::mutex updateMutex_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -36,6 +36,7 @@ public:
     void Clear();
     int32_t GetHandles(int32_t parentId, std::vector<int> &outHandles, MediaType mediaType = MEDIA_TYPE_DEFAULT);
     int32_t GetHandles(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt32List> &outHandles);
+    int32_t GetAllHandles(const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<UInt32List> &out);
     int32_t GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<ObjectInfo> &outObjectInfo);
     int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd, const std::string &mode);
@@ -74,12 +75,22 @@ private:
         bool isHandle);
     std::shared_ptr<DataShare::DataShareResultSet> GetPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
         bool isHandle);
+    int32_t GetAlbumCloud();
+    int32_t GetAlbumCloudDisplay(std::vector<std::string> &ownerAlbumIds);
     int32_t HaveMovingPhotesHandle(const std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         std::shared_ptr<UInt32List> &outHandles, const uint32_t parent);
     uint32_t GetSizeFromOfft(const off_t &size);
     std::vector<std::string> GetBurstKeyFromPhotosInfo();
     std::shared_ptr<DataShare::DataShareResultSet> GetOwnerAlbumIdList();
     std::string GetThumbUri(const int32_t &id, const std::string &thumbSizeValue, const std::string &dataPath);
+    int32_t GetFileAssetFromPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
+        std::shared_ptr<FileAsset> &fileAsset);
+    int32_t CopyAndDumpFile(const std::shared_ptr<MtpOperationContext> &context,
+        const std::string &oldDataPath, const std::string &newDataPath);
+    int32_t GetMovingPhotoVideoPath(const std::string &dataPath, std::string &displayName,
+        std::string &movingPhotoDataPath, MediaType &mediaType);
+    int32_t InsertCopyObject(const std::string &displayName, const MediaType &mediaType);
+    int32_t GetThumbnailFromPath(std::string &path, std::shared_ptr<UInt8List> &outThumb);
 private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;

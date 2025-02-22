@@ -125,7 +125,9 @@ private:
             album_name, \
             bundle_name, \
             lpath, \
-            priority \
+            priority, \
+            date_modified, \
+            date_added \
         ) \
         SELECT \
             INPUT.album_type, \
@@ -146,7 +148,9 @@ private:
             CASE \
                 WHEN album_plugin.priority IS NULL THEN INPUT.priority \
                 ELSE album_plugin.priority \
-            END AS priority \
+            END AS priority, \
+            strftime('%s000', 'now') AS date_modified, \
+            strftime('%s000', 'now') AS date_added \
         FROM \
         ( \
             SELECT \

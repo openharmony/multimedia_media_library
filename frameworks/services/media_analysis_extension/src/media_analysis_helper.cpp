@@ -95,7 +95,7 @@ void MediaAnalysisHelper::AnalysePortraitCover(const std::string albumId)
     }
 }
 
-bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> geoInfo)
+bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> geoInfo, const bool isForceQuery)
 {
     MessageParcel data;
     MediaAnalysisProxy mediaAnalysisProxy(nullptr);
@@ -111,6 +111,9 @@ bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> geoInfo)
     }
 
     int32_t code = IMediaAnalysisService::ActivateServiceType::PARSE_GEO_INFO;
+    if (isForceQuery) {
+        code = IMediaAnalysisService::ActivateServiceType::PARSE_GEO_INFO_LIST;
+    }
     MessageParcel reply;
     MessageOption option(MessageOption::TF_SYNC);
     if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {

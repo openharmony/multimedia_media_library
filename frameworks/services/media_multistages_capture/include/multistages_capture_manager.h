@@ -19,6 +19,8 @@
 #include "multistages_photo_capture_manager.h"
 #include "multistages_video_capture_manager.h"
 
+#include <string>
+
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -31,6 +33,7 @@ public:
     EXPORT static void RemovePhotos(const NativeRdb::AbsRdbPredicates &predicates,
         bool isRestorable = true);
     EXPORT static void RestorePhotos(const NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT static int32_t QuerySubType(const std::string &photoId);
 };
 } // namespace Media
 } // namespace OHOS

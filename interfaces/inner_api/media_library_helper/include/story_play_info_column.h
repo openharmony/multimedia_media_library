@@ -35,6 +35,7 @@ const std::string HIGHLIGHTING_ALGO_VERSION = "highlighting_algo_version";
 const std::string CAMERA_MOVEMENT_ALGO_VERSION = "camera_movement_algo_version";
 const std::string TRANSITION_ALGO_VERSION = "transition_algo_version";
 const std::string PLAY_SERVICE_VERSION = "play_service_version";
+const std::string PLAY_INFO_STATUS = "status";
 
 const std::string URI_HIGHLIGHT_PLAY_INFO = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_PLAY_INFO_TABLE;
 } // namespace Media

@@ -57,6 +57,7 @@ const STAT_TYPE_VIDEO = 'video';
 const STAT_TYPE_AUDIO = 'audio';
 const STAT_TYPE_PHOTO_VIDEO = 'photo&video';
 const STAT_TYPE_UPDATE = 'update';
+const STAT_TYPE_THUMBNAIL = 'thumbnail';
 const STAT_TYPE_OTHER = 'other';
 const STAT_TYPE_ONGOING = 'ongoing';
 const STAT_TYPES = [STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO];
@@ -136,6 +137,12 @@ const DEFAULT_PROGRESS_INFO = {
     'isPercentage': false
   },
   {
+    'name': STAT_TYPE_THUMBNAIL,
+    'processed': 0,
+    'total': 0,
+    'isPercentage': false
+  },
+  {
     'name': STAT_TYPE_OTHER,
     'processed': 0,
     'total': 0,
@@ -167,7 +174,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   }
 
   async onRestoreEx(bundleVersion: BundleVersion, bundleInfo: string): Promise<string> {
-    console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}, ${JSON.stringify(bundleInfo)}`);
+    console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
     let sceneCode: number = this.getSceneCode(bundleVersion);
@@ -321,10 +328,6 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   private isBackupInfoValid(backupInfo: string): boolean {
     try {
       let jsonObject = JSON.parse(backupInfo);
-      if (jsonObject.length !== STAT_TYPES.length) {
-        console.error(TAG, `backupInfo num ${jsonObject.length} != ${STAT_TYPES.length}`);
-        return false;
-      }
       let hasPhoto = false;
       let hasVideo = false;
       let hasAudio = false;
@@ -347,10 +350,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     if (!this.hasKey(subBackupInfo, STAT_KEY_BACKUP_INFO) || !this.hasKey(subBackupInfo, STAT_KEY_NUMBER)) {
       return false;
     }
-    if (!STAT_TYPES.includes(subBackupInfo[STAT_KEY_BACKUP_INFO])) {
-      console.error(TAG, `SubBackupInfo ${subBackupInfo[STAT_KEY_BACKUP_INFO]} not in ${JSON.stringify(STAT_TYPES)}`);
-      return false;
-    }
+
     return !isNaN(subBackupInfo[STAT_KEY_NUMBER]);
   }
 

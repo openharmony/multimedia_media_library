@@ -26,16 +26,16 @@ namespace Media {
 const std::string CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE =
     "CREATE TABLE IF NOT EXISTS temp_upgrade_photo_map AS SELECT MIN(map_album) AS map_album, map_asset FROM PhotoMap "
     "INNER JOIN Photos ON PhotoMap.map_asset=Photos.file_id where COALESCE(owner_album_id, 0) = 0 GROUP BY map_asset;";
- 
+
 const std::string QUERY_MATCHED_COUNT =
     "SELECT COUNT(1) from temp_upgrade_photo_map";
- 
+
 const std::string QUERY_SUCCESS_MATCHED_COUNT =
     "SELECT COUNT(1) from Photos where owner_album_id != 0";
 
 const std::string CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET =
     "CREATE INDEX IF NOT EXISTS unique_temp_upgrade_index_on_map_asset ON temp_upgrade_photo_map (map_asset);";
- 
+
 const std::string CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_PHOTO_MAP =
     "CREATE UNIQUE INDEX IF NOT EXISTS unique_temp_upgrade_index_on_photo_map ON "
     "temp_upgrade_photo_map (map_album, map_asset);";
@@ -74,39 +74,14 @@ const std::string FILL_ALBUM_ID_FOR_PHOTOS =
     " OR bundle_name = NEW.owner_package) AND " +
     PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
-    " AND dirty != 4 ORDER BY priority DESC LIMIT 1) WHERE file_id = new.file_id";
+    " AND dirty != 4 ORDER BY priority DESC LIMIT 1) WHERE file_id = new.file_id AND new.owner_album_id = 0";
 
 const std::string PHOTO_ALBUM_NOTIFY_FUNC =
     "SELECT photo_album_notify_func((SELECT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
     " FROM " + PhotoColumn::PHOTOS_TABLE +
     " WHERE " + MediaColumn::MEDIA_ID + " = NEW." + MediaColumn::MEDIA_ID + "));";
 
-const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
-    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_create_source_album_trigger AFTER INSERT ON " +
-    PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
-    " BEGIN INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
-    PhotoAlbumColumns::ALBUM_TYPE + " , " +
-    PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
-    PhotoAlbumColumns::ALBUM_NAME + " , " +
-    PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " , " +
-    PhotoAlbumColumns::ALBUM_LPATH + " , " +
-    PhotoAlbumColumns::ALBUM_PRIORITY + " , " +
-    PhotoAlbumColumns::ALBUM_DATE_ADDED +
-    " ) VALUES ( " +
-    std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " , " +
-    std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + " , " +
-    "NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
-    "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE + " , " +
-    "COALESCE((SELECT lpath from album_plugin WHERE ((bundle_name = "
-    "NEW.owner_package AND COALESCE(NEW.owner_package,'')!= '') OR album_name = NEW.package_name) "
-    "and priority ='1'), '/Pictures/'||NEW.package_name), 1, "
-    "strftime('%s000', 'now')" +
-    ");" + FILL_ALBUM_ID_FOR_PHOTOS + "; " + PHOTO_ALBUM_NOTIFY_FUNC + " END;";
-
-const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
-    "CREATE TRIGGER IF NOT EXISTS insert_source_photo_update_album_id_trigger AFTER INSERT ON " +
-    PhotoColumn::PHOTOS_TABLE + WHEN_SOURCE_PHOTO_COUNT + "> 0 AND NEW.owner_album_id = 0" +
-    " BEGIN " + FILL_ALBUM_ID_FOR_PHOTOS + "; END;";
+const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER = SOURCE_ALBUM_SQL;
 
 const std::string QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP_BY_PAGE =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +
@@ -124,8 +99,9 @@ const std::string QUERY_NEW_NOT_MATCHED_COUNT_IN_PHOTOMAP =
 
 const std::string CREATE_DEFALUT_ALBUM_FOR_NO_RELATIONSHIP_ASSET =
     "INSERT INTO " + PhotoAlbumColumns::TABLE +
-        "(album_type, album_subtype, album_name,bundle_name, dirty, is_local, date_added, lpath, priority)"
-        " Values ('2048', '2049', '其它', 'com.other.album', '1', '1', strftime('%s000', 'now'), '/Pictures/其它', '1')";
+        "(album_type, album_subtype, album_name,bundle_name, dirty, is_local, date_modified, " +
+        "date_added, lpath, priority) Values ('2048', '2049', '其它', 'com.other.album', '1', '1', " +
+        "strftime('%s000', 'now'), strftime('%s000', 'now'), '/Pictures/其它', '1')";
 
 const std::string CREATE_HIDDEN_ALBUM_FOR_DUAL_ASSET =
     "INSERT INTO " + PhotoAlbumColumns::TABLE +

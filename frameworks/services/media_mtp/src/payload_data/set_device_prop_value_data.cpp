@@ -15,7 +15,6 @@
 #define MLOG_TAG "MtpSetDevicePropValueData"
 #include "payload_data/set_device_prop_value_data.h"
 #include "media_log.h"
-#include "mtp_global.h"
 #include "media_mtp_utils.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_utils.h"
@@ -23,7 +22,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 static constexpr int32_t PARSER_PARAM_SUM = 1;
-const std::string WINDOWS = "Windows";
 
 SetDevicePropValueData::SetDevicePropValueData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context)
@@ -52,7 +50,6 @@ int SetDevicePropValueData::Parser(const std::vector<uint8_t> &buffer, int32_t r
         return MTP_ERROR_PACKET_INCORRECT;
     }
     size_t offset = MTP_CONTAINER_HEADER_SIZE;
-    MtpPacketTool::Dump(buffer, offset);
     if (!context_->indata) {
         context_->property = MtpPacketTool::GetUInt32(buffer, offset);
     } else {
@@ -91,10 +88,7 @@ void SetDevicePropValueData::PaserPropValue(const std::vector<uint8_t> &buffer, 
             // This function will be completed later
             break;
         case MTP_DEVICE_PROPERTY_SESSION_INITIATOR_VERSION_INFO_CODE:
-            if (WINDOWS.compare(value.substr(0, WINDOWS.size())) == 0) {
-                MtpGlobal::ReleaseBlock();
-                MEDIA_INFO_LOG("SetDevicePropValueData::Parser ReleaseBlock");
-            }
+            MtpOperationUtils::SetIsDevicePropSet();
             break;
         default:
             MEDIA_INFO_LOG("property do not find");

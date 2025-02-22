@@ -42,11 +42,28 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetGalleryMedia(
 }
 
 /**
+ * @brief Get the gallery_media for cloud to restore to Photos.
+ */
+std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetCloudGalleryMedia(
+    int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+{
+    return this->galleryMediaDao_.GetCloudGalleryMedia(offset, pageSize, shouldIncludeSd, hasLowQualityImage);
+}
+
+/**
  * @brief Get the row count of gallery_media.
  */
 int32_t PhotosRestore::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQualityImage)
 {
     return this->galleryMediaDao_.GetGalleryMediaCount(shouldIncludeSd, hasLowQualityImage);
+}
+
+/**
+ * @brief Get the row count of cloud_meta.
+ */
+int32_t PhotosRestore::GetCloudMetaCount(bool shouldIncludeSd, bool hasLowQualityImage)
+{
+    return this->galleryMediaDao_.GetCloudMetaCount(shouldIncludeSd, hasLowQualityImage);
 }
 
 /**
@@ -90,11 +107,8 @@ PhotoAlbumDao::PhotoAlbumRowData PhotosRestore::FindAlbumInfo(const FileInfo &fi
 int32_t PhotosRestore::FindAlbumId(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
-    if (albumInfo.lPath.empty()) {
-        MEDIA_ERR_LOG("Can not find PhotoAlbum. fileInfo.lPath= %{public}s, fileInfo.sourcePath= %{public}s",
-            fileInfo.lPath.c_str(),
-            fileInfo.sourcePath.c_str());
-    }
+    CHECK_AND_PRINT_LOG(!albumInfo.lPath.empty(), "Can not find PhotoAlbum. fileInfo.lPath= %{public}s,"
+        " fileInfo.sourcePath= %{public}s", fileInfo.lPath.c_str(), fileInfo.sourcePath.c_str());
     return albumInfo.albumId;
 }
 
@@ -104,11 +118,8 @@ int32_t PhotosRestore::FindAlbumId(const FileInfo &fileInfo)
 std::string PhotosRestore::FindlPath(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
-    if (albumInfo.lPath.empty()) {
-        MEDIA_ERR_LOG("Can not find PhotoAlbum. fileInfo.lPath= %{public}s, fileInfo.sourcePath= %{public}s",
-            fileInfo.lPath.c_str(),
-            fileInfo.sourcePath.c_str());
-    }
+    CHECK_AND_PRINT_LOG(!albumInfo.lPath.empty(), "Can not find PhotoAlbum. fileInfo.lPath= %{public}s,"
+        " fileInfo.sourcePath= %{public}s", fileInfo.lPath.c_str(), fileInfo.sourcePath.c_str());
     return albumInfo.lPath;
 }
 
@@ -118,11 +129,8 @@ std::string PhotosRestore::FindlPath(const FileInfo &fileInfo)
 std::string PhotosRestore::FindPackageName(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
-    if (albumInfo.lPath.empty()) {
-        MEDIA_ERR_LOG("Can not find PhotoAlbum. fileInfo.lPath= %{public}s, fileInfo.sourcePath= %{public}s",
-            fileInfo.lPath.c_str(),
-            fileInfo.sourcePath.c_str());
-    }
+    CHECK_AND_PRINT_LOG(!albumInfo.lPath.empty(), "Can not find PhotoAlbum. fileInfo.lPath= %{public}s,"
+        " fileInfo.sourcePath= %{public}s", fileInfo.lPath.c_str(), fileInfo.sourcePath.c_str());
     return albumInfo.albumName;
 }
 
@@ -132,11 +140,8 @@ std::string PhotosRestore::FindPackageName(const FileInfo &fileInfo)
 std::string PhotosRestore::FindBundleName(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
-    if (albumInfo.lPath.empty()) {
-        MEDIA_ERR_LOG("Can not find PhotoAlbum. fileInfo.lPath= %{public}s, fileInfo.sourcePath= %{public}s",
-            fileInfo.lPath.c_str(),
-            fileInfo.sourcePath.c_str());
-    }
+    CHECK_AND_PRINT_LOG(!albumInfo.lPath.empty(), "Can not find PhotoAlbum. fileInfo.lPath= %{public}s,"
+        "fileInfo.sourcePath= %{public}s", fileInfo.lPath.c_str(), fileInfo.sourcePath.c_str());
     return albumInfo.bundleName;
 }
 
@@ -145,9 +150,7 @@ std::string PhotosRestore::FindBundleName(const FileInfo &fileInfo)
  */
 std::string PhotosRestore::FindBurstKey(const FileInfo &fileInfo)
 {
-    if (fileInfo.burstKey.size() > 0) {
-        return fileInfo.burstKey;
-    }
+    CHECK_AND_RETURN_RET(fileInfo.burstKey.size() <= 0, fileInfo.burstKey);
     return "";
 }
 
@@ -165,10 +168,9 @@ int32_t PhotosRestore::FindDirty(const FileInfo &fileInfo)
 int32_t PhotosRestore::FindBurstCoverLevel(const FileInfo &fileInfo)
 {
     // identify burst photo
-    if (fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::COVER) ||
-        fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::MEMBER)) {
-        return fileInfo.isBurst;
-    }
+    bool cond = (fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::COVER) ||
+        fileInfo.isBurst == static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+    CHECK_AND_RETURN_RET(!cond, fileInfo.isBurst);
     return static_cast<int32_t>(BurstCoverLevelType::COVER);
 }
 
@@ -177,12 +179,8 @@ int32_t PhotosRestore::FindBurstCoverLevel(const FileInfo &fileInfo)
  */
 int32_t PhotosRestore::FindSubtype(const FileInfo &fileInfo)
 {
-    if (fileInfo.burstKey.size() > 0) {
-        return static_cast<int32_t>(PhotoSubType::BURST);
-    }
-    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
-        return static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
-    }
+    CHECK_AND_RETURN_RET(fileInfo.burstKey.size() <= 0, static_cast<int32_t>(PhotoSubType::BURST));
+    CHECK_AND_RETURN_RET(!BackupFileUtils::IsLivePhoto(fileInfo), static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     return static_cast<int32_t>(PhotoSubType::DEFAULT);
 }
 
@@ -192,9 +190,7 @@ int32_t PhotosRestore::FindSubtype(const FileInfo &fileInfo)
 int64_t PhotosRestore::FindDateTrashed(const FileInfo &fileInfo)
 {
     // prevent Photos marked as deleted when it's in use.
-    if (fileInfo.recycleFlag == 0) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(fileInfo.recycleFlag != 0, 0);
     // LOG INFO for analyser.
     if (fileInfo.recycledTime != 0) {
         string fileName = fileInfo.displayName;
@@ -258,9 +254,8 @@ bool PhotosRestore::IsDuplicateData(const std::string &data)
  */
 int32_t PhotosRestore::FindPhotoQuality(const FileInfo &fileInfo)
 {
-    if (fileInfo.photoQuality == 1 && fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
-        return 0;
-    }
+    bool cond = (fileInfo.photoQuality == 1);
+    CHECK_AND_RETURN_RET(!cond, 0);
     return fileInfo.photoQuality;
 }
 

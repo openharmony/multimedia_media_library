@@ -33,18 +33,15 @@ namespace OHOS::Media {
 std::unordered_map<std::string, std::string> TabOldPhotosClient::GetUrisByOldUris(std::vector<std::string>& uris)
 {
     std::unordered_map<std::string, std::string> resultMap;
-    if (uris.empty() || static_cast<std::int32_t>(uris.size()) > this->URI_MAX_SIZE) {
-        MEDIA_ERR_LOG("the size is invalid, size = %{public}d", static_cast<std::int32_t>(uris.size()));
-        return resultMap;
-    }
+    bool cond = (uris.empty() || static_cast<std::int32_t>(uris.size()) > this->URI_MAX_SIZE);
+    CHECK_AND_RETURN_RET_LOG(!cond, resultMap, "the size is invalid, size = %{public}d",
+        static_cast<std::int32_t>(uris.size()));
     std::string queryUri = QUERY_TAB_OLD_PHOTO;
     Uri uri(queryUri);
     DataShare::DataSharePredicates predicates;
     int ret = BuildPredicates(uris, predicates);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("build predicates failed");
-        return resultMap;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, resultMap, "build predicates failed");
+
     std::vector<std::string> column;
     column.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "file_id");
     column.push_back(TabOldPhotosColumn::OLD_PHOTOS_TABLE + "." + "data");
@@ -54,10 +51,7 @@ std::unordered_map<std::string, std::string> TabOldPhotosClient::GetUrisByOldUri
     int errCode = 0;
     std::shared_ptr<DataShare::DataShareResultSet> dataShareResultSet =
         this->GetResultSetFromTabOldPhotos(uri, predicates, column, errCode);
-    if (dataShareResultSet == nullptr) {
-        MEDIA_ERR_LOG("query failed");
-        return resultMap;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareResultSet != nullptr, resultMap, "query failed");
     return this->GetResultMap(dataShareResultSet, uris);
 }
 
@@ -69,21 +63,13 @@ std::shared_ptr<DataShare::DataShareResultSet> TabOldPhotosClient::GetResultSetF
     sptr<IRemoteObject> token = this->mediaLibraryManager_.InitToken();
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is nullptr");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is nullptr");
+
     resultSet = dataShareHelper->Query(uri, predicates, columns, &businessError);
     int count = 0;
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query failed, code: %{public}d", businessError.GetCode());
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Query failed, code: %{public}d", businessError.GetCode());
     auto ret = resultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Resultset check failed, ret: %{public}d", ret);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, nullptr, "Resultset check failed, ret: %{public}d", ret);
     return resultSet;
 }
 
@@ -115,11 +101,7 @@ int TabOldPhotosClient::BuildPredicates(const std::vector<std::string> &queryTab
             conditionCount += 1;
         }
     }
-    if (conditionCount == 0) {
-        MEDIA_ERR_LOG("Zero uri condition");
-        return E_FAIL;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(conditionCount != 0, E_FAIL, "Zero uri condition");
     return E_OK;
 }
 
@@ -127,10 +109,7 @@ std::vector<TabOldPhotosClient::TabOldPhotosClientObj> TabOldPhotosClient::Parse
     std::shared_ptr<DataShare::DataShareResultSet> &resultSet)
 {
     std::vector<TabOldPhotosClient::TabOldPhotosClientObj> result;
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is null");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "resultSet is null");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         TabOldPhotosClient::TabOldPhotosClientObj obj;
         obj.fileId = GetInt32Val(this->COLUMN_FILE_ID, resultSet);
@@ -214,18 +193,16 @@ std::pair<std::string, std::string> TabOldPhotosClient::Build(const TabOldPhotos
         auto it = std::find_if(dataMapping.begin(),
             dataMapping.end(),
             [oldFileId](const TabOldPhotosClient::TabOldPhotosClientObj &obj) {return obj.oldFileId == oldFileId;});
-        if (it != dataMapping.end()) {
-            return std::make_pair(requestUriObj.requestUri, this->BuildRequestUri(*it));
-        }
+        CHECK_AND_RETURN_RET(it == dataMapping.end(),
+            std::make_pair(requestUriObj.requestUri, this->BuildRequestUri(*it)));
     }
     if (requestUriObj.type == URI_TYPE_PATH) {
         std::string oldData = requestUriObj.oldData;
         auto it = std::find_if(dataMapping.begin(),
             dataMapping.end(),
             [oldData](const TabOldPhotosClient::TabOldPhotosClientObj &obj) {return obj.oldData == oldData;});
-        if (it != dataMapping.end()) {
-            return std::make_pair(requestUriObj.requestUri, this->BuildRequestUri(*it));
-        }
+        CHECK_AND_RETURN_RET(it == dataMapping.end(),
+            std::make_pair(requestUriObj.requestUri, this->BuildRequestUri(*it)));
     }
     return std::make_pair(requestUriObj.requestUri, "");
 }
@@ -245,10 +222,7 @@ std::unordered_map<std::string, std::string> TabOldPhotosClient::GetResultMap(
     std::shared_ptr<DataShareResultSet> &resultSet, std::vector<std::string> &queryTabOldPhotosUris)
 {
     std::unordered_map<std::string, std::string> resultMap;
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is null");
-        return resultMap;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, resultMap, "resultSet is null");
     std::vector<TabOldPhotosClient::TabOldPhotosClientObj> dataMapping = this->Parse(resultSet);
     std::vector<TabOldPhotosClient::RequestUriObj> uriList = this->Parse(queryTabOldPhotosUris);
     return this->Parse(dataMapping, uriList);

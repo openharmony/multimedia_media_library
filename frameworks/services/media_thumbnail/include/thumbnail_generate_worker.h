@@ -46,6 +46,7 @@ enum class ThumbnailTaskPriority {
 
 class ThumbnailTaskData {
 public:
+    ThumbnailTaskData() = default;
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data) : opts_(opts), thumbnailData_(data) {}
 
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data,
@@ -59,12 +60,37 @@ public:
 };
 
 using ThumbnailGenerateExecute = void (*)(std::shared_ptr<ThumbnailTaskData> &data);
+
+class ExecuteParamBuilder {
+public:
+    ExecuteParamBuilder() = default;
+    ~ExecuteParamBuilder() = default;
+    int32_t tempLimit_ { -1 };
+    int32_t batteryLimit_ { -1 };
+    CpuAffinityType affinity_ { CpuAffinityType::CPU_IDX_DEFAULT };
+};
+
+class ThumbnailGeneratorWrapper {
+public:
+    ThumbnailGeneratorWrapper() = default;
+    ~ThumbnailGeneratorWrapper() = default;
+    ThumbnailGeneratorWrapper(ThumbnailGenerateExecute execute,
+        std::shared_ptr<ExecuteParamBuilder> param) : executor_(execute), executeParam_(param) {};
+    void operator()(std::shared_ptr<ThumbnailTaskData> &data);
+private:
+    bool IsPreconditionFullfilled();
+    void BeforeExecute();
+    ThumbnailGenerateExecute executor_ { nullptr };
+    std::shared_ptr<ExecuteParamBuilder> executeParam_ { nullptr };
+};
+
 class ThumbnailGenerateTask {
 public:
     ThumbnailGenerateTask(ThumbnailGenerateExecute executor,
-        std::shared_ptr<ThumbnailTaskData> &data) : executor_(executor), data_(data) {}
+        std::shared_ptr<ThumbnailTaskData> &data,
+        std::shared_ptr<ExecuteParamBuilder> param = nullptr) : executor_(executor, param), data_(data) {}
     ~ThumbnailGenerateTask() = default;
-    ThumbnailGenerateExecute executor_;
+    ThumbnailGeneratorWrapper executor_;
     std::shared_ptr<ThumbnailTaskData> data_;
 };
 
@@ -76,6 +102,7 @@ public:
     bool isThreadWaiting_ = false;
     int32_t taskNum_ = 0;
     CpuAffinityType cpuAffinityType = CpuAffinityType::CPU_IDX_DEFAULT;
+    CpuAffinityType cpuAffinityTypeLowPriority = CpuAffinityType::CPU_IDX_DEFAULT;
 };
 
 class ThumbnailGenerateWorker {
@@ -88,6 +115,7 @@ public:
         const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority);
     EXPORT void IgnoreTaskByRequestId(int32_t requestId);
     EXPORT void TryCloseTimer();
+    EXPORT bool IsLowerQueueEmpty();
 
 private:
     void StartWorker(std::shared_ptr<ThumbnailGenerateThreadStatus> threadStatus);

@@ -29,6 +29,7 @@
 #include "accesstoken_kit.h"
 #include "delete_callback.h"
 #include "directory_ex.h"
+#include "delete_permanently_operations_uri.h"
 #include "file_uri.h"
 #include "image_packer.h"
 #include "ipc_skeleton.h"
@@ -60,6 +61,9 @@ namespace OHOS::Media {
 static const string MEDIA_ASSET_CHANGE_REQUEST_CLASS = "MediaAssetChangeRequest";
 thread_local napi_ref MediaAssetChangeRequestNapi::constructor_ = nullptr;
 std::atomic<uint32_t> MediaAssetChangeRequestNapi::cacheFileId_ = 0;
+const std::string SET_LOCATION_KEY = "set_location";
+const std::string SET_LOCATION_VALUE = "1";
+const std::string SET_USER_ID_VALUE = "1";
 
 static const std::array<int, 4> ORIENTATION_ARRAY = {0, 90, 180, 270};
 
@@ -74,21 +78,25 @@ constexpr int32_t MAX_PHOTO_ID_LEN = 32;
 
 const std::string PAH_SUBTYPE = "subtype";
 const std::string CAMERA_SHOT_KEY = "cameraShotKey";
+const std::string USER_ID = "userId";
 const std::map<std::string, std::string> PHOTO_CREATE_OPTIONS_PARAM = {
     { PAH_SUBTYPE, PhotoColumn::PHOTO_SUBTYPE },
     { CAMERA_SHOT_KEY, PhotoColumn::CAMERA_SHOT_KEY },
+    { USER_ID, SET_USER_ID_VALUE },
 };
 
 const std::string TITLE = "title";
 const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
     { TITLE, PhotoColumn::MEDIA_TITLE },
     { PAH_SUBTYPE, PhotoColumn::PHOTO_SUBTYPE },
+    { USER_ID, SET_USER_ID_VALUE },
 };
 
 const std::string DEFAULT_TITLE_TIME_FORMAT = "%Y%m%d_%H%M%S";
 const std::string DEFAULT_TITLE_IMG_PREFIX = "IMG_";
 const std::string DEFAULT_TITLE_VIDEO_PREFIX = "VID_";
 const std::string MOVING_PHOTO_VIDEO_EXTENSION = "mp4";
+static const size_t BATCH_DELETE_MAX_NUMBER = 500;
 
 int32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_t length)
 {
@@ -137,6 +145,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("createAssetRequest", JSCreateAssetRequest),
             DECLARE_NAPI_STATIC_FUNCTION("createImageAssetRequest", JSCreateImageAssetRequest),
             DECLARE_NAPI_STATIC_FUNCTION("createVideoAssetRequest", JSCreateVideoAssetRequest),
+            DECLARE_NAPI_STATIC_FUNCTION("deleteLocalAssetsPermanently", JSDeleteLocalAssetsPermanently),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAssets", JSDeleteAssets),
             DECLARE_NAPI_FUNCTION("getAsset", JSGetAsset),
             DECLARE_NAPI_FUNCTION("setEditData", JSSetEditData),
@@ -478,6 +487,16 @@ int32_t MediaAssetChangeRequestNapi::GetImageFileType()
     return imageFileType_;
 }
 
+void MediaAssetChangeRequestNapi::SetIsWriteGpsAdvanced(bool val)
+{
+    isWriteGpsAdvanced_ = val;
+}
+
+bool MediaAssetChangeRequestNapi::GetIsWriteGpsAdvanced()
+{
+    return isWriteGpsAdvanced_;
+}
+
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
@@ -586,6 +605,12 @@ static napi_status ParseAssetCreateOptions(napi_env env, napi_value arg, MediaAs
         napi_valuetype valueType = napi_undefined;
         result = napi_typeof(env, value, &valueType);
         CHECK_COND_RET(result == napi_ok, result, "Failed to get value type");
+        if (param == USER_ID && valueType == napi_number) {
+            int32_t number = -1;
+            result = napi_get_value_int32(env, value, &number);
+            CHECK_COND_RET(result == napi_ok, result, "Failed to get int32_t");
+            context.userId_ = number;
+        }
         if (valueType == napi_number) {
             int32_t number = 0;
             result = napi_get_value_int32(env, value, &number);
@@ -701,10 +726,10 @@ static napi_value ParseArgsCreateAsset(
 {
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_FOUR;
+    napi_value result = nullptr;
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
-    CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
 
     napi_valuetype valueType;
     CHECK_COND_WITH_MESSAGE(
@@ -715,13 +740,15 @@ static napi_value ParseArgsCreateAsset(
             return nullptr;
         }
         CHECK_COND_WITH_MESSAGE(env, context->argc <= ARGS_THREE, "Number of args is invalid");
-        return ParseArgsCreateAssetSystem(env, info, context);
+        result = ParseArgsCreateAssetSystem(env, info, context);
     } else if (valueType == napi_number) {
-        return ParseArgsCreateAssetCommon(env, info, context);
+        result = ParseArgsCreateAssetCommon(env, info, context);
     } else {
         NAPI_ERR_LOG("param type %{public}d is invalid", static_cast<int32_t>(valueType));
         return nullptr;
     }
+    CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info, context->userId_), JS_INNER_FAIL);
+    return result;
 }
 
 napi_value MediaAssetChangeRequestNapi::JSCreateAssetRequest(napi_env env, napi_callback_info info)
@@ -740,6 +767,7 @@ napi_value MediaAssetChangeRequestNapi::JSCreateAssetRequest(napi_env env, napi_
     emptyFileAsset->SetPhotoSubType(subtype);
     emptyFileAsset->SetTimePending(CREATE_ASSET_REQUEST_PENDING);
     emptyFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    emptyFileAsset->SetUserId(asyncContext->userId_);
     napi_value fileAssetNapi = FileAssetNapi::CreateFileAsset(env, emptyFileAsset);
     CHECK_COND(env, fileAssetNapi != nullptr, JS_INNER_FAIL);
 
@@ -1142,6 +1170,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetLocation(napi_env env, napi_callbac
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
+    NAPI_INFO_LOG("JSSetLocation begin.");
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     double latitude;
     double longitude;
@@ -1198,6 +1227,7 @@ static int SavePhotoProxyImage(const UniqueFd& destFd, sptr<PhotoProxy> photoPro
     int ret = write(destFd, buffer, packedSize);
     if (ret < 0) {
         NAPI_ERR_LOG("Failed to write photo proxy to cache file, return %{public}d", ret);
+        delete[] buffer;
         return ret;
     }
     delete[] buffer;
@@ -1363,7 +1393,7 @@ static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& contex
     string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + cacheFileName;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri openCacheUri(uri);
-    int32_t ret = UserFileClient::OpenFile(openCacheUri, MEDIA_FILEMODE_WRITEONLY);
+    int32_t ret = UserFileClient::OpenFile(openCacheUri, MEDIA_FILEMODE_WRITEONLY, fileAsset->GetUserId());
     if (ret == E_PERMISSION_DENIED) {
         context.error = OHOS_PERMISSION_DENIED_CODE;
         NAPI_ERR_LOG("Open cache file failed, permission denied");
@@ -1838,7 +1868,22 @@ int32_t MediaAssetChangeRequestNapi::PutMediaAssetEditData(DataShare::DataShareV
     return E_OK;
 }
 
-int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffectMode)
+void HandleValueBucketForSetLocation(std::shared_ptr<FileAsset> fileAsset, DataShare::DataShareValuesBucket& values,
+    bool isWriteGpsAdvanced)
+{
+    if (fileAsset == nullptr) {
+        NAPI_ERR_LOG("fileAsset is nullptr.");
+        return;
+    }
+    if (isWriteGpsAdvanced) {
+        NAPI_INFO_LOG("Need to setLocationAdvanced, check uri is correct.");
+        values.Put(PhotoColumn::PHOTO_LATITUDE, fileAsset->GetLatitude());
+        values.Put(PhotoColumn::PHOTO_LONGITUDE, fileAsset->GetLongitude());
+    }
+}
+
+int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffectMode,
+    bool isWriteGpsAdvanced, const int32_t userId)
 {
     CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
     CHECK_COND_RET(!cacheFileName_.empty() || !cacheMovingPhotoVideoName_.empty(), E_FAIL,
@@ -1846,6 +1891,10 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
 
     string uri = PAH_SUBMIT_CACHE;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    if (isWriteGpsAdvanced) {
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_LOCATION_KEY, SET_LOCATION_VALUE);
+    }
+    NAPI_INFO_LOG("Check SubmitCache isWriteGpsAdvanced: %{public}d", isWriteGpsAdvanced);
     Uri submitCacheUri(uri);
 
     string assetUri;
@@ -1859,7 +1908,8 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
         if (IsMovingPhoto()) {
             creationValuesBucket_.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
         }
-        ret = UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri);
+        HandleValueBucketForSetLocation(fileAsset_, creationValuesBucket_, isWriteGpsAdvanced);
+        ret = UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri, userId);
     } else {
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset_->GetId());
@@ -1873,9 +1923,9 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
             valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset_->GetMovingPhotoEffectMode());
             valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
         }
-        ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
+        HandleValueBucketForSetLocation(fileAsset_, valuesBucket, isWriteGpsAdvanced);
+        ret = UserFileClient::Insert(submitCacheUri, valuesBucket, userId);
     }
-
     if (ret > 0 && isCreation) {
         SetNewFileAsset(ret, assetUri);
     }
@@ -1892,7 +1942,9 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
     bool isCreation = IsCreation(context);
     bool isSetEffectMode = IsSetEffectMode(context);
     auto changeRequest = context.objectInfo;
-    int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode);
+    bool isWriteGpsAdvanced = changeRequest->GetIsWriteGpsAdvanced();
+    int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode, isWriteGpsAdvanced,
+        changeRequest->GetFileAssetInstance()->GetUserId());
     if (ret < 0) {
         context.SaveError(ret);
         NAPI_ERR_LOG("Failed to write cache, ret: %{public}d", ret);
@@ -2052,7 +2104,7 @@ static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("AddResourceExecute");
-
+    NAPI_INFO_LOG("JSSetLocation begin.");
     if (!HasWritePermission()) {
         return WriteBySecurityComponent(context);
     }
@@ -2216,7 +2268,12 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("SetLocationExecute");
+    if (context.objectInfo->GetIsWriteGpsAdvanced()) {
+        NAPI_INFO_LOG("SetLocation will execute by addResource.");
+        return true;
+    }
 
+    NAPI_INFO_LOG("SetLocation begin.");
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
@@ -2241,14 +2298,14 @@ static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
-static void DiscardHighQualityPhoto(MediaAssetChangeRequestAsyncContext& context)
+static void DiscardHighQualityPhoto(const shared_ptr<FileAsset> fileAsset)
 {
+    CHECK_NULL_PTR_RETURN_VOID(fileAsset, "fileAsset is nullptr");
     std::string uriStr = PAH_REMOVE_MSC_TASK;
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(uriStr);
     DataShare::DataSharePredicates predicates;
     int errCode = 0;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
     std::vector<std::string> columns { to_string(fileAsset->GetId()) };
     UserFileClient::Query(uri, predicates, columns, errCode);
 }
@@ -2259,6 +2316,12 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     tracer.Start("SaveCameraPhotoExecute");
     NAPI_INFO_LOG("Begin SaveCameraPhotoExecute");
 
+    auto objInfo = context.objectInfo;
+    CHECK_COND_RET(objInfo != nullptr, false, "Failed to check objInfo");
+
+    auto fileAsset = objInfo->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, false, "Failed to check fileAsset");
+
     auto changeOpreations = context.assetChangeOperations;
     bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_RESOURCE) != changeOpreations.end();
@@ -2266,7 +2329,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     if (containsAddResource && !MediaLibraryNapiUtils::IsSystemApp()) {
         // remove high quality photo
         NAPI_INFO_LOG("discard high quality photo because add resource by third app");
-        DiscardHighQualityPhoto(context);
+        DiscardHighQualityPhoto(fileAsset);
 
         // set dirty flag when third-party hap calling addResource to save camera photo
         MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_DIRTY,
@@ -2277,16 +2340,6 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     bool needScan = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_FILTERS) == changeOpreations.end();
 
-    if (context.objectInfo == nullptr) {
-        NAPI_ERR_LOG("objectInfo is nullptr");
-        return false;
-    }
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    if (fileAsset == nullptr) {
-        NAPI_ERR_LOG("fileAsset is nullptr");
-        return false;
-    }
-    
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(needScan));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetUri());
@@ -2294,7 +2347,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
         to_string(fileAsset->GetPhotoSubType()));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE,
-        to_string(context.objectInfo->GetImageFileType()));
+        to_string(objInfo->GetImageFileType()));
     Uri uri(uriStr);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
@@ -2386,9 +2439,24 @@ static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    if (fileAsset == nullptr) {
+        NAPI_ERR_LOG("Fail to get fileAsset");
+        return false;
+    }
+    NAPI_INFO_LOG("enter SetSupportedWatermarkTypeExecute: %{public}d", fileAsset->GetSupportedWatermarkType());
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+    
+    string uri = PAH_UPDATE_PHOTO_SUPPORTED_WATERMARK_TYPE;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(uri);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update supported_watermark_type of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
@@ -2411,6 +2479,20 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_VIDEO_ENHANCEMENT_ATTR, SetVideoEnhancementAttr },
 };
 
+static void RecordAddResourceAndSetLocation(MediaAssetChangeRequestAsyncContext& context)
+{
+    std::vector<AssetChangeOperation> operations = context.assetChangeOperations;
+    bool isAddResource =
+        std::find(operations.begin(), operations.end(), AssetChangeOperation::ADD_RESOURCE) != operations.end();
+    bool isSetLocation =
+        std::find(operations.begin(), operations.end(), AssetChangeOperation::SET_LOCATION) != operations.end();
+    if (isAddResource && isSetLocation) {
+        context.objectInfo->SetIsWriteGpsAdvanced(true);
+    }
+    NAPI_INFO_LOG("Check addResource and setLocation, isAddResource: %{public}d, isSetLocation: %{public}d",
+        isAddResource, isSetLocation);
+}
+
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
 {
     MediaLibraryTracer tracer;
@@ -2418,7 +2500,7 @@ static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
 
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     if (context == nullptr) {
-        NAPI_ERR_LOG("Failed to check becuase context is nullptr");
+        NAPI_ERR_LOG("Failed to check because context is nullptr");
         return;
     }
     if (context->objectInfo == nullptr || context->objectInfo->GetFileAssetInstance() == nullptr) {
@@ -2426,7 +2508,7 @@ static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
         NAPI_ERR_LOG("Failed to check async context of MediaAssetChangeRequest object");
         return;
     }
-
+    RecordAddResourceAndSetLocation(*context);
     unordered_set<AssetChangeOperation> appliedOperations;
     for (const auto& changeOperation : context->assetChangeOperations) {
         // Keep the final result of each operation, and commit it only once.
@@ -2500,5 +2582,94 @@ napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
     addResourceTypes_.clear();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ApplyMediaAssetChangeRequest",
         ApplyAssetChangeRequestExecute, ApplyAssetChangeRequestCompleteCallback);
+}
+
+static napi_value ParseArgsDeleteLocalAssetsPermanently(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& context)
+{
+    NAPI_DEBUG_LOG("enter ParseArgsDeleteLocalAssetsPermanently.");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
+        "Failed to get args");
+    CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
+
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+
+    if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
+            "Exceeded the maximum batch output quantity, cannot be deleted.");
+        return nullptr;
+    }
+    vector<string> deleteIds;
+    for (const auto& napiValue : napiValues) {
+        FileAssetNapi* obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
+        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get photo napi object");
+        deleteIds.push_back(to_string(obj->GetFileId()));
+    }
+    context->predicates.In(PhotoColumn::MEDIA_ID, deleteIds);
+    RETURN_NAPI_TRUE(env);
+}
+
+static void DeleteLocalAssetsPermanentlydExecute(napi_env env, void* data)
+{
+    NAPI_DEBUG_LOG("enter DeleteLocalAssetsPermanentlydExecute.");
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteLocalAssetsPermanentlydExecute");
+
+    auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    Uri deleteLocalAssetsCompletedUri(URI_DELETE_PHOTOS_COMPLETED);
+    int ret = UserFileClient::Update(deleteLocalAssetsCompletedUri, context->predicates, valuesBucket);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Failed to delete assets from local album permanently, err: %{public}d", ret);
+        return;
+    }
+}
+
+static void DeleteLocalAssetsPermanentlyCallback(napi_env env, napi_status status, void* data)
+{
+    NAPI_DEBUG_LOG("enter DeleteLocalAssetsPermanentlyCallback.");
+    auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value MediaAssetChangeRequestNapi::JSDeleteLocalAssetsPermanently(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("enter JSDeleteLocalAssetsPermanently.");
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteLocalAssetsPermanently(env, info, asyncContext),
+        "Failed to parse args");
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "ChangeRequestDeleteLocalAssetsPermanently",
+        DeleteLocalAssetsPermanentlydExecute, DeleteLocalAssetsPermanentlyCallback);
 }
 } // namespace OHOS::Media

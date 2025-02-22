@@ -38,6 +38,9 @@ unordered_map<ChainType, list<shared_ptr<BaseHandler>>> NotifyResponsibilityChai
     {ALBUM_DELETE, {
         make_shared<CloudAlbumHandler>()
     }},
+    {GALLERY_PHOTO_DELETE, {
+        make_shared<AnalysisHandler>(),
+    }},
 };
 
 shared_ptr<BaseHandler> NotifyResponsibilityChainFactory::CreateChain(const ChainType &type)

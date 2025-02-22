@@ -21,6 +21,7 @@ import { bundleManager } from '@kit.AbilityKit';
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
+const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
 
 @Component
 export struct PhotoPickerComponent {
@@ -38,6 +39,7 @@ export struct PhotoPickerComponent {
   onVideoPlayStateChanged?: VideoPlayStateChangedCallback;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
+  @State revokeIndex = 0;
 
   private onChanged(): void {
     if (!this.proxy) {
@@ -150,6 +152,7 @@ export struct PhotoPickerComponent {
       Column() {
         SecurityUIExtensionComponent({
           parameters: {
+            errorRevokeIndex: this.revokeIndex,
             "ability.want.params.uiExtensionTargetType": "photoPicker",
             uri: "multipleselect",
             targetPage: "photoPage",
@@ -175,6 +178,7 @@ export struct PhotoPickerComponent {
             maxVideoSelectNumber: this.pickerOptions?.maxVideoSelectNumber as number,
             isOnItemClickedSet: this.onItemClicked ? true : false,
             isPreviewForSingleSelectionSupported: this.pickerOptions?.isPreviewForSingleSelectionSupported as boolean,
+            singleSelectionMode: this.pickerOptions?.singleSelectionMode as number,
             isSlidingSelectionSupported: this.pickerOptions?.isSlidingSelectionSupported as boolean,
             photoBrowserCheckboxPosition: this.pickerOptions?.photoBrowserCheckboxPosition as [number, number],
             gridMargin: this.pickerOptions?.gridMargin as Margin,
@@ -191,8 +195,12 @@ export struct PhotoPickerComponent {
             let wantParam: Record<string, Object> = data as Record<string, Object>;
             this.handleOnReceive(wantParam);
           })
-          .onError(() => {
-            console.info('PhotoPickerComponent onError');
+          .onError((error) => {
+            console.info('PhotoPickerComponent onError: ' + JSON.stringify(error));
+            console.info('PhotoPickerComponent revokeIndex: ' + this.revokeIndex);
+            if (error.code === 100014 && this.revokeIndex < 3) {
+              this.revokeIndex++;
+            }
           });
       }
       .width('100%')
@@ -224,6 +232,9 @@ export struct PhotoPickerComponent {
       this.handleCreateCallback(wantParam);
     } else if (dataType === 'saveCallback') {
       this.handleSaveCallback(wantParam);
+    } else if (dataType === 'onBackground') {
+      console.info('PhotoPickerComponent onReceive: onBackground');
+      this.revokeIndex = 0;
     } else {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
@@ -366,10 +377,12 @@ export struct PhotoPickerComponent {
       filterType = FILTER_MEDIA_TYPE_IMAGE;
     } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
       filterType = FILTER_MEDIA_TYPE_VIDEO;
+    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
+      filterType = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
     } else {
       filterType = FILTER_MEDIA_TYPE_ALL;
     }
-    console.info('PhotoPickerComponent convertMIMETypeToFilterType' + JSON.stringify(filterType));
+    console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
   }
 }
@@ -461,11 +474,13 @@ export class PickerController {
   }
 
   replacePhotoPickerPreview(selectedMediaUri: string, replaceUri: string, callback: AsyncCallback<void>) {
-    if (!fs.accessSync(replaceUri)) {
-      callback({ 'code': 13900002, 'message': 'No such file', name: '' });
+    try {
+      let fd = fs.openSync(replaceUri).fd;
+      fs.close(fd);
+    } catch (err) {
+      callback({'code': 13900002, 'message': 'No such file', name: ''});
       return;
     }
-    replaceUri = fileUri.getUriFromPath(replaceUri);
     let date = Math.random();
     this.data = new Map([['CREATE_URI', [selectedMediaUri, replaceUri, date]]]);
     this.createCallbackMap.set(date, (grantUri: string, code: number, message: string) => {
@@ -491,7 +506,11 @@ export class PickerController {
   }
 
   saveTrustedPhotoAssets(selectedMediaUris: Array<string>, callback: AsyncCallback<Array<string>>,
-    config?: photoAccessHelper.PhotoCreationConfig, saveMode?: SaveMode) {
+    config?: Array<photoAccessHelper.PhotoCreationConfig>, saveMode?: SaveMode) {
+    if (!selectedMediaUris || selectedMediaUris.length === 0) {
+      callback({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
+      return;
+    }
     this.getAppName().then((appName: string)=>{
       let date = Math.random();
       this.data = new Map([['SAVE_TRUSTED_PHOTO_ASSETS', [selectedMediaUris, config, saveMode, appName, date]]]);
@@ -646,6 +665,6 @@ export enum VideoPlayerState {
 }
 
 export enum SaveMode {
-  SAVE_AS_NEW = 0,
-  SAVE_AS_REPLACE = 1
+  SAVE_AS = 0,
+  OVERWRITE = 1
 }

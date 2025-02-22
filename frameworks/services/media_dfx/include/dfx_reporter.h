@@ -37,6 +37,18 @@ struct AlbumFusionDfxDataPoint {
     std::string hiddenAssetInfo;
 };
 
+struct CustomRestoreDfxDataPoint {
+    std::string customRestorePackageName = "";
+    std::string albumLPath = "";
+    std::string keyPath = "";
+    int32_t totalNum = -1;
+    int32_t successNum = -1;
+    int32_t failedNum = -1;
+    int32_t sameNum = -1;
+    int32_t cancelNum = -1;
+    uint64_t totalTime = 0;
+};
+
 struct PhotoStatistics {
     int32_t localImageCount;   // 纯本地照片数量
     int32_t localVideoCount;   // 纯本地视频数量
@@ -44,6 +56,13 @@ struct PhotoStatistics {
     int32_t cloudVideoCount;   // 纯云端视频数量
     int32_t sharedImageCount;  // 端云共存照片数量
     int32_t sharedVideoCount;  // 端云共存视频数量
+};
+
+struct LcdAndAstcCount {
+    int32_t localLcdCount;
+    int32_t localAstcCount;
+    int32_t cloudLcdCount;
+    int32_t cloudAstcCount;
 };
 
 class DfxReporter {
@@ -72,6 +91,8 @@ public:
     void ReportPhotoRecordInfo();
     static int32_t ReportMedialibraryAPI(const std::string& callerPackage, const std::string& saveUri);
     static int32_t ReportAlbumFusion(const AlbumFusionDfxDataPoint& reportData);
+    void ReportAstcInfo(const LcdAndAstcCount& count);
+    static int32_t ReportCustomRestoreFusion(const CustomRestoreDfxDataPoint& reportData);
 };
 } // namespace Media
 } // namespace OHOS

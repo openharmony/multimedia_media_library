@@ -46,6 +46,7 @@ PictureManagerThread::PictureManagerThread()
 
 PictureManagerThread::~PictureManagerThread()
 {
+    MEDIA_INFO_LOG("~PictureManagerThread end");
     pictureDataOperations_ = nullptr;
     Stop();
 }
@@ -121,6 +122,7 @@ void PictureManagerThread::Run()
         int32_t taskSize = pictureDataOperations_->GetPendingTaskSize();
         if (lastPendingTaskSize_ != 0 && taskSize == 0) {
             pauseFlag_ = true;
+            MEDIA_INFO_LOG("PictureManagerThread end.");
             return;
         }
         lastPendingTaskSize_ = taskSize;
@@ -131,19 +133,15 @@ void PictureManagerThread::InsertPictureData(const std::string& imageId, sptr<Pi
     PictureType pictureType)
 {
     Start();
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("InsertPictureData failed, pictureDataOperations_ is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pictureDataOperations_ != nullptr,
+        "InsertPictureData failed, pictureDataOperations_ is null");
     pictureDataOperations_->InsertPictureData(imageId, PicturePair, pictureType);
 }
 
 void PictureManagerThread::DeleteDataWithImageId(const std::string& imageId, PictureType pictureType)
 {
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("InsertPictureData failed, pictureDataOperations_ is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pictureDataOperations_ != nullptr,
+        "InsertPictureData failed, pictureDataOperations_ is null");
     pictureDataOperations_->DeleteDataWithImageId(imageId, pictureType);
 }
 
@@ -151,64 +149,51 @@ std::shared_ptr<Media::Picture> PictureManagerThread::GetDataWithImageId(const s
     bool &isHighQualityPicture, bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter ");
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("GetDataWithImageId failed, pictureDataOperations_ is null");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(pictureDataOperations_ != nullptr, nullptr,
+        "GetDataWithImageId failed, pictureDataOperations_ is null");
     return pictureDataOperations_->GetDataWithImageId(imageId, isHighQualityPicture, isCleanImmediately);
 }
 
 void PictureManagerThread::SavePictureWithImageId(const std::string& imageId)
 {
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("SavePictureWithImageId failed, pictureDataOperations_ is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pictureDataOperations_ != nullptr,
+        "SavePictureWithImageId failed, pictureDataOperations_ is null");
     return pictureDataOperations_->SavePictureWithImageId(imageId);
 }
 
 int32_t PictureManagerThread::AddSavePictureTask(sptr<PicturePair>& picturePair)
 {
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("AddSavePictureTask failed, pictureDataOperations_ is null");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(pictureDataOperations_ != nullptr, 0,
+        "AddSavePictureTask failed, pictureDataOperations_ is null");
     pictureDataOperations_->AddSavePictureTask(picturePair);
     return 0;
 }
 
 int32_t PictureManagerThread::GetPendingTaskSize()
 {
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("GetPendingTaskSize failed, pictureDataOperations_ is null");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(pictureDataOperations_ != nullptr, 0,
+        "GetPendingTaskSize failed, pictureDataOperations_ is null");
     return pictureDataOperations_->GetPendingTaskSize();
 }
 
 bool PictureManagerThread::IsExsitDataForPictureType(PictureType pictureType)
 {
     MEDIA_INFO_LOG("enter ");
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("IsExsitDataForPictureType failed, pictureDataOperations_ is null");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(pictureDataOperations_ != nullptr, false,
+        "IsExsitDataForPictureType failed, pictureDataOperations_ is null");
     return pictureDataOperations_->IsExsitDataForPictureType(pictureType);
 }
 
 bool PictureManagerThread::IsExsitPictureByImageId(const std::string& imageId)
 {
     MEDIA_INFO_LOG("enter ");
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("IsExsitDataForPictureType failed, pictureDataOperations_ is null");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(pictureDataOperations_ != nullptr, false,
+        "IsExsitDataForPictureType failed, pictureDataOperations_ is null");
+
     enum PictureType pictureType;
     for (pictureType = HIGH_QUALITY_PICTURE; pictureType >= LOW_QUALITY_PICTURE;
         pictureType = (PictureType)(pictureType - 1)) {
-        if (pictureDataOperations_->IsExsitDataForPictureType(imageId, pictureType)) {
-            return true;
-        }
+        CHECK_AND_RETURN_RET(!pictureDataOperations_->IsExsitDataForPictureType(imageId, pictureType), true);
     }
     return false;
 }
@@ -217,20 +202,17 @@ bool PictureManagerThread::IsExsitPictureByImageId(const std::string& imageId)
 void PictureManagerThread::SaveLowQualityPicture(const std::string& imageId)
 {
     MEDIA_INFO_LOG("enter ");
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("SaveLowQualityPicture failed, pictureDataOperations_ is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pictureDataOperations_ != nullptr,
+        "SaveLowQualityPicture failed, pictureDataOperations_ is null");
     pictureDataOperations_->SaveLowQualityPicture(imageId);
 }
 
 void PictureManagerThread::FinishAccessingPicture(const std::string& imageId)
 {
     MEDIA_INFO_LOG("enter ");
-    if (pictureDataOperations_ == nullptr) {
-        MEDIA_ERR_LOG("FinishAccessingPicture failed, pictureDataOperations_ is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pictureDataOperations_ != nullptr,
+        "FinishAccessingPicture failed, pictureDataOperations_ is null");
+
     enum PictureType pictureType;
     for (pictureType = HIGH_QUALITY_PICTURE; pictureType >= LOW_QUALITY_PICTURE;
         pictureType = (PictureType)(pictureType - 1)) {

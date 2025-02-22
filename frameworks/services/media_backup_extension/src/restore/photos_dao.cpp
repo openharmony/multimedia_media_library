@@ -30,24 +30,22 @@ namespace OHOS::Media {
 PhotosDao::PhotosRowData PhotosDao::FindSameFileInAlbum(const FileInfo &fileInfo, int32_t maxFileId)
 {
     PhotosDao::PhotosRowData rowData;
-    if (maxFileId <= 0) {
-        return rowData;
-    }
+    CHECK_AND_RETURN_RET(maxFileId > 0, rowData);
     // pictureFlag: 0 for video, 1 for photo; Only search for photo in this case.
     int pictureFlag = fileInfo.fileType == MEDIA_TYPE_VIDEO ? 0 : 1;
     const std::vector<NativeRdb::ValueObject> params = {
         fileInfo.lPath, maxFileId, fileInfo.displayName, fileInfo.fileSize, pictureFlag, fileInfo.orientation};
     std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_IN_ALBUM;
-    if (this->mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return rowData;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
+
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return rowData;
     }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
+    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
+    rowData.position = GetInt32Val("position", resultSet);
     return rowData;
 }
 
@@ -57,24 +55,22 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileInAlbum(const FileInfo &fileInfo
 PhotosDao::PhotosRowData PhotosDao::FindSameFileWithoutAlbum(const FileInfo &fileInfo, int32_t maxFileId)
 {
     PhotosDao::PhotosRowData rowData;
-    if (maxFileId <= 0) {
-        return rowData;
-    }
+    CHECK_AND_RETURN_RET(maxFileId > 0, rowData);
     // pictureFlag: 0 for video, 1 for photo; Only search for photo in this case.
     int pictureFlag = fileInfo.fileType == MEDIA_TYPE_VIDEO ? 0 : 1;
     const std::vector<NativeRdb::ValueObject> params = {
         maxFileId, fileInfo.displayName, fileInfo.fileSize, pictureFlag, fileInfo.orientation};
     std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_WITHOUT_ALBUM;
-    if (this->mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return rowData;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
+
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return rowData;
     }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
+    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
+    rowData.position = GetInt32Val("position", resultSet);
     return rowData;
 }
 
@@ -108,9 +104,7 @@ PhotosDao::PhotosBasicInfo PhotosDao::GetBasicInfo()
 PhotosDao::PhotosRowData PhotosDao::FindSameFile(const FileInfo &fileInfo, const int32_t maxFileId)
 {
     PhotosDao::PhotosRowData rowData;
-    if (maxFileId <= 0) {
-        return rowData;
-    }
+    CHECK_AND_RETURN_RET(maxFileId > 0, rowData);
     if (fileInfo.lPath.empty()) {
         rowData = this->FindSameFileWithoutAlbum(fileInfo, maxFileId);
         MEDIA_ERR_LOG("Media_Restore: FindSameFile - lPath is empty, DB Info: %{public}s, Object: %{public}s",
@@ -139,25 +133,23 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFile(const FileInfo &fileInfo, const
 PhotosDao::PhotosRowData PhotosDao::FindSameFileBySourcePath(const FileInfo &fileInfo, const int32_t maxFileId)
 {
     PhotosDao::PhotosRowData rowData;
-    if (maxFileId <= 0) {
-        return rowData;
-    }
+    CHECK_AND_RETURN_RET(maxFileId > 0, rowData);
     // pictureFlag: 0 for video, 1 for photo; Only search for photo in this case.
     int pictureFlag = fileInfo.fileType == MEDIA_TYPE_VIDEO ? 0 : 1;
     std::string sourcePath = this->SOURCE_PATH_PREFIX + fileInfo.lPath + "/" + fileInfo.displayName;
     const std::vector<NativeRdb::ValueObject> params = {
         sourcePath, maxFileId, fileInfo.displayName, fileInfo.fileSize, pictureFlag, fileInfo.orientation};
     std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_BY_SOURCE_PATH;
-    if (this->mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return rowData;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
+
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return rowData;
     }
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
+    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
+    rowData.position = GetInt32Val("position", resultSet);
     return rowData;
 }
 

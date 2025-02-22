@@ -16,7 +16,9 @@
 
 #include "thumbnail_service.h"
 
+#include "cloud_sync_helper.h"
 #include "display_manager.h"
+#include "dfx_utils.h"
 #include "ipc_skeleton.h"
 #include "ithumbnail_helper.h"
 #include "media_column.h"
@@ -34,6 +36,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
 #ifdef HAS_THERMAL_MANAGER_PART
@@ -282,6 +285,49 @@ int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fi
     return E_OK;
 }
 
+int32_t ThumbnailService::CreateThumbnailPastDirtyDataFix(const std::string &fileId)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .row = fileId
+    };
+    int err = 0;
+    ThumbnailData data;
+
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, fileId, data, err);
+    CHECK_AND_RETURN_RET_LOG(
+        err == E_OK, err,
+        "QueryThumbnailDataFromFileId failed, path: %{public}s",
+        DfxUtils::GetSafePath(data.path).c_str());
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    IThumbnailHelper::AddThumbnailGenerateTask(
+        IThumbnailHelper::CreateThumbnail, opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::LOW);
+    return E_OK;
+}
+
+int32_t ThumbnailService::CreateLcdPastDirtyDataFix(const std::string &fileId, const uint8_t quality)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .row = fileId
+    };
+    int err = 0;
+    ThumbnailData data;
+    data.thumbnailQuality = quality;
+
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, fileId, data, err);
+    CHECK_AND_RETURN_RET_LOG(
+        err == E_OK, err,
+        "QueryThumbnailDataFromFileId failed, path: %{public}s",
+        DfxUtils::GetSafePath(data.path).c_str());
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    IThumbnailHelper::AddThumbnailGenerateTask(
+        IThumbnailHelper::CreateLcd, opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::LOW);
+    return E_OK;
+}
+
 int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, const string &path, bool isSync)
 {
     string fileId;
@@ -297,6 +343,7 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
     }
 
     std::string dateTaken = ThumbnailUriUtils::GetDateTakenFromUri(uri);
+    std::string dateModified = ThumbnailUriUtils::GetDateModifiedFromUri(uri);
     std::string fileUri = ThumbnailUriUtils::GetFileUriFromUri(uri);
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
@@ -304,6 +351,7 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
         .table = tableName,
         .row = fileId,
         .dateTaken = dateTaken,
+        .dateModified = dateModified,
         .fileUri = fileUri,
         .screenSize = screenSize_
     };
@@ -321,11 +369,6 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
 
 void ThumbnailService::InterruptBgworker()
 {
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker != nullptr) {
-        asyncWorker->Interrupt();
-    }
-
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
     if (thumbnailWorker == nullptr) {
@@ -429,13 +472,13 @@ int32_t ThumbnailService::TriggerHighlightThumbnail(std::string &id, std::string
     return err;
 }
 
-int32_t ThumbnailService::RestoreThumbnailDualFrame()
+int32_t ThumbnailService::RestoreThumbnailDualFrame(const int32_t &restoreAstcCount)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE
     };
-    return ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
+    return ThumbnailGenerateHelper::RestoreAstcDualFrame(opts, restoreAstcCount);
 }
 
 int32_t ThumbnailService::LcdAging()
@@ -570,6 +613,25 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     return E_OK;
 }
 
+int32_t ThumbnailService::LocalThumbnailGeneration()
+{
+    if (!CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_) {
+        MEDIA_INFO_LOG("active local thumb genetaion exists");
+        return E_OK;
+    }
+    CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = false;
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+    };
+    int err = ThumbnailGenerateHelper::CreateLocalThumbnail(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("LocalThumbnailGeneration failed : %{public}d", err);
+        return err;
+    }
+    return E_OK;
+}
+
 int32_t ThumbnailService::CreateAstcCloudDownload(const string &id, bool isCloudInsertTaskPriorityHigh)
 {
     if (!isCloudInsertTaskPriorityHigh && !currentStatusForTask_) {
@@ -587,6 +649,21 @@ int32_t ThumbnailService::CreateAstcCloudDownload(const string &id, bool isCloud
         return err;
     }
     return err;
+}
+
+bool ThumbnailService::CreateAstcMthAndYear(const std::string &id)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .fileId = id,
+    };
+    int err = ThumbnailGenerateHelper::CreateAstcMthAndYear(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CreateAstcMthAndYear failed, err: %{public}d", err);
+        return false;
+    }
+    return true;
 }
 
 void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken)
@@ -784,6 +861,18 @@ void ThumbnailService::NotifyTempStatusForReady(const int32_t &currentTemperatur
 int32_t ThumbnailService::GetCurrentTemperatureLevel()
 {
     return currentTemperatureLevel_;
+}
+
+void ThumbnailService::CheckLcdSizeAndUpdateStatus()
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE
+    };
+    int32_t err = ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CheckLcdSizeAndUpdateStatus failed: %{public}d", err);
+    }
 }
 
 } // namespace Media

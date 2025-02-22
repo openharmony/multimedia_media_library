@@ -58,6 +58,7 @@ void MtpSubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
         MtpManager::GetInstance().StopMtpService();
         return;
     }
+    MtpManager::GetInstance().StopMtpService();
     bool isMtp = want.GetBoolParam(std::string {USB::UsbSrvSupport::FUNCTION_NAME_MTP}, false);
     if (isMtp) {
         MEDIA_INFO_LOG("MtpSubscriber OnReceiveEvent USB MTP connected");
@@ -71,7 +72,6 @@ void MtpSubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
         return;
     }
     MEDIA_INFO_LOG("MtpSubscriber OnReceiveEvent USB NOT MTP/PTP, Only HDC");
-    MtpManager::GetInstance().StopMtpService();
     return;
 }
 } // namespace Media

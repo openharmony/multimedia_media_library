@@ -19,6 +19,7 @@
 #include "medialibrary_db_const.h"
 
 #include <unordered_map>
+#include <unordered_set>
 
 namespace OHOS {
 namespace Media {
@@ -37,6 +38,7 @@ constexpr int32_t STAMP_PARAM_ONE = 1;
 constexpr int32_t STAMP_PARAM_TWO = 2;
 constexpr int32_t STAMP_PARAM_THREE = 3;
 enum class ThumbnailType : int32_t {
+    NOT_DEFINED = -1,
     LCD,
     THUMB,
     MTH,
@@ -98,6 +100,7 @@ constexpr int32_t WAIT_FOR_MS = 1000;
 constexpr int32_t WAIT_FOR_SECOND = 3;
 
 constexpr float EPSILON = 1e-6;
+constexpr int32_t MONTH_SHORT_SIDE_THRESHOLD = 128;
 constexpr int32_t SHORT_SIDE_THRESHOLD = 350;
 constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 1050;
 constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;
@@ -108,9 +111,10 @@ constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8192;
 constexpr int32_t DECODE_SCALE_BASE = 2;
 constexpr int32_t FLAT_ANGLE = 180;
 constexpr int32_t THUMBNAIL_GENERATE_BATCH_COUNT = 200;
-constexpr int32_t ASTC_GENERATE_COUNT_AFTER_RESTORE = 500;
+constexpr int32_t ASTC_GENERATE_COUNT_AFTER_RESTORE = 2000;
 constexpr int32_t READY_TEMPERATURE_LEVEL = 4;
 constexpr int32_t EVEN_BASE_NUMBER = 2;
+constexpr int32_t LOCAL_GENERATION_BATTERY_CAPACITY = 10;
 const std::string DEFAULT_EXIF_ORIENTATION = "1";
 
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";     // The size fit to screen
@@ -127,11 +131,13 @@ const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
 
 const std::string THUMBNAIL_FORMAT = "image/jpeg";
 const std::string THUMBASTC_FORMAT = "image/astc/4*4";
+constexpr uint8_t THUMBNAIL_EIGHTY = 80;
 constexpr uint8_t THUMBNAIL_MID = 90;
 constexpr uint8_t THUMBNAIL_HIGH = 100;
 constexpr uint8_t ASTC_LOW_QUALITY = 20;
 
 constexpr uint32_t THUMBNAIL_QUERY_MAX = 2000;
+constexpr uint32_t THUMBNAIL_QUERY_MIN = 200;
 constexpr int64_t AV_FRAME_TIME = 0;
 constexpr int64_t MS_TRANSFER_US = 1000;
 
@@ -148,6 +154,7 @@ const std::string THUMBNAIL_WIDTH = "width";
 const std::string THUMBNAIL_PATH = "path";
 const std::string THUMBNAIL_BEGIN_STAMP = "begin_stamp";
 const std::string THUMBNAIL_TYPE = "type";
+const std::string THUMBNAIL_USER = "user";
 
 // create thumbnail in close operation
 const std::string CLOSE_CREATE_THUMB_STATUS = "create_thumbnail_sync_status";
@@ -166,8 +173,20 @@ const std::string RDB_QUERY_COUNT = "count";
 
 const int32_t THUMBNAIL_READY_FAILED = 2;
 
+const int32_t THUMBNAIL_FREE_SIZE_LIMIT_1 = 1;
+const int32_t THUMBNAIL_FREE_SIZE_LIMIT_10 = 10;
+
 // LCD that is over 2MB would not be uploaded
 const size_t LCD_UPLOAD_LIMIT_SIZE = 2048000;
+
+// Only check the latest 3000 data to avoid opreation taking too long time
+const uint32_t MAXIMUM_LCD_CHECK_NUM = 3000;
+
+const std::unordered_set<uint8_t> THUMBNAIL_QUALITY_SET = {
+    THUMBNAIL_EIGHTY,
+    THUMBNAIL_MID,
+    THUMBNAIL_HIGH,
+};
 
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
 {

@@ -73,7 +73,7 @@ std::vector<PhotoInfo> DfxDatabaseUtils::QueryDirtyCloudPhoto()
 {
     vector<PhotoInfo> photoInfoList;
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.IsNotNull(PhotoColumn::PHOTO_CLOUD_ID);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, 1);
     predicates.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t> (DirtyType::TYPE_SYNCED));
     predicates.Limit(DIRTY_PHOTO_COUNT);
     std::vector<std::string> columns = { MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_DIRTY,
@@ -274,6 +274,80 @@ int32_t DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(int32_t& downloadedTh
         return errCode;
     }
     return E_OK;
+}
+
+int32_t DfxDatabaseUtils::QueryASTCThumb(bool isLocal)
+{
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+
+    int32_t localImage = 1;
+    int32_t cloudImage = 2;
+    int32_t localAndCloudImage = 3;
+    int32_t thumbnail_ready = 3;
+    if (isLocal) {
+        predicates.BeginWrap();
+        predicates.EqualTo(PhotoColumn::PHOTO_POSITION, localImage);
+        predicates.Or()->EqualTo(PhotoColumn::PHOTO_POSITION, localAndCloudImage);
+        predicates.EndWrap();
+    } else {
+        predicates.EqualTo(PhotoColumn::PHOTO_POSITION, cloudImage);
+    }
+
+    predicates.And()
+        ->GreaterThanOrEqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, thumbnail_ready);
+
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+    int32_t count = 0;
+    int32_t errCode = QueryInt(predicates, columns, queryColumn, count);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("query astc thumb fail: %{public}d", errCode);
+    }
+
+    return count;
+}
+
+int32_t DfxDatabaseUtils::QueryLCDThumb(bool isLocal)
+{
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+
+    int32_t lcd_visit_time = 2;
+    int32_t localImage = 1;
+    int32_t cloudImage = 2;
+    int32_t localAndCloudImage = 3;
+    int32_t localThumb = 0;
+    int32_t cloudThumb = 2;
+    if (isLocal) {
+        predicates.BeginWrap();
+        predicates.EqualTo(PhotoColumn::PHOTO_POSITION, localImage);
+        predicates.And()->EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, lcd_visit_time);
+        predicates.EndWrap();
+        predicates.Or()->BeginWrap();
+        predicates.BeginWrap();
+        predicates.EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, lcd_visit_time);
+        predicates.Or()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, localThumb);
+        predicates.Or()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, cloudThumb);
+        predicates.EndWrap();
+        predicates.And()->EqualTo(PhotoColumn::PHOTO_POSITION, localAndCloudImage);
+        predicates.EndWrap();
+    } else {
+        predicates.BeginWrap();
+        predicates.EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, localThumb);
+        predicates.Or()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, cloudThumb);
+        predicates.EndWrap();
+        predicates.And()->EqualTo(PhotoColumn::PHOTO_POSITION, cloudImage);
+    }
+
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+
+    int32_t count = 0;
+    int32_t errCode = QueryInt(predicates, columns, queryColumn, count);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("query lcd thumb fail: %{public}d", errCode);
+    }
+
+    return count;
 }
 
 int32_t DfxDatabaseUtils::QueryTotalCloudThumb(int32_t& totalDownload)

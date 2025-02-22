@@ -48,6 +48,7 @@ ohos_shared_library("media_library") {
     "src/media_asset_rdbstore.cpp",
     "src/media_change_effect.cpp",
     "src/media_column.cpp",
+    "src/media_facard_photos_column.cpp",
     "src/media_file_uri.cpp",
     "src/media_file_utils.cpp",
     "src/media_old_photos_column.cpp",
@@ -66,6 +67,7 @@ ohos_shared_library("media_library") {
     "src/photo_album_column.cpp",
     "src/photo_file_utils.cpp",
     "src/photo_map_column.cpp",
+    "src/photo_query_filter.cpp",
     "src/smart_album_asset.cpp",
   ]
 
@@ -80,8 +82,6 @@ ohos_shared_library("media_library") {
   ]
 
   cflags_cc = [ "-Os" ]
-
-  deps = [ "${MEDIALIB_UTILS_PATH}:medialibrary_common_utils" ]
 
   external_deps = [
     "ability_base:zuri",

@@ -145,7 +145,42 @@ static const set<std::string> UndefinedImageFormatSet = {
     MTP_FORMAT_SRW,
     MTP_FORMAT_ARW,
     MTP_FORMAT_SVG,
-    MTP_FORMAT_RAW
+    MTP_FORMAT_RAW,
+    MTP_FORMAT_IEF,
+    MTP_FORMAT_JP2,
+    MTP_FORMAT_JPG2,
+    MTP_FORMAT_JPM,
+    MTP_FORMAT_JPX,
+    MTP_FORMAT_JPF,
+    MTP_FORMAT_PCX,
+    MTP_FORMAT_SVGZ,
+    MTP_FORMAT_TIFF_EP,
+    MTP_FORMAT_TIFF,
+    MTP_FORMAT_DJVU,
+    MTP_FORMAT_DJV,
+    MTP_FORMAT_ICO,
+    MTP_FORMAT_WBMP,
+    MTP_FORMAT_CR2,
+    MTP_FORMAT_CRW,
+    MTP_FORMAT_RAS,
+    MTP_FORMAT_CDR,
+    MTP_FORMAT_PAT,
+    MTP_FORMAT_CDT,
+    MTP_FORMAT_CPT,
+    MTP_FORMAT_ERF,
+    MTP_FORMAT_ART,
+    MTP_FORMAT_JNG,
+    MTP_FORMAT_NEF,
+    MTP_FORMAT_ORF,
+    MTP_FORMAT_PSD,
+    MTP_FORMAT_PNM,
+    MTP_FORMAT_PBM,
+    MTP_FORMAT_PGM,
+    MTP_FORMAT_PPM,
+    MTP_FORMAT_RGB,
+    MTP_FORMAT_XBM,
+    MTP_FORMAT_XPM,
+    MTP_FORMAT_XWD
 };
 
 static const set<std::string> UndefinedVideoFormatSet = {
@@ -175,7 +210,32 @@ static const set<std::string> UndefinedVideoFormatSet = {
     MTP_FORMAT_MOV,
     MTP_FORMAT_MKV,
     MTP_FORMAT_WEBM,
-    MTP_FORMAT_H264
+    MTP_FORMAT_MPEG,
+    MTP_FORMAT_MPE,
+    MTP_FORMAT_AVI,
+    MTP_FORMAT_H264,
+    MTP_FORMAT_RMVB,
+    MTP_FORMAT_AXV,
+    MTP_FORMAT_DL,
+    MTP_FORMAT_DIF,
+    MTP_FORMAT_DV,
+    MTP_FORMAT_DLI,
+    MTP_FORMAT_GL,
+    MTP_FORMAT_QT,
+    MTP_FORMAT_OGV,
+    MTP_FORMAT_MXU,
+    MTP_FORMAT_FLV,
+    MTP_FORMAT_LSF,
+    MTP_FORMAT_LSX,
+    MTP_FORMAT_MNG,
+    MTP_FORMAT_WM,
+    MTP_FORMAT_WMX,
+    MTP_FORMAT_MOVIE,
+    MTP_FORMAT_MPV,
+    MTP_FORMAT_ASF,
+    MTP_FORMAT_ASX_PLAYLIST,
+    MTP_FORMAT_WVX,
+    MTP_FORMAT_FMP4
 };
 
 static const map<std::string, MediaType> FormatAllMap = {
@@ -316,6 +376,8 @@ int32_t MtpDataUtils::SolveSendObjectFormatData(const uint16_t format, MediaType
 int32_t MtpDataUtils::SolveSetObjectPropValueData(const shared_ptr<MtpOperationContext> &context,
     std::string &outColName, variant<int64_t, std::string> &outColVal)
 {
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "context is nullptr");
+
     if (ObjMediaPropTypeMap.find(context->property) == ObjMediaPropTypeMap.end()) {
         MEDIA_ERR_LOG("Can not support propertyType");
         return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
@@ -349,11 +411,19 @@ void MtpDataUtils::GetMediaTypeByformat(const uint16_t format, MediaType &outMed
 int32_t MtpDataUtils::GetPropListBySet(const std::shared_ptr<MtpOperationContext> &context,
     const shared_ptr<DataShare::DataShareResultSet> &resultSet, shared_ptr<vector<Property>> &outProps)
 {
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "context is nullptr");
+
     shared_ptr<UInt16List> properties = make_shared<UInt16List>();
+    CHECK_AND_RETURN_RET_LOG(properties != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "properties is nullptr");
+
     if (context->property == MTP_PROPERTY_ALL_CODE) {
         shared_ptr<MtpOperationContext> ptpContext = make_shared<MtpOperationContext>();
+        CHECK_AND_RETURN_RET_LOG(ptpContext != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "ptpContext is nullptr");
+
         ptpContext->format = context->format;
         shared_ptr<GetObjectPropsSupportedData> payLoadData = make_shared<GetObjectPropsSupportedData>(ptpContext);
+        CHECK_AND_RETURN_RET_LOG(payLoadData != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "payLoadData is nullptr");
+
         payLoadData->GetObjectProps(*properties);
     } else {
         properties->push_back(context->property);
@@ -365,6 +435,10 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
     const shared_ptr<DataShare::DataShareResultSet> &resultSet,
     const shared_ptr<UInt16List> &properties, shared_ptr<vector<Property>> &outProps)
 {
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "context is nullptr");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "resultSet is nullptr");
+    CHECK_AND_RETURN_RET_LOG(properties != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "properties is nullptr");
+
     int count = 0;
     resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(count > 0, MTP_ERROR_INVALID_OBJECTHANDLE, "have no row");
@@ -404,6 +478,9 @@ void MtpDataUtils::GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &
     const MovingType &movingType)
 {
     CHECK_AND_RETURN_LOG(outProps != nullptr, "outProps is nullptr");
+    CHECK_AND_RETURN_LOG(context != nullptr, "context is nullptr");
+    CHECK_AND_RETURN_LOG(properties != nullptr, "properties is nullptr");
+
     std::string column;
     for (uint16_t property : *properties) {
         if (PropColumnMap.find(property) != PropColumnMap.end()) {
@@ -414,6 +491,8 @@ void MtpDataUtils::GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &
             if (column.compare(MEDIA_DATA_DB_FORMAT) == 0) {
                 uint16_t format = MTP_FORMAT_UNDEFINED_CODE;
                 GetMtpFormatByPath(path, format);
+                CHECK_AND_RETURN_LOG(prop.currentValue != nullptr, "prop.currentValue is nullptr");
+
                 prop.currentValue->bin_.ui16 = format;
             } else {
                 SetPtpProperty(column, path, movingType, prop);
@@ -472,6 +551,8 @@ void MtpDataUtils::GetFormatByPath(const std::string &path, uint16_t &outFormat)
 int32_t MtpDataUtils::GetFormat(const shared_ptr<DataShare::DataShareResultSet> &resultSet,
     uint16_t &outFormat)
 {
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "resultSet is nullptr");
+
     int index;
     int status;
     int mediaType;
@@ -531,6 +612,8 @@ std::string Strftime(const std::string &format, time_t curTime)
 void MtpDataUtils::SetProperty(const std::string &column, const shared_ptr<DataShare::DataShareResultSet> &resultSet,
     ResultSetDataType &type, Property &prop)
 {
+    CHECK_AND_RETURN_LOG(prop.currentValue != nullptr, "prop.currentValue is nullptr");
+
     variant<int32_t, std::string, int64_t, double> columnValue =
         ResultSetUtils::GetValFromColumn(column, resultSet, type);
     switch (type) {
@@ -556,6 +639,9 @@ void MtpDataUtils::SetProperty(const std::string &column, const shared_ptr<DataS
 void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare::DataShareResultSet> &resultSet,
     const shared_ptr<UInt16List> &properties, shared_ptr<vector<Property>> &outProps)
 {
+    CHECK_AND_RETURN_LOG(properties != nullptr, "properties is nullptr");
+    CHECK_AND_RETURN_LOG(outProps != nullptr, "outProps is nullptr");
+
     std::string column;
     ResultSetDataType type;
     for (uint16_t property : *properties) {
@@ -568,6 +654,8 @@ void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare
             if (column.compare(MEDIA_DATA_DB_FORMAT) == 0) {
                 uint16_t format = MTP_FORMAT_UNDEFINED_CODE;
                 GetFormat(resultSet, format);
+                CHECK_AND_RETURN_LOG(prop.currentValue != nullptr, "prop.currentValue is nullptr");
+
                 prop.currentValue->bin_.ui16 = format;
                 MEDIA_INFO_LOG("prop.currentValue->bin_.ui16 %{public}u", format);
             } else {
@@ -583,6 +671,8 @@ void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare
 int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
     const shared_ptr<DataShare::DataShareResultSet> &resultSet, PropertyValue &outPropValue)
 {
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "resultSet is nullptr");
+
     if (resultSet->GoToFirstRow() != 0) {
         return MTP_ERROR_INVALID_OBJECTHANDLE;
     }
@@ -618,6 +708,8 @@ void MtpDataUtils::SetOneDefaultlPropList(uint32_t handle, uint16_t property, sh
     auto propType = PropDefaultMap.at(property);
     auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
     Property prop(property, properType);
+    CHECK_AND_RETURN_LOG(prop.currentValue != nullptr, "prop.currentValue is nullptr");
+
     prop.handle_ = handle;
     switch (propType) {
         case INTTYPE16:
@@ -678,14 +770,20 @@ int32_t MtpDataUtils::GetMtpPropList(const std::shared_ptr<std::unordered_map<ui
     CHECK_AND_RETURN_RET_LOG(handles != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "handles is nullptr");
     for (auto it = handles->begin(); it != handles->end(); it++) {
         shared_ptr<UInt16List> properties = make_shared<UInt16List>();
+        CHECK_AND_RETURN_RET_LOG(properties != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "properties is nullptr");
+
         if (context->property == MTP_PROPERTY_ALL_CODE) {
             shared_ptr<MtpOperationContext> mtpContext = make_shared<MtpOperationContext>();
+            CHECK_AND_RETURN_RET_LOG(mtpContext != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "mtpContext is nullptr");
+
             if (context->format == 0) {
                 GetMtpFormatByPath(it->second, mtpContext->format);
             } else {
                 mtpContext->format = context->format;
             }
             shared_ptr<GetObjectPropsSupportedData> payLoadData = make_shared<GetObjectPropsSupportedData>(mtpContext);
+            CHECK_AND_RETURN_RET_LOG(payLoadData != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "payLoadData is nullptr");
+
             payLoadData->GetObjectProps(*properties);
         } else {
             properties->push_back(context->property);
@@ -711,12 +809,16 @@ void MtpDataUtils::GetMtpOneRowProp(const std::shared_ptr<UInt16List> &propertie
     std::unordered_map<uint32_t, std::string>::iterator it, shared_ptr<vector<Property>> &outProps, int32_t storageId)
 {
     CHECK_AND_RETURN_LOG(outProps != nullptr, "outProps is nullptr");
+    CHECK_AND_RETURN_LOG(properties != nullptr, "properties is nullptr");
+
     std::string column;
     ResultSetDataType type;
     for (uint16_t property : *properties) {
         if (PropColumnMap.find(property) != PropColumnMap.end()) {
             auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
             Property prop(property, properType);
+            CHECK_AND_RETURN_LOG(prop.currentValue != nullptr, "prop.currentValue is nullptr");
+
             prop.handle_ = it->first;
             column = PropColumnMap.at(property);
             type = ColumnTypeMap.at(column);
@@ -780,6 +882,8 @@ uint32_t MtpDataUtils::GetMtpFormatByPath(const std::string &path, uint16_t &out
 void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &path,
     ResultSetDataType &type, Property &prop)
 {
+    CHECK_AND_RETURN_LOG(prop.currentValue != nullptr, "prop.currentValue is nullptr");
+
     if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
         prop.currentValue->str_ = make_shared<std::string>(std::filesystem::path(path).filename().string());
         return;
@@ -826,6 +930,8 @@ void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &
 void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &path, const MovingType &movingType,
     Property &prop)
 {
+    CHECK_AND_RETURN_LOG(prop.currentValue != nullptr, "prop.currentValue is nullptr");
+
     std::string displayName = movingType.displayName;
     if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
         std::string filename = std::filesystem::path(path).filename();
@@ -871,6 +977,8 @@ string MtpDataUtils::GetMovingOrEnditSourcePath(const std::string &path, const i
     const shared_ptr<MtpOperationContext> &context)
 {
     string sourcePath;
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, sourcePath, "context is nullptr");
+
     MEDIA_INFO_LOG("mtp GetMovingOrEnditSourcePath path:%{public}s, subtype:%{public}d", path.c_str(), subtype);
     switch (static_cast<int32_t>(context->handle / COMMON_PHOTOS_OFFSET)) {
         case EDITED_PHOTO_TYPE:

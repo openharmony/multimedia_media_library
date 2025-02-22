@@ -248,14 +248,21 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("OWNER_ALBUM_ID",            PhotoColumn::PHOTO_OWNER_ALBUM_ID),
     std::make_pair("THUMBNAIL_VISIBLE",         PhotoColumn::PHOTO_THUMBNAIL_VISIBLE),
     std::make_pair("SUPPORTED_WATERMARK_TYPE",  PhotoColumn::SUPPORTED_WATERMARK_TYPE),
+    std::make_pair("LATITUDE",                  PhotoColumn::PHOTO_LATITUDE),
+    std::make_pair("LONGITUDE",                 PhotoColumn::PHOTO_LONGITUDE),
+    std::make_pair("IS_AUTO",                   PhotoColumn::PHOTO_IS_AUTO),
+    std::make_pair("MEDIA_SUFFIX",              PhotoColumn::PHOTO_MEDIA_SUFFIX),
+    std::make_pair("IS_RECENT_SHOW",            PhotoColumn::PHOTO_IS_RECENT_SHOW),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
     std::make_pair("URI",                       MEDIA_DATA_DB_URI),
     std::make_pair("ALBUM_NAME",                PhotoAlbumColumns::ALBUM_NAME),
+    std::make_pair("ALBUM_LPATH",               PhotoAlbumColumns::ALBUM_LPATH),
     std::make_pair("FILE_TYPE",                 MEDIA_DATA_DB_MEDIA_TYPE),
     std::make_pair("DATE_ADDED",                MEDIA_DATA_DB_DATE_ADDED),
-    std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED)
+    std::make_pair("DATE_MODIFIED",             MEDIA_DATA_DB_DATE_MODIFIED),
+    std::make_pair("BUNDLE_NAME",               PhotoAlbumColumns::ALBUM_BUNDLE_NAME),
 };
 
 const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTIES = {

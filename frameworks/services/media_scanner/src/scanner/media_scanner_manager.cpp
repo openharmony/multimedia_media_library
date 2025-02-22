@@ -44,7 +44,7 @@ std::shared_ptr<MediaScannerManager> MediaScannerManager::GetInstance()
 }
 
 int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
-    MediaLibraryApi api)
+    MediaLibraryApi api, bool isCameraShotMovingPhoto)
 {
     MEDIA_DEBUG_LOG("scan file %{private}s, api%{public}d", path.c_str(), static_cast<int>(api));
 
@@ -59,8 +59,10 @@ int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared
         return E_INVALID_PATH;
     }
 
+    MediaScannerObj::ScanType scanType =
+        isCameraShotMovingPhoto ? MediaScannerObj::CAMERA_SHOT_MOVING_PHOTO : MediaScannerObj::FILE;
     std::unique_ptr<MediaScannerObj> scanner =
-        std::make_unique<MediaScannerObj>(realPath, callback, MediaScannerObj::FILE, api);
+        std::make_unique<MediaScannerObj>(realPath, callback, scanType, api);
     executor_.Commit(move(scanner));
 
     return E_OK;

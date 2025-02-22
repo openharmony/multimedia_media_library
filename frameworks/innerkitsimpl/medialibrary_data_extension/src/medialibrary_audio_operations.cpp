@@ -204,13 +204,12 @@ int32_t MediaLibraryAudioOperations::CreateV9(MediaLibraryCommand& cmd)
     return outRow;
 }
 
-int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
+int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand &cmd)
 {
     FileAsset fileAsset;
     ValuesBucket &values = cmd.GetValueBucket();
     string displayName;
     string extention;
-    string title;
     bool isContains = false;
     bool isNeedGrant = false;
     if (GetStringFromValuesBucket(values, AudioColumn::MEDIA_NAME, displayName)) {
@@ -221,6 +220,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, ASSET_EXTENTION, extention), E_HAS_DB_ERROR);
         isNeedGrant = true;
         fileAsset.SetTimePending(UNOPEN_FILE_COMPONENT_TIMEPENDING);
+        string title;
         if (GetStringFromValuesBucket(values, AudioColumn::MEDIA_TITLE, title)) {
             displayName = title + "." + extention;
             fileAsset.SetDisplayName(displayName);
@@ -229,8 +229,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     }
 
     int32_t mediaType = 0;
-    CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, AudioColumn::MEDIA_TYPE, mediaType),
-        E_HAS_DB_ERROR);
+    CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, AudioColumn::MEDIA_TYPE, mediaType), E_HAS_DB_ERROR);
     CHECK_AND_RETURN_RET(mediaType == MediaType::MEDIA_TYPE_AUDIO, E_CHECK_MEDIATYPE_FAIL);
     fileAsset.SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
 
@@ -241,8 +240,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     int32_t outRow = -1;
     std::function<int(void)> func = [&]()->int {
         CHECK_AND_RETURN_RET((errCode == E_OK), errCode);
-        errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) :
-            SetAssetPath(fileAsset, extention, trans);
+        errCode = isContains ? SetAssetPathInCreate(fileAsset, trans) : SetAssetPath(fileAsset, extention, trans);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
             "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
 
@@ -253,10 +251,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
         return errCode;
     };
     errCode = trans->RetryTrans(func);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("CreateV10: trans retry fail!, ret:%{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "CreateV10: trans retry fail!, ret:%{public}d", errCode);
     fileAsset.SetId(outRow);
     string fileUri = CreateExtUriForV10Asset(fileAsset);
     if (isNeedGrant) {
@@ -289,6 +284,7 @@ int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fi
     }
 
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     string notifyUri = MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileId),
         (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
 
@@ -333,6 +329,7 @@ int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
 
     // Audio has no favorite album, do not send favorite notify
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileAsset->GetId()),
         extraUri), NotifyType::NOTIFY_UPDATE);
     return rowId;
@@ -378,6 +375,7 @@ int32_t MediaLibraryAudioOperations::UpdateV9(MediaLibraryCommand &cmd)
 
     // Audio has no favorite album, do not send favorite notify
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileAsset->GetId())),
         NotifyType::NOTIFY_UPDATE);
     return rowId;

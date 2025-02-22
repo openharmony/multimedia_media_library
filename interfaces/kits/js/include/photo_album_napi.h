@@ -46,9 +46,11 @@ public:
     const std::string& GetAlbumUri() const;
     const std::string& GetCoverUri() const;
     int64_t GetDateModified() const;
+    int64_t GetDateAdded() const;
     double GetLatitude() const;
     double GetLongitude() const;
     const std::string& GetAlbumName() const;
+    const std::string& GetLPath() const;
     PhotoAlbumType GetPhotoAlbumType() const;
     PhotoAlbumSubType GetPhotoAlbumSubType() const;
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
@@ -68,8 +70,11 @@ private:
     EXPORT static napi_value JSGetPhotoAlbumSubType(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetDateModified(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetDateModifiedSystem(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetDateAdded(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetLatitude(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetLongitude(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumLPath(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);

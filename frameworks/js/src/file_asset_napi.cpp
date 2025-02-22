@@ -253,6 +253,7 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_GETTER("photoType", JSGetMediaType),
             DECLARE_NAPI_GETTER_SETTER("displayName", JSGetFileDisplayName, JSSetFileDisplayName),
             DECLARE_NAPI_FUNCTION("getThumbnail", PhotoAccessHelperGetThumbnail),
+            DECLARE_NAPI_FUNCTION("getThumbnailData", PhotoAccessHelperGetThumbnailData),
             DECLARE_NAPI_FUNCTION("getKeyFrameThumbnail", PhotoAccessHelperGetKeyFrameThumbnail),
             DECLARE_NAPI_FUNCTION("getReadOnlyFd", JSGetReadOnlyFd),
             DECLARE_NAPI_FUNCTION("setHidden", PhotoAccessHelperSetHidden),
@@ -392,7 +393,6 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &i
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     sFileAsset_ = std::move(iAsset);
-
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
 
@@ -1207,7 +1207,7 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     }
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateTaken = obj->fileAssetPtr->GetDateTaken();
+        dateTaken = obj->fileAssetPtr->GetDateTaken() / MSEC_TO_SEC;
         napi_create_int64(env, dateTaken, &jsResult);
     }
     return jsResult;
@@ -1720,6 +1720,21 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     return result;
 }
 
+static void JSGetThumbnailDataExecute(napi_env env, FileAssetAsyncContext* context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetThumbnailDataExecute");
+ 
+    string path = context->objectPtr->GetPath();
+#ifndef MEDIALIBRARY_COMPATIBILITY
+    if (path.empty()
+            && !context->objectPtr->GetRelativePath().empty() && !context->objectPtr->GetDisplayName().empty()) {
+        path = ROOT_MEDIA_DIR + context->objectPtr->GetRelativePath() + context->objectPtr->GetDisplayName();
+    }
+#endif
+    context->path = path;
+}
+
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
 {
     MediaLibraryTracer tracer;
@@ -1750,6 +1765,50 @@ static void JSGetKeyFrameThumbnailExecute(FileAssetAsyncContext* context)
 
     context->pixelmap = ThumbnailManager::QueryKeyFrameThumbnail(context->objectPtr->GetUri(), context->beginStamp,
         context->type, path);
+}
+
+static napi_value GetReference(napi_env env, napi_ref ref)
+{
+    napi_value obj = nullptr;
+    napi_status status = napi_get_reference_value(env, ref, &obj);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "napi_get_reference_value fail");
+        return nullptr;
+    }
+    return obj;
+}
+
+static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
+                                               FileAssetAsyncContext* context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetThumbnailDataCompleteCallback");
+ 
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    context->napiArrayBufferRef = ThumbnailManager::QueryThumbnailData(
+        env, context->objectPtr->GetUri(), context->type, context->path);
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+ 
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->data = GetReference(env, context->napiArrayBufferRef);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+ 
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+
+    napi_delete_reference(env, context->napiArrayBufferRef);
+    delete context;
 }
 
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
@@ -1826,6 +1885,25 @@ static bool GetNapiObjectFromNapiObject(napi_env env, napi_value configObj, std:
     }
 
     return true;
+}
+
+napi_value GetJSArgsForGetThumbnailData(napi_env env, size_t argc, const napi_value argv[],
+                                        unique_ptr<FileAssetAsyncContext> &asyncContext)
+{
+    for (size_t i = PARAM0; i < argc; i++) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[i], &valueType);
+        if (i == PARAM0 && valueType == napi_number) {
+            napi_get_value_int32(env, argv[PARAM0], &asyncContext->type);
+        } else {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid parameter type");
+            return nullptr;
+        }
+    }
+ 
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
 }
 
 napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value argv[],
@@ -2063,7 +2141,8 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
     Uri uri(analysisInfo.uriStr);
     std::vector<std::string> fetchColumn = analysisInfo.fetchColumn;
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    int userId = context->objectPtr != nullptr ? context->objectPtr->GetUserId() : -1;
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
     context->analysisData = context->analysisType == ANALYSIS_FACE ?
         MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn) :
         MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
@@ -2072,7 +2151,7 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
         DataShare::DataSharePredicates predicates;
         std::vector<std::string> fetchColumn = { analysisInfo.fieldStr };
         predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-        auto fieldValue = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+        auto fieldValue = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
         string value = MediaLibraryNapiUtils::ParseResultSet2JsonStr(fieldValue, fetchColumn);
         if (strstr(value.c_str(), ANALYSIS_INIT_VALUE.c_str()) == NULL) {
             context->analysisData = ANALYSIS_STATUS_ANALYZED;
@@ -2747,6 +2826,8 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::CAMERA_SHOT_KEY,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PhotoColumn::SUPPORTED_WATERMARK_TYPE,
+        PhotoColumn::PHOTO_IS_AUTO,
+        PhotoColumn::PHOTO_IS_RECENT_SHOW,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };
@@ -2821,7 +2902,7 @@ static bool GetDateTakenFromResultSet(const shared_ptr<DataShare::DataShareResul
 }
 
 static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset> &fileAssetPtr,
-    const string &detailTime)
+    const string &detailTime, int64_t &dateTaken)
 {
     string uri = PAH_UPDATE_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -2832,9 +2913,12 @@ static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ MediaFileUtils::GetIdFromUri(fileAssetPtr->GetUri()) });
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
-    if (changedRows < 0) {
+    if (changedRows <= 0) {
         NAPI_ERR_LOG("Failed to modify detail time, err: %{public}d", changedRows);
         NapiError::ThrowError(env, JS_INNER_FAIL);
+    } else {
+        NAPI_INFO_LOG("success to modify detial time, detailTime: %{public}s, dateTaken: %{public}" PRId64,
+            detailTime.c_str(), dateTaken);
     }
 }
 
@@ -2860,9 +2944,9 @@ static napi_value HandleGettingDetailTimeKey(napi_env env, const shared_ptr<File
             if (dateTaken > SECONDS_LEVEL_LIMIT) {
                 dateTaken = dateTaken / MSEC_TO_SEC;
             }
-            string detailTime = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
+            string detailTime = MediaFileUtils::StrCreateTimeSafely(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
             napi_create_string_utf8(env, detailTime.c_str(), NAPI_AUTO_LENGTH, &jsResult);
-            UpdateDetailTimeByDateTaken(env, fileAssetPtr, detailTime);
+            UpdateDetailTimeByDateTaken(env, fileAssetPtr, detailTime, dateTaken);
         } else {
             NapiError::ThrowError(env, JS_INNER_FAIL);
         }
@@ -3726,7 +3810,7 @@ static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
             to_string(context->objectPtr->GetTimePending()));
     }
     Uri openFileUri(fileUri);
-    int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
+    int32_t retVal = UserFileClient::OpenFile(openFileUri, mode, context->objectPtr->GetUserId());
     if (retVal <= 0) {
         context->SaveError(retVal);
         NAPI_ERR_LOG("File open asset failed, ret: %{public}d", retVal);
@@ -3780,7 +3864,6 @@ napi_value FileAssetNapi::PhotoAccessHelperOpen(napi_env env, napi_callback_info
         return nullptr;
     }
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
-
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperOpen",
         PhotoAccessHelperOpenExecute, PhotoAccessHelperOpenCallbackComplete);
 }
@@ -3882,7 +3965,7 @@ napi_value FileAssetNapi::PhotoAccessHelperClose(napi_env env, napi_callback_inf
         PhotoAccessHelperCloseExecute, PhotoAccessHelperCloseCallbackComplete);
 }
 
-static shared_ptr<FileAsset> getFileAsset(const std::string fileAssetId)
+static shared_ptr<FileAsset> getFileAsset(const std::string fileAssetId, const int32_t userId)
 {
     DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileAssetId);
@@ -3890,7 +3973,7 @@ static shared_ptr<FileAsset> getFileAsset(const std::string fileAssetId)
         MediaColumn::MEDIA_TITLE, MediaColumn::MEDIA_TYPE };
     int32_t errCode = 0;
     Uri uri(PAH_QUERY_PHOTO_MAP);
-    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode, userId);
     if (resultSet == nullptr) {
         NAPI_INFO_LOG("Failed to get file asset, err: %{public}d", errCode);
         return nullptr;
@@ -3911,15 +3994,17 @@ static void CloneAssetHandlerCompleteCallback(napi_env env, napi_status status, 
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
+    int32_t userId = -1;
     if (context->error == ERR_DEFAULT) {
         napi_value jsFileAsset = nullptr;
         int64_t assetId = context->assetId;
+        userId = context->objectInfo != nullptr ? context->objectInfo->GetFileAssetInstance()->GetUserId() : userId;
         if (assetId == 0) {
             MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
                 "Clone file asset failed");
             napi_get_undefined(env, &jsContext->data);
         } else {
-            shared_ptr<FileAsset> newFileAsset = getFileAsset(to_string(assetId));
+            shared_ptr<FileAsset> newFileAsset = getFileAsset(to_string(assetId), userId);
             CHECK_NULL_PTR_RETURN_VOID(newFileAsset, "newFileAset is null.");
 
             newFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -4099,6 +4184,31 @@ napi_value FileAssetNapi::PhotoAccessHelperFavorite(napi_env env, napi_callback_
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperFavorite",
         PhotoAccessHelperFavoriteExecute, PhotoAccessHelperFavoriteComplete);
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperGetThumbnailData(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetThumbnailData");
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
+    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_TWO) ==
+        napi_ok, result, "Failed to get object info");
+    result = GetJSArgsForGetThumbnailData(env, asyncContext->argc, asyncContext->argv, asyncContext);
+    ASSERT_NULLPTR_CHECK(env, result);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperGetThumbnailData",
+        [](napi_env env, void *data) {
+            auto context = static_cast<FileAssetAsyncContext*>(data);
+            JSGetThumbnailDataExecute(env, context);
+        },
+        reinterpret_cast<CompleteCallback>(JSGetThumbnailDataCompleteCallback));
+ 
+    return result;
 }
 
 napi_value FileAssetNapi::PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info)
@@ -4690,7 +4800,7 @@ static void ProcessEditData(FileAssetAsyncContext *context, const UniqueFd &uniq
     struct stat fileInfo;
     if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
         off_t fileSize = fileInfo.st_size;
-        if (fileSize < 0) {
+        if (fileSize < 0 || fileSize + 1 < 0) {
             NAPI_ERR_LOG("fileBuffer error : %{public}ld", static_cast<long>(fileSize));
             context->SaveError(E_FAIL);
             return;
@@ -4704,6 +4814,8 @@ static void ProcessEditData(FileAssetAsyncContext *context, const UniqueFd &uniq
         ssize_t bytes = read(uniqueFd.Get(), context->editDataBuffer, fileSize);
         if (bytes < 0) {
             NAPI_ERR_LOG("Read edit data failed, errno: %{public}d", errno);
+            free(context->editDataBuffer);
+            context->editDataBuffer = nullptr;
             context->SaveError(E_FAIL);
             return;
         }
@@ -5093,7 +5205,7 @@ napi_value FileAssetNapi::PhotoAccessHelperCommitEditedAsset(napi_env env, napi_
     CHECK_ARGS_THROW_INVALID_PARAM(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_THREE));
     string editData;
-    const static int32_t EDIT_DATA_MAX_LENGTH = 65536;
+    const static int32_t EDIT_DATA_MAX_LENGTH = 5 * 1024 * 1024;
     CHECK_ARGS_THROW_INVALID_PARAM(env,
         MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[0], EDIT_DATA_MAX_LENGTH, editData));
     CHECK_ARGS_THROW_INVALID_PARAM(env,

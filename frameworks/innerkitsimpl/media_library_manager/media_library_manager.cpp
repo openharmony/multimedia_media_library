@@ -53,7 +53,6 @@
 #include "thumbnail_const.h"
 #include "unique_fd.h"
 #include "userfilemgr_uri.h"
-#include "medialibrary_common_utils.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -76,12 +75,15 @@ constexpr uint32_t URI_PERMISSION_FLAG_READ = 1;
 constexpr uint32_t URI_PERMISSION_FLAG_WRITE = 2;
 constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 3;
 
+const std::string MULTI_USER_URI_FLAG = "user=";
+
 struct UriParams {
     string path;
     string fileUri;
     Size size;
     bool isAstc;
     DecodeDynamicRange dynamicRange;
+    string user;
 };
 static map<string, TableType> tableMap = {
     { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
@@ -108,15 +110,9 @@ void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &tok
 sptr<IRemoteObject> MediaLibraryManager::InitToken()
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saManager == nullptr) {
-        MEDIA_ERR_LOG("get system ability mgr failed.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(saManager != nullptr, nullptr, "get system ability mgr failed.");
     auto remoteObj = saManager->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    if (remoteObj == nullptr) {
-        MEDIA_ERR_LOG("GetSystemAbility Service failed.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(remoteObj != nullptr, nullptr, "GetSystemAbility Service failed.");
     return remoteObj;
 }
 
@@ -191,7 +187,7 @@ string MediaLibraryManager::CreateAsset(const string &displayName)
 
 static bool CheckUri(string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string uriprex = "file://media";
@@ -200,7 +196,7 @@ static bool CheckUri(string &uri)
 
 static bool CheckPhotoUri(const string &uri)
 {
-    if (uri.find("..") != string::npos) {
+    if (uri.find("../") != string::npos) {
         return false;
     }
     string photoUriPrefix = "file://media/Photo/";
@@ -255,28 +251,42 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
     return retVal;
 }
 
+int32_t MediaLibraryManager::GetAstcYearAndMonth(const std::vector<string> &uris)
+{
+    if ((uris.empty()) || (uris.size() > URI_MAX_SIZE)) {
+        MEDIA_ERR_LOG("Failed to check uri size");
+        return E_ERR;
+    }
+
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Failed to GetAstcYearAndMonth, datashareHelper is nullptr");
+        return E_ERR;
+    }
+    string abilityUri = MEDIALIBRARY_DATA_URI;
+    Uri astcUri(abilityUri + "/" + MTH_AND_YEAR_ASTC + "/" + MTH_AND_YEAR_ASTC);
+    DataShareValuesBucket bucket;
+    for (auto uri : uris) {
+        bucket.Put(uri, false);
+    }
+    vector<DataShareValuesBucket> values;
+    values.emplace_back(bucket);
+    return sDataShareHelper_->BatchInsert(astcUri, values);
+}
+
 int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 {
     auto dataShareHelper = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is null");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_FAIL, "dataShareHelper is null");
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYVOLUME + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
     DataSharePredicates predicates;
     auto queryResultSet = dataShareHelper->Query(uri, predicates, columns);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("queryResultSet is null!");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_FAIL, "queryResultSet is null!");
     auto count = 0;
     auto ret = queryResultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("get rdbstore failed");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "get rdbstore failed");
     MEDIA_INFO_LOG("count = %{public}d", (int)count);
+
     if (count >= 0) {
         int thumbnailType = -1;
         while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -313,10 +323,7 @@ std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, 
     string fileId = MediaFileUtils::GetIdFromUri(value);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     DatashareBusinessError businessError;
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("datashareHelper is nullptr");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "datashareHelper is nullptr");
     return dataShareHelper->Query(queryUri, predicates, columns, &businessError);
 }
 
@@ -324,7 +331,15 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
     vector<string> &columns)
 {
     if (columnName == MEDIA_DATA_DB_URI) {
-        return GetResultSetFromPhotos(value, columns, token_, sDataShareHelper_);
+        auto resultSet = GetResultSetFromPhotos(value, columns, token_, sDataShareHelper_);
+        if (resultSet == nullptr) {
+            MEDIA_ERR_LOG("resultset is null, reconnect and retry");
+            shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+                DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+            return GetResultSetFromPhotos(value, columns, token_, dataShareHelper);
+        } else {
+            return resultSet;
+        }
     }
     Uri uri(MEDIALIBRARY_MEDIA_PREFIX);
     DataSharePredicates predicates;
@@ -334,10 +349,7 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
 
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is null");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, nullptr, "dataShareHelper is null");
     return dataShareHelper->Query(uri, predicates, columns, &businessError);
 }
 
@@ -365,6 +377,10 @@ static int32_t SolvePath(const string &filePath, string &tempPath, string &userI
 
 int32_t MediaLibraryManager::CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet)
 {
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Input resultset is nullptr");
+        return E_FAIL;
+    }
     int count = 0;
     auto ret = resultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
@@ -515,14 +531,28 @@ static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool is
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
     // To ensure performance.
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Failed to open thumbnail, sDataShareHelper_ is nullptr");
+    std::string str = uriStr;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    std::string userId = "";
+    if (pos != std::string::npos) {
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == std::string::npos) {
+            end = str.length();
+        }
+        userId = str.substr(pos, end - pos);
+        MEDIA_ERR_LOG("OpenThumbnail for other user is %{public}s", userId.c_str());
+    }
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ? DataShare::DataShareHelper::Creator(token_,
+        MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) : sDataShareHelper_;
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("Failed to open thumbnail, dataShareHelper is nullptr");
         return E_ERR;
     }
     if (path.empty()) {
         MEDIA_ERR_LOG("OpenThumbnail path is empty");
         Uri openUri(uriStr);
-        return sDataShareHelper_->OpenFile(openUri, "R");
+        return dataShareHelper->OpenFile(openUri, "R");
     }
     string sandboxPath = GetSandboxPath(path, size, isAstc);
     int32_t fd = GetFdFromSandbox(path, sandboxPath, isAstc);
@@ -535,7 +565,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         uriStr += "&" + THUMBNAIL_PATH + "=" + path;
     }
     Uri openUri(uriStr);
-    return sDataShareHelper_->OpenFile(openUri, "R");
+    return dataShareHelper->OpenFile(openUri, "R");
 }
 
 /**
@@ -568,18 +598,26 @@ static void GetUriParamsFromQueryKey(UriParams& uriParams,
         uriParams.path = queryKey[THUMBNAIL_PATH];
     }
     if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
-        uriParams.size.width = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_WIDTH]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_WIDTH])) {
+            uriParams.size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        }
     }
     if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
-        uriParams.size.height = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_HEIGHT]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_HEIGHT])) {
+            uriParams.size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        }
     }
     if (queryKey.count(THUMBNAIL_OPER) != 0) {
         uriParams.isAstc = queryKey[THUMBNAIL_OPER] == MEDIA_DATA_DB_THUMB_ASTC;
     }
+    if (queryKey.count(THUMBNAIL_USER) != 0) {
+        uriParams.user = queryKey[THUMBNAIL_USER];
+    }
     uriParams.dynamicRange = DecodeDynamicRange::AUTO;
     if (queryKey.count(DYNAMIC_RANGE) != 0) {
-        uriParams.dynamicRange = static_cast<DecodeDynamicRange>(
-            MediaLibraryCommonUtils::SafeStoi(queryKey[DYNAMIC_RANGE]));
+        if (MediaFileUtils::IsValidInteger(queryKey[DYNAMIC_RANGE])) {
+            uriParams.dynamicRange = static_cast<DecodeDynamicRange>(stoi(queryKey[DYNAMIC_RANGE]));
+        }
     }
 }
 
@@ -693,6 +731,12 @@ unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(UriParams& params)
     string oper = params.isAstc ? MEDIA_DATA_DB_THUMB_ASTC : MEDIA_DATA_DB_THUMBNAIL;
     string openUriStr = params.fileUri + "?" + MEDIA_OPERN_KEYWORD + "=" + oper + "&" + MEDIA_DATA_DB_WIDTH +
         "=" + to_string(params.size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(params.size.height);
+    if (params.user != "") {
+        openUriStr = openUriStr + "&" + THUMBNAIL_USER + "=" + params.user;
+        if (!params.path.empty() && !params.path.find(MULTI_USER_URI_FLAG)) {
+            params.path = params.path + "&" + THUMBNAIL_USER + "=" + params.user;
+        }
+    }
     tracer.Start("DataShare::OpenThumbnail");
     UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, params.path, params.size, params.isAstc));
     if (uniqueFd.Get() < 0) {
@@ -743,6 +787,7 @@ static int32_t GetAstcsByOffset(const vector<string> &uriBatch, vector<vector<ui
     int32_t start = 0;
     int32_t count = 0;
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    CHECK_AND_RETURN_RET_LOG(!timeIdBatch.empty(), E_INVALID_URI, "GetTimeIdFromUri failed");
     MEDIA_INFO_LOG("GetAstcsByOffset image batch size: %{public}zu, begin: %{public}s, end: %{public}s,"
         "start: %{public}d, count: %{public}d", uriBatch.size(), timeIdBatch.back().c_str(),
         timeIdBatch.front().c_str(), start, count);
@@ -782,6 +827,7 @@ static int32_t GetAstcsBatch(const vector<string> &uriBatch, vector<vector<uint8
     }
     vector<string> timeIdBatch;
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch);
+    CHECK_AND_RETURN_RET_LOG(!timeIdBatch.empty(), E_INVALID_URI, "GetTimeIdFromUri failed");
     MEDIA_INFO_LOG("GetAstcsBatch image batch size: %{public}zu, begin: %{public}s, end: %{public}s",
         uriBatch.size(), timeIdBatch.back().c_str(), timeIdBatch.front().c_str());
 
@@ -797,15 +843,9 @@ static int32_t GetAstcsBatch(const vector<string> &uriBatch, vector<vector<uint8
     }
 
     auto kvStore = MediaLibraryKvStoreManager::GetInstance().GetKvStore(KvStoreRoleType::VISITOR, valueType);
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("GetAstcsBatch kvStore is nullptr");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(kvStore != nullptr, E_DB_FAIL, "GetAstcsBatch kvStore is nullptr");
     int32_t status = kvStore->BatchQuery(timeIdBatch, astcBatch);
-    if (status != E_OK) {
-        MEDIA_ERR_LOG("GetAstcsBatch failed, status %{public}d", status);
-        return status;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == E_OK, status, "GetAstcsBatch failed, status %{public}d", status);
     return E_OK;
 }
 
@@ -833,19 +873,13 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeAstc(UniqueFd &uniqueFd)
     SourceOptions opts;
     uint32_t err = 0;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
-    if (imageSource  == nullptr) {
-        MEDIA_ERR_LOG("CreateImageSource err %{public}d", err);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "CreateImageSource err %{public}d", err);
 
     DecodeOptions decodeOpts;
     decodeOpts.fastAstc = true;
     decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    if (pixelMap == nullptr) {
-        MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, nullptr, "CreatePixelMap err %{public}d", err);
     return pixelMap;
 }
 
@@ -872,6 +906,12 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
     string openUriStr = uriParams.fileUri + "?" + MEDIA_OPERN_KEYWORD + "=" +
         MEDIA_DATA_DB_THUMB_ASTC + "&" + MEDIA_DATA_DB_WIDTH + "=" + to_string(uriParams.size.width) +
             "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(uriParams.size.height);
+    if (uriParams.user != "") {
+        openUriStr = openUriStr + "&" + THUMBNAIL_USER + "=" + uriParams.user;
+        if (!uriParams.path.empty() && !uriParams.path.find(MULTI_USER_URI_FLAG)) {
+            uriParams.path = uriParams.path + "&" + THUMBNAIL_USER + "=" + uriParams.user;
+        }
+    }
     tracer.Start("MediaLibraryManager::OpenThumbnail");
     UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, uriParams.path, uriParams.size, true));
     if (uniqueFd.Get() < 0) {
@@ -906,6 +946,21 @@ int32_t MediaLibraryManager::OpenReadOnlyAppSandboxVideo(const string& uri)
 
 int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const string &option)
 {
+    std::string str = uri;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    std::string userId = "";
+    if (pos != std::string::npos) {
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == std::string::npos) {
+            end = str.length();
+        }
+        userId = str.substr(pos, end - pos);
+        MEDIA_INFO_LOG("ReadMovingPhotoVideo for other user is %{public}s", userId.c_str());
+    }
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ?
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) :
+        sDataShareHelper_;
     if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
         return OpenReadOnlyAppSandboxVideo(uri);
     }
@@ -914,15 +969,12 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const strin
         return E_ERR;
     }
 
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR,
+        "Failed to read video of moving photo, datashareHelper is nullptr");
     string videoUri = uri;
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, option);
     Uri openVideoUri(videoUri);
-    return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+    return dataShareHelper->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
 }
 
 int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
@@ -963,12 +1015,8 @@ int32_t MediaLibraryManager::ReadPrivateMovingPhoto(const string &uri)
         MEDIA_ERR_LOG("invalid uri: %{public}s", uri.c_str());
         return E_ERR;
     }
-
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_ERR,
+        "Failed to read video of moving photo, datashareHelper is nullptr");
     string movingPhotoUri = uri;
     MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
     Uri openMovingPhotoUri(movingPhotoUri);
@@ -1185,17 +1233,12 @@ static int32_t CheckPhotoUriPermissionQueryOperation(const sptr<IRemoteObject> &
     };
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("Failed to checkPhotoUriPermission, datashareHelper is nullptr");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR,
+        "Failed to checkPhotoUriPermission, datashareHelper is nullptr");
 
     Uri uri(MEDIALIBRARY_CHECK_URIPERM_URI);
     auto queryResultSet = dataShareHelper->Query(uri, predicates, columns);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("queryResultSet is null!");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_ERR, "queryResultSet is null!");
     while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
         string fileId = GetStringVal(AppUriPermissionColumn::FILE_ID, queryResultSet);
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryResultSet);
@@ -1255,15 +1298,12 @@ int32_t MediaLibraryManager::CheckPhotoUriPermission(uint32_t tokenId, const str
     const vector<string> &urisSource, vector<bool> &results, uint32_t flag)
 {
     auto ret = CheckInputParameters(urisSource, flag);
-    if (ret != E_SUCCESS) {
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
     vector<string> photoFileIds;
     vector<string> audioFileIds;
     ret = UrisSourceMediaTypeClassify(urisSource, photoFileIds, audioFileIds);
-    if (ret != E_SUCCESS) {
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
+
     int32_t queryPhotoFlag = URI_PERMISSION_FLAG_READWRITE;
     int32_t queryAudioFlag = URI_PERMISSION_FLAG_READWRITE;
     if (photoFileIds.empty()) {
@@ -1283,18 +1323,14 @@ int32_t MediaLibraryManager::CheckPhotoUriPermission(uint32_t tokenId, const str
         MakePredicatesForCheckPhotoUriPermission(queryPhotoFlag, predicates,
             appid, TableType::TYPE_PHOTOS, photoFileIds);
         auto ret = CheckPhotoUriPermissionQueryOperation(token_, predicates, photoResultMap);
-        if (ret != E_SUCCESS) {
-            return E_ERR;
-        }
+        CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
     }
     if (queryAudioFlag != -1) {
         DataSharePredicates predicates;
         MakePredicatesForCheckPhotoUriPermission(queryAudioFlag, predicates,
             appid, TableType::TYPE_AUDIOS, audioFileIds);
         auto ret = CheckPhotoUriPermissionQueryOperation(token_, predicates, audioResultMap);
-        if (ret != E_SUCCESS) {
-            return E_ERR;
-        }
+        CHECK_AND_RETURN_RET(ret == E_SUCCESS, E_ERR);
     }
     return SetCheckPhotoUriPermissionResult(urisSource, results, photoResultMap, audioResultMap,
         queryPhotoFlag, queryAudioFlag);
@@ -1321,10 +1357,8 @@ int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const 
     }
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is nullptr");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR, "dataShareHelper is nullptr");
+
     for (const auto &uri : uris) {
         int32_t tableType = -1;
         for (const auto &iter : tableMap) {
@@ -1355,6 +1389,7 @@ shared_ptr<PhotoAssetProxy> MediaLibraryManager::CreatePhotoAssetProxy(CameraSho
 {
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    MEDIA_INFO_LOG("dataShareHelper is ready, ret = %{public}d.", dataShareHelper != nullptr);
     shared_ptr<PhotoAssetProxy> photoAssetProxy = make_shared<PhotoAssetProxy>(dataShareHelper, cameraShotType,
         callingUid, userId);
     return photoAssetProxy;

@@ -204,16 +204,16 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperatio
 std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperations::QueryNewData(
     OHOS::NativeRdb::ValuesBucket &valueBucket, int &resultFlag)
 {
-    // parse appid
-    ValueObject appidVO;
-    bool appIdRet = valueBucket.GetObject(AppUriPermissionColumn::APP_ID, appidVO);
-    if (!appIdRet) {
-        MEDIA_ERR_LOG("param without appId");
-        resultFlag = ERROR;
-        return nullptr;
+    // parse tokenId
+    int64_t srcTokenId;
+    ValueObject valueObject;
+    if (valueBucket.GetObject(AppUriPermissionColumn::SOURCE_TOKENID, valueObject)) {
+        valueObject.GetLong(srcTokenId);
     }
-    string appId = appidVO;
-
+    int64_t destTokenId;
+    if (valueBucket.GetObject(AppUriPermissionColumn::TARGET_TOKENID, valueObject)) {
+        valueObject.GetLong(destTokenId);
+    }
     // parse fileId
     int fileId = -1;
     if (!GetIntFromValuesBucket(valueBucket, AppUriPermissionColumn::FILE_ID, fileId)) {
@@ -231,7 +231,8 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperatio
     OHOS::DataShare::DataSharePredicates permissionPredicates;
     permissionPredicates.And()->EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
     permissionPredicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, uriType);
-    permissionPredicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appId);
+    permissionPredicates.And()->EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, srcTokenId);
+    permissionPredicates.And()->EqualTo(AppUriPermissionColumn::TARGET_TOKENID, destTokenId);
     
     vector<string> fetchColumns;
     fetchColumns.push_back(AppUriPermissionColumn::ID);
@@ -276,10 +277,8 @@ int MediaLibraryAppUriPermissionOperations::UpdatePermissionType(shared_ptr<Resu
     updateVB.PutLong(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t idDB = MediaLibraryRdbStore::GetInt(resultSetDB, AppUriPermissionColumn::ID);
 
-    OHOS::DataShare::DataSharePredicates updatePredicates;
-    updatePredicates.EqualTo(AppUriPermissionColumn::ID, idDB);
-    RdbPredicates updateRdbPredicates =
-        RdbUtils::ToPredicates(updatePredicates, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    RdbPredicates updateRdbPredicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    updateRdbPredicates.EqualTo(AppUriPermissionColumn::ID, idDB);
     int32_t updateRows = 0;
     if (trans == nullptr) {
         updateRows = MediaLibraryRdbStore::UpdateWithDateTime(updateVB, updateRdbPredicates);

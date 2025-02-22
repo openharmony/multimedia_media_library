@@ -167,6 +167,9 @@ static napi_status CheckWhetherAsync(napi_env env, napi_callback_info info, bool
             NAPI_ERR_LOG("Error while obtaining js environment information");
             return status;
         }
+        if (valueType == napi_number) {
+            return napi_ok;
+        }
         if (valueType == napi_boolean) {
             isAsync = true;
         }
@@ -178,6 +181,32 @@ static napi_status CheckWhetherAsync(napi_env env, napi_callback_info info, bool
     }
 }
 
+static int32_t ParseUserIdFormCbInfo(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_status status;
+    int userId = -1;
+    status = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+    if (status == napi_ok) {
+        napi_valuetype valueType = napi_undefined;
+        status = napi_typeof(env, argv[ARGS_ONE], &valueType);
+        if (status == napi_ok && valueType == napi_number) {
+            napi_get_value_int32(env, argv[ARGS_ONE], &userId);
+        }
+    }
+    return userId;
+}
+
+
+static int32_t GetUserIdFromSendableContext(SendablePhotoAccessHelperAsyncContext *context)
+{
+    if (context == nullptr || context->objectInfo == nullptr) {
+        return -1;
+    }
+    return context->objectInfo->GetUserId();
+}
+
 // Constructor callback
 napi_value SendablePhotoAccessHelper::MediaLibraryNapiConstructor(napi_env env, napi_callback_info info)
 {
@@ -185,8 +214,9 @@ napi_value SendablePhotoAccessHelper::MediaLibraryNapiConstructor(napi_env env, 
     napi_value result = nullptr;
     napi_value thisVar = nullptr;
     MediaLibraryTracer tracer;
-
     tracer.Start("MediaLibraryNapiConstructor");
+    int32_t userId = ParseUserIdFormCbInfo(env, info);
+    UserFileClient::SetUserId(userId);
 
     NAPI_CALL(env, napi_get_undefined(env, &result));
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
@@ -200,14 +230,14 @@ napi_value SendablePhotoAccessHelper::MediaLibraryNapiConstructor(napi_env env, 
         return result;
     }
     obj->env_ = env;
-
+    obj->SetUserId(userId);
     bool isAsync = false;
     NAPI_CALL(env, CheckWhetherAsync(env, info, isAsync));
     if (!isAsync) {
         unique_lock<mutex> helperLock(sUserFileClientMutex_);
-        if (!UserFileClient::IsValid()) {
-            UserFileClient::Init(env, info);
-            if (!UserFileClient::IsValid()) {
+        if (!UserFileClient::IsValid(obj->GetUserId())) {
+            UserFileClient::Init(env, info, obj->GetUserId());
+            if (!UserFileClient::IsValid(obj->GetUserId())) {
                 NAPI_ERR_LOG("UserFileClient creation failed");
                 helperLock.unlock();
                 return result;
@@ -215,7 +245,6 @@ napi_value SendablePhotoAccessHelper::MediaLibraryNapiConstructor(napi_env env, 
         }
         helperLock.unlock();
     }
-
     status = napi_wrap_sendable(env, thisVar, reinterpret_cast<void *>(obj.get()),
         SendablePhotoAccessHelper::MediaLibraryNapiDestructor, nullptr);
     if (status == napi_ok) {
@@ -224,11 +253,10 @@ napi_value SendablePhotoAccessHelper::MediaLibraryNapiConstructor(napi_env env, 
     } else {
         NAPI_ERR_LOG("Failed to wrap the native media lib client object with JS, status: %{public}d", status);
     }
-
     return result;
 }
 
-static bool CheckWhetherInitSuccess(napi_env env, napi_value value, bool checkIsValid)
+static bool CheckWhetherInitSuccess(napi_env env, napi_value value, bool checkIsValid, const int32_t userId = -1)
 {
     napi_value propertyNames;
     uint32_t propertyLength;
@@ -243,7 +271,7 @@ static bool CheckWhetherInitSuccess(napi_env env, napi_value value, bool checkIs
     if (propertyLength == 0) {
         return false;
     }
-    if (checkIsValid && (!UserFileClient::IsValid())) {
+    if (checkIsValid && (!UserFileClient::IsValid(userId))) {
         NAPI_ERR_LOG("UserFileClient is not valid");
         return false;
     }
@@ -267,10 +295,27 @@ static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_
         NAPI_CALL(env, napi_get_boolean(env, true, &argv[ARGS_ONE]));
         argv[ARGS_ONE] = argv[argContext];
     }
+    int32_t userId = -1;
+    if (argc > 1 && !isAsync) {
+        argc = ARGS_TWO;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+        NAPI_CALL(env, napi_get_reference_value(env, ref, &ctor));
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[ARGS_ONE], &valueType);
+        if (valueType == napi_number) {
+            NAPI_CALL(env, napi_get_value_int32(env, argv[ARGS_ONE], &userId));
+            if (userId != -1 && !SendableMediaLibraryNapiUtils::IsSystemApp()) {
+                NAPI_ERR_LOG("CreateNewInstance failed, target is not system app");
+                return nullptr;
+            }
+            UserFileClient::SetUserId(userId);
+            NAPI_INFO_LOG("CreateNewInstance for other user is %{public}d", userId);
+        }
+    }
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, ctor, argc, argv, &result));
-    if (!CheckWhetherInitSuccess(env, result, !isAsync)) {
+    if (!CheckWhetherInitSuccess(env, result, !isAsync, userId)) {
         NAPI_ERR_LOG("Init MediaLibrary Instance is failed");
         NAPI_CALL(env, napi_get_undefined(env, &result));
     }
@@ -394,7 +439,7 @@ static void SetAlbumCoverUri(SendablePhotoAccessHelperAsyncContext *context, uni
     Uri uri(queryUri);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(
-        uri, predicates, columns, errCode);
+        uri, predicates, columns, errCode, GetUserIdFromSendableContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query for Album uri failed! errorCode is = %{public}d", errCode);
         return;
@@ -713,6 +758,15 @@ static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetc
     return result;
 }
 
+static void AddDefaultColumnsForNonAnalysisAlbums(SendablePhotoAccessHelperAsyncContext& context)
+{
+    if (!context.isAnalysisAlbum) {
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_LPATH);
+    }
+}
+
 napi_value GetJSArgsForCreateSmartAlbum(napi_env env, size_t argc, const napi_value argv[],
                                         SendablePhotoAccessHelperAsyncContext &asyncContext)
 {
@@ -758,9 +812,9 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
         JS_ERR_PARAMETER_INVALID);
 
     /* Parse the first argument */
-    CHECK_ARGS(env, SendableMediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
-        JS_INNER_FAIL);
-    auto &predicates = context->predicates;
+    CHECK_ARGS(env, SendableMediaLibraryNapiUtils::GetFetchOption(
+        env, context->argv[PARAM0], ASSET_FETCH_OPT, context), JS_INNER_FAIL);
+
     switch (context->assetType) {
         case TYPE_AUDIO: {
             CHECK_NULLPTR_RET(SendableMediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
@@ -791,18 +845,60 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
             return nullptr;
         }
     }
+    auto &predicates = context->predicates;
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     if (context->assetType == TYPE_PHOTO) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
         predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
-        predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
-            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
+        predicates.EqualTo(
+            PhotoColumn::PHOTO_BURST_COVER_LEVEL, to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     }
-
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+// Easter egg operation: query duplicate assets
+static bool EasterEgg(SendablePhotoAccessHelperAsyncContext* context)
+{
+    string queryUri;
+    if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS) {
+        queryUri = PAH_FIND_ALL_DUPLICATE_ASSETS;
+    } else if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE) {
+        queryUri = PAH_FIND_DUPLICATE_ASSETS_TO_DELETE;
+    } else {
+        return false;
+    }
+    if (!SendableMediaLibraryNapiUtils::IsSystemApp()) {
+        NAPI_ERR_LOG("Easter egg operation failed, target is not system app");
+        return false;
+    };
+    bool isQueryCount = find(context->fetchColumn.begin(), context->fetchColumn.end(), MEDIA_COLUMN_COUNT)
+        != context->fetchColumn.end();
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    NAPI_INFO_LOG(
+        "Easter egg operation start: %{public}s, is query count: %{public}d",
+        queryUri == PAH_FIND_ALL_DUPLICATE_ASSETS ?
+        "find all duplicate assets" : "find all duplicate assets to delete", isQueryCount);
+    int errCode = 0;
+    Uri uri(queryUri);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
+        context->predicates, context->fetchColumn, errCode, GetUserIdFromSendableContext(context));
+    if (resultSet == nullptr) {
+        context->SaveError(errCode);
+        NAPI_ERR_LOG("Easter egg operation failed, errCode: %{public}d", errCode);
+        return true;
+    }
+    context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    context->fetchFileResult->SetUserId(GetUserIdFromSendableContext(context));
+    NAPI_INFO_LOG(
+        "Easter egg operation end: %{public}s, is query count: %{public}d, cost time: %{public}" PRId64 "ms",
+        queryUri == PAH_FIND_ALL_DUPLICATE_ASSETS ?
+        "find all duplicate assets" : "find all duplicate assets to delete", isQueryCount,
+        MediaFileUtils::UTCTimeMilliSeconds() - startTime);
+    return true;
 }
 
 static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
@@ -811,16 +907,13 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     tracer.Start("PhotoAccessGetAssetsExecute");
 
     auto *context = static_cast<SendablePhotoAccessHelperAsyncContext*>(data);
+    if (EasterEgg(context)) {
+        return;
+    }
     string queryUri;
     switch (context->assetType) {
         case TYPE_PHOTO: {
-            if (context->uri == URI_ALL_DUPLICATE_ASSETS) {
-                queryUri = PAH_ALL_DUPLICATE_ASSETS;
-            } else if (context->uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
-                queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
-            } else {
-                queryUri = PAH_QUERY_PHOTO;
-            }
+            queryUri = PAH_QUERY_PHOTO;
             SendableMediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
             break;
         }
@@ -833,10 +926,11 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     Uri uri(queryUri);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
-        context->predicates, context->fetchColumn, errCode);
+        context->predicates, context->fetchColumn, errCode, GetUserIdFromSendableContext(context));
     if (resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
         Uri queryWithUri(context->uri);
-        resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode);
+        resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode,
+            GetUserIdFromSendableContext(context));
     }
     if (resultSet == nullptr) {
         context->SaveError(errCode);
@@ -844,6 +938,7 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     }
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    context->fetchFileResult->SetUserId(GetUserIdFromSendableContext(context));
 }
 
 napi_value SendablePhotoAccessHelper::PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info)
@@ -892,7 +987,8 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     }
     Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode,
+        GetUserIdFromSendableContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED) {
@@ -912,6 +1008,7 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
     context->fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum ==
         PhotoAlbumSubType::GEOGRAPHY_LOCATION);
+    context->fetchPhotoAlbumResult->SetUserId(GetUserIdFromSendableContext(context));
 }
 
 static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, void *data)
@@ -1140,10 +1237,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
-        if (!context->isAnalysisAlbum) {
-            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
-            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
-        }
+        AddDefaultColumnsForNonAnalysisAlbums(*context);
         if (context->isHighlightAlbum) {
             context->fetchColumn.erase(std::remove(context->fetchColumn.begin(), context->fetchColumn.end(),
                 PhotoAlbumColumns::ALBUM_ID), context->fetchColumn.end());
@@ -1501,6 +1595,7 @@ static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, 
     fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     fileAsset->SetTimePending(UNCREATE_FILE_TIMEPENDING);
+    fileAsset->SetUserId(GetUserIdFromSendableContext(context));
     context->fileAsset = move(fileAsset);
 }
 
@@ -1639,6 +1734,7 @@ static void JSCreateAssetInCallback(napi_env env, SendablePhotoAccessHelperAsync
             "Obtain file asset failed");
         napi_get_undefined(env, &jsContext->data);
     } else {
+        context->fileAsset->SetUserId(GetUserIdFromSendableContext(context));
         jsFileAsset = SendableFileAssetNapi::CreateFileAsset(env, context->fileAsset);
         if (jsFileAsset == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
@@ -1762,7 +1858,7 @@ napi_value SendablePhotoAccessHelper::PhotoAccessGetSharedPhotoAssets(napi_env e
     SendableMediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
 
     Uri uri(queryUri);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
         context->predicates, context->fetchColumn);
     CHECK_NULLPTR_RET(resultSet);
 
@@ -1781,6 +1877,16 @@ napi_value SendablePhotoAccessHelper::PhotoAccessGetSharedPhotoAssets(napi_env e
     } while (!resultSet->GoToNextRow());
     resultSet->Close();
     return jsFileArray;
+}
+
+int32_t SendablePhotoAccessHelper::GetUserId()
+{
+    return userId_;
+}
+ 
+void SendablePhotoAccessHelper::SetUserId(const int32_t &userId)
+{
+    userId_ = userId;
 }
 } // namespace Media
 } // namespace OHOS

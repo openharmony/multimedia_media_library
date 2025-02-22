@@ -16,10 +16,15 @@
 #define MLOG_TAG "PictureDataOperations"
 
 #include "picture_data_operations.h"
+
 #include "file_utils.h"
+#include "media_column.h"
 #include "media_log.h"
+#include "medialibrary_data_manager_utils.h"
+#include "medialibrary_unistore_manager.h"
 #include "parameter.h"
 #include "parameters.h"
+#include "result_set_utils.h"
 
 using namespace std;
 namespace OHOS {
@@ -39,6 +44,21 @@ PictureDataOperations::~PictureDataOperations()
     highQualityPictureImageId.clear();
 }
 
+static bool IsPictureEdited(const string &photoId)
+{
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(photoId), false, "photoId is invalid");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore");
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_ID, photoId);
+    vector<string> columns { PhotoColumn::PHOTO_EDIT_TIME };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, false,
+        "resultSet is empty");
+    bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
+    return isEdited;
+}
+
 void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap,
     PictureType pictureType)
 {
@@ -48,7 +68,10 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
         bool isNeedDeletePicture = ((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_);
         if (isNeedDeletePicture || ((iter->second)->expireTime_ + SAVE_PICTURE_TIMEOUT_SEC) < now) {
             if (pictureType == LOW_QUALITY_PICTURE) {
-                FileUtils::SavePicture(iter->first, (iter->second)->picture_, false, true);
+                bool isEdited = IsPictureEdited(iter->first);
+                FileUtils::SavePicture(iter->first, (iter->second)->picture_, isEdited, true);
+                MEDIA_INFO_LOG("end SavePicture, photoId: %{public}s, isEdited: %{public}d",
+                    (iter->first).c_str(), static_cast<int32_t>(isEdited));
             }
             MEDIA_INFO_LOG("enter CleanDateByPictureMap %{public}s enter", (iter->first).c_str());
             iter->second = nullptr;
@@ -81,7 +104,8 @@ void PictureDataOperations::CleanDateForPeriodical()
 void PictureDataOperations::InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair,
     PictureType pictureType)
 {
-    MEDIA_INFO_LOG("enter InsertPictureData %{public}s enter", imageId.c_str());
+    MEDIA_INFO_LOG("enter InsertPictureData, imageId: %{public}s, pictureType: %{public}d", imageId.c_str(),
+        static_cast<int32_t>(pictureType));
     switch (pictureType) {
         case LOW_QUALITY_PICTURE:{
             lock_guard<mutex>  lock(pictureMapMutex_);
@@ -102,26 +126,26 @@ void PictureDataOperations::InsertPictureData(const std::string& imageId, sptr<P
         default:
             break;
     }
-    
-    MEDIA_DEBUG_LOG("end InsertPictureData");
+
+    MEDIA_INFO_LOG("end InsertPictureData, lowQualityPictureMap: %{public}d, highQualityPictureMap: %{public}d",
+        static_cast<int32_t>(lowQualityPictureMap_.size()), static_cast<int32_t>(highQualityPictureMap_.size()));
 }
 
 void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::string& imageId,
     sptr<PicturePair>& picturePair,
     std::list<std::string>& pictureImageIdList)
 {
-    MEDIA_DEBUG_LOG("enter %{public}zu", highQualityPictureMap_.size());
+    MEDIA_INFO_LOG("enter CleanHighQualityPictureDataInternal, %{public}zu, %{public}zu",
+        lowQualityPictureMap_.size(), highQualityPictureMap_.size());
     lock_guard<mutex>  lock(pictureMapMutex_);
     // 清理低质量图
     auto iterPicture = lowQualityPictureMap_.find(imageId);
-    if (iterPicture != lowQualityPictureMap_.end()) {
-        iterPicture->second = nullptr;
+    if (iterPicture != lowQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
         lowQualityPictureMap_.erase(iterPicture);
     }
     // 存储高质量图
     iterPicture = highQualityPictureMap_.find(imageId);
-    if (iterPicture != highQualityPictureMap_.end()) {
-        iterPicture->second = nullptr;
+    if (iterPicture != highQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
         highQualityPictureMap_.erase(iterPicture);
     }
     highQualityPictureMap_[imageId] = picturePair;
@@ -134,7 +158,6 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
         std::string imageId = *iter;
         std::map<std::string, sptr<PicturePair>>::iterator iterPicture = highQualityPictureMap_.find(imageId);
         if (iterPicture != highQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
-            iterPicture->second = nullptr;
             highQualityPictureMap_.erase(iterPicture);
             iter = pictureImageIdList.erase(iter);
         } else {
@@ -155,11 +178,11 @@ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const 
         pictureType = (PictureType)(pictureType - 1)) {
         picture = GetDataWithImageIdAndPictureType(imageId, pictureType, isCleanImmediately);
         if (picture != nullptr && picture->GetMainPixel() != nullptr) {
-            MEDIA_DEBUG_LOG("GetDataWithImageId is not null ");
+            MEDIA_INFO_LOG("GetDataWithImageId is founded, pictureType:%{public}d", static_cast<int32_t>(pictureType));
             isHighQualityPicture = (pictureType == HIGH_QUALITY_PICTURE);
             return picture;
         } else {
-            MEDIA_DEBUG_LOG("GetDataWithImageId is not found ");
+            MEDIA_INFO_LOG("GetDataWithImageId not found, pictureType:%{public}d", static_cast<int32_t>(pictureType));
         }
     }
     return picture;
@@ -268,10 +291,11 @@ void PictureDataOperations::SaveLowQualityPicture(const std::string& imageId)
 bool PictureDataOperations::SavePicture(const std::string& imageId,
     std::map<std::string, sptr<PicturePair>>& pictureMap, bool isLowQualityPicture)
 {
-    MEDIA_DEBUG_LOG("enter photoId: %{public}s", imageId.c_str());
+    MEDIA_INFO_LOG("enter photoId: %{public}s, isLowQualityPicture: %{public}d", imageId.c_str(), isLowQualityPicture);
     lock_guard<mutex> lock(pictureMapMutex_);
     bool isSuccess = false;
     if (pictureMap.size() == 0) {
+        MEDIA_ERR_LOG("pictureMap is null.");
         return false;
     }
     std::map<std::string, sptr<PicturePair>>::iterator iter;
@@ -282,11 +306,13 @@ bool PictureDataOperations::SavePicture(const std::string& imageId,
     }
     if (iter != pictureMap.end()) {
         FileUtils::SavePicture(iter->first, (iter->second)->picture_, false, isLowQualityPicture);
-        MEDIA_INFO_LOG("SavePicture, photoId: %{public}s", imageId.c_str());
+        MEDIA_INFO_LOG("SavePicture, photoId: %{public}s, isLowQualityPicture: %{public}d",
+            imageId.c_str(), isLowQualityPicture);
         // 落盘后清除缓存数据
         pictureMap.erase(iter);
         isSuccess = true;
     }
+    MEDIA_INFO_LOG("SavePicture end, isSuccess: %{public}d, map size: %{public}zu", isSuccess, pictureMap.size());
     return isSuccess;
 }
 
@@ -324,6 +350,8 @@ int32_t PictureDataOperations::AddSavePictureTask(sptr<PicturePair>& picturePair
 int32_t PictureDataOperations::GetPendingTaskSize()
 {
     lock_guard<mutex> lock(pictureMapMutex_);
+    MEDIA_INFO_LOG("GetPendingTaskSize, lowQualityPictureMap: %{public}d, highQualityPictureMap: %{public}d",
+        static_cast<int32_t>(lowQualityPictureMap_.size()), static_cast<int32_t>(highQualityPictureMap_.size()));
     return lowQualityPictureMap_.size() + highQualityPictureMap_.size();
 }
 
@@ -331,7 +359,8 @@ void PictureDataOperations::DeleteDataWithImageId(const std::string& imageId, Pi
 {
     MEDIA_DEBUG_LOG("enter ");
     lock_guard<mutex> lock(pictureMapMutex_);
-    MEDIA_INFO_LOG("DeleteDataWithImageId start: %{public}s", imageId.c_str());
+    MEDIA_INFO_LOG("DeleteDataWithImageId start, imageId: %{public}s, pictureType: %{public}d",
+        imageId.c_str(), static_cast<int32_t>(pictureType));
     std::map<std::string, sptr<PicturePair>>::iterator iter;
     switch (pictureType) {
         case LOW_QUALITY_PICTURE:
@@ -357,7 +386,8 @@ void PictureDataOperations::DeleteDataWithImageId(const std::string& imageId, Pi
 void PictureDataOperations::FinishAccessingPicture(const std::string& imageId, PictureType pictureType)
 {
     lock_guard<mutex> lock(pictureMapMutex_);
-    MEDIA_INFO_LOG("FinishAccessingPicture start: %{public}s", imageId.c_str());
+    MEDIA_INFO_LOG("FinishAccessingPicture start, imageId: %{public}s, pictureType: %{public}d",
+        imageId.c_str(), static_cast<int32_t>(pictureType));
     std::map<std::string, sptr<PicturePair>>::iterator iter;
     switch (pictureType) {
         case LOW_QUALITY_PICTURE:

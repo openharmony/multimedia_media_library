@@ -30,6 +30,7 @@ public:
     void AddFileInotify(const std::string &path, const std::string &realPath, const ContextSptr &context);
     bool StartFileInotify();
     bool StopFileInotify();
+    void AddPathToWatchMap(const std::string &path);
 
 private:
     static bool AddInotifyEvents(const int &inotifyFd, const ContextSptr &context);

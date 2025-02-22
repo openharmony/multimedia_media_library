@@ -167,3 +167,35 @@ MEDIALIB_BACKUP_RESTORE_RESULT:
   DUPLICATE_COUNT: { type: INT32, desc: Number of existing assets of the new device }
   FAILED_COUNT: { type: INT32, desc: Number of assets that fail to be migrated }
   SUCCESS_COUNT: { type: INT32, desc: Number of Successfully Migrated Assets }
+
+MEDIALIB_CUSTOM_RESTORE:
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the data transfer result after Upgrade Restore task, preserve: true }
+  CUSTOM_RESTORE_PACKAGE_NAME: { type: STRING, desc: custorm restore package name }
+  ALBUM_LPATH: { type: STRING, desc: custorm restore album lpath }
+  KEY_PATH: { type: STRING, desc: custorm restore key path }
+  TOTAL_NUM: { type: INT32, desc: Number of custorm restore  }
+  SUCCESS_NUM: { type: INT32, desc: Number of existing assets of the new device }
+  FAILED_NUM: { type: INT32, desc: Number of existing assets of the new device }
+  SAME_NUM: { type: INT32, desc: Number of existing assets of the new device }
+  CANCEL_NUM: { type: INT32, desc: Number of existing assets of the new device }
+  TOTAL_TIME: { type: UINT64, desc: total time cost of custorm restore }
+ 
+MEDIALIB_CLOUD_SYNC_STAT:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: Report the cloud download sync info, preserve: true }
+  START_DOWNLOAD_T: { type: INT64, desc: Start time of cloud download sync }
+  END_DOWNLOAD_T: { type: INT64, desc: End time of cloud download sync }
+  DOWNLOAD_TYPE: { type: INT32, desc: Type of cloud download sync }
+  TOTAL_PHOTO_C: { type: INT32, desc: Number of pictures and videos before cloud download sync }
+  TOTAL_ALBUM_NUM: { type: INT32, desc: Number of albums }
+  ADD_ALBUM_NUM: { type: INT32, desc: Number of albums }
+  UPDATE_ALBUM_NUM: { type: INT32, desc: Number of albums updated }
+  DELETE_ALBUM_NUM: { type: INT32, desc: Number of albums deleted }
+  TOTAL_ASSET_NUM: { type: INT32, desc: Number of assets }
+  ADD_ASSET_NUM: { type: INT32, desc: Number of assets added }
+  UPDATE_ASSET_NUM: { type: INT32, desc: Number of assets updated }
+  DELETE_ASSET_NUM: { type: INT32, desc: Number of assets deleted }
+  AVG_REF_IMAGEVIDEO_ALBUM_T: { type: INT32, desc: Average time to refresh photo and video albums }
+  REF_USERSOURCE_ALBUM_C: { type: INT32, desc: Number of user and source albums refreshed }
+  AVG_REF_USERSOURCE_ALBUM_T: { type: INT32, desc: Average time to refresh user and source albums }
+  REF_ANALYSIS_ALBUM_C: { type: INT32, desc: Number of analysis albums refreshed }
+  AVG_REF_ANALYSIS_ALBUM_T: { type: INT32, desc: Average time to refresh analysis albums }

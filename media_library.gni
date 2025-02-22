@@ -36,10 +36,12 @@ MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH =
 
 declare_args() {
   media_library_link_opt = false
-  medialibrary_mtp_enable = true
   resourceschedule_device_standby = true
   if (defined(global_parts_info) &&
       !defined(global_parts_info.resourceschedule_device_standby)) {
     resourceschedule_device_standby = false
   }
+  media_library_feature_mtp = true
+  media_library_feature_back_up = true
+  media_library_feature_cloud_enhancement = true
 }

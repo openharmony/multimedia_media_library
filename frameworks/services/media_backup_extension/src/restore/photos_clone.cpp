@@ -47,14 +47,11 @@ std::string PhotosClone::ToLower(const std::string &str)
 int32_t PhotosClone::GetPhotosRowCountInPhotoMap()
 {
     std::string querySql = this->SQL_PHOTOS_TABLE_COUNT_IN_PHOTO_MAP;
-    if (this->mediaLibraryOriginalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
+        "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -64,14 +61,11 @@ int32_t PhotosClone::GetPhotosRowCountInPhotoMap()
 int32_t PhotosClone::GetPhotosRowCountNotInPhotoMap()
 {
     std::string querySql = this->SQL_PHOTOS_TABLE_COUNT_NOT_IN_PHOTO_MAP;
-    if (this->mediaLibraryOriginalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
+        "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -81,10 +75,8 @@ int32_t PhotosClone::GetPhotosRowCountNotInPhotoMap()
 std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosInPhotoMap(int32_t offset, int32_t pageSize)
 {
     std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
-    if (this->mediaLibraryOriginalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, nullptr,
+        "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     return this->mediaLibraryOriginalRdb_->QuerySql(this->SQL_PHOTOS_TABLE_QUERY_IN_PHOTO_MAP, bindArgs);
 }
 
@@ -166,10 +158,9 @@ std::string PhotosClone::FindPackageName(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
     // Only provide the package name of the SOURCE album.
-    if (albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
-        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC)) {
-        return "";
-    }
+    bool cond = (albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
+        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC));
+    CHECK_AND_RETURN_RET(!cond, "");
     return albumInfo.albumName;
 }
 
@@ -220,7 +211,7 @@ std::vector<PhotosDao::PhotosRowData> PhotosClone::FindDuplicateBurstKey()
 
 int32_t PhotosClone::FindPhotoQuality(const FileInfo &fileInfo)
 {
-    if (fileInfo.photoQuality == 1 && fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
+    if (fileInfo.photoQuality == 1) {
         return 0;
     }
     return fileInfo.photoQuality;

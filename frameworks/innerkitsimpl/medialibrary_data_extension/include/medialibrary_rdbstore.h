@@ -45,7 +45,7 @@ public:
     EXPORT static bool CheckRdbStore();
     EXPORT virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
     EXPORT virtual int32_t BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
-        const std::vector<NativeRdb::ValuesBucket>& values) override;
+        std::vector<NativeRdb::ValuesBucket>& values) override;
     EXPORT virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
     EXPORT virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows) override;
     EXPORT std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
@@ -58,7 +58,7 @@ public:
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) override;
 
     EXPORT static int32_t BatchInsert(int64_t &outRowId, const std::string &table,
-        const std::vector<NativeRdb::ValuesBucket> &values);
+        std::vector<NativeRdb::ValuesBucket> &values);
     EXPORT static void BuildValuesSql(const NativeRdb::ValuesBucket &values,
         std::vector<NativeRdb::ValueObject> &bindArgs, std::string &sql);
     EXPORT static void BuildQuerySql(const NativeRdb::AbsRdbPredicates &predicates,
@@ -99,6 +99,12 @@ public:
     EXPORT static void UpdateIndexForCover(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateLcdStatusNotUploaded(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddReadyCountIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void RevertFixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddCloudEnhancementAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddPhotoDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void UpdatePhotoQualityCloned(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);
@@ -114,7 +120,7 @@ public:
         const std::vector<std::string> &columns = {});
     EXPORT int Update(int &changedRows, const NativeRdb::ValuesBucket &row,
         const NativeRdb::AbsRdbPredicates &predicates);
-    EXPORT int Insert(int64_t &outRowId, const std::string &table, const NativeRdb::ValuesBucket &row);
+    EXPORT int Insert(int64_t &outRowId, const std::string &table, NativeRdb::ValuesBucket &row);
     EXPORT int Delete(int &deletedRows, const std::string &table, const std::string &whereClause,
         const std::vector<std::string> &args);
     EXPORT int Delete(int &deletedRows, const NativeRdb::AbsRdbPredicates &predicates);
@@ -130,11 +136,15 @@ public:
         return MediaLibraryRdbStore::GetRaw()->ExecuteSql(sql, args);
     }
     static void WalCheckPoint();
+    EXPORT int ExecuteForChangedRowCount(int64_t &outValue, const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &args = {});
+    static void UpdateMediaTypeAndThumbnailReadyIdx(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::RdbStore> GetRaw();
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
+    EXPORT static const std::string RegexReplaceFunc(const std::vector<std::string> &args);
     friend class TransactionOperations;
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
     EXPORT static const std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
@@ -197,6 +207,7 @@ public:
     std::vector<std::string> notifyUris_;
     std::vector<std::string> dateTakens_;
     std::vector<int32_t> subTypes_;
+    std::vector<int32_t> isTemps_;
     std::string table_;
     int32_t deleteRows_;
     std::string bundleName_;

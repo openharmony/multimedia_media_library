@@ -36,9 +36,22 @@ using namespace std;
 
 namespace OHOS::Media {
 
+std::string USER_STR = "user";
 static inline bool ContainsFlag(const string &mode, const char flag)
 {
     return mode.find(flag) != string::npos;
+}
+
+static int32_t AcrossUserOperationPermCheck(MediaLibraryCommand &cmd)
+{
+    std::string user = cmd.GetQuerySetParam(USER_STR);
+    vector<string> perms;
+    if (user == "") {
+        return E_SUCCESS;
+    } else {
+        perms.push_back(PERM_INTERACT_ACROSS_LOCAL_ACCOUNTS);
+    }
+    return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
@@ -155,6 +168,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::PAH_MULTISTAGES_CAPTURE,
         OperationObject::STORY_ALBUM,
         OperationObject::STORY_COVER,
+        OperationObject::HIGHLIGHT_DELETE,
         OperationObject::STORY_PLAY,
         OperationObject::USER_PHOTOGRAPHY,
         OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
@@ -229,6 +243,8 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
         OperationObject::ACTIVE_DEVICE,
         OperationObject::MISCELLANEOUS,
         OperationObject::TAB_OLD_PHOTO,
+        OperationObject::TAB_FACARD_PHOTO,
+        OperationObject::CONVERT_PHOTO,
     };
 
     string uri = cmd.GetUri().ToString();
@@ -272,7 +288,12 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     MEDIA_DEBUG_LOG("uri: %{private}s object: %{public}d, opType: %{public}d isWrite: %{public}d",
         cmd.GetUri().ToString().c_str(), cmd.GetOprnObject(), cmd.GetOprnType(), isWrite);
 
-    int err = SystemApiCheck(cmd);
+    int err = AcrossUserOperationPermCheck(cmd);
+    if (err != E_SUCCESS) {
+        return err;
+    }
+
+    err = SystemApiCheck(cmd);
     if (err != E_SUCCESS) {
         return err;
     }
@@ -367,6 +388,10 @@ int32_t ReadWritePermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &
 {
     MEDIA_DEBUG_LOG("ReadWritePermissionHandler:isOpenFile=%{public}d", permParam.isOpenFile);
     if (permParam.isOpenFile) {
+        int err = AcrossUserOperationPermCheck(cmd);
+        if (err != E_SUCCESS) {
+            return err;
+        }
         permParam.isWrite = ContainsFlag(permParam.openFileNode, 'w');
         return CheckOpenFilePermission(cmd, permParam);
     }

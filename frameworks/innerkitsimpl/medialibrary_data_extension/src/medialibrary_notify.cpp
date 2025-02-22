@@ -18,6 +18,7 @@
 #include "medialibrary_async_worker.h"
 #include "medialibrary_period_worker.h"
 #include "data_ability_helper_impl.h"
+#include "dfx_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_command.h"
@@ -41,8 +42,11 @@ static const int32_t WAIT_TIME = 2;
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::instance_;
 mutex MediaLibraryNotify::mutex_;
 unordered_map<string, NotifyDataMap> MediaLibraryNotify::nfListMap_ = {};
+atomic<uint16_t> MediaLibraryNotify::thumbCounts_(0);
 atomic<uint16_t> MediaLibraryNotify::counts_(0);
 static const uint16_t IDLING_TIME = 50;
+const static uint16_t THUMB_LOOP = 5;
+const static uint16_t THUMB_NOTIFY_SEQ_NUM = 1;
 
 shared_ptr<MediaLibraryNotify> MediaLibraryNotify::GetInstance()
 {
@@ -122,6 +126,21 @@ static int SolveAlbumUri(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
     }
 }
 
+static void PrintNotifyInfo(NotifyType type, const list<Uri> &uris, const string &uri = "")
+{
+    string temp;
+    for (auto it : uris) {
+        temp += DfxUtils::GetSafeUri(it.ToString()) + ",";
+    }
+    if (type == NotifyType::NOTIFY_UPDATE || type == NotifyType::NOTIFY_REMOVE
+        || type == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET) {
+        if (!uri.empty()) {
+            MEDIA_INFO_LOG("album uri is %{public}s", uri.c_str());
+        }
+        MEDIA_INFO_LOG("type is %{public}d, info is %{public}s", static_cast<int>(type), temp.c_str());
+    }
+}
+
 static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
 {
     int ret;
@@ -129,11 +148,13 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
         if (uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX) != string::npos) {
             Uri notifyUri = Uri(uri);
             ret = SolveAlbumUri(notifyUri, type, uris);
+            PrintNotifyInfo(type, uris, uri);
         } else {
             auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
             MEDIA_DEBUG_LOG("obsMgrClient->NotifyChangeExt URI is %{public}s, type is %{public}d",
                 uri.c_str(), static_cast<int>(type));
             ret = obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(type), uris});
+            PrintNotifyInfo(type, uris);
         }
         if (ret != E_OK) {
             MEDIA_ERR_LOG("PushNotification failed, errorCode = %{public}d", ret);
@@ -142,11 +163,41 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
     return;
 }
 
-static void PushNotification(PeriodTaskData *data)
+static void ExtractDataMapWithNotifyType(NotifyType type, unordered_map<string, NotifyDataMap>& listMap,
+    NotifyDataMap& dataMap)
 {
-    if (data == nullptr) {
+    if (listMap.count(PhotoColumn::PHOTO_URI_PREFIX) == 0) {
         return;
     }
+    auto iter = listMap.find(PhotoColumn::PHOTO_URI_PREFIX);
+    auto typeIter = iter->second.find(type);
+    if (typeIter == iter->second.end()) {
+        return;
+    }
+    dataMap.emplace(type, typeIter->second);
+    iter->second.erase(type);
+}
+
+// only call this function after clear listMap
+static void InsertDataMapToListMap(NotifyType type, unordered_map<string, NotifyDataMap>& listMap,
+    NotifyDataMap& dataMap)
+{
+    if (dataMap.size() == 0) {
+        return;
+    }
+    if (listMap.count(PhotoColumn::PHOTO_URI_PREFIX) == 0) {
+        listMap.emplace(PhotoColumn::PHOTO_URI_PREFIX, dataMap);
+        return;
+    }
+    auto iter = listMap.find(PhotoColumn::PHOTO_URI_PREFIX);
+    if (iter->second.count(type) == 0) {
+        iter->second.emplace(type, dataMap.at(type));
+    }
+}
+
+static void PushNotification(PeriodTaskData *data)
+{
+    MediaLibraryNotify::thumbCounts_ = (++MediaLibraryNotify::thumbCounts_) % THUMB_LOOP;
     unordered_map<string, NotifyDataMap> tmpNfListMap;
     {
         lock_guard<mutex> lock(MediaLibraryNotify::mutex_);
@@ -158,6 +209,7 @@ static void PushNotification(PeriodTaskData *data)
                     MEDIA_ERR_LOG("failed to get period worker instance");
                     return;
                 }
+                MediaLibraryNotify::thumbCounts_ = 0;
                 periodWorker->StopThread(PeriodTaskType::COMMON_NOTIFY);
                 MEDIA_INFO_LOG("notify task close");
             }
@@ -165,8 +217,17 @@ static void PushNotification(PeriodTaskData *data)
         } else {
             MediaLibraryNotify::counts_.store(0);
         }
+        NotifyDataMap thumbAddMap = {};
+        NotifyDataMap thumbUpdateMap = {};
+        if (MediaLibraryNotify::thumbCounts_ != THUMB_NOTIFY_SEQ_NUM) {
+            ExtractDataMapWithNotifyType(NotifyType::NOTIFY_THUMB_ADD, MediaLibraryNotify::nfListMap_, thumbAddMap);
+            ExtractDataMapWithNotifyType(NotifyType::NOTIFY_THUMB_UPDATE, MediaLibraryNotify::nfListMap_,
+                thumbUpdateMap);
+        }
         MediaLibraryNotify::nfListMap_.swap(tmpNfListMap);
         MediaLibraryNotify::nfListMap_.clear();
+        InsertDataMapToListMap(NotifyType::NOTIFY_THUMB_ADD, MediaLibraryNotify::nfListMap_, thumbAddMap);
+        InsertDataMapToListMap(NotifyType::NOTIFY_THUMB_UPDATE, MediaLibraryNotify::nfListMap_, thumbUpdateMap);
     }
     for (auto &[uri, notifyDataMap] : tmpNfListMap) {
         if (notifyDataMap.empty()) {
@@ -176,8 +237,62 @@ static void PushNotification(PeriodTaskData *data)
     }
 }
 
+static int32_t IsThumbReadyById(const string &fileId)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    vector<string> columns = {
+        MediaColumn::MEDIA_HIDDEN,
+        MediaColumn::MEDIA_DATE_TRASHED,
+        PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
+        PhotoColumn::PHOTO_SUBTYPE,
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+    };
+    NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    auto resultSet = uniStore->Query(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("GetThumbVisibleById failed");
+        return 0;
+    }
+    int ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, 0, "Failed to GoToFirstRow");
+    int32_t isVisible = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
+        resultSet, TYPE_INT32));
+    int64_t isTrashed = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_DATE_TRASHED,
+        resultSet, TYPE_INT64));
+    int32_t subtype = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE,
+        resultSet, TYPE_INT32));
+    int32_t burstCoverLevel = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        resultSet, TYPE_INT32));
+    int32_t isHidden = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_HIDDEN,
+        resultSet, TYPE_INT32));
+    resultSet->Close();
+    return isVisible && isTrashed == 0 && isHidden == 0 && !(subtype == static_cast<int32_t>(PhotoSubType::BURST) &&
+        burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+}
+
+static bool SkipThumbNotifyIfNotReady(NotifyTaskData* taskData)
+{
+    if (taskData == nullptr) {
+        return false;
+    }
+    if (taskData->notifyType_ != NotifyType::NOTIFY_THUMB_ADD) {
+        return false;
+    }
+    string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(taskData->uri_);
+    if (fileId.empty()) {
+        return false;
+    }
+    return !IsThumbReadyById(fileId);
+}
+
 static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData* taskData)
 {
+    if (SkipThumbNotifyIfNotReady(taskData)) {
+        MEDIA_DEBUG_LOG("Skip taskData %{public}s, because not visible", taskData->uri_.c_str());
+        return;
+    }
     NotifyDataMap notifyDataMap;
     list<Uri> sendUris;
     Uri uri(srcUri);
@@ -208,6 +323,7 @@ static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData
 static int32_t GetAlbumsById(const string &fileId, list<string> &albumIdList)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "rdbstore is nullptr");
     MediaLibraryCommand queryAlbumMapCmd(OperationObject::PAH_PHOTO, OperationType::QUERY);
     queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
     auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoColumn::PHOTO_OWNER_ALBUM_ID});
@@ -283,12 +399,7 @@ int32_t MediaLibraryNotify::Init()
         MEDIA_ERR_LOG("failed to get period worker instance");
         return E_ERR;
     }
-    PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
-    if (data == nullptr) {
-        MEDIA_ERR_LOG("Failed to new taskdata");
-        return E_ERR;
-    }
-    periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, data);
+    periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, nullptr);
     MEDIA_INFO_LOG("add notify task");
     return E_OK;
 }
@@ -299,12 +410,7 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
     auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
     if (periodWorker != nullptr && !periodWorker->IsThreadRunning(PeriodTaskType::COMMON_NOTIFY)) {
         MediaLibraryNotify::counts_.store(0);
-        PeriodTaskData *data = new (std::nothrow) PeriodTaskData();
-        if (data == nullptr) {
-            MEDIA_ERR_LOG("Failed to new taskdata");
-            return E_ERR;
-        }
-        periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, data);
+        periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, nullptr);
     }
     unique_ptr<NotifyTaskWorker> &asyncWorker = NotifyTaskWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");

@@ -15,7 +15,6 @@
 #define MLOG_TAG "MtpService"
 #include "mtp_service.h"
 #include "media_log.h"
-#include "mtp_global.h"
 #include "mtp_media_library.h"
 
 using namespace std;
@@ -40,7 +39,6 @@ void MtpService::StartService()
         Init();
         CHECK_AND_RETURN_LOG(!isMonitorRun_, "MtpService::StartService -- monitor is already running, return");
         CHECK_AND_RETURN_LOG(monitorPtr_ != nullptr, "MtpService::StartService monitorPtr_ is nullptr");
-        MtpGlobal::ResetBlockStatus();
         monitorPtr_->Start();
         isMonitorRun_ = true;
     }
@@ -55,7 +53,6 @@ void MtpService::StopService()
         CHECK_AND_RETURN_LOG(monitorPtr_ != nullptr, "MtpService::StopService monitorPtr_ is nullptr");
         monitorPtr_->Stop();
         isMonitorRun_ = false;
-        monitorPtr_.reset();
         // after stop mtp service, clear the unordered_map memory of the MtpMediaLibrary
         MtpMediaLibrary::GetInstance()->Clear();
     }

@@ -312,16 +312,16 @@ void MediaLibraryMultiStagesPhotoCaptureTest::TearDown(void) {}
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_result_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_result_001 Start");
-    MultiStagesCaptureDfxResult::Report("123456", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
-
+    EXPECT_NE(g_rdbStore, nullptr);
+    MultiStagesCaptureDfxResult::Report("123456", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     MEDIA_INFO_LOG("dfx_result_001 End");
 }
 
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_result_invalid_param_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_result_invalid_param_002 Start");
-    MultiStagesCaptureDfxResult::Report("", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::Photo));
-
+    EXPECT_NE(g_rdbStore, nullptr);
+    MultiStagesCaptureDfxResult::Report("", 0, static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     MEDIA_INFO_LOG("dfx_result_invalid_param_002 End");
 }
 
@@ -334,7 +334,8 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_001, TestSize.L
 
     // sleep for 1234 milliseconds
     this_thread::sleep_for(chrono::milliseconds(1234));
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), true);
 
     MEDIA_INFO_LOG("dfx_total_time_001 End");
@@ -346,7 +347,8 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_two_start_002, 
     string photoId = "1234566";
 
     // test that photo_id is not add start time
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), true);
 
     string photoId2 = "12345666";
@@ -355,10 +357,12 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_two_start_002, 
 
     // sleep for 1234 milliseconds
     this_thread::sleep_for(chrono::milliseconds(1234));
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), false);
 
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId2);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId2,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), true);
 
     MEDIA_INFO_LOG("dfx_total_time_two_start_002 End");
@@ -390,7 +394,8 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_total_time_invalid_param_0
 
     // sleep for 1234 milliseconds
     this_thread::sleep_for(chrono::milliseconds(1234));
-    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId);
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId,
+        static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE));
     EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), true);
 
     MEDIA_INFO_LOG("dfx_total_time_invalid_param_004 End");
@@ -619,7 +624,7 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, deferred_proc_adapter_null_ses
 {
     MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 Start");
     std::shared_ptr<DeferredPhotoProcessingAdapter> deferredProcSession = make_shared<DeferredPhotoProcessingAdapter>();
-
+    EXPECT_NE(deferredProcSession, nullptr);
     // test deferredProcSession_ is nullptr;
     deferredProcSession->deferredPhotoProcSession_ = nullptr;
 
@@ -629,6 +634,20 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, deferred_proc_adapter_null_ses
     deferredProcSession->ProcessImage("com.test.demo", PHOTO_ID_FOR_TEST);
     deferredProcSession->CancelProcessImage(PHOTO_ID_FOR_TEST);
     MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, normal_deferred_proc_adapter_session, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("normal_deferred_proc_adapter_session Start");
+    std::shared_ptr<DeferredPhotoProcessingAdapter> deferredProcSession = make_shared<DeferredPhotoProcessingAdapter>();
+    EXPECT_NE(deferredProcSession, nullptr);
+
+    deferredProcSession->BeginSynchronize();
+    deferredProcSession->EndSynchronize();
+    deferredProcSession->RestoreImage(PHOTO_ID_FOR_TEST);
+    deferredProcSession->ProcessImage("com.test.demo", PHOTO_ID_FOR_TEST);
+    deferredProcSession->CancelProcessImage(PHOTO_ID_FOR_TEST);
+    MEDIA_INFO_LOG("normal_deferred_proc_adapter_session End");
 }
 
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, file_utils_save_file_001, TestSize.Level1)
@@ -667,6 +686,7 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdatePhotoQuality_001, TestSi
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
     auto result = callback->UpdatePhotoQuality(PHOTO_ID_FOR_TEST);
     EXPECT_EQ(result, E_OK);
+    delete callback;
 
     vector<string> columns = { PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_IS_TEMP };
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
@@ -683,6 +703,127 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdatePhotoQuality_001, TestSi
     EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet), 0);
 
     MEDIA_INFO_LOG("UpdatePhotoQuality_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateCEAvailable_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateCEAvailable_test Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+    vector<string> columns = { PhotoColumn::MEDIA_NAME, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    ASSERT_NE(resultSet, nullptr);
+
+    callback->NotifyIfTempFile(resultSet);
+    callback->UpdateCEAvailable(to_string(fileId), 1);
+    callback->UpdateCEAvailable(to_string(fileId), 2);
+    callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_SESSION_SYNC_NEEDED);
+    callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_IMAGE_PROC_INTERRUPTED);
+    callback->OnStateChanged(CameraStandard::SESSION_STATE_RUNNALBE);
+    delete callback;
+    MEDIA_INFO_LOG("UpdateCEAvailable_test End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, ProcessAndSaveHighQualityImage_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("ProcessAndSaveHighQualityImage_test_001 Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureDeferredPhotoProcSessionCallback * callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+    shared_ptr<Media::Picture> picture = make_shared<Media::Picture>();
+    shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    picture->SetMainPixel(pixelMap);
+
+    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, true);
+    callback->OnProcessImageDone(to_string(fileId), picture, false);
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_IS_TEMP, 1);
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    EXPECT_GT(MediaLibraryPhotoOperations::Update(cmd), E_OK);
+
+    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, false);
+    callback->GetCommandByImageId(PHOTO_ID_FOR_TEST, cmd);
+    callback->GetCommandByImageId("2011/11/11", cmd);
+
+    delete callback;
+    MEDIA_INFO_LOG("ProcessAndSaveHighQualityImage_test_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateHighQualityPictureInfo_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateHighQualityPictureInfo_test Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+
+    callback->UpdateHighQualityPictureInfo(to_string(fileId), true);
+    callback->UpdateHighQualityPictureInfo(to_string(fileId), false);
+    delete callback;
+    MEDIA_INFO_LOG("UpdateHighQualityPictureInfo_test End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, OnDeliveryLowQualityImage_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("OnDeliveryLowQualityImage_test Start");
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    shared_ptr<Media::Picture> picture;
+    callback->OnDeliveryLowQualityImage(to_string(fileId), picture);
+
+    picture = make_shared<Media::Picture>();
+    callback->OnDeliveryLowQualityImage(to_string(fileId), picture);
+
+    shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    picture->SetMainPixel(pixelMap);
+    callback->OnDeliveryLowQualityImage(to_string(fileId), picture);
+    callback->OnDeliveryLowQualityImage("fileId", picture);
+    delete callback;
+    MEDIA_INFO_LOG("OnDeliveryLowQualityImage_test End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, OnProcessImageDone_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("OnProcessImageDone_test_002 Start");
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    uint8_t addr = 1;
+    long bytes = 8;
+    MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(1, to_string(fileId), true);
+    MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(2, PHOTO_ID_FOR_TEST, false);
+    callback->OnProcessImageDone(to_string(fileId), &addr, bytes, true);
+    callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, &addr, bytes, false);
+
+    ValuesBucket values;
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
+    values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    EXPECT_GT(MediaLibraryPhotoOperations::Update(cmd), E_OK);
+
+    callback->OnProcessImageDone(to_string(fileId), &addr, bytes, false);
+    delete callback;
+    MEDIA_INFO_LOG("OnProcessImageDone_test_002 End");
 }
 
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, UpdateDbInfoTest_normal_001, TestSize.Level1)

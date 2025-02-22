@@ -1817,7 +1817,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_084, TestSi
     ASSERT_NE(context, nullptr);
     uint32_t parent = 0;
     mtpMediaLib_->GetIdByPath(FILE_PATH, parent);
-    context->storageID = 2;
+    context->storageID = 0;
     context->parent = parent;
     context->format = MTP_FORMAT_TEXT_CODE;
     context->name = "1.txt";
@@ -2415,7 +2415,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_109, TestSi
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
     std::shared_ptr<MtpOperationContext> context = nullptr;
-    bool condition = true;
+    bool condition = false;
     int fd = 1;
     mtpMediaLib_->CondCloseFd(condition, fd);
 

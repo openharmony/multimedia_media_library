@@ -31,6 +31,7 @@ const photoAccessHelper = requireNapi('file.photoAccessHelper');
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
+const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
 
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
@@ -50,6 +51,7 @@ export class PhotoPickerComponent extends ViewPU {
         this.onVideoPlayStateChanged = void 0;
         this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
+        this.__revokeIndex = new ObservedPropertySimplePU(0, this, 'revokeIndex');
         this.setInitiallyProvidedValue(o);
         this.declareWatch('pickerController', this.onChanged);
     }
@@ -69,6 +71,9 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onVideoPlayStateChanged && (this.onVideoPlayStateChanged = e.onVideoPlayStateChanged);
         this.__pickerController.set(e.pickerController);
         void 0 !== e.proxy && (this.proxy = e.proxy);
+        if (e.revokeIndex !== undefined) {
+            this.revokeIndex = e.revokeIndex;
+        }
     }
 
     updateStateVars(e) {
@@ -77,16 +82,26 @@ export class PhotoPickerComponent extends ViewPU {
 
     purgeVariableDependenciesOnElmtId(e) {
         this.__pickerController.purgeDependencyOnElmtId(e);
+        this.__revokeIndex.purgeDependencyOnElmtId(e);
     }
 
     aboutToBeDeleted() {
         this.__pickerController.aboutToBeDeleted();
+        this.__revokeIndex.aboutToBeDeleted();
         SubscriberManager.Get().delete(this.id__());
         this.aboutToBeDeletedInternal();
     }
 
     get pickerController() {
         return this.__pickerController.get();
+    }
+
+    get revokeIndex() {
+        return this.__revokeIndex.get();
+    }
+
+    set revokeIndex(newValue) {
+        return this.__revokeIndex.set();
     }
 
     onChanged() {
@@ -208,6 +223,7 @@ export class PhotoPickerComponent extends ViewPU {
             var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d;
             SecurityUIExtensionComponent.create({
                 parameters: {
+                    errorRevokeIndex: this.revokeIndex,
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
                     uri: 'multipleselect',
                     targetPage: 'photoPage',
@@ -233,6 +249,7 @@ export class PhotoPickerComponent extends ViewPU {
                     maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber,
                     isOnItemClickedSet: !!this.onItemClicked,
                     isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported,
+                    singleSelectionMode: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.singleSelectionMode,
                     isSlidingSelectionSupported: null === (b = this.pickerOptions) || void 0 === b ? void 0 : b.isSlidingSelectionSupported,
                     photoBrowserCheckboxPosition: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition,
                     gridMargin: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.gridMargin,
@@ -249,8 +266,12 @@ export class PhotoPickerComponent extends ViewPU {
                 let o = e;
                 this.handleOnReceive(o);
             }));
-            SecurityUIExtensionComponent.onError((() => {
-                console.info('PhotoPickerComponent onError');
+            SecurityUIExtensionComponent.onError(((error) => {
+                console.info('PhotoPickerComponent onError: ' + JSON.stringify(error));
+                console.info('PhotoPickerComponent revokeIndex: ' + this.revokeIndex);
+                if (error.code === 100014 && this.revokeIndex < 5) {
+                    this.revokeIndex++;
+                }
             }));
         }), SecurityUIExtensionComponent);
         Column.pop();
@@ -391,10 +412,16 @@ export class PhotoPickerComponent extends ViewPU {
 
     convertMIMETypeToFilterType(e) {
         let o;
-        o = e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE ?
-            FILTER_MEDIA_TYPE_IMAGE : e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE ?
-            FILTER_MEDIA_TYPE_VIDEO : FILTER_MEDIA_TYPE_ALL;
-        console.info('PhotoPickerComponent convertMIMETypeToFilterType' + JSON.stringify(o));
+        if (e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
+            o = FILTER_MEDIA_TYPE_IMAGE;
+        } else if (e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
+            o = FILTER_MEDIA_TYPE_VIDEO;
+        } else if (e === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
+            o = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
+        } else {
+            o = FILTER_MEDIA_TYPE_ALL;
+        }
+        console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(o));
         return o;
     }
 
@@ -471,11 +498,13 @@ let PickerController = class {
     }
 
     replacePhotoPickerPreview(e, o, callback) {
-        if (!fs.accessSync(o)) {
+        try {
+            let fd = fs.openSync(o).fd;
+            fs.close(fd);
+        } catch (err) {
             callback({'code': 13900002, 'message': 'No such file', name: ''});
             return;
         }
-        o = fileUri.getUriFromPath(o);
         let date = Math.random();
         this.data = new Map([['CREATE_URI', [e, o, date]]]);
         this.createCallbackMap.set(date, (grantUri, code, message)=>{
@@ -501,6 +530,10 @@ let PickerController = class {
     }
 
     saveTrustedPhotoAssets(e, callback, config, saveMode) {
+        if (!e || e.length === 0) {
+            callback({'code': 14000002, 'message': 'Invalid URI', name: ''}, []);
+            return;
+        }
         this.getAppName().then((appName) => {
             let date = Math.random();
             this.data = new Map([['SAVE_REPLACE_PHOTO_ASSETS', [e, config, saveMode, appName, date]]]);
@@ -647,8 +680,8 @@ export var VideoPlayerState;
 
 export var SaveMode;
 !function(e) {
-    e[e.SAVE_AS_NEW = 0] = 'SAVE_AS_NEW';
-    e[e.SAVE_AS_REPLACE = 1] = 'SAVE_AS_REPLACE';
+    e[e.SAVE_AS = 0] = 'SAVE_AS';
+    e[e.OVERWRITE = 1] = 'OVERWRITE';
 }(SaveMode || (SaveMode = {}));
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,

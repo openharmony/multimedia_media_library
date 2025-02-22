@@ -34,7 +34,7 @@ struct CloneDbInfo {
 class OthersCloneRestore : public BaseRestore {
 public:
     OthersCloneRestore(int32_t sceneCode, const std::string &mediaAppName, const std::string &bundleInfo = "");
-    virtual ~OthersCloneRestore();
+    virtual ~OthersCloneRestore() = default;
 
     int32_t Init(const std::string &backupRetorePath, const std::string &upgradePath, bool isUpgrade);
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
@@ -53,6 +53,7 @@ private:
     void RestoreAlbum(std::vector<FileInfo> &fileInfos);
     void UpdateAlbumInfo(FileInfo &info);
     bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
+    void AddAudioFile(FileInfo &tmpInfo);
     void SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo);
     int32_t GetAllfilesInCurrentDir(const std::string &path);
     void UpDateFileModifiedTime(FileInfo &fileInfo);
@@ -63,6 +64,11 @@ private:
     void CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, std::vector<CloneDbInfo> &popInfos);
     void HandleInsertBatch(int32_t offset);
     PhotoAlbumDao::PhotoAlbumRowData FindAlbumInfo(FileInfo &fileInfo);
+
+    static std::string ParseSourcePathToLPath(int32_t sceneCode, const std::string &filePath, int32_t fileType);
+    static std::string GetFileHeadPath(int32_t sceneCode, int32_t fileType);
+    static void AddGalleryAlbum(std::vector<PhotoAlbumRestore::GalleryAlbumRowData> &galleryAlbumInfos,
+        const std::string &lPath);
 
 private:
     std::mutex cloneMutex_;

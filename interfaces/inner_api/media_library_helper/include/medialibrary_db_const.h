@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 139;
+const int32_t MEDIA_RDB_VERSION = 165;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -165,6 +165,32 @@ enum {
     VERSION_UPDATE_URIPERMISSION_SOURCE_TOKEN_AND_TARGET_TOKEN = 137,
     VERSION_ADD_READY_COUNT_INDEX = 138,
     VERSION_FIX_PICTURE_LCD_SIZE = 139,
+    VERSION_FIX_DATE_ADDED_INDEX = 140,
+    VERSION_UPDATE_NEW_SOURCE_PHOTO_ALBUM_TRIGGER = 141,
+    VERSION_REVERT_FIX_DATE_ADDED_INDEX = 142,
+    VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID = 143,
+    VERSION_ADD_CLOUD_ENHANCEMENT_ALBUM_INDEX = 144,
+    VERSION_HIGHLIGHT_CHANGE_FUNCTION = 145,
+    VERSION_ADD_PHOTO_DATEADD_INDEX = 146,
+    VERSION_ADD_ALBUM_INDEX = 147,
+    VERSION_REFRESH_PERMISSION_APPID = 148,
+    VERSION_UPDATE_PHOTOS_DATE_AND_IDX = 149,
+    VERSION_ADD_CHECK_FLAG = 150,
+    VERSION_ADD_HIGHLIGHT_ANALYSIS_PROGRESS = 151,
+    VERSION_FIX_SOURCE_PHOTO_ALBUM_DATE_MODIFIED = 152,
+    VERSION_UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL = 153,
+    VERSION_ADD_REFRESH_ALBUM_STATUS_COLUMN = 154,
+    VERSION_FIX_SOURCE_ALBUM_UPDATE_TRIGGER_TO_USE_LPATH = 155,
+    VERSION_UPDATE_PHOTOS_DATE_IDX = 156,
+    VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX = 157,
+    VERSION_FIX_PHOTO_QUALITY_CLONED = 158,
+    VERSION_ADD_STAGE_VIDEO_TASK_STATUS = 159,
+    VERSION_HIGHLIGHT_SUBTITLE = 160,
+    VERSION_ADD_IS_AUTO = 161,
+    VERSION_ADD_MEDIA_SUFFIX_COLUMN = 162,
+    VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN = 163,
+    VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN = 164,
+    VERSION_CREATE_TAB_FACARD_PHOTOS = 165,
 };
 
 enum {
@@ -208,6 +234,7 @@ const std::string ML_URI_TIME_ID = "&time_id=";
 const std::string ML_URI_OFFSET = "&offset=";
 const std::string ML_URI_DATE_ADDED = "date_added";
 const std::string ML_URI_DATE_TAKEN = "date_taken";
+const std::string ML_URI_DATE_MODIFIED = "date_modified";
 const std::string ML_URI_AUTHORITY = "media";
 const std::string ML_DATA_SHARE_SCHEME = "datashare";
 const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
@@ -270,6 +297,11 @@ const std::string MEDIA_DATA_DB_CLOUD_ID = "cloud_id";
 const std::string MEDIA_DATA_DB_META_DATE_MODIFIED = "meta_date_modified";
 const std::string MEDIA_DATA_DB_SYNC_STATUS = "sync_status";
 const std::string MEDIA_DATA_DB_THUMBNAIL_READY = "thumbnail_ready";
+const std::string MEDIA_DATA_DB_ALL_EXIF = "all_exif";
+const std::string MEDIA_DATA_DB_SHOOTING_MODE = "shooting_mode";
+const std::string MEDIA_DATA_DB_SHOOTING_MODE_TAG = "shooting_mode_tag";
+const std::string MEDIA_DATA_DB_PHOTOS_LATITUDE = "photos." + MEDIA_DATA_DB_LATITUDE;
+const std::string MEDIA_DATA_DB_PHOTOS_LONGITUDE = "photos." + MEDIA_DATA_DB_LONGITUDE;
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
@@ -340,6 +372,7 @@ const std::string MEDIA_DATA_DB_PHOTO_ID = "photo_id";
 const std::string MEDIA_DATA_DB_PHOTO_QUALITY = "photo_quality";
 const std::string MEDIA_DATA_DB_FIRST_VISIT_TIME = "first_visit_time";
 const std::string MEDIA_DATA_DB_DEFERRED_PROC_TYPE = "deferred_proc_type";
+const std::string MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS = "stage_video_task_status";
 
 const std::string MEDIA_COLUMN_COUNT = "count(*)";
 const std::string MEDIA_COLUMN_COUNT_1 = "count(1)";
@@ -421,6 +454,8 @@ const std::string MEDIA_DB_FILE_SLAVE_WAL = "/data/storage/el2/database/rdb/medi
 // requestId for generating thumbnail in batches
 const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 const std::string IMAGE_FILE_TYPE = "image_file_type";
+
+const std::string RESTORE_REQUEST_ASTC_GENERATE_COUNT = "restore_request_astc_generate_count";
 } // namespace Media
 } // namespace OHOS
 

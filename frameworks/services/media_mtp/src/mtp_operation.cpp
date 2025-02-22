@@ -16,16 +16,17 @@
 #include "mtp_operation.h"
 #include <algorithm>
 #include "header_data.h"
+#include "medialibrary_tracer.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_constants.h"
-#include "mtp_global.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_context.h"
 #include "mtp_operation_utils.h"
 #include "mtp_storage_manager.h"
 #include "packet_payload_factory.h"
+#include "parameters.h"
 #include "payload_data/get_device_info_data.h"
 #include "payload_data.h"
 #include "payload_data/send_object_info_data.h"
@@ -35,6 +36,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
+constexpr const char *MTP_DISABLE = "persist.edm.mtp_server_disable";
 MtpOperation::MtpOperation(void)
 {
     Init();
@@ -56,22 +58,43 @@ void MtpOperation::Init()
     responseCode_ = MTP_UNDEFINED_CODE;
 }
 
-void MtpOperation::Execute()
+void MtpOperation::Stop()
 {
-    int errorCode;
+    CHECK_AND_RETURN_LOG(requestPacketPtr_ != nullptr, "requestPacketPtr_ is null");
+    requestPacketPtr_->Stop();
+}
+
+int32_t MtpOperation::Execute()
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MtpOperation::Execute");
+    // 判断param, disable == true, 直接给Initiator返回error_dode
+    std::string param(MTP_DISABLE);
+    bool mtpDisable = system::GetBoolParameter(param, false);
+    int errorCode = 0;
+    if (mtpDisable) {
+        SendMakeResponsePacket(errorCode);
+        MEDIA_INFO_LOG("MTP is disable");
+        return errorCode;
+    }
     ResetOperation();
     ReceiveRequestPacket(errorCode);
+    CHECK_AND_RETURN_RET_LOG(mtpContextPtr_ != nullptr, errorCode, "mtpContextPtr_ is null");
+    if (mtpContextPtr_->operationCode == 0) {
+        MEDIA_DEBUG_LOG("operationCode is 0, read error, no need to send response");
+        return errorCode;
+    }
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
         MEDIA_ERR_LOG("MtpOperation::Execute Out ReceiveRequestPacket fail err: %{public}d", errorCode);
-        return;
+        return errorCode;
     }
 
     DealRequest(mtpContextPtr_->operationCode, errorCode);
     if (errorCode != MTP_SUCCESS) {
         SendMakeResponsePacket(errorCode);
         MEDIA_ERR_LOG("MtpOperation::Execute Out DealRequest fail err: %{public}d", errorCode);
-        return;
+        return errorCode;
     }
 
     if (MtpPacket::IsNeedDataPhase(mtpContextPtr_->operationCode)) {
@@ -83,10 +106,11 @@ void MtpOperation::Execute()
     }
     if (errorCode == MTP_ERROR_TRANSFER_CANCELLED) {
         MEDIA_INFO_LOG("File transfer canceled");
-        return;
+        return errorCode;
     }
 
     SendMakeResponsePacket(errorCode);
+    return errorCode;
 }
 
 void MtpOperation::ReceiveRequestPacket(int &errorCode)
@@ -169,7 +193,8 @@ void MtpOperation::ReceiveI2Rdata(int &errorCode)
 
 void MtpOperation::SendR2Idata(int &errorCode)
 {
-    if (mtpContextPtr_->operationCode == MTP_OPERATION_GET_OBJECT_CODE) {
+    if (mtpContextPtr_->operationCode == MTP_OPERATION_GET_OBJECT_CODE ||
+        mtpContextPtr_->operationCode == MTP_OPERATION_GET_PARTIAL_OBJECT_CODE) {
         SendObjectData(errorCode);
         return;
     }
@@ -238,7 +263,6 @@ uint16_t MtpOperation::GetPayloadDataSub(shared_ptr<MtpOperationContext> &contex
     uint16_t containerType, int &errorCode)
 {
     responseCode_ = MTP_UNDEFINED_CODE;
-    CHECK_AND_RETURN_RET_LOG(!MtpGlobal::IsBlocked(), responseCode_, "Not support operation in blocked mode");
     switch (context->operationCode) {
         case MTP_OPERATION_RESET_DEVICE_CODE:
         case MTP_OPERATION_CLOSE_SESSION_CODE:

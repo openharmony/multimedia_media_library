@@ -116,6 +116,8 @@ public:
 
     static const std::string &GetIndentBlank();
     static std::string GetIndentBlank(size_t indent);
+    static bool CanDump();
+    static void DumpPacket(const std::vector<uint8_t> &outBuffer);
     static void Dump(const std::vector<uint8_t> &data, uint32_t offset = 0, uint32_t sum = UINT32_MAX);
 
 private:

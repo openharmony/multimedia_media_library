@@ -43,6 +43,8 @@ void MtpEvent::SendObjectAdded(const std::string &path)
     CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendObjectAdded failed, mtpContextPtr_ is nullptr");
 
     handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
+    CHECK_AND_RETURN_LOG(handleptr_ != nullptr, "SendObjectAdded failed, handleptr_ is nullptr");
+
     uint32_t handle{0};
     int i{0};
     while (i < MTP_SEND_ADD_TIMES) {
@@ -62,6 +64,8 @@ void MtpEvent::SendObjectRemoved(const std::string &path)
     CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendObjectRemoved failed, mtpContextPtr_ is nullptr");
 
     handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
+    CHECK_AND_RETURN_LOG(handleptr_ != nullptr, "SendObjectRemoved failed, handleptr_ is nullptr");
+
     uint32_t handle{0};
     int i{0};
     while (i < MTP_SEND_ADD_TIMES) {
@@ -77,11 +81,20 @@ void MtpEvent::SendObjectRemoved(const std::string &path)
     }
 }
 
+void MtpEvent::SendObjectRemovedByHandle(uint32_t handle)
+{
+    CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendObjectRemovedByHandle failed, mtpContextPtr_ is nullptr");
+    mtpContextPtr_->eventHandle = handle;
+    SendEvent(MTP_EVENT_OBJECT_REMOVED_CODE);
+}
+
 void MtpEvent::SendObjectInfoChanged(const std::string &path)
 {
     CHECK_AND_RETURN_LOG(mtpContextPtr_ != nullptr, "SendObjectInfoChanged failed, mtpContextPtr_ is nullptr");
 
     handleptr_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
+    CHECK_AND_RETURN_LOG(handleptr_ != nullptr, "SendObjectInfoChanged failed, handleptr_ is nullptr");
+
     uint32_t handle{0};
     int i{0};
     while (i < MTP_SEND_ADD_TIMES) {
@@ -149,17 +162,15 @@ void MtpEvent::SendEvent(const int32_t &code)
     shared_ptr<HeaderData> eventHeaderData =
         make_shared<HeaderData>(EVENT_CONTAINER_TYPE, code, HeaderData::sTransactionID_);
     shared_ptr<MtpPacket> eventPacketPtr = std::make_shared<MtpPacket>(mtpContextPtr_, mtpContextPtr_->mtpDriver);
+    CHECK_AND_RETURN_LOG(eventPacketPtr != nullptr, "SendEvent failed, eventPacketPtr is nullptr");
+
     eventPacketPtr->Init(eventHeaderData, eventPayloadData);
     int errorCode = eventPacketPtr->Maker(true);
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpEvent::SendEvent  responsePacket Maker err: %{public}d", errorCode);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(errorCode == MTP_SUCCESS, "MtpEvent::SendEvent  responsePacket Maker err: %{public}d",
+        errorCode);
     errorCode = eventPacketPtr->Write();
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpEvent::SendEvent responsePacket Write err: %{public}d", errorCode);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(errorCode == MTP_SUCCESS, "MtpEvent::SendEvent responsePacket Write err: %{public}d",
+        errorCode);
 }
 
 uint16_t MtpEvent::EventPayloadData(const uint16_t code, shared_ptr<PayloadData> &data)

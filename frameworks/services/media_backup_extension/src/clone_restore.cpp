@@ -22,6 +22,7 @@
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
+#include "cloud_sync_helper.h"
 #include "database_report.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
@@ -34,6 +35,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
+#include "ohos_account_kits.h"
 #include "photos_dao.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -48,8 +50,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const int32_t CLONE_QUERY_COUNT = 200;
-const int32_t SYSTEM_ALBUM_ID_START = 1;
-const int32_t SYSTEM_ALBUM_ID_END = 7;
 const string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
@@ -156,7 +156,8 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
         {
             { PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_NAME + " IS NOT NULL" },
             { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
-                to_string(PhotoAlbumSubType::SHOOTING_MODE) + ")" },
+                to_string(PhotoAlbumSubType::SHOOTING_MODE) + ", " +
+                to_string(PhotoAlbumSubType::GEOGRAPHY_CITY) + ")" },
         }},
 };
 const vector<string> CLONE_ALBUMS = { PhotoAlbumColumns::TABLE, ANALYSIS_ALBUM_TABLE };
@@ -189,20 +190,15 @@ Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, cons
 CloneRestore::CloneRestore()
 {
     sceneCode_ = CLONE_RESTORE_ID;
-    ffrt::set_escape_enable(false);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = false");
-}
-
-CloneRestore::~CloneRestore()
-{
-    ffrt::set_escape_enable(true);
-    MEDIA_INFO_LOG("Set ffrt::set_escape_enable = true");
+    ffrt_disable_worker_escape();
+    MEDIA_INFO_LOG("Set ffrt_disable_worker_escape");
 }
 
 void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)
 {
     MEDIA_INFO_LOG("Start clone restore");
     SetParameterForClone();
+    GetAccountValid();
 #ifdef CLOUD_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
@@ -262,6 +258,10 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     InitThumbnailStatus();
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
+    cloneRestoreGeo_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
+    cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
+    cloneRestoreHighlight_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
+    cloneRestoreCVAnalysis_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -269,10 +269,8 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
 void CloneRestore::RestorePhoto()
 {
     MEDIA_INFO_LOG("Start clone restore: photos");
-    if (!IsReadyForRestore(PhotoColumn::PHOTOS_TABLE)) {
-        MEDIA_ERR_LOG("Column status is not ready for restore photo, quit");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(IsReadyForRestore(PhotoColumn::PHOTOS_TABLE),
+        "Column status is not ready for restore photo, quit");
     unordered_map<string, string> srcColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_,
         PhotoColumn::PHOTOS_TABLE);
     unordered_map<string, string> dstColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaLibraryRdb_,
@@ -317,10 +315,39 @@ void CloneRestore::RestorePhoto()
         RestorePhotoBatch(offset);
     }
     this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
+}
 
-    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
-    ReportPortraitCloneStat(sceneCode_);
+void CloneRestore::GetAccountValid()
+{
+    string oldId = "";
+    string newId = "";
+    nlohmann::json jsonArr = nlohmann::json::parse(restoreInfo_, nullptr, false);
+    if (jsonArr.is_discarded()) {
+        MEDIA_ERR_LOG("cloud account parse failed");
+        return;
+    }
+    for (const auto& item : jsonArr) {
+        if (!item.contains("type") || !item.contains("detail") || item["type"] != "singleAccountId") {
+            continue;
+        } else {
+            oldId = item["detail"];
+            MEDIA_INFO_LOG("the old is %{public}s", oldId.c_str());
+            break;
+        }
+    }
+    std::pair<bool, OHOS::AccountSA::OhosAccountInfo> ret =
+        OHOS::AccountSA::OhosAccountKits::GetInstance().QueryOhosAccountInfo();
+    if (ret.first) {
+        OHOS::AccountSA::OhosAccountInfo& resultInfo = ret.second;
+        newId = resultInfo.uid_;
+    } else {
+        MEDIA_ERR_LOG("new account logins failed");
+        return;
+    }
+    MEDIA_INFO_LOG("clone the old id is %{public}s, new id is %{public}s",
+        BackupFileUtils::GarbleFilePath(oldId, sceneCode_).c_str(),
+        BackupFileUtils::GarbleFilePath(newId, sceneCode_).c_str());
+    isAccountValid_ = (oldId != "" && oldId == newId);
 }
 
 void CloneRestore::RestoreAlbum()
@@ -352,6 +379,40 @@ void CloneRestore::RestoreAlbum()
 
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
+    cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
+    cloneRestoreGeoDictionary_.RestoreAlbums();
+    RestoreHighlightAlbums(CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
+}
+
+int32_t CloneRestore::GetHighlightCloudMediaCnt()
+{
+    const std::string QUERY_SQL = "SELECT COUNT(1) AS count FROM AnalysisAlbum AS a "
+        "INNER JOIN AnalysisPhotoMap AS m ON a.album_id = m.map_album "
+        "INNER JOIN Photos AS p ON p.file_id = m.map_asset "
+        "WHERE a.album_subtype IN (4104, 4105) AND p.position = 2";
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this->mediaRdb_, QUERY_SQL, {});
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query count of highlight cloud media failed.");
+        return -1;
+    }
+    int32_t cnt = GetInt32Val("count", resultSet);
+    MEDIA_INFO_LOG("GetHighlightCloudMediaCnt is %{public}d", cnt);
+    resultSet->Close();
+    return cnt;
+}
+
+void CloneRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
+{
+    int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
+    UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
+        .Report("Highlight Restore", "",
+            "sceneCode_: " + std::to_string(this->sceneCode_) +
+            ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
+            ", isAccountValid_: " + std::to_string(isAccountValid_) +
+            ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
+    if (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen)) {
+        cloneRestoreHighlight_.RestoreAlbums();
+    }
 }
 
 void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount,
@@ -360,11 +421,12 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
     vector<std::string> moveFailedData;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath) || fileInfos[i].cloudPath.empty() ||
-            !fileInfos[i].isNew) {
+            !fileInfos[i].needMove) {
             continue;
         }
         int32_t errCode = MoveAsset(fileInfos[i]);
         if (errCode != E_OK) {
+            fileInfos[i].needUpdate = false;
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, error:%{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
                 strerror(errno));
@@ -385,14 +447,8 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
 
 int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 {
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
-        return E_OK;
-    }
-    if (fileInfos.empty()) {
-        MEDIA_ERR_LOG("fileInfos are empty");
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ is null");
+    CHECK_AND_RETURN_RET_LOG(!fileInfos.empty(), E_OK, "fileInfos are empty");
     int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(CLONE_RESTORE_ID, fileInfos, SourceType::PHOTOS);
     int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
@@ -415,12 +471,14 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     int64_t fileMoveCount = 0;
     int64_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount);
+    int64_t startUpdate = MediaFileUtils::UTCTimeMilliSeconds();
+    UpdatePhotosByFileInfoMap(mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related cost "
-        "%{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
+        "%{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld. update cost %{public}ld",
         (long)(startInsertPhoto - startGenerate), (long)photoRowNum, (long)(startInsertRelated - startInsertPhoto),
         (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
-        (long)videoFileMoveCount, (long)(end - startMove));
+        (long)videoFileMoveCount, (long)(startUpdate - startMove), (long)(end - startUpdate));
     return E_OK;
 }
 
@@ -439,9 +497,10 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
         if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
             continue;
         }
-        NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], fileInfos[i].cloudPath, sourceType);
-        fileInfos[i].isNew = true;
-        values.emplace_back(value);
+        if (fileInfos[i].isNew) {
+            NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], fileInfos[i].cloudPath, sourceType);
+            values.emplace_back(value);
+        }
     }
     return values;
 }
@@ -483,12 +542,10 @@ bool CloneRestore::ParseResultSet(const shared_ptr<NativeRdb::ResultSet> &result
 
 int32_t CloneRestore::QueryTotalNumber(const string &tableName)
 {
-    if (tableName == PhotoAlbumColumns::TABLE) {
-        return this->photoAlbumClone_.GetPhotoAlbumCountInOriginalDb();
-    }
-    if (tableName == PhotoColumn::PHOTOS_TABLE) {
-        return this->photosClone_.GetPhotosRowCountNotInPhotoMap();
-    }
+    CHECK_AND_RETURN_RET(tableName != PhotoAlbumColumns::TABLE,
+        this->photoAlbumClone_.GetPhotoAlbumCountInOriginalDb());
+    CHECK_AND_RETURN_RET(tableName != PhotoColumn::PHOTOS_TABLE,
+        this->photosClone_.GetPhotosRowCountNotInPhotoMap());
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + tableName;
     string whereClause = GetQueryWhereClauseByTable(tableName);
     querySql += whereClause.empty() ? "" : " WHERE " + whereClause;
@@ -536,6 +593,7 @@ bool CloneRestore::ParseAlbumResultSet(const string &tableName, const shared_ptr
     albumInfo.albumSubType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
     albumInfo.lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
     albumInfo.albumBundleName = GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet);
+    albumInfo.dateModified = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet);
 
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
@@ -562,28 +620,22 @@ int32_t CloneRestore::MovePicture(FileInfo &fileInfo)
     } else {
         opRet = this->CopyFile(fileInfo.filePath, localPath);
     }
-    if (opRet != E_OK) {
-        MEDIA_ERR_LOG("Move photo file failed, filePath = %{public}s, deleteOriginalFile = %{public}d",
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
-            deleteOriginalFile);
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(opRet == E_OK, E_FAIL,
+        "Move photo file failed, filePath = %{public}s, deleteOriginalFile = %{public}d",
+        BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
+        deleteOriginalFile);
     return E_OK;
 }
 
 int32_t CloneRestore::MoveMovingPhotoVideo(FileInfo &fileInfo)
 {
-    if (fileInfo.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET(fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), E_OK);
     bool deleteOriginalFile = fileInfo.isRelatedToPhotoMap == 1 ? false : true;
     std::string localPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL,
         fileInfo.cloudPath);
     std::string srcLocalVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(fileInfo.filePath);
-    if (!MediaFileUtils::IsFileExists(srcLocalVideoPath)) {
-        MEDIA_WARN_LOG("video of moving photo does not exist: %{private}s", srcLocalVideoPath.c_str());
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(srcLocalVideoPath), E_OK,
+        "video of moving photo does not exist: %{private}s", srcLocalVideoPath.c_str());
     std::string localVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(localPath);
     int32_t opVideoRet = E_FAIL;
     if (deleteOriginalFile) {
@@ -591,10 +643,7 @@ int32_t CloneRestore::MoveMovingPhotoVideo(FileInfo &fileInfo)
     } else {
         opVideoRet = this->CopyFile(srcLocalVideoPath, localVideoPath);
     }
-    if (opVideoRet != E_OK) {
-        MEDIA_ERR_LOG("Move video of moving photo failed");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(opVideoRet == E_OK, E_FAIL, "Move video of moving photo failed");
     BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified / MSEC_TO_SEC);
     return E_OK;
 }
@@ -619,9 +668,8 @@ int32_t CloneRestore::MoveEditedData(FileInfo &fileInfo)
 static void UpdateThumbnailStatusToFailed(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string id,
     bool isThumbnailStatusNeedUpdate, bool isLcdStatusNeedUpdate)
 {
-    if (rdbStore == nullptr || id.empty()) {
-        return;
-    }
+    bool cond = (rdbStore == nullptr || id.empty());
+    CHECK_AND_RETURN_LOG(!cond, "rdb is nullptr or id is empty");
 
     NativeRdb::ValuesBucket values;
     int changedRows;
@@ -634,9 +682,7 @@ static void UpdateThumbnailStatusToFailed(std::shared_ptr<NativeRdb::RdbStore> &
     }
     int32_t err = rdbStore->Update(changedRows, PhotoColumn::PHOTOS_TABLE,
         values, MEDIA_DATA_DB_ID + " = ?", vector<string> { id });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-    }
+    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "RdbStore Update failed! %{public}d", err);
 }
 
 static std::string GetThumbnailLocalPath(const string path)
@@ -702,10 +748,8 @@ int32_t CloneRestore::MoveThumbnailDir(FileInfo &fileInfo)
             errno, MediaFileUtils::DesensitizePath(thumbnailOldDir).c_str());
         return E_FAIL;
     }
-    if (BackupFileUtils::PreparePath(thumbnailNewDir) != E_OK) {
-        MEDIA_ERR_LOG("Prepare thumbnail dir path failed");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(BackupFileUtils::PreparePath(thumbnailNewDir) == E_OK, E_FAIL,
+        "Prepare thumbnail dir path failed");
     if (MediaFileUtils::IsFileExists(thumbnailNewDir) && !MediaFileUtils::DeleteDir(thumbnailNewDir)) {
         MEDIA_ERR_LOG("Delete thumbnail new dir failed, errno:%{public}d", errno);
         return E_FAIL;
@@ -718,13 +762,10 @@ int32_t CloneRestore::MoveThumbnailDir(FileInfo &fileInfo)
         opRet = MediaFileUtils::CopyDirectory(thumbnailOldDir, thumbnailNewDir);
     }
     if (opRet != E_OK) {
-        if (!MediaFileUtils::IsFileExists(thumbnailNewDir)) {
-            return opRet;
-        }
+        CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(thumbnailNewDir), opRet);
         MEDIA_WARN_LOG("MoveThumbnailDir failed but thumbnailNewDir exists");
-        if (!MediaFileUtils::DeleteDir(thumbnailNewDir)) {
-            MEDIA_ERR_LOG("Delete existential thumbnailNewDir failed, errno:%{public}d", errno);
-        }
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteDir(thumbnailNewDir),
+            "Delete existential thumbnailNewDir failed, errno:%{public}d", errno);
         return opRet;
     }
     return E_OK;
@@ -755,14 +796,10 @@ int32_t CloneRestore::MoveThumbnail(FileInfo &fileInfo)
         return E_FAIL;
     }
 
-    if (!isInitKvstoreSuccess_) {
-        return E_NO_SUCH_FILE;
-    }
-    if (fileInfo.thumbnailReady < RESTORE_THUMBNAIL_READY_SUCCESS) {
-        MEDIA_ERR_LOG("Astc does not exist, id:%{public}d, path:%{public}s",
-            fileInfo.fileIdNew, MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str());
-        return E_NO_SUCH_FILE;
-    }
+    CHECK_AND_RETURN_RET(isInitKvstoreSuccess_, E_NO_SUCH_FILE);
+    CHECK_AND_RETURN_RET_LOG(fileInfo.thumbnailReady >= RESTORE_THUMBNAIL_READY_SUCCESS, E_NO_SUCH_FILE,
+        "Astc does not exist, id:%{public}d, path:%{public}s",
+        fileInfo.fileIdNew, MediaFileUtils::DesensitizePath(fileInfo.cloudPath).c_str());
     if (MoveAstc(fileInfo) != E_OK) {
         UpdateThumbnailStatusToFailed(mediaLibraryRdb_, to_string(fileInfo.fileIdNew), true, false);
         MEDIA_ERR_LOG("Move astc failed, id:%{public}d, path:%{public}s",
@@ -778,19 +815,13 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
 {
     // Picture files.
     int32_t optRet = this->MovePicture(fileInfo);
-    if (optRet != E_OK) {
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
     // Video files of moving photo.
     optRet = this->MoveMovingPhotoVideo(fileInfo);
-    if (optRet != E_OK) {
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
     // Edit Data.
     optRet = this->MoveEditedData(fileInfo);
-    if (optRet != E_OK) {
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET(optRet == E_OK, E_FAIL);
     // Thumbnail of photos.
     this->MoveThumbnail(fileInfo);
     return E_OK;
@@ -840,6 +871,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
     values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
     values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation); // photos need orientation
@@ -854,6 +886,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
         values.PutString(MediaColumn::MEDIA_OWNER_APPID, "");
     }
     values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
+    values.PutInt(PhotoColumn::STAGE_VIDEO_TASK_STATUS, static_cast<int32_t>(StageVideoTaskStatus::NO_NEED_TO_STAGE));
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
@@ -888,10 +921,7 @@ bool CloneRestore::PrepareCommonColumnInfoMap(const string &tableName,
     auto neededColumnsException = GetValueFromMap(NEEDED_COLUMNS_EXCEPTION_MAP, tableName);
     auto excludedColumns = GetValueFromMap(EXCLUDED_COLUMNS_MAP, tableName);
     auto &commonColumnInfoMap = tableCommonColumnInfoMap_[tableName];
-    if (!HasColumns(dstColumnInfoMap, neededColumns)) {
-        MEDIA_ERR_LOG("Destination lack needed columns");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(HasColumns(dstColumnInfoMap, neededColumns), false, "Destination lack needed columns");
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
         if (!HasSameColumn(srcColumnInfoMap, it->first, it->second) || excludedColumns.count(it->first) > 0) {
             continue;
@@ -920,10 +950,7 @@ void CloneRestore::GetValFromResultSet(const shared_ptr<NativeRdb::ResultSet> &r
 {
     int32_t columnIndex = 0;
     int32_t errCode = resultSet->GetColumnIndex(columnName, columnIndex);
-    if (errCode) {
-        MEDIA_ERR_LOG("Get column index errCode: %{public}d", errCode);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(errCode == 0, "Get column index errCode: %{public}d", errCode);
     bool isNull = false;
     errCode = resultSet->IsColumnNull(columnIndex, isNull);
     if (errCode || isNull) {
@@ -969,10 +996,7 @@ void CloneRestore::PrepareCommonColumnVal(NativeRdb::ValuesBucket &values, const
     const unordered_map<string, string> &commonColumnInfoMap) const
 {
     string columnType = GetValueFromMap(commonColumnInfoMap, columnName);
-    if (columnType.empty()) {
-        MEDIA_ERR_LOG("No such column %{public}s", columnName.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!columnType.empty(), "No such column %{public}s", columnName.c_str());
     ResultSetDataType dataType = GetValueFromMap(COLUMN_TYPE_MAP, columnType, ResultSetDataType::TYPE_NULL);
     switch (dataType) {
         case ResultSetDataType::TYPE_INT32: {
@@ -1018,10 +1042,8 @@ void CloneRestore::GetQueryWhereClause(const string &tableName, const unordered_
 void CloneRestore::GetAlbumExtraQueryWhereClause(const string &tableName)
 {
     string mapTableName = GetValueFromMap(CLONE_ALBUM_MAP, tableName);
-    if (mapTableName.empty()) {
-        MEDIA_ERR_LOG("Get map of table %{public}s failed", BackupDatabaseUtils::GarbleInfoName(tableName).c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!mapTableName.empty(), "Get map of table %{public}s failed",
+        BackupDatabaseUtils::GarbleInfoName(tableName).c_str());
     string albumQueryWhereClause = "EXISTS (SELECT " + PhotoMap::ASSET_ID + " FROM " + mapTableName + " WHERE " +
         PhotoMap::ALBUM_ID + " = " + PhotoAlbumColumns::ALBUM_ID + " AND EXISTS (SELECT " + MediaColumn::MEDIA_ID +
         " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
@@ -1039,6 +1061,11 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AlbumInfo &albumInfo,
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, static_cast<int32_t>(albumInfo.albumType));
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, static_cast<int32_t>(albumInfo.albumSubType));
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumInfo.albumName);
+
+    if (tableName == PhotoAlbumColumns::TABLE) {
+        values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
+            (albumInfo.dateModified ? albumInfo.dateModified : MediaFileUtils::UTCTimeMilliSeconds()));
+    }
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = albumInfo.valMap.begin(); it != albumInfo.valMap.end(); ++it) {
@@ -1065,10 +1092,7 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
         " WHERE " + MediaColumn::MEDIA_FILE_PATH + " IN (" + selection + ")";
     querySql += " LIMIT " + to_string(fileIndexMap.size());
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
@@ -1090,12 +1114,9 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
 void CloneRestore::BatchNotifyPhoto(const vector<FileInfo> &fileInfos)
 {
     auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Get MediaLibraryNotify instance failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(watch != nullptr, "Get MediaLibraryNotify instance failed");
     for (const auto &fileInfo : fileInfos) {
-        if (!fileInfo.isNew || fileInfo.cloudPath.empty()) {
+        if (!fileInfo.needMove || fileInfo.cloudPath.empty()) {
             continue;
         }
         string extraUri = MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath);
@@ -1107,21 +1128,13 @@ void CloneRestore::BatchNotifyPhoto(const vector<FileInfo> &fileInfos)
 
 void CloneRestore::InsertAlbum(vector<AlbumInfo> &albumInfos, const string &tableName)
 {
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
-        return;
-    }
-    if (albumInfos.empty()) {
-        MEDIA_ERR_LOG("albumInfos are empty");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
+    CHECK_AND_RETURN_LOG(!albumInfos.empty(), "albumInfos are empty");
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(albumInfos, tableName);
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
-    if (errCode != E_OK) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(errCode == E_OK, "Batc insert failed");
     migrateDatabaseAlbumNumber_ += rowNum;
 
     int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1151,17 +1164,15 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> 
 bool CloneRestore::HasSameAlbum(const AlbumInfo &albumInfo, const string &tableName)
 {
     // check if the album already exists
-    if (tableName == PhotoAlbumColumns::TABLE) {
-        return this->photoAlbumClone_.HasSameAlbum(albumInfo.lPath);
-    }
+    CHECK_AND_RETURN_RET(tableName != PhotoAlbumColumns::TABLE,
+        this->photoAlbumClone_.HasSameAlbum(albumInfo.lPath));
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + tableName + " WHERE " +
         PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(albumInfo.albumType) + " AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
         PhotoAlbumColumns::ALBUM_NAME + " = '" + albumInfo.albumName + "'";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return false;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, false);
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
     return count > 0;
 }
@@ -1197,15 +1208,11 @@ void CloneRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &to
     std::string tableName = ANALYSIS_ALBUM_TABLE;
     string garbledTableName = BackupDatabaseUtils::GarbleInfoName(tableName);
     string mapTableName = GetValueFromMap(CLONE_ALBUM_MAP, tableName);
-    if (mapTableName.empty()) {
-        MEDIA_ERR_LOG("Get map of table %{public}s failed", garbledTableName.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!mapTableName.empty(),
+        "Get map of table %{public}s failed", garbledTableName.c_str());
     auto albumIdMap = GetValueFromMap(tableAlbumIdMap_, tableName);
-    if (albumIdMap.empty()) {
-        MEDIA_INFO_LOG("Get album id map of table %{public}s empty, skip", garbledTableName.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!albumIdMap.empty(),
+        "Get album id map of table %{public}s empty, skip", garbledTableName.c_str());
     string albumSelection = GetValueFromMap(tableQueryWhereClauseMap_, tableName);
     unordered_set<int32_t> currentTableAlbumSet;
     string baseQuerySql = mapTableName + " INNER JOIN " + tableName + " ON " +
@@ -1225,7 +1232,6 @@ void CloneRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &to
         MEDIA_INFO_LOG("query %{public}zu map infos cost %{public}ld, insert %{public}ld maps cost %{public}ld",
             mapInfos.size(), (long)(startInsert - startQuery), (long)rowNum, (long)(end - startInsert));
     }
-    UpdateAlbumToNotifySet(tableName, currentTableAlbumSet);
 }
 
 NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const MapInfo &mapInfo) const
@@ -1286,36 +1292,6 @@ bool CloneRestore::IsReadyForRestore(const string &tableName)
     return GetValueFromMap(tableColumnStatusMap_, tableName, false);
 }
 
-void CloneRestore::UpdateAlbumToNotifySet(const string &tableName, const unordered_set<int32_t> &albumSet)
-{
-    string albumUriPrefix = GetValueFromMap(ALBUM_URI_PREFIX_MAP, tableName);
-    if (albumUriPrefix.empty()) {
-        MEDIA_ERR_LOG("Get album uri prefix of %{public}s failed",
-            BackupDatabaseUtils::GarbleInfoName(tableName).c_str());
-        return;
-    }
-    for (auto albumId : albumSet) {
-        string albumUri = MediaFileUtils::GetUriByExtrConditions(albumUriPrefix, to_string(albumId));
-        albumToNotifySet_.insert(albumUri);
-    }
-}
-
-void CloneRestore::NotifyAlbum()
-{
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Get MediaLibraryNotify instance failed");
-        return;
-    }
-    for (const auto &albumUri : albumToNotifySet_) {
-        watch->Notify(albumUri, NotifyType::NOTIFY_ADD);
-    }
-    for (int32_t systemAlbumId = SYSTEM_ALBUM_ID_START; systemAlbumId <= SYSTEM_ALBUM_ID_END; systemAlbumId++) {
-        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(systemAlbumId), NotifyType::NOTIFY_UPDATE);
-    }
-    MEDIA_INFO_LOG("System albums and %{public}zu albums notified", albumToNotifySet_.size());
-}
-
 void CloneRestore::PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
     const unordered_map<string, string> &commonColumnInfoMap) const
 {
@@ -1348,15 +1324,19 @@ void CloneRestore::RestoreGallery()
         (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
     MEDIA_INFO_LOG("Start update group tags");
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
+    cloneRestoreGeo_.ReportGeoRestoreTask();
+    cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
+    cloneRestoreHighlight_.UpdateAlbums();
+    cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
+    ReportPortraitCloneStat(sceneCode_);
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
 {
     fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
-    if (fileInfo.cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get cloudPath empty");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!fileInfo.cloudPath.empty(), false, "Get cloudPath empty");
     if (IsSameFileForClone(tableName, fileInfo)) {
         // should not delete the file, if the FileInfo is came from PhotoMap.
         if (fileInfo.isRelatedToPhotoMap != 1) {
@@ -1367,7 +1347,8 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
         UpdateDuplicateNumber(fileInfo.fileType);
         return false;
     }
-    if (MediaFileUtils::IsFileExists(fileInfo.cloudPath) || fileInfo.isRelatedToPhotoMap == 1) {
+    // If the device originally has dentry file in the cloud path, no need to generate new cloud path.
+    if (fileInfo.isNew && (MediaFileUtils::IsFileExists(fileInfo.cloudPath) || fileInfo.isRelatedToPhotoMap == 1)) {
         int32_t uniqueId = GetUniqueId(fileInfo.fileType);
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfo.fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfo.displayName), fileInfo.cloudPath);
@@ -1406,26 +1387,25 @@ void CloneRestore::RestoreMusic()
 void CloneRestore::RestoreAudio(void)
 {
     MEDIA_INFO_LOG("Start clone restore: audio");
-    if (!IsReadyForRestore(AudioColumn::AUDIOS_TABLE)) {
-        MEDIA_ERR_LOG("Column status is not ready for restore audio, quit");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(IsReadyForRestore(AudioColumn::AUDIOS_TABLE),
+        "Column status is not ready for restore audio, quit");
     unordered_map<string, string> srcColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_,
         AudioColumn::AUDIOS_TABLE);
     unordered_map<string, string> dstColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaLibraryRdb_,
         AudioColumn::AUDIOS_TABLE);
-    if (!PrepareCommonColumnInfoMap(AudioColumn::AUDIOS_TABLE, srcColumnInfoMap, dstColumnInfoMap)) {
-        MEDIA_ERR_LOG("Prepare common column info failed");
+    CHECK_AND_RETURN_LOG(PrepareCommonColumnInfoMap(AudioColumn::AUDIOS_TABLE, srcColumnInfoMap,
+        dstColumnInfoMap), "Prepare common column info failed");
+    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
+    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
+    if (totalNumber <= 0) {
         return;
     }
+    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
         MEDIA_INFO_LOG("music dir is not exists!!!");
         MediaFileUtils::CreateDirectory(RESTORE_MUSIC_LOCAL_DIR);
     }
-    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
-    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
-    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -1442,10 +1422,7 @@ vector<FileInfo> CloneRestore::QueryFileInfos(const string &tableName, int32_t o
     querySql += whereClause.empty() ? "" : " WHERE " + whereClause;
     querySql += " LIMIT " + to_string(offset) + ", " + to_string(CLONE_QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo fileInfo;
         if (ParseResultSet(tableName, resultSet, fileInfo)) {
@@ -1499,14 +1476,8 @@ bool CloneRestore::ParseResultSetForAudio(const shared_ptr<NativeRdb::ResultSet>
 
 void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
 {
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
-        return;
-    }
-    if (fileInfos.empty()) {
-        MEDIA_ERR_LOG("fileInfos are empty");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
+    CHECK_AND_RETURN_LOG(!fileInfos.empty(), "fileInfos are empty");
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
     for (auto& fileInfo : fileInfos) {
@@ -1542,16 +1513,79 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     MEDIA_INFO_LOG("move %{public}ld files cost %{public}ld.", (long)fileMoveCount, (long)(end - startMove));
 }
 
+static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
+{
+    if (mediaRdb == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return 0;
+    }
+
+    const string sql = "SELECT SUM(" + PhotoExtColumn::THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE +
+                       " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
+    auto resultSet = mediaRdb->QuerySql(sql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null!");
+        return 0;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("go to first row failed");
+        return 0;
+    }
+    int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, resultSet, TYPE_INT64));
+    if (size < 0) {
+        MEDIA_ERR_LOG("Invalid thumPhoto size from db: %{public}" PRId64, size);
+        return 0;
+    }
+
+    resultSet->Close();
+    return static_cast<size_t>(size);
+}
+
+size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
+{
+    if (mediaRdb == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return 0;
+    }
+
+    // media asset size
+    size_t thumbPhotoSize = QueryThumbPhotoSize(mediaRdb);
+    string querySizeSql = "SELECT cast(" + std::to_string(thumbPhotoSize) +
+        " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
+    string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME +
+        " UNION " + querySizeSql;
+
+    auto resultSet = mediaRdb->QuerySql(mediaVolumeQuery);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to execute media volume query");
+        return 0;
+    }
+
+    int64_t totalVolume = 0;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int64_t mediaSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
+        totalVolume += mediaSize;
+    }
+    resultSet->Close();
+    size_t totalAssetSize = static_cast<size_t>(totalVolume);
+    // other meta data dir size
+    size_t editDataTotalSize {0};
+    size_t rdbTotalSize {0};
+    size_t kvdbTotalSize {0};
+    size_t highlightTotalSize {0};
+    MediaFileUtils::StatDirSize(CLONE_STAT_EDIT_DATA_DIR, editDataTotalSize);
+    MediaFileUtils::StatDirSize(CLONE_STAT_RDB_DIR, rdbTotalSize);
+    MediaFileUtils::StatDirSize(CLONE_STAT_KVDB_DIR, kvdbTotalSize);
+    MediaFileUtils::StatDirSize(CLONE_STAT_HIGHLIGHT_DIR, highlightTotalSize);
+    size_t totalSize = totalAssetSize + editDataTotalSize + rdbTotalSize + kvdbTotalSize + highlightTotalSize;
+    return totalSize;
+}
+
 string CloneRestore::GetBackupInfo()
 {
-    if (BaseRestore::Init() != E_OK) {
-        MEDIA_ERR_LOG("GetBackupInfo init failed");
-        return "";
-    }
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("GetBackupInfo Rdbstore is null");
-        return "";
-    }
+    CHECK_AND_RETURN_RET_LOG(BaseRestore::Init() == E_OK, "", "GetBackupInfo init failed");
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, "", "GetBackupInfo Rdbstore is null");
+
     CheckTableColumnStatus(mediaLibraryRdb_, CLONE_TABLE_LISTS_OLD_DEVICE);
     int32_t photoCount = QueryTotalNumberByMediaType(mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE,
         MediaType::MEDIA_TYPE_IMAGE);
@@ -1559,9 +1593,12 @@ string CloneRestore::GetBackupInfo()
         MediaType::MEDIA_TYPE_VIDEO);
     int32_t audioCount = QueryTotalNumberByMediaType(mediaLibraryRdb_, AudioColumn::AUDIOS_TABLE,
         MediaType::MEDIA_TYPE_AUDIO);
-    MEDIA_INFO_LOG("QueryTotalNumber, photo: %{public}d, video: %{public}d, audio: %{public}d", photoCount, videoCount,
-        audioCount);
-    return GetBackupInfoByCount(photoCount, videoCount, audioCount);
+
+    size_t totalSize = StatClonetotalSize(mediaLibraryRdb_);
+    MEDIA_INFO_LOG("QueryTotalNumber, photo: %{public}d, video: %{public}d, audio: %{public}d, totalSize: "
+        "%{public}lld bytes", photoCount, videoCount, audioCount, static_cast<long long>(totalSize));
+
+    return GetBackupInfoByCount(photoCount, videoCount, audioCount, totalSize);
 }
 
 int32_t CloneRestore::QueryTotalNumberByMediaType(shared_ptr<NativeRdb::RdbStore> rdbStore, const string &tableName,
@@ -1572,14 +1609,13 @@ int32_t CloneRestore::QueryTotalNumberByMediaType(shared_ptr<NativeRdb::RdbStore
     string whereClause = GetQueryWhereClauseByTable(tableName);
     querySql += whereClause.empty() ? "" : " AND " + whereClause;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
     int32_t result = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
     return result;
 }
 
-string CloneRestore::GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount)
+string CloneRestore::GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount, size_t totalSize)
 {
     nlohmann::json jsonObject = {
         {
@@ -1593,6 +1629,10 @@ string CloneRestore::GetBackupInfoByCount(int32_t photoCount, int32_t videoCount
         {
             { STAT_KEY_BACKUP_INFO, STAT_TYPE_AUDIO },
             { STAT_KEY_NUMBER, audioCount }
+        },
+        {
+            { STAT_KEY_BACKUP_INFO, STAT_TYPE_TOTAL_SIZE },
+            { STAT_KEY_NUMBER, totalSize }
         }
     };
     return jsonObject.dump();
@@ -1633,6 +1673,8 @@ void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos)
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("query new file_id cost %{public}ld, insert %{public}ld maps cost %{public}ld",
         (long)(startInsert - startQuery), (long)mapRowNum, (long)(end - startInsert));
+    cloneRestoreGeo_.RestoreMaps(fileInfos);
+    cloneRestoreHighlight_.RestoreMaps(fileInfos);
 }
 
 void CloneRestore::SetFileIdReference(const vector<FileInfo> &fileInfos, string &selection,
@@ -1663,10 +1705,7 @@ vector<MapInfo> CloneRestore::QueryMapInfos(const string &tableName, const strin
     string querySql = "SELECT " + columnMapAlbum + ", " + columnMapAsset + " FROM " + baseQuerySql;
     querySql += " LIMIT " + to_string(offset) + ", " + to_string(CLONE_QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return mapInfos;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, mapInfos, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t albumIdOld = GetInt32Val(columnMapAlbum, resultSet);
         int32_t fileIdOld = GetInt32Val(columnMapAsset, resultSet);
@@ -1687,10 +1726,8 @@ int64_t CloneRestore::InsertMapByTable(const string &tableName, const vector<Map
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(mapInfos);
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Batch insert map failed, errCode: %{public}d", errCode);
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, 0,
+        "Batch insert map failed, errCode: %{public}d", errCode);
     for (const auto &mapInfo : mapInfos) {
         albumSet.insert(mapInfo.albumId);
     }
@@ -1740,19 +1777,22 @@ void CloneRestore::SetSpecialAttributes(const string &tableName, const shared_pt
     fileInfo.bundleName = this->photosClone_.FindBundleName(fileInfo);
     fileInfo.photoQuality = this->photosClone_.FindPhotoQuality(fileInfo);
     fileInfo.sourcePath = this->photosClone_.FindSourcePath(fileInfo);
+    fileInfo.latitude = GetDoubleVal("latitude", resultSet);
+    fileInfo.longitude = GetDoubleVal("longitude", resultSet);
 }
 
 bool CloneRestore::IsSameFileForClone(const string &tableName, FileInfo &fileInfo)
 {
-    if (tableName != PhotoColumn::PHOTOS_TABLE) {
-        return IsSameAudioFile(mediaLibraryRdb_, tableName, fileInfo);
-    }
+    CHECK_AND_RETURN_RET(tableName == PhotoColumn::PHOTOS_TABLE,
+        IsSameAudioFile(mediaLibraryRdb_, tableName, fileInfo));
     PhotosDao::PhotosRowData rowData = this->photosClone_.FindSameFile(fileInfo);
     int32_t fileId = rowData.fileId;
     std::string cloudPath = rowData.data;
-    bool isNew = fileId <= 0 || cloudPath.empty();
-    fileInfo.isNew = isNew;
-    return !isNew;
+    if (fileId <= 0 || cloudPath.empty()) {
+        return false;
+    }
+    // Meed extra check to determine whether or not to drop the duplicate file.
+    return ExtraCheckForCloneSameFile(fileInfo, rowData);
 }
 
 void CloneRestore::RestoreFromGalleryPortraitAlbum()
@@ -1811,10 +1851,7 @@ vector<AnalysisAlbumTbl> CloneRestore::QueryPortraitAlbumTbl(int32_t offset,
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         AnalysisAlbumTbl analysisAlbumTbl;
@@ -1862,15 +1899,8 @@ void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::Result
 
 void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl)
 {
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
-        return;
-    }
-
-    if (analysisAlbumTbl.empty()) {
-        MEDIA_ERR_LOG("analysisAlbumTbl are empty");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
+    CHECK_AND_RETURN_LOG(!analysisAlbumTbl.empty(), "analysisAlbumTbl are empty");
 
     std::vector<std::string> albumNames;
     std::vector<std::string> tagIds;
@@ -1886,18 +1916,14 @@ void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAl
     MEDIA_INFO_LOG("Total albums: %{public}zu, Albums with names: %{public}zu, Albums with tagIds: %{public}zu",
                    analysisAlbumTbl.size(), albumNames.size(), tagIds.size());
 
-    if (!BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(albumNames, tagIds, mediaLibraryRdb_)) {
-        MEDIA_ERR_LOG("Batch delete failed.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(albumNames,
+        tagIds, mediaLibraryRdb_), "Batch delete failed.");
 
     int32_t albumRowNum = InsertPortraitAlbumByTable(analysisAlbumTbl);
-    if (albumRowNum == E_ERR) {
-        MEDIA_ERR_LOG("Failed to insert album");
-    }
+    CHECK_AND_PRINT_LOG(albumRowNum != E_ERR, "Failed to insert album");
 
     migratePortraitAlbumNumber_ += static_cast<uint64_t>(albumRowNum);
-    return ;
+    return;
 }
 
 int32_t CloneRestore::InsertPortraitAlbumByTable(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl)
@@ -1906,9 +1932,7 @@ int32_t CloneRestore::InsertPortraitAlbumByTable(std::vector<AnalysisAlbumTbl> &
 
     int64_t rowNum = 0;
     int32_t ret = BatchInsertWithRetry(ANALYSIS_ALBUM_TABLE, valuesBuckets, rowNum);
-    if (ret != E_OK) {
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET(ret == E_OK, E_ERR);
     return rowNum;
 }
 
@@ -1966,15 +1990,9 @@ std::vector<PortraitAlbumDfx> CloneRestore::QueryAllPortraitAlbum(int32_t& offse
         "LIMIT ?, ?";
 
     std::vector<NativeRdb::ValueObject> bindArgs = { SMART, PORTRAIT, offset, QUERY_COUNT };
-    if (this->mediaRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaRdb_ is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaRdb_ != nullptr, result, "Media_Restore: mediaRdb_ is null.");
     auto resultSet = mediaRdb_->QuerySql(querySql, bindArgs);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         PortraitAlbumDfx dfxInfo;
@@ -2037,19 +2055,13 @@ std::unordered_set<std::string> CloneRestore::QueryAllPortraitAlbum()
         }
     }
 
-    if (tagIds.empty()) {
-        MEDIA_INFO_LOG("No valid tag_ids found in old albums");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(!tagIds.empty(), result, "No valid tag_ids found in old albums");
 
     std::string querySql = "SELECT tag_id FROM " + ANALYSIS_ALBUM_TABLE +
         " WHERE tag_id IN (" + BackupDatabaseUtils::JoinSQLValues<string>(tagIds, ", ") + ")";
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSql is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
 
     std::string dfxInfo;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -2103,38 +2115,36 @@ void CloneRestore::RestorePortraitClusteringInfo()
         VISION_FACE_TAG_TABLE);
     std::vector<std::string> commonColumns = BackupDatabaseUtils::filterColumns(commonColumn,
         EXCLUDED_FACE_TAG_COLUMNS);
+    BackupDatabaseUtils::LeftJoinValues<string>(commonColumns, "vft.");
+    std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
+    BackupDatabaseUtils::ExecuteSQL(mediaRdb_, CREATE_FACE_TAG_INDEX);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, commonColumns);
+        vector<FaceTagTbl> faceTagTbls = QueryFaceTagTbl(offset, inClause);
         BatchInsertFaceTags(faceTagTbls);
+        if (static_cast<std::int32_t>(faceTagTbls.size()) < QUERY_COUNT) {
+            break;
+        }
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migratePortraitTotalTimeCost_ += end - start;
 }
 
-vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, std::vector<std::string> &commonColumns)
+vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
 {
     vector<FaceTagTbl> result;
-    result.reserve(QUERY_COUNT);
-
-    std::string inClause = BackupDatabaseUtils::JoinValues<string>(commonColumns, ", ");
     std::string querySql = "SELECT DISTINCT " + inClause +
         " FROM " + VISION_FACE_TAG_TABLE + " vft" +
-        " WHERE EXISTS (" +
-        "   SELECT 1" +
-        "   FROM AnalysisAlbum aa" +
-        "   JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
-        "   JOIN Photos ph ON ph.file_id = apm.map_asset" +
-        "   WHERE aa.tag_id = vft.tag_id" +
-        "   AND ph.position IN (1, 3)" +
-        " )";
+        " LEFT JOIN AnalysisAlbum aa ON aa.tag_id = vft.tag_id" +
+        " LEFT JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
+        " LEFT JOIN Photos ph ON ph.file_id = apm.map_asset"
+        " WHERE ph.position IN (1, 3)";
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSet is null.");
-        return result;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSet is null.");
+    int resultRowCount = 0;
+    resultSet->GetRowCount(resultRowCount);
+    result.reserve(resultRowCount);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FaceTagTbl faceTagTbl;
         ParseFaceTagResultSet(resultSet, faceTagTbl);
@@ -2153,10 +2163,7 @@ void CloneRestore::BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbl
 
     int64_t rowNum = 0;
     int32_t ret = BatchInsertWithRetry(VISION_FACE_TAG_TABLE, valuesBuckets, rowNum);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to batch insert face tags");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to batch insert face tags");
 }
 
 void CloneRestore::RestoreImageFaceInfo(std::vector<FileInfo> &fileInfos)
@@ -2209,10 +2216,7 @@ std::vector<ImageFaceTbl> CloneRestore::QueryImageFaceTbl(int32_t offset, std::s
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSet is null.");
-        return result;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSet is null.");
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         ImageFaceTbl imageFaceTbl;
@@ -2238,10 +2242,8 @@ bool CloneRestore::GetFileInfoByFileId(int32_t fileId, const std::vector<FileInf
 void CloneRestore::GenNewCoverUris(const std::vector<CloneRestore::CoverUriInfo>& coverUriInfo,
     std::vector<FileInfo> &fileInfos)
 {
-    if (coverUriInfo.empty() && fileInfos.empty()) {
-        MEDIA_WARN_LOG("Empty coverUriInfo or fileIdPairs, skipping.");
-        return;
-    }
+    bool cond = (coverUriInfo.empty() && fileInfos.empty());
+    CHECK_AND_RETURN_LOG(!cond, "Empty coverUriInfo or fileIdPairs, skipping.");
 
     std::unordered_map<std::string, std::pair<std::string, int32_t>> tagIdToCoverInfo;
     for (const auto& [tagId, coverInfo] : coverUriInfo) {
@@ -2280,9 +2282,8 @@ std::string CloneRestore::GenCoverUriUpdateSql(const std::unordered_map<std::str
         }
     }
 
-    if (coverUriUpdates.empty() || isCoverSatisfiedUpdates.empty()) {
-        return "";
-    }
+    bool cond = (coverUriUpdates.empty() || isCoverSatisfiedUpdates.empty());
+    CHECK_AND_RETURN_RET(!cond, "");
 
     std::string updateSql = "UPDATE AnalysisAlbum SET ";
 
@@ -2335,10 +2336,7 @@ std::string CloneRestore::ProcessUriAndGenNew(const std::string& tagId, const st
 std::vector<ImageFaceTbl> CloneRestore::ProcessImageFaceTbls(const std::vector<ImageFaceTbl>& imageFaceTbls,
     const std::vector<FileIdPair>& fileIdPairs)
 {
-    if (imageFaceTbls.empty()) {
-        MEDIA_ERR_LOG("image faces tbl empty");
-        return {};
-    }
+    CHECK_AND_RETURN_RET_LOG(!imageFaceTbls.empty(), {}, "image faces tbl empty");
 
     std::vector<ImageFaceTbl> imageFaceNewTbls;
     imageFaceNewTbls.reserve(imageFaceTbls.size());
@@ -2369,10 +2367,7 @@ void CloneRestore::BatchInsertImageFaces(const std::vector<ImageFaceTbl>& imageF
 
     int64_t rowNum = 0;
     int32_t ret = BatchInsertWithRetry(VISION_IMAGE_FACE_TABLE, valuesBuckets, rowNum);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to batch insert image faces");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to batch insert image faces");
 
     for (const auto& imageFaceTbl : imageFaceTbls) {
         if (imageFaceTbl.fileId.has_value()) {
@@ -2459,10 +2454,7 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
 
 void CloneRestore::ReportPortraitCloneStat(int32_t sceneCode)
 {
-    if (sceneCode != CLONE_RESTORE_ID) {
-        MEDIA_ERR_LOG("err scencecode %{public}d", sceneCode);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID, "err scencecode %{public}d", sceneCode);
 
     MEDIA_INFO_LOG("PortraitStat: album %{public}lld, photo %{public}lld, face %{public}lld, cost %{public}lld",
         (long long)migratePortraitAlbumNumber_, (long long)migratePortraitPhotoNumber_,
@@ -2527,21 +2519,15 @@ bool CloneRestore::BackupKvStore()
     }
 
     std::string backupKvdbPath = CLONE_KVDB_BACKUP_DIR + "/kvdb";
-    if (BackupFileUtils::PreparePath(backupKvdbPath) != E_OK) {
-        MEDIA_ERR_LOG("Prepare backup dir failed");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(BackupFileUtils::PreparePath(backupKvdbPath) == E_OK,
+        false, "Prepare backup dir failed");
 
     int32_t status = MediaLibraryKvStoreManager::GetInstance().CloneKvStore(
         MEDIA_KVSTORE_MONTH_STOREID, MEDIA_KVDB_DIR, CLONE_KVSTORE_MONTH_STOREID, CLONE_KVDB_BACKUP_DIR);
-    if (status != E_OK) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(status == E_OK, false);
     status = MediaLibraryKvStoreManager::GetInstance().CloneKvStore(
         MEDIA_KVSTORE_YEAR_STOREID, MEDIA_KVDB_DIR, CLONE_KVSTORE_YEAR_STOREID, CLONE_KVDB_BACKUP_DIR);
-    if (status != E_OK) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(status == E_OK, false);
     MEDIA_INFO_LOG("End BackupKvstore");
     return true;
 }

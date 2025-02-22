@@ -15,12 +15,17 @@
 
 #include "cloud_sync_notify_handler.h"
 
+#include <sys/stat.h>
+
 #include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_sync_utils.h"
 #include "medialibrary_album_fusion_utils.h"
+#include "medialibrary_album_operations.h"
 #include "notify_responsibility_chain_factory.h"
+#include "result_set_utils.h"
 #include "thumbnail_service.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdb_utils.h"
 #include "parameters.h"
@@ -57,10 +62,7 @@ static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 
 static void UpdateCloudAssetDownloadTask(const bool verifyFlag)
 {
-    if (!verifyFlag) {
-        MEDIA_INFO_LOG("Current status is not suitable for task.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(verifyFlag, "Current status is not suitable for task.");
     if (!CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate() && CloudSyncUtils::IsCloudSyncSwitchOn() &&
         CloudSyncUtils::IsCloudDataAgingPolicyOn()) {
         CloudMediaAssetManager::GetInstance().StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
@@ -96,7 +98,6 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
 
 void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
 {
-    bool verifyFlag = false;
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto dateTakenPos = uriString.rfind('/');
@@ -114,15 +115,9 @@ void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
             MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
             continue;
         }
-        if (!verifyFlag) {
-            verifyFlag = true;
-        }
 
         ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateTaken(fileId, dateTaken);
         MediaLibraryPhotoOperations::HasDroppedThumbnailSize(fileId);
-    }
-    if (verifyFlag) {
-        CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
     }
 }
 
@@ -182,6 +177,251 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
     }
 }
 
+void CloudSyncNotifyHandler::HandleDirtyDataFix(const std::list<Uri> &uris, const CloudSyncErrType &errType)
+{
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+    switch (errType) {
+        case CloudSyncErrType::CONTENT_NOT_FOUND:
+            HandleContentNotFound(uris);
+            break;
+        case CloudSyncErrType::THM_NOT_FOUND:
+            HandleThumbnailNotFound(uris);
+            break;
+        case CloudSyncErrType::LCD_NOT_FOUND:
+            HandleLCDNotFound(uris);
+            break;
+        case CloudSyncErrType::LCD_SIZE_IS_TOO_LARGE:
+            HandleLCDSizeTooLarge(uris);
+            break;
+        case CloudSyncErrType::CONTENT_SIZE_IS_ZERO:
+            HandleContentSizeIsZero(uris);
+            break;
+        case CloudSyncErrType::ALBUM_NOT_FOUND:
+            HandleAlbumNotFound(uris);
+            break;
+        default:
+            MEDIA_ERR_LOG("HandleDirtyDataFix, Unrecognized error type : %{public}d", errType);
+        }
+}
+
+std::string CloudSyncNotifyHandler::GetfileIdFromPastDirtyDataFixUri(std::string uriString)
+{
+    auto fileIdPos = uriString.rfind('/');
+    if (fileIdPos == string::npos) {
+        return "";
+    }
+    std::string fileId = uriString.substr(fileIdPos + 1, uriString.size() - fileIdPos);
+    return fileId;
+}
+
+void CloudSyncNotifyHandler::HandleContentNotFound(const std::list<Uri> &uris)
+{
+    for (auto &uri : uris) {
+        std::string uriString = uri.ToString();
+        std::string fileId = GetfileIdFromPastDirtyDataFixUri(uriString);
+        if (fileId == "") {
+            continue;
+        }
+        if (fileId.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+        MEDIA_INFO_LOG(
+            "ContentNotFound, uri : %{public}s", uriString.c_str());
+    }
+}
+
+void CloudSyncNotifyHandler::HandleThumbnailNotFound(const std::list<Uri> &uris)
+{
+    for (auto &uri : uris) {
+        std::string uriString = uri.ToString();
+        std::string fileId = GetfileIdFromPastDirtyDataFixUri(uriString);
+        if (fileId == "") {
+            continue;
+        }
+        if (fileId.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+
+        int32_t err = ThumbnailService::GetInstance()->CreateThumbnailPastDirtyDataFix(fileId);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("ThumbnailService CreateThumbnailPastDirtyDataFix failed : %{public}d", err);
+            continue;
+        }
+        MEDIA_INFO_LOG("Generate thumbnail %{public}s, success ", uriString.c_str());
+    }
+}
+
+void CloudSyncNotifyHandler::HandleLCDNotFound(const std::list<Uri> &uris)
+{
+    for (auto &uri : uris) {
+        std::string uriString = uri.ToString();
+        std::string fileId = GetfileIdFromPastDirtyDataFixUri(uriString);
+        if (fileId == "") {
+            continue;
+        }
+        if (fileId.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+
+        int32_t err = ThumbnailService::GetInstance()->CreateLcdPastDirtyDataFix(fileId);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("ThumbnailService CreateLCDPastDirtyDataFix failed : %{public}d", err);
+            continue;
+        }
+        MEDIA_INFO_LOG("Generate Lcd %{public}s, success ", uriString.c_str());
+    }
+    return;
+}
+
+void CloudSyncNotifyHandler::HandleLCDSizeTooLarge(const std::list<Uri> &uris)
+{
+    for (auto &uri : uris) {
+        std::string uriString = uri.ToString();
+        std::string fileId = GetfileIdFromPastDirtyDataFixUri(uriString);
+        if (fileId == "") {
+            continue;
+        }
+        if (fileId.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+
+        int32_t err = ThumbnailService::GetInstance()->CreateLcdPastDirtyDataFix(fileId, THUMBNAIL_EIGHTY);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("ThumbnailService CreateLcdPastDirtyDataFix to eighty quality failed : %{public}d", err);
+            continue;
+        }
+        MEDIA_INFO_LOG("Regenerate Lcd %{public}s to eighty quality, success ", uriString.c_str());
+    }
+    return;
+}
+
+void CloudSyncNotifyHandler::HandleContentSizeIsZero(const std::list<Uri> &uris)
+{
+    for (auto &uri : uris) {
+        std::string uriString = uri.ToString();
+        std::string fileId = GetfileIdFromPastDirtyDataFixUri(uriString);
+        if (fileId == "") {
+            continue;
+        }
+        if (fileId.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+
+        std::string filePath;
+        auto err = QueryFilePathFromFileId(fileId, filePath);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("QueryFilePathFromFileId failed : %{public}d", err);
+            continue;
+        }
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        int changeRows = 0;
+        struct stat st;
+        err = stat(filePath.c_str(), &st);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("stat failed : %{public}d", err);
+            continue;
+        }
+        if (st.st_size == 0) {
+            MEDIA_INFO_LOG("HandleContentSizeIsZero, file size is zero");
+            continue;
+        }
+        NativeRdb::ValuesBucket valuesNew;
+        valuesNew.PutLong(PhotoColumn::MEDIA_SIZE, st.st_size);
+        NativeRdb::RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+        rdbPredicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+        rdbStore->Update(changeRows, valuesNew, rdbPredicates);
+        CHECK_AND_PRINT_LOG(changeRows >= 0, "Failed to update content size , ret = %{public}d", changeRows);
+        MEDIA_INFO_LOG("refresh photo size field to : %{public}d , success", static_cast<int>(st.st_size));
+    }
+    return;
+}
+
+int32_t CloudSyncNotifyHandler::QueryFilePathFromFileId(const std::string &id, std::string &filePath)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_DB_FAIL, "QueryFilePathFromFileId failed. rdbStore is null");
+    const string sqlQuery = "SELECT * From " + PhotoColumn::PHOTOS_TABLE +
+                            " WHERE " + PhotoColumn::MEDIA_ID + " = " + id;
+    auto resultSet = rdbStore->QuerySql(sqlQuery);
+    CHECK_AND_RETURN_RET_LOG(
+        resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        E_DB_FAIL, "Query not matched data fails");
+
+    filePath = get<std::string>(
+        ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, ResultSetDataType::TYPE_STRING));
+    return E_OK;
+}
+
+int32_t CloudSyncNotifyHandler::QueryAlbumLpathFromFileId(const std::string &id, std::string &lpath)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(
+        rdbStore != nullptr,
+        E_DB_FAIL, "QueryAlbumLpathFromFileId failed. rdbStore is null");
+    const string sqlQuery = "SELECT * From " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::MEDIA_ID +
+                            " = " + id;
+    auto resultSet = rdbStore->QuerySql(sqlQuery);
+    CHECK_AND_RETURN_RET_LOG(
+        resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        E_DB_FAIL, "Query not matched data fails");
+
+    auto sourcePath = get<std::string>(
+        ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SOURCE_PATH, resultSet, ResultSetDataType::TYPE_STRING));
+    int32_t mediaType = GetInt32Val(PhotoColumn::MEDIA_TYPE, resultSet);
+    int32_t err = MediaLibraryAlbumOperations::GetLPathFromSourcePath(sourcePath, lpath, mediaType);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_DB_FAIL, "GetLPathFromSourcePath fail : %{public}s ", lpath.c_str());
+    MEDIA_INFO_LOG("QueryAlbumLpathFromFileId succcess, lpath is : %{public}s ", lpath.c_str());
+    return E_OK;
+}
+
+void CloudSyncNotifyHandler::HandleAlbumNotFound(const std::list<Uri> &uris)
+{
+    for (auto &uri : uris) {
+        std::string uriString = uri.ToString();
+        std::string fileId = GetfileIdFromPastDirtyDataFixUri(uriString);
+        if (fileId == "") {
+            continue;
+        }
+        if (fileId.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+
+        std::string lpath;
+        int64_t newAlbumId = -1;
+        bool isUserAlbum = false;
+        auto err = QueryAlbumLpathFromFileId(fileId, lpath);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("QueryAlbumLpathFromFileId failed : %{public}d", err);
+            continue;
+        }
+        MediaLibraryAlbumOperations::RecoverAlbum(fileId, lpath, isUserAlbum, newAlbumId);
+        if (newAlbumId == -1) {
+            MEDIA_ERR_LOG("HandleAlbumNotFound Fail, Recover album fails");
+            continue;
+        }
+
+        if (isUserAlbum) {
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {to_string(newAlbumId)});
+        } else {
+            MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+                MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), {to_string(newAlbumId)});
+        }
+        auto watch = MediaLibraryNotify::GetInstance();
+        if (watch != nullptr) {
+            watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+                PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId)), NotifyType::NOTIFY_ADD);
+        }
+    }
+    return;
+}
+
 void CloudSyncNotifyHandler::MakeResponsibilityChain()
 {
     string uriString = notifyInfo_.uris.front().ToString();
@@ -221,6 +461,10 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
         } else {
             chain = NotifyResponsibilityChainFactory::CreateChain(TRANSPARENT);
         }
+    }
+
+    if (uriString.find(PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX) != string::npos) {
+        HandleDirtyDataFix(notifyInfo_.uris, static_cast<CloudSyncErrType>(notifyInfo_.type));
     }
     CloudSyncHandleData handleData;
     handleData.orgInfo = notifyInfo_;

@@ -276,6 +276,22 @@ static void HandleLocalVersion(std::shared_ptr<DfxReporter> &dfxReporter)
     dfxReporter->ReportAnalysisVersion("tab_analysis_aesthetics_score", aestheticsVersion);
 }
 
+void HandleAstcInfo(std::shared_ptr<DfxReporter>& dfxReporter)
+{
+    LcdAndAstcCount count = {};
+    count.localAstcCount = DfxDatabaseUtils::QueryASTCThumb(true);
+    count.cloudAstcCount = DfxDatabaseUtils::QueryASTCThumb(false);
+    count.localLcdCount = DfxDatabaseUtils::QueryLCDThumb(true);
+    count.cloudLcdCount = DfxDatabaseUtils::QueryLCDThumb(false);
+
+    MEDIA_INFO_LOG("localLcdCount: %{public}d, localAstcCount: %{public}d, "
+                   "cloudLcdCount: %{public}d, cloudAstcCount: %{public}d",
+                   count.localLcdCount, count.localAstcCount,
+                   count.cloudLcdCount, count.cloudAstcCount);
+
+    dfxReporter->ReportAstcInfo(count);
+}
+
 static void HandleStatistic(DfxData *data)
 {
     if (data == nullptr) {
@@ -287,6 +303,7 @@ static void HandleStatistic(DfxData *data)
     HandleAlbumInfo(dfxReporter);
     HandleDirtyCloudPhoto(dfxReporter);
     HandleLocalVersion(dfxReporter);
+    HandleAstcInfo(dfxReporter);
 #ifdef META_RECOVERY_SUPPORT
     MediaLibraryMetaRecovery::GetInstance().RecoveryStatistic();
 #endif
@@ -584,6 +601,7 @@ void CloudSyncDfxManager::StartTimer()
         return;
     }
     Utils::Timer::TimerCallback timerCallback = [this]() {
+        (void)this;
         if (IsReported()) {
             return;
         }

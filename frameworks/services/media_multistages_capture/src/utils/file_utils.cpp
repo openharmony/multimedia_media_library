@@ -21,7 +21,9 @@
 
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "moving_photo_file_utils.h"
 #include "database_adapter.h"
+#include "dfx_utils.h"
 #include "result_set_utils.h"
 #include "media_column.h"
 #include "image_packer.h"
@@ -150,8 +152,10 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
 {
     MediaLibraryTracer tracer;
     tracer.Start("FileUtils::DealPicture");
-    MEDIA_DEBUG_LOG("DealPicture %{public}s", path.c_str());
+    MEDIA_INFO_LOG("DealPicture, path: %{public}s, mime_type: %{public}s",
+        MediaFileUtils::DesensitizePath(path).c_str(), mime_type.c_str());
     if (picture == nullptr) {
+        MEDIA_ERR_LOG("picture is nullptr.");
         return -1;
     }
     Media::ImagePacker imagePacker;
@@ -172,7 +176,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     imagePacker.FinalizePacking();
     size_t size = -1;
     MediaFileUtils::GetFileSize(tempOutputPath, size);
-    MEDIA_DEBUG_LOG("SavePicture end {public}%zu", size);
+    MEDIA_INFO_LOG("SavePicture end size: {public}%zu", size);
     if (size == 0) {
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
@@ -195,16 +199,44 @@ int32_t FileUtils::SaveVideo(const std::string &filePath, bool isEdited)
     if (isEdited) {
         targetPath = MediaLibraryAssetOperations::GetEditDataSourcePath(filePath);
     }
- 
-    if (!IsFileExist(filePath)) {
-        MEDIA_INFO_LOG("file not exist: %{public}s", filePath.c_str());
-    }
- 
+
     if (!IsFileExist(tempPath)) {
-        MEDIA_INFO_LOG("file not exist: %{public}s", tempPath.c_str());
+        MEDIA_ERR_LOG("file not exist: %{public}s", DfxUtils::GetSafePath(tempPath).c_str());
     }
  
-    MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s", targetPath.c_str(), tempPath.c_str());
+    if (!IsFileExist(targetPath)) {
+        MEDIA_ERR_LOG("file not exist: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
+    }
+ 
+    MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s",
+        DfxUtils::GetSafePath(targetPath).c_str(), DfxUtils::GetSafePath(tempPath).c_str());
+    return rename(tempPath.c_str(), targetPath.c_str());
+}
+
+int32_t FileUtils::SaveMovingPhotoVideo(const std::string &filePath)
+{
+    string tempPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(
+        filePath.substr(0, filePath.rfind('.')) + "_tmp" + filePath.substr(filePath.rfind('.')));
+    string targetPath;
+
+    string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
+    string editVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(
+        MediaLibraryAssetOperations::GetEditDataSourcePath(filePath));
+
+    if (!IsFileExist(tempPath)) {
+        MEDIA_ERR_LOG("file not exist: %{public}s", DfxUtils::GetSafePath(tempPath).c_str());
+    }
+
+    if (IsFileExist(editVideoPath)) {
+        targetPath = editVideoPath;
+    } else if (IsFileExist(videoPath)) {
+        targetPath = videoPath;
+    } else {
+        MEDIA_ERR_LOG("file not exist: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
+    }
+
+    MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s",
+        DfxUtils::GetSafePath(targetPath).c_str(), DfxUtils::GetSafePath(tempPath).c_str());
     return rename(tempPath.c_str(), targetPath.c_str());
 }
  

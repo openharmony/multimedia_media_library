@@ -50,12 +50,9 @@ static int Open(const char *path, struct fuse_file_info *fi)
     dfxTimer.SetCallerUid(ctx->uid);
 
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path, fi->flags, fd);
-    if (err) {
-        MEDIA_ERR_LOG("Open file failed, path = %{private}s", path);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == 0, err, "Open file failed, path = %{private}s", path);
 
-    fi->fh = fd;
+    fi->fh = static_cast<uint64_t>(fd);
     return 0;
 }
 
@@ -68,10 +65,7 @@ static int Read(const char *path, char *buf, size_t size, off_t offset, struct f
     dfxTimer.SetCallerUid(ctx->uid);
 
     int res = pread(fi->fh, buf, size, offset);
-    if (res == -1) {
-        MEDIA_ERR_LOG("Read file failed, errno = %{public}d", errno);
-        return -errno;
-    }
+    CHECK_AND_RETURN_RET_LOG(res != -1, -errno, "Read file failed, errno = %{public}d", errno);
 
     return res;
 }
@@ -85,10 +79,7 @@ static int Write(const char *path, const char *buf, size_t size, off_t offset, s
     dfxTimer.SetCallerUid(ctx->uid);
 
     int res = pwrite(fi->fh, buf, size, offset);
-    if (res == -1) {
-        MEDIA_ERR_LOG("Write file failed, errno = %{public}d", errno);
-        return -errno;
-    }
+    CHECK_AND_RETURN_RET_LOG(res != -1, -errno, "Read file failed, errno = %{public}d", errno);
 
     return res;
 }
@@ -118,10 +109,8 @@ int32_t MediaFuseDaemon::StartFuse()
     int ret = E_OK;
 
     bool expect = false;
-    if (!isRunning_.compare_exchange_strong(expect, true)) {
-        MEDIA_INFO_LOG("Fuse daemon is already running");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(isRunning_.compare_exchange_strong(expect, true), E_FAIL,
+        "Fuse daemon is already running");
 
     std::thread([this]() {
         DaemonThread();

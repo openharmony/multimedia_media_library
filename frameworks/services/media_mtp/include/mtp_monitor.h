@@ -14,23 +14,25 @@
  */
 #ifndef FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_MONITOR_H_
 #define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_MTP_MONITOR_H_
+#include <atomic>
+#include <thread>
 #include "mtp_operation.h"
 namespace OHOS {
 namespace Media {
 class MtpMonitor {
 public:
-    MtpMonitor();
+    MtpMonitor() = default;
     ~MtpMonitor() = default;
     void Start();
     void Stop();
 
 private:
-    void Init();
     void Run();
 
 private:
     std::shared_ptr<MtpOperation> operationPtr_;
-    bool interruptFlag {false};
+    std::atomic_bool threadRunning_ {false};
+    std::unique_ptr<std::thread> thread_;
 };
 } // namespace Media
 } // namespace OHOS
