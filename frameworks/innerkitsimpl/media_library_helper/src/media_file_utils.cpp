@@ -882,7 +882,7 @@ static inline bool RegexCheck(const string &str, const string &regexStr)
     return regex_search(str, express);
 }
 
-static inline int32_t CheckTitle(const string &title)
+int32_t MediaFileUtils::CheckTitle(const string &title)
 {
     if (title.empty()) {
         MEDIA_ERR_LOG("Title is empty.");
@@ -897,10 +897,20 @@ static inline int32_t CheckTitle(const string &title)
     return E_OK;
 }
 
-int32_t MediaFileUtils::CheckTitleName(const string &title)
-    {
-        return CheckTitle(title);
+int32_t MediaFileUtils::CheckTitleCompatible(const string& title)
+{
+    if (title.empty()) {
+        MEDIA_ERR_LOG("Title is empty.");
+        return -EINVAL;
     }
+    
+    static const string titleRegexCheck = R"([\.\\/:*?"'`<>|{}\[\]])";
+    if (RegexCheck(title, titleRegexCheck)) {
+        MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
+        return -EINVAL;
+    }
+    return E_OK;
+}
 
 std::string MediaFileUtils::GetFileAssetUri(const std::string &fileAssetData, const std::string &displayName,
     const int32_t &fileId)
@@ -917,7 +927,7 @@ std::string MediaFileUtils::GetFileAssetUri(const std::string &fileAssetData, co
     return baseUri + "/Photo/" + std::to_string(fileId) + "/" + fileNameInData + "/" + displayName;
 }
 
-int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
+int32_t MediaFileUtils::CheckDisplayName(const string &displayName, const bool compatibleCheckTitle)
 {
     int err = CheckStringSize(displayName, DISPLAYNAME_MAX);
     if (err < 0) {
@@ -929,6 +939,11 @@ int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
     string title = GetTitleFromDisplayName(displayName);
     if (title.empty()) {
         return -EINVAL;
+    }
+
+    if (compatibleCheckTitle) {
+        // 为了向前兼容，此处进行老版本的title校验
+        return CheckTitleCompatible(title);
     }
     return CheckTitle(title);
 }
@@ -942,7 +957,7 @@ int32_t MediaFileUtils::CheckFileDisplayName(const string &displayName)
     if (displayName.at(0) == '.') {
         return -EINVAL;
     }
-    static const string TITLE_REGEX_CHECK = R"([\\/:*?"<>|])";
+    static const string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
     if (RegexCheck(displayName, TITLE_REGEX_CHECK)) {
         MEDIA_ERR_LOG("Failed to check displayName regex: %{private}s", displayName.c_str());
         return -EINVAL;
