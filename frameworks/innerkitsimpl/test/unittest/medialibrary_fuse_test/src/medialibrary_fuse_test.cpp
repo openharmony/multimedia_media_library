@@ -289,8 +289,6 @@ bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, co
     return true;
 }
 
-void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api) {}
-
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_001");
