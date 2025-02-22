@@ -156,7 +156,8 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
         {
             { PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_NAME + " IS NOT NULL" },
             { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
-                to_string(PhotoAlbumSubType::SHOOTING_MODE) + ")" },
+                to_string(PhotoAlbumSubType::SHOOTING_MODE) + ", " +
+                to_string(PhotoAlbumSubType::GEOGRAPHY_CITY) + ")" },
         }},
 };
 const vector<string> CLONE_ALBUMS = { PhotoAlbumColumns::TABLE, ANALYSIS_ALBUM_TABLE };
@@ -258,6 +259,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeo_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
+    cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreHighlight_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
     cloneRestoreCVAnalysis_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
     MEDIA_INFO_LOG("Init db succ.");
@@ -378,6 +380,7 @@ void CloneRestore::RestoreAlbum()
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
     cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
+    cloneRestoreGeoDictionary_.RestoreAlbums();
     RestoreHighlightAlbums(CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
 }
 
@@ -1324,6 +1327,7 @@ void CloneRestore::RestoreGallery()
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     cloneRestoreGeo_.ReportGeoRestoreTask();
+    cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     cloneRestoreHighlight_.UpdateAlbums();
     cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
     ReportPortraitCloneStat(sceneCode_);
