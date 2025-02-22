@@ -69,7 +69,8 @@ public:
         DIRECTORY,
         START,
         ERROR,
-        SET_ERROR
+        SET_ERROR,
+        CAMERA_SHOT_MOVING_PHOTO
     };
 
     EXPORT MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
@@ -147,6 +148,7 @@ private:
     bool isForceScan_ = false;
     int32_t fileId_ = 0;
     bool isSkipAlbumUpdate_ = false;
+    bool isCameraShotMovingPhoto_ = false;
 };
 
 class ScanErrCallback : public IMediaScannerCallback {

@@ -53,7 +53,8 @@ public:
         const std::string &dstDirPath);
     EXPORT static int32_t OpenFile(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT static int32_t CloseFile(MediaLibraryCommand &cmd);
-    EXPORT static void ScanFileAsync(const std::string &path, const std::string &id, MediaLibraryApi api);
+    EXPORT static void ScanFileAsync(const std::string &path, const std::string &id, MediaLibraryApi api,
+        bool isCameraShotMovingPhoto = false);
     static void ScanFileSyncWithoutAlbumUpdate(const std::string &path, const std::string &id, MediaLibraryApi api);
     EXPORT static int32_t GetIdByPathFromDb(const std::string &path);
     static std::string GetPathByIdFromDb(const std::string &id, const bool isDelete = false);
