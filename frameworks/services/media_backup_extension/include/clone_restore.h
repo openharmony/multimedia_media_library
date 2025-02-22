@@ -38,6 +38,14 @@
 
 namespace OHOS {
 namespace Media {
+struct CloudPhotoFileExistFlag {
+    bool isLcdExist {false};
+    bool isThmExist {false};
+    bool isDayAstcExist {false};
+    bool isYearAstcExist {false};
+    bool isExLcdExist {false};
+    bool isExThmExist {false};
+};
 class CloneRestore : public BaseRestore {
 public:
     CloneRestore();
@@ -56,6 +64,9 @@ public:
 protected:
     void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode) override;
+    void GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPhotoFileExistFlag &resultExistFlag);
+    void CloudPhotoFileVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound
+        std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
 
 private:
     void RestorePhoto(void) override;
@@ -187,12 +198,14 @@ private:
     int32_t MoveEditedData(FileInfo &fileInfo);
     int32_t MoveThumbnail(FileInfo &fileInfo);
     int32_t MoveThumbnailDir(FileInfo &fileInfo);
+    int32_t MoveCloudThumbnailDir(FileInfo &fileInfo);
     int32_t MoveAstc(FileInfo &fileInfo);
     void InitThumbnailStatus();
     bool InitAllKvStore();
     void CloseAllKvStore();
     bool BackupKvStore();
     void GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
+    void GetCloudThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     int32_t GetNoNeedMigrateCount() override;
     void GetAccountValid() override;
     int32_t GetHighlightCloudMediaCnt();
@@ -206,6 +219,13 @@ private:
     void PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
         const std::optional<T>& optionalValue, const T& defaultValue);
     std::string GetThumbnailLocalPath(const string path);
+    void BatchInsertFileInfoData(std::vector<FileInfo> &fileInfos,
+        unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
+    int32_t CheckThumbReady(const FileInfo &fileInfo,
+        CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
+    int32_t CheckThumbStatus(const FileInfo &fileInfo,
+        CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
+    int32_t CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
