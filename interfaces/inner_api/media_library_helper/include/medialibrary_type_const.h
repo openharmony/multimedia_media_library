@@ -60,6 +60,16 @@ enum DirType {
     DIR_TYPE_MAX
 };
 
+enum class CloudSyncErrType : int32_t {
+    OTHER_ERROR = 0,
+    CONTENT_NOT_FOUND,
+    THM_NOT_FOUND,
+    LCD_NOT_FOUND,
+    LCD_SIZE_IS_TOO_LARGE,
+    CONTENT_SIZE_IS_ZERO,
+    ALBUM_NOT_FOUND
+};
+
 enum PrivateAlbumType {
     TYPE_FAVORITE = 0,
     TYPE_TRASH,
@@ -98,13 +108,24 @@ enum class DirtyType : int32_t {
 enum class CloudEnhancementAvailableType : int32_t {
     NOT_SUPPORT = 0,
     SUPPORT,
-    PROCESSING,
+    PROCESSING_MANUAL,
     FAILED_RETRY,
     FAILED,
     SUCCESS,
     EDIT,
     TRASH,
+    PROCESSING_AUTO,
     FINISH = 120,
+};
+
+enum class CloudEnhancementIsAutoType : int32_t {
+    NOT_AUTO = 0,
+    AUTO,
+};
+
+enum class CloudEnhancementTriggerModeType : int32_t {
+    TRIGGER_MANUAL = 0,
+    TRIGGER_AUTO,
 };
 
 enum class CEErrorCodeType : int32_t {
@@ -164,6 +185,15 @@ enum class MultiStagesPhotoQuality : int32_t {
     LOW,
 };
 
+enum class StageVideoTaskStatus : int32_t {
+    NO_NEED_TO_STAGE = 0,
+    NEED_TO_STAGE,
+    STAGE_TASK_TO_DELIVER,
+    STAGE_TASK_DELIVERED,
+    STAGE_TASK_FAIL,
+    STAGE_TASK_SUCCESS,
+};
+
 constexpr int32_t DEFAULT_INT32 = 0;
 constexpr int64_t DEFAULT_INT64 = 0;
 constexpr int64_t DEFAULT_DOUBLE = 0;
@@ -206,6 +236,7 @@ const std::string MEDIA_EDIT_DATA_DIR = ROOT_MEDIA_DIR + ".editData/";
 const std::string META_RECOVERY_PHOTO_RELATIVE_PATH = "/Photo/";
 const std::string META_RECOVERY_META_RELATIVE_PATH = "/.meta/Photo/";
 const std::string META_RECOVERY_META_FILE_SUFFIX = ".json";
+const std::string ASTC_JSON_FILE_PATH = "/data/storage/el2/base/preferences/astcphase.json";
 const char SLASH_CHAR = '/';
 const std::string SLASH_STR = "/";
 const int32_t KEY_FRAME_LCD = 1;
@@ -245,11 +276,15 @@ const std::string CLOUD_ENHANCEMENT_WATER_MARK_DIR = "/sys_prod/resource/camera"
 const std::string CACHE_DIR_VALUE = ".cache";
 const std::string HIGHLIGHT_INFO_OLD = ".thumbs/highlight";
 const std::string HIGHLIGHT_INFO_NEW = "highlight";
+const std::string MEDIA_PHOTO_URI = "file://media/Photo/";
+const std::string HMDFS = "/mnt/hmdfs/";
+const std::string CLOUD_MERGE_VIEW = "/account/cloud_merge_view/files/";
+const std::string CUSTOM_RESTORE_VALUES = "custom_restore";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
     PHOTO_BUCKET + "/", AUDIO_BUCKET + "/", BACKUP_DATA_DIR_VALUE, EDIT_DATA_DIR_VALUE + "/",
-    BACKUP_SINGLE_DATA_DIR_VALUE, CACHE_DIR_VALUE
+    BACKUP_SINGLE_DATA_DIR_VALUE, CACHE_DIR_VALUE, CUSTOM_RESTORE_VALUES
 };
 
 const std::vector<std::string> E_POLICY_DIRS = {
@@ -273,6 +308,22 @@ const std::string FAVOURTIE_ALBUM_NAME_VALUES = "FavoritAlbum";
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
 static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
+
+const std::string PHOTO_OPTION_WLAN_ONLY = "WLAN only";
+const std::string PHOTO_OPTION_WLAN_AND_NETWORK = "WLAN and networks";
+const std::string PHOTO_OPTION_CLOSE = "close";
+
+constexpr const char *SETTINGS_DATA_EXT_URI = "datashare:///com.ohos.settingsdata.DataAbility";
+constexpr const char *SETTINGS_DATASHARE_AUTO_OPTION_URI =
+    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true&key=persist.photos.ce.auto.option";
+const std::string SETTINGS_DATASHARE_URI =
+    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true";
+const std::string SETTINGS_DATASHARE_WATER_MARK_URI = SETTINGS_DATASHARE_URI +
+    "&key=persist.photos.ce.watermark.enable";
+const std::string SETTING_KEY = "KEYWORD";
+const std::string SETTING_VALUE = "VALUE";
+const std::string WATER_MARK_ENABLED = "true";
+constexpr int PHOTOS_STORAGE_MANAGER_ID = 5003;
 } // namespace OHOS
 } // namespace Media
 

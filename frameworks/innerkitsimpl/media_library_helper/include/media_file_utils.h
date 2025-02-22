@@ -93,7 +93,8 @@ public:
     EXPORT static std::string GetParentPath(const std::string &path);
     EXPORT static std::string GetTitleFromDisplayName(const std::string &displayName);
     EXPORT static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
-    EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath);
+    EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath,
+        bool isSupportCrossPolicy = false);
     EXPORT static bool CopyDirAndDelSrc(const std::string &srcPath, const std::string &destPath,
         unsigned short curRecursionDepth = 0);
     EXPORT static bool CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile);
@@ -159,6 +160,7 @@ public:
     EXPORT static bool IsFileTablePath(const std::string &path);
     EXPORT static bool IsPhotoTablePath(const std::string &path);
     EXPORT static std::string StrCreateTime(const std::string &format, int64_t time);
+    EXPORT static std::string StrCreateTimeSafely(const std::string &format, int64_t time);
     EXPORT static std::string StrCreateTimeByMilliseconds(const std::string &format, int64_t time);
     EXPORT static std::string AddDocsToRelativePath(const std::string &relativePath);
     EXPORT static std::string RemoveDocsFromRelativePath(const std::string &relativePath);
@@ -191,7 +193,14 @@ public:
     EXPORT static bool GenerateKvStoreKey(const std::string &fileId, const std::string &dateKey, std::string &key);
     EXPORT static bool IsCalledBySelf();
     EXPORT static std::vector<std::string> GetAllTypes(const int32_t extension);
-
+    EXPORT static bool IsValidInteger(const std::string &value);
+    EXPORT static int32_t CreateAssetRealName(
+        int32_t fileId, int32_t mediaType, const std::string &extension, std::string &name);
+    EXPORT static int64_t GetTotalSize();
+    EXPORT static int64_t GetFreeSize();
+    EXPORT static void StatDirSize(const std::string& rootPath, size_t& totalSize);
+    EXPORT static std::string GetMimeTypeFromDisplayName(const std::string &displayName);
+    EXPORT static std::string DesensitizeUri(const std::string &fileUri);
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);

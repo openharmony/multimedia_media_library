@@ -47,10 +47,8 @@ bool PhotoAlbumDao::CheckAlbumNameUnique(const std::string &albumName, const std
         return true;
     }
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
-    if (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Restore: Query resultSql is null.");
-        return true;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, true, "Media_Restore: Query resultSql is null.");
     int32_t count = GetInt32Val("count", resultSet);
     return count == 0;
 }
@@ -60,10 +58,8 @@ bool PhotoAlbumDao::CheckAlbumNameUnique(const std::string &albumName, const std
  */
 std::string PhotoAlbumDao::FindUniqueAlbumName(const PhotoAlbumDao::PhotoAlbumRowData &photoAlbum)
 {
-    if (photoAlbum.lPath.empty() || photoAlbum.albumName.empty()) {
-        MEDIA_ERR_LOG("Media_Restore: Invalid album data");
-        return "";
-    }
+    bool cond = (photoAlbum.lPath.empty() || photoAlbum.albumName.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, "", "Media_Restore: Invalid album data");
     const std::string lPath = photoAlbum.lPath;
     // The PhotoAlbum is cached.
     PhotoAlbumDao::PhotoAlbumRowData albumDataInCache;
@@ -148,11 +144,10 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
         return albumRowData;
     }
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_WARN_LOG("Media_Restore: can not find the PhotoAlbum info by lPath [%{public}s] in PhotoAlbum table.",
-            lPath.c_str());
-        return albumRowData;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, albumRowData, "Media_Restore: can not find the PhotoAlbum info by"
+        " lPath [%{public}s] in PhotoAlbum table.", lPath.c_str());
+
     albumRowData.albumId = GetInt32Val(this->FIELD_NAME_ALBUM_ID, resultSet);
     albumRowData.albumName = GetStringVal(this->FIELD_NAME_ALBUM_NAME, resultSet);
     albumRowData.bundleName = GetStringVal(this->FIELD_NAME_BUNDLE_NAME, resultSet);
@@ -175,11 +170,8 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
 PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const PhotoAlbumRowData &album)
 {
     // validate inputs
-    if (album.lPath.empty()) {
-        MEDIA_ERR_LOG(
-            "Media_Restore: Invalid album data, lPath is empty. Object: %{public}s", this->ToString(album).c_str());
-        return album;
-    }
+    CHECK_AND_RETURN_RET_LOG(!album.lPath.empty(), album, "Media_Restore: Invalid album data, lPath is empty."
+        " Object: %{public}s", this->ToString(album).c_str());
     std::unique_lock<std::mutex> lock(this->photoAlbumCreateLock_);
     // try to get from cache
     PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->GetPhotoAlbum(album.lPath);
@@ -194,14 +186,9 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
         return album;
     }
     auto err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Restore: INSERT INTO PhotoAlbum failed, err = %{public}d, executeSql = %{public}s, "
-                      "bindArgs = %{public}s",
-            err,
-            this->SQL_PHOTO_ALBUM_INSERT.c_str(),
-            this->ToString(bindArgs).c_str());
-        return album;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, album, "Media_Restore: INSERT INTO PhotoAlbum failed,"
+        "err = %{public}d, executeSql = %{public}s, bindArgs = %{public}s",
+        err, this->SQL_PHOTO_ALBUM_INSERT.c_str(), this->ToString(bindArgs).c_str());
     MEDIA_INFO_LOG("Media_Restore: INSERT INTO PhotoAlbum success, Object: %{public}s", this->ToString(album).c_str());
     return this->GetPhotoAlbum(album.lPath);
 }

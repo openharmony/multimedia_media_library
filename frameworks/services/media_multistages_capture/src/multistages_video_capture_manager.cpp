@@ -26,6 +26,8 @@
 #include "medialibrary_command.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
+#include "moving_photo_file_utils.h"
+#include "multistages_capture_dfx_total_time.h"
 #include "result_set_utils.h"
 
 using namespace std;
@@ -86,6 +88,7 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
     }
     
     deferredProcSession_->AddVideo(videoId, srcFd, dstFd);
+    MultiStagesCaptureDfxTotalTime::GetInstance().AddStartTime(videoId);
 #endif
 }
 
@@ -136,12 +139,15 @@ void MultiStagesVideoCaptureManager::SyncWithDeferredVideoProcSessionInternal()
     MEDIA_INFO_LOG("SyncWithDeferredVideoProcSessionInternal enter");
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = MEDIA_DATA_DB_PHOTO_ID + " is not null and " +
-        MEDIA_DATA_DB_PHOTO_QUALITY + " > 0 and " + MEDIA_DATA_DB_MEDIA_TYPE + " = " +
-        to_string(static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO));
+    string where = MEDIA_DATA_DB_PHOTO_ID + " IS NOT NULL AND " +
+        "((" + MEDIA_DATA_DB_PHOTO_QUALITY + " > 0 AND (" + MEDIA_DATA_DB_MEDIA_TYPE + " = " +
+        to_string(static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) + ") OR (" +
+        MEDIA_DATA_DB_PHOTO_QUALITY + " = 0 AND " + MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS + " IN (" +
+        to_string(static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_TO_DELIVER)) + ", " +
+        to_string(static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED)) + "))))";
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     vector<string> columns { MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_FILE_PATH,
-                            MEDIA_DATA_DB_DATE_TRASHED };
+                            MEDIA_DATA_DB_DATE_TRASHED, PhotoColumn::PHOTO_SUBTYPE };
 
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
@@ -153,6 +159,10 @@ void MultiStagesVideoCaptureManager::SyncWithDeferredVideoProcSessionInternal()
     do {
         string videoId = GetStringVal(MEDIA_DATA_DB_PHOTO_ID, resultSet);
         string filePath = GetStringVal(MEDIA_DATA_DB_FILE_PATH, resultSet);
+        if (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) ==
+            static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            filePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
+        }
         bool isTrashed = GetInt64Val(MEDIA_DATA_DB_DATE_TRASHED, resultSet) > 0;
         AddVideoInternal(videoId, filePath);
 
@@ -204,7 +214,7 @@ void MultiStagesVideoCaptureManager::RemoveVideo(const std::string &videoId, con
     vector<string> whereArgs { videoId };
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    vector<string> columns { MediaColumn::MEDIA_FILE_PATH };
+    vector<string> columns { MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_SUBTYPE };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("result set is empty");
@@ -212,6 +222,10 @@ void MultiStagesVideoCaptureManager::RemoveVideo(const std::string &videoId, con
     }
 
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) ==
+        static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        data = MovingPhotoFileUtils::GetMovingPhotoVideoPath(data);
+    }
     int ret = MediaLibraryPhotoOperations::RemoveTempVideo(data);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Delete temp video file failed. ret: %{public}d, errno: %{public}d", ret, errno);

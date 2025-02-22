@@ -56,10 +56,14 @@ enum CloudReadStatus {
 
 class ThumbnailSyncStatus {
 public:
+    bool CheckSavedFileMap(const std::string &id, ThumbnailType type, const std::string &dateModified);
+    bool UpdateSavedFileMap(const std::string &id, ThumbnailType type, const std::string &dateModified);
     std::condition_variable cond_;
     std::mutex mtx_;
     bool isSyncComplete_{false};
     bool isCreateThumbnailSuccess_{false};
+    std::string latestDateModified_{"0"};
+    std::map<std::string, std::string> latestSavedFileMap_;
     std::atomic<CloudReadStatus> CloudLoadThumbnailStatus_{START};
     std::atomic<CloudReadStatus> CloudLoadLcdStatus_{START};
     std::atomic<CloudLoadType> cloudLoadType_{NONE};
@@ -71,15 +75,19 @@ public:
     ThumbnailWait(bool release);
     ~ThumbnailWait();
 
-    WaitStatus InsertAndWait(const std::string &id, ThumbnailType type);
+    WaitStatus InsertAndWait(const std::string &id, ThumbnailType type, const std::string &dateModified);
     WaitStatus CloudInsertAndWait(const std::string &id, CloudLoadType cloudLoadType);
     void CheckAndWait(const std::string &id, bool isLcd);
     void UpdateThumbnailMap();
     void UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, bool isLoadSuccess);
 
+    bool TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType type);
+    bool TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
+
 private:
     void Notify();
     std::string id_;
+    std::string dateModified_;
     bool needRelease_{false};
     static ThumbnailMap thumbnailMap_;
     static std::shared_mutex mutex_;
@@ -95,8 +103,12 @@ public:
     EXPORT static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static void CloudSyncOnGenerationComplete(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor,
+        const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
     EXPORT static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
-        ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
+        ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority,
+        std::shared_ptr<ExecuteParamBuilder> param = nullptr);
     EXPORT static void AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
         ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId = 0);
     EXPORT static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
@@ -104,6 +116,7 @@ public:
     EXPORT static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
     EXPORT static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
+    EXPORT static bool DoCreateAstcMthAndYear(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
     EXPORT static bool IsPureCloudImage(ThumbRdbOpt &opts);
@@ -112,6 +125,10 @@ public:
     EXPORT static bool UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
     EXPORT static void UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data);
 private:
+    EXPORT static bool TrySavePixelMap(ThumbnailData &data, ThumbnailType type);
+    EXPORT static bool TrySavePicture(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
+    EXPORT static bool SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx);
+    EXPORT static bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx);
     EXPORT static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     EXPORT static bool GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data);

@@ -109,7 +109,7 @@ const std::vector<std::string> SHOOTING_PARAM_EXIF = {
 
 MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId,
     const int32_t type)
-    : path_(path), mode_(mode), fileId_(fileId), type_(type), fuseFlag_(false)
+    : path_(path), mode_(mode), fileId_(fileId), type_(type), uid_(0), tokenId_(0), fuseFlag_(false)
 {}
 
 MediaPrivacyManager::MediaPrivacyManager(const string &path, const string &mode, const string &fileId,
@@ -153,10 +153,7 @@ static bool CheckFsMounted(const string &fsType, const string &mountPoint)
     constexpr uint32_t mntEntrySize = 1024;
     char entryStr[mntEntrySize] = {0};
     FILE *mountTable = setmntent("/proc/mounts", "r");
-    if (mountTable == nullptr) {
-        MEDIA_ERR_LOG("Failed to get mount table, errno:%{public}d", errno);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(mountTable != nullptr, false, "Failed to get mount table, errno:%{public}d", errno);
 
     do {
         struct mntent *mnt = getmntent_r(mountTable, &mountEntry, entryStr, sizeof(entryStr));
@@ -178,21 +175,16 @@ static bool CheckFsMounted(const string &fsType, const string &mountPoint)
 static int32_t BindFilterProxyFdToOrigin(const int32_t originFd, int32_t &proxyFd)
 {
     int ret = ioctl(proxyFd, IOC_SET_ORIGIN_FD, &originFd);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to set origin fd: %{public}d to filter proxy fd: %{public}d, error: %{public}d",
-                      originFd, proxyFd, errno);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret,
+        "Failed to set origin fd: %{public}d to filter proxy fd: %{public}d, error: %{public}d",
+        originFd, proxyFd, errno);
     return ret;
 }
 
 static int32_t SendRangesToIoctl(const int32_t originFd, const int32_t proxyFd, const PrivacyRanges &rans)
 {
     FilterProxyRanges *ranges = (FilterProxyRanges *)malloc(sizeof(*ranges) + sizeof(ranges->range[0]) * rans.size());
-    if (ranges == nullptr) {
-        MEDIA_ERR_LOG("Failed to malloc ranges, errno: %{public}d", errno);
-        return -ENOMEM;
-    }
+    CHECK_AND_RETURN_RET_LOG(ranges != nullptr, -ENOMEM, "Failed to malloc ranges, errno: %{public}d", errno);
     ranges->size = static_cast<uint64_t>(rans.size());
     ranges->reserved = 0;
     for (size_t i = 0; i < rans.size(); i++) {
@@ -201,9 +193,7 @@ static int32_t SendRangesToIoctl(const int32_t originFd, const int32_t proxyFd, 
         ranges->range[i].end = static_cast<uint64_t>(rans[i].second);
     }
     int err = ioctl(proxyFd, IOC_SET_FILTER_PROXY_RANGE, ranges);
-    if (err < 0) {
-        MEDIA_ERR_LOG("Failed to set ranges to fd: %{public}d, error: %{public}d", proxyFd, errno);
-    }
+    CHECK_AND_PRINT_LOG(err >= 0, "Failed to set ranges to fd: %{public}d, error: %{public}d", proxyFd, errno);
     free(ranges);
     return err;
 }
@@ -233,16 +223,13 @@ static int32_t OpenFilterProxyFd(const string &path, const string &mode, const P
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaPrivacyManager::OpenFilterProxyFd");
-    if (!CheckFsMounted(FS_TYPE_EPFS, EPFS_MOUNT_POINT)) {
-        MEDIA_INFO_LOG("Epfs is currently not supported yet");
-        return OpenOriginFd(path, mode, clientBundle, fuseFlag);
-    }
-
+    CHECK_AND_RETURN_RET_LOG(CheckFsMounted(FS_TYPE_EPFS, EPFS_MOUNT_POINT),
+        OpenOriginFd(path, mode, clientBundle, fuseFlag),
+        "Epfs is currently not supported yet");
     int32_t originFd = open(path.c_str(), O_RDONLY);
-    if (originFd < 0) {
-        MEDIA_ERR_LOG("Failed to open file, errno: %{public}d, path: %{private}s", errno, path.c_str());
-        return originFd;
-    }
+    CHECK_AND_RETURN_RET_LOG(originFd >= 0, originFd,
+        "Failed to open file, errno: %{public}d, path: %{private}s", errno, path.c_str());
+
     constexpr mode_t epfsFileMode = 0400;
     // filterProxyFd_ will be returned to user, so there is no need to close it here.
     int32_t filterProxyFd = open(EPFS_MOUNT_POINT.c_str(), O_TMPFILE | O_RDWR, epfsFileMode);
@@ -343,10 +330,8 @@ static int32_t CollectRanges(const string &path, const HideSensitiveType &sensit
             MEDIA_ERR_LOG("Invaild hide sensitive type %{public}d", sensitiveType);
             return E_SUCCESS;
     }
-
-    if (err != E_SUCCESS) {
-        MEDIA_WARN_LOG("Failed to get privacy area with type %{public}d, err: %{public}u", sensitiveType, err);
-    }
+    CHECK_AND_WARN_LOG(err == E_SUCCESS,
+        "Failed to get privacy area with type %{public}d, err: %{public}u", sensitiveType, err);
     for (auto &range : areas) {
         ranges.insert(ranges.end(), std::make_pair(range.first, range.first + range.second));
     }
@@ -384,7 +369,6 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
         appId_ = PermissionUtils::GetAppIdByBundleName(bundleName);
         tokenId_ = PermissionUtils::GetTokenId();
     }
-    string appIdFile = UriSensitiveOperations::QueryAppId(fileId_);
     bool result;
     for (auto &item : PRIVACY_PERMISSION_MAP) {
         const string &perm = item.second;
@@ -403,7 +387,7 @@ int32_t MediaPrivacyManager::GetPrivacyRanges()
         } else {
             //collect ranges by hideSensitiveType
             bool isForceSensitive = UriSensitiveOperations::QueryForceSensitive(tokenId_, fileId_);
-            if (!isForceSensitive && (result || appId_ == appIdFile)) {
+            if (!isForceSensitive && result) {
                 continue;
             }
             HideSensitiveType sensitiveType =
@@ -423,10 +407,8 @@ static bool IsDeveloperMediaTool()
         MEDIA_DEBUG_LOG("Mediatool permission check failed: target is not root");
         return false;
     }
-    if (!OHOS::system::GetBoolParameter("const.security.developermode.state", true)) {
-        MEDIA_DEBUG_LOG("Mediatool permission check failed: target is not in developer mode");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(OHOS::system::GetBoolParameter("const.security.developermode.state", true),
+        false, "Mediatool permission check failed: target is not in developer mode");
     return true;
 }
 

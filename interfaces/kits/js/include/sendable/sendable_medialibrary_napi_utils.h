@@ -114,12 +114,14 @@ public:
     static MediaType GetMediaTypeFromUri(const std::string &uri);
     template <class AsyncContext>
     static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
-        AsyncContext &context, const FetchOptionType &fetchOptType);
+        AsyncContext &context, const FetchOptionType &fetchOptType,
+        std::vector<DataShare::OperationItem> operations = {});
     template <class AsyncContext>
     static napi_status ParseAlbumFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context);
     template <class AsyncContext>
     static bool HandleSpecialPredicate(AsyncContext &context,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType);
+        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType,
+        std::vector<DataShare::OperationItem> operations = {});
     template <class AsyncContext>
     static void UpdateMediaTypeSelections(AsyncContext *context);
 
@@ -133,7 +135,7 @@ public:
 
     template <class AsyncContext>
     static napi_status GetFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,
-        AsyncContext &context);
+        AsyncContext &context, std::vector<DataShare::OperationItem> operations = {});
 
     template <class AsyncContext>
     static napi_status GetAlbumFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,
@@ -229,11 +231,11 @@ public:
     static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
     static napi_value GetStringArray(
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
-    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     static napi_value CreateValueByIndex(napi_env env, int32_t index, std::string name,
-        std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
     static void handleTimeInfo(napi_env env, const std::string& name, napi_value result,
-        int32_t index, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet);
+        int32_t index, const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
 
     template <class AsyncContext>
     static napi_status ParsePredicates(napi_env env,

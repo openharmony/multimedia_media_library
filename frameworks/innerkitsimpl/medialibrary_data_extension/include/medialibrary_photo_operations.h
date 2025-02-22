@@ -29,6 +29,14 @@
 
 namespace OHOS {
 namespace Media {
+
+class AlbumData {
+public:
+    AlbumData() = default;
+    ~AlbumData() = default;
+    std::vector<bool> isHidden = {};
+};
+
 #define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryPhotoOperations : public MediaLibraryAssetOperations {
 public:
@@ -64,16 +72,21 @@ public:
     EXPORT static int64_t CloneSingleAsset(MediaLibraryCommand &cmd);
     EXPORT static int32_t AddFiltersForCloudEnhancementPhoto(int32_t fileId, const std::string& assetPath,
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
-    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs);
-    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris);
-    EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, const std::string &path);
+    EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs,
+        std::shared_ptr<AlbumData> AlbumData = nullptr);
+    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris,
+        std::shared_ptr<AlbumData> AlbumData = nullptr);
+    EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto, const std::string &path);
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
     EXPORT static int32_t SaveSourceVideoFile(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &assetPath, const bool &isTemp);
-    EXPORT static int32_t AddFiltersToVideoExecute(const std::shared_ptr<FileAsset>& fileAsset);
+    EXPORT static int32_t AddFiltersToVideoExecute(const std::shared_ptr<FileAsset>& fileAsset, bool isSaveVideo);
     EXPORT static int32_t DoRevertFilters(const std::shared_ptr<FileAsset> &fileAsset,
         std::string &path, std::string &sourcePath);
-
+    EXPORT static int32_t CopyVideoFile(const std::string& assetPath, bool toSource);
+    EXPORT static int32_t ProcessCustomRestore(MediaLibraryCommand &cmd);
+    EXPORT static int32_t CancelCustomRestore(MediaLibraryCommand &cmd);
+    EXPORT static int32_t UpdateSupportedWatermarkType(MediaLibraryCommand &cmd);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
@@ -106,7 +119,7 @@ private:
     static int32_t AddFiltersExecute(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
         const std::string &cachePath);
     static int32_t SubmitEditCacheExecute(MediaLibraryCommand &cmd,
-        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath, bool isWriteGpsAdvanced);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
@@ -124,6 +137,7 @@ private:
         bool &orientationUpdated, std::string &currentOrientation);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t BatchSetOwnerAlbumId(MediaLibraryCommand &cmd);
+    static int32_t BatchSetRecentShow(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
         const std::string &editdata, const std::string &photoStatus = "");
     static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,

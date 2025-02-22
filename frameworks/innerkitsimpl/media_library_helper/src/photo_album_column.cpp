@@ -21,6 +21,7 @@
 #include "media_log.h"
 #include "medialibrary_type_const.h"
 #include "photo_map_column.h"
+#include "photo_query_filter.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
 
@@ -49,6 +50,7 @@ const string PhotoAlbumColumns::ALBUM_IS_LOCAL = "is_local";
 const string PhotoAlbumColumns::ALBUM_DATE_ADDED = "date_added";
 const string PhotoAlbumColumns::ALBUM_PRIORITY = "priority";
 const string PhotoAlbumColumns::ALBUM_LPATH = "lpath";
+const string PhotoAlbumColumns::ALBUM_CHECK_FLAG = "check_flag";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -84,7 +86,7 @@ const std::string LOCATION_COVER_URI =
 
 // default fetch columns
 const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
-    ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED,
+    ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED
 };
 
 // location default fetch columns
@@ -105,6 +107,8 @@ const string PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI = "file://media/HiddenA
 const string PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX = "file://media/AnalysisAlbum/";
 
 const string PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX = "file://cloudsync/PhotoAlbum/";
+const string PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX = "file://cloudsync/gallery/PhotoAlbum/";
+const string PhotoAlbumColumns::PHOTO_GALLERY_CLOUD_SYNC_INFO_URI_PREFIX = "file://cloudsync/gallery/cloudSyncInfo/";
 
 // Create tables
 const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
@@ -130,7 +134,8 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_IS_LOCAL + " INT, " +
     ALBUM_DATE_ADDED + " BIGINT DEFAULT 0, " +
     ALBUM_LPATH + " TEXT, " +
-    ALBUM_PRIORITY + " INT)";
+    ALBUM_PRIORITY + " INT, " +
+    ALBUM_CHECK_FLAG + " INT DEFAULT 0)";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
@@ -181,7 +186,7 @@ bool PhotoAlbumColumns::IsPhotoAlbumColumn(const string &columnName)
     static const set<string> PHOTO_ALBUM_COLUMNS = {
         PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE,
         PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::ALBUM_COUNT,
-        PhotoAlbumColumns::ALBUM_RELATIVE_PATH, CONTAINS_HIDDEN, HIDDEN_COUNT, HIDDEN_COVER
+        PhotoAlbumColumns::ALBUM_RELATIVE_PATH, CONTAINS_HIDDEN, HIDDEN_COUNT, HIDDEN_COVER, ALBUM_LPATH
     };
     return PHOTO_ALBUM_COLUMNS.find(columnName) != PHOTO_ALBUM_COLUMNS.end();
 }
@@ -219,7 +224,11 @@ void PhotoAlbumColumns::GetPortraitAlbumPredicates(const int32_t albumId, RdbPre
     onClause = "ag." + GROUP_TAG + " = " + ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG;
     clauses = { onClause };
     predicates.InnerJoin(tempTable)->On(clauses);
-    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
+    if (hiddenState) {
+        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_HIDDEN, predicates);
+    } else {
+        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_VISIBLE, predicates);
+    }
     predicates.Distinct();
     return;
 }
@@ -229,8 +238,11 @@ void PhotoAlbumColumns::GetAnalysisAlbumPredicates(const int32_t albumId,
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
+    if (hiddenState) {
+        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_HIDDEN, predicates);
+    } else {
+        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_VISIBLE, predicates);
+    }
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
 }
 
@@ -301,8 +313,14 @@ static void GetAllImagesPredicates(RdbPredicates &predicates, const bool hiddenS
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
-    SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
+    // order need adapt PHOTO_SCHPT_MEDIA_TYPE_INDEX
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     predicates.EndWrap();
 }
 
@@ -357,7 +375,7 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
         }
         default: {
             predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));
-            MEDIA_WARN_LOG("Unsupported system album subtype: %{public}d", subtype);
+            MEDIA_ERR_LOG("Unsupported system album subtype: %{public}d", subtype);
             return;
         }
     }

@@ -23,7 +23,6 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_errno.h"
 #include "userfilemgr_uri.h"
-#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -343,7 +342,7 @@ void MediaLibraryCommand::SetApiFromQuerySetMap()
             api_ = MediaLibraryApi::API_OLD;
             return;
         }
-        int32_t apiNum = MediaLibraryCommonUtils::SafeStoi(apiString);
+        int32_t apiNum = stoi(apiString);
         if (apiNum <= static_cast<int32_t>(MediaLibraryApi::API_START) ||
             apiNum >= static_cast<int32_t>(MediaLibraryApi::API_END)) {
             MEDIA_ERR_LOG("this api num is wrong: %{public}d", apiNum);

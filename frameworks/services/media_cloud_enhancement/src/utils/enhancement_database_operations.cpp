@@ -142,6 +142,7 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     string extension = ScannerUtils::GetFileExtension(displayName);
     assetInfo.PutString(MediaColumn::MEDIA_MIME_TYPE,
         MimeTypeUtils::GetMimeTypeFromExtension(extension));
+    assetInfo.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, extension);
     assetInfo.PutString(MediaColumn::MEDIA_FILE_PATH, fileAsset.GetPath());
     assetInfo.PutLong(MediaColumn::MEDIA_TIME_PENDING, fileAsset.GetTimePending());
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);

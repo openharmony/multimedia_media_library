@@ -86,9 +86,7 @@ PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanInvalidPhotoAlbums()
     // Delete the invalid albums
     std::string sql = this->SQL_PHOTO_ALBUM_EMPTY_DELETE;
     int32_t ret = this->rdbStorePtr_->ExecuteSql(sql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Operation: Failed to exec: %{public}s", sql.c_str());
-    }
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Operation: Failed to exec: %{public}s", sql.c_str());
     MEDIA_INFO_LOG("Media_Operation: clean invalid album completed! "
                    "total: %{public}d, ret: %{public}d",
         total,
@@ -147,13 +145,10 @@ PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanDuplicatePhotoAlbums()
 int32_t PhotoAlbumLPathOperation::CleanDuplicatePhotoAlbum(const PhotoAlbumInfoPo &mainAlbumInfo)
 {
     bool isInvalid = mainAlbumInfo.albumId <= 0 || mainAlbumInfo.lPath.empty() || mainAlbumInfo.albumName.empty();
-    if (isInvalid) {
-        return NativeRdb::E_OK;
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, NativeRdb::E_OK);
     std::vector<PhotoAlbumInfoPo> subAlbumInfoList = this->GetDuplicatelPathAlbumInfoSub(mainAlbumInfo);
-    if (subAlbumInfoList.empty()) {
-        return NativeRdb::E_OK;
-    }
+    CHECK_AND_RETURN_RET(!subAlbumInfoList.empty(), NativeRdb::E_OK);
+
     int32_t index = 0;
     int32_t total = static_cast<int32_t>(subAlbumInfoList.size());
     for (const auto &subAlbumInfo : subAlbumInfoList) {
@@ -217,67 +212,56 @@ std::string PhotoAlbumLPathOperation::ToString(const std::vector<NativeRdb::Valu
 
 int32_t PhotoAlbumLPathOperation::UpdateAlbumInfoFromAlbumPluginByAlbumId(const PhotoAlbumInfoPo &albumInfo)
 {
-    if (this->rdbStorePtr_ == nullptr) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(this->rdbStorePtr_ != nullptr, NativeRdb::E_ERROR);
     bool isInvalid = albumInfo.albumId <= 0 || albumInfo.lPath.empty();
-    if (isInvalid) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, NativeRdb::E_ERROR);
+
     std::string sql = this->SQL_PHOTO_ALBUM_SYNC_BUNDLE_NAME_UPDATE;
     const std::vector<NativeRdb::ValueObject> bindArgs = {
         albumInfo.lPath, albumInfo.lPath, albumInfo.lPath, albumInfo.albumId, albumInfo.lPath};
     int32_t ret = this->rdbStorePtr_->ExecuteSql(sql, bindArgs);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Operation: Failed to exec: %{public}s, bindArgs: %{public}s",
-            sql.c_str(),
-            this->ToString(bindArgs).c_str());
-        return ret;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+        "Media_Operation: Failed to exec: %{public}s, bindArgs: %{public}s",
+        sql.c_str(), this->ToString(bindArgs).c_str());
     return NativeRdb::E_OK;
 }
 
 int32_t PhotoAlbumLPathOperation::UpdateAlbumLPathByAlbumId(const PhotoAlbumInfoPo &albumInfo)
 {
-    if (this->rdbStorePtr_ == nullptr) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(this->rdbStorePtr_ != nullptr, NativeRdb::E_ERROR);
     bool isInvalid = albumInfo.lPath.empty() || albumInfo.albumId <= 0;
-    if (isInvalid) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, NativeRdb::E_ERROR);
+
     std::string sql = this->SQL_PHOTO_ALBUM_UPDATE_LPATH_BY_ALBUM_ID;
     const std::vector<NativeRdb::ValueObject> bindArgs = {albumInfo.lPath, albumInfo.albumId, albumInfo.lPath};
     int32_t ret = this->rdbStorePtr_->ExecuteSql(sql, bindArgs);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Operation: Failed to exec: %{public}s, bindArgs: %{public}s",
-            sql.c_str(),
-            this->ToString(bindArgs).c_str());
-        return ret;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+        "Media_Operation: Failed to exec: %{public}s, bindArgs: %{public}s",
+        sql.c_str(), this->ToString(bindArgs).c_str());
     return NativeRdb::E_OK;
 }
 
 PhotoAlbumInfoPo PhotoAlbumLPathOperation::GetLatestAlbumInfoBylPath(const std::string &lPath)
 {
-    if (this->rdbStorePtr_ == nullptr || lPath.empty()) {
-        return PhotoAlbumInfoPo();
-    }
+    bool cond = (this->rdbStorePtr_ == nullptr || lPath.empty());
+    CHECK_AND_RETURN_RET(!cond, PhotoAlbumInfoPo());
+
     std::string sql = this->SQL_PHOTO_ALBUM_QUERY_BY_LPATH;
     const std::vector<NativeRdb::ValueObject> bindArgs = {lPath};
     auto resultSet = this->rdbStorePtr_->QuerySql(sql, bindArgs);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return PhotoAlbumInfoPo();
-    }
+
+    cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, PhotoAlbumInfoPo());
     return PhotoAlbumInfoPo().Parse(resultSet);
 }
 
 int32_t PhotoAlbumLPathOperation::CleanEmptylPathPhotoAlbum(const PhotoAlbumInfoPo &subAlbumInfo)
 {
     bool isInvalid = subAlbumInfo.albumId <= 0 || subAlbumInfo.lPath.empty() || subAlbumInfo.albumName.empty();
-    if (isInvalid) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, NativeRdb::E_ERROR);
+
     PhotoAlbumInfoPo mainAlbumInfo = this->GetLatestAlbumInfoBylPath(subAlbumInfo.lPath);
     bool isMainAlbumInvalid =
         mainAlbumInfo.albumId <= 0 || mainAlbumInfo.lPath.empty() || mainAlbumInfo.albumName.empty();
@@ -301,9 +285,7 @@ int32_t PhotoAlbumLPathOperation::MergePhotoAlbum(
     const PhotoAlbumInfoPo &mainAlbumInfo, const PhotoAlbumInfoPo &subAlbumInfo)
 {
     bool isInvalid = this->rdbStorePtr_ == nullptr || mainAlbumInfo.albumId <= 0 || subAlbumInfo.albumId <= 0;
-    if (isInvalid) {
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, NativeRdb::E_ERROR);
     return PhotoAlbumMergeOperation()
         .SetRdbStore(this->rdbStorePtr_)
         .MergeAlbum(subAlbumInfo.albumId, mainAlbumInfo.albumId);
@@ -311,14 +293,11 @@ int32_t PhotoAlbumLPathOperation::MergePhotoAlbum(
 
 std::vector<PhotoAlbumInfoPo> PhotoAlbumLPathOperation::GetDuplicatelPathAlbumInfoMain()
 {
-    if (this->rdbStorePtr_ == nullptr) {
-        return {};
-    }
+    CHECK_AND_RETURN_RET(this->rdbStorePtr_ != nullptr, {});
     std::string querySql = this->SQL_PHOTO_ALBUM_DUPLICATE_LPATH_MAIN_QUERY;
     auto resultSet = this->rdbStorePtr_->QuerySql(querySql);
-    if (resultSet == nullptr) {
-        return {};
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, {});
+
     std::vector<PhotoAlbumInfoPo> result;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         result.emplace_back(PhotoAlbumInfoPo().Parse(resultSet));
@@ -329,15 +308,12 @@ std::vector<PhotoAlbumInfoPo> PhotoAlbumLPathOperation::GetDuplicatelPathAlbumIn
 std::vector<PhotoAlbumInfoPo> PhotoAlbumLPathOperation::GetDuplicatelPathAlbumInfoSub(const PhotoAlbumInfoPo &albumInfo)
 {
     bool isInvalid = this->rdbStorePtr_ == nullptr || albumInfo.albumId <= 0 || albumInfo.lPath.empty();
-    if (isInvalid) {
-        return {};
-    }
+    CHECK_AND_RETURN_RET(!isInvalid, {});
+
     std::string sql = this->SQL_PHOTO_ALBUM_DUPLICATE_LPATH_SUB_QUERY;
     const std::vector<NativeRdb::ValueObject> bindArgs = {albumInfo.albumId, albumInfo.lPath};
     auto resultSet = this->rdbStorePtr_->QuerySql(sql, bindArgs);
-    if (resultSet == nullptr) {
-        return {};
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, {});
     std::vector<PhotoAlbumInfoPo> result;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         result.emplace_back(PhotoAlbumInfoPo().Parse(resultSet));
@@ -347,14 +323,11 @@ std::vector<PhotoAlbumInfoPo> PhotoAlbumLPathOperation::GetDuplicatelPathAlbumIn
 
 std::vector<PhotoAlbumInfoPo> PhotoAlbumLPathOperation::GetEmptylPathAlbumInfo()
 {
-    if (this->rdbStorePtr_ == nullptr) {
-        return {};
-    }
+    CHECK_AND_RETURN_RET(this->rdbStorePtr_ != nullptr, {});
     std::string querySql = this->SQL_PHOTO_ALBUM_FIX_LPATH_QUERY;
     auto resultSet = this->rdbStorePtr_->QuerySql(querySql);
-    if (resultSet == nullptr) {
-        return {};
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, {});
+
     std::vector<PhotoAlbumInfoPo> result;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         result.emplace_back(PhotoAlbumInfoPo().Parse(resultSet));

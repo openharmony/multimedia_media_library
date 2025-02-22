@@ -59,12 +59,14 @@ void SendableFetchFileResultNapi::GetFetchResult(unique_ptr<SendableFetchFileRes
             auto fileResult = make_shared<FetchResult<FileAsset>>(move(sFetchFileResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchFileResult_ = fileResult;
             obj->propertyPtr->fetchFileResult_->SetInfo(sFetchFileResult_);
+            obj->propertyPtr->fetchFileResult_->SetUserId(sFetchFileResult_->GetUserId());
             break;
         }
         case FetchResType::TYPE_ALBUM: {
             auto albumResult = make_shared<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchAlbumResult_ = albumResult;
             obj->propertyPtr->fetchAlbumResult_->SetInfo(sFetchAlbumResult_);
+            obj->propertyPtr->fetchAlbumResult_->SetUserId(sFetchAlbumResult_->GetUserId());
             break;
         }
         case FetchResType::TYPE_PHOTOALBUM: {
@@ -72,6 +74,7 @@ void SendableFetchFileResultNapi::GetFetchResult(unique_ptr<SendableFetchFileRes
                 make_shared<FetchResult<PhotoAlbum>>(move(sFetchPhotoAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchPhotoAlbumResult_ = photoAlbumResult;
             obj->propertyPtr->fetchPhotoAlbumResult_->SetInfo(sFetchPhotoAlbumResult_);
+            obj->propertyPtr->fetchPhotoAlbumResult_->SetUserId(sFetchPhotoAlbumResult_->GetUserId());
             break;
         }
         case FetchResType::TYPE_SMARTALBUM: {
@@ -378,12 +381,14 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultSendableAsyncContex
     napi_value jsAsset;
     switch (context->objectPtr->fetchResType_) {
         case FetchResType::TYPE_FILE:
+            context->fileAsset->SetUserId(context->objectPtr->fetchFileResult_->GetUserId());
             jsAsset = SendableFileAssetNapi::CreateFileAsset(env, context->fileAsset);
             break;
         case FetchResType::TYPE_ALBUM:
             jsAsset = AlbumNapi::CreateAlbumNapi(env, context->albumAsset);
             break;
         case FetchResType::TYPE_PHOTOALBUM:
+            context->photoAlbum->SetUserId(context->objectPtr->fetchPhotoAlbumResult_->GetUserId());
             jsAsset = SendablePhotoAlbumNapi::CreatePhotoAlbumNapi(env, context->photoAlbum);
             break;
         case FetchResType::TYPE_SMARTALBUM:
@@ -828,6 +833,7 @@ void FetchFileResultSendableAsyncContext::GetAllObjectFromFetchResult()
             auto fetchResult = objectPtr->fetchFileResult_;
             auto file = fetchResult->GetFirstObject();
             while (file != nullptr) {
+                file->SetUserId(fetchResult->GetUserId());
                 fileAssetArray.push_back(move(file));
                 file = fetchResult->GetNextObject();
             }
@@ -846,6 +852,7 @@ void FetchFileResultSendableAsyncContext::GetAllObjectFromFetchResult()
             auto fetchResult = objectPtr->fetchPhotoAlbumResult_;
             auto photoAlbum = fetchResult->GetFirstObject();
             while (photoAlbum != nullptr) {
+                photoAlbum->SetUserId(fetchResult->GetUserId());
                 filePhotoAlbumArray.push_back(move(photoAlbum));
                 photoAlbum = fetchResult->GetNextObject();
             }

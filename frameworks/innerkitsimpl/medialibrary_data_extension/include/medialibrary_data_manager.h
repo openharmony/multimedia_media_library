@@ -79,9 +79,10 @@ public:
     // upgrade existed thumbnails to fix such as size, rotation and quality etc. problems
     EXPORT int32_t UpgradeThumbnailBackground(bool isWifiConnected);
 
-    // restore thumbnail for date fronted 500 photos from dual framework upgrade or clone
+    // restore thumbnail for date fronted 2000 photos from dual framework upgrade or clone
     EXPORT int32_t RestoreThumbnailDualFrame();
     void InterruptBgworker();
+    void InterruptThumbnailBgWorker();
     EXPORT int32_t DoAging();
     EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);
     /**
@@ -93,6 +94,8 @@ public:
 
     // update burst photo from gallery
     EXPORT int32_t UpdateBurstFromGallery();
+    // update burst_cover_level from gallery
+    EXPORT int32_t UpdateBurstCoverLevelFromGallery();
 
     EXPORT std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
 
@@ -153,6 +156,8 @@ private:
     int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
         const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates);
     void SubscriberPowerConsumptionDetection();
+    int32_t AstcMthAndYearInsert(MediaLibraryCommand &cmd,
+        const std::vector<DataShare::DataShareValuesBucket> &values);
     std::shared_mutex mgrSharedMutex_;
 #ifdef DISTRIBUTED
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
@@ -167,6 +172,8 @@ private:
     std::shared_ptr<MediaDataShareExtAbility> extension_;
     std::shared_ptr<CloudSyncObserver> cloudPhotoObserver_;
     std::shared_ptr<CloudSyncObserver> cloudPhotoAlbumObserver_;
+    std::shared_ptr<CloudSyncObserver> galleryRebuildObserver_;
+    std::shared_ptr<CloudSyncObserver> cloudGalleryPhotoObserver_;
 };
 
 // Scanner callback objects

@@ -22,6 +22,7 @@ const ARGS_TWO = 2;
 const ARGS_THREE = 3;
 
 const WRITE_PERMISSION = 'ohos.permission.WRITE_IMAGEVIDEO';
+const ACROSS_ACCOUNTS_PERMISSION = 'ohos.permission.INTERACT_ACROSS_LOCAL_ACCOUNTS';
 
 const PERMISSION_DENIED = 13900012;
 const ERR_CODE_PARAMERTER_INVALID = 13900020;
@@ -30,6 +31,7 @@ const ERR_CODE_OHOS_PARAMERTER_INVALID = 401;
 const REQUEST_CODE_SUCCESS = 0;
 const PERMISSION_STATE_ERROR = -1;
 const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
+const ERROR_MSG_ACROSS_ACCOUNTS_PERMISSION = 'not have ohos.permission.INTERACT_ACROSS_LOCAL_ACCOUNTS';
 const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
 const ERROR_MSG_INNER_FAIL = 'System inner fail';
@@ -479,13 +481,13 @@ function createAssetWithShortTermPermission(photoCreationConfig) {
   return createAssetWithShortTermPermissionOk(photoCreationConfig);
 }
 
-function getPhotoAccessHelper(context) {
+function getPhotoAccessHelper(context, userId = -1) {
   if (context === undefined) {
     console.log('photoAccessHelper gContext undefined');
     throw Error('photoAccessHelper gContext undefined');
   }
   gContext = context;
-  let helper = photoAccessHelper.getPhotoAccessHelper(gContext);
+  let helper = photoAccessHelper.getPhotoAccessHelper(gContext, userId);
   if (helper !== undefined) {
     console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest and showAssetsCreationDialog');
     helper.createDeleteRequest = createDeleteRequest;
@@ -601,6 +603,12 @@ const PhotoViewMIMETypes = {
   INVALID_TYPE: ''
 };
 
+const SingleSelectionMode = {
+  BROWSER_MODE: 0,
+  SELECT_MODE: 1,
+  BROWSER_AND_SELECT_MODE: 2,
+};
+
 const ErrCode = {
   INVALID_ARGS: 13900020,
   RESULT_ERROR: 13900042,
@@ -675,10 +683,12 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.recommendationOptions = option.recommendationOptions;
     config.parameters.preselectedUris = option.preselectedUris;
     config.parameters.isPreviewForSingleSelectionSupported = option.isPreviewForSingleSelectionSupported;
+    config.parameters.singleSelectionMode = option.singleSelectionMode;
     config.parameters.isOriginalSupported = option.isOriginalSupported;
     config.parameters.subWindowName = option.subWindowName;
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
+    config.parameters.userId = option.userId;
   }
 
   return config;
@@ -712,6 +722,13 @@ async function photoPickerSelect(...args) {
 
   const config = parsePhotoPickerSelectOption(args);
   console.log('[picker] config: ' + JSON.stringify(config));
+  if (config.parameters.userId && config.parameters.userId > 0) {
+    let check = await checkInteractAcrossLocalAccounts();
+    if (!check) {
+      console.log('[picker] error: ' + ERROR_MSG_ACROSS_ACCOUNTS_PERMISSION);
+      return undefined;
+    }
+  }
 
   let context = undefined;
   try {
@@ -746,12 +763,29 @@ async function photoPickerSelect(...args) {
   return undefined;
 }
 
+async function checkInteractAcrossLocalAccounts() {
+  let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_REQUESTED_PERMISSION;
+  let { reqPermissionDetails, permissionGrantStates } = await bundleManager.getBundleInfoForSelf(flags);
+  let permissionIndex = -1;
+  for (let i = 0; i < reqPermissionDetails.length; i++) {
+    if (reqPermissionDetails[i].name === ACROSS_ACCOUNTS_PERMISSION) {
+      permissionIndex = i;
+    }
+  }
+  if (permissionIndex < 0 || permissionGrantStates[permissionIndex] === PERMISSION_STATE_ERROR) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 function BaseSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
   this.isSearchSupported = true;
   this.isPhotoTakingSupported = true;
   this.isPreviewForSingleSelectionSupported = true;
+  this.singleSelectionMode = SingleSelectionMode.BROWSER_MODE;
 }
 
 function PhotoSelectOptions() {
@@ -762,6 +796,7 @@ function PhotoSelectOptions() {
   this.isEditSupported = true;
   this.isOriginalSupported = false;
   this.completeButtonText = CompleteButtonText.TEXT_DONE;
+  this.userId = -1;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto) {
@@ -829,6 +864,7 @@ export default {
   AlbumKeys: photoAccessHelper.AlbumKeys,
   AlbumType: photoAccessHelper.AlbumType,
   AlbumSubtype: photoAccessHelper.AlbumSubtype,
+  AnalysisAlbum: photoAccessHelper.AnalysisAlbum,
   HighlightAlbum: photoAccessHelper.HighlightAlbum,
   PositionType: photoAccessHelper.PositionType,
   PhotoSubtype: photoAccessHelper.PhotoSubtype,
@@ -857,6 +893,7 @@ export default {
   MediaAssetChangeRequest: MediaAssetChangeRequest,
   MediaAssetsChangeRequest: photoAccessHelper.MediaAssetsChangeRequest,
   MediaAlbumChangeRequest: photoAccessHelper.MediaAlbumChangeRequest,
+  MediaAnalysisAlbumChangeRequest: photoAccessHelper.MediaAnalysisAlbumChangeRequest,
   MediaAssetManager: photoAccessHelper.MediaAssetManager,
   MovingPhoto: photoAccessHelper.MovingPhoto,
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,

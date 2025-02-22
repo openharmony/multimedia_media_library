@@ -74,8 +74,6 @@ static const uint16_t Operations[] = {
     MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE,
     MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE,
     MTP_OPERATION_GET_OBJECT_PROP_LIST_CODE,
-    MTP_OPERATION_GET_OBJECT_REFERENCES_CODE,
-    MTP_OPERATION_SET_OBJECT_REFERENCES_CODE,
 };
 
 static const uint16_t OperationsPtp[] = {
@@ -103,8 +101,6 @@ static const uint16_t OperationsPtp[] = {
     MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE,
     MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE,
     MTP_OPERATION_GET_OBJECT_PROP_LIST_CODE,
-    MTP_OPERATION_GET_OBJECT_REFERENCES_CODE,
-    MTP_OPERATION_SET_OBJECT_REFERENCES_CODE,
 };
 
 const int EXTENSION_ID = 6;
@@ -165,7 +161,6 @@ int GetDeviceInfoData::Maker(std::vector<uint8_t> &outBuffer)
     MtpPacketTool::PutString(outBuffer, version_);
     MtpPacketTool::PutString(outBuffer, serialNum_);
 
-    MtpPacketTool::Dump(outBuffer, 0);
     return MTP_SUCCESS;
 }
 

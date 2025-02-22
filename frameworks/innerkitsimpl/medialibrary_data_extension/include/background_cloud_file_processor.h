@@ -17,18 +17,22 @@
 #define OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
 
 #include "abs_shared_result_set.h"
+#include "background_cloud_file_download_callback.h"
 #include "medialibrary_async_worker.h"
 #include "metadata.h"
 #include "rdb_predicates.h"
 #include "timer.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "media_file_uri.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
+constexpr int32_t DOWNLOAD_INTERVAL = 1 * 60 * 1000;  // 1 minute
 constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
+constexpr int32_t DOWNLOAD_FAIL_MAX_TIMES = 3; // 3 times
 
 typedef struct {
     bool isCloud;
@@ -39,20 +43,27 @@ class BackgroundCloudFileProcessor {
 public:
     EXPORT static void StartTimer();
     EXPORT static void StopTimer();
+    EXPORT static void SetDownloadLatestFinished(bool downloadLatestFinished);
+    EXPORT static bool GetDownloadLatestFinished();
+    EXPORT static void HandleSuccessCallback(const DownloadProgressObj &progress);
+    EXPORT static void HandleFailedCallback(const DownloadProgressObj &progress);
+    EXPORT static void HandleStoppedCallback(const DownloadProgressObj &progress);
 
 private:
     typedef struct {
-        std::vector<std::string> paths;
+        std::vector<std::string> uris;
         MediaType mediaType;
     } DownloadFiles;
 
     typedef struct {
         int32_t fileId;
         std::string path;
+        std::string displayName;
         int64_t size;
         int32_t width;
         int32_t height;
         std::string mimeType;
+        std::string mediaSuffix;
         int32_t duration;
         MediaType mediaType;
         bool isCloud;
@@ -62,6 +73,15 @@ private:
     typedef struct {
         std::vector<AbnormalData> abnormalData;
     } UpdateData;
+
+    enum DownloadStatus : int32_t {
+        INIT = 0,
+        SUCCESS,
+        NETWORK_UNAVAILABLE,
+        STORAGE_FULL,
+        STOPPED,
+        UNKNOWN,
+    };
 
     class DownloadCloudFilesData : public AsyncTaskData {
     public:
@@ -79,15 +99,34 @@ private:
         UpdateData updateData_;
     };
 
+    class UpdateAbnormalDayMonthYearData : public AsyncTaskData {
+    public:
+        UpdateAbnormalDayMonthYearData(std::vector<std::string> fileIds) : fileIds_(fileIds){};
+        ~UpdateAbnormalDayMonthYearData() override = default;
+
+        std::vector<std::string> fileIds_;
+    };
+
     static void DownloadCloudFiles();
-    static bool IsStorageInsufficient();
-    static std::shared_ptr<NativeRdb::ResultSet> QueryCloudFiles();
+    static bool GetStorageFreeRatio(double &freeRatio);
+    static void SetLastDownloadMilliSecond(int64_t lastDownloadMilliSecond);
+    static int64_t GetLastDownloadMilliSecond();
+    static void ClearDownloadCnt();
+    static void UpdateDownloadCnt(std::string path, int64_t cnt);
+    static int64_t GetDownloadCnt(std::string path);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryCloudFiles(double freeRatio);
+    static void CheckAndUpdateDownloadCnt(std::string path, int64_t cnt);
+    static void GetDownloadNum(int64_t &downloadNum);
+    static void DownloadLatestFinished();
     static void ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet, DownloadFiles &downloadFiles);
+    static void removeFinishedResult(const std::vector<std::string>& downloadingPaths);
     static int32_t AddDownloadTask(const DownloadFiles &downloadFiles);
     static void DownloadCloudFilesExecutor(AsyncTaskData *data);
     static void StopDownloadFiles();
     static void ProcessCloudData();
     static void UpdateCloudData();
+    static void UpdateAbnormalDayMonthYearExecutor(AsyncTaskData *data);
+    static void UpdateAbnormalDayMonthYear();
     static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData(bool isCloud, bool isVideo);
     static void SetPredicates(NativeRdb::RdbPredicates &predicates, bool isCloud, bool isVideo);
     static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData,
@@ -101,18 +140,21 @@ private:
     static void UpdateCurrentOffset(bool isCloud, bool isVideo);
 
     static int32_t processInterval_;
+    static int32_t downloadInterval_;
     static int32_t downloadDuration_;
     static std::recursive_mutex mutex_;
     static Utils::Timer timer_;
+    static uint32_t cloudDataTimerId_;
     static uint32_t startTimerId_;
     static uint32_t stopTimerId_;
-    static std::vector<std::string> curDownloadPaths_;
     static bool isUpdating_;
     static int32_t cloudUpdateOffset_;
     static int32_t localImageUpdateOffset_;
     static int32_t localVideoUpdateOffset_;
     static int32_t cloudRetryCount_;
-    static bool isDownload_;
+    static std::mutex downloadResultMutex_;
+    static std::unordered_map<std::string, DownloadStatus> downloadResult_;
+    static int64_t downloadId_;
 };
 } // namespace Media
 } // namespace OHOS

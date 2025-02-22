@@ -40,6 +40,13 @@ const std::unordered_map<SourceState, SourceState> SourceLoader::LOCAL_SOURCE_LO
     { SourceState::LOCAL_ORIGIN, SourceState::FINISH },
 };
 
+const std::unordered_map<SourceState, SourceState> SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::LOCAL_THUMB },
+    { SourceState::LOCAL_THUMB, SourceState::LOCAL_LCD },
+    { SourceState::LOCAL_LCD, SourceState::LOCAL_ORIGIN },
+    { SourceState::LOCAL_ORIGIN, SourceState::FINISH },
+};
+
 const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_SOURCE_LOADING_STATES = {
     { SourceState::BEGIN, SourceState::CLOUD_THUMB },
     { SourceState::CLOUD_THUMB, SourceState::CLOUD_LCD },
@@ -236,6 +243,21 @@ Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desire
         desiredSize = lcdDesiredSize;
         return lcdDesiredSize;
     }
+}
+
+int32_t ParseDesiredMinSide(const ThumbnailType &type)
+{
+    switch (type) {
+        case ThumbnailType::THUMB:
+            return SHORT_SIDE_THRESHOLD;
+            break;
+        case ThumbnailType::MTH_ASTC:
+            return MONTH_SHORT_SIDE_THRESHOLD;
+            break;
+        default:
+            break;
+    }
+    return INT32_MAX_VALUE_LENGTH;
 }
 
 void SwitchToNextState(ThumbnailData &data, SourceState &state)
@@ -564,9 +586,10 @@ bool LocalOriginSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 
 std::string CloudThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
-    std::string tmpPath = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
+    std::string tmpPath = data.orientation != 0 ?
+        GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX) : GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (data.orientation != 0) {
+    if (!IsCloudSourceAvailable(tmpPath)) {
         return "";
     }
     int32_t totalCost = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - startTime);
@@ -576,7 +599,8 @@ std::string CloudThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 
 bool CloudThumbSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
-    if (minSize < SHORT_SIDE_THRESHOLD) {
+    int minDesiredSide = ParseDesiredMinSide(data.loaderOpts.desiredType);
+    if (minSize < minDesiredSide) {
         return false;
     }
     return true;

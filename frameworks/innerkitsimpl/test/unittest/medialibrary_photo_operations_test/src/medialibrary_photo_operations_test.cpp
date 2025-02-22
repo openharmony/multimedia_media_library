@@ -20,6 +20,7 @@
 #include <chrono>
 #include <fcntl.h>
 #include <fstream>
+#include <future>
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
@@ -51,6 +52,7 @@
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
 #include "photo_album_column.h"
+#include "duplicate_photo_operation.h"
 #define private public
 #include "picture_data_operations.h"
 #undef private
@@ -1922,6 +1924,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_013, Test
     MediaLibraryCommand cmd(uri);
     int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values2, predicates);
     EXPECT_EQ(changedRows, 1);
+
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, "1");
+    MediaLibraryCommand cmd2(uri);
+    changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd2, values2, predicates);
+    EXPECT_LT(changedRows, 0);
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_013");
 }
  
@@ -3741,6 +3748,57 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level
     MEDIA_INFO_LOG("end tdd clone_single_asset_002");
 }
 
+// 多线程访问clone接口tdd测试
+HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd clone_single_asset_003");
+
+    // create asset
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open photo and video cache file
+    string fileName;
+    int32_t fd = OpenCacheFile(false, fileName);
+    EXPECT_GE(fd, 0);
+
+    // edit by cache
+    int ret = MovingPhotoEditByCache(fileId, fileName, fileName, true);
+    EXPECT_EQ(ret, fileId);
+
+    string title = "";
+    for (int i = 0; i < 251; i++) {
+        title += "1";
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLONE_ASSET, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.Put(MediaColumn::MEDIA_ID, fileId);
+    values.Put(MediaColumn::MEDIA_TITLE, title);
+    cmd.SetValueBucket(values);
+    cmd.SetBundleName("values");
+
+    std::vector<std::future<int64_t>> futures;
+    for (int i = 0; i < 10; i++) {
+        futures.push_back(
+            std::async(std::launch::async, [&]() { return MediaLibraryPhotoOperations::CloneSingleAsset(cmd); }));
+    }
+
+    for (auto &future : futures) {
+        if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+            EXPECT_EQ(false, true);
+        }
+
+        int64_t ret = future.get();
+        EXPECT_GE(ret, fileId);
+    }
+
+    MEDIA_INFO_LOG("end tdd clone_single_asset_003");
+}
+
 HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd picture_date_test_001");
@@ -3780,6 +3838,245 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0
     // insert invalid quality icture
     s_pictureDataOperations->InsertPictureData(fileId, picturePair, static_cast<PictureType>(ILLEGAL_PHOTO_QUALITU));
     MEDIA_INFO_LOG("end tdd picture_date_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_001, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    // create local normal photo
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutInt(MediaColumn::MEDIA_ID, 1);
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    cmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(fileId, 0);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_002, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    // create local edit photo
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutInt(MediaColumn::MEDIA_ID, 1);
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutInt(PhotoColumn::PHOTO_EDIT_TIME, 20250121);
+    cmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(fileId, 0);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_003, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    // create local moving photo
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutInt(MediaColumn::MEDIA_ID, 1);
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    PhotoSubType subType = PhotoSubType::MOVING_PHOTO;
+    int intValue = static_cast<int>(subType);
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, intValue);
+    cmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(fileId, 0);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_004, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    // create local burst photo
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutInt(MediaColumn::MEDIA_ID, 1);
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutString(PhotoColumn::PHOTO_BURST_KEY, "burst_key");
+    cmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(fileId, 0);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_005, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    // create cloud photo
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutInt(MediaColumn::MEDIA_ID, 1);
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutInt(PhotoColumn::PHOTO_POSITION, 2);
+    cmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(fileId, 0);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_006, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    // create both local and cloud normal file
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutInt(MediaColumn::MEDIA_ID, 1);
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutInt(PhotoColumn::PHOTO_POSITION, 3);
+    cmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(fileId, 0);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_007, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    // create both local and cloud edit photo
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutInt(MediaColumn::MEDIA_ID, 1);
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutInt(PhotoColumn::PHOTO_EDIT_TIME, 20250121);
+    values.PutInt(PhotoColumn::PHOTO_POSITION, 3);
+    cmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(fileId, 0);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_008, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    // create both local and cloud moving photo
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutInt(MediaColumn::MEDIA_ID, 1);
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    PhotoSubType subType = PhotoSubType::MOVING_PHOTO;
+    int intValue = static_cast<int>(subType);
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, intValue);
+    values.PutInt(PhotoColumn::PHOTO_POSITION, 3);
+    cmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(fileId, 0);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_09, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    // create local burst photo
+    string name = "photo.jpg";
+    ValuesBucket values;
+    values.PutInt(MediaColumn::MEDIA_ID, 1);
+    values.PutString(MediaColumn::MEDIA_NAME, name);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutString(PhotoColumn::PHOTO_BURST_KEY, "burst_key");
+    values.PutInt(PhotoColumn::PHOTO_POSITION, 3);
+    cmd.SetValueBucket(values);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(fileId, 0);
+
+    AbsRdbPredicates rbdPredicates(PhotoColumn::PHOTOS_TABLE);
+    rbdPredicates.EqualTo(PhotoColumn::MEDIA_ID, 1);
+    int32_t ret = MediaLibraryAssetOperations::DeletePermanently(rbdPredicates, true);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, getAllDuplicateAssets_test, TestSize.Level0)
+{
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("Create photo failed");
+        return;
+    }
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::FIND_DUPLICATE_ASSETS,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    cmd.SetDataSharePred(predicates);
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_NAME);
+    columns.push_back(MediaColumn::MEDIA_DATE_ADDED);
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    EXPECT_NE(resultSet, nullptr);
+    columns.push_back(MEDIA_COLUMN_COUNT);
+    resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    EXPECT_NE(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestSize.Level0)
+{
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("Create photo failed");
+        return;
+    }
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::FIND_DUPLICATE_ASSETS_TO_DELETE,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    cmd.SetDataSharePred(predicates);
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_NAME);
+    columns.push_back(MediaColumn::MEDIA_DATE_ADDED);
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    EXPECT_NE(resultSet, nullptr);
+    columns.push_back(MEDIA_COLUMN_COUNT);
+    resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    EXPECT_NE(resultSet, nullptr);
 }
 } // namespace Media
 } // namespace OHOS

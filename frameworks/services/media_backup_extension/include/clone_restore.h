@@ -26,19 +26,23 @@
 
 #include "base_restore.h"
 #include "backup_const.h"
+#include "clone_restore_cv_analysis.h"
+#include "clone_restore_highlight.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
 #include "backup_database_utils.h"
 #include "photo_album_clone.h"
 #include "photos_clone.h"
+#include "clone_restore_geo.h"
+#include "clone_restore_geo_dictionary.h"
 
 namespace OHOS {
 namespace Media {
 class CloneRestore : public BaseRestore {
 public:
     CloneRestore();
-    virtual ~CloneRestore();
+    virtual ~CloneRestore() = default;
     // upgradePath is useless now
     void StartRestore(const std::string &backupRestorePath, const std::string &upgradePath) override;
     int32_t Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade) override;
@@ -58,7 +62,6 @@ private:
     void AnalyzeSource() override;
     void RestoreAlbum(void);
     void RestoreAudio(void) override;
-    void NotifyAlbum() override;
     int InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
@@ -99,7 +102,6 @@ private:
     bool HasColumn(const std::unordered_map<std::string, std::string> &columnInfoMap, const std::string &columnName);
     void GetAlbumExtraQueryWhereClause(const std::string &tableName);
     bool IsReadyForRestore(const std::string &tableName);
-    void UpdateAlbumToNotifySet(const std::string &tableName, const std::unordered_set<int32_t> &albumSet);
     void PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
         const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
     void RestoreGallery();
@@ -111,7 +113,8 @@ private:
     void InsertAudio(std::vector<FileInfo> &fileInfos);
     int32_t QueryTotalNumberByMediaType(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         MediaType mediaType);
-    std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount);
+    size_t StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
+    std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount, size_t totalSize);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount, int64_t &videoFileMoveCount);
     void RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreAudioBatch(int32_t offset);
@@ -154,7 +157,7 @@ private:
     NativeRdb::ValuesBucket CreateValuesBucketFromFaceTagTbl(const FaceTagTbl& faceTagTbl);
     void BatchInsertFaceTags(const std::vector<FaceTagTbl>& faceTagTbls);
     void DeleteExistingFaceTagData(const std::string& inClause);
-    std::vector<FaceTagTbl> QueryFaceTagTbl(int32_t offset, std::vector<std::string> &commonColumns);
+    std::vector<FaceTagTbl> QueryFaceTagTbl(int32_t offset, const std::string& inClause);
     void RestorePortraitClusteringInfo();
     void ReportPortraitCloneStat(int32_t sceneCode);
     void AppendExtraWhereClause(std::string& whereClause, const std::string& tableName);
@@ -178,6 +181,9 @@ private:
     bool BackupKvStore();
     void GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     int32_t GetNoNeedMigrateCount() override;
+    void GetAccountValid() override;
+    int32_t GetHighlightCloudMediaCnt();
+    void RestoreHighlightAlbums(bool isSyncSwitchOpen);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -198,7 +204,6 @@ private:
     std::unordered_map<std::string, std::string> tableExtraQueryWhereClauseMap_;
     std::unordered_map<std::string, std::unordered_map<int32_t, int32_t>> tableAlbumIdMap_;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tableCommonColumnInfoMap_;
-    std::unordered_set<std::string> albumToNotifySet_;
     std::string garbagePath_;
     std::vector<CoverUriInfo> coverUriInfo_;
     std::vector<PortraitAlbumDfx> portraitAlbumDfx_;
@@ -212,6 +217,10 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets;
+    CloneRestoreGeo cloneRestoreGeo_;
+    CloneRestoreHighlight cloneRestoreHighlight_;
+    CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;
+    CloneRestoreGeoDictionary cloneRestoreGeoDictionary_;
 };
 
 template<typename T>

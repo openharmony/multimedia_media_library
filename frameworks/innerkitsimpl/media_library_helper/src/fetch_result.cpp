@@ -93,6 +93,10 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, TYPE_INT32 },
         { PhotoColumn::SUPPORTED_WATERMARK_TYPE, TYPE_INT32},
         { PhotoColumn::PHOTO_QUALITY, TYPE_INT32},
+        { PhotoColumn::PHOTO_CLOUD_ID, TYPE_STRING},
+        { PhotoColumn::PHOTO_IS_AUTO, TYPE_INT32},
+        { PhotoColumn::PHOTO_MEDIA_SUFFIX, TYPE_STRING},
+        { PhotoColumn::PHOTO_IS_RECENT_SHOW, TYPE_INT32},
     };
     return RESULT_TYPE_MAP;
 }
@@ -222,6 +226,18 @@ template<class T>
 bool FetchResult<T>::GetLocationOnly() const
 {
     return locationOnly_;
+}
+
+template<class T>
+void FetchResult<T>::SetUserId(int32_t userId)
+{
+    userId_ = userId;
+}
+ 
+template<class T>
+int32_t FetchResult<T>::GetUserId()
+{
+    return userId_;
 }
 
 template <class T>
@@ -566,10 +582,12 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, resultSet))));
     photoAlbumData->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, resultSet))));
-
+    photoAlbumData->SetLPath(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, TYPE_STRING,
+        resultSet)));
     photoAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING,
         resultSet)));
-
+    photoAlbumData->SetDateAdded(get<int64_t>(GetRowValFromColumn(
+        PhotoAlbumColumns::ALBUM_DATE_ADDED, TYPE_INT64, resultSet)));
     photoAlbumData->SetDateModified(get<int64_t>(GetRowValFromColumn(
         PhotoAlbumColumns::ALBUM_DATE_MODIFIED, TYPE_INT64, resultSet)));
     photoAlbumData->SetResultNapiType(resultNapiType_);

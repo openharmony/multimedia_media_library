@@ -52,6 +52,7 @@ public:
     EXPORT TransactionOperations(std::string funcName);
     EXPORT ~TransactionOperations();
     EXPORT int32_t Start(bool isBackup = false);
+    EXPORT int32_t Commit();
     EXPORT int32_t Finish();
     EXPORT int32_t TryTrans(std::function<int(void)> &func, bool isBackup);
     EXPORT int32_t RetryTrans(std::function<int(void)> &func, bool isBackup = false);
@@ -73,6 +74,8 @@ public:
         const NativeRdb::AbsRdbPredicates &predicates);
     EXPORT int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows);
     EXPORT int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows);
+    EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryByStep(const NativeRdb::AbsRdbPredicates &predicates,
+        const std::vector<std::string> &columns, bool preCount);
 
 private:
     std::shared_ptr<OHOS::NativeRdb::Transaction> transaction_ = nullptr;

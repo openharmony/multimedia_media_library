@@ -236,7 +236,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_004, T
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_005, TestSize.Level0)
 {
     string displayName = "test.test.jpg";
-    EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName), 0);
+    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_006, TestSize.Level0)
@@ -909,9 +909,9 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirectory_Test_002, Test
     string testPath = "/data/test/copydirectory_002";
     string oldDir = testPath + "/copydirectory_002_srcdir";
     string newDir = testPath + "/copydirectory_002_dstdir";
-    EXPECT_EQ(MediaFileUtils::CreateFile(oldDir), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(oldDir), true);
     int32_t ret = MediaFileUtils::CopyDirectory(oldDir, newDir);
-    EXPECT_EQ(ret, E_FAIL);
+    EXPECT_EQ(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyDirectory_Test_003, TestSize.Level0)
@@ -977,6 +977,40 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetDateModified_Test_001, Te
     EXPECT_EQ(MediaFileUtils::CreateFile(filePath), true);
     EXPECT_EQ(MediaFileUtils::GetDateModified(filePath, dateModified), true);
     EXPECT_GT(dateModified, 0);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(filePath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAllTypes_Test_001, TestSize.Level0)
+{
+    int32_t extension = MEDIA_TYPE_IMAGE;
+    vector<std::string> allTypesOut = MediaFileUtils::GetAllTypes(extension);
+    EXPECT_GT(allTypesOut.size(), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAllTypes_Test_002, TestSize.Level0)
+{
+    int32_t extension = MEDIA_TYPE_VIDEO;
+    vector<std::string> allTypesOut = MediaFileUtils::GetAllTypes(extension);
+    EXPECT_GT(allTypesOut.size(), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAllTypes_Test_003, TestSize.Level0)
+{
+    int32_t extension = MEDIA_TYPE_FILE;
+    vector<std::string> allTypesOut = MediaFileUtils::GetAllTypes(extension);
+    EXPECT_TRUE(allTypesOut.empty());
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckSupportedWatermarkType_Test_001, TestSize.Level0)
+{
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(-10), false);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(-1), false);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(0), false);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(1), true);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(2), true);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(3), true);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(4), false);
+    EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(10), false);
 }
 } // namespace Media
 } // namespace OHOS

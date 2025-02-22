@@ -18,9 +18,20 @@ import("//foundation/ability/ability_runtime/ability_runtime.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
+group("media_backup_package") {
+  deps = []
+  if (media_library_feature_back_up) {
+    deps += [ ":mediabackup" ]
+  } else {
+  }
+}
+
 ohos_shared_library("mediabackup") {
   include_dirs = [
     "./include",
+    "./include/geo_dictionary",
+    "./include/geo_knowledge",
+    "./include/highlight",
     "./include/log",
     "./include/restore",
     "./include/report",
@@ -45,6 +56,12 @@ ohos_shared_library("mediabackup") {
     "./src/base_restore.cpp",
     "./src/burst_key_generator.cpp",
     "./src/clone_restore.cpp",
+    "./src/geo_dictionary/clone_restore_geo_dictionary.cpp",
+    "./src/geo_knowledge/clone_restore_geo.cpp",
+    "./src/geo_knowledge/geo_knowledge_restore.cpp",
+    "./src/highlight/clone_restore_cv_analysis.cpp",
+    "./src/highlight/clone_restore_highlight.cpp",
+    "./src/highlight/highlight_restore.cpp",
     "./src/log/backup_hi_audit.cpp",
     "./src/log/backup_hi_audit_helper.cpp",
     "./src/log/backup_log_utils.cpp",
@@ -52,6 +69,7 @@ ohos_shared_library("mediabackup") {
     "./src/medialibrary_backup_napi.cpp",
     "./src/native_module_ohos_medialibrary_backup.cpp",
     "./src/others_clone_restore.cpp",
+    "./src/report/audios_count_statistic.cpp",
     "./src/report/database_report.cpp",
     "./src/report/external_files_count_statistic.cpp",
     "./src/report/gallery_media_count_statistic.cpp",
@@ -94,10 +112,14 @@ ohos_shared_library("mediabackup") {
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "i18n:intl_util",
+    "image_framework:image_native",
     "init:libbegetutil",
     "kv_store:distributeddata_inner",
     "libxml2:libxml2",
     "napi:ace_napi",
+    "os_account:libaccountkits",  # ohos_account
+    "os_account:os_account_innerkits",  # os_account
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",

@@ -150,7 +150,9 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         MediaFileUtils::GetExtraUri(newFileInfo->displayName, newFileInfo->filePath));
     needUpdateUris.emplace_back(newFileUri);
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(newFileUri, NotifyType::NOTIFY_ADD);
+    if (watch != nullptr) {
+        watch->Notify(newFileUri, NotifyType::NOTIFY_ADD);
+    }
     return newFileId;
 }
 
@@ -241,7 +243,8 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     int32_t hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
     int32_t sourceSubtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     int32_t sourceCEAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
-    CHECK_AND_PRINT_LOG(sourceCEAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING),
+    CHECK_AND_PRINT_LOG((sourceCEAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL) ||
+        sourceCEAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO)),
         "enhancement callback error: db CE_AVAILABLE status not processing, file_id: %{public}d", sourceFileId);
     // save 120 per
     shared_ptr<CloudEnhancementFileInfo> info = make_shared<CloudEnhancementFileInfo>(sourceFileId,
@@ -262,7 +265,9 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     string fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(sourceFileId),
         MediaFileUtils::GetExtraUri(sourceDisplayName, sourceFilePath));
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
+    if (watch != nullptr) {
+        watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
+    }
     MEDIA_INFO_LOG("DealWithSuccessedTask success, photo_id: %{public}s", taskId.c_str());
 }
 
@@ -285,7 +290,8 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
     resultSet->Close();
-    CHECK_AND_PRINT_LOG(ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING),
+    CHECK_AND_PRINT_LOG((ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL) ||
+        ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO)),
         "enhancement callback error: db CE_AVAILABLE status not processing, file_id: %{public}d", fileId);
     NativeRdb::ValuesBucket valueBucket;
     if (statusCode == static_cast<int32_t>(CEErrorCodeType::EXECUTE_FAILED) ||
@@ -306,7 +312,9 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     string fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
         MediaFileUtils::GetExtraUri(displayName, filePath));
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
+    if (watch != nullptr) {
+        watch->Notify(fileUri, NotifyType::NOTIFY_UPDATE);
+    }
     MEDIA_INFO_LOG("DealWithFailedTask success, photo_id: %{public}s", taskId.c_str());
 }
 
@@ -315,6 +323,7 @@ void EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement()
     MEDIA_INFO_LOG("UpdateAlbumsForCloudEnhancement start");
     if (!needUpdateUris.empty()) {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
         MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, needUpdateUris);
         needUpdateUris.clear();
     } else {

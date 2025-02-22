@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIA_SPACE_STATISTICS_TEST_H
-#define MEDIA_SPACE_STATISTICS_TEST_H
+#ifndef MEDIA_HELPER_TEST_H
+#define MEDIA_HELPER_TEST_H
 
 #include "gtest/gtest.h"
 
@@ -29,4 +29,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIA_SPACE_STATISTICS_TEST_H
+#endif // MEDIA_HELPER_TEST_H

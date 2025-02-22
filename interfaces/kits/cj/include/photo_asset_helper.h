@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,25 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef OHOS_MTP_GLOBAL_H
-#define OHOS_MTP_GLOBAL_H
+#ifndef PHOTO_ASSET_HELPER_H
+#define PHOTO_ASSET_HELPER_H
 
+#include <string>
+#include <cstdint>
 
+#define EXPORT __attribute__ ((visibility ("default")))
 namespace OHOS {
 namespace Media {
-
-class MtpGlobal {
-public:
-    static bool IsBlocked();
-    static void ResetBlockStatus();
-    static void ReleaseBlock();
-private:
-    MtpGlobal() = delete;
-    ~MtpGlobal() = delete;
-    static bool isBlock_;
-};
-
-
-} // namespace Media
-} // namespace OHOS
-#endif // OHOS_MTP_GLOBAL_H
+EXPORT int64_t CreatePhotoAssetImpl(const std::string &uri, int32_t cameraShotType, const std::string &burstKey = "");
+}
+}
+#endif

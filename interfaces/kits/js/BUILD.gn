@@ -82,7 +82,7 @@ config("napi_config") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
   ]
 
-  if (defined(medialibrary_mtp_enable)) {
+  if (media_library_feature_mtp) {
     include_dirs += [ "${MEDIALIB_MTP_PATH}/include" ]
   }
 
@@ -200,7 +200,7 @@ ohos_shared_library("medialibrary_nutils") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
-  if (defined(medialibrary_mtp_enable)) {
+  if (media_library_feature_mtp) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
   if (!media_library_link_opt) {
@@ -226,8 +226,14 @@ ohos_shared_library("medialibrary_nutils") {
 
   if (defined(global_parts_info) &&
       defined(
-          global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
+          global_parts_info.device_cloud_gateway_media_cloud_enhance_service) &&
+      !factory) {
     defines += [ "ABILITY_CLOUD_ENHANCEMENT_SUPPORT" ]
+  }
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.multimedia_video_processing_engine)) {
+    defines += [ "USE_VIDEO_PROCESSING_ENGINE" ]
   }
 
   if (ability_runtime_graphics) {
@@ -274,7 +280,7 @@ ohos_shared_library("medialibrary") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
-  if (defined(medialibrary_mtp_enable)) {
+  if (media_library_feature_mtp) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
   if (defined(global_parts_info) &&
@@ -339,7 +345,7 @@ ohos_shared_library("userfilemanager") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
-  if (defined(medialibrary_mtp_enable)) {
+  if (media_library_feature_mtp) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
   if (!media_library_link_opt) {
@@ -447,7 +453,7 @@ ohos_shared_library("photoaccesshelper") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
-  if (defined(medialibrary_mtp_enable)) {
+  if (media_library_feature_mtp) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
   if (!media_library_link_opt) {
@@ -697,7 +703,7 @@ ohos_shared_library("sendablephotoaccesshelper") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
-  if (defined(medialibrary_mtp_enable)) {
+  if (media_library_feature_mtp) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
   if (!media_library_link_opt) {

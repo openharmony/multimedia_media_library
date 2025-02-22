@@ -48,9 +48,15 @@ public:
     static void RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
     static void UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
     static int OpenFile(Uri &uri, const std::string &mode);
+    static void SetUserId(const int32_t userId);
+    static int32_t GetUserId();
+    static void SetLastUserId(const int32_t userId);
+    static int32_t GetLastUserId();
 
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
+    static int32_t userId_;
+    static int32_t lastUserId_;
 };
 }
 }

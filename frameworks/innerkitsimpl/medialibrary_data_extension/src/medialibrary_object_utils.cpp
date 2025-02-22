@@ -63,7 +63,6 @@
 #include "post_event_utils.h"
 #include "userfilemgr_uri.h"
 #include "dfx_utils.h"
-#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -785,10 +784,24 @@ static bool IsDocumentUri(const std::string &uriString)
 
 static void GetType(string &uri, int32_t &type)
 {
-    int pos = uri.find("type=");
+    size_t pos = uri.find("type=");
     if (pos != uri.npos) {
         type = uri[pos + OFFSET] - ZERO_ASCII;
     }
+}
+
+int32_t HandleRequestPicture(MediaLibraryCommand &cmd)
+{
+    std::string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
+    int32_t fd;
+    PictureHandlerService::OpenPicture(fileId, fd);
+    return fd;
+}
+
+int32_t HandlePhotoRequestPictureBuffer(MediaLibraryCommand &cmd)
+{
+    std::string fd = cmd.GetQuerySetParam("fd");
+    return PictureHandlerService::RequestBufferHandlerFd(fd);
 }
 
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
@@ -803,13 +816,9 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     } else if (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC) {
         return ThumbnailService::GetInstance()->GetThumbnailFd(uriString, true);
     } else if (cmd.GetOprnObject() == OperationObject::REQUEST_PICTURE) {
-        std::string fileId = cmd.GetQuerySetParam(MediaColumn::MEDIA_ID);
-        int32_t fd;
-        PictureHandlerService::OpenPicture(fileId, fd);
-        return fd;
+        return HandleRequestPicture(cmd);
     } else if (cmd.GetOprnObject() == OperationObject::PHOTO_REQUEST_PICTURE_BUFFER) {
-        std::string fd = cmd.GetQuerySetParam("fd");
-        return PictureHandlerService::RequestBufferHandlerFd(fd);
+        return HandlePhotoRequestPictureBuffer(cmd);
     } else if (cmd.GetOprnObject() == OperationObject::KEY_FRAME) {
         return ThumbnailService::GetInstance()->GetKeyFrameThumbnailFd(uriString, true);
     } else if (IsDocumentUri(uriString)) {
@@ -843,7 +852,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     return fd;
 }
 
-void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api)
+void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api,
+    bool isCameraShotMovingPhoto)
 {
     string tableName;
     if (MediaFileUtils::IsFileTablePath(path)) {
@@ -863,7 +873,7 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
     }
-    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb, api);
+    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb, api, isCameraShotMovingPhoto);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
@@ -1046,8 +1056,7 @@ unique_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetByPredicates(const Na
 
 shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromId(const string &id, const string &networkId)
 {
-    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) ||
-        (MediaLibraryCommonUtils::SafeStoi(id) == -1)) {
+    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
         MEDIA_ERR_LOG("Id for the path is incorrect: %{private}s", id.c_str());
         return nullptr;
     }
@@ -1162,8 +1171,7 @@ string MediaLibraryObjectUtils::GetStringColumnByIdFromDb(const string &id, cons
         return value;
     }
 
-    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) ||
-        (MediaLibraryCommonUtils::SafeStoi(id) == -1)) {
+    if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
         MEDIA_ERR_LOG("Id for the path is incorrect or rdbStore is null");
         return value;
     }
@@ -1330,8 +1338,7 @@ int32_t MediaLibraryObjectUtils::ModifyInfoByIdInDb(MediaLibraryCommand &cmd, co
     string strDeleteCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
     if (strDeleteCondition.empty()) {
         string strRow = fileId.empty() ? cmd.GetOprnFileId() : fileId;
-        if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow) ||
-            (MediaLibraryCommonUtils::SafeStoi(strRow) == -1)) {
+        if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow) || (stoi(strRow) == -1)) {
             MEDIA_ERR_LOG("DeleteFile: Index not digit");
             return E_INVALID_FILEID;
         }
@@ -1480,11 +1487,13 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
     }
     if (outRow < 0) {
         MEDIA_ERR_LOG("Failed to obtain CreateFileObj");
+        CloseFileById(srcFileAsset->GetId());
         return outRow;
     }
     shared_ptr<FileAsset> destFileAsset = GetFileAssetFromId(to_string(outRow));
     if (destFileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database");
+        CloseFileById(srcFileAsset->GetId());
         return E_INVALID_URI;
     }
     string destPath = MediaFileUtils::UpdatePath(destFileAsset->GetPath(), destFileAsset->GetUri());
@@ -1498,6 +1507,7 @@ int32_t MediaLibraryObjectUtils::CopyAssetByFd(int32_t srcFd, int32_t srcId, int
     struct stat statSrc;
     if (fstat(srcFd, &statSrc) == -1) {
         CloseFileById(srcId);
+        CloseFileById(destId);
         MEDIA_ERR_LOG("File get stat failed, %{public}d", errno);
         return E_FILE_OPER_FAIL;
     }

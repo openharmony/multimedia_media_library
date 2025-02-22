@@ -93,6 +93,7 @@ ohos_shared_library("media_library_manager") {
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
+      "ffrt:libffrt",
       "memmgr_override:libpurgeablemem_plugin",
       "memmgr_override:purgeable_pixelmap_builder",
     ]
@@ -134,6 +135,7 @@ ohos_shared_library("media_library_extend_manager") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "os_account:os_account_innerkits",
     "samgr:samgr_proxy",
   ]
 
@@ -161,6 +163,61 @@ ohos_shared_library("media_library_extend_manager") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
+
+  part_name = "media_library"
+  subsystem_name = "multimedia"
+}
+
+ohos_shared_library("media_library_custom_restore") {
+  install_enable = true
+
+  sources = [
+    "./media_library_custom_restore.cpp",
+    "./src/medialibrary_custom_restore_observer_manager.cpp",
+  ]
+
+  include_dirs = [
+    "./include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+  ]
+
+  public_configs = [ ":media_library_manager_config" ]
+
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "hitrace:hitrace_meter",
+    "samgr:samgr_proxy",
+  ]
+
+  ldflags = [ "-Wl,--gc-sections" ]
+
+  cflags = [
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Os",
+  ]
+
+  cflags_cc = [ "-Os" ]
+
+  if (!media_library_link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
+    }
+  }
 
   part_name = "media_library"
   subsystem_name = "multimedia"

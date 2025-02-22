@@ -91,6 +91,15 @@ public:
         std::string strUri_;
     };
 
+    struct JsOnChangeCallbackWrapper {
+        UvChangeMsg* msg_;
+        std::list<std::string> extraUris_;
+        uint32_t uriSize_ { 0 };
+        std::shared_ptr<NativeRdb::ResultSet> sharedAssets_;
+        std::vector<std::shared_ptr<RowObject>> sharedAssetsRowObjVector_;
+        std::shared_ptr<NativeRdb::ResultSet> extraSharedAssets_;
+    };
+
     explicit ChangeListenerNapi(napi_env env) : env_(env) {}
 
     ChangeListenerNapi(const ChangeListenerNapi &listener)
@@ -111,8 +120,12 @@ public:
     ~ChangeListenerNapi() {};
 
     void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
+    void QueryRdbAndNotifyChange(uv_loop_s *loop, UvChangeMsg *msg, uv_work_t *work);
     int UvQueueWork(uv_loop_s *loop, uv_work_t *work);
-    static napi_value SolveOnChange(napi_env env, UvChangeMsg *msg);
+    static napi_value SolveOnChange(napi_env env, JsOnChangeCallbackWrapper* wrapper);
+    void GetResultSetFromMsg(UvChangeMsg* msg, JsOnChangeCallbackWrapper* wrapper);
+    std::shared_ptr<NativeRdb::ResultSet> GetSharedResultSetFromIds(std::vector<string>& Ids, bool isPhoto);
+    void GetIdsFromUris(std::list<Uri>& listValue, std::vector<string>& ids, bool isPhoto);
     static string GetTrashAlbumUri();
     static std::string trashAlbumUri_;
     napi_ref cbOnRef_ = nullptr;
@@ -128,6 +141,14 @@ public:
     std::vector<std::shared_ptr<MediaOnNotifyObserver>> observers_;
 private:
     napi_env env_ = nullptr;
+
+    static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr,
+        ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, napi_value& result, bool isPhoto);
+
+    static int ParseSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
+        bool isPhoto);
+    static napi_value BuildSharedPhotoAssetsObj(const napi_env& env,
+        ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto);
 };
 
 class MediaObserver : public AAFwk::DataAbilityObserverStub {
@@ -198,10 +219,11 @@ public:
     static void ReplaceSelection(std::string &selection, std::vector<std::string> &selectionArgs,
         const std::string &key, const std::string &keyInstead, const int32_t mode = ReplaceSelectionMode::DEFAULT);
     static void OnThumbnailGenerated(napi_env env, napi_value cb, void *context, void *data);
+    int32_t GetUserId();
+    void SetUserId(const int32_t &userId);
 
     EXPORT MediaLibraryNapi();
     EXPORT ~MediaLibraryNapi();
-
     static std::mutex sUserFileClientMutex_;
 
 private:
@@ -279,6 +301,7 @@ private:
     EXPORT static napi_value CheckShortTermPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateAssetsHasPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateAssetWithShortTermPermission(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateAssetsForAppWithAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value ShowAssetsCreationDialog(napi_env env, napi_callback_info info);
     EXPORT static napi_value RequestPhotoUrisReadPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
@@ -297,12 +320,16 @@ private:
     EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbumsSync(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessSaveGalleryFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessRemoveGalleryFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessUpdateGalleryFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetFileAssetsInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperGetDataAnalysisProgress(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetForceHideSensitiveType(napi_env env, napi_callback_info info);
     
@@ -349,6 +376,7 @@ private:
     static bool CheckRef(napi_env env,
         napi_ref ref, ChangeListenerNapi &listObj, bool isOff, const std::string &uri);
     napi_env env_;
+    int32_t userId_ = -1;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
@@ -459,12 +487,17 @@ struct MediaLibraryAsyncContext : public NapiError {
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
+    bool isForce = false;
     bool hiddenOnly = false;
     bool isAnalysisAlbum = false;
     int32_t hiddenAlbumFetchMode = -1;
     std::string formId;
     std::string indexProgress;
     std::shared_ptr<PickerCallBack> pickerCallBack;
+    std::vector<std::string> analysisDatas;
+    uint32_t tokenId;
+    std::vector<std::string> albumIds;
+    std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

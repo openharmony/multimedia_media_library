@@ -18,6 +18,7 @@
 
 #include <mutex>
 
+#include <atomic>
 #include <timer.h>
 
 #include "cloud_sync_manager.h"
@@ -35,14 +36,15 @@ constexpr int32_t SYNC_INTERVAL = 5000;
 class CloudSyncHelper final {
 public:
     EXPORT static std::shared_ptr<CloudSyncHelper> GetInstance();
+    std::atomic<bool> isThumbnailGenerationCompleted_ = true;
     virtual ~CloudSyncHelper();
 
     EXPORT void StartSync();
+    EXPORT bool IsSyncSwitchOpen();
 
 private:
     CloudSyncHelper();
     void OnTimerCallback();
-    bool IsSyncSwitchOpen();
     bool InitDataShareHelper();
 
     /* singleton */
@@ -68,7 +70,12 @@ private:
 class MediaCloudSyncCallback : public FileManagement::CloudSync::CloudSyncCallback {
 public:
     void OnSyncStateChanged(FileManagement::CloudSync::SyncType type,
-        FileManagement::CloudSync::SyncPromptState state);
+        FileManagement::CloudSync::SyncPromptState state) override;
+    void OnSyncStateChanged(FileManagement::CloudSync::CloudSyncState state,
+        FileManagement::CloudSync::ErrorType error) override;
+private:
+    std::mutex syncStateMutex_;
+    bool isSyncing_ = false;
 };
 } // namespace Media
 } // namespace OHOS

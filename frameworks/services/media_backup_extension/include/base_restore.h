@@ -23,9 +23,12 @@
 #include "backup_const.h"
 #include "media_file_utils.h"
 #include "nlohmann/json.hpp"
+#include "photos_dao.h"
 #include "rdb_helper.h"
 #include "result_set.h"
 #include "tab_old_photos_restore.h"
+#include "geo_knowledge_restore.h"
+#include "highlight_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -44,9 +47,11 @@ public:
     void ReportPortraitStat(int32_t sceneCode);
     std::string GetProgressInfo();
     virtual void StartBackup();
+    std::string restoreInfo_;
 
 protected:
     int32_t Init(void);
+    static std::mutex fileInfoMutext_;
 
     virtual void RestorePhoto(void) = 0;
     virtual void RestoreAudio(void) = 0;
@@ -61,15 +66,21 @@ protected:
     virtual bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     virtual void InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
         int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum);
-    virtual void NotifyAlbum();
+    void NotifyAlbum();
     virtual std::string CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
+    std::vector<NativeRdb::ValuesBucket> GetCloudInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
+        int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
+    virtual void GetAccountValid();
+    void GetSourceDeviceInfo();
+    bool IsRestorePhoto();
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
     int InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
+    int InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
@@ -95,13 +106,27 @@ protected:
     void UpdateFailedFileByFileType(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode);
     void UpdateFailedFiles(int32_t fileType, const FileInfo &fileInfo, int32_t errorCode);
     void UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode);
+
     void UpdateDuplicateNumber(int32_t fileType);
     void DeleteMoveFailedData(std::vector<std::string> &moveFailedData);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode);
+
+    bool RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
+    bool RestoreLcdAndThumbFromKvdb(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
+    std::string GetThumbFile(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
+
+    int32_t BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
+        std::string fileType);
+    int32_t SetVisiblePhoto(std::vector<FileInfo> &fileInfos);
+    void HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
+        std::string fileType);
+    void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
+        int32_t sceneCode);
     void SetParameterForClone();
     void StopParameterForClone(int32_t sceneCode);
     void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType);
+    void UpdateLcdVisibleColumn(const FileInfo &fileInfo);
     bool NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     bool NeedBatchQueryPhotoForPhotoMap(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     bool NeedQuery(const FileInfo &fileInfo, const NeedQueryMap &needQueryMap);
@@ -118,23 +143,40 @@ protected:
     void UpdateDatabase();
     void GetUpdateTotalCount();
     void GetUpdateAllAlbumsCount();
+    std::string GetUpgradeEnhance();
     void GetUpdateUniqueNumberCount();
     void RestoreThumbnail();
     std::string GetRestoreTotalInfo();
     virtual int32_t GetNoNeedMigrateCount();
+    bool ExtraCheckForCloneSameFile(FileInfo &fileInfo, PhotosDao::PhotosRowData &rowData);
+    void UpdatePhotosByFileInfoMap(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+        std::vector<FileInfo>& fileInfos);
+    int32_t RemoveDentryFileWithConflict(const FileInfo &fileInfo);
+    int32_t GetRestoreMode();
+    uint64_t GetNotFoundNumber();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
     std::atomic<uint64_t> migrateFileNumber_{0};
     std::atomic<uint64_t> migrateVideoFileNumber_{0};
     std::atomic<uint64_t> migrateAudioDatabaseNumber_{0};
+    std::atomic<uint64_t> totalCloudMetaNumber_{0};
+    std::atomic<uint64_t> successCloudMetaNumber_{0};
     std::atomic<uint64_t> migrateAudioFileNumber_{0};
     std::atomic<uint64_t> totalNumber_{0};
+    std::atomic<uint64_t> notFoundNumber_{0};
     std::atomic<uint64_t> audioTotalNumber_{0};
     std::atomic<uint64_t> updateTotalNumber_{0};
+    std::atomic<uint64_t> localLcdCount_{0};
+    std::atomic<uint64_t> localThumbnailCount_{0};
+    std::atomic<uint64_t> cloudLcdCount_{0};
+    std::atomic<uint64_t> cloudThumbnailCount_{0};
+    std::atomic<uint64_t> cloudMetaCount_{0};
+    std::atomic<uint64_t> thumbnailTotalNumber_{0};
     std::atomic<uint64_t> otherTotalNumber_{0};
     std::atomic<uint64_t> ongoingTotalNumber_{0};
     std::atomic<uint64_t> updateProcessedNumber_{0};
+    std::atomic<uint64_t> thumbnailProcessedNumber_{0};
     std::atomic<uint64_t> otherProcessedNumber_{0};
     std::atomic<uint64_t> migratePhotoDuplicateNumber_{0};
     std::atomic<uint64_t> migrateVideoDuplicateNumber_{0};
@@ -147,11 +189,16 @@ protected:
     std::atomic<uint32_t> videoNumber_{0};
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
     std::atomic<uint32_t> audioNumber_{0};
+    std::atomic<uint64_t> rotateLcdMigrateFileNumber_{0};
+    std::atomic<uint64_t> rotateThmMigrateFileNumber_{0};
     std::atomic<int32_t> updateProcessStatus_{ProcessStatus::STOP};
     std::atomic<int32_t> otherProcessStatus_{ProcessStatus::STOP};
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string backupRestoreDir_;
+    std::string upgradeRestoreDir_;
+    std::string albumOdid_;
+    std::string dualDeviceSoftName_;
     std::mutex imageMutex_;
     std::mutex videoMutex_;
     std::mutex audioMutex_;
@@ -167,6 +214,10 @@ protected:
     std::string taskId_ = std::to_string(MediaFileUtils::UTCTimeSeconds());
     TabOldPhotosRestore tabOldPhotosRestore_;
     bool needReportFailed_ = false;
+    bool isAccountValid_ = false;
+    GeoKnowledgeRestore geoKnowledgeRestore_;
+    HighlightRestore highlightRestore_;
+    int32_t restoreMode_;
 };
 } // namespace Media
 } // namespace OHOS

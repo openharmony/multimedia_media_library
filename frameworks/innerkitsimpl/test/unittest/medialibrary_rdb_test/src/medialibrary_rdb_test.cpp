@@ -542,5 +542,20 @@ HWTEST_F(MediaLibraryRdbTest, medialib_GenerateHighlightThumbnail_test, TestSize
     EXPECT_EQ(ret, "");
     rdbStorePtr->Stop();
 }
+
+HWTEST_F(MediaLibraryRdbTest, medialib_PhotoAlbumNotifyFunc_001, TestSize.Level0)
+{
+    vector<string> args = {};
+    auto ret = MediaLibraryRdbStore::PhotoAlbumNotifyFunc(args);
+    EXPECT_EQ(ret, "");
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_QueryEditDataExists_001, TestSize.Level0)
+{
+    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+
+    auto ret = MediaLibraryRdbStore::QueryEditDataExists(predicates);
+    EXPECT_EQ(ret, nullptr);
+}
 } // namespace Media
 } // namespace OHOS

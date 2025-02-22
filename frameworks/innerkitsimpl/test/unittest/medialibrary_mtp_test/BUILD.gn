@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-if (defined(medialibrary_mtp_enable)) {
+if (media_library_feature_mtp) {
   module_output_path = "media_library/medialibrary_mtp"
   group("unittest") {
     testonly = true
@@ -42,6 +42,7 @@ if (defined(medialibrary_mtp_enable)) {
     sources = [
       "src/debug_printf.cpp",
       "src/medialibrary_mtp_unit_test.cpp",
+      "src/medialibrary_ptp_unit_test.cpp",
       "src/mock_mtp_driver.cpp",
       "src/mtp_data_utils_unit_test.cpp",
       "src/mtp_media_library_unit_test.cpp",

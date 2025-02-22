@@ -43,6 +43,7 @@ const std::string PERM_WRITE_AUDIO = "ohos.permission.WRITE_AUDIO";
 const std::string PERM_WRITE_DOCUMENT = "ohos.permission.WRITE_DOCUMENT";
 const std::string PERM_MANAGE_PRIVATE_PHOTOS = "ohos.permission.MANAGE_PRIVATE_PHOTOS";
 const std::string PERM_SHORT_TERM_WRITE_IMAGEVIDEO = "ohos.permission.SHORT_TERM_WRITE_IMAGEVIDEO";
+const std::string PERM_INTERACT_ACROSS_LOCAL_ACCOUNTS = "ohos.permission.INTERACT_ACROSS_LOCAL_ACCOUNTS";
 const std::string E_POLICY = "E";
 constexpr int SHORT_TERM_PERMISSION_DURATION_300S = 300;
 
@@ -60,6 +61,8 @@ struct BundleInfo {
     std::string bundleName;
     std::string packageName;
     std::string appId;
+    uint32_t tokenId {0};
+    std::string ownerAlbumId;
 };
 
 class PermissionUtils {
@@ -91,6 +94,7 @@ public:
         const Security::AccessToken::PermissionUsedType type, const int &uid);
     static void ClearBundleInfoInCache();
     static bool SetEPolicy();
+    static int64_t GetMainTokenId(const std::string &appId, int64_t &tokenId);
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();

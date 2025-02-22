@@ -27,7 +27,7 @@ namespace OHOS::Media {
 static const string MEDIA_ASSET_EDIT_DATA_CLASS = "MediaAssetEditData";
 thread_local napi_ref MediaAssetEditDataNapi::constructor_ = nullptr;
 
-constexpr int32_t EDIT_DATA_MAX_LENGTH = 65536;
+constexpr int32_t EDIT_DATA_MAX_LENGTH = 5 * 1024 * 1024;
 constexpr int32_t EDIT_FORMAT_MAX_LENGTH = 256;
 
 napi_value MediaAssetEditDataNapi::Init(napi_env env, napi_value exports)
@@ -231,9 +231,10 @@ static napi_value GetStringArg(
         OHOS_INVALID_PARAM_CODE);
 
     size_t res = 0;
-    char buffer[maxLen];
-    CHECK_ARGS(env, napi_get_value_string_utf8(env, argv[PARAM0], buffer, maxLen, &res), JS_INNER_FAIL);
-    arg = string(buffer);
+    unique_ptr<char[]> buffer = make_unique<char[]>(maxLen);
+    CHECK_COND(env, buffer != nullptr, JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_get_value_string_utf8(env, argv[PARAM0], buffer.get(), maxLen, &res), JS_INNER_FAIL);
+    arg = string(buffer.get());
     RETURN_NAPI_TRUE(env);
 }
 

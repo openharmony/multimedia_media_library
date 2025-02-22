@@ -14,49 +14,72 @@
  */
 #define MLOG_TAG "MtpMonitor"
 #include "mtp_monitor.h"
-#include <thread>
 #include "media_log.h"
+#include "mtp_file_observer.h"
+#include "mtp_medialibrary_manager.h"
+#include "mtp_store_observer.h"
 using namespace std;
 namespace OHOS {
 namespace Media {
-constexpr int32_t SLEEP_TIME = 10;
-MtpMonitor::MtpMonitor(void)
-{
-    Init();
-}
-
-void MtpMonitor::Init()
-{
-    interruptFlag = false;
-}
+constexpr int32_t IPC_SERVER_RELEASED = -204;
+constexpr int32_t IPC_OBJECT_INVALID = -4;
+constexpr int32_t ERROR_SLEEP_TIME = 10;
 
 void MtpMonitor::Start()
 {
-    std::thread([this] { this->Run(); }).detach();
+    MEDIA_INFO_LOG("MtpMonitor::Start begin threadRunning_:%{public}d", threadRunning_.load());
+    if (!threadRunning_.load()) {
+        threadRunning_.store(true);
+        if (thread_ == nullptr) {
+            thread_ = std::make_unique<std::thread>(&MtpMonitor::Run, this);
+        }
+    }
+    MEDIA_INFO_LOG("MtpMonitor::Start end threadRunning_:%{public}d", threadRunning_.load());
 }
 
 void MtpMonitor::Stop()
 {
-    interruptFlag = true;
-    // make sure stop done after other operations.
-    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
+    MEDIA_INFO_LOG("MtpMonitor::Stop begin threadRunning_:%{public}d", threadRunning_.load());
+    threadRunning_.store(false);
+    if (thread_ != nullptr) {
+        if (thread_->joinable()) {
+            thread_->join();
+        }
+        thread_ = nullptr;
+    }
+    MEDIA_INFO_LOG("MtpMonitor::Stop end threadRunning_:%{public}d", threadRunning_.load());
 }
 
 void MtpMonitor::Run()
 {
-    string name("MtpMonitor::Run");
-    pthread_setname_np(pthread_self(), name.c_str());
-    while (!interruptFlag) {
+    MEDIA_INFO_LOG("MtpMonitor::Run start");
+    pthread_setname_np(pthread_self(), "MtpMonitor::Run");
+    while (threadRunning_.load()) {
         if (operationPtr_ == nullptr) {
             operationPtr_ = make_shared<MtpOperation>();
         }
         if (operationPtr_ != nullptr) {
-            operationPtr_->Execute();
+            int32_t errorCode = operationPtr_->Execute();
+            if (errorCode == IPC_SERVER_RELEASED || errorCode == IPC_OBJECT_INVALID) {
+                break;
+            }
+            if (errorCode != 0 && threadRunning_.load()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(ERROR_SLEEP_TIME));
+            }
         }
     }
+    MEDIA_INFO_LOG("MtpMonitor::Run break");
+    {
+        MtpFileObserver::GetInstance().StopFileInotify();
+        MtpStoreObserver::StopObserver();
+        MtpMedialibraryManager::GetInstance()->Clear();
+    }
     if (operationPtr_ != nullptr) {
+        operationPtr_->Stop();
         operationPtr_.reset();
     }
+    threadRunning_.store(false);
+    MEDIA_INFO_LOG("MtpMonitor::Run end");
 }
 } // namespace Media
 } // namespace OHOS

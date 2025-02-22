@@ -331,5 +331,21 @@ bool PhotoAlbum::IsHighlightAlbum(const PhotoAlbumType albumType, const PhotoAlb
     return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::HIGHLIGHT ||
         albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS);
 }
+
+bool PhotoAlbum::IsAnalysisAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SMART) && (albumSubType >= PhotoAlbumSubType::ANALYSIS_START &&
+            albumSubType <= PhotoAlbumSubType::ANALYSIS_END);
+}
+
+void PhotoAlbum::SetUserId(int32_t userId)
+{
+    targetUserId_ = userId;
+}
+ 
+int32_t PhotoAlbum::GetUserId()
+{
+    return targetUserId_;
+}
 }  // namespace Media
 }  // namespace OHOS

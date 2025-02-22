@@ -35,13 +35,19 @@ static inline string FuzzString(const uint8_t *data, size_t size)
     return {reinterpret_cast<const char*>(data), size};
 }
 
-static inline int32_t FuzzInt32(const uint8_t *data)
+static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int32_t)) {
+        return 0;
+    }
     return static_cast<int32_t>(*data);
 }
 
 static inline double FuzzDouble(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(double)) {
+        return 0.0;
+    }
     return static_cast<double>(*data);
 }
 
@@ -75,8 +81,18 @@ static void CommonUtilsTest(const uint8_t *data, size_t size)
 
 static void DfxTest(const uint8_t *data, size_t size)
 {
-    Media::DfxDatabaseUtils::QueryFromPhotos(FuzzInt32(data), FuzzInt32(data));
-    Media::DfxDatabaseUtils::QueryAlbumInfoBySubtype(FuzzInt32(data));
+    const int32_t int32Count = 5;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t mediaType = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t position = FuzzInt32(data + offset, size);
+    Media::DfxDatabaseUtils::QueryFromPhotos(mediaType, position);
+    offset += sizeof(int32_t);
+    int32_t albumSubtype = FuzzInt32(data + offset, size);
+    Media::DfxDatabaseUtils::QueryAlbumInfoBySubtype(albumSubtype);
     Media::DfxDatabaseUtils::QueryDirtyCloudPhoto();
     Media::DfxDatabaseUtils::QueryAnalysisVersion(FuzzString(data, size), FuzzString(data, size));
     int32_t downloadedThumb;
@@ -85,9 +101,13 @@ static void DfxTest(const uint8_t *data, size_t size)
     int32_t totalDownload;
     Media::DfxDatabaseUtils::QueryTotalCloudThumb(totalDownload);
     Media::DfxDatabaseUtils::QueryDbVersion();
+    offset += sizeof(int32_t);
+    int32_t imageCount = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t videoCount = FuzzInt32(data + offset, size);
     Media::PhotoRecordInfo info = {
-        .imageCount = FuzzInt32(data),
-        .videoCount = FuzzInt32(data)
+        .imageCount = imageCount,
+        .videoCount = videoCount
     };
     Media::DfxDatabaseUtils::QueryPhotoRecordInfo(info);
 }
@@ -103,7 +123,13 @@ static void PermissionUtilsTest(const uint8_t *data, size_t size)
     perms.push_back(FuzzString(data, size));
     Media::PermissionUtils::CheckHasPermission(perms);
     string packageName;
-    Media::PermissionUtils::GetPackageName(FuzzInt32(data), packageName);
+    const int32_t int32Count = 3;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    int uid = FuzzInt32(data + offset, size);
+    Media::PermissionUtils::GetPackageName(uid, packageName);
     Media::PermissionUtils::CheckIsSystemAppByUid();
     Media::PermissionUtils::GetPackageNameByBundleName(FuzzString(data, size));
     Media::PermissionUtils::GetAppIdByBundleName(packageName);
@@ -113,8 +139,12 @@ static void PermissionUtilsTest(const uint8_t *data, size_t size)
     Media::PermissionUtils::IsHdcShell();
     Media::PermissionUtils::GetTokenId();
     Media::PermissionUtils::ClearBundleInfoInCache();
-    Media::PermissionUtils::CollectPermissionInfo(FuzzString(data, size), FuzzInt32(data),
-        static_cast<Security::AccessToken::PermissionUsedType>(FuzzInt32(data)));
+    offset += sizeof(int32_t);
+    int32_t permGranted = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t permissionUsedType = FuzzInt32(data + offset, size);
+    Media::PermissionUtils::CollectPermissionInfo(FuzzString(data, size), permGranted,
+        static_cast<Security::AccessToken::PermissionUsedType>(permissionUsedType));
 }
 
 static void FileUriTest(const uint8_t *data, size_t size)
@@ -126,25 +156,58 @@ static void FileUriTest(const uint8_t *data, size_t size)
     fileUri.GetTableName();
     Media::MediaFileUri::GetPhotoId(FuzzString(data, size));
     Media::MediaFileUri::RemoveAllFragment(uriStr);
-    Media::MediaFileUri::GetMediaTypeUri(static_cast<Media::MediaType>(FuzzInt32(data)), FuzzInt32(data));
+    const int32_t int32Count = 6;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t mediaType = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t apiVersion = FuzzInt32(data + offset, size);
+    Media::MediaFileUri::GetMediaTypeUri(static_cast<Media::MediaType>(mediaType), apiVersion);
     vector<string> timeIdBatch;
-    int start = FuzzInt32(data);
-    int count = FuzzInt32(data);
+
+    offset += sizeof(int32_t);
+    int start = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int count = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
     Media::MediaFileUri::GetTimeIdFromUri(FuzzVectorString(data, size), timeIdBatch);
     Media::MediaFileUri::GetTimeIdFromUri(FuzzVectorString(data, size), timeIdBatch, start, count);
-    Media::MediaFileUri::CreateAssetBucket(FuzzInt32(data), count);
-    Media::MediaFileUri::GetPathFromUri(FuzzString(data, size), FuzzInt32(data));
+    int32_t fileId = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t isPhoto = FuzzInt32(data + offset, size);
+    Media::MediaFileUri::CreateAssetBucket(fileId, count);
+    Media::MediaFileUri::GetPathFromUri(FuzzString(data, size), isPhoto);
 }
 
 static void ExifTest(const uint8_t *data, size_t size)
 {
-    Media::ExifUtils::WriteGpsExifInfo(FuzzString(data, size), FuzzDouble(data, size), FuzzDouble(data, size));
+    const double doubleCount = 2;
+    if (data == nullptr || size < sizeof(double) * doubleCount) {
+        return;
+    }
+    size_t offset = 0;
+    double longitude = FuzzDouble(data + offset, size);
+    offset += sizeof(double);
+    double latitude = FuzzDouble(data + offset, size);
+    Media::ExifUtils::WriteGpsExifInfo(FuzzString(data, size), longitude, latitude);
 }
 
 static void PhotoProxyTest(const uint8_t *data, size_t size)
 {
-    Media::PhotoAssetProxy proxy(nullptr, static_cast<Media::CameraShotType>(FuzzInt32(data)),
-        FuzzInt32(data), FuzzInt32(data));
+    const int32_t int32Count = 3;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t cameraShotType = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    uint32_t callingUid = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t userId = FuzzInt32(data + offset, size);
+    Media::PhotoAssetProxy proxy(nullptr, static_cast<Media::CameraShotType>(cameraShotType),
+        callingUid, userId);
     proxy.GetFileAsset();
     proxy.GetPhotoAssetUri();
     proxy.GetVideoFd();

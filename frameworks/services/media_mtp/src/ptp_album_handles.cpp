@@ -65,10 +65,7 @@ void PtpAlbumHandles::RemoveHandle(int32_t value)
 
 void PtpAlbumHandles::AddAlbumHandles(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet)
 {
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
     std::lock_guard<std::mutex> lock(mutex_);
     dataHandles_.clear();
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -85,27 +82,14 @@ bool PtpAlbumHandles::FindHandle(int32_t value)
     return iter != dataHandles_.end();
 }
 
-int32_t PtpAlbumHandles::ChangeHandle(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet)
+void PtpAlbumHandles::UpdateHandle(const std::set<int32_t> &albumIds, std::vector<int32_t> &removeIds)
 {
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return E_ERR;
-    }
-    std::vector<int32_t> data;
-    do {
-        int32_t id = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-        data.push_back(id);
-    } while (!resultSet->GoToNextRow());
-
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto value : dataHandles_) {
-        auto iter = std::find(data.begin(), data.end(), value);
-        if (iter == data.end()) {
-            return value;
+        if (albumIds.count(value) == 0) {
+            removeIds.push_back(value);
         }
     }
-    MEDIA_ERR_LOG("no data handle to remove");
-    return E_ERR;
 }
 } // namespace Media
 } // namespace OHOS

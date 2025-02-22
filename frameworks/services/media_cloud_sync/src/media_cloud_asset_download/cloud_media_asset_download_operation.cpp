@@ -27,6 +27,7 @@
 #include <chrono>
 #include <algorithm>
 #include <map>
+#include <sys/statvfs.h>
 
 #include "common_event_utils.h"
 #include "cloud_sync_common.h"
@@ -37,6 +38,7 @@
 #include "iservice_registry.h"
 #include "media_column.h"
 #include "media_file_utils.h"
+#include "media_file_uri.h"
 #include "media_log.h"
 #include "medialibrary_command.h"
 #include "medialibrary_db_const.h"
@@ -83,6 +85,8 @@ static const int32_t STATUS_CHANGE_ARG_SIZE = 3;
 static const int32_t INDEX_ZERO = 0;
 static const int32_t INDEX_ONE = 1;
 static const int32_t INDEX_TWO = 2;
+static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.1;
+static const std::string STORAGE_PATH = "/data/storage/el2/database/";
 
 static const std::map<Status, std::vector<int32_t>> STATUS_MAP = {
     { Status::FORCE_DOWNLOADING, {0, 0, 0} },
@@ -103,6 +107,7 @@ static const std::map<Status, std::vector<int32_t>> STATUS_MAP = {
 
 static const std::map<CloudMediaTaskRecoverCause, CloudMediaTaskPauseCause> RECOVER_RELATIONSHIP_MAP = {
     { CloudMediaTaskRecoverCause::FOREGROUND_TEMPERATURE_PROPER, CloudMediaTaskPauseCause::TEMPERATURE_LIMIT },
+    { CloudMediaTaskRecoverCause::STORAGE_NORMAL, CloudMediaTaskPauseCause::ROM_LIMIT },
     { CloudMediaTaskRecoverCause::NETWORK_FLOW_UNLIMIT, CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT },
     { CloudMediaTaskRecoverCause::BACKGROUND_TASK_AVAILABLE, CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE },
     { CloudMediaTaskRecoverCause::RETRY_FOR_FREQUENT_REQUESTS, CloudMediaTaskPauseCause::FREQUENT_USER_REQUESTS },
@@ -212,7 +217,8 @@ std::shared_ptr<NativeRdb::ResultSet> CloudMediaAssetDownloadOperation::QueryDow
         MediaColumn::MEDIA_ID,
         MediaColumn::MEDIA_FILE_PATH,
         MediaColumn::MEDIA_SIZE,
-        PhotoColumn::PHOTO_BURST_COVER_LEVEL
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL,
+        MediaColumn::MEDIA_NAME
     };
     return rdbStore->Query(predicates, columns);
 }
@@ -262,21 +268,23 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
     while (resultSetForDownload->GoToNextRow() == NativeRdb::E_OK) {
         std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSetForDownload);
         std::string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSetForDownload);
-        if (fileId.empty() || path.empty()) {
-            MEDIA_ERR_LOG("empty fileId or filePath, fileId: %{public}s, filePath: %{public}s.",
-                fileId.c_str(), MediaFileUtils::DesensitizePath(path).c_str());
+        std::string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSetForDownload);
+        std::string fileUri = MediaFileUri::GetPhotoUri(fileId, path, displayName);
+        if (fileUri.empty()) {
+            MEDIA_ERR_LOG("Failed to get fileUri, fileId: %{public}s, filePath: %{public}s, displayName: %{public}s.",
+                fileId.c_str(), MediaFileUtils::DesensitizePath(path).c_str(), displayName.c_str());
             continue;
         }
         int64_t fileSize = GetInt64Val(PhotoColumn::MEDIA_SIZE, resultSetForDownload);
 
-        data.pathVec.push_back(path);
+        data.pathVec.push_back(fileUri);
         int32_t burstCoverLevel = GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSetForDownload);
         if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
-            data.fileDownloadMap[path] = fileSize;
+            data.fileDownloadMap[fileUri] = fileSize;
             data.batchSizeNeedDownload += fileSize;
             data.batchCountNeedDownload++;
         } else {
-            data.fileDownloadMap[path] = 0;
+            data.fileDownloadMap[fileUri] = 0;
         }
         data.batchFileIdNeedDownload.push_back(fileId);
     }
@@ -370,6 +378,13 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
 {
     isUnlimitedTrafficStatusOn_ = CloudSyncUtils::IsUnlimitedTrafficStatusOn();
     MEDIA_INFO_LOG("isUnlimitedTrafficStatusOn_ is %{public}d", static_cast<int32_t>(isUnlimitedTrafficStatusOn_));
+
+    if (!isForeground && !CommonEventUtils::IsWifiConnected()) {
+        MEDIA_WARN_LOG("Failed to init startDownloadTaskStatus, wifi is not connected.");
+        SetTaskStatus(Status::PAUSE_FOR_BACKGROUND_TASK_UNAVAILABLE);
+        return;
+    }
+
     if (isForeground && !IsProperFgTemperature()) {
         SetTaskStatus(Status::PAUSE_FOR_TEMPERATURE_LIMIT);
         MEDIA_ERR_LOG("Temperature is not suitable for foreground downloads.");
@@ -387,15 +402,16 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
 int32_t CloudMediaAssetDownloadOperation::SetDeathRecipient()
 {
     auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saMgr == nullptr) {
-        MEDIA_ERR_LOG("Failed to get SystemAbilityManagerClient");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(saMgr != nullptr, E_ERR, "Failed to get SystemAbilityManagerClient.");
+
     cloudRemoteObject_ = saMgr->CheckSystemAbility(CLOUD_MANAGER_MANAGER_ID);
     if (cloudRemoteObject_ == nullptr) {
-        MEDIA_ERR_LOG("Token is null.");
-        return E_ERR;
+        MEDIA_INFO_LOG("try to load CloudFilesService SystemAbility");
+        int32_t minTimeout = 4;
+        cloudRemoteObject_ = saMgr->LoadSystemAbility(CLOUD_MANAGER_MANAGER_ID, minTimeout);
+        CHECK_AND_RETURN_RET_LOG(cloudRemoteObject_ != nullptr, E_ERR, "cloudRemoteObject_ is null.");
     }
+    
     if (!cloudRemoteObject_->AddDeathRecipient(sptr(new CloudDeathRecipient(instance_)))) {
         MEDIA_ERR_LOG("Failed to add death recipient.");
         return E_ERR;
@@ -407,27 +423,25 @@ int32_t CloudMediaAssetDownloadOperation::DoRelativedRegister()
 {
     // register unlimit traffic status
     auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saMgr == nullptr) {
-        MEDIA_ERR_LOG("Failed to get SystemAbilityManagerClient");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(saMgr != nullptr, E_ERR, "Failed to get SystemAbilityManagerClient.");
+
     OHOS::sptr<OHOS::IRemoteObject> remoteObject = saMgr->CheckSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    if (remoteObject == nullptr) {
-        MEDIA_ERR_LOG("Token is null.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(remoteObject != nullptr, E_ERR, "remoteObject is null.");
     cloudHelper_ = DataShare::DataShareHelper::Creator(remoteObject, CLOUD_DATASHARE_URI);
+    CHECK_AND_RETURN_RET_LOG(cloudHelper_ != nullptr, E_ERR, "cloudHelper_ is null.");
+
     cloudMediaAssetObserver_ = std::make_shared<CloudMediaAssetObserver>(instance_);
+    CHECK_AND_RETURN_RET_LOG(cloudMediaAssetObserver_ != nullptr, E_ERR, "cloudMediaAssetObserver_ is null.");
     // observer more than 50, failed to register
     cloudHelper_->RegisterObserverExt(Uri(CLOUD_URI), cloudMediaAssetObserver_, true);
 
     // observer download callback
     downloadCallback_ = std::make_shared<MediaCloudDownloadCallback>(instance_);
+    CHECK_AND_RETURN_RET_LOG(downloadCallback_ != nullptr, E_ERR, "downloadCallback_ is null.");
+
     int32_t ret = SetDeathRecipient();
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("failed to register death recipient, ret: %{public}d.", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "failed to register death recipient, ret: %{public}d.", ret);
+
     MEDIA_INFO_LOG("success to register");
     return ret;
 }
@@ -532,7 +546,8 @@ int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecoverTask(const CloudMe
 
     if (recoverCause == CloudMediaTaskRecoverCause::NETWORK_NORMAL &&
         (pauseCause_ == CloudMediaTaskPauseCause::WIFI_UNAVAILABLE ||
-        pauseCause_ == CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT)) {
+        pauseCause_ == CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT ||
+        pauseCause_ == CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE)) {
         downloadId_ = DOWNLOAD_ID_DEFAULT; // wifi recovery, submit
         return PassiveStatusRecover();
     }
@@ -545,12 +560,42 @@ int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecoverTask(const CloudMe
     return PassiveStatusRecover();
 }
 
+static bool IsStorageSufficient()
+{
+    struct statvfs diskInfo;
+    int ret = statvfs(STORAGE_PATH.c_str(), &diskInfo);
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Get file system status information failed, err: %{public}d", ret);
+
+    double totalSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_blocks);
+    CHECK_AND_RETURN_RET_LOG(totalSize >= 1e-9, false,
+        "Get file system total size failed, totalSize=%{public}f", totalSize);
+
+    double freeSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_bfree);
+    double freeRatio = freeSize / totalSize;
+    MEDIA_INFO_LOG("Get freeRatio, freeRatio= %{public}f", freeRatio);
+
+    return freeRatio > PROPER_DEVICE_STORAGE_CAPACITY_RATIO;
+}
+
+void CloudMediaAssetDownloadOperation::CheckStorageAndRecoverDownloadTask()
+{
+    if (IsStorageSufficient()) {
+        MEDIA_INFO_LOG("storage is sufficient, begin to recover downloadTask.");
+        PassiveStatusRecoverTask(CloudMediaTaskRecoverCause::STORAGE_NORMAL);
+    }
+}
+
 int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTaskPauseCause &pauseCause)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PauseDownloadTask");
     if (taskStatus_ == CloudMediaAssetTaskStatus::IDLE || pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSED) {
         MEDIA_ERR_LOG("PauseDownloadTask permission denied");
+        return E_ERR;
+    }
+    if (pauseCause_ == CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE &&
+        pauseCause != CloudMediaTaskPauseCause::USER_PAUSED) {
+        MEDIA_ERR_LOG("PauseDownloadTask permission denied, pauseCause_ is BACKGROUND_TASK_UNAVAILABLE");
         return E_ERR;
     }
     MEDIA_INFO_LOG("enter PauseDownloadTask, taskStatus_: %{public}d, pauseCause_: %{public}d, pauseCause: %{public}d",
@@ -577,6 +622,7 @@ void CloudMediaAssetDownloadOperation::ResetParameter()
 
     isThumbnailUpdate_ = true;
     isBgDownloadPermission_ = false;
+    isUnlimitedTrafficStatusOn_ = false;
 
     totalCount_ = 0;
     totalSize_ = 0;
@@ -599,11 +645,10 @@ int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
     ResetParameter();
     downloadCallback_ = nullptr;
     cloudRemoteObject_ = nullptr;
-    if (cloudHelper_ == nullptr) {
-        return E_OK;
+    if (cloudHelper_ != nullptr) {
+        cloudHelper_->UnregisterObserverExt(Uri(CLOUD_URI), cloudMediaAssetObserver_);
+        cloudHelper_ = nullptr;
     }
-    cloudHelper_->UnregisterObserverExt(Uri(CLOUD_URI), cloudMediaAssetObserver_);
-    cloudHelper_ = nullptr;
     cloudMediaAssetObserver_ = nullptr;
     return E_OK;
 }
@@ -629,7 +674,7 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     if (progress.downloadId != downloadId_ ||
         dataForDownload_.fileDownloadMap.find(progress.path) == dataForDownload_.fileDownloadMap.end()) {
         MEDIA_WARN_LOG("this path is unknown, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
-            MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
+            MediaFileUtils::DesensitizeUri(progress.path).c_str(), to_string(progress.downloadId).c_str(),
             to_string(downloadId_).c_str());
         return;
     }
@@ -642,7 +687,7 @@ void CloudMediaAssetDownloadOperation::HandleSuccessCallback(const DownloadProgr
     dataForDownload_.fileDownloadMap.erase(progress.path);
 
     MEDIA_INFO_LOG("success, path: %{public}s, size: %{public}s, batchSuccNum: %{public}s.",
-        MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(size).c_str(),
+        MediaFileUtils::DesensitizeUri(progress.path).c_str(), to_string(size).c_str(),
         to_string(progress.batchSuccNum).c_str());
 
     SubmitBatchDownloadAgain();
@@ -654,19 +699,19 @@ void CloudMediaAssetDownloadOperation::MoveDownloadFileToCache(const DownloadPro
     if (progress.downloadId != downloadId_ ||
         dataForDownload_.fileDownloadMap.find(progress.path) == dataForDownload_.fileDownloadMap.end()) {
         MEDIA_WARN_LOG("This file is unknown, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
-            MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
+            MediaFileUtils::DesensitizeUri(progress.path).c_str(), to_string(progress.downloadId).c_str(),
             to_string(downloadId_).c_str());
         return;
     }
     if (cacheForDownload_.fileDownloadMap.find(progress.path) != cacheForDownload_.fileDownloadMap.end()) {
         MEDIA_INFO_LOG("file is in fileDownloadCacheMap_, path: %{public}s.",
-            MediaFileUtils::DesensitizePath(progress.path).c_str());
+            MediaFileUtils::DesensitizeUri(progress.path).c_str());
         return;
     }
     cacheForDownload_.pathVec.push_back(progress.path);
     cacheForDownload_.fileDownloadMap[progress.path] = dataForDownload_.fileDownloadMap.at(progress.path);
     dataForDownload_.fileDownloadMap.erase(progress.path);
-    MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
+    MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizeUri(progress.path).c_str());
     SubmitBatchDownloadAgain();
 }
 
@@ -676,18 +721,18 @@ void CloudMediaAssetDownloadOperation::MoveDownloadFileToNotFound(const Download
     if (progress.downloadId != downloadId_ ||
         dataForDownload_.fileDownloadMap.find(progress.path) == dataForDownload_.fileDownloadMap.end()) {
         MEDIA_ERR_LOG("This file is unknown, path: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
-            MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
+            MediaFileUtils::DesensitizeUri(progress.path).c_str(), to_string(progress.downloadId).c_str(),
             to_string(downloadId_).c_str());
         return;
     }
     if (notFoundForDownload_.fileDownloadMap.find(progress.path) != notFoundForDownload_.fileDownloadMap.end()) {
         MEDIA_INFO_LOG("file is in notFoundForDownload_, path: %{public}s.",
-            MediaFileUtils::DesensitizePath(progress.path).c_str());
+            MediaFileUtils::DesensitizeUri(progress.path).c_str());
         return;
     }
     notFoundForDownload_.fileDownloadMap[progress.path] = dataForDownload_.fileDownloadMap.at(progress.path);
     dataForDownload_.fileDownloadMap.erase(progress.path);
-    MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
+    MEDIA_INFO_LOG("success, path: %{public}s.", MediaFileUtils::DesensitizeUri(progress.path).c_str());
     SubmitBatchDownloadAgain();
 }
 
@@ -700,7 +745,7 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
         return;
     }
     MEDIA_INFO_LOG("Download error type: %{public}d, path: %{public}s.", progress.downloadErrorType,
-        MediaFileUtils::DesensitizePath(progress.path).c_str());
+        MediaFileUtils::DesensitizeUri(progress.path).c_str());
     switch (progress.downloadErrorType) {
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::UNKNOWN_ERROR): {
             PauseDownloadTask(CloudMediaTaskPauseCause::CLOUD_ERROR);
@@ -739,7 +784,7 @@ void CloudMediaAssetDownloadOperation::HandleStoppedCallback(const DownloadProgr
 {
     MediaLibraryTracer tracer;
     tracer.Start("HandleStoppedCallback");
-    MEDIA_INFO_LOG("enter DownloadStopped, path: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
+    MEDIA_INFO_LOG("enter DownloadStopped, path: %{public}s.", MediaFileUtils::DesensitizeUri(progress.path).c_str());
     MoveDownloadFileToCache(progress);
 }
 

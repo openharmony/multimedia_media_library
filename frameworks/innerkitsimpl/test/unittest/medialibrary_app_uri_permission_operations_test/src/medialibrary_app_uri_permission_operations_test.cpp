@@ -345,11 +345,15 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     }
 
     int ret = -1;
+    int64_t sourceId = 21;
+    int64_t targetId = 12;
     // step 1: insert a new persist read data.
     OHOS::DataShare::DataShareValuesBucket dataShareValue01;
     dataShareValue01.Put(AppUriPermissionColumn::APP_ID, "appid01");
     dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue01.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
+    dataShareValue01.Put(AppUriPermissionColumn::SOURCE_TOKENID, sourceId);
+    dataShareValue01.Put(AppUriPermissionColumn::TARGET_TOKENID, targetId);
     ret = TestInsert(dataShareValue01);
     EXPECT_EQ(ret, 0);
 
@@ -358,6 +362,8 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     dataShareValue02.Put(AppUriPermissionColumn::APP_ID, "appid01");
     dataShareValue02.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue02.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
+    dataShareValue02.Put(AppUriPermissionColumn::SOURCE_TOKENID, sourceId);
+    dataShareValue02.Put(AppUriPermissionColumn::TARGET_TOKENID, targetId);
     ret = TestInsert(dataShareValue02);
     // expected result: 1, alread exist.
     EXPECT_EQ(ret, 1);
@@ -378,11 +384,15 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     }
 
     int ret = -1;
+    int64_t sourceId = 21;
+    int64_t targetId = 12;
     // step 1: insert a new persist read data.
     OHOS::DataShare::DataShareValuesBucket dataShareValue01;
     dataShareValue01.Put(AppUriPermissionColumn::APP_ID, "appid01");
     dataShareValue01.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue01.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
+    dataShareValue01.Put(AppUriPermissionColumn::SOURCE_TOKENID, sourceId);
+    dataShareValue01.Put(AppUriPermissionColumn::TARGET_TOKENID, targetId);
     ret = TestInsert(dataShareValue01);
     // expected result: 0, success
     EXPECT_EQ(ret, 0);
@@ -392,6 +402,8 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     dataShareValue02.Put(AppUriPermissionColumn::APP_ID, "appid01");
     dataShareValue02.Put(AppUriPermissionColumn::FILE_ID, photoId);
     dataShareValue02.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
+    dataShareValue02.Put(AppUriPermissionColumn::SOURCE_TOKENID, sourceId);
+    dataShareValue02.Put(AppUriPermissionColumn::TARGET_TOKENID, targetId);
     ret = TestInsert(dataShareValue02);
     // expected result: 1, alread exist
     EXPECT_EQ(ret, 1);

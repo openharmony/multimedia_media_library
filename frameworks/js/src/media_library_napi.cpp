@@ -32,6 +32,7 @@
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
 #include "location_column.h"
+#include "locale_config.h"
 #include "media_device_column.h"
 #include "media_directory_type_column.h"
 #include "media_file_asset_columns.h"
@@ -71,6 +72,7 @@
 #include "vision_total_column.h"
 #include "file_asset_napi.h"
 #include "form_map.h"
+#include "media_facard_photos_column.h"
 #ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
 #endif
@@ -82,7 +84,7 @@
 #include "window.h"
 #include "permission_utils.h"
 #include "userfilemgr_uri.h"
-#include "medialibrary_common_utils.h"
+#include "user_photography_info_column.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -99,7 +101,10 @@ const int32_t THIRD_ENUM = 3;
 const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 10;
 const int64_t MAX_INT64 = 9223372036854775807;
-const int32_t MAX_QUERY_LIMIT = 80;
+const int32_t MAX_QUERY_LIMIT = 150;
+const int32_t MAX_CREATE_ASSET_LIMIT = 500;
+const int32_t MAX_QUERY_ALBUM_LIMIT = 500;
+const int32_t MAX_LEN_LIMIT = 9999;
 constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 
@@ -156,6 +161,7 @@ const std::string CONFIRM_BOX_BUNDLE_NAME = "bundleName";
 const std::string CONFIRM_BOX_APP_NAME = "appName";
 const std::string CONFIRM_BOX_APP_ID = "appId";
 const std::string TARGET_PAGE = "targetPage";
+const std::string TOKEN_ID = "tokenId";
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
@@ -340,12 +346,17 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getHiddenAlbums", PahGetHiddenAlbums),
             DECLARE_NAPI_FUNCTION("applyChanges", JSApplyChanges),
             DECLARE_NAPI_FUNCTION("saveFormInfo", PhotoAccessSaveFormInfo),
+            DECLARE_NAPI_FUNCTION("saveGalleryFormInfo", PhotoAccessSaveGalleryFormInfo),
             DECLARE_NAPI_FUNCTION("removeFormInfo", PhotoAccessRemoveFormInfo),
+            DECLARE_NAPI_FUNCTION("removeGalleryFormInfo", PhotoAccessRemoveGalleryFormInfo),
+            DECLARE_NAPI_FUNCTION("updateGalleryFormInfo", PhotoAccessUpdateGalleryFormInfo),
             DECLARE_NAPI_FUNCTION("getAssetsSync", PhotoAccessGetPhotoAssetsSync),
             DECLARE_NAPI_FUNCTION("getAlbumsSync", PhotoAccessGetPhotoAlbumsSync),
             DECLARE_NAPI_FUNCTION("getFileAssetsInfo", PhotoAccessGetFileAssetsInfo),
             DECLARE_NAPI_FUNCTION("startCreateThumbnailTask", PhotoAccessStartCreateThumbnailTask),
             DECLARE_NAPI_FUNCTION("stopCreateThumbnailTask", PhotoAccessStopCreateThumbnailTask),
+            DECLARE_NAPI_FUNCTION("startThumbnailCreationTask", PhotoAccessStartCreateThumbnailTask),
+            DECLARE_NAPI_FUNCTION("stopThumbnailCreationTask", PhotoAccessStopCreateThumbnailTask),
             DECLARE_NAPI_FUNCTION("createAssetsForApp", PhotoAccessHelperAgentCreateAssets),
             DECLARE_NAPI_FUNCTION("createAssetsHasPermission", CreateAssetsHasPermission),
             DECLARE_NAPI_FUNCTION("grantPhotoUriPermission", PhotoAccessGrantPhotoUriPermission),
@@ -356,6 +367,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getSharedPhotoAssets", PhotoAccessGetSharedPhotoAssets),
             DECLARE_NAPI_FUNCTION("getSupportedPhotoFormats", PhotoAccessGetSupportedPhotoFormats),
             DECLARE_NAPI_FUNCTION("setForceHideSensitiveType", PhotoAccessHelperSetForceHideSensitiveType),
+            DECLARE_NAPI_FUNCTION("getAnalysisData", PhotoAccessHelperGetAnalysisData),
+            DECLARE_NAPI_FUNCTION("createAssetsForAppWithAlbum", CreateAssetsForAppWithAlbum),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -426,6 +439,9 @@ static napi_status CheckWhetherAsync(napi_env env, napi_callback_info info, bool
             NAPI_ERR_LOG("Error while obtaining js environment information");
             return status;
         }
+        if (valueType == napi_number) {
+            return napi_ok;
+        }
         if (valueType == napi_boolean) {
             isAsync = true;
         }
@@ -437,6 +453,31 @@ static napi_status CheckWhetherAsync(napi_env env, napi_callback_info info, bool
     }
 }
 
+static int32_t ParseUserIdFormCbInfo(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_status status;
+    int userId = -1;
+    status = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+    if (status == napi_ok) {
+        napi_valuetype valueType = napi_undefined;
+        status = napi_typeof(env, argv[ARGS_ONE], &valueType);
+        if (status == napi_ok && valueType == napi_number) {
+            napi_get_value_int32(env, argv[ARGS_ONE], &userId);
+        }
+    }
+    return userId;
+}
+
+static int32_t GetUserIdFromContext(MediaLibraryAsyncContext *context)
+{
+    if (context == nullptr || context->objectInfo == nullptr) {
+        return -1;
+    }
+    return context->objectInfo->GetUserId();
+}
+
 // Constructor callback
 napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_callback_info info)
 {
@@ -444,8 +485,9 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     napi_value result = nullptr;
     napi_value thisVar = nullptr;
     MediaLibraryTracer tracer;
-
     tracer.Start("MediaLibraryNapiConstructor");
+    int32_t userId = ParseUserIdFormCbInfo(env, info);
+    UserFileClient::SetUserId(userId);
 
     NAPI_CALL(env, napi_get_undefined(env, &result));
     GET_JS_OBJ_WITH_ZERO_ARGS(env, info, status, thisVar);
@@ -453,24 +495,23 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
         NAPI_ERR_LOG("Error while obtaining js environment information, status: %{public}d", status);
         return result;
     }
-
     unique_ptr<MediaLibraryNapi> obj = make_unique<MediaLibraryNapi>();
     if (obj == nullptr) {
         return result;
     }
     obj->env_ = env;
+    obj->SetUserId(userId);
     // Initialize the ChangeListener object
     if (g_listObj == nullptr) {
         g_listObj = make_unique<ChangeListenerNapi>(env);
     }
-
     bool isAsync = false;
     NAPI_CALL(env, CheckWhetherAsync(env, info, isAsync));
     if (!isAsync) {
         unique_lock<mutex> helperLock(sUserFileClientMutex_);
-        if (!UserFileClient::IsValid()) {
-            UserFileClient::Init(env, info);
-            if (!UserFileClient::IsValid()) {
+        if (!UserFileClient::IsValid(obj->GetUserId())) {
+            UserFileClient::Init(env, info, obj->GetUserId());
+            if (!UserFileClient::IsValid(obj->GetUserId())) {
                 NAPI_ERR_LOG("UserFileClient creation failed");
                 helperLock.unlock();
                 return result;
@@ -478,7 +519,6 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
         }
         helperLock.unlock();
     }
-
     status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                        MediaLibraryNapi::MediaLibraryNapiDestructor, nullptr, nullptr);
     if (status == napi_ok) {
@@ -487,11 +527,10 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     } else {
         NAPI_ERR_LOG("Failed to wrap the native media lib client object with JS, status: %{public}d", status);
     }
-
     return result;
 }
 
-static bool CheckWhetherInitSuccess(napi_env env, napi_value value, bool checkIsValid)
+static bool CheckWhetherInitSuccess(napi_env env, napi_value value, bool checkIsValid, const int32_t userId = -1)
 {
     napi_value propertyNames;
     uint32_t propertyLength;
@@ -506,7 +545,7 @@ static bool CheckWhetherInitSuccess(napi_env env, napi_value value, bool checkIs
     if (propertyLength == 0) {
         return false;
     }
-    if (checkIsValid && (!UserFileClient::IsValid())) {
+    if (checkIsValid && (!UserFileClient::IsValid(userId))) {
         NAPI_ERR_LOG("UserFileClient is not valid");
         return false;
     }
@@ -524,16 +563,32 @@ static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_
     napi_value ctor = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     NAPI_CALL(env, napi_get_reference_value(env, ref, &ctor));
-
     if (isAsync) {
         argc = ARGS_TWO;
         NAPI_CALL(env, napi_get_boolean(env, true, &argv[ARGS_ONE]));
         argv[ARGS_ONE] = argv[ARG_CONTEXT];
     }
+    int32_t userId = -1;
+    if (argc > 1 && !isAsync) {
+        argc = ARGS_TWO;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+        NAPI_CALL(env, napi_get_reference_value(env, ref, &ctor));
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[ARGS_ONE], &valueType);
+        if (valueType == napi_number) {
+            NAPI_CALL(env, napi_get_value_int32(env, argv[ARGS_ONE], &userId));
+            if (userId != -1 && !MediaLibraryNapiUtils::IsSystemApp()) {
+                NAPI_ERR_LOG("CreateNewInstance failed, target is not system app");
+                return nullptr;
+            }
+            UserFileClient::SetUserId(userId);
+            NAPI_INFO_LOG("CreateNewInstance for other user is %{public}d", userId);
+        }
+    }
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, ctor, argc, argv, &result));
-    if (!CheckWhetherInitSuccess(env, result, !isAsync)) {
+    if (!CheckWhetherInitSuccess(env, result, !isAsync, userId)) {
         NAPI_ERR_LOG("Init MediaLibrary Instance is failed");
         NAPI_CALL(env, napi_get_undefined(env, &result));
     }
@@ -929,7 +984,8 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
     string queryUri = MEDIALIBRARY_DIRECTORY_URI;
     Uri uri(queryUri);
     int errCode = 0;
-    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode,
+        GetUserIdFromContext(context));
     if (resultSet != nullptr) {
         auto count = 0;
         auto ret = resultSet->GetRowCount(count);
@@ -1125,7 +1181,7 @@ static void GetFileAssetsExecute(napi_env env, void *data)
     Uri uri(queryUri);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
-        context->predicates, context->fetchColumn, errCode);
+        context->predicates, context->fetchColumn, errCode, GetUserIdFromContext(context));
     if (resultSet != nullptr) {
         // Create FetchResult object using the contents of resultSet
         context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
@@ -1236,7 +1292,7 @@ static void CompatSetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr
     Uri uri(URI_QUERY_PHOTO_MAP);
     vector<string> columns;
     columns.assign(MediaColumn::DEFAULT_FETCH_COLUMNS.begin(), MediaColumn::DEFAULT_FETCH_COLUMNS.end());
-    auto resultSet = UserFileClient::Query(uri, predicates, columns, err);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, err, GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("Query for Album uri failed! errorCode is = %{public}d", err);
         context->SaveError(err);
@@ -1533,7 +1589,8 @@ static void GetResultDataExecute(napi_env env, void *data)
     }
     Uri uri(queryUri);
     int errCode = 0;
-    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, context->predicates, columns, errCode);
+    shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, context->predicates, columns, errCode,
+        GetUserIdFromContext(context));
 
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetMediaResultData resultSet is nullptr, errCode is %{public}d", errCode);
@@ -1660,8 +1717,7 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
     int errCode = 0;
-
-    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode, GetUserIdFromContext(context));
     CHECK_NULL_PTR_RETURN_VOID(resultSet, "Failed to get file asset by id, query resultSet is nullptr");
 
     // Create FetchResult object using the contents of resultSet
@@ -1738,6 +1794,7 @@ static void SetFileAssetByIdV10(int32_t id, const string &networkId, const strin
     fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     fileAsset->SetTimePending(UNCREATE_FILE_TIMEPENDING);
+    fileAsset->SetUserId(GetUserIdFromContext(context));
     context->fileAsset = move(fileAsset);
 }
 
@@ -1759,6 +1816,7 @@ static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, 
     fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     fileAsset->SetTimePending(UNCREATE_FILE_TIMEPENDING);
+    fileAsset->SetUserId(GetUserIdFromContext(context));
     context->fileAsset = move(fileAsset);
 }
 
@@ -1840,6 +1898,7 @@ static void JSCreateAssetInCallback(napi_env env, MediaLibraryAsyncContext *cont
             "Obtain file asset failed");
         napi_get_undefined(env, &jsContext->data);
     } else {
+        context->fileAsset->SetUserId(GetUserIdFromContext(context));
         jsFileAsset = FileAssetNapi::CreateFileAsset(env, context->fileAsset);
         if (jsFileAsset == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
@@ -2171,7 +2230,8 @@ static void JSCreateAssetExecute(napi_env env, void *data)
     GetCreateUri(context, uri);
     Uri createFileUri(uri);
     string outUri;
-    int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri);
+    int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri,
+        GetUserIdFromContext(context));
     if (index < 0) {
         context->SaveError(index);
     } else {
@@ -2511,26 +2571,14 @@ static napi_status SetValueArray(const napi_env& env,
     return status;
 }
 
-static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr,
-    const std::list<Uri>& listValue, napi_value& result, bool isPhoto)
+napi_status ChangeListenerNapi::SetSharedAssetArray(const napi_env& env, const char* fieldStr,
+    ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, napi_value& result, bool isPhoto)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SolveOnChange BuildSharedPhotoAssetsObj");
     std::vector<std::string> assetIds;
     napi_status status = napi_ok;
-    if (listValue.size() > MAX_QUERY_LIMIT) {
-        return status;
-    }
-    for (auto& uri : listValue) {
-        string assetId = isPhoto ? MediaLibraryNapiUtils::GetFileIdFromUriString(uri.ToString()) :
-            MediaLibraryNapiUtils::GetAlbumIdFromUriString(uri.ToString());
-        if (assetId == "") {
-            NAPI_ERR_LOG("Failed to read assetId");
-            status = napi_invalid_arg;
-            return status;
-        }
-        assetIds.push_back(assetId);
-    }
-    napi_value assetResults = isPhoto ? MediaLibraryNapiUtils::GetSharedPhotoAssets(env, assetIds) :
-        MediaLibraryNapiUtils::GetSharedAlbumAssets(env, assetIds);
+    napi_value assetResults =  ChangeListenerNapi::BuildSharedPhotoAssetsObj(env, wrapper, isPhoto);
     if (assetResults == nullptr) {
         NAPI_ERR_LOG("Failed to get assets Result from rdb");
         status = napi_invalid_arg;
@@ -2543,20 +2591,18 @@ static napi_status SetSharedAssetArray(const napi_env& env, const char* fieldStr
     return status;
 }
 
-static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParcel> parcel, napi_value& result)
+static napi_status SetSubUris(const napi_env& env, ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper,
+    napi_value& result)
 {
-    uint32_t len = 0;
+    MediaLibraryTracer tracer;
+    tracer.Start("SolveOnChange SetSubUris");
+    uint32_t len = wrapper->extraUris_.size();
     napi_status status = napi_invalid_arg;
-    if (!parcel->ReadUint32(len)) {
-        NAPI_ERR_LOG("Failed to read sub uri list length");
-        return status;
-    }
     napi_value subUriArray = nullptr;
     napi_create_array_with_length(env, len, &subUriArray);
     int subElementIndex = 0;
-    vector<std::string> fileIds;
-    for (uint32_t i = 0; i < len; i++) {
-        string subUri = parcel->ReadString();
+    for (auto iter = wrapper->extraUris_.begin(); iter != wrapper->extraUris_.end(); iter++) {
+        string subUri = *iter;
         if (subUri.empty()) {
             NAPI_ERR_LOG("Failed to read sub uri");
             return status;
@@ -2564,22 +2610,12 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
         napi_value subUriRet = nullptr;
         napi_create_string_utf8(env, subUri.c_str(), NAPI_AUTO_LENGTH, &subUriRet);
         napi_set_element(env, subUriArray, subElementIndex++, subUriRet);
-        string fileId = MediaLibraryNapiUtils::GetFileIdFromUriString(subUri);
-        if (fileId == "") {
-            NAPI_ERR_LOG("Failed to read sub uri fileId");
-            continue;
-        }
-        fileIds.push_back(fileId);
     }
     status = napi_set_named_property(env, result, "extraUris", subUriArray);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set subUri named property error!");
     }
-    if (len > MAX_QUERY_LIMIT) {
-        NAPI_ERR_LOG("suburi length exceed the limit.");
-        return napi_ok;
-    }
-    napi_value photoAssetArray = MediaLibraryNapiUtils::GetSharedPhotoAssets(env, fileIds);
+    napi_value photoAssetArray = MediaLibraryNapiUtils::GetSharedPhotoAssets(env, wrapper->extraSharedAssets_, len);
     if (photoAssetArray == nullptr) {
         NAPI_ERR_LOG("Failed to get sharedPhotoAsset");
     }
@@ -2616,8 +2652,9 @@ string ChangeListenerNapi::GetTrashAlbumUri()
     return albumSet->GetFirstObject()->GetAlbumUri();
 }
 
-napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
+napi_value ChangeListenerNapi::SolveOnChange(napi_env env, ChangeListenerNapi::JsOnChangeCallbackWrapper* wrapper)
 {
+    UvChangeMsg* msg = wrapper->msg_;
     static napi_value result;
     if (msg->changeInfo_.uris_.empty()) {
         napi_get_undefined(env, &result);
@@ -2626,9 +2663,9 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
     napi_create_object(env, &result);
     SetValueArray(env, "uris", msg->changeInfo_.uris_, result);
     if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
-        SetSharedAssetArray(env, "SharedAlbumAssets", msg->changeInfo_.uris_, result, false);
+        ChangeListenerNapi::SetSharedAssetArray(env, "sharedAlbumAssets", wrapper, result, false);
     } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
-        SetSharedAssetArray(env, "SharedPhotoAssets", msg->changeInfo_.uris_, result, true);
+        ChangeListenerNapi::SetSharedAssetArray(env, "sharedPhotoAssets", wrapper, result, true);
     } else {
         NAPI_DEBUG_LOG("other albums notify");
     }
@@ -2647,18 +2684,88 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
         } else {
             SetValueInt32(env, "type", (int)NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, result);
         }
-        shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
-        if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(msg->data_), msg->changeInfo_.size_)) {
-            napi_status status = SetSubUris(env, parcel, result);
-            if (status != napi_ok) {
-                NAPI_ERR_LOG("Set subArray named property error! field: subUris");
-                return nullptr;
-            }
+        napi_status status = SetSubUris(env, wrapper, result);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Set subArray named property error! field: subUris");
         }
     } else {
         SetValueInt32(env, "type", (int)msg->changeInfo_.changeType_, result);
     }
     return result;
+}
+
+std::shared_ptr<NativeRdb::ResultSet> ChangeListenerNapi::GetSharedResultSetFromIds(std::vector<string>& Ids,
+    bool isPhoto)
+{
+    string queryString = isPhoto ? PAH_QUERY_PHOTO : PAH_QUERY_PHOTO_ALBUM;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryString, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri queryUri(queryString);
+    DataShare::DataSharePredicates predicates;
+    if (isPhoto) {
+        predicates.In(MediaColumn::MEDIA_ID, Ids);
+    } else {
+        predicates.In(PhotoAlbumColumns::ALBUM_ID, Ids);
+    }
+    std::vector<std::string> columns = isPhoto ? PHOTO_COLUMN : ALBUM_COLUMN;
+    return UserFileClient::QueryRdb(queryUri, predicates, columns);
+}
+
+void ChangeListenerNapi::GetIdsFromUris(std::list<Uri>& listValue, std::vector<std::string>& ids, bool isPhoto)
+{
+    for (auto& uri : listValue) {
+        string assetId = isPhoto ? MediaLibraryNapiUtils::GetFileIdFromUriString(uri.ToString()) :
+            MediaLibraryNapiUtils::GetAlbumIdFromUriString(uri.ToString());
+        if (assetId == "") {
+            NAPI_WARN_LOG("Failed to read assetId");
+            continue;
+        }
+        ids.push_back(assetId);
+    }
+}
+
+void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbackWrapper* wrapper)
+{
+    std::vector<string> ids = {};
+    std::shared_ptr<NativeRdb::ResultSet> sharedAssets = nullptr;
+    if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
+        GetIdsFromUris(msg->changeInfo_.uris_, ids, false);
+        sharedAssets = GetSharedResultSetFromIds(ids, false);
+    } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
+        GetIdsFromUris(msg->changeInfo_.uris_, ids, true);
+        sharedAssets = GetSharedResultSetFromIds(ids, true);
+    } else {
+        NAPI_DEBUG_LOG("other albums notify");
+    }
+    wrapper->uriSize_ = ids.size();
+    wrapper->sharedAssets_ = sharedAssets;
+    shared_ptr<MessageParcel> parcel = make_shared<MessageParcel>();
+    std::vector<string> extraIds = {};
+    if (parcel->ParseFrom(reinterpret_cast<uintptr_t>(msg->data_), msg->changeInfo_.size_)) {
+        uint32_t len = 0;
+        if (!parcel->ReadUint32(len)) {
+            NAPI_ERR_LOG("Failed to read sub uri list length");
+            return;
+        }
+        if (len > MAX_LEN_LIMIT) {
+            NAPI_ERR_LOG("len exceed the limit.");
+            return;
+        }
+        for (uint32_t i = 0; i < len; i++) {
+            string subUri = parcel->ReadString();
+            if (subUri.empty()) {
+                NAPI_ERR_LOG("Failed to read sub uri");
+                continue;
+            }
+            wrapper->extraUris_.push_back(subUri);
+            extraIds.push_back(MediaLibraryNapiUtils::GetFileIdFromUriString(subUri));
+        }
+        if (len > MAX_QUERY_LIMIT) {
+            NAPI_INFO_LOG("subUri length exceed the limit.");
+            wrapper->extraSharedAssets_ = nullptr;
+            return;
+        }
+        wrapper->extraSharedAssets_ = GetSharedResultSetFromIds(extraIds, true);
+    }
 }
 
 void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref cbRef)
@@ -2700,13 +2807,42 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
             }
         }
     }
-    work->data = reinterpret_cast<void *>(msg);
+    QueryRdbAndNotifyChange(loop, msg, work);
+}
 
-    int ret = UvQueueWork(loop, work);
+void ChangeListenerNapi::QueryRdbAndNotifyChange(uv_loop_s *loop, UvChangeMsg *msg, uv_work_t *work)
+{
+    JsOnChangeCallbackWrapper* wrapper = new (std::nothrow) JsOnChangeCallbackWrapper();
+    if (wrapper == nullptr) {
+        NAPI_ERR_LOG("JsOnChangeCallbackWrapper allocation failed");
+        delete msg;
+        delete work;
+        return;
+    }
+    wrapper->msg_ = msg;
+    MediaLibraryTracer tracer;
+    tracer.Start("GetResultSetFromMsg");
+    GetResultSetFromMsg(msg, wrapper);
+    tracer.Finish();
+    int ret = 0;
+    if (msg->strUri_.find(PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
+        ret = ChangeListenerNapi::ParseSharedPhotoAssets(wrapper, false);
+    } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
+        ret = ChangeListenerNapi::ParseSharedPhotoAssets(wrapper, true);
+    } else {
+        NAPI_DEBUG_LOG("other albums notify");
+    }
+    if (ret != 0) {
+        wrapper->sharedAssetsRowObjVector_.clear();
+        NAPI_WARN_LOG("Failed to ParseSharedPhotoAssets, ret: %{public}d", ret);
+    }
+    work->data = reinterpret_cast<void *>(wrapper);
+    ret = UvQueueWork(loop, work);
     if (ret != 0) {
         NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
         free(msg->data_);
         delete msg;
+        delete wrapper;
         delete work;
     }
 }
@@ -2719,7 +2855,8 @@ int ChangeListenerNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
             return;
         }
 
-        UvChangeMsg *msg = reinterpret_cast<UvChangeMsg *>(w->data);
+        JsOnChangeCallbackWrapper* wrapper = reinterpret_cast<JsOnChangeCallbackWrapper *>(w->data);
+        UvChangeMsg* msg = reinterpret_cast<UvChangeMsg *>(wrapper->msg_);
         do {
             if (msg == nullptr) {
                 NAPI_ERR_LOG("UvChangeMsg is null");
@@ -2739,7 +2876,7 @@ int ChangeListenerNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
             }
             napi_value retVal = nullptr;
             napi_value result[ARGS_ONE];
-            result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, msg);
+            result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, wrapper);
             if (result[PARAM0] == nullptr) {
                 break;
             }
@@ -2750,8 +2887,84 @@ int ChangeListenerNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
             }
         } while (0);
         delete msg;
+        delete wrapper;
         delete w;
     });
+}
+
+int ChangeListenerNapi::ParseSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto)
+{
+    MediaLibraryTracer tracer;
+    std::string traceName = std::string("ParseSharedPhotoAssets to wrapper for ") + (isPhoto ? "photo" : "album");
+    tracer.Start(traceName.c_str());
+    int ret = -1;
+    if (wrapper->uriSize_ > MAX_QUERY_LIMIT) {
+        return ret;
+    }
+
+    std::shared_ptr<NativeRdb::ResultSet> result = wrapper->sharedAssets_;
+    if (result == nullptr) {
+        NAPI_WARN_LOG("ParseSharedPhotoAssets result is nullptr");
+        return ret;
+    }
+    wrapper->sharedAssetsRowObjVector_.clear();
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        std::shared_ptr<RowObject> rowObj = std::make_shared<RowObject>();
+        if (isPhoto) {
+            ret = MediaLibraryNapiUtils::ParseNextRowObject(rowObj, result, true);
+        } else {
+            ret = MediaLibraryNapiUtils::ParseNextRowAlbumObject(rowObj, result);
+        }
+        if (ret != NativeRdb::E_OK) {
+            result->Close();
+            return ret;
+        }
+        wrapper->sharedAssetsRowObjVector_.emplace_back(std::move(rowObj));
+    }
+    result->Close();
+    return ret;
+}
+
+napi_value ChangeListenerNapi::BuildSharedPhotoAssetsObj(const napi_env& env,
+    ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto)
+{
+    napi_value value = nullptr;
+    napi_status status = napi_create_array_with_length(env, wrapper->uriSize_, &value);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
+    napi_value tmpValue = nullptr;
+    status = napi_create_array_with_length(env, 0, &tmpValue);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
+    if (wrapper->uriSize_ > MAX_QUERY_LIMIT) {
+        NAPI_WARN_LOG("BuildSharedPhotoAssetsObj uriSize is over limit");
+        return tmpValue;
+    }
+    if (wrapper->sharedAssets_ == nullptr) {
+        NAPI_WARN_LOG("wrapper sharedAssets is nullptr");
+        return tmpValue;
+    }
+    size_t elementIndex = 0;
+    while (elementIndex < wrapper->sharedAssetsRowObjVector_.size()) {
+        napi_value assetValue;
+        if (isPhoto) {
+            assetValue = MediaLibraryNapiUtils::BuildNextRowObject(
+                env, wrapper->sharedAssetsRowObjVector_[elementIndex], true);
+        } else {
+            assetValue = MediaLibraryNapiUtils::BuildNextRowAlbumObject(
+                env, wrapper->sharedAssetsRowObjVector_[elementIndex]);
+        }
+        if (assetValue == nullptr) {
+            wrapper->sharedAssets_->Close();
+            return tmpValue;
+        }
+        status = napi_set_element(env, value, elementIndex++, assetValue);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Set photo asset value failed");
+            wrapper->sharedAssets_->Close();
+            return tmpValue;
+        }
+    }
+    wrapper->sharedAssets_->Close();
+    return value;
 }
 
 int32_t MediaLibraryNapi::GetListenerType(const string &str) const
@@ -3281,7 +3494,8 @@ static void SetSmartAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME);
     int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode,
+        GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet is nullptr, errCode is %{public}d", errCode);
         return;
@@ -3341,7 +3555,8 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     }
     Uri uri(uriStr);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, columns, errCode);
+    auto resultSet = UserFileClient::Query(uri, context->predicates, columns, errCode,
+        GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         context->error = E_PERMISSION_DENIED;
@@ -3457,7 +3672,7 @@ static void GetSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + SMARTALBUMASSETS_VIEW_NAME);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode, GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("ResultSet is nullptr, errCode is %{public}d", errCode);
         context->error = ERR_INVALID_OUTPUT;
@@ -3556,7 +3771,7 @@ static void GetSmartAlbumsResultDataExecute(napi_env env, void *data)
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + SMARTALBUMASSETS_VIEW_NAME);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode, GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("ResultSet is nullptr, errCode is %{public}d", errCode);
         context->error = ERR_INVALID_OUTPUT;
@@ -3620,6 +3835,16 @@ static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetc
     return result;
 }
 
+static void AddDefaultColumnsForNonAnalysisAlbums(MediaLibraryAsyncContext& context)
+{
+    if (!context.isAnalysisAlbum) {
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_LPATH);
+        context.fetchColumn.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
+    }
+}
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
 static void CompatGetPrivateAlbumExecute(napi_env env, void *data)
 {
@@ -3630,7 +3855,8 @@ static void CompatGetPrivateAlbumExecute(napi_env env, void *data)
     string queryUri = URI_QUERY_PHOTO_ALBUM;
     Uri uri(queryUri);
     int err = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, err);
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, err,
+        GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", err);
         context->SaveError(err);
@@ -4081,7 +4307,7 @@ shared_ptr<DataShare::DataShareResultSet> QueryActivePeer(int &errCode,
         predicates.SetWhereClause(context->selection);
     }
     predicates.SetWhereArgs(context->selectionArgs);
-    return UserFileClient::Query(uri, predicates, columns, errCode);
+    return UserFileClient::Query(uri, predicates, columns, errCode, GetUserIdFromContext(context));
 }
 
 void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
@@ -4323,10 +4549,14 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         return;
     }
     SetFileAssetByIdV9(index, "", context);
+    if (context->fileAsset == nullptr) {
+        close(srcFd);
+        NAPI_ERR_LOG("JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
+        return;
+    }
     LogMedialibraryAPI(context->fileAsset->GetUri());
-    CHECK_NULL_PTR_RETURN_VOID(context->fileAsset, "JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
     Uri openFileUri(context->fileAsset->GetUri());
-    int32_t destFd = UserFileClient::OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
+    int32_t destFd = UserFileClient::OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE, GetUserIdFromContext(context));
     if (destFd < 0) {
         context->error = destFd;
         NAPI_DEBUG_LOG("File open asset failed");
@@ -4861,49 +5091,83 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     }
 }
 
+static napi_status ParseTokenId(napi_env env, napi_value arg,
+    uint32_t &tokenId)
+{
+    napi_valuetype valueType = napi_undefined;
+    CHECK_STATUS_RET(napi_typeof(env, arg, &valueType), "Failed to get type");
+    if (valueType == napi_number) {
+        CHECK_STATUS_RET(MediaLibraryNapiUtils::GetUInt32(env, arg, tokenId), "Failed to get tokenId");
+        CHECK_COND_RET(tokenId > 0, napi_invalid_arg, "Invalid tokenId");
+    } else {
+        NAPI_ERR_LOG("JS param type %{public}d is wrong", static_cast<int32_t>(valueType));
+        return napi_invalid_arg;
+    }
+    return napi_ok;
+}
+
+static napi_status ParsePermissionType(napi_env env, napi_value arg, int32_t &permissionType)
+{
+    CHECK_STATUS_RET(MediaLibraryNapiUtils::GetInt32(env, arg, permissionType), "Failed to get permissionType");
+    if (AppUriPermissionColumn::PERMISSION_TYPES_PICKER.find((int)permissionType) ==
+        AppUriPermissionColumn::PERMISSION_TYPES_PICKER.end()) {
+        NAPI_ERR_LOG("invalid picker permissionType, permissionType=%{public}d", permissionType);
+        return napi_invalid_arg;
+    }
+    return napi_ok;
+}
+
+static napi_status ParseHidenSensitiveType(napi_env env, napi_value arg, int32_t &hideSensitiveType)
+{
+    CHECK_STATUS_RET(MediaLibraryNapiUtils::GetInt32(env, arg, hideSensitiveType), "Failed to get hideSensitiveType");
+    if (AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.find((int)hideSensitiveType) ==
+        AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end()) {
+        NAPI_ERR_LOG("invalid picker hideSensitiveType, hideSensitiveType=%{public}d", hideSensitiveType);
+        return napi_invalid_arg;
+    }
+    return napi_ok;
+}
+
+static napi_status ParseGrantMediaUris(napi_env env, napi_value arg, vector<string> &uris)
+{
+    CHECK_STATUS_RET(MediaLibraryNapiUtils::GetStringArray(env, arg, uris), "Failed to get uris");
+    size_t urisMaxSize = 1000;
+    if (uris.empty() || uris.size() > urisMaxSize) {
+        NAPI_ERR_LOG("the size of uriList is invalid");
+        return napi_invalid_arg;
+    }
+    return napi_ok;
+}
+
 static napi_value ParseArgsGrantPhotoUriPermissionInner(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    // parse appid
-    string appid;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], appid) ==
-        napi_ok, "Failed to get appid");
-    if (appid.empty()) {
-        NAPI_ERR_LOG("appid is empty");
-        return nullptr;
-    }
-    context->valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
+    // parse appid or tokenId
+    uint32_t tokenId;
+    NAPI_ASSERT(env, ParseTokenId(env, context->argv[ARGS_ZERO], tokenId) ==
+        napi_ok, "Invalid args[0]");
+    context->valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    uint32_t srcTokenId = IPCSkeleton::GetCallingTokenID();
+    context->valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, static_cast<int64_t>(srcTokenId));
 
     // parse fileId
     string uri;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], uri) ==
         napi_ok, "Failed to get uri");
     int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(uri);
-    if (fileId < 0) {
-        return nullptr;
-    }
+    NAPI_ASSERT(env, fileId >= 0, "Invalid uri");
     context->valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
 
     // parse permissionType
     int32_t permissionType;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_TWO], permissionType) ==
-        napi_ok, "Failed to get permissionType");
-    if (AppUriPermissionColumn::PERMISSION_TYPES_PICKER.find((int)permissionType) ==
-        AppUriPermissionColumn::PERMISSION_TYPES_PICKER.end()) {
-        NAPI_ERR_LOG("invalid picker permissionType, permissionType=%{public}d", permissionType);
-        return nullptr;
-    }
+    NAPI_ASSERT(env, ParsePermissionType(env, context->argv[ARGS_TWO], permissionType) ==
+        napi_ok, "Invalid PermissionType");
     context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     // parse hideSensitiveType
     int32_t hideSensitiveType;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_THREE], hideSensitiveType) ==
-        napi_ok, "Failed to get hideSensitiveType");
-    if (AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.find((int)hideSensitiveType) ==
-        AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end()) {
-        NAPI_ERR_LOG("invalid picker hideSensitiveType, hideSensitiveType=%{public}d", permissionType);
-        return nullptr;
-    }
+    NAPI_ASSERT(env, ParseHidenSensitiveType(env, context->argv[ARGS_THREE],
+        hideSensitiveType) == napi_ok, "Invalid SensitiveType");
     context->valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, hideSensitiveType);
 
     // parsing fileId ensured uri is photo.
@@ -4931,8 +5195,7 @@ static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_i
     return ParseArgsGrantPhotoUriPermissionInner(env, info, context);
 }
 
-static bool ParseUriTypes(std::string &appid, int &permissionType, int &sensitiveType, std::vector<std::string> &uris,
-    unique_ptr<MediaLibraryAsyncContext> &context)
+static napi_status ParseUriTypes(std::vector<std::string> &uris, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     // used for deduplication
     std::set<int32_t> fileIdSet;
@@ -4940,48 +5203,19 @@ static bool ParseUriTypes(std::string &appid, int &permissionType, int &sensitiv
         OHOS::DataShare::DataShareValuesBucket valuesBucket;
         int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(uri);
         if (fileId < 0) {
-            return false;
+            NAPI_ERR_LOG("invalid uri can not find fileid");
+            return napi_invalid_arg;
         }
         if (fileIdSet.find(fileId) != fileIdSet.end()) {
             continue;
         }
         fileIdSet.insert(fileId);
+        valuesBucket = context->valuesBucket;
         valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
-        valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
-        valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
-        valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, sensitiveType);
-        // parsing fileId ensured uri is photo.
         valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
         context->valuesBucketArray.push_back(move(valuesBucket));
     }
-    return true;
-}
-
-static bool ParseUriTypes(uint32_t &srcTokenId, uint32_t &targetTokenId, int &sensitiveType,
-    std::vector<std::string> &uris, unique_ptr<MediaLibraryAsyncContext> &context)
-{
-    // used for deduplication
-    std::set<int32_t> fileIdSet;
-    for (const auto &uri : uris) {
-        OHOS::DataShare::DataShareValuesBucket valuesBucket;
-        int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(uri);
-        if (fileId < 0) {
-            return false;
-        }
-        if (fileIdSet.find(fileId) != fileIdSet.end()) {
-            continue;
-        }
-        fileIdSet.insert(fileId);
-        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
-        valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, (int64_t)srcTokenId);
-        valuesBucket.Put(AppUriSensitiveColumn::TARGET_TOKENID, (int64_t)targetTokenId);
-        valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, sensitiveType);
-        valuesBucket.Put(AppUriSensitiveColumn::IS_FORCE_SENSITIVE, 1);
-        // parsing fileId ensured uri is photo.
-        valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
-        context->valuesBucketArray.push_back(move(valuesBucket));
-    }
-    return true;
+    return napi_ok;
 }
 
 static napi_value ParseArgsGrantPhotoUrisForForceSensitive(napi_env env, napi_callback_info info,
@@ -5000,30 +5234,20 @@ static napi_value ParseArgsGrantPhotoUrisForForceSensitive(napi_env env, napi_ca
 
     // tokenId
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    context->valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, static_cast<int64_t>(tokenId));
+    context->valuesBucket.Put(AppUriSensitiveColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
  
     // parse uris
     vector<string> uris;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ZERO], uris),
-        JS_ERR_PARAMETER_INVALID);
-    constexpr size_t urisMaxSize = 1000;
-    if (uris.empty() || uris.size() > urisMaxSize) {
-        NAPI_ERR_LOG("the size of uriList is invalid");
-        return nullptr;
-    }
+    NAPI_ASSERT(env, ParseGrantMediaUris(env, context->argv[ARGS_ZERO], uris) ==
+        napi_ok, "Invalid uri");
  
     // parse hideSensitiveType
     int32_t hideSensitiveType;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_ONE], hideSensitiveType) ==
-        napi_ok, "Failed to get hideSensitiveType");
-    if (AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.find((int)hideSensitiveType) ==
-        AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end()) {
-        NAPI_ERR_LOG("invalid picker hideSensitiveType, hideSensitiveType=%{public}d", hideSensitiveType);
-        return nullptr;
-    }
-
-    if (!ParseUriTypes(tokenId, tokenId, hideSensitiveType, uris, context)) {
-        return nullptr;
-    }
+    NAPI_ASSERT(env, ParseHidenSensitiveType(env, context->argv[ARGS_ONE],
+        hideSensitiveType) == napi_ok, "Invalid SensitiveType");
+    context->valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, hideSensitiveType);
+    NAPI_ASSERT(env, ParseUriTypes(uris, context) == napi_ok, "ParseUriTypes failed");
  
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
@@ -5033,9 +5257,7 @@ static napi_value ParseArgsGrantPhotoUrisForForceSensitive(napi_env env, napi_ca
 static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    constexpr size_t minArgs = ARGS_ONE;
-    constexpr size_t maxArgs = ARGS_FOUR;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, ARGS_ONE, ARGS_FOUR) ==
         napi_ok, "Failed to get object info");
     
     context->isCreateByComponent = false;
@@ -5043,48 +5265,34 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
-    // parse appid
-    string appid;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], appid) ==
-        napi_ok, "Failed to get appid");
-    if (appid.empty()) {
-        NAPI_ERR_LOG("appid is empty");
-        return nullptr;
-    }
-
-    // parse uris
-    vector<string> uris;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ONE], uris),
-        JS_ERR_PARAMETER_INVALID);
-    size_t urisMaxSize = 1000;
-    if (uris.empty() || uris.size() > urisMaxSize) {
-        NAPI_ERR_LOG("the size of uriList is invalid");
-        return nullptr;
-    }
+    // parse appid or tokenId
+    uint32_t tokenId;
+    NAPI_ASSERT(env, ParseTokenId(env, context->argv[ARGS_ZERO], tokenId) ==
+        napi_ok, "Invalid tokenId");
+    context->valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    uint32_t srcTokenId = IPCSkeleton::GetCallingTokenID();
+    context->valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, static_cast<int64_t>(srcTokenId));
 
     // parse permissionType
     int32_t permissionType;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_TWO], permissionType) ==
-        napi_ok, "Failed to get permissionType");
-    if (AppUriPermissionColumn::PERMISSION_TYPES_PICKER.find((int)permissionType) ==
-        AppUriPermissionColumn::PERMISSION_TYPES_PICKER.end()) {
-        NAPI_ERR_LOG("invalid picker permissionType, permissionType=%{public}d", permissionType);
-        return nullptr;
-    }
+    NAPI_ASSERT(env, ParsePermissionType(env, context->argv[ARGS_TWO], permissionType) ==
+        napi_ok, "Invalid PermissionType");
+    context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     // parse hideSensitiveType
     int32_t hideSensitiveType;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_THREE], hideSensitiveType) ==
-        napi_ok, "Failed to get hideSensitiveType");
-    if (AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.find((int)hideSensitiveType) ==
-        AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end()) {
-        NAPI_ERR_LOG("invalid picker hideSensitiveType, hideSensitiveType=%{public}d", permissionType);
-        return nullptr;
-    }
+    NAPI_ASSERT(env, ParseHidenSensitiveType(env, context->argv[ARGS_THREE], hideSensitiveType) ==
+        napi_ok, "Invalid SensitiveType");
+    context->valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, hideSensitiveType);
 
-    if (!ParseUriTypes(appid, permissionType, hideSensitiveType, uris, context)) {
-        return nullptr;
-    }
+    // parsing fileId ensured uri is photo.
+    context->valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
+
+    // parse uris
+    vector<string> uris;
+    NAPI_ASSERT(env, ParseGrantMediaUris(env, context->argv[ARGS_ONE], uris) ==
+        napi_ok, "Invalid uris");
+    NAPI_ASSERT(env, ParseUriTypes(uris, context) == napi_ok, "ParseUriTypes failed");
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
@@ -5104,15 +5312,15 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
-    // parse appid
-    string appid;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], appid) ==
-        napi_ok, "Failed to get appid");
-    if (appid.empty()) {
-        NAPI_ERR_LOG("appid is empty");
-        return nullptr;
-    }
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appid);
+    // parse tokenId
+    uint32_t tokenId;
+    NAPI_ASSERT(env, ParseTokenId(env, context->argv[ARGS_ZERO], tokenId) ==
+        napi_ok, "Invalid args[0]");
+    context->predicates.And()->EqualTo(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    
+    //get caller tokenid
+    uint32_t callerTokenId = IPCSkeleton::GetCallingTokenID();
+    context->predicates.And()->EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, static_cast<int64_t>(callerTokenId));
 
     // parse fileId
     string uri;
@@ -5126,13 +5334,8 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
 
     // parse permissionType
     int32_t permissionType;
-    NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_TWO], permissionType) ==
-        napi_ok, "Failed to get permissionType");
-    if (AppUriPermissionColumn::PERMISSION_TYPES_PICKER.find((int)permissionType) ==
-            AppUriPermissionColumn::PERMISSION_TYPES_PICKER.end()) {
-        NAPI_ERR_LOG("invalid picker permissionType, permissionType=%{public}d", permissionType);
-        return nullptr;
-    }
+    NAPI_ASSERT(env, ParsePermissionType(env, context->argv[ARGS_TWO], permissionType) ==
+        napi_ok, "Invalid args[2]");
     context->predicates.And()->EqualTo(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     // parsing fileId ensured uri is photo.
@@ -5143,8 +5346,22 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
     return result;
 }
 
+static void HandleBundleInfo(OHOS::DataShare::DataShareValuesBucket &valuesBucket, bool isAuthorization,
+    BundleInfo bundleInfo)
+{
+    if (isAuthorization) {
+        valuesBucket.Put(MEDIA_DATA_DB_OWNER_PACKAGE, bundleInfo.bundleName);
+        valuesBucket.Put(MEDIA_DATA_DB_OWNER_APPID, bundleInfo.appId);
+        valuesBucket.Put(MEDIA_DATA_DB_PACKAGE_NAME, bundleInfo.packageName);
+    }
+    if (!bundleInfo.ownerAlbumId.empty()) {
+        valuesBucket.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, bundleInfo.ownerAlbumId);
+        NAPI_INFO_LOG("client put ownerAlbumId: %{public}s", bundleInfo.ownerAlbumId.c_str());
+    }
+}
+
 static napi_status ParseCreateConfig(napi_env env, napi_value arg,
-    BundleInfo bundleInfo, MediaLibraryAsyncContext &context)
+    BundleInfo bundleInfo, MediaLibraryAsyncContext &context, bool isAuthorization = true)
 {
     const std::map<std::string, std::string> PHOTO_CREATE_CONFIG_PARAM = {
         { PHOTO_TYPE, MEDIA_DATA_DB_MEDIA_TYPE },
@@ -5190,11 +5407,77 @@ static napi_status ParseCreateConfig(napi_env env, napi_value arg,
             return napi_invalid_arg;
         }
     }
-    valuesBucket.Put(MEDIA_DATA_DB_OWNER_PACKAGE, bundleInfo.bundleName);
-    valuesBucket.Put(MEDIA_DATA_DB_OWNER_APPID, bundleInfo.appId);
-    valuesBucket.Put(MEDIA_DATA_DB_PACKAGE_NAME, bundleInfo.packageName);
+    HandleBundleInfo(valuesBucket, isAuthorization, bundleInfo);
     context.valuesBucketArray.push_back(move(valuesBucket));
     return napi_ok;
+}
+
+static napi_value ParseCreateSource(napi_env env, napi_value arg, BundleInfo &bundleInfo)
+{
+    napi_value valueBundleName = MediaLibraryNapiUtils::GetPropertyValueByName(env, arg,
+        CONFIRM_BOX_BUNDLE_NAME.c_str());
+    CHECK_NULLPTR_RET(valueBundleName);
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, valueBundleName,
+        bundleInfo.bundleName) == napi_ok, "Failed to get bundleName");
+    napi_value valueAppName = MediaLibraryNapiUtils::GetPropertyValueByName(env, arg,
+        CONFIRM_BOX_APP_NAME.c_str());
+    CHECK_NULLPTR_RET(valueAppName);
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, valueAppName,
+        bundleInfo.packageName) == napi_ok, "Failed to get appName");
+    napi_value valueAppId = MediaLibraryNapiUtils::GetPropertyValueByName(env, arg,
+        CONFIRM_BOX_APP_ID.c_str());
+    CHECK_NULLPTR_RET(valueAppId);
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, valueAppId,
+        bundleInfo.appId) == napi_ok, "Failed to get appId");
+    napi_value valueTokenId = MediaLibraryNapiUtils::GetPropertyValueByName(env, arg,
+        TOKEN_ID.c_str());
+    CHECK_NULLPTR_RET(valueTokenId);
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetUInt32(env, valueTokenId,
+        bundleInfo.tokenId) == napi_ok, "Failed to get appId");
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+    return result;
+}
+
+static napi_value ParseArgsCreatePhotoAssetForAppWithAlbum(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_FOUR;
+    constexpr size_t maxArgs = ARGS_FOUR;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+    context->isCreateByComponent = false;
+    context->isCreateByAgent = true;
+    BundleInfo bundleInfo;
+    string albumUri;
+    bool isAuthorization = false;
+    ParseCreateSource(env, context->argv[ARGS_ZERO], bundleInfo);
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE],
+        albumUri) == napi_ok, "Failed to get albumUri");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamBool(env, context->argv[ARGS_TWO],
+        isAuthorization) == napi_ok, "Failed to get isAuthorization");
+    bundleInfo.ownerAlbumId = MediaFileUtils::GetIdFromUri(albumUri);
+    if (isAuthorization) {
+        context->tokenId = bundleInfo.tokenId;
+    }
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+
+    vector<napi_value> napiValues;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[ARGS_THREE], napiValues));
+    if (napiValues.empty() || napiValues.size() > MAX_CREATE_ASSET_LIMIT) {
+        NAPI_ERR_LOG("the size of albumid is invalid");
+        return nullptr;
+    }
+
+    for (const auto& napiValue : napiValues) {
+        CHECK_COND_WITH_MESSAGE(env, ParseCreateConfig(env, napiValue, bundleInfo, *context,
+            isAuthorization) == napi_ok, "Parse asset create config failed");
+    }
+
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamCallback(env, context)
+        == napi_ok, "Failed to get callback");
+    return result;
 }
 
 static napi_value ParseArgsCreateAgentCreateAssets(napi_env env, napi_callback_info info,
@@ -5327,9 +5610,10 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
         JS_ERR_PARAMETER_INVALID);
 
     /* Parse the first argument */
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
+    CHECK_ARGS(env,
+        MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM0], ASSET_FETCH_OPT, context),
         JS_INNER_FAIL);
-    auto &predicates = context->predicates;
+
     switch (context->assetType) {
         case TYPE_AUDIO: {
             CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
@@ -5346,15 +5630,15 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
             return nullptr;
         }
     }
+    auto &predicates = context->predicates;
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     if (context->assetType == TYPE_PHOTO) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
         predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
-        predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
-            to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
+        predicates.EqualTo(
+            PhotoColumn::PHOTO_BURST_COVER_LEVEL, to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
     }
-
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -5475,13 +5759,14 @@ static void JSGetAssetsExecute(napi_env env, void *data)
     Uri uri(queryUri);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
-        context->predicates, context->fetchColumn, errCode);
+        context->predicates, context->fetchColumn, errCode, GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         context->SaveError(errCode);
         return;
     }
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
+    context->fetchFileResult->SetUserId(GetUserIdFromContext(context));
 }
 
 static void GetPhotoIndexAsyncCallbackComplete(napi_env env, napi_status status, void *data)
@@ -5526,7 +5811,8 @@ static void GetPhotoIndexExec(napi_env env, void *data, ResultNapiType type)
     MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode,
+        GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         context->SaveError(errCode);
         return;
@@ -5648,7 +5934,8 @@ static void PhotoAccessGetIndexConstructProgressExec(napi_env env, void *data)
     Uri uri(queryUri);
     int errCode = 0;
     string indexProgress;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode,
+        GetUserIdFromContext(context));
     if (!GetProgressFromResultSet(resultSet, indexProgress)) {
         if (errCode == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -5693,6 +5980,123 @@ static napi_status CheckFormId(string &formId)
     return napi_ok;
 }
 
+static napi_status ParseUpdateGalleryFormInfoOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
+{
+    const std::string formIdKey = "formId";
+    const std::string assetUrisKey = "assetUris";
+ 
+    bool formIdPresent = false;
+    napi_status result = napi_has_named_property(env, arg, formIdKey.c_str(), &formIdPresent);
+    CHECK_COND_RET(result == napi_ok, result, "failed to check formId property");
+    if (!formIdPresent) {
+        return napi_invalid_arg;
+    }
+    napi_value formIdValue;
+    result = napi_get_named_property(env, arg, formIdKey.c_str(), &formIdValue);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get formId property");
+    char formIdBuffer[ARG_BUF_SIZE];
+    size_t formIdLength = 0;
+    result = napi_get_value_string_utf8(env, formIdValue, formIdBuffer, ARG_BUF_SIZE, &formIdLength);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get formId string");
+    std::string formId = std::string(formIdBuffer);
+    context.formId = formId;
+ 
+    bool urisPresent = false;
+    result = napi_has_named_property(env, arg, assetUrisKey.c_str(), &urisPresent);
+    CHECK_COND_RET(result == napi_ok, result, "failed to check uris property");
+    if (!urisPresent) {
+        return napi_invalid_arg;
+    }
+    napi_value urisValue;
+    result = napi_get_named_property(env, arg, assetUrisKey.c_str(), &urisValue);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get uris property");
+    bool isArray = false;
+    result = napi_is_array(env, urisValue, &isArray);
+    CHECK_COND_RET(result == napi_ok && isArray, napi_invalid_arg, "uris is not an array");
+
+    uint32_t arrayLength = 0;
+    result = napi_get_array_length(env, urisValue, &arrayLength);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get array length");
+ 
+    for (uint32_t i = 0; i < arrayLength; ++i) {
+        napi_value uriValue;
+        result = napi_get_element(env, urisValue, i, &uriValue);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get array element");
+        char uriBuffer[ARG_BUF_SIZE];
+        size_t uriLength = 0;
+        result = napi_get_value_string_utf8(env, uriValue, uriBuffer, ARG_BUF_SIZE, &uriLength);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get URI string");
+        std::string assetUri = std::string(uriBuffer);
+        OHOS::DataShare::DataShareValuesBucket bucket;
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, formId);
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, assetUri);
+        context.valuesBucketArray.push_back(move(bucket));
+    }
+    return napi_ok;
+}
+ 
+static napi_status ParseSaveGalleryFormInfoOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
+{
+    const std::string formIdKey = "formId";
+    const std::string assetUrisKey = "assetUris";
+ 
+    bool formIdPresent = false;
+    napi_status result = napi_has_named_property(env, arg, formIdKey.c_str(), &formIdPresent);
+    CHECK_COND_RET(result == napi_ok, result, "failed to check formId property");
+    if (!formIdPresent) {
+        NAPI_ERR_LOG("ParseSaveGalleryFormInfoOption formIdPresent is false");
+        return napi_invalid_arg;
+    }
+ 
+    napi_value formIdValue;
+    result = napi_get_named_property(env, arg, formIdKey.c_str(), &formIdValue);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get formId property");
+ 
+    char formIdBuffer[ARG_BUF_SIZE];
+    size_t formIdLength = 0;
+    result = napi_get_value_string_utf8(env, formIdValue, formIdBuffer, ARG_BUF_SIZE, &formIdLength);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get formId string");
+ 
+    std::string formId = std::string(formIdBuffer);
+ 
+    bool urisPresent = false;
+    result = napi_has_named_property(env, arg, assetUrisKey.c_str(), &urisPresent);
+    CHECK_COND_RET(result == napi_ok, result, "failed to check uris property");
+    if (!urisPresent) {
+        NAPI_ERR_LOG("ParseSaveGalleryFormInfoOption urisPresent is false");
+        return napi_invalid_arg;
+    }
+ 
+    napi_value urisValue;
+    result = napi_get_named_property(env, arg, assetUrisKey.c_str(), &urisValue);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get uris property");
+ 
+    bool isArray = false;
+    result = napi_is_array(env, urisValue, &isArray);
+    CHECK_COND_RET(result == napi_ok && isArray, napi_invalid_arg, "uris is not an array");
+ 
+    uint32_t arrayLength = 0;
+    result = napi_get_array_length(env, urisValue, &arrayLength);
+    CHECK_COND_RET(result == napi_ok, result, "failed to get array length");
+ 
+    for (uint32_t i = 0; i < arrayLength; ++i) {
+        napi_value uriValue;
+        result = napi_get_element(env, urisValue, i, &uriValue);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get array element");
+ 
+        char uriBuffer[ARG_BUF_SIZE];
+        size_t uriLength = 0;
+        result = napi_get_value_string_utf8(env, uriValue, uriBuffer, ARG_BUF_SIZE, &uriLength);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get URI string");
+        std::string assetUri = std::string(uriBuffer);
+        OHOS::DataShare::DataShareValuesBucket bucket;
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, formId);
+        bucket.Put(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, assetUri);
+        context.valuesBucketArray.push_back(move(bucket));
+    }
+    return napi_ok;
+}
+
 static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
 {
     const std::string formId = "formId";
@@ -5726,6 +6130,38 @@ static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLi
     return CheckFormId(tempFormId);
 }
 
+static napi_value ParseArgsUpdateGalleryFormInfo(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
+        maxArgs) == napi_ok, "Failed to get object info");
+ 
+    CHECK_COND_WITH_MESSAGE(env, ParseUpdateGalleryFormInfoOption(env, context->argv[ARGS_ZERO], *context) == napi_ok,
+        "Parse formInfo Option failed");
+ 
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+ 
+static napi_value ParseArgsSaveGalleryFormInfo(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
+        maxArgs) == napi_ok, "Failed to get object info");
+ 
+    CHECK_COND_WITH_MESSAGE(env, ParseSaveGalleryFormInfoOption(env, context->argv[ARGS_ZERO], *context) == napi_ok,
+        "Parse formInfo Option failed");
+ 
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 static napi_value ParseArgsSaveFormInfo(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -5740,6 +6176,25 @@ static napi_value ParseArgsSaveFormInfo(napi_env env, napi_callback_info info,
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+static void SaveGalleryFormInfoExec(napi_env env, void *data, ResultNapiType type)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    context->resultNapiType = type;
+    string uri = PAH_STORE_FACARD_PHOTO;
+    Uri createFormIdUri(uri);
+    auto ret = UserFileClient::BatchInsert(createFormIdUri, context->valuesBucketArray);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else if (ret == E_GET_PRAMS_FAIL) {
+            context->error = OHOS_INVALID_PARAM_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        NAPI_INFO_LOG("store formInfo failed, ret: %{public}d", ret);
+    }
 }
 
 static void SaveFormInfoExec(napi_env env, void *data, ResultNapiType type)
@@ -5784,6 +6239,36 @@ static void SaveFormInfoAsyncCallbackComplete(napi_env env, napi_status status, 
     delete context;
 }
 
+static napi_value ParseArgsRemoveGalleryFormInfo(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
+        maxArgs) == napi_ok, "Failed to get object info");
+ 
+    bool present = false;
+    CHECK_COND_WITH_MESSAGE(env, napi_has_named_property(env, context->argv[ARGS_ZERO], "formId", &present) == napi_ok,
+        "Failed to get object info");
+    if (!present) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
+        return nullptr;
+    }
+ 
+    napi_value value;
+    CHECK_COND_WITH_MESSAGE(env, napi_get_named_property(env, context->argv[ARGS_ZERO], "formId", &value) == napi_ok,
+        "failed to get named property");
+    char buffer[ARG_BUF_SIZE];
+    size_t res = 0;
+    CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res) == napi_ok,
+        "failed to get string param");
+    context->formId = string(buffer);
+    CHECK_COND_WITH_MESSAGE(env, CheckFormId(context->formId) == napi_ok, "FormId is invalid");
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -5812,6 +6297,32 @@ static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+static void RemoveGalleryFormInfoExec(napi_env env, void *data, ResultNapiType type)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("RemoveGalleryFormInfoExec");
+ 
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    context->resultNapiType = type;
+    string formId = context->formId;
+    if (formId.empty()) {
+        context->error = OHOS_INVALID_PARAM_CODE;
+        return;
+    }
+    context->predicates.EqualTo(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, formId);
+    string deleteUri = PAH_REMOVE_FACARD_PHOTO;
+    Uri uri(deleteUri);
+    int ret = UserFileClient::Delete(uri, context->predicates);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        NAPI_ERR_LOG("remove formInfo failed, ret: %{public}d", ret);
+    }
 }
 
 static void RemoveFormInfoExec(napi_env env, void *data, ResultNapiType type)
@@ -5876,9 +6387,49 @@ napi_value MediaLibraryNapi::PhotoAccessSaveFormInfo(napi_env env, napi_callback
         PhotoAccessSaveFormInfoExec, SaveFormInfoAsyncCallbackComplete);
 }
 
+static void PhotoAccessSaveGalleryFormInfoExec(napi_env env, void *data)
+{
+    SaveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+ 
+napi_value MediaLibraryNapi::PhotoAccessSaveGalleryFormInfo(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsSaveGalleryFormInfo(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessSaveGalleryFormInfo",
+        PhotoAccessSaveGalleryFormInfoExec, SaveFormInfoAsyncCallbackComplete);
+}
+
 static void PhotoAccessRemoveFormInfoExec(napi_env env, void *data)
 {
     RemoveFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+
+static void PhotoAccessRemoveGalleryFormInfoExec(napi_env env, void *data)
+{
+    RemoveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+ 
+static void PhotoAccessUpdateGalleryFormInfoExec(napi_env env, void *data)
+{
+    RemoveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    SaveGalleryFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+ 
+napi_value MediaLibraryNapi::PhotoAccessRemoveGalleryFormInfo(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsRemoveGalleryFormInfo(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessRemoveGalleryFormInfo",
+        PhotoAccessRemoveGalleryFormInfoExec, RemoveFormInfoAsyncCallbackComplete);
+}
+ 
+napi_value MediaLibraryNapi::PhotoAccessUpdateGalleryFormInfo(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsUpdateGalleryFormInfo(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessRemoveGalleryFormInfo",
+        PhotoAccessUpdateGalleryFormInfoExec, RemoveFormInfoAsyncCallbackComplete);
 }
 
 napi_value MediaLibraryNapi::PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info)
@@ -6036,7 +6587,7 @@ napi_value MediaLibraryNapi::PhotoAccessStartCreateThumbnailTask(napi_env env, n
 
 void ThumbnailBatchGenerateObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    if (changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_THUMB_ADD)) {
+    if (changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_THUMB_UPDATE)) {
         return;
     }
 
@@ -6046,7 +6597,10 @@ void ThumbnailBatchGenerateObserver::OnChange(const ChangeInfo &changeInfo)
         if (pos == std::string::npos) {
             continue;
         }
-        requestIdCallback_ = MediaLibraryCommonUtils::SafeStoi(uriString.substr(pos + 1));
+        if (!MediaFileUtils::IsValidInteger(uriString.substr(pos + 1))) {
+            continue;
+        }
+        requestIdCallback_ = std::stoi(uriString.substr(pos + 1));
         std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
         if (!thumbnailGenerateHandlerMap.Find(requestIdCallback_, dataHandler)) {
             continue;
@@ -6149,28 +6703,93 @@ static std::string GetLabelAnalysisProgress()
     };
     vector<string> columns = {
         "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
+            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
+            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount",
         "SUM(CASE WHEN label != 0 THEN 1 ELSE 0 END) AS LabelCount"
     };
     nlohmann::json jsonObj;
     GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
+    NAPI_INFO_LOG("Progress json is %{public}s", jsonObj.dump().c_str());
     return jsonObj.dump();
+}
+
+static std::string GetTotalCount()
+{
+    Uri uri(URI_TOTAL);
+    string clause = VISION_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE+ "." +
+        MediaColumn::MEDIA_ID;
+    DataShare::DataSharePredicates predicates;
+    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ clause });
+    predicates.EqualTo(PhotoColumn::PHOTO_HIDDEN_TIME, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, 0)->And()
+        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
+
+    vector<string> column = {
+        "COUNT(*) AS totalCount"
+    };
+
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, column, errCode);
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return "";
+    }
+    if (ret->GoToFirstRow() != NativeRdb::E_OK) {
+        ret->Close();
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        return "";
+    }
+    int totalCount = 0;
+    ret->GetInt(0, totalCount);
+    ret->Close();
+    return to_string(totalCount);
 }
 
 static std::string GetFaceAnalysisProgress()
 {
-    unordered_map<int, string> idxToCount = {
-        {0, "totalCount"}, {1, "finishedCount"}, {2, "PortraitCoverCount"}, {3, "PortraitCount"},
+    string curTotalCount = GetTotalCount();
+
+    Uri uri(URI_USER_PHOTOGRAPHY_INFO);
+    vector<string> column = {
+        HIGHLIGHT_ANALYSIS_PROGRESS
     };
-    vector<string> columns = {
-        "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
-        "SUM(CASE WHEN face = 3 THEN 1 ELSE 0 END) AS PortraitCoverCount",
-        "SUM(CASE WHEN face > 0 THEN 1 ELSE 0 END) AS PortraitCount"
-    };
-    nlohmann::json jsonObj;
-    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
-    return jsonObj.dump();
+    DataShare::DataSharePredicates predicates;
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, column, errCode);
+    if (ret == nullptr) {
+        NAPI_ERR_LOG("ret is nullptr");
+        return "";
+    }
+    if (ret->GoToNextRow() != NativeRdb::E_OK) {
+        ret->Close();
+        nlohmann::json jsonObj;
+        jsonObj["cvFinishedCount"] = 0;
+        jsonObj["geoFinishedCount"] = 0;
+        jsonObj["searchFinishedCount"] = 0;
+        jsonObj["totalCount"] = curTotalCount;
+        string retJson = jsonObj.dump();
+        NAPI_ERR_LOG("GetFaceAnalysisProgress failed, errCode is %{public}d, json is %{public}s", errCode,
+            retJson.c_str());
+        return retJson;
+    }
+    string retJson = MediaLibraryNapiUtils::GetStringValueByColumn(ret, HIGHLIGHT_ANALYSIS_PROGRESS);
+    if (retJson == "" || !nlohmann::json::accept(retJson)) {
+        ret->Close();
+        NAPI_ERR_LOG("retJson is empty or invalid");
+        return "";
+    }
+    nlohmann::json curJsonObj = nlohmann::json::parse(retJson);
+    int preTotalCount = curJsonObj["totalCount"];
+    if (to_string(preTotalCount) != curTotalCount) {
+        NAPI_ERR_LOG("preTotalCount != curTotalCount, curTotalCount is %{public}s, preTotalCount is %{public}d",
+            curTotalCount.c_str(), preTotalCount);
+        curJsonObj["totalCount"] = curTotalCount;
+    }
+    retJson = curJsonObj.dump();
+    NAPI_INFO_LOG("GoToNextRow successfully and json is %{public}s", retJson.c_str());
+    ret->Close();
+    return retJson;
 }
 
 static std::string GetGeoAnalysisProgress()
@@ -6180,7 +6799,9 @@ static std::string GetGeoAnalysisProgress()
     };
     vector<string> columns = {
         "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN status != 0 THEN 1 ELSE 0 END) AS finishedCount",
+        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
+            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
+            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount"
     };
     nlohmann::json jsonObj;
     GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
@@ -6193,25 +6814,30 @@ static std::string GetGeoAnalysisProgress()
     predicates.GreaterThan(PhotoAlbumColumns::ALBUM_COUNT, 0);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, albumColumns, errCode);
+    string retStr = jsonObj.dump();
     if (ret == nullptr) {
-        NAPI_ERR_LOG("ret is nullptr");
-        return jsonObj.dump();
+        NAPI_ERR_LOG("ret is nullptr and progress json is %{public}s", retStr.c_str());
+        return retStr;
     }
     if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d", errCode);
+        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d, json is %{public}s", errCode, retStr.c_str());
         ret->Close();
-        return jsonObj.dump();
+        return retStr;
     }
 
     int tmp = -1;
     int32_t retCode = ret->GetRowCount(tmp);
     if (retCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("Can not get row count from resultSet, errCode=%{public}d", retCode);
-        return jsonObj.dump();
+        NAPI_ERR_LOG("Can not get row count from resultSet, errCode is %{public}d, progress json is %{public}s",
+            retCode, retStr.c_str());
+        ret->Close();
+        return retStr;
     }
     jsonObj[idxToCount[columns.size()]] = tmp;
     ret->Close();
-    return jsonObj.dump();
+    string jsonStr = jsonObj.dump();
+    NAPI_INFO_LOG("Progress json is %{public}s", jsonStr.c_str());
+    return jsonStr;
 }
 
 static std::string GetHighlightAnalysisProgress()
@@ -6246,7 +6872,9 @@ static std::string GetHighlightAnalysisProgress()
         jsonObj[idxToCount[i]] = tmp;
     }
     ret->Close();
-    return jsonObj.dump();
+    string retStr = jsonObj.dump();
+    NAPI_INFO_LOG("Progress json is %{public}s", retStr.c_str());
+    return retStr;
 }
 
 static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
@@ -6321,6 +6949,186 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetDataAnalysisProgress(napi_env e
         }, reinterpret_cast<CompleteCallback>(JSGetDataAnalysisProgressCompleteCallback));
 }
 
+static void JSGetAnalysisDataCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAnalysisDataCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        napi_value returnArray;
+        napi_create_array(env, &returnArray);
+        for (size_t i = 0; i < context->analysisDatas.size(); ++i) {
+            napi_value element;
+            napi_create_string_utf8(env, context->analysisDatas[i].c_str(), NAPI_AUTO_LENGTH, &element);
+            napi_set_element(env, returnArray, i, element);
+        }
+        jsContext->data = returnArray;
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAnalysisDataExecute");
+    
+    std::string analysisUri;
+    if (context->isForce) {
+        analysisUri = PAH_QUERY_ANA_ADDRESS_ASSETS_ACTIVE;
+    } else {
+        analysisUri = PAH_QUERY_ANA_ADDRESS_ASSETS;
+    }
+    Uri uri(analysisUri);
+    DataSharePredicates predicates;
+    vector<string> columns;
+    
+    if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+        columns = { PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, PhotoColumn::PHOTOS_TABLE + "." + LATITUDE,
+            PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, LANGUAGE, COUNTRY, ADMIN_AREA, SUB_ADMIN_AREA, LOCALITY,
+            SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION, LOCATION_TYPE,
+            AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY};
+        string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
+            GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
+            GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
+        predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
+        predicates.In(PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID, context->uris);
+    } else {
+        predicates.In(MediaColumn::MEDIA_ID, context->uris);
+    }
+
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode,
+        GetUserIdFromContext(context));
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("Query geo assets list failed");
+        return;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        nlohmann::json jsonObject;
+        for (uint32_t i = 0; i < columns.size(); i++) {
+            string columnName = columns[i];
+            jsonObject[columnName] = MediaLibraryNapiUtils::GetStringValueByColumn(resultSet, columnName);
+        }
+        context->analysisDatas.push_back(jsonObject.dump());
+    }
+}
+
+static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> &assetsArray)
+{
+    bool isArray = false;
+    CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_INNER_FAIL);
+    if (!isArray) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check array type");
+        return nullptr;
+    }
+
+    uint32_t len = 0;
+    CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_INNER_FAIL);
+    if (len <= 0) {
+        NAPI_ERR_LOG("Failed to check array length: %{public}u", len);
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check array length");
+        return nullptr;
+    }
+
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value asset = nullptr;
+        CHECK_ARGS(env, napi_get_element(env, arg, i, &asset), JS_INNER_FAIL);
+        if (asset == nullptr) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get asset element");
+            return nullptr;
+        }
+
+        FileAssetNapi *obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, asset, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
+        if (obj == nullptr) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get asset napi object");
+            return nullptr;
+        }
+        if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO)) {
+            NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
+            continue;
+        }
+        assetsArray.push_back(to_string(obj->GetFileId()));
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static napi_value ParseArgsAnalysisData(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_THREE;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+    
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    // Parse analysis type
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_ZERO], context->analysisType),
+        JS_ERR_PARAMETER_INVALID);
+
+    // Parse asset uris
+    vector<string> uris;
+    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[ARGS_ONE], uris));
+    if (uris.empty()) {
+        NAPI_ERR_LOG("Geo assets list empty");
+        return nullptr;
+    }
+    context->uris = uris;
+
+    //Parse isForce
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamBool(env, context->argv[ARGS_TWO], context->isForce),
+        JS_ERR_PARAMETER_INVALID);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetAnalysisData");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
+
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsAnalysisData(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperGetAnalysisData",
+        [](napi_env env, void *data) {
+            auto context = static_cast<MediaLibraryAsyncContext*>(data);
+            JSGetAnalysisDataExecute(env, context);
+        }, reinterpret_cast<CompleteCallback>(JSGetAnalysisDataCompleteCallback));
+}
+
 napi_value MediaLibraryNapi::JSGetPhotoAssets(napi_env env, napi_callback_info info)
 {
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -6331,22 +7139,60 @@ napi_value MediaLibraryNapi::JSGetPhotoAssets(napi_env env, napi_callback_info i
         JSGetAssetsExecute, GetFileAssetsAsyncCallbackComplete);
 }
 
+// Easter egg operation: query duplicate assets
+static bool EasterEgg(MediaLibraryAsyncContext* context)
+{
+    string queryUri;
+    if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS) {
+        queryUri = PAH_FIND_ALL_DUPLICATE_ASSETS;
+    } else if (context->uri == URI_FIND_ALL_DUPLICATE_ASSETS_TO_DELETE) {
+        queryUri = PAH_FIND_DUPLICATE_ASSETS_TO_DELETE;
+    } else {
+        return false;
+    }
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NAPI_ERR_LOG("Easter egg operation failed, target is not system app");
+        return false;
+    };
+    bool isQueryCount = find(context->fetchColumn.begin(), context->fetchColumn.end(), MEDIA_COLUMN_COUNT)
+        != context->fetchColumn.end();
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    NAPI_INFO_LOG(
+        "Easter egg operation start: %{public}s, is query count: %{public}d",
+        queryUri == PAH_FIND_ALL_DUPLICATE_ASSETS ?
+        "find all duplicate assets" : "find all duplicate assets to delete", isQueryCount);
+    int errCode = 0;
+    Uri uri(queryUri);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
+        context->predicates, context->fetchColumn, errCode, GetUserIdFromContext(context));
+    if (resultSet == nullptr) {
+        context->SaveError(errCode);
+        NAPI_ERR_LOG("Easter egg operation failed, errCode: %{public}d", errCode);
+        return true;
+    }
+    context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    NAPI_INFO_LOG(
+        "Easter egg operation end: %{public}s, is query count: %{public}d, cost time: %{public}" PRId64 "ms",
+        queryUri == PAH_FIND_ALL_DUPLICATE_ASSETS ?
+        "find all duplicate assets" : "find all duplicate assets to delete", isQueryCount,
+        MediaFileUtils::UTCTimeMilliSeconds() - startTime);
+    return true;
+}
+
 static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessGetAssetsExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    if (EasterEgg(context)) {
+        return;
+    }
     string queryUri;
     switch (context->assetType) {
         case TYPE_PHOTO: {
-            if (context->uri == URI_ALL_DUPLICATE_ASSETS) {
-                queryUri = PAH_ALL_DUPLICATE_ASSETS;
-            } else if (context->uri == URI_CAN_DEL_DUPLICATE_ASSETS) {
-                queryUri = PAH_CAN_DEL_DUPLICATE_ASSETS;
-            } else {
-                queryUri = PAH_QUERY_PHOTO;
-            }
+            queryUri = PAH_QUERY_PHOTO;
             MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
             break;
         }
@@ -6359,10 +7205,11 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     Uri uri(queryUri);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
-        context->predicates, context->fetchColumn, errCode);
+        context->predicates, context->fetchColumn, errCode, GetUserIdFromContext(context));
     if (resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
         Uri queryWithUri(context->uri);
-        resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode);
+        resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode,
+            GetUserIdFromContext(context));
     }
     if (resultSet == nullptr) {
         context->SaveError(errCode);
@@ -6370,6 +7217,7 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     }
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    context->fetchFileResult->SetUserId(GetUserIdFromContext(context));
 }
 
 static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyncContext& asyncContext)
@@ -6378,13 +7226,12 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
     if (context->assetType != TYPE_PHOTO) {
         return nullptr;
     }
-
     string queryUri = PAH_QUERY_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(queryUri);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
-        context->predicates, context->fetchColumn, errCode);
+        context->predicates, context->fetchColumn, errCode, GetUserIdFromContext(context));
     if (resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
         Uri queryWithUri(context->uri);
         resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode);
@@ -6392,6 +7239,7 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
     CHECK_NULLPTR_RET(resultSet);
     auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fetchResult->SetUserId(GetUserIdFromContext(context));
     CHECK_NULLPTR_RET(fetchResult);
 
     std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
@@ -6405,6 +7253,7 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
     napi_create_array_with_length(env, len, &jsFileArray);
     size_t i = 0;
     for (i = 0; i < len; i++) {
+        fileAssetArray[i]->SetUserId(GetUserIdFromContext(context));
         napi_value jsFileAsset = FileAssetNapi::CreateFileAsset(env, fileAssetArray[i]);
         if ((jsFileAsset == nullptr) || (napi_set_element(env, jsFileArray, i, jsFileAsset) != napi_ok)) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
@@ -6446,7 +7295,7 @@ static napi_value PhotoAccessGetFileAssetsExecuteSync(napi_env env, MediaLibrary
     MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
 
     Uri uri(queryUri);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
         context->predicates, context->fetchColumn);
     CHECK_NULLPTR_RET(resultSet);
 
@@ -6491,10 +7340,37 @@ napi_value MediaLibraryNapi::JSGetAudioAssets(napi_env env, napi_callback_info i
         JSGetAssetsExecute, GetFileAssetsAsyncCallbackComplete);
 }
 
+static napi_value GetPhotoAlbumMap(napi_env env, std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> fileResult)
+{
+    napi_status status;
+    napi_value mapNapiValue {nullptr};
+    status = napi_create_map(env, &mapNapiValue);
+    CHECK_COND_RET(status == napi_ok && mapNapiValue != nullptr, nullptr,
+        "Failed to create map napi value, napi status: %{public}d", static_cast<int>(status));
+
+    NAPI_INFO_LOG("PhotoAlbumMap size: %{public}d", static_cast<int32_t>(fileResult.size()));
+    for (auto &iter : fileResult) {
+        napi_value albumId {nullptr};
+        status = napi_create_int32(env, iter.first, &albumId);
+        CHECK_COND_RET(status == napi_ok && albumId != nullptr, nullptr,
+            "Failed to create album id, napi status: %{public}d", static_cast<int>(status));
+        napi_value albumPhoto = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, iter.second);
+        status = napi_map_set_property(env, mapNapiValue, albumId, albumPhoto);
+        CHECK_COND_RET(status == napi_ok, nullptr, "Failed to set albumMap, napi status: %{public}d",
+            static_cast<int>(status));
+    }
+    return mapNapiValue;
+}
+
 static void GetPhotoAlbumQueryResult(napi_env env, MediaLibraryAsyncContext *context,
     unique_ptr<JSAsyncContextOutput> &jsContext)
 {
-    napi_value fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
+    napi_value fileResult;
+    if (context->albumIds.empty()) {
+        fileResult = FetchFileResultNapi::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
+    } else {
+        fileResult = GetPhotoAlbumMap(env, move(context->albumMap));
+    }
     if (fileResult == nullptr) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
@@ -6504,6 +7380,63 @@ static void GetPhotoAlbumQueryResult(napi_env env, MediaLibraryAsyncContext *con
     jsContext->data = fileResult;
     jsContext->status = true;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+}
+
+static void SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<DataShareResultSet> &resultSet)
+{
+    int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet,
+        TYPE_INT32));
+    photoAlbumData->SetAlbumId(albumId);
+    photoAlbumData->SetPhotoAlbumType(static_cast<PhotoAlbumType>(
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, resultSet, TYPE_INT32))));
+    photoAlbumData->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet, TYPE_INT32))));
+    photoAlbumData->SetLPath(get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_LPATH, resultSet,
+        TYPE_STRING)));
+    photoAlbumData->SetAlbumName(get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_NAME,
+        resultSet, TYPE_STRING)));
+    photoAlbumData->SetDateAdded(get<int64_t>(ResultSetUtils::GetValFromColumn(
+        PhotoAlbumColumns::ALBUM_DATE_ADDED, resultSet, TYPE_INT64)));
+    photoAlbumData->SetDateModified(get<int64_t>(ResultSetUtils::GetValFromColumn(
+        PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet, TYPE_INT64)));
+    photoAlbumData->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+
+    string countColumn = PhotoAlbumColumns::ALBUM_COUNT;
+    string coverColumn = PhotoAlbumColumns::ALBUM_COVER_URI;
+    string albumUriPrefix = PhotoAlbumColumns::ALBUM_URI_PREFIX;
+    photoAlbumData->SetAlbumUri(albumUriPrefix + to_string(albumId));
+    photoAlbumData->SetCount(get<int32_t>(ResultSetUtils::GetValFromColumn(countColumn, resultSet, TYPE_INT32)));
+    photoAlbumData->SetCoverUri(get<string>(ResultSetUtils::GetValFromColumn(coverColumn, resultSet, TYPE_STRING)));
+
+    // Albums of hidden types (except hidden album itself) don't support image count and video count,
+    // return -1 instead
+    int32_t imageCount = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
+        resultSet, TYPE_INT32));
+    int32_t videoCount = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
+        resultSet, TYPE_INT32));
+    photoAlbumData->SetImageCount(imageCount);
+    photoAlbumData->SetVideoCount(videoCount);
+}
+
+static void BuildAlbumMap(std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> &albumMap,
+    shared_ptr<DataShareResultSet> resultSet)
+{
+    int32_t count = 0;
+    auto ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("get rdbstore failed");
+        return;
+    }
+    if (count == 0) {
+        NAPI_ERR_LOG("albumid not find");
+        return;
+    }
+    NAPI_INFO_LOG("build album map size: %{public}d", count);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        unique_ptr<PhotoAlbum> albumAssetPtr = make_unique<PhotoAlbum>();
+        SetPhotoAlbum(albumAssetPtr.get(), resultSet);
+        albumMap[albumAssetPtr->GetAlbumId()] = std::move(albumAssetPtr);
+    }
 }
 
 static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
@@ -6525,7 +7458,8 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     }
     Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode,
+        GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED) {
@@ -6536,11 +7470,17 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
         return;
     }
 
-    context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
-    context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
-    context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
-    context->fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum ==
-        PhotoAlbumSubType::GEOGRAPHY_LOCATION);
+    if (context->albumIds.empty()) {
+        context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
+        context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
+        context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
+        context->fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum ==
+            PhotoAlbumSubType::GEOGRAPHY_LOCATION);
+        context->fetchPhotoAlbumResult->SetUserId(GetUserIdFromContext(context));
+    } else {
+        std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
+        BuildAlbumMap(context->albumMap, resultSet);
+    }
 }
 
 static napi_value JSGetPhotoAlbumsExecuteSync(napi_env env, MediaLibraryAsyncContext& asyncContext)
@@ -6559,13 +7499,16 @@ static napi_value JSGetPhotoAlbumsExecuteSync(napi_env env, MediaLibraryAsyncCon
     }
     Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode,
+        GetUserIdFromContext(context));
     CHECK_NULLPTR_RET(resultSet);
 
     auto fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
     fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
     fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum == PhotoAlbumSubType::GEOGRAPHY_LOCATION);
+    fetchPhotoAlbumResult->SetUserId(GetUserIdFromContext(context));
+    context->photoAlbumData->SetUserId(GetUserIdFromContext(context));
     if (fetchPhotoAlbumResult->GetCount() <= 0) {
         return nullptr;
     }
@@ -6583,7 +7526,20 @@ static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, v
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
-    if (context->error != ERR_DEFAULT  || context->fetchPhotoAlbumResult == nullptr) {
+    if (context->error == ERR_DEFAULT && context->albumMap.empty() && context->albumIds.size() > 0) {
+        napi_status status;
+        napi_value mapNapiValue {nullptr};
+        status = napi_create_map(env, &mapNapiValue);
+        if (status != napi_ok || mapNapiValue == nullptr) {
+            CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+            context->HandleError(env, jsContext->error);
+        } else {
+            jsContext->data = mapNapiValue;
+            jsContext->status = true;
+            CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+        }
+    } else if (context->error != ERR_DEFAULT  ||
+        (context->fetchPhotoAlbumResult == nullptr && context->albumMap.empty())) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
         context->HandleError(env, jsContext->error);
     } else {
@@ -7000,7 +7956,7 @@ static void GetExistsPhotoAlbum(const string &albumName, MediaLibraryAsyncContex
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
     vector<string> columns;
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    auto resultSet = UserFileClient::Query(uri, predicates, columns, errCode, GetUserIdFromContext(context));
     auto fetchResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     fetchResult->SetResultNapiType(context->resultNapiType);
     context->photoAlbumData = fetchResult->GetFirstObject();
@@ -7057,6 +8013,7 @@ static void GetPhotoAlbumCreateResult(napi_env env, MediaLibraryAsyncContext *co
             "Obtain photo album asset failed");
         return;
     }
+    context->photoAlbumData->SetUserId(GetUserIdFromContext(context));
     napi_value jsPhotoAlbum = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, context->photoAlbumData);
     if (jsPhotoAlbum == nullptr) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
@@ -7076,6 +8033,7 @@ static void HandleExistsError(napi_env env, MediaLibraryAsyncContext *context, n
             "Obtain photo album asset failed");
         return;
     }
+    context->photoAlbumData->SetUserId(GetUserIdFromContext(context));
     napi_value jsPhotoAlbum = PhotoAlbumNapi::CreatePhotoAlbumNapi(env, context->photoAlbumData);
     if (jsPhotoAlbum == nullptr) {
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, error, ERR_MEM_ALLOCATION,
@@ -7272,6 +8230,40 @@ static napi_value GetAlbumFetchOption(napi_env env, unique_ptr<MediaLibraryAsync
     return result;
 }
 
+static napi_value GetAlbumIds(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context, bool hasCallback)
+{
+    if (context->argc < (ARGS_ONE + hasCallback)) {
+        NAPI_ERR_LOG("No arguments to parse");
+        return nullptr;
+    }
+    MediaLibraryNapiUtils::GetStringArrayFromInt32(env, context->argv[PARAM0], context->albumIds);
+    if (context->albumIds.empty() || context->albumIds.size() > MAX_QUERY_ALBUM_LIMIT) {
+        NAPI_ERR_LOG("the size of albumid is invalid");
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    NAPI_INFO_LOG("GetAlbumIds: %{public}d", static_cast<int32_t>(context->albumIds.size()));
+    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, context->albumIds);
+    return result;
+}
+
+static napi_value HandleOneArgAlbum(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context, bool hasCallback)
+{
+    bool hasFetchOpt = false;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::hasFetchOpt(env, context->argv[PARAM0], hasFetchOpt), JS_INNER_FAIL);
+    if (hasFetchOpt) {
+        return GetAlbumFetchOption(env, context, hasCallback);
+    } else {
+        if (!MediaLibraryNapiUtils::IsSystemApp()) {
+            NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+            return nullptr;
+        }
+        return GetAlbumIds(env, context, hasCallback);
+    }
+}
+
 static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &context, const int32_t albumSubType)
 {
     if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
@@ -7379,7 +8371,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         case ARGS_ZERO:
             break;
         case ARGS_ONE:
-            CHECK_NULLPTR_RET(GetAlbumFetchOption(env, context, hasCallback));
+            CHECK_NULLPTR_RET(HandleOneArgAlbum(env, context, hasCallback));
             break;
         case ARGS_TWO:
             CHECK_NULLPTR_RET(ParseAlbumTypes(env, context));
@@ -7395,10 +8387,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
-        if (!context->isAnalysisAlbum) {
-            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
-            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
-        }
+        AddDefaultColumnsForNonAnalysisAlbums(*context);
         if (context->isHighlightAlbum) {
             context->fetchColumn.erase(std::remove(context->fetchColumn.begin(), context->fetchColumn.end(),
                 PhotoAlbumColumns::ALBUM_ID), context->fetchColumn.end());
@@ -7487,7 +8476,8 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
     GetCreateUri(context, uri);
     Uri createFileUri(uri);
     string outUri;
-    int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri);
+    int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri,
+        GetUserIdFromContext(context));
     if (index < 0) {
         context->SaveError(index);
         NAPI_ERR_LOG("InsertExt fail, index: %{public}d.", index);
@@ -7657,10 +8647,14 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
 
     string uri;
     GetCreateUri(context, uri);
+    if (context->tokenId != 0) {
+        NAPI_INFO_LOG("tokenId: %{public}d", context->tokenId);
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, TOKEN_ID, to_string(context->tokenId));
+    }
     Uri createFileUri(uri);
     for (const auto& valuesBucket : context->valuesBucketArray) {
         string outUri;
-        int index = UserFileClient::InsertExt(createFileUri, valuesBucket, outUri);
+        int index = UserFileClient::InsertExt(createFileUri, valuesBucket, outUri, GetUserIdFromContext(context));
         if (index < 0) {
             if (index == E_PERMISSION_DENIED) {
                 context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -7773,6 +8767,25 @@ napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssets(napi_env env, na
     NAPI_ASSERT(env, ParseArgsAgentCreateAssets(env, info, asyncContext), "Failed to parse js args");
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperAgentCreateAssets",
+        PhotoAccessAgentCreateAssetsExecute, JSCreateAssetCompleteCallback);
+}
+
+napi_value MediaLibraryNapi::CreateAssetsForAppWithAlbum(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateAssetsForAppWithAlbum");
+
+    NAPI_INFO_LOG("enter");
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    NAPI_ASSERT(env, ParseArgsCreatePhotoAssetForAppWithAlbum(env, info, asyncContext), "Failed to parse js args");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CreateAssetsForAppWithAlbum",
         PhotoAccessAgentCreateAssetsExecute, JSCreateAssetCompleteCallback);
 }
 
@@ -8961,7 +9974,7 @@ napi_value MediaLibraryNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_
     MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
 
     Uri uri(queryUri);
-    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
         context->predicates, context->fetchColumn);
     CHECK_NULLPTR_RET(resultSet);
 
@@ -8980,6 +9993,16 @@ napi_value MediaLibraryNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_
     } while (!resultSet->GoToNextRow());
     resultSet->Close();
     return jsFileArray;
+}
+
+int32_t MediaLibraryNapi::GetUserId()
+{
+    return userId_;
+}
+ 
+void MediaLibraryNapi::SetUserId(const int32_t &userId)
+{
+    userId_ = userId;
 }
 } // namespace Media
 } // namespace OHOS

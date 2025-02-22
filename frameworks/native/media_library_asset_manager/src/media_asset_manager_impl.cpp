@@ -712,10 +712,7 @@ void MediaAssetManagerImpl::RegisterTaskObserver(const unique_ptr<RequestSourceA
 
 void MediaAssetManagerImpl::ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName)
 {
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Get sDataShareHelper_ failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(sDataShareHelper_ != nullptr, "Get sDataShareHelper_ failed");
     std::string uriStr = PAH_PROCESS_IMAGE;
     MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, std::to_string(MEDIA_API_VERSION_V10));
     Uri uri(uriStr);

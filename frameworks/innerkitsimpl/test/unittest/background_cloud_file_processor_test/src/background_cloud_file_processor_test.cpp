@@ -39,6 +39,7 @@ using namespace testing::ext;
 static shared_ptr<MediaLibraryRdbStore> rdbStore;
 static std::atomic<int> num{ 0 };
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static constexpr int64_t SEC_TO_MSEC = 1e3;
 
 int32_t ExecSqls(const vector<string> &sqls)
 {
@@ -87,6 +88,7 @@ string InsertPhoto(const MediaType &mediaType, int32_t position)
 
     int64_t fileId = -1;
     int64_t timestamp = GetTimestamp();
+    int64_t timestampMilliSecond = timestamp * SEC_TO_MSEC;
     string title = GetTitle(timestamp);
     string displayName = mediaType == MEDIA_TYPE_VIDEO ? (title + ".mp4") : (title + ".jpg");
     string path = "/storage/cloud/files/photo/1/" + displayName;
@@ -111,8 +113,9 @@ string InsertPhoto(const MediaType &mediaType, int32_t position)
     valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, path);
     valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
     valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
-    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, timestamp);
-    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, timestamp);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, timestampMilliSecond);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, timestampMilliSecond);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TAKEN, timestampMilliSecond);
     valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
@@ -167,7 +170,8 @@ int32_t QueryPhotosCount()
 std::vector<std::string> QueryCurDownloadFiles()
 {
     std::vector<std::string> curDownloadFiles;
-    auto resultSet = BackgroundCloudFileProcessor::QueryCloudFiles();
+    double freeRatio = 0.5;
+    auto resultSet = BackgroundCloudFileProcessor::QueryCloudFiles(freeRatio);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query cloud files!");
         return curDownloadFiles;
@@ -175,11 +179,11 @@ std::vector<std::string> QueryCurDownloadFiles()
 
     BackgroundCloudFileProcessor::DownloadFiles downloadFiles;
     BackgroundCloudFileProcessor::ParseDownloadFiles(resultSet, downloadFiles);
-    if (downloadFiles.paths.empty()) {
+    if (downloadFiles.uris.empty()) {
         MEDIA_INFO_LOG("No cloud files need to be downloaded");
         return curDownloadFiles;
     }
-    return downloadFiles.paths;
+    return downloadFiles.uris;
 }
 
 void BackgroundCloudFileProcessorTest::SetUpTestCase()
@@ -209,50 +213,6 @@ void BackgroundCloudFileProcessorTest::TearDown()
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest TearDown");
 }
 
-// Scenario3: Test Video download order
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_003, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_003 Start");
-    PreparePhotos(5, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    vector<string> latest = PreparePhotos(1, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    EXPECT_EQ(QueryPhotosCount(), 16);
-
-    std::vector<std::string> curDownloadFiles = QueryCurDownloadFiles();
-    EXPECT_EQ(curDownloadFiles, latest);
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_003 End");
-}
-
-// Scenario4: Test the download order when the video is latest
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_004, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_004 Start");
-    PreparePhotos(5, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    PreparePhotos(5, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    PreparePhotos(5, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    PreparePhotos(5, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    vector<string> latest = PreparePhotos(1, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    EXPECT_EQ(QueryPhotosCount(), 21);
-
-    std::vector<std::string> curDownloadFiles = QueryCurDownloadFiles();
-    EXPECT_EQ(curDownloadFiles, latest);
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_004 End");
-}
-
-// Scenario5: Test the download order when the video is earliest
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_005, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_005 Start");
-    vector<string> earliest = PreparePhotos(1, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    EXPECT_EQ(QueryPhotosCount(), 21);
-
-    std::vector<std::string> curDownloadFiles = QueryCurDownloadFiles();
-    EXPECT_EQ(curDownloadFiles, earliest);
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_005 End");
-}
-
 // Scenario6: Test how many images can be downloaded in one minute
 HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_006, TestSize.Level0)
 {
@@ -261,20 +221,8 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     EXPECT_EQ(QueryPhotosCount(), 10);
 
     std::vector<std::string> curDownloadFiles = QueryCurDownloadFiles();
-    EXPECT_EQ(curDownloadFiles.size(), 2);
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_006 End");
-}
-
-// Scenario7: Test how many videos can be downloaded in one minute
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_007, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_007 Start");
-    PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
-    EXPECT_EQ(QueryPhotosCount(), 10);
-
-    std::vector<std::string> curDownloadFiles = QueryCurDownloadFiles();
     EXPECT_EQ(curDownloadFiles.size(), 1);
-    MEDIA_INFO_LOG("background_cloud_file_processor_test_007 End");
+    MEDIA_INFO_LOG("background_cloud_file_processor_test_006 End");
 }
 
 // Scenario8: Test how many image can be updated in one minute

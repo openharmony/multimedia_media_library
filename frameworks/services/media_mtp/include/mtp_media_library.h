@@ -45,7 +45,8 @@ public:
         std::shared_ptr<UInt32List> &outHandles);
     EXPORT int32_t GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<ObjectInfo> &outObjectInfo);
-    EXPORT int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
+    EXPORT bool IsExistObject(const std::shared_ptr<MtpOperationContext> &context);
+    EXPORT int32_t GetFd(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd, bool forWrite = false);
     EXPORT int32_t GetThumb(const std::shared_ptr<MtpOperationContext> &context,
         std::shared_ptr<UInt8List> &outThumb);
     EXPORT int32_t SendObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
@@ -68,7 +69,7 @@ public:
     EXPORT bool TryRemoveExternalStorage(const std::string &fsUuid, uint32_t &storageId);
     EXPORT int GetStorageIds();
     EXPORT void DeleteHandlePathMap(const std::string &path, const uint32_t id);
-    EXPORT int ObserverAddPathToMap(const std::string &path);
+    EXPORT uint32_t ObserverAddPathToMap(const std::string &path);
     EXPORT void ObserverDeletePathToMap(const std::string &path);
 
 private:

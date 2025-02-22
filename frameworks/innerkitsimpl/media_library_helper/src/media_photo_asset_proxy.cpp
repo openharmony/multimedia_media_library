@@ -134,6 +134,7 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
     values.Put(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(mediaType));
     if (cameraShotType_ == CameraShotType::MOVING_PHOTO) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+        values.Put(PhotoColumn::STAGE_VIDEO_TASK_STATUS, static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE));
     }
     if (cameraShotType_ == CameraShotType::BURST) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
@@ -231,10 +232,7 @@ int32_t CloseFd(const shared_ptr<DataShare::DataShareHelper> &dataShareHelper, c
         if (close(fd) == E_SUCCESS) {
             retVal = dataShareHelper->Insert(closeAssetUri, valuesBucket);
         }
-
-        if (retVal == E_FAIL) {
-            MEDIA_ERR_LOG("Failed to close the file");
-        }
+        CHECK_AND_PRINT_LOG(retVal != E_FAIL, "Failed to close the file");
     }
 
     return retVal;
@@ -284,17 +282,12 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
         .width = photoProxy->GetWidth(),
         .height = photoProxy->GetHeight()
     };
+
     auto pixelMap = Media::PixelMap::Create(opts);
-    if (pixelMap == nullptr) {
-        MEDIA_ERR_LOG("Create pixelMap failed.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, E_ERR, "Create pixelMap failed.");
     pixelMap->SetPixelsAddr(imageAddr, nullptr, imageSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
     auto pixelSize = static_cast<uint32_t>(pixelMap->GetByteCount());
-    if (pixelSize == 0) {
-        MEDIA_ERR_LOG("pixel size is 0.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(pixelSize != 0, E_ERR, "pixel size is 0.");
 
     // encode rgba to jpeg
     auto buffer = new (std::nothrow) uint8_t[pixelSize];
@@ -311,6 +304,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
     uint32_t packResult = imagePacker.FinalizePacking(packedSize);
     if (packResult != E_OK || buffer == nullptr) {
         MEDIA_ERR_LOG("packet pixelMap failed packResult: %{public}d", packResult);
+        delete[] buffer;
         return E_ERR;
     }
     MEDIA_INFO_LOG("pack pixelMap success, packedSize: %{public}" PRId64, packedSize);
@@ -334,31 +328,21 @@ void PhotoAssetProxy::SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t si
     tracer.Start("CreateImageSource");
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
     tracer.Finish();
-    if (imageSource == nullptr) {
-        MEDIA_ERR_LOG("imageSource is nullptr");
-        return;
-    }
+
+    CHECK_AND_RETURN_LOG(imageSource != nullptr, "imageSource is nullptr");
     uint32_t index = 0;
     uint32_t ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_ISO_SPEED_LATITUDE_ZZZ,
         to_string(shootingMode));
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("modify image property shooting mode fail %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "modify image property shooting mode fail %{public}d", ret);
 
     ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LONGITUDE, LocationValueToString(longitude));
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("modify image property longitude fail %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "modify image property longitude fail %{public}d", ret);
 
     ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF, longitude > 0.0 ? "E" : "W");
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("modify image property longitude ref fail %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "modify image property longitude ref fail %{public}d", ret);
 
     ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE, LocationValueToString(latitude));
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("modify image property latitude fail %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "modify image property latitude fail %{public}d", ret);
 
     tracer.Start("ModifyImageProperty");
     ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, latitude > 0.0 ? "N" : "S", fd);
@@ -439,9 +423,7 @@ int PhotoAssetProxy::SaveLowQualityPhoto(std::shared_ptr<DataShare::DataShareHel
     valuesBucket.Put(PhotoColumn::PHOTO_LONGITUDE, photoProxy->GetLongitude());
 
     int32_t changeRows = dataShareHelper->Update(updateAssetUri, predicates, valuesBucket);
-    if (changeRows < 0) {
-        MEDIA_ERR_LOG("update fail, error: %{public}d", changeRows);
-    }
+    CHECK_AND_PRINT_LOG(changeRows >= 0, "update fail, error: %{public}d", changeRows);
     MEDIA_INFO_LOG("photoId: %{public}s,", photoProxy->GetPhotoId().c_str());
     photoProxy->Release();
     return E_OK;

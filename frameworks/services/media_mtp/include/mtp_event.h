@@ -28,6 +28,7 @@ public:
     ~MtpEvent();
     void SendObjectAdded(const std::string &path);
     void SendObjectRemoved(const std::string &path);
+    void SendObjectRemovedByHandle(uint32_t handle);
     void SendObjectInfoChanged(const std::string &path);
     void SendDevicePropertyChanged();
     void SendStoreAdded(const std::string &fsUuid);

@@ -69,6 +69,7 @@ private:
     COMPILE_HIDDEN void Init();
     COMPILE_HIDDEN void HandleTask(PeriodTaskType periodTaskType);
 
+    COMPILE_HIDDEN static std::atomic<bool> stop_;
     COMPILE_HIDDEN static std::shared_ptr<MediaLibraryPeriodWorker> periodWorkerInstance_;
     COMPILE_HIDDEN static std::mutex instanceMtx_;
     COMPILE_HIDDEN static std::map<int32_t, std::shared_ptr<MedialibraryPeriodTask>> tasks_;

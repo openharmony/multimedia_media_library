@@ -75,6 +75,12 @@ void MtpPacket::Reset()
     std::vector<uint8_t>().swap(writeBuffer_);
 }
 
+void MtpPacket::Stop()
+{
+    CHECK_AND_RETURN_LOG(mtpDriver_ != nullptr, "mtpDriver_ is null");
+    (void)mtpDriver_->CloseDriver();
+}
+
 bool MtpPacket::IsNeedDataPhase(uint16_t operationCode)
 {
     switch (operationCode) {
@@ -95,6 +101,7 @@ bool MtpPacket::IsNeedDataPhase(uint16_t operationCode)
         case MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE:
         case MTP_OPERATION_GET_OBJECT_PROP_LIST_CODE:
         case MTP_OPERATION_GET_OBJECT_REFERENCES_CODE:
+        case MTP_OPERATION_GET_PARTIAL_OBJECT_CODE:
             return true;
         default:
             break;

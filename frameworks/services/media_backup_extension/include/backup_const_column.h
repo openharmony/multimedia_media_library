@@ -41,9 +41,8 @@ const std::string GALLERY_SCALE_HEIGHT = "merge_face.scale_height";
 const std::string GALLERY_PITCH = "merge_face.pitch";
 const std::string GALLERY_YAW = "merge_face.yaw";
 const std::string GALLERY_ROLL = "merge_face.roll";
-const std::string GALLERY_PROB = "face.prob";
+const std::string GALLERY_PROB = "merge_face.prob";
 const std::string GALLERY_TOTAL_FACE = "merge_face.total_face";
-const std::string GALLERY_LANDMARKS = "merge_face.landmarks";
 const std::string GALLERY_MERGE_FACE_HASH = GALLERY_TABLE_MERGE_FACE + "." + GALLERY_HASH;
 const std::string GALLERY_MERGE_FACE_TAG_ID = GALLERY_TABLE_MERGE_FACE + "." + GALLERY_TAG_ID;
 const std::string GALLERY_MERGE_TAG_TAG_ID = GALLERY_TABLE_MERGE_TAG + "." + GALLERY_TAG_ID;
@@ -125,26 +124,43 @@ const std::string ANALYSIS_ALBUM_SUBTYPE = "album_subtype";
 
 const std::string QUERY_FACE_TAG_COUNT = "SELECT count(1) AS count FROM " + VISION_FACE_TAG_TABLE;
 const std::string QUERY_IMAGE_FACE_COUNT = "SELECT count(1) AS count FROM " + VISION_IMAGE_FACE_TABLE;
+const std::string CREATE_FACE_TAG_INDEX =
+    "CREATE INDEX IF NOT EXISTS face_clone_tag_index ON tab_analysis_face_tag (tag_id)";
 
 const std::string GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY = GALLERY_TAG_NAME + " IS NOT NULL AND " + GALLERY_TAG_NAME +
     " != ''";
 const std::string GALLERY_TAG_WITH_PHOTOS = "EXISTS (SELECT 1 FROM " + GALLERY_TABLE_MERGE_FACE + " INNER JOIN \
+    gallery_media ON " + GALLERY_MERGE_FACE_HASH + " = gallery_media.hash WHERE " + LOCAL_PHOTOS_WHERE_CLAUSE +
+    " AND " + GALLERY_MERGE_FACE_TAG_ID + " = " + GALLERY_MERGE_TAG_TAG_ID + ")";
+
+const std::string GALLERY_TAG_WITH_CLOUD_PHOTOS = "EXISTS (SELECT 1 FROM " + GALLERY_TABLE_MERGE_FACE + " INNER JOIN \
     gallery_media ON " + GALLERY_MERGE_FACE_HASH + " = gallery_media.hash WHERE " + ALL_PHOTOS_WHERE_CLAUSE + " AND " +
-    GALLERY_MERGE_FACE_TAG_ID + " = " + GALLERY_MERGE_TAG_TAG_ID + " AND " + GALLERY_LANDMARKS + " != 0)";
+    GALLERY_MERGE_FACE_TAG_ID + " = " + GALLERY_MERGE_TAG_TAG_ID + ")";
+
 const std::string GALLERY_PORTRAIT_ALBUM_TABLE = GALLERY_TABLE_MERGE_TAG + " WHERE " +
     GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY + " AND " + GALLERY_TAG_WITH_PHOTOS;
+
+const std::string GALLERY_PORTRAIT_ALBUM_TABLE_WITH_CLOUD = GALLERY_TABLE_MERGE_TAG + " WHERE " +
+    GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY + " AND " + GALLERY_TAG_WITH_CLOUD_PHOTOS;
+
 const std::string QUERY_GALLERY_PORTRAIT_ALBUM_COUNT = "SELECT count(1) as count FROM " + GALLERY_PORTRAIT_ALBUM_TABLE;
+
+const std::string QUERY_GALLERY_PORTRAIT_ALBUM_WITH_CLOUD_COUNT = "SELECT count(1) as count FROM " +
+    GALLERY_PORTRAIT_ALBUM_TABLE_WITH_CLOUD;
+
 const std::string GALLERY_FACE_TABLE_JOIN_TAG = GALLERY_TABLE_MERGE_FACE + " INNER JOIN " + GALLERY_TABLE_MERGE_TAG +
     " ON " + GALLERY_MERGE_FACE_TAG_ID + " = " + GALLERY_MERGE_TAG_TAG_ID + " INNER JOIN " + GALLERY_TABLE_MEDIA +
     " ON " + GALLERY_MERGE_FACE_HASH + " = " + GALLERY_MEDIA_HASH + " GROUP BY " + GALLERY_MERGE_FACE_HASH + ", " +
     GALLERY_FACE_ID;
-const std::string GALLERY_FACE_TABLE_FULL = GALLERY_TABLE_MERGE_FACE + " INNER JOIN " + GALLERY_TABLE_FACE + " ON " +
-    GALLERY_MERGE_FACE_HASH + " = " + GALLERY_FACE_HASH + " AND " + GALLERY_MERGE_FACE_FACE_ID + " = " +
-    GALLERY_FACE_FACE_ID + " WHERE " + GALLERY_LANDMARKS + " != 0 ";
 
 // Path related
 const std::string INTERNAL_PREFIX = "/storage/emulated";
+constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 const std::string APP_TWIN_DATA_PREFIX = "/AppTwinData";
+const std::string CLONE_STAT_EDIT_DATA_DIR = "/storage/media/local/files/.editData/";
+const std::string CLONE_STAT_RDB_DIR = "/data/storage/el2/database/rdb/";
+const std::string CLONE_STAT_KVDB_DIR = "/data/storage/el2/database/kvdb/";
+const std::string CLONE_STAT_HIGHLIGHT_DIR = "/storage/media/local/files/highlight/";
 } // namespace Media
 } // namespace OHOS
 

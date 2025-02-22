@@ -26,6 +26,7 @@
 #include "medialibrary_notify.h"
 #include "rdb_predicates.h"
 #include "media_file_utils.h"
+#include "photo_query_filter.h"
 
 using namespace std;
 
@@ -52,10 +53,7 @@ static vector<string> GetIds(const CloudSyncHandleData &handleData)
 static void UpdateCloudAlbum(const string &id, int32_t count)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Can not get rdbstore");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Can not get rdbstore");
     int changeRows = 0;
     NativeRdb::ValuesBucket valuesNew;
     valuesNew.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
@@ -63,9 +61,7 @@ static void UpdateCloudAlbum(const string &id, int32_t count)
     NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, id);
     rdbStore->Update(changeRows, valuesNew, rdbPredicates);
-    if (changeRows < 0) {
-        MEDIA_ERR_LOG("Failed to update cloudAlbum , ret = %{public}d", changeRows);
-    }
+    CHECK_AND_PRINT_LOG(changeRows >= 0, "Failed to update cloudAlbum , ret = %{public}d", changeRows);
 }
 static int32_t GetCloudAlbumCount(const string &id)
 {
@@ -73,10 +69,7 @@ static int32_t GetCloudAlbumCount(const string &id)
 
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, id);
-    predicates.And()->EqualTo(PhotoColumn::MEDIA_HIDDEN, 0);
-    predicates.And()->EqualTo(PhotoColumn::MEDIA_DATE_TRASHED, 0);
-    predicates.And()->EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG,
-        to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_VISIBLE, predicates);
 
     auto resultSet = MediaLibraryRdbStore::Query(predicates, columnInfo);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
@@ -117,8 +110,13 @@ static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
     predicates.EndWrap();
     predicates.Or()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
     predicates.EndWrap();
-    int deleteRow = MediaLibraryRdbStore::Delete(predicates);
+    int deleteRow = -1;
+    auto ret = rdbStore->Delete(deleteRow, predicates);
+    if (ret != NativeRdb::E_OK || deleteRow <= 0) {
+        MEDIA_ERR_LOG("DeletePhotoAlbum failed, errCode = %{public}d, deleteRow = %{public}d", ret, deleteRow);
+    }
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     const vector<string> &notifyUris = predicates.GetWhereArgs();
     size_t count = notifyUris.size() - AFTER_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {
@@ -130,7 +128,7 @@ static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
     return deleteRow;
 }
 
-void DeleteOrUpdateCloudAlbums(const vector<string> &ids)
+void CloudAlbumHandler::DeleteOrUpdateCloudAlbums(const vector<string> &ids)
 {
     for (const auto &id : ids) {
         auto count = GetCloudAlbumCount(id);
@@ -143,7 +141,7 @@ void DeleteOrUpdateCloudAlbums(const vector<string> &ids)
                 MEDIA_INFO_LOG("delete Album {%{public}s} fail", id.c_str());
             }
         } else {
-            MEDIA_INFO_LOG("Album {%{public}s} not empty, count %{public}d", id.c_str(), count);
+            MEDIA_INFO_LOG("Album {%{public}s} not empty, setcount %{public}d", id.c_str(), count);
             UpdateCloudAlbum(id, count);
         }
     }

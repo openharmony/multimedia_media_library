@@ -27,7 +27,6 @@
 #include "medialibrary_errno.h"
 #include "thumbnail_const.h"
 #include "userfile_manager_types.h"
-#include "medialibrary_common_utils.h"
 
 using namespace std;
 
@@ -61,11 +60,15 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
     }
 
     if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
-        outSize.width = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_WIDTH]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_WIDTH])) {
+            outSize.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        }
     }
 
     if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
-        outSize.height = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_HEIGHT]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_HEIGHT])) {
+            outSize.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        }
     }
 
     if (queryKey.count(THUMBNAIL_PATH) != 0) {
@@ -97,11 +100,15 @@ bool ThumbnailUriUtils::ParseKeyFrameThumbnailInfo(const string &uriString, stri
     }
 
     if (queryKey.count(THUMBNAIL_BEGIN_STAMP) != 0) {
-        outBeginStamp = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_BEGIN_STAMP]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_BEGIN_STAMP])) {
+            outBeginStamp = stoi(queryKey[THUMBNAIL_BEGIN_STAMP]);
+        }
     }
 
     if (queryKey.count(THUMBNAIL_TYPE) != 0) {
-        outType = MediaLibraryCommonUtils::SafeStoi(queryKey[THUMBNAIL_TYPE]);
+        if (MediaFileUtils::IsValidInteger(queryKey[THUMBNAIL_TYPE])) {
+            outType = stoi(queryKey[THUMBNAIL_TYPE]);
+        }
     }
 
     if (queryKey.count(THUMBNAIL_PATH) != 0) {
@@ -162,6 +169,24 @@ string ThumbnailUriUtils::GetDateTakenFromUri(const string &uri)
         return pairString.substr(splitIndex + 1);
     }
     return "";
+}
+
+string ThumbnailUriUtils::GetDateModifiedFromUri(const string &uri)
+{
+    size_t index = uri.find(ML_URI_DATE_MODIFIED);
+    if (index == std::string::npos) {
+        MEDIA_ERR_LOG("GetDateModifiedFromUri find index for dateModified failed: %{private}s", uri.c_str());
+        return "";
+    }
+
+    string pairString = uri.substr(index + 1);
+    size_t startIndex = pairString.find('=');
+    size_t endIndex = pairString.find('&');
+    if (startIndex == std::string::npos || endIndex == std::string::npos || endIndex - startIndex - 1 <= 0) {
+        MEDIA_ERR_LOG("GetDateModifiedFromUri failed to parse pairString: %{private}s", pairString.c_str());
+        return "";
+    }
+    return pairString.substr(startIndex + 1, endIndex - startIndex - 1);
 }
 
 string ThumbnailUriUtils::GetFileUriFromUri(const string &uri)

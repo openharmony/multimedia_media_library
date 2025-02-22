@@ -259,6 +259,30 @@ struct NapiClassInfo {
     std::vector<napi_property_descriptor> props;
 };
 
+typedef union ColumnUnion {
+    ~ColumnUnion() {};
+    std::string sval_;
+    int ival_;
+    int64_t lval_;
+    double dval_;
+} ColumnUnion;
+
+struct RowObject;
+struct ColumnInfo {
+    std::string columnName_;
+    std::string tmpName_;
+    ColumnUnion tmpNameValue_{};
+    std::string timeInfoKey_;
+    int64_t timeInfoVal_{0};
+    int32_t thumbnailReady_{0};
+    std::shared_ptr<RowObject> coverSharedPhotoAsset_;
+};
+
+struct RowObject {
+    std::vector<std::shared_ptr<ColumnInfo>> columnVector_;
+    std::string dbUri_;
+};
+
 /* Util class used by napi asynchronous methods for making call to js callback function */
 class MediaLibraryNapiUtils {
 public:
@@ -335,6 +359,7 @@ public:
         std::string &propValue);
     static napi_status GetArrayProperty(napi_env env, napi_value arg, const std::string &propName,
         std::vector<std::string> &array);
+    static napi_status GetStringArrayFromInt32(napi_env env, napi_value arg, std::vector<std::string> &array);
     static napi_status GetStringArray(napi_env env, napi_value arg, std::vector<std::string> &array);
     static void UriAddTableName(std::string &uri, const std::string tableName);
     static std::string GetFileIdFromUri(const std::string &uri);
@@ -342,12 +367,14 @@ public:
     static MediaType GetMediaTypeFromUri(const std::string &uri);
     template <class AsyncContext>
     static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
-        AsyncContext &context, const FetchOptionType &fetchOptType);
+        AsyncContext &context, const FetchOptionType &fetchOptType,
+        std::vector<DataShare::OperationItem> operations = {});
     template <class AsyncContext>
     static napi_status ParseAlbumFetchOptCallback(napi_env env, napi_callback_info info, AsyncContext &context);
     template <class AsyncContext>
     static bool HandleSpecialPredicate(AsyncContext &context,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType);
+        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType,
+        std::vector<DataShare::OperationItem> operations = {});
     template <class AsyncContext>
     static void UpdateMediaTypeSelections(AsyncContext *context);
 
@@ -361,7 +388,7 @@ public:
 
     template <class AsyncContext>
     static napi_status GetFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,
-        AsyncContext &context);
+        AsyncContext &context, std::vector<DataShare::OperationItem> operations = {});
 
     template <class AsyncContext>
     static napi_status GetAlbumFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,
@@ -390,6 +417,10 @@ public:
 
     template <class AsyncContext>
     static napi_status ParseArgsOnlyCallBack(napi_env env, napi_callback_info info, AsyncContext &context);
+
+    static napi_value ParseAssetIdArray(napi_env env, napi_value arg, std::vector<std::string> &idArray);
+
+    static napi_value ParseIntegerArray(napi_env env, napi_value arg, std::vector<int32_t> &intArray);
 
     static AssetType GetAssetType(MediaType type);
 
@@ -466,31 +497,59 @@ public:
     static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
     static napi_value GetUriArrayFromAssets(
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
+    static napi_value GetIdArrayFromAssets(
+        napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
     static napi_value GetStringArray(
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
     static void FixSpecialDateType(std::string &selections);
     static std::string TransferUri(const std::string &oldUri);
     static std::string GetFileIdFromUriString(const std::string& uri);
     static std::string GetAlbumIdFromUriString(const std::string& uri);
-    static napi_value GetSharedPhotoAssets(const napi_env& env, std::vector<std::string>& albumIds,
-        bool isSingleResult = false);
-    static napi_value GetSharedAlbumAssets(const napi_env& env, std::vector<std::string>& fileIds);
+    static napi_value GetSharedPhotoAssets(const napi_env& env, std::shared_ptr<NativeRdb::ResultSet> result,
+        int32_t size, bool isSingleResult = false);
+    static napi_value GetSharedAlbumAssets(const napi_env& env, std::shared_ptr<NativeRdb::ResultSet> result,
+        int32_t size);
+    static napi_value GetSharedPhotoAssets(const napi_env& env, std::vector<std::string>& fileIds,
+        bool isSingleResult);
     static void HandleCoverSharedPhotoAsset(napi_env env, int32_t index, napi_value result,
-        const std::string& name, const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet);
-    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+        const std::string& name, const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         bool isShared = false);
-    static napi_value GetNextRowAlbumObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    static napi_value GetNextRowAlbumObject(napi_env env, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     static napi_value CreateValueByIndex(napi_env env, int32_t index, std::string name,
-        std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
     static void handleTimeInfo(napi_env env, const std::string& name, napi_value result, int32_t index,
-        const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet);
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
 
     template <class AsyncContext>
     static napi_status ParsePredicates(napi_env env,
         const napi_value arg, AsyncContext &context, const FetchOptionType &fetchOptType);
 
-private:
+    static int ParseNextRowObject(std::shared_ptr<RowObject>& rowObj, std::shared_ptr<NativeRdb::ResultSet>& resultSet,
+        bool isShared);
+    static int ParseNextRowAlbumObject(std::shared_ptr<RowObject>& rowObj,
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+    static napi_value BuildNextRowObject(const napi_env& env, std::shared_ptr<RowObject>& rowObj, bool isShared);
+    static napi_value BuildNextRowAlbumObject(const napi_env& env, std::shared_ptr<RowObject>& rowObj);
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
+
+private:
+    static napi_value BuildValueByIndex(const napi_env& env, int32_t index, const std::string& name,
+        ColumnUnion& tmpNameValue);
+    static int ParseValueByIndex(std::shared_ptr<ColumnInfo>& columnInfo, int32_t index, const std::string& name,
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
+    static int ParseTimeInfo(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo, int32_t index,
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static void BuildTimeInfo(const napi_env& env, const std::string& name, napi_value& result, int32_t index,
+    std::shared_ptr<ColumnInfo>& columnInfo);
+    static int ParseThumbnailReady(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo, int32_t index,
+        const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static void BuildThumbnailReady(const napi_env& env, const std::string& name, napi_value& result, int32_t index,
+    std::shared_ptr<ColumnInfo>& columnInfo);
+    static int ParseCoverSharedPhotoAsset(int32_t index, std::shared_ptr<ColumnInfo>& columnInfo,
+        const std::string& name, const std::shared_ptr<NativeRdb::ResultSet>& resultSet);
+    static int ParseSingleSharedPhotoAssets(std::shared_ptr<ColumnInfo>& columnInfo,
+        std::shared_ptr<NativeRdb::ResultSet>& result);
 };
 
 class NapiScopeHandler {

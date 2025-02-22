@@ -18,6 +18,7 @@
 
 #include "ability_manager_client.h"
 #include "background_task_mgr_helper.h"
+#include "cloud_sync_helper.h"
 #include "dfx_cloud_manager.h"
 #include "dfx_utils.h"
 #include "hitrace_meter.h"
@@ -33,6 +34,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "post_event_utils.h"
+#include "post_proc.h"
 #include "result_set_utils.h"
 #include "rdb_predicates.h"
 #include "rdb_helper.h"
@@ -40,7 +42,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_source_loading.h"
-
+#include "medialibrary_astc_stat.h"
 using namespace std;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
@@ -55,6 +57,13 @@ void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data)
     if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
         MediaLibraryPhotoOperations::StoreThumbnailSize(photoId, tmpPath);
     }
+}
+
+void IThumbnailHelper::CloudSyncOnGenerationComplete(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    CloudSyncHelper::GetInstance()->isThumbnailGenerationCompleted_ = true;
+    CloudSyncHelper::GetInstance()->StartSync();
+    MEDIA_INFO_LOG("CloudSyncOnGenerationComplete complete");
 }
 
 void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -108,8 +117,11 @@ void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateAstc failed, data is null");
         return;
     }
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     bool isSuccess = DoCreateAstc(data->opts_, data->thumbnailData_);
     UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime,
+        data->thumbnailData_.stats.scene, AstcGenScene::NOCHARGING_SCREENOFF, data->thumbnailData_.id);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -151,8 +163,24 @@ void IThumbnailHelper::UpdateAstcDateTaken(std::shared_ptr<ThumbnailTaskData> &d
     }
 }
 
+void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, const ThumbnailTaskType &taskType,
+    const ThumbnailTaskPriority &priority)
+{
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(taskType);
+    if (thumbnailWorker == nullptr) {
+        MEDIA_ERR_LOG("thumbnailWorker is null");
+        return;
+    }
+
+    std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>();
+    std::shared_ptr<ThumbnailGenerateTask> task = std::make_shared<ThumbnailGenerateTask>(executor, taskData);
+    thumbnailWorker->AddTask(task, priority);
+}
+
 void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
-    ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority)
+    ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority,
+    std::shared_ptr<ExecuteParamBuilder> param)
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(taskType);
@@ -162,7 +190,7 @@ void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executo
     }
 
     std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, thumbData);
-    std::shared_ptr<ThumbnailGenerateTask> task = std::make_shared<ThumbnailGenerateTask>(executor, taskData);
+    std::shared_ptr<ThumbnailGenerateTask> task = std::make_shared<ThumbnailGenerateTask>(executor, taskData, param);
     thumbnailWorker->AddTask(task, priority);
 }
 
@@ -204,14 +232,24 @@ static bool WaitFor(const shared_ptr<ThumbnailSyncStatus> &thumbnailWait, int wa
     return ret;
 }
 
-WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type)
+WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type, const string &dateModified)
 {
     id_ = id + ThumbnailUtils::GetThumbnailSuffix(type);
+    dateModified_ = dateModified;
     unique_lock<shared_mutex> writeLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
     if (iter != thumbnailMap_.end()) {
         auto thumbnailWait = iter->second;
         unique_lock<mutex> lck(thumbnailWait->mtx_);
+
+        // As data Source has changed, allowing this insertion to proceed and update dateModified
+        if (thumbnailWait->latestDateModified_ < dateModified) {
+            MEDIA_INFO_LOG("DateModified changed, continue to generate thumbnail, id: %{public}s, last: %{public}s,"
+                "new:  %{public}s", id_.c_str(), thumbnailWait->latestDateModified_.c_str(), dateModified.c_str());
+            thumbnailWait->latestDateModified_ = dateModified;
+            return WaitStatus::WAIT_CONTINUE;
+        }
+
         writeLck.unlock();
         MEDIA_INFO_LOG("Waiting for thumbnail generation, id: %{public}s", id_.c_str());
         thumbnailWait->cond_.wait(lck, [weakPtr = weak_ptr(thumbnailWait)]() {
@@ -230,6 +268,7 @@ WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type)
         }
     } else {
         shared_ptr<ThumbnailSyncStatus> thumbnailWait = make_shared<ThumbnailSyncStatus>();
+        thumbnailWait->latestDateModified_ = dateModified;
         thumbnailMap_.insert(ThumbnailMap::value_type(id_, thumbnailWait));
         return WaitStatus::INSERT;
     }
@@ -299,6 +338,82 @@ WaitStatus ThumbnailWait::CloudInsertAndWait(const string &id, CloudLoadType clo
     }
 }
 
+bool ThumbnailWait::TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType type)
+{
+    ThumbnailType idType = (type == ThumbnailType::LCD || type == ThumbnailType::LCD_EX) ?
+        ThumbnailType::LCD : ThumbnailType::THUMB;
+    id_ = data.id + ThumbnailUtils::GetThumbnailSuffix(idType);
+    MEDIA_INFO_LOG("Save current pixelMap, path: %{public}s, type: %{public}d",
+        DfxUtils::GetSafePath(data.path).c_str(), type);
+    unique_lock<shared_mutex> writeLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        unique_lock<mutex> lck(thumbnailWait->mtx_);
+        writeLck.unlock();
+        if (!thumbnailWait->CheckSavedFileMap(data.id, type, data.dateModified)) {
+            MEDIA_ERR_LOG("TrySaveCurrentPixelMap cancelled, latest file exists, path: %{public}s",
+                DfxUtils::GetSafePath(data.path).c_str());
+            return false;
+        }
+
+        int err = ThumbnailUtils::TrySaveFile(data, type);
+        if (err < 0) {
+            MEDIA_ERR_LOG("TrySaveCurrentPixelMap failed: %{public}d, path: %{public}s", err,
+                DfxUtils::GetSafePath(data.path).c_str());
+            return false;
+        }
+
+        if (!thumbnailWait->UpdateSavedFileMap(data.id, type, data.dateModified)) {
+            MEDIA_ERR_LOG("UpdateSavedFileMap failed while save pixelMap, path: %{public}s",
+                DfxUtils::GetSafePath(data.path).c_str());
+            return false;
+        }
+    } else {
+        MEDIA_ERR_LOG("TrySaveCurrentPixelMap cancelled, corresponding task has finished, path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+    return true;
+}
+
+bool ThumbnailWait::TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, const string &tempOutputPath)
+{
+    id_ = data.id + ThumbnailUtils::GetThumbnailSuffix(ThumbnailType::LCD);
+    MEDIA_INFO_LOG("Save current picture, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    unique_lock<shared_mutex> writeLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        unique_lock<mutex> lck(thumbnailWait->mtx_);
+        writeLck.unlock();
+        ThumbnailType lcdType = isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD;
+        if (!thumbnailWait->CheckSavedFileMap(data.id, lcdType, data.dateModified)) {
+            MEDIA_ERR_LOG("TrySaveCurrentPicture cancelled, latest file exists, path: %{public}s",
+                DfxUtils::GetSafePath(data.path).c_str());
+            ThumbnailUtils::CancelAfterPacking(tempOutputPath);
+            return false;
+        }
+
+        if (!ThumbnailUtils::SaveAfterPacking(data.path, tempOutputPath)) {
+            MEDIA_ERR_LOG("TrySaveCurrentPicture failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+            return false;
+        }
+
+        if (!thumbnailWait->UpdateSavedFileMap(data.id, lcdType, data.dateModified)) {
+            MEDIA_ERR_LOG("UpdateSavedFileMap failed while save picture, path: %{public}s",
+                DfxUtils::GetSafePath(data.path).c_str());
+            return false;
+        }
+    } else {
+        MEDIA_ERR_LOG("TrySaveCurrentPicture cancelled, corresponding task has finished, path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        ThumbnailUtils::CancelAfterPacking(tempOutputPath);
+        return false;
+    }
+    return true;
+}
+
 void ThumbnailWait::CheckAndWait(const string &id, bool isLcd)
 {
     id_ = id;
@@ -328,6 +443,10 @@ void ThumbnailWait::UpdateThumbnailMap()
             unique_lock<mutex> lck(thumbnailWait->mtx_);
             writeLck.unlock();
             thumbnailWait->isCreateThumbnailSuccess_ = true;
+            needRelease_ = thumbnailWait->latestDateModified_ == dateModified_;
+        }
+        if (!needRelease_) {
+            MEDIA_INFO_LOG("Latest task has come, id: %{public}s", id_.c_str());
         }
     } else {
         MEDIA_ERR_LOG("Update ThumbnailMap failed, id: %{public}s", id_.c_str());
@@ -373,9 +492,13 @@ void ThumbnailWait::Notify()
     auto iter = thumbnailMap_.find(id_);
     if (iter != thumbnailMap_.end()) {
         auto thumbnailWait = iter->second;
-        thumbnailMap_.erase(iter);
         {
             unique_lock<mutex> lck(thumbnailWait->mtx_);
+            if (!dateModified_.empty() && thumbnailWait->latestDateModified_ > dateModified_) {
+                MEDIA_INFO_LOG("Latest task has come, no need to notify, id: %{public}s", id_.c_str());
+                return;
+            }
+            thumbnailMap_.erase(iter);
             writeLck.unlock();
             thumbnailWait->isSyncComplete_ = true;
         }
@@ -385,6 +508,32 @@ void ThumbnailWait::Notify()
             thumbnailWait->cond_.notify_one();
         }
     }
+}
+
+bool ThumbnailSyncStatus::CheckSavedFileMap(const string &id, ThumbnailType type, const string &dateModified)
+{
+    std::string saveId = id + ThumbnailUtils::GetThumbnailSuffix(type);
+    auto iter = latestSavedFileMap_.find(id);
+    if (iter != latestSavedFileMap_.end() && (iter->second > dateModified)) {
+        return false;
+    }
+    return true;
+}
+
+bool ThumbnailSyncStatus::UpdateSavedFileMap(const string &id, ThumbnailType type, const string &dateModified)
+{
+    std::string saveId = id + ThumbnailUtils::GetThumbnailSuffix(type);
+    auto iter = latestSavedFileMap_.find(id);
+    if (iter != latestSavedFileMap_.end()) {
+        if (iter->second > dateModified) {
+            return false;
+        } else {
+            iter->second = dateModified;
+        }
+    } else {
+        latestSavedFileMap_.emplace(id, dateModified);
+    }
+    return true;
 }
 
 bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
@@ -422,11 +571,50 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
+bool IThumbnailHelper::TrySavePixelMap(ThumbnailData &data, ThumbnailType type)
+{
+    if (!data.needCheckWaitStatus) {
+        int err = ThumbnailUtils::TrySaveFile(data, type);
+        if (err < 0) {
+            MEDIA_ERR_LOG("No wait TrySavePixelMap failed: %{public}d, path: %{public}s", err,
+                DfxUtils::GetSafePath(data.path).c_str());
+            return false;
+        }
+        return true;
+    }
+    ThumbnailWait thumbnailWait(false);
+    if (!thumbnailWait.TrySaveCurrentPixelMap(data, type)) {
+        MEDIA_ERR_LOG("TrySavePixelMap failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+    return true;
+}
+
+bool IThumbnailHelper::TrySavePicture(ThumbnailData &data, bool isSourceEx, const string &tempOutputPath)
+{
+    if (!data.needCheckWaitStatus) {
+        if (!ThumbnailUtils::SaveAfterPacking(data.path, tempOutputPath)) {
+            MEDIA_ERR_LOG("No wait TrySavePicture failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+            return false;
+        }
+        return true;
+    }
+    ThumbnailWait thumbnailWait(false);
+    if (!thumbnailWait.TrySaveCurrentPicture(data, isSourceEx, tempOutputPath)) {
+        MEDIA_ERR_LOG("TrySavePicture failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+    return true;
+}
+
 bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
+    MEDIA_INFO_LOG("Start DoCreateLcd, id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     ThumbnailWait thumbnailWait(true);
-    ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD);
-    if (ret != WaitStatus::INSERT) {
+    ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD, data.dateModified);
+    data.needCheckWaitStatus = true;
+    if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
 
@@ -439,6 +627,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, WaitS
         MEDIA_ERR_LOG("Fail to create lcdEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
     }
     thumbnailWait.UpdateThumbnailMap();
+    data.needCheckWaitStatus = false;
     return true;
 }
 
@@ -468,7 +657,7 @@ void IThumbnailHelper::UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &
     }
 }
 
-bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx)
+bool IThumbnailHelper::SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx)
 {
     shared_ptr<Picture> lcdSource = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
     if (lcdSource == nullptr) {
@@ -480,25 +669,19 @@ bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceE
             lcdSource->GetMainPixel() == nullptr, lcdSource->GetGainmapPixelMap() == nullptr);
         return false;
     }
-    int lcdDesiredWidth;
-    int lcdDesiredHeight;
-    if (isSourceEx) {
-        lcdDesiredWidth = data.lcdDesiredSize.width;
-        lcdDesiredHeight = data.lcdDesiredSize.height;
-    } else {
-        lcdDesiredWidth = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.width : data.lcdDesiredSize.height;
-        lcdDesiredHeight = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.height : data.lcdDesiredSize.width;
-    }
+    bool shouldReverseSize = !isSourceEx && (data.orientation % FLAT_ANGLE != 0);
+    int lcdDesiredWidth = shouldReverseSize ? data.lcdDesiredSize.height : data.lcdDesiredSize.width;
+    int lcdDesiredHeight = shouldReverseSize ? data.lcdDesiredSize.width : data.lcdDesiredSize.height;
     std::shared_ptr<Picture> copySource;
     if (lcdDesiredWidth != lcdSource->GetMainPixel()->GetWidth()) {
         MEDIA_INFO_LOG("Copy and resize picture source for lcd desiredSize: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         if (!ThumbnailUtils::CopyPictureSource(lcdSource, copySource)) {
-            MEDIA_ERR_LOG("CompressPicture failed, CopyPictureSource failed");
+            MEDIA_ERR_LOG("SaveLcdPictureSource failed, CopyPictureSource failed");
             return false;
         }
         if (lcdSource->GetMainPixel()->GetWidth() * lcdSource->GetMainPixel()->GetHeight() == 0) {
-            MEDIA_ERR_LOG("CompressPicture failed, invalid mainpixel size");
+            MEDIA_ERR_LOG("SaveLcdPictureSource failed, invalid mainpixel size");
             return false;
         }
         float widthScale = (1.0f * lcdDesiredWidth) / lcdSource->GetMainPixel()->GetWidth();
@@ -506,8 +689,13 @@ bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceE
         lcdSource->GetMainPixel()->scale(widthScale, heightScale);
         lcdSource->GetGainmapPixelMap()->scale(widthScale, heightScale);
     }
-    if (!ThumbnailUtils::CompressPicture(data, isSourceEx)) {
-        MEDIA_ERR_LOG("CompressPicture failed");
+    std::string tempOutputPath;
+    if (!ThumbnailUtils::CompressPicture(data, isSourceEx, tempOutputPath)) {
+        MEDIA_ERR_LOG("SaveLcdPictureSource failed, CompressPicture failed");
+        return false;
+    }
+    if (!TrySavePicture(data, isSourceEx, tempOutputPath)) {
+        MEDIA_ERR_LOG("SaveLcdPictureSource failed, save picture failed");
         return false;
     }
     if (copySource != nullptr) {
@@ -519,7 +707,7 @@ bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceE
     return true;
 }
 
-bool SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx)
+bool IThumbnailHelper::SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx)
 {
     shared_ptr<PixelMap> lcdSource = isSourceEx ? data.source.GetPixelMapEx() : data.source.GetPixelMap();
     if (lcdSource == nullptr) {
@@ -549,15 +737,13 @@ bool SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSource
         float heightScale = (1.0f * lcdDesiredHeight) / lcdSource->GetHeight();
         lcdSource->scale(widthScale, heightScale);
     }
-    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd,
-        data.mediaType == MEDIA_TYPE_AUDIO, false, false)) {
+    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, false, false, data.thumbnailQuality)) {
         MEDIA_ERR_LOG("CompressImage failed");
         return false;
     }
 
-    int err = ThumbnailUtils::TrySaveFile(data, isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD);
-    if (err < 0) {
-        MEDIA_ERR_LOG("SaveLcd PixelMap failed %{public}d", err);
+    if (!TrySavePixelMap(data, isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD)) {
+        MEDIA_ERR_LOG("SaveLcd PixelMap failed: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
 
@@ -626,7 +812,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
 
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
         if (!ThumbnailUtils::CompressImage(pixelMap, type == ThumbnailType::THUMB ? data.thumbnail : data.thumbAstc,
-            false, type == ThumbnailType::THUMB_ASTC)) {
+            type == ThumbnailType::THUMB_ASTC)) {
             MEDIA_ERR_LOG("CompressImage faild id %{public}s", opts.row.c_str());
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -647,12 +833,8 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
         return false;
     }
 
-    int err = ThumbnailUtils::TrySaveFile(data, type);
-    if (err < 0) {
-        MEDIA_ERR_LOG("SaveThumbnailData faild %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+    if (!TrySavePixelMap(data, type)) {
+        MEDIA_ERR_LOG("SaveThumbnailData failed: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
         return false;
     }
     data.thumbnail.clear();
@@ -681,14 +863,13 @@ bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    if (!ThumbnailUtils::CompressImage(pixelMapEx, data.thumbnail, false, false)) {
+    if (!ThumbnailUtils::CompressImage(pixelMapEx, data.thumbnail, false)) {
         MEDIA_ERR_LOG("CompressImage failed id %{public}s", opts.row.c_str());
         return false;
     }
 
-    int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::THUMB_EX);
-    if (err < 0) {
-        MEDIA_ERR_LOG("SaveThumbnailEx failed %{public}d", err);
+    if (!TrySavePixelMap(data, ThumbnailType::THUMB_EX)) {
+        MEDIA_ERR_LOG("SaveThumbnailEx failed: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
         return false;
     }
     data.thumbnail.clear();
@@ -714,7 +895,7 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
     }
 #endif
     if (!ThumbnailUtils::CompressImage(pixelMap,
-        (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, false, true)) {
+        (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, true)) {
         MEDIA_ERR_LOG("CompressImage to astc failed");
         return false;
     }
@@ -732,8 +913,40 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailDa
     return isSuccess ? UpdateSuccessState(opts, data) : UpdateFailState(opts, data);
 }
 
+// This method has to be called before updating rdb
+static int32_t IsPhotoVisible(const ThumbRdbOpt &opts, const ThumbnailData &data)
+{
+    vector<string> columns = {
+        PhotoColumn::PHOTO_THUMBNAIL_VISIBLE
+    };
+    if (data.id.empty() && opts.row.empty()) {
+        MEDIA_ERR_LOG("SendThumbNotify thumb is empty");
+        return 0;
+    }
+    string fileId = data.id.empty() ? opts.row : data.id;
+    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + fileId;
+    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.SetWhereClause(strQueryCondition);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("SendThumbNotify opts.store is nullptr");
+        return 0;
+    }
+    auto resultSet = opts.store->QueryByStep(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("SendThumbNotify result is null");
+        return 0;
+    }
+    auto ret = resultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("SendThumbNotify go to first row failed");
+        return 0;
+    }
+    return GetInt32Val(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet);
+}
+
 bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
+    int thumbnailVisible = IsPhotoVisible(opts, data);
     int32_t err = UpdateThumbDbState(opts, data);
     if (err != E_OK) {
         MEDIA_ERR_LOG("update thumbnail_ready failed, err = %{public}d", err);
@@ -742,10 +955,10 @@ bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const Thumbna
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
-        MEDIA_ERR_LOG("watch is nullptr");
+        MEDIA_ERR_LOG("SendThumbNotify watch is nullptr");
         return false;
     }
-    if (data.isThumbExisted) {
+    if (thumbnailVisible) {
         watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_UPDATE);
     } else {
         watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
@@ -762,6 +975,7 @@ bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailD
     ValuesBucket values;
     int changedRows;
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
     if (err != NativeRdb::E_OK) {
@@ -798,9 +1012,13 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
 
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
 {
+    MEDIA_INFO_LOG("Start DoCreateThumbnail, id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     ThumbnailWait thumbnailWait(true);
-    ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB);
-    if (ret != WaitStatus::INSERT) {
+    ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB, data.dateModified);
+    data.needCheckWaitStatus = true;
+    if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
 
@@ -813,6 +1031,9 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
         MEDIA_ERR_LOG("Fail to create thumbnailEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
     }
     thumbnailWait.UpdateThumbnailMap();
+    data.needCheckWaitStatus = false;
+    MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime, data.stats.scene,
+        AstcGenScene::SCREEN_ON, data.id);
     return true;
 }
 
@@ -881,30 +1102,23 @@ bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    if (!ThumbnailUtils::CompressImage(pixelMap, data.thumbnail, false, false)) {
+    if (!ThumbnailUtils::CompressImage(pixelMap, data.thumbnail, false)) {
         MEDIA_ERR_LOG("CompressImage faild id %{public}s", data.id.c_str());
         return false;
     }
 
-    int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::THUMB);
-    if (err < 0) {
-        MEDIA_ERR_LOG("SaveThumbnailData faild %{public}d", err);
+    if (!TrySavePixelMap(data, ThumbnailType::THUMB)) {
+        MEDIA_ERR_LOG("DoRotateThumbnail failed: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
     data.thumbnail.clear();
     return true;
 }
 
-bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
+static bool ScaleLcdToThumbnail(ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
-    data.isNeedStoreSize = false;
-    if (!DoCreateLcd(opts, data, ret)) {
-        MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+    if (data.source.IsEmptySource()) {
+        MEDIA_ERR_LOG("data source is empty when scaling from lcd to thumb");
         return false;
     }
 
@@ -928,15 +1142,17 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
     }
-
-    if (!DoCreateThumbnail(opts, data, ret)) {
-        MEDIA_ERR_LOG("Fail to create thumbnail, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return false;
-    }
     return true;
+}
+
+bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret)
+{
+    MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    data.isNeedStoreSize = false;
+    DoCreateLcd(opts, data, ret);
+    ScaleLcdToThumbnail(data);
+    return DoCreateThumbnail(opts, data, ret);
 }
 
 std::string GetAvailableThumbnailSuffix(ThumbnailData &data)
@@ -985,7 +1201,28 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
-    CloudSyncDfxManager::GetInstance().RunDfx();
+    return true;
+}
+
+bool IThumbnailHelper::DoCreateAstcMthAndYear(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    MEDIA_INFO_LOG("Start DoCreateAstcMthAndYear, id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
+    data.loaderOpts.decodeInThumbSize = true;
+    data.loaderOpts.desiredType = ThumbnailType::MTH_ASTC;
+    if (!TryLoadSource(opts, data)) {
+        MEDIA_ERR_LOG("DoCreateAstcMthAndYear failed, try load source failed, id: %{public}s", data.id.c_str());
+        return false;
+    }
+    auto pixelMap = data.source.GetPixelMap();
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("DoCreateAstc failed, no available pixelMap, id: %{public}s.", data.id.c_str());
+        return false;
+    }
+    if (!GenThumbnail(opts, data, ThumbnailType::MTH_ASTC) || !GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
+        MEDIA_ERR_LOG("DoCreateAstc failed, GenThumbnail failed, id: %{public}s.", data.id.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -1070,7 +1307,6 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, Wa
     }
 
     thumbnailWait.UpdateCloudLoadThumbnailMap(CloudLoadType::CLOUD_DOWNLOAD, true);
-    CloudSyncDfxManager::GetInstance().RunDfx();
     return true;
 }
 
@@ -1096,7 +1332,7 @@ bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &dat
     }
     close(fd);
 
-    dataSource->rotate(static_cast<float>(data.orientation));
+    PostProc::RotateInRectangularSteps(*(dataSource.get()), static_cast<float>(data.orientation), true);
     data.source.SetPixelMap(dataSource);
     if (!GenerateRotatedThumbnail(opts, data, thumbType)) {
         MEDIA_ERR_LOG("GenerateRotatedThumbnail failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());

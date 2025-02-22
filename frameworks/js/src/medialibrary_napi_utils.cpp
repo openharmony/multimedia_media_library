@@ -51,7 +51,6 @@
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
 #include "userfilemgr_uri.h"
-#include "medialibrary_common_utils.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -176,6 +175,23 @@ napi_status MediaLibraryNapiUtils::GetProperty(napi_env env, const napi_value ar
     return napi_ok;
 }
 
+napi_status MediaLibraryNapiUtils::GetStringArrayFromInt32(napi_env env, napi_value arg, vector<string> &array)
+{
+    bool isArray = false;
+    uint32_t len = 0;
+    CHECK_STATUS_RET(napi_is_array(env, arg, &isArray), "Failed to check array type");
+    CHECK_COND_RET(isArray, napi_array_expected, "Expected array type");
+    CHECK_STATUS_RET(napi_get_array_length(env, arg, &len), "Failed to get array length");
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value item = nullptr;
+        int32_t val;
+        CHECK_STATUS_RET(napi_get_element(env, arg, i, &item), "Failed to get array item");
+        CHECK_STATUS_RET(GetInt32(env, item, val), "Failed to get string buffer");
+        array.push_back(to_string(val));
+    }
+    return napi_ok;
+}
+
 napi_status MediaLibraryNapiUtils::GetStringArray(napi_env env, napi_value arg, vector<string> &array)
 {
     bool isArray = false;
@@ -229,8 +245,8 @@ napi_status MediaLibraryNapiUtils::hasFetchOpt(napi_env env, const napi_value ar
         hasFetchOpt = false;
         return napi_ok;
     }
-    CHECK_STATUS_RET(napi_has_named_property(env, arg, "selections", &hasFetchOpt),
-        "Failed to get property selections");
+    CHECK_STATUS_RET(napi_has_named_property(env, arg, "predicates", &hasFetchOpt),
+        "Failed to get property predicates");
     return napi_ok;
 }
 
@@ -275,7 +291,7 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
         return ERROR;
     }
     if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
-        return MediaLibraryCommonUtils::SafeStoi(fileIdStr);
+        return std::stoi(fileIdStr);
     }
 
     NAPI_ERR_LOG("asset fileId is invalid");
@@ -320,12 +336,11 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 }
 
 template <class AsyncContext>
-bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
-    shared_ptr<DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType)
+bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context, shared_ptr<DataShareAbsPredicates> &predicate,
+    const FetchOptionType &fetchOptType, vector<OperationItem> operations)
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
-    vector<OperationItem> operations;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
         if (item.singleParams.empty()) {
@@ -432,10 +447,11 @@ bool MediaLibraryNapiUtils::GetLocationPredicate(AsyncContext &context,
 
 template <class AsyncContext>
 napi_status MediaLibraryNapiUtils::GetFetchOption(napi_env env, napi_value arg, const FetchOptionType &fetchOptType,
-    AsyncContext &context)
+    AsyncContext &context, vector<OperationItem> operations)
 {
     // Parse the argument into fetchOption if any
-    CHECK_STATUS_RET(GetPredicate(env, arg, "predicates", context, fetchOptType), "invalid predicate");
+    CHECK_STATUS_RET(GetPredicate(env, arg, "predicates", context, fetchOptType, move(operations)),
+        "invalid predicate");
     CHECK_STATUS_RET(GetArrayProperty(env, arg, "fetchColumns", context->fetchColumn),
         "Failed to parse fetchColumn");
     return napi_ok;
@@ -452,7 +468,7 @@ napi_status MediaLibraryNapiUtils::GetAlbumFetchOption(napi_env env, napi_value 
 
 template <class AsyncContext>
 napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value arg, const string &propName,
-    AsyncContext &context, const FetchOptionType &fetchOptType)
+    AsyncContext &context, const FetchOptionType &fetchOptType, vector<OperationItem> operations)
 {
     bool present = false;
     napi_value property = nullptr;
@@ -467,8 +483,8 @@ napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value a
             return napi_invalid_arg;
         }
         shared_ptr<DataShareAbsPredicates> predicate = jsProxy->GetInstance();
-        CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE, napi_invalid_arg,
-            "invalid predicate");
+        CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType, move(operations)) == TRUE,
+            napi_invalid_arg, "invalid predicate");
         CHECK_COND_RET(GetLocationPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");
     }
     return napi_ok;
@@ -630,6 +646,35 @@ napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack(napi_env env, napi_call
     CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
         "Failed to get object info");
     return napi_ok;
+}
+
+napi_value MediaLibraryNapiUtils::ParseAssetIdArray(napi_env env, napi_value arg, vector<string> &idArray)
+{
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetIdArrayFromAssets(env, napiValues, idArray));
+    RETURN_NAPI_TRUE(env);
+}
+
+napi_value MediaLibraryNapiUtils::ParseIntegerArray(napi_env env, napi_value arg, std::vector<int32_t> &intArray)
+{
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    intArray.clear();
+    for (const auto &napiValue: napiValues) {
+        CHECK_ARGS(env, napi_typeof(env, napiValue, &valueType), JS_ERR_PARAMETER_INVALID);
+        CHECK_COND(env, valueType == napi_number, JS_ERR_PARAMETER_INVALID);
+        int32_t intVal;
+        CHECK_ARGS(env, napi_get_value_int32(env, napiValue, &intVal), JS_ERR_PARAMETER_INVALID);
+        intArray.push_back(intVal);
+    }
+    RETURN_NAPI_TRUE(env);
 }
 
 AssetType MediaLibraryNapiUtils::GetAssetType(MediaType type)
@@ -1330,7 +1375,7 @@ string MediaLibraryNapiUtils::GetStringFetchProperty(napi_env env, napi_value ar
 }
 
 napi_value MediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32_t index, string name,
-    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const shared_ptr<FileAsset> &asset)
+    shared_ptr<NativeRdb::ResultSet> &resultSet, const shared_ptr<FileAsset> &asset)
 {
     int status;
     int integerVal = 0;
@@ -1342,21 +1387,25 @@ napi_value MediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32_t index
     switch (dataType.first) {
         case TYPE_STRING:
             status = resultSet->GetString(index, stringVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_STRING: %{public}d", status);
             napi_create_string_utf8(env, stringVal.c_str(), NAPI_AUTO_LENGTH, &value);
             asset->GetMemberMap().emplace(name, stringVal);
             break;
         case TYPE_INT32:
             status = resultSet->GetInt(index, integerVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_INT32: %{public}d", status);
             napi_create_int32(env, integerVal, &value);
             asset->GetMemberMap().emplace(name, integerVal);
             break;
         case TYPE_INT64:
             status = resultSet->GetLong(index, longVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_INT64: %{public}d", status);
             napi_create_int64(env, longVal, &value);
             asset->GetMemberMap().emplace(name, longVal);
             break;
         case TYPE_DOUBLE:
             status = resultSet->GetDouble(index, doubleVal);
+            NAPI_DEBUG_LOG("CreateValueByIndex TYPE_DOUBLE: %{public}d", status);
             napi_create_double(env, doubleVal, &value);
             asset->GetMemberMap().emplace(name, doubleVal);
             break;
@@ -1369,7 +1418,7 @@ napi_value MediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32_t index
 }
 
 void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name, napi_value result, int32_t index,
-    const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+    const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
     if (TIME_COLUMN.count(name) == 0) {
         return;
@@ -1378,6 +1427,7 @@ void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name
     int status;
     napi_value value = nullptr;
     status = resultSet->GetLong(index, longVal);
+    NAPI_DEBUG_LOG("handleTimeInfo status: %{public}d", status);
     int64_t modifieldValue = longVal / 1000;
     napi_create_int64(env, modifieldValue, &value);
     auto dataType = MediaLibraryNapiUtils::GetTimeTypeMap().at(name);
@@ -1385,7 +1435,7 @@ void MediaLibraryNapiUtils::handleTimeInfo(napi_env env, const std::string& name
 }
 
 static void handleThumbnailReady(napi_env env, const std::string& name, napi_value result, int32_t index,
-    const std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+    const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
     if (name != "thumbnail_ready") {
         return;
@@ -1394,12 +1444,13 @@ static void handleThumbnailReady(napi_env env, const std::string& name, napi_val
     int status;
     napi_value value = nullptr;
     status = resultSet->GetLong(index, longVal);
+    NAPI_DEBUG_LOG("handleThumbnailReady status: %{public}d", status);
     bool resultVal = longVal > 0;
     napi_create_int32(env, resultVal, &value);
     napi_set_named_property(env, result, "thumbnailReady", value);
 }
 
-napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet,
+napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<NativeRdb::ResultSet> &resultSet,
     bool isShared)
 {
     if (resultSet == nullptr) {
@@ -1441,7 +1492,7 @@ napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<Nati
 }
 
 void MediaLibraryNapiUtils::HandleCoverSharedPhotoAsset(napi_env env, int32_t index, napi_value result,
-    const string& name, const shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
+    const string& name, const shared_ptr<NativeRdb::ResultSet>& resultSet)
 {
     if (name != "cover_uri") {
         return;
@@ -1454,12 +1505,15 @@ void MediaLibraryNapiUtils::HandleCoverSharedPhotoAsset(napi_env env, int32_t in
     }
     vector<string> albumIds;
     albumIds.push_back(GetFileIdFromUriString(coverUri));
+    MediaLibraryTracer tracer;
+    tracer.Start("HandleCoverSharedPhotoAsset");
     napi_value coverValue = GetSharedPhotoAssets(env, albumIds, true);
+    tracer.Finish();
     napi_set_named_property(env, result, "coverSharedPhotoAsset", coverValue);
 }
 
 napi_value MediaLibraryNapiUtils::GetNextRowAlbumObject(napi_env env,
-    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("GetNextRowObject fail, result is nullptr");
@@ -1522,9 +1576,16 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vect
     DataShare::DataSharePredicates predicates;
     predicates.In(MediaColumn::MEDIA_ID, fileIds);
     std::vector<std::string> columns = PHOTO_COLUMN;
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> result = UserFileClient::QueryRdb(photoUri, predicates, columns);
+    std::shared_ptr<NativeRdb::ResultSet> result = UserFileClient::QueryRdb(photoUri, predicates, columns);
+
+    return GetSharedPhotoAssets(env, result, fileIds.size(), isSingleResult);
+}
+
+napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env,
+    std::shared_ptr<NativeRdb::ResultSet> result, int32_t size, bool isSingleResult)
+{
     napi_value value = nullptr;
-    napi_status status = napi_create_array_with_length(env, fileIds.size(), &value);
+    napi_status status = napi_create_array_with_length(env, size, &value);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Create array error!");
         return value;
@@ -1532,43 +1593,37 @@ napi_value MediaLibraryNapiUtils::GetSharedPhotoAssets(const napi_env& env, vect
     if (result == nullptr) {
         return value;
     }
-    int count = 0;
-    int elementIndex = 0;
-    int err = result->GoToFirstRow();
-    if (err != napi_ok) {
-        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return value;
-    }
-    if (isSingleResult && result->GetRowCount(count), count == 1) {
-        napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
+    if (isSingleResult) {
+        napi_value assetValue = nullptr;
+        if (result->GoToNextRow() == NativeRdb::E_OK) {
+            assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
+        }
         result->Close();
         return assetValue;
     }
-    do {
+    int elementIndex = 0;
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
         napi_value assetValue = MediaLibraryNapiUtils::GetNextRowObject(env, result, true);
         if (assetValue == nullptr) {
+            result->Close();
             return nullptr;
         }
         status = napi_set_element(env, value, elementIndex++, assetValue);
         if (status != napi_ok) {
-            NAPI_ERR_LOG("Set photo asset Value failed");
+            NAPI_ERR_LOG("Set photo asset value failed");
+            result->Close();
             return nullptr;
         }
-    } while (result->GoToNextRow() == E_OK);
+    }
     result->Close();
     return value;
 }
 
-napi_value MediaLibraryNapiUtils::GetSharedAlbumAssets(const napi_env& env, vector<string>& albumIds)
+napi_value MediaLibraryNapiUtils::GetSharedAlbumAssets(const napi_env& env,
+    std::shared_ptr<NativeRdb::ResultSet> result, int32_t size)
 {
-    string queryUri = PAH_QUERY_PHOTO_ALBUM;
-    Uri albumUri(queryUri);
-    DataShare::DataSharePredicates predicates;
-    predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
-    std::vector<std::string> columns = ALBUM_COLUMN;
-    std::shared_ptr<NativeRdb::AbsSharedResultSet> result = UserFileClient::QueryRdb(albumUri, predicates, columns);
     napi_value value = nullptr;
-    napi_status status = napi_create_array_with_length(env, albumIds.size(), &value);
+    napi_status status = napi_create_array_with_length(env, size, &value);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Create array error!");
         return value;
@@ -1576,23 +1631,20 @@ napi_value MediaLibraryNapiUtils::GetSharedAlbumAssets(const napi_env& env, vect
     if (result == nullptr) {
         return value;
     }
-    int err = result->GoToFirstRow();
-    if (err != napi_ok) {
-        NAPI_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return value;
-    }
     int elementIndex = 0;
-    do {
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
         napi_value assetValue = MediaLibraryNapiUtils::GetNextRowAlbumObject(env, result);
         if (assetValue == nullptr) {
+            result->Close();
             return nullptr;
         }
         status = napi_set_element(env, value, elementIndex++, assetValue);
         if (status != napi_ok) {
             NAPI_ERR_LOG("Set albumn asset Value failed");
+            result->Close();
             return nullptr;
         }
-    } while (result->GoToNextRow() == E_OK);
+    }
     result->Close();
     return value;
 }
@@ -1708,6 +1760,27 @@ napi_value MediaLibraryNapiUtils::GetUriArrayFromAssets(
     return ret;
 }
 
+napi_value MediaLibraryNapiUtils::GetIdArrayFromAssets(napi_env env, vector<napi_value> &napiValues,
+    vector<string> &values)
+{
+    FileAssetNapi *fileAsset = nullptr;
+    for (const auto &napiValue: napiValues) {
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void **>(&fileAsset)), JS_INNER_FAIL);
+        if (fileAsset == nullptr) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset napi object");
+            return nullptr;
+        }
+        if (fileAsset->GetMediaType() != MEDIA_TYPE_IMAGE && fileAsset->GetMediaType() != MEDIA_TYPE_VIDEO) {
+            NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", fileAsset->GetMediaType());
+            continue;
+        }
+        values.push_back(std::to_string(fileAsset->GetFileId()));
+    }
+    napi_value ret = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
+    return ret;
+}
+
 void MediaLibraryNapiUtils::FixSpecialDateType(string &selections)
 {
     vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED,
@@ -1720,6 +1793,311 @@ void MediaLibraryNapiUtils::FixSpecialDateType(string &selections)
             pos = selections.find(dateType, pos + date2Second.length());
         }
     }
+}
+
+napi_value MediaLibraryNapiUtils::BuildValueByIndex(const napi_env& env, int32_t index, const string& name,
+    ColumnUnion& tmpNameValue)
+{
+    int integerVal = 0;
+    string stringVal = "";
+    int64_t longVal = 0;
+    double doubleVal = 0.0;
+    napi_value value = nullptr;
+    auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+    switch (dataType.first) {
+        case TYPE_STRING:
+            stringVal = static_cast<std::string>(tmpNameValue.sval_);
+            napi_create_string_utf8(env, stringVal.c_str(), NAPI_AUTO_LENGTH, &value);
+            break;
+        case TYPE_INT32:
+            integerVal = static_cast<int32_t>(tmpNameValue.ival_);
+            napi_create_int32(env, integerVal, &value);
+            break;
+        case TYPE_INT64:
+            longVal = static_cast<int64_t>(tmpNameValue.lval_);
+            napi_create_int64(env, longVal, &value);
+            break;
+        case TYPE_DOUBLE:
+            doubleVal = static_cast<double>(tmpNameValue.dval_);
+            napi_create_double(env, doubleVal, &value);
+            break;
+        default:
+            NAPI_ERR_LOG("not match dataType %{public}d", dataType.first);
+            break;
+    }
+    return value;
+}
+
+int MediaLibraryNapiUtils::ParseValueByIndex(std::shared_ptr<ColumnInfo>& columnInfo, int32_t index, const string& name,
+    shared_ptr<NativeRdb::ResultSet>& resultSet, const shared_ptr<FileAsset>& asset)
+{
+    int status = -1;
+    int integerVal = 0;
+    string stringVal = "";
+    int64_t longVal = 0;
+    double doubleVal = 0.0;
+    auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+    switch (dataType.first) {
+        case TYPE_STRING:
+            status = resultSet->GetString(index, stringVal);
+            columnInfo->tmpNameValue_.sval_ = stringVal;
+            asset->GetMemberMap().emplace(name, stringVal);
+            break;
+        case TYPE_INT32:
+            status = resultSet->GetInt(index, integerVal);
+            columnInfo->tmpNameValue_.ival_ = integerVal;
+            asset->GetMemberMap().emplace(name, integerVal);
+            break;
+        case TYPE_INT64:
+            status = resultSet->GetLong(index, longVal);
+            columnInfo->tmpNameValue_.lval_ = longVal;
+            asset->GetMemberMap().emplace(name, longVal);
+            break;
+        case TYPE_DOUBLE:
+            status = resultSet->GetDouble(index, doubleVal);
+            columnInfo->tmpNameValue_.dval_ = doubleVal;
+            asset->GetMemberMap().emplace(name, doubleVal);
+            break;
+        default:
+            NAPI_ERR_LOG("not match dataType %{public}d", dataType.first);
+            break;
+    }
+    return status;
+}
+
+int MediaLibraryNapiUtils::ParseTimeInfo(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo,
+    int32_t index, const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
+{
+    int ret = -1;
+    if (TIME_COLUMN.count(name) == 0) {
+        return ret;
+    }
+    int64_t longVal = 0;
+    ret = resultSet->GetLong(index, longVal);
+    int64_t modifieldValue = longVal / 1000;
+    columnInfo->timeInfoVal_ = modifieldValue;
+    auto dataType = MediaLibraryNapiUtils::GetTimeTypeMap().at(name);
+    columnInfo->timeInfoKey_ = dataType.second;
+    return ret;
+}
+
+void MediaLibraryNapiUtils::BuildTimeInfo(const napi_env& env, const std::string& name,
+    napi_value& result, int32_t index,
+    std::shared_ptr<ColumnInfo>& columnInfo)
+{
+    if (TIME_COLUMN.count(name) == 0) {
+        return;
+    }
+    napi_value value = nullptr;
+    napi_create_int64(env, columnInfo->timeInfoVal_, &value);
+    napi_set_named_property(env, result, columnInfo->timeInfoKey_.c_str(), value);
+}
+
+int MediaLibraryNapiUtils::ParseThumbnailReady(const std::string& name, std::shared_ptr<ColumnInfo>& columnInfo,
+    int32_t index, const std::shared_ptr<NativeRdb::ResultSet>& resultSet)
+{
+    int ret = -1;
+    if (name != "thumbnail_ready") {
+        return ret;
+    }
+    int64_t longVal = 0;
+    ret = resultSet->GetLong(index, longVal);
+    bool resultVal = longVal > 0;
+    columnInfo->thumbnailReady_ = resultVal ? 1 : 0;
+    return ret;
+}
+
+void MediaLibraryNapiUtils::BuildThumbnailReady(const napi_env& env, const std::string& name,
+    napi_value& result, int32_t index, std::shared_ptr<ColumnInfo>& columnInfo)
+{
+    if (name != "thumbnail_ready") {
+        return;
+    }
+    napi_value value = nullptr;
+    napi_create_int32(env, columnInfo->thumbnailReady_, &value);
+    napi_set_named_property(env, result, "thumbnailReady", value);
+}
+
+napi_value MediaLibraryNapiUtils::BuildNextRowObject(const napi_env& env, std::shared_ptr<RowObject>& rowObj,
+    bool isShared)
+{
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+
+    if (rowObj == nullptr) {
+        NAPI_WARN_LOG("BuildNextRowObject rowObj is nullptr");
+        return result;
+    }
+    napi_value value = nullptr;
+    for (size_t index = 0; index < rowObj->columnVector_.size(); index++) {
+        auto columnInfo = rowObj->columnVector_[index];
+        if (columnInfo == nullptr) {
+            continue;
+        }
+        std::string name = columnInfo->columnName_;
+        // Check if the column name exists in the type map
+        if (MediaLibraryNapiUtils::GetTypeMap().count(name) == 0) {
+            continue;
+        }
+        value = MediaLibraryNapiUtils::BuildValueByIndex(env, index, name, columnInfo->tmpNameValue_);
+        napi_set_named_property(env, result, columnInfo->tmpName_.c_str(), value);
+        if (!isShared) {
+            continue;
+        }
+        BuildTimeInfo(env, name, result, index, columnInfo);
+        BuildThumbnailReady(env, name, result, index, columnInfo);
+    }
+    napi_create_string_utf8(env, rowObj->dbUri_.c_str(), NAPI_AUTO_LENGTH, &value);
+    napi_set_named_property(env, result, MEDIA_DATA_DB_URI.c_str(), value);
+    return result;
+}
+
+napi_value MediaLibraryNapiUtils::BuildNextRowAlbumObject(const napi_env& env,
+    shared_ptr<RowObject>& rowObj)
+{
+    if (rowObj == nullptr) {
+        NAPI_ERR_LOG("BuildNextRowAlbumObject rowObj is nullptr");
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+
+    napi_value value = nullptr;
+    for (size_t index = 0; index < rowObj->columnVector_.size(); index++) {
+        auto columnInfo = rowObj->columnVector_[index];
+        if (columnInfo == nullptr) {
+            continue;
+        }
+        std::string name = columnInfo->columnName_;
+        // Check if the column name exists in the type map
+        if (MediaLibraryNapiUtils::GetTypeMap().count(name) == 0) {
+            continue;
+        }
+        value = MediaLibraryNapiUtils::BuildValueByIndex(env, index, name, columnInfo->tmpNameValue_);
+        napi_set_named_property(env, result, columnInfo->tmpName_.c_str(), value);
+
+        if (name == "cover_uri") {
+            napi_value coverValue = MediaLibraryNapiUtils::BuildNextRowObject(
+                env, columnInfo->coverSharedPhotoAsset_, true);
+            napi_set_named_property(env, result, "coverSharedPhotoAsset", coverValue);
+        }
+    }
+    return result;
+}
+
+int MediaLibraryNapiUtils::ParseCoverSharedPhotoAsset(int32_t index, std::shared_ptr<ColumnInfo>& columnInfo,
+    const string& name, const shared_ptr<NativeRdb::ResultSet>& resultSet)
+{
+    int ret = -1;
+    if (name != "cover_uri") {
+        return ret;
+    }
+    string coverUri = "";
+    ret = resultSet->GetString(index, coverUri);
+    if (ret != NativeRdb::E_OK || coverUri.empty()) {
+        return ret;
+    }
+    vector<string> albumIds;
+    albumIds.emplace_back(GetFileIdFromUriString(coverUri));
+
+    MediaLibraryTracer tracer;
+    tracer.Start("ParseCoverSharedPhotoAsset");
+    string queryUri = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri photoUri(queryUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, albumIds);
+    std::vector<std::string> columns = PHOTO_COLUMN;
+    std::shared_ptr<NativeRdb::ResultSet> result = UserFileClient::QueryRdb(photoUri, predicates, columns);
+    return ParseSingleSharedPhotoAssets(columnInfo, result);
+}
+
+int MediaLibraryNapiUtils::ParseSingleSharedPhotoAssets(std::shared_ptr<ColumnInfo>& columnInfo,
+    std::shared_ptr<NativeRdb::ResultSet>& result)
+{
+    int ret = -1;
+    if (result == nullptr) {
+        NAPI_WARN_LOG("ParseSingleSharedPhotoAssets fail, result is nullptr");
+        return ret;
+    }
+    if (result->GoToNextRow() == NativeRdb::E_OK) {
+        columnInfo->coverSharedPhotoAsset_ = std::make_shared<RowObject>();
+        ret = MediaLibraryNapiUtils::ParseNextRowObject(columnInfo->coverSharedPhotoAsset_, result, true);
+    }
+    result->Close();
+    return ret;
+}
+
+int MediaLibraryNapiUtils::ParseNextRowObject(std::shared_ptr<RowObject>& rowObj,
+    shared_ptr<NativeRdb::ResultSet>& resultSet, bool isShared)
+{
+    if (resultSet == nullptr) {
+        NAPI_WARN_LOG("ParseNextRowObject fail, resultSet is nullptr");
+        return -1;
+    }
+    if (rowObj == nullptr) {
+        NAPI_WARN_LOG("ParseNextRowObject fail, rowObj is nullptr");
+        return -1;
+    }
+    vector<string> columnNames;
+    resultSet->GetAllColumnNames(columnNames);
+
+    int32_t index = -1;
+    auto fileAsset = make_shared<FileAsset>();
+    for (const auto &name : columnNames) {
+        index++;
+        std::shared_ptr<ColumnInfo> columnInfo = std::make_shared<ColumnInfo>();
+        columnInfo->columnName_ = name;
+        // Check if the column name exists in the type map
+        if (MediaLibraryNapiUtils::GetTypeMap().count(name) == 0) {
+            NAPI_WARN_LOG("ParseNextRowObject current name is not in map");
+            continue;
+        }
+        MediaLibraryNapiUtils::ParseValueByIndex(columnInfo, index, name, resultSet, fileAsset);
+        auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+        std::string tmpName = isShared ? dataType.second : name;
+        columnInfo->tmpName_ = tmpName;
+        if (!isShared) {
+            continue;
+        }
+        ParseTimeInfo(name, columnInfo, index, resultSet);
+        ParseThumbnailReady(name, columnInfo, index, resultSet);
+        rowObj->columnVector_.emplace_back(columnInfo);
+    }
+    string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);
+    MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()), "", MEDIA_API_VERSION_V10, extrUri);
+    rowObj->dbUri_ = fileUri.ToString();
+    return 0;
+}
+
+int MediaLibraryNapiUtils::ParseNextRowAlbumObject(std::shared_ptr<RowObject>& rowObj,
+    shared_ptr<NativeRdb::ResultSet>& resultSet)
+{
+    if (resultSet == nullptr) {
+        NAPI_WARN_LOG("ParseNextRowAlbumObject fail, resultSet is nullptr");
+        return -1;
+    }
+    vector<string> columnNames;
+    resultSet->GetAllColumnNames(columnNames);
+
+    int32_t index = -1;
+    auto fileAsset = make_shared<FileAsset>();
+    for (const auto &name : columnNames) {
+        index++;
+        std::shared_ptr<ColumnInfo> columnInfo = std::make_shared<ColumnInfo>();
+        columnInfo->columnName_ = name;
+        // Check if the column name exists in the type map
+        if (MediaLibraryNapiUtils::GetTypeMap().count(name) == 0) {
+            continue;
+        }
+        MediaLibraryNapiUtils::ParseValueByIndex(columnInfo, index, name, resultSet, fileAsset);
+        auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+        columnInfo->tmpName_ = dataType.second;
+        ParseCoverSharedPhotoAsset(index, columnInfo, name, resultSet);
+        rowObj->columnVector_.emplace_back(columnInfo);
+    }
+    return 0;
 }
 
 template <class AsyncContext>
@@ -1741,15 +2119,15 @@ napi_status MediaLibraryNapiUtils::ParsePredicates(napi_env env, const napi_valu
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
     unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
-    const FetchOptionType &fetchOptType);
+    const FetchOptionType &fetchOptType, vector<OperationItem> operations);
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<AlbumNapiAsyncContext>>(
     unique_ptr<AlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
-    const FetchOptionType &fetchOptType);
+    const FetchOptionType &fetchOptType, vector<OperationItem> operations);
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<SmartAlbumNapiAsyncContext>>(
     unique_ptr<SmartAlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
-    const FetchOptionType &fetchOptType);
+    const FetchOptionType &fetchOptType, vector<OperationItem> operations);
 
 template bool MediaLibraryNapiUtils::GetLocationPredicate<unique_ptr<MediaLibraryAsyncContext>>(
     unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate);
@@ -1761,10 +2139,12 @@ template bool MediaLibraryNapiUtils::GetLocationPredicate<unique_ptr<SmartAlbumN
     unique_ptr<SmartAlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate);
 
 template napi_status MediaLibraryNapiUtils::GetFetchOption<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
-    napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<MediaLibraryAsyncContext> &context);
+    napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<MediaLibraryAsyncContext> &context,
+    vector<OperationItem> operations);
 
 template napi_status MediaLibraryNapiUtils::GetFetchOption<unique_ptr<PhotoAlbumNapiAsyncContext>>(napi_env env,
-    napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<PhotoAlbumNapiAsyncContext> &context);
+    napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<PhotoAlbumNapiAsyncContext> &context,
+    vector<OperationItem> operations);
 
 template napi_status MediaLibraryNapiUtils::GetAlbumFetchOption<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<MediaLibraryAsyncContext> &context);
@@ -1774,15 +2154,15 @@ template napi_status MediaLibraryNapiUtils::GetAlbumFetchOption<unique_ptr<Photo
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     const napi_value arg, const string &propName, unique_ptr<MediaLibraryAsyncContext> &context,
-    const FetchOptionType &fetchOptType);
+    const FetchOptionType &fetchOptType, vector<OperationItem> operations);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<AlbumNapiAsyncContext>>(napi_env env,
     const napi_value arg, const string &propName, unique_ptr<AlbumNapiAsyncContext> &context,
-    const FetchOptionType &fetchOptType);
+    const FetchOptionType &fetchOptType, vector<OperationItem> operations);
 
 template napi_status MediaLibraryNapiUtils::GetPredicate<unique_ptr<SmartAlbumNapiAsyncContext>>(napi_env env,
     const napi_value arg, const string &propName, unique_ptr<SmartAlbumNapiAsyncContext> &context,
-    const FetchOptionType &fetchOptType);
+    const FetchOptionType &fetchOptType, vector<OperationItem> operations);
 
 template napi_status MediaLibraryNapiUtils::ParseAssetFetchOptCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);

@@ -14,6 +14,7 @@
  */
 
 #include "photo_accesshelper_ffi.h"
+#include "photo_asset_helper.h"
 
 using namespace OHOS::FFI;
 
@@ -57,8 +58,8 @@ extern "C" {
     {
         PhotoAssetMember assetMember = {
             .memberType = -1,
-            .boolValue = false,
-            .stringValue = nullptr
+            .stringValue = nullptr,
+            .boolValue = false
         };
         auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(id);
         if (photoAssetImpl == nullptr) {
@@ -595,7 +596,18 @@ extern "C" {
             *errCode = JS_INNER_FAIL;
             return 0;
         }
-        auto changeRequest = FFIData::Create<MediaAssetChangeRequestImpl>(photoAssetImpl, errCode);
+        auto fileAssetPtr = photoAssetImpl->GetFileAssetInstance();
+        if (fileAssetPtr == nullptr) {
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            LOGE("fileAsset is null");
+            return 0;
+        }
+        if (fileAssetPtr->GetMediaType() != MEDIA_TYPE_IMAGE && fileAssetPtr->GetMediaType() != MEDIA_TYPE_VIDEO) {
+            LOGE("Unsupported type of fileAsset");
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            return 0;
+        }
+        auto changeRequest = FFIData::Create<MediaAssetChangeRequestImpl>(fileAssetPtr);
         if (!changeRequest) {
             *errCode = JS_INNER_FAIL;
             return 0;
@@ -656,7 +668,7 @@ extern "C" {
             LOGE("array is empty");
             return OHOS_INVALID_PARAM_CODE;
         }
-        for (size_t i = 0; i < assets.size; i++) {
+        for (size_t i = 0; i < static_cast<size_t>(assets.size); i++) {
             auto photoAssetImpl = FFIData::GetData<PhotoAssetImpl>(assets.head[i]);
             if (!photoAssetImpl) {
                 return JS_ERR_PARAMETER_INVALID;
@@ -795,7 +807,20 @@ extern "C" {
             *errCode = JS_INNER_FAIL;
             return 0;
         }
-        auto changeRequest = FFIData::Create<MediaAlbumChangeRequestImpl>(photoAlbumImpl, errCode);
+        auto photoAlbumPtr = photoAlbumImpl->GetPhotoAlbumInstance();
+        if (photoAlbumPtr == nullptr) {
+            LOGE("photoAlbum is null");
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            return 0;
+        }
+        if (!(photoAlbumPtr->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER &&
+                PhotoAlbum::CheckPhotoAlbumType(photoAlbumPtr->GetPhotoAlbumType()) &&
+                PhotoAlbum::CheckPhotoAlbumSubType(photoAlbumPtr->GetPhotoAlbumSubType()))) {
+            LOGE("Unsupported type of photoAlbum");
+            *errCode = OHOS_INVALID_PARAM_CODE;
+            return 0;
+        }
+        auto changeRequest = FFIData::Create<MediaAlbumChangeRequestImpl>(photoAlbumPtr);
         if (!changeRequest) {
             *errCode = JS_INNER_FAIL;
             return 0;
@@ -856,6 +881,45 @@ extern "C" {
         }
         return changeRequest->ApplyChanges();
     }
+}
+
+enum class CJCameraShotType : int32_t {
+    IMAGE = 0,
+    VIDEO,
+    MOVING_PHOTO,
+    BURST,
+};
+
+int64_t CreatePhotoAssetImpl(const std::string &uri, int32_t cameraShotType, const std::string &burstKey)
+{
+    if (uri.empty()) {
+        return 0;
+    }
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetUri(uri);
+    std::string fileId = MediaFileUtils::GetIdFromUri(uri);
+    if (MediaFileUtils::IsValidInteger(fileId)) {
+        fileAsset->SetId(stoi(fileId));
+    }
+
+    fileAsset->SetDisplayName(MediaFileUtils::GetFileName(uri));
+    if (cameraShotType == static_cast<int32_t>(CJCameraShotType::IMAGE)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
+    } else if (cameraShotType == static_cast<int32_t>(CJCameraShotType::MOVING_PHOTO)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
+    } else if (cameraShotType == static_cast<int32_t>(CJCameraShotType::BURST)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::BURST));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
+        fileAsset->SetBurstKey(burstKey);
+    } else if (cameraShotType == static_cast<int32_t>(CJCameraShotType::VIDEO)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_VIDEO);
+    }
+    fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    auto photoAssetImpl = FFIData::Create<PhotoAssetImpl>(fileAsset);
+    return photoAssetImpl->GetID();
 }
 }
 }

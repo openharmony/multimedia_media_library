@@ -20,6 +20,7 @@
 #include "media_log.h"
 #include "dfx_manager.h"
 #include "medialibrary_bundle_manager.h"
+#include "permission_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -50,14 +51,15 @@ DfxTimer::~DfxTimer()
 
     std::string bundleName;
     if (uid_ > 0) {
-        MediaLibraryBundleManager::GetInstance()->GetBundleNameByUID(uid_, bundleName);
+        PermissionUtils::GetClientBundle(uid_, bundleName);
     } else {
         bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     }
 
     if (timeCost_ > timeOut_) {
-        MEDIA_WARN_LOG("timeout! bundleName: %{public}s, type: %{public}d, object: %{public}d, cost %{public}d",
-            bundleName.c_str(), type_, object_, (int) (timeCost_));
+        std::string caller = (bundleName == "") ? "uid=" + std::to_string(IPCSkeleton::GetCallingUid()) : bundleName;
+        MEDIA_WARN_LOG("timeout! caller: %{public}s, type: %{public}d, object: %{public}d, cost %{public}d",
+            caller.c_str(), type_, object_, (int) (timeCost_));
 
         if (timeCost_ > TO_MILLION)
             DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, (int) (timeCost_));

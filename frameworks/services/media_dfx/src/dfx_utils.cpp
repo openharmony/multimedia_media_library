@@ -71,6 +71,24 @@ string DfxUtils::GetSafePath(const string &path)
     return safePath;
 }
 
+string DfxUtils::GetSafeUri(const string &uri)
+{
+    string safeUri = uri;
+    if (uri == "") {
+        return safeUri;
+    }
+    size_t splitIndex = safeUri.find_last_of(SPLIT_PATH);
+    string displayName;
+    if (splitIndex == string::npos) {
+        return safeUri;
+    } else {
+        displayName = safeUri.substr(splitIndex + 1);
+    }
+    string safeDisplayName = GetSafeDiaplayName(displayName);
+    safeUri = safeUri.substr(0, splitIndex) + "/" + safeDisplayName;
+    return safeUri;
+}
+
 string DfxUtils::GetSafeDiaplayName(string &displayName)
 {
     if (displayName == "") {
@@ -161,6 +179,23 @@ unordered_set<string> DfxUtils::SplitString(const string& input, char delimiter)
         result.emplace(token);
     }
     return result;
+}
+
+string DfxUtils::GetSafeAlbumName(const string& albumName)
+{
+    if (albumName == "") {
+        return albumName;
+    }
+    uint32_t length = albumName.size();
+    string safeAlbumName;
+    if (length <= GARBLE_SMALL) {
+        safeAlbumName = GARBLE + albumName.substr(length - GARBLE_LAST_ONE);
+    } else if (length > GARBLE_LARGE) {
+        safeAlbumName = GARBLE + albumName.substr(GARBLE_LARGE);
+    } else {
+        safeAlbumName = GARBLE + albumName.substr(length - GARBLE_LAST_TWO);
+    }
+    return safeAlbumName;
 }
 
 } // namespace Media

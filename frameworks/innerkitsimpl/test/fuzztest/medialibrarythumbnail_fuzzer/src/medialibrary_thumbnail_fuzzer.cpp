@@ -61,13 +61,19 @@ static inline string FuzzString(const uint8_t *data, size_t size)
     return {reinterpret_cast<const char*>(data), size};
 }
 
-static inline int32_t FuzzInt32(const uint8_t *data)
+static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int32_t)) {
+        return 0;
+    }
     return static_cast<int32_t>(*data);
 }
 
 static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return 0;
+    }
     return static_cast<int64_t>(*data);
 }
 
@@ -81,7 +87,7 @@ static inline bool FuzzBool(const uint8_t* data, size_t size)
 
 static inline Media::ThumbnailType FuzzThumbnailType(const uint8_t* data, size_t size)
 {
-    int32_t value = FuzzInt32(data);
+    int32_t value = FuzzInt32(data, size);
     if (value >= static_cast<int32_t>(Media::ThumbnailType::LCD) &&
         value <= static_cast<int32_t>(Media::ThumbnailType::THUMB_EX)) {
         return static_cast<Media::ThumbnailType>(value);
@@ -92,14 +98,20 @@ static inline Media::ThumbnailType FuzzThumbnailType(const uint8_t* data, size_t
 static inline Media::Size FuzzSize(const uint8_t* data, size_t size)
 {
     Media::Size value;
-    value.width = FuzzInt32(data);
-    value.height = FuzzInt32(data);
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return value;
+    }
+    int32_t offset = 0;
+    value.width = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    value.height = FuzzInt32(data + offset, size);
     return value;
 }
 
 static inline Media::PixelFormat FuzzPixelFormat(const uint8_t* data, size_t size)
 {
-    int32_t value = FuzzInt32(data);
+    int32_t value = FuzzInt32(data, size);
     if (value >= static_cast<int32_t>(Media::PixelFormat::UNKNOWN) &&
         value <= static_cast<int32_t>(Media::PixelFormat::ASTC_8x8)) {
         return static_cast<Media::PixelFormat>(value);
@@ -116,7 +128,7 @@ static inline Media::DecodeOptions FuzzDecodeOptions(const uint8_t* data, size_t
 
 static inline Media::ThumbnailTaskType FuzzThumbnailTaskType(const uint8_t* data, size_t size)
 {
-    int32_t value = FuzzInt32(data);
+    int32_t value = FuzzInt32(data, size);
     if (value >= static_cast<int32_t>(Media::ThumbnailTaskType::FOREGROUND) &&
         value <= static_cast<int32_t>(Media::ThumbnailTaskType::BACKGROUND)) {
         return static_cast<Media::ThumbnailTaskType>(value);
@@ -151,7 +163,7 @@ static Media::ThumbRdbOpt FuzzThumbRdbOpt(const uint8_t* data, size_t size, bool
 
 static inline Media::MediaType FuzzMediaType(const uint8_t* data, size_t size)
 {
-    int32_t value = FuzzInt32(data);
+    int32_t value = FuzzInt32(data, size);
     if (value >= static_cast<int32_t>(Media::MediaType::MEDIA_TYPE_FILE) &&
         value <= static_cast<int32_t>(Media::MediaType::MEDIA_TYPE_DEFAULT)) {
         return static_cast<Media::MediaType>(value);
@@ -169,7 +181,7 @@ static Media::ThumbnailData FuzzThumbnailData(const uint8_t* data, size_t size)
 
 static Media::ThumbnailTaskPriority FuzzThumbnailTaskPriority(const uint8_t* data, size_t size)
 {
-    int32_t value = FuzzInt32(data);
+    int32_t value = FuzzInt32(data, size);
     if (value >= static_cast<int32_t>(Media::ThumbnailTaskPriority::HIGH) &&
         value <= static_cast<int32_t>(Media::ThumbnailTaskPriority::LOW)) {
         return static_cast<Media::ThumbnailTaskPriority>(value);
@@ -182,17 +194,24 @@ static Media::ThumbnailTaskPriority FuzzThumbnailTaskPriority(const uint8_t* dat
 
 static void ThumbnailAgingHelperTest(const uint8_t* data, size_t size)
 {
+    const int64_t int64Count = 2;
+    if (data == nullptr || size <  sizeof(int32_t) + sizeof(int64_t) * int64Count) {
+        return;
+    }
     Media::ThumbRdbOpt opt = FuzzThumbRdbOpt(data, size, false);
     Media::ThumbnailAgingHelper::AgingLcdBatch(opt);
-
-    int64_t time = FuzzInt64(data, size);
+    int64_t offset = 0;
+    int64_t time = FuzzInt64(data + offset, size);
     bool before = FuzzBool(data, size);
     int outLcdCount;
     Media::ThumbnailAgingHelper::GetAgingDataCount(time, before, opt, outLcdCount);
 
     vector<Media::ThumbnailData> infos;
-    Media::ThumbnailAgingHelper::GetAgingLcdData(opt, FuzzInt32(data), infos);
-    Media::ThumbnailAgingHelper::GetLcdCountByTime(FuzzInt64(data, size), FuzzBool(data, size), opt, outLcdCount);
+    offset += sizeof(int32_t);
+    Media::ThumbnailAgingHelper::GetAgingLcdData(opt, FuzzInt32(data + offset, size), infos);
+    offset += sizeof(int64_t);
+    Media::ThumbnailAgingHelper::GetLcdCountByTime(FuzzInt64(data + offset, size), FuzzBool(data, size),
+        opt, outLcdCount);
 }
 
 static void ThumbnailGenerateHelperTest(const uint8_t* data, size_t size)
@@ -231,7 +250,7 @@ static void ThumbnailGenerateWorkerTest(const uint8_t* data, size_t size)
     Media::ThumbRdbOpt opts = FuzzThumbRdbOpt(data, size, false);
     Media::ThumbnailData thumbnailData = FuzzThumbnailData(data, size);
     std::shared_ptr<Media::ThumbnailTaskData> taskData =
-        std::make_shared<Media::ThumbnailTaskData>(opts, thumbnailData, FuzzInt32(data));
+        std::make_shared<Media::ThumbnailTaskData>(opts, thumbnailData, FuzzInt32(data, size));
     std::shared_ptr<Media::ThumbnailGenerateTask> task =
         std::make_shared<Media::ThumbnailGenerateTask>(Media::IThumbnailHelper::CreateLcdAndThumbnail, taskData);
 
@@ -286,15 +305,23 @@ static void Init()
 
 static void ThumhnailTest(const uint8_t* data, size_t size)
 {
+    const int32_t int32Count = 4;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
     Media::ThumbnailService::GetInstance()->GetThumbnailFd(FuzzString(data, size),
-        FuzzInt32(data));
+        FuzzInt32(data + offset, size));
     string thumUri = "file://media/Photo/1?operation=thumbnail&width=-1&height=-1";
-    Media::ThumbnailService::GetInstance()->GetThumbnailFd(thumUri, FuzzInt32(data));
+    offset += sizeof(int32_t);
+    Media::ThumbnailService::GetInstance()->GetThumbnailFd(thumUri, FuzzInt32(data + offset, size));
     Media::ThumbnailService::GetInstance()->LcdAging();
+    offset += sizeof(int32_t);
     Media::ThumbnailService::GetInstance()->CreateThumbnailFileScaned(FuzzString(data, size),
-        FuzzString(data, size), FuzzInt32(data));
+        FuzzString(data, size), FuzzInt32(data + offset, size));
+    offset += sizeof(int32_t);
     NativeRdb::RdbPredicates rdbPredicate("Photos");
-    Media::ThumbnailService::GetInstance()->CancelAstcBatchTask(FuzzInt32(data));
+    Media::ThumbnailService::GetInstance()->CancelAstcBatchTask(FuzzInt32(data + offset, size));
     Media::ThumbnailService::GetInstance()->GenerateThumbnailBackground();
     Media::ThumbnailService::GetInstance()->UpgradeThumbnailBackground(false);
     Media::ThumbnailService::GetInstance()->RestoreThumbnailDualFrame();
@@ -306,7 +333,7 @@ static void ThumbnailSourceTest(const uint8_t* data, size_t size)
 {
     Media::GetLocalThumbnailPath(FuzzString(data, size), FuzzString(data, size));
     int32_t error;
-    int32_t minSize = FuzzInt32(data);
+    int32_t minSize = FuzzInt32(data, size);
     Media::ThumbnailData thumbnailData = FuzzThumbnailData(data, size);
     Media::LocalThumbSource::GetSourcePath(thumbnailData, error);
     Media::LocalThumbSource::IsSizeLargeEnough(thumbnailData, minSize);
@@ -358,11 +385,16 @@ static void ParseFileUriTest(const uint8_t* data, size_t size)
 }
 } // namespace OHOS
 
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
+{
+    OHOS::Init();
+    return 0;
+}
+
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::Init();
     OHOS::ThumhnailTest(data, size);
     OHOS::ThumbnailAgingHelperTest(data, size);
     OHOS::ThumbnailGenerateHelperTest(data, size);

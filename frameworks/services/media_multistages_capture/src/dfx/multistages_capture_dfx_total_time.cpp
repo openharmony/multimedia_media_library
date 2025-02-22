@@ -48,7 +48,7 @@ void MultiStagesCaptureDfxTotalTime::RemoveStartTime(const std::string &photoId)
     startTimes_.erase(photoId);
 }
 
-void MultiStagesCaptureDfxTotalTime::Report(const std::string &photoId)
+void MultiStagesCaptureDfxTotalTime::Report(const std::string &photoId, const int32_t mediaType)
 {
     if (startTimes_.empty() || startTimes_.find(photoId) == startTimes_.end()) {
         MEDIA_INFO_LOG("startTimes_ is empty or photoId is not in startTimes_");
@@ -57,7 +57,7 @@ void MultiStagesCaptureDfxTotalTime::Report(const std::string &photoId)
     int64_t startTime = startTimes_[photoId];
     int64_t totalTime = MediaFileUtils::UTCTimeMilliSeconds() - startTime;
     startTimes_.erase(photoId);
-    VariantMap map = {{KEY_PHOTO_ID, photoId}, {KEY_TOTAL_TIME_COST, totalTime}};
+    VariantMap map = {{KEY_PHOTO_ID, photoId}, {KEY_TOTAL_TIME_COST, totalTime}, {KEY_MEDIA_TYPE, mediaType}};
     PostEventUtils::GetInstance().PostStatProcess(StatType::MSC_TOTAL_TIME_COST_STAT, map);
 }
 

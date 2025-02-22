@@ -106,6 +106,12 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTotal(const std::strin
     return Report("TotalInfo", errorCode, totalInfo);
 }
 
+UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportUpgradeEnh(const std::string &errorCode,
+    const std::string &info)
+{
+    return Report("UpgradeEnh", errorCode, info);
+}
+
 UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTimeCost()
 {
     int64_t startTime = std::atoll(this->taskId_.c_str());
@@ -117,6 +123,11 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTimeCost()
         return *this;
     }
     return Report("TimeCost", std::to_string(timeCost), "");
+}
+
+UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportRestoreMode(int32_t restoreMode, uint64_t notFoundFileNum)
+{
+    return Report("RestoreMode:NotFoundFileNum", std::to_string(restoreMode), std::to_string(notFoundFileNum));
 }
 
 int32_t UpgradeRestoreTaskReport::PostInfoDfx(const MediaRestoreResultInfo &info)

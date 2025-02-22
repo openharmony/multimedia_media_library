@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <regex>
+#include <sstream>
 #include <unordered_set>
 #include "medialibrary_errno.h"
 #include "medialibrary_db_const.h"
@@ -24,6 +25,7 @@
 #include "media_directory_type_column.h"
 #include "media_log.h"
 #include "media_old_photos_column.h"
+#include "media_facard_photos_column.h"
 #include "media_smart_album_column.h"
 #include "openssl/sha.h"
 #include "vision_aesthetics_score_column.h"
@@ -37,6 +39,10 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+
+const std::string ALBUM_LPATH = "lpath";
+const std::string ALBUM_BUNDLE_NAME = "bundle_name";
+
 const vector<string> CHAR2HEX_TABLE = {
     "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1A", "1B", "1C", "1D", "1E", "1F",
@@ -58,9 +64,6 @@ const vector<string> CHAR2HEX_TABLE = {
     "E0", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "EA", "EB", "EC", "ED", "EE", "EF",
     "F0", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "FA", "FB", "FC", "FD", "FE", "FF"
 };
-
-const int32_t INTEGER_MAX_LENGTH = 10;
-const std::string MAX_INTEGER = "2147483648";
 
 void MediaLibraryCommonUtils::Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr)
 {
@@ -172,8 +175,16 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_CE_AVAILABLE,
     PhotoColumn::PHOTO_LCD_VISIT_TIME,
     PhotoColumn::PHOTO_DETAIL_TIME,
+    PhotoColumn::PHOTO_MEDIA_SUFFIX,
     TabOldPhotosColumn::MEDIA_OLD_ID,
     TabOldPhotosColumn::MEDIA_OLD_FILE_PATH,
+    TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI,
+    TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID,
+    MEDIA_DATA_DB_ALL_EXIF,
+    MEDIA_DATA_DB_SHOOTING_MODE,
+    MEDIA_DATA_DB_SHOOTING_MODE_TAG,
+    MEDIA_DATA_DB_PHOTOS_LATITUDE,
+    MEDIA_DATA_DB_PHOTOS_LONGITUDE,
 
     // Photos table columns
     COMPAT_HIDDEN,
@@ -183,6 +194,8 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
 
     // PhotoAlbum table columns
     COMPAT_ALBUM_SUBTYPE,
+    ALBUM_LPATH,
+    ALBUM_BUNDLE_NAME,
 
     // Analysis table columns
     TAG_ID,
@@ -337,39 +350,12 @@ void MediaLibraryCommonUtils::AppendSelections(std::string &selections)
     selections = "(" + selections + ")";
 }
 
-int MediaLibraryCommonUtils::SafeStoi(const std::string &value)
+bool MediaLibraryCommonUtils::CanConvertStrToInt32(const std::string &str)
 {
-    if (!IsValidInteger(value)) {
-        MEDIA_ERR_LOG("invalid number!");
-        return -1;
-    }
-    return stoi(value);
-}
-
-bool MediaLibraryCommonUtils::IsValidInteger(const std::string &value)
-{
-    if (value.empty()) {
-        MEDIA_ERR_LOG("KeyWord is empty!");
-        return false;
-    }
-    std::string unsignedStr = value.c_str();
-    if (value[0] == '-') {
-        unsignedStr = value.substr(1);
-    }
-
-    for (int32_t i = 0; i < unsignedStr.size(); i++) {
-        if (!std::isdigit(unsignedStr[i])) {
-            MEDIA_ERR_LOG("invalid char of:%{public}c", unsignedStr[i]);
-            return false;
-        }
-    }
-    if (unsignedStr.size() > INTEGER_MAX_LENGTH) {
-        MEDIA_ERR_LOG("KeyWord is out length!");
-        return false;
-    } else if (unsignedStr.size() == INTEGER_MAX_LENGTH) {
-        return unsignedStr < MAX_INTEGER;
-    }
-    return true;
+    std::istringstream iss(str);
+    int32_t num = 0;
+    iss >> num;
+    return iss.eof() && !iss.fail();
 }
 } // namespace Media
 } // namespace OHOS

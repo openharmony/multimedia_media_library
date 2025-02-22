@@ -20,15 +20,17 @@
 #include <unordered_set>
 
 #include "abs_shared_result_set.h"
+#include "rdb_predicates.h"
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class DuplicatePhotoOperation {
 public:
-    static std::shared_ptr<NativeRdb::ResultSet> GetAllDuplicateAssets(const std::vector<std::string> &columns,
-        const int offset, const int limit);
-    static std::shared_ptr<NativeRdb::ResultSet> GetCanDelDuplicateAssets(const std::vector<std::string> &columns,
-        const int offset, const int limit);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetAllDuplicateAssets(
+        const NativeRdb::RdbPredicates& predicates, const std::vector<std::string>& columns);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetDuplicateAssetsToDelete(
+        const NativeRdb::RdbPredicates& predicates, const std::vector<std::string>& columns);
 
 private:
     static std::string GetSelectColumns(const std::unordered_set<std::string> &columns);

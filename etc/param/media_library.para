@@ -13,3 +13,4 @@
 
 persist.multimedia.medialibrary.rdb_hamode = 0
 persist.multimedia.medialibrary.rdb_switch_status = 0
+multimedia.medialibrary.mtp_show_dump = 0

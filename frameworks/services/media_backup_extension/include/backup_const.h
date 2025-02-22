@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -50,7 +50,11 @@ constexpr size_t GARBLE_UNIT = 2;
 constexpr uint32_t COVER_URI_NUM = 3;
 constexpr int32_t EXTERNAL_DB_NOT_EXIST = -3;
 constexpr uint32_t UNIQUE_NUMBER_NUM = 3;
-constexpr uint32_t THUMBNAIL_NUM = 500;
+constexpr int32_t MAX_RESTORE_ASTC_NUM = 2000;
+constexpr uint64_t MAX_UPGRADE_WAIT_ASTC_NUM = 100;
+constexpr uint32_t THUMBNAIL_QUERY_INTERVAL = 1000;
+constexpr int64_t MIN_RESTORE_THUMBNAIL_TIME = 60 * 1000;
+constexpr int32_t MAX_RESTORE_THUMBNAIL_TIMEOUT_TIMES = 10;
 constexpr size_t MAX_FAILED_FILES_LIMIT = 100;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 constexpr int32_t MAX_THREAD_NUM = 4;
@@ -59,9 +63,10 @@ const std::string RESTORE_FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string RESTORE_FILES_LOCAL_DIR = "/storage/media/local/files/";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
+const std::string RESTORE_THUMB_CLOUD_DIR = "/storage/cloud/files/.thumbs/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
-const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/Music/";
+const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/UpdateBackup/";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
 const std::string OTHER_CLONE_PATH = "/storage/media/local/files/.backup/restore/";
@@ -98,8 +103,20 @@ const std::string GALLERY_SPECIAL_FILE_TYPE = "special_file_type";
 const std::string GALLERY_FIRST_UPDATE_TIME = "first_update_time";
 const std::string GALLERY_DATE_TAKEN = "datetaken";
 const std::string GALLERY_DETAIL_TIME = "detail_time";
+const std::string GALLERY_THUMB_TYPE = "thumbType";
+const std::string GALLERY_ALBUM_ID = "albumId";
+const std::string GALLERY_UNIQUE_ID = "uniqueId";
+const std::string GALLERY_LOCAL_THUMB_PATH_ID = "localThumbPath";
+const std::string GALLERY_LOCAL_BIG_THUMB_PATH_ID = "localBigThumbPath";
+const std::string GALLERY_RESOLUTION = "resolution";
+
+// dentryInfo fileType
+const std::string DENTRY_INFO_ORIGIN = "CONTENT";
+const std::string DENTRY_INFO_LCD = "LCD";
+const std::string DENTRY_INFO_THM = "THM";
 
 // external column
+const std::string EXTERNAL_FILE_ID = "_id";
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
 const std::string EXTERNAL_DATE_MODIFIED = "date_modified";
 const std::string EXTERNAL_DATE_ADDED = "date_added";
@@ -147,13 +164,16 @@ const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
 const std::string STAT_TYPE_PHOTO = "photo";
 const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
+const std::string STAT_TYPE_TOTAL_SIZE = "totalSize";
 const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
+const std::string STAT_TYPE_GALLERY_DATA = "galleryData";
 const std::string STAT_TYPE_UPDATE = "update";
+const std::string STAT_TYPE_THUMBNAIL = "thumbnail";
 const std::string STAT_TYPE_OTHER = "other";
 const std::string STAT_TYPE_ONGOING = "ongoing";
 const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
 const std::vector<std::string> STAT_PROGRESS_TYPES = { STAT_TYPE_PHOTO_VIDEO, STAT_TYPE_AUDIO, STAT_TYPE_UPDATE,
-    STAT_TYPE_OTHER, STAT_TYPE_ONGOING };
+    STAT_TYPE_THUMBNAIL, STAT_TYPE_OTHER, STAT_TYPE_ONGOING };
 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
@@ -181,6 +201,11 @@ const int RESTORE_THUMBNAIL_VISIBLE_TRUE = 1;
 const int RESTORE_LCD_VISIT_TIME_SUCCESS = 2;
 const int RESTORE_LCD_VISIT_TIME_NO_LCD = 0;
 
+const int PHOTO_IS_DIRTY = 1;
+const int PHOTO_CLOUD_POSITION = 2;
+const int PHOTO_SYNC_STATUS_VISIBLE = 0;
+const int PHOTO_SYNC_STATUS_NOT_VISIBLE = -1;
+
 const std::string MEDIA_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data";
 const std::string MEDIA_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data";
 const std::string CLONE_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data_clone";
@@ -199,6 +224,11 @@ constexpr int32_t NICK = 0;
 constexpr int32_t CACHE = 1;
 
 constexpr int32_t DEFAULT_AREA_VERSION = -1;
+
+constexpr int32_t RESTORE_MODE_PROC_ALL_DATA = 0;
+constexpr int32_t RESTORE_MODE_PROC_MAIN_DATA = 1;
+constexpr int32_t RESTORE_MODE_PROC_TWIN_DATA = 2;
+constexpr int32_t RESTORE_MODE_PROC_MIX_DATA = 3;
 
 enum SourceType {
     GALLERY = 0,
@@ -236,6 +266,10 @@ enum RestoreError {
     CREATE_PATH_FAILED,
     PREPARE_PATH_FAILED,
     GALLERY_DATABASE_CORRUPTION,
+    UPDATE_PHOTOS_FAILED,
+    UPDATE_FAILED,
+    PARSE_TRACK_FAILED,
+    TABLE_LACK_OF_COLUMN,
 };
 
 enum class PhotoRelatedType {
@@ -262,6 +296,10 @@ const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::CREATE_PATH_FAILED, "RESTORE_CREATE_PATH_FAILED" },
     { RestoreError::PREPARE_PATH_FAILED, "RESTORE_PREPARE_PATH_FAILED" },
     { RestoreError::GALLERY_DATABASE_CORRUPTION, "RESTORE_GALLERY_DATABASE_CORRUPTION" },
+    { RestoreError::UPDATE_PHOTOS_FAILED, "RESTORE_UPDATE_PHOTOS_FAILED"},
+    { RestoreError::UPDATE_FAILED, "RESTORE_UPDATE_FAILED"},
+    { RestoreError::PARSE_TRACK_FAILED, "RESTORE_HIGHLIGHT_PARSE_TRACK_FAILED"},
+    { RestoreError::TABLE_LACK_OF_COLUMN, "RESTORE_TABLE_LACK_OF_COLUMN"},
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
@@ -299,11 +337,20 @@ struct FileInfo {
     std::string movingPhotoVideoPath;
     std::string extraDataPath;
     std::string detailTime;
+    std::string syncStatus{0};
+    std::string albumId;
+    std::string uniqueId;
+    std::string localThumbPath;
+    std::string localBigThumbPath;
+    std::string resolution;
+
+    int32_t thumbType {-1};
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int64_t fileSize {0};
     int64_t duration {0};
     int64_t recycledTime {0};
+    int64_t dateTrashed {0};
     int32_t hidden {0};
     int32_t isFavorite {0};
     int32_t fileType {0};
@@ -318,10 +365,12 @@ struct FileInfo {
     int32_t mediaAlbumId {-1};  // 单相册id
     int32_t localMediaId {-1};
     bool isNew {true};
+    bool needVisible {true};
     int64_t dateTaken {0};
     int64_t firstUpdateTime {0};
     int64_t thumbnailReady {0};
     int32_t lcdVisitTime {0};
+    int32_t strongAssociation {0};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
     /**
@@ -363,6 +412,11 @@ struct FileInfo {
     std::string newAstcDateKey;
     bool isInternal {true};
     int32_t userId {-1};
+    double latitude {0.0};
+    double longitude {0.0};
+    std::string storyIds;
+    std::string portraitIds;
+    bool needUpdate {false};
 };
 
 struct AlbumInfo {
@@ -374,6 +428,7 @@ struct AlbumInfo {
     PhotoAlbumSubType albumSubType;
     std::string lPath;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
+    int64_t dateModified {0};
 };
 
 struct GalleryAlbumInfo {
@@ -456,7 +511,6 @@ struct FaceInfo {
     std::string faceId;
     std::string tagIdOld;
     std::string tagIdNew;
-    std::string landmarks;
 };
 
 struct AnalysisAlbumTbl {
@@ -553,11 +607,19 @@ const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND
 
 const std::string NOT_IN_CAMERA = " bucket_id NOT IN (-1739773001, 0, 1028075469, 0 ) AND is_pending = 0";
 
+const std::string IS_PENDING = " is_pending = 0";
+
 const std::string QUERY_NOT_SYNC = " _id < 1000000000 AND media_type IN (1, 3) AND _size > 0 ";
+
+const std::string IMAGE_AND_VIDEO_TYPE = " media_type IN (1, 3) AND _size > 0";
+
+const std::string GROUP_BY_MEIDA_TYPE = " group by media_type";
 
 const std::string COMPARE_ID = " _id > ";
 
 const std::string QUERY_COUNT_FROM_FILES = "SELECT count(1) AS count FROM files WHERE";
+
+const std::string QUERY_MEDIA_TYPE_AND_COUNT_FROM_FILES = "SELECT media_type,count(1) AS count FROM files WHERE";
 
 // sql for gallery
 const std::string QUERY_GARBAGE_ALBUM = "SELECT type, cache_dir, nick_dir, nick_name FROM garbage_album";
@@ -572,7 +634,15 @@ const std::string QUERY_MAX_ID_OTHERS = "SELECT max(local_media_id) AS max_id FR
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
     (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
 
-const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relative_bucket_id IS NULL OR \
+const std::string QUERY_MAX_ID_ALL = "SELECT max(local_media_id) AS max_id FROM gallery_media \
+    WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
+    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
+
+const std::string LOCAL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relative_bucket_id IS NULL OR \
+    relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) AND _size > 0 \
+    AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
+
+const std::string ALL_PHOTOS_WHERE_CLAUSE = "(relative_bucket_id IS NULL OR \
     relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) AND _size > 0 \
     AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
 
@@ -592,6 +662,9 @@ const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count",
 const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operation", "rename_operation", "group_tag",
     "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};
 const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
+const std::string SQL_SELECT_ERROR_BURST_PHOTOS  = "burst_key IS NOT NULL and NOT EXISTS ( \
+        SELECT 1 FROM Photos p1 WHERE p1.burst_key = photos.burst_key AND p1.burst_cover_level = 1)";
+const std::string SQL_SELECT_CLONE_FILE_IDS = "SELECT file_id FROM tab_old_photos";
 } // namespace Media
 } // namespace OHOS
 

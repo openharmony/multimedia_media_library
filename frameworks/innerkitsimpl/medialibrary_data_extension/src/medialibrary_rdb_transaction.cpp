@@ -85,6 +85,24 @@ int32_t TransactionOperations::Start(bool isBackup)
     return errCode;
 }
 
+int32_t TransactionOperations::Commit()
+{
+    if (transaction_ == nullptr) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::NULLPTR_ERROR, E_HAS_DB_ERROR);
+        MEDIA_ERR_LOG("transaction is null");
+        return E_HAS_DB_ERROR;
+    }
+    MEDIA_INFO_LOG("Commit transaction, funcName is :%{public}s", funcName_.c_str());
+    auto ret = transaction_->Commit();
+    if (ret != NativeRdb::E_OK) {
+        reporter_.ReportError(DfxTransaction::AbnormalType::COMMIT_ERROR, ret);
+        MEDIA_ERR_LOG("transaction commit fail!, ret:%{public}d", ret);
+    } else {
+        reporter_.ReportIfTimeout();
+    }
+    return ret;
+}
+
 int32_t TransactionOperations::Finish()
 {
     if (transaction_ == nullptr) {
@@ -412,6 +430,22 @@ int32_t TransactionOperations::Delete(MediaLibraryCommand &cmd, int32_t &deleted
         MEDIA_ERR_LOG("rdbStore_->Delete failed, ret = %{public}d", ret);
         MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
+    }
+    return ret;
+}
+
+std::shared_ptr<NativeRdb::ResultSet> TransactionOperations::QueryByStep(const NativeRdb::AbsRdbPredicates &predicates,
+    const std::vector<std::string> &columns, bool preCount)
+{
+    if (transaction_ == nullptr) {
+        MEDIA_ERR_LOG("transaction_ is null");
+        return nullptr;
+    }
+    /* local query */
+    auto ret = transaction_->QueryByStep(predicates, columns, preCount);
+    if (ret == nullptr) {
+        MEDIA_ERR_LOG("transaction_->QueryByStep failed");
+        return nullptr;
     }
     return ret;
 }

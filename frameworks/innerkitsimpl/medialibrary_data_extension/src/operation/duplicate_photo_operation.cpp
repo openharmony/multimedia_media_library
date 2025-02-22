@@ -22,6 +22,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
+#include "photo_query_filter.h"
 
 namespace OHOS {
 namespace Media {
@@ -30,357 +31,231 @@ std::once_flag DuplicatePhotoOperation::onceFlag_;
 const std::string ASTERISK = "*";
 
 const std::string SELECT_COLUMNS = "SELECT_COLUMNS";
+const std::string NORMALIZED_PHOTOS = "NormalizedPhotos";
+const std::string NORMALIZED_TITLE = "normalized_title";
+
+const std::string LIMIT_CLAUSE = "LIMIT ?";
+const std::string OFFSET_CLAUSE = "OFFSET ?";
 
 const std::string IDX_DUPLICATE_ASSETS = "\
     CREATE INDEX \
     IF \
       NOT EXISTS idx_duplicate_assets ON Photos (title, size, orientation)";
 
-const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
-    SELECT\
-      SELECT_COLUMNS \
-    FROM\
-      Photos\
-      INNER JOIN (\
-      SELECT\
-        title,\
-        size,\
-        orientation \
-      FROM\
-        Photos \
-      WHERE\
-        sync_status = 0 \
-        AND clean_flag = 0 \
-        AND date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-        AND media_type = 1 \
-      GROUP BY\
-        title,\
-        size,\
-        orientation \
-      HAVING\
-        count(*) > 1 \
-      ) AS IMG ON Photos.title = IMG.title \
-      AND Photos.size = IMG.size \
-      AND Photos.orientation = IMG.orientation \
-    WHERE\
-      sync_status = 0 \
-      AND clean_flag = 0 \
-      AND date_trashed = 0 \
-      AND hidden = 0 \
-      AND time_pending = 0 \
-      AND is_temp = 0 \
-      AND burst_cover_level = 1 UNION\
-    SELECT\
-      SELECT_COLUMNS \
-    FROM\
-      Photos\
-      INNER JOIN (\
-      SELECT\
-        title,\
-        size \
-      FROM\
-        Photos \
-      WHERE\
-        sync_status = 0 \
-        AND clean_flag = 0 \
-        AND date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-        AND media_type = 2 \
-      GROUP BY\
-        title,\
-        size \
-      HAVING\
-        count(*) > 1 \
-      ) AS VID ON Photos.title = VID.title \
-      AND Photos.size = VID.size \
-    WHERE\
-      sync_status = 0 \
-      AND clean_flag = 0 \
-      AND date_trashed = 0 \
-      AND hidden = 0 \
-      AND time_pending = 0 \
-      AND is_temp = 0 \
-      AND burst_cover_level = 1 \
-    ORDER BY\
-      Photos.title,\
-      Photos.size,\
-      Photos.orientation \
-      LIMIT ? OFFSET ? ";
-
-const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
-    SELECT\
-      count(*) \
-    FROM\
-      (\
-      SELECT\
-        file_id \
-      FROM\
-        Photos\
-        INNER JOIN (\
-        SELECT\
-          title,\
-          size,\
-          orientation \
-        FROM\
+static std::string GetNormalizedPhotosSubquery()
+{
+    static const std::string SQL_NORMALIZED_PHOTO_SUBQUERY = " \
+        SELECT \
+          *, \
+          REGEXP_REPLACE(title, '(_[0-9]{2})?((_[0-9])|(\\([0-9]*\\)))*$', '') AS " + NORMALIZED_TITLE + " \
+        FROM \
           Photos \
-        WHERE\
-          sync_status = 0 \
-          AND clean_flag = 0 \
-          AND date_trashed = 0 \
-          AND hidden = 0 \
-          AND time_pending = 0 \
-          AND is_temp = 0 \
-          AND burst_cover_level = 1 \
-          AND media_type = 1 \
-        GROUP BY\
-          title,\
-          size,\
-          orientation \
-        HAVING\
-          count(*) > 1 \
-        ) AS IMG ON Photos.title = IMG.title \
-        AND Photos.size = IMG.size \
-        AND Photos.orientation = IMG.orientation \
-      WHERE\
-        sync_status = 0 \
-        AND clean_flag = 0 \
-        AND date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 UNION\
-      SELECT\
-        file_id \
-      FROM\
-        Photos\
+        WHERE " +
+          PhotoQueryFilter::GetSqlWhereClause(PhotoQueryFilter::Option::FILTER_VISIBLE) + " ";
+
+    return SQL_NORMALIZED_PHOTO_SUBQUERY;
+}
+
+static std::string GetAllDuplicateImageAssetsCTE()
+{
+    static const std::string SQL_ALL_DUPLICATE_IMG_ASSETS_CTE =
+        NORMALIZED_PHOTOS + " \
+        INNER JOIN ( \
+            SELECT " +
+                NORMALIZED_TITLE + ", \
+                size, \
+                orientation \
+            FROM " +
+                NORMALIZED_PHOTOS + " \
+            WHERE \
+                media_type = 1 \
+            GROUP BY " +
+                NORMALIZED_TITLE + ", \
+                size, \
+                orientation \
+            HAVING \
+                count(*) > 1 \
+        ) AS DupImg ON " + NORMALIZED_PHOTOS + "." + NORMALIZED_TITLE + " = DupImg." + NORMALIZED_TITLE + " \
+            AND " + NORMALIZED_PHOTOS + ".size = DupImg.size \
+            AND " + NORMALIZED_PHOTOS + ".orientation = DupImg.orientation ";
+
+    return SQL_ALL_DUPLICATE_IMG_ASSETS_CTE;
+}
+
+static std::string GetAllDuplicateVideoAssetsCTE()
+{
+    static const std::string SQL_ALL_DUPLICATE_VID_ASSETS_CTE =
+        NORMALIZED_PHOTOS + " \
         INNER JOIN (\
-        SELECT\
-          title,\
-          size \
-        FROM\
-          Photos \
-        WHERE\
-          sync_status = 0 \
-          AND clean_flag = 0 \
-          AND date_trashed = 0 \
-          AND hidden = 0 \
-          AND time_pending = 0 \
-          AND is_temp = 0 \
-          AND burst_cover_level = 1 \
-          AND media_type = 2 \
-        GROUP BY\
-          title,\
-          size \
-        HAVING\
-          count(*) > 1 \
-        ) AS VID ON Photos.title = VID.title \
-        AND Photos.size = VID.size \
-      WHERE\
-        sync_status = 0 \
-        AND clean_flag = 0 \
-        AND date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-      ) ";
+            SELECT " +
+                NORMALIZED_TITLE + ", \
+                size, \
+                orientation \
+            FROM " +
+                NORMALIZED_PHOTOS + " \
+            WHERE \
+                media_type = 2 \
+            GROUP BY " +
+                NORMALIZED_TITLE + ", \
+                size \
+            HAVING \
+                count(*) > 1\
+        ) AS DupVid ON " + NORMALIZED_PHOTOS + "." + NORMALIZED_TITLE + " = DupVid." + NORMALIZED_TITLE + " \
+            AND " + NORMALIZED_PHOTOS + ".size = DupVid.size ";
 
-const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS = "\
-    SELECT\
-      SELECT_COLUMNS \
-    FROM\
-      (\
+    return SQL_ALL_DUPLICATE_VID_ASSETS_CTE;
+}
+
+static std::string GetQueryAllDuplicateAssetsCountSql()
+{
+    static const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT = "\
+        WITH " + NORMALIZED_PHOTOS + " AS (" + GetNormalizedPhotosSubquery() + ") " + " \
+        SELECT \
+            count(*) \
+        FROM (SELECT file_id FROM " + GetAllDuplicateImageAssetsCTE() +
+            " UNION " +
+            "SELECT file_id FROM " + GetAllDuplicateVideoAssetsCTE() + ") ";
+
+    return SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT;
+}
+
+static std::string GetQueryAllDuplicateAssetsSql()
+{
+    static const std::string SQL_QUERY_ALL_DUPLICATE_ASSETS = "\
+        WITH " + NORMALIZED_PHOTOS + " AS (" + GetNormalizedPhotosSubquery() + ") " + " \
+        SELECT \
+            * \
+        FROM " + GetAllDuplicateImageAssetsCTE() + " \
+        UNION \
+        SELECT \
+            * \
+        FROM " + GetAllDuplicateVideoAssetsCTE() + " \
+        ORDER BY \
+            " + NORMALIZED_PHOTOS + "." + NORMALIZED_TITLE + ", \
+            " + NORMALIZED_PHOTOS + ".size, \
+            " + NORMALIZED_PHOTOS + ".orientation \
+        ";
+
+    return SQL_QUERY_ALL_DUPLICATE_ASSETS;
+}
+
+const std::string ALBUM_PRIORITY_EXPRESSION = "\
+    CASE \
+        WHEN lpath = '/DCIM/Camera' THEN \
+        0 \
+        WHEN lpath = '/Pictures/Screenshots' THEN \
+        1 \
+        WHEN lpath = '/Pictures/Screenrecords' THEN \
+        2 \
+        WHEN lpath = '/Pictures/WeiXin' THEN \
+        3 \
+        WHEN lpath IN ( '/Pictures/WeChat', '/tencent/MicroMsg/WeChat', '/Tencent/MicroMsg/WeiXin' ) THEN \
+        4 \
+        ELSE 5 \
+    END ";
+
+const std::string TITLE_PRIORITY_EXPRESSION = "\
+    CASE \
+        WHEN title = " + NORMALIZED_TITLE + " THEN \
+        0 \
+        ELSE 1 \
+    END ";
+
+static std::string GetDuplicateImageToDeleteCTE()
+{
+    static const std::string SQL_DUPLICATE_IMG_TO_DELETE_CTE = "\
       SELECT\
-        SELECT_COLUMNS,\
+        " + SELECT_COLUMNS + ", \
+        " + NORMALIZED_TITLE + ", \
         ROW_NUMBER( ) OVER (\
-          PARTITION BY title,\
-          size,\
+          PARTITION BY " + NORMALIZED_TITLE + ", \
+          size, \
           orientation \
-        ORDER BY\
-        CASE\
-            WHEN album_id != NULL THEN\
-            0 ELSE 1 \
-          END ASC,\
-        CASE\
-            WHEN lpath = '/DCIM/Camera' THEN\
-            0 \
-            WHEN lpath = '/Pictures/Screenshots' THEN\
-            1 \
-            WHEN lpath = '/Pictures/Screenrecords' THEN\
-            2 \
-            WHEN lpath = '/Pictures/WeiXin' THEN\
-            3 \
-            WHEN lpath IN ( '/Pictures/WeChat', '/tencent/MicroMsg/WeChat', '/Tencent/MicroMsg/WeiXin' ) THEN\
-            4 ELSE 5 \
-        END ASC \
-        ) AS img_row_num \
-      FROM\
-        Photos\
-        LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
-      WHERE\
-        sync_status = 0 \
-        AND clean_flag = 0 \
-        AND date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-        AND media_type = 1 \
-      ) \
-    WHERE\
-      img_row_num > 1 UNION\
-    SELECT\
-      SELECT_COLUMNS \
-    FROM\
-      (\
-      SELECT\
-        SELECT_COLUMNS,\
-        ROW_NUMBER( ) OVER (\
-          PARTITION BY title,\
-          size \
-        ORDER BY\
-        CASE\
-            WHEN album_id != NULL THEN\
-            0 ELSE 1 \
-          END ASC,\
-        CASE\
-            WHEN lpath = '/DCIM/Camera' THEN\
-            0 \
-            WHEN lpath = '/Pictures/Screenshots' THEN\
-            1 \
-            WHEN lpath = '/Pictures/Screenrecords' THEN\
-            2 \
-            WHEN lpath = '/Pictures/WeiXin' THEN\
-            3 \
-            WHEN lpath IN ( '/Pictures/WeChat', '/tencent/MicroMsg/WeChat', '/Tencent/MicroMsg/WeiXin' ) THEN\
-            4 ELSE 5 \
-        END ASC \
-        ) AS vid_row_num \
-      FROM\
-        Photos\
-        LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
-      WHERE\
-        sync_status = 0 \
-        AND clean_flag = 0 \
-        AND date_trashed = 0 \
-        AND hidden = 0 \
-        AND time_pending = 0 \
-        AND is_temp = 0 \
-        AND burst_cover_level = 1 \
-        AND media_type = 2 \
-      ) \
-    WHERE\
-      vid_row_num > 1 \
-    ORDER BY\
-      title,\
-      size,\
-      orientation \
-      LIMIT ? OFFSET ? ";
+        ORDER BY \
+        CASE \
+          WHEN album_id != NULL THEN \
+          0 ELSE 1 \
+        END ASC, \
+        " + ALBUM_PRIORITY_EXPRESSION + " ASC, \
+        " + TITLE_PRIORITY_EXPRESSION + " ASC \
+        ) AS row_num \
+      FROM \
+        " + NORMALIZED_PHOTOS + " \
+        LEFT JOIN PhotoAlbum ON " + NORMALIZED_PHOTOS + ".owner_album_id = PhotoAlbum.album_id \
+      WHERE \
+        media_type = 1 ";
 
-const std::string SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT = "\
-    SELECT\
-      count(*) \
-    FROM\
-      (\
+    return SQL_DUPLICATE_IMG_TO_DELETE_CTE;
+}
+
+static std::string GetDuplicateVideoToDeleteCTE()
+{
+    static const std::string SQL_DUPLICATE_VID_TO_DELETE_CTE = "\
       SELECT\
-        file_id \
-      FROM\
-        (\
-        SELECT\
-          file_id,\
-          ROW_NUMBER( ) OVER (\
-            PARTITION BY title,\
-            size,\
+        " + SELECT_COLUMNS + ", \
+        " + NORMALIZED_TITLE + ", \
+        ROW_NUMBER( ) OVER (\
+          PARTITION BY " + NORMALIZED_TITLE + ", \
+          size \
+        ORDER BY \
+        CASE \
+          WHEN album_id != NULL THEN \
+          0 ELSE 1 \
+        END ASC, \
+        " + ALBUM_PRIORITY_EXPRESSION + " ASC, \
+        " + TITLE_PRIORITY_EXPRESSION + " ASC \
+        ) AS row_num \
+      FROM \
+        " + NORMALIZED_PHOTOS + " \
+        LEFT JOIN PhotoAlbum ON " + NORMALIZED_PHOTOS + ".owner_album_id = PhotoAlbum.album_id \
+      WHERE \
+        media_type = 2 ";
+
+    return SQL_DUPLICATE_VID_TO_DELETE_CTE;
+}
+
+static std::string GetDuplicateAssetsToDeleteSql()
+{
+    static const std::string SQL_QUERY_DUPLICATE_ASSETS_TO_DELETE = "\
+        WITH " + NORMALIZED_PHOTOS + " AS (" + GetNormalizedPhotosSubquery() + ") " + " \
+        SELECT \
+            " + SELECT_COLUMNS + ", \
+            " + NORMALIZED_TITLE + " \
+        FROM ( " + GetDuplicateImageToDeleteCTE() + " ) \
+        WHERE \
+            row_num > 1 \
+        UNION \
+        SELECT \
+            " + SELECT_COLUMNS + ", \
+            " + NORMALIZED_TITLE + " \
+        FROM ( " + GetDuplicateVideoToDeleteCTE() + " ) \
+        WHERE \
+            row_num > 1 \
+        ORDER BY \
+            " + NORMALIZED_TITLE + ", \
+            size, \
             orientation \
-          ORDER BY\
-          CASE\
-              WHEN album_id != NULL THEN\
-              0 ELSE 1 \
-            END ASC,\
-          CASE\
-              WHEN lpath = '/DCIM/Camera' THEN\
-              0 \
-              WHEN lpath = '/Pictures/Screenshots' THEN\
-              1 \
-              WHEN lpath = '/Pictures/Screenrecords' THEN\
-              2 \
-              WHEN lpath = '/Pictures/WeiXin' THEN\
-              3 \
-              WHEN lpath IN ( '/Pictures/WeChat', '/tencent/MicroMsg/WeChat', '/Tencent/MicroMsg/WeiXin' ) THEN\
-              4 ELSE 5 \
-          END ASC \
-          ) AS img_row_num \
-        FROM\
-          Photos\
-          LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
-        WHERE\
-          sync_status = 0 \
-          AND clean_flag = 0 \
-          AND date_trashed = 0 \
-          AND hidden = 0 \
-          AND time_pending = 0 \
-          AND is_temp = 0 \
-          AND burst_cover_level = 1 \
-          AND media_type = 1 \
-        ) \
-      WHERE\
-        img_row_num > 1 UNION\
-      SELECT\
-        file_id \
-      FROM\
-        (\
-        SELECT\
-          file_id,\
-          ROW_NUMBER( ) OVER (\
-            PARTITION BY title,\
-            size \
-          ORDER BY\
-          CASE\
-              WHEN album_id != NULL THEN\
-              0 ELSE 1 \
-            END ASC,\
-          CASE\
-              WHEN lpath = '/DCIM/Camera' THEN\
-              0 \
-              WHEN lpath = '/Pictures/Screenshots' THEN\
-              1 \
-              WHEN lpath = '/Pictures/Screenrecords' THEN\
-              2 \
-              WHEN lpath = '/Pictures/WeiXin' THEN\
-              3 \
-              WHEN lpath IN ( '/Pictures/WeChat', '/tencent/MicroMsg/WeChat', '/Tencent/MicroMsg/WeiXin' ) THEN\
-              4 ELSE 5 \
-          END ASC \
-          ) AS vid_row_num \
-        FROM\
-          Photos\
-          LEFT JOIN PhotoAlbum ON Photos.owner_album_id = PhotoAlbum.album_id \
-        WHERE\
-          sync_status = 0 \
-          AND clean_flag = 0 \
-          AND date_trashed = 0 \
-          AND hidden = 0 \
-          AND time_pending = 0 \
-          AND is_temp = 0 \
-          AND burst_cover_level = 1 \
-          AND media_type = 2 \
-        ) \
-      WHERE\
-      vid_row_num > 1 \
-      ) ";
+    ";
+
+    return SQL_QUERY_DUPLICATE_ASSETS_TO_DELETE;
+}
+
+static std::string GetDuplicateAssetsToDeleteCountSql()
+{
+    static const std::string SQL_QUERY_DUPLICATE_ASSETS_TO_DELETE = "\
+        WITH " + NORMALIZED_PHOTOS + " AS (" + GetNormalizedPhotosSubquery() + ") " + " \
+        SELECT \
+            count(*) \
+        FROM (SELECT file_id FROM (" + GetDuplicateImageToDeleteCTE() + ") WHERE row_num > 1 \
+            UNION \
+            SELECT file_id FROM (" + GetDuplicateVideoToDeleteCTE() + ") WHERE row_num > 1) ";
+
+    return SQL_QUERY_DUPLICATE_ASSETS_TO_DELETE;
+}
 
 std::string DuplicatePhotoOperation::GetSelectColumns(const std::unordered_set<std::string> &columns)
 {
-    if (columns.empty()) {
-        return ASTERISK;
-    }
+    CHECK_AND_RETURN_RET(!columns.empty(), ASTERISK);
 
     std::string selectColumns;
     bool first = true;
@@ -396,62 +271,67 @@ std::string DuplicatePhotoOperation::GetSelectColumns(const std::unordered_set<s
     return selectColumns;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetAllDuplicateAssets(
-    const std::vector<std::string> &columns, const int offset, const int limit)
+static void AppendLimitOffsetClause(std::string &sql, std::vector<NativeRdb::ValueObject>& bindArgs,
+    int limit, int offset)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetAllDuplicateAssets failed, rdbStore is nullptr");
-        return nullptr;
+    if (limit >= 0) {
+        sql += " " + LIMIT_CLAUSE;
+        bindArgs.push_back(limit);
+        if (offset >= 0) {
+            sql += " " + OFFSET_CLAUSE;
+            bindArgs.push_back(offset);
+        }
     }
+}
+
+std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetAllDuplicateAssets(
+    const NativeRdb::RdbPredicates& predicates, const std::vector<std::string>& columns)
+{
+    int limit = predicates.GetLimit();
+    int offset = predicates.GetOffset();
+    bool isQueryCount = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end();
+    MEDIA_INFO_LOG("Limit: %{public}d, Offset: %{public}d, isQueryCount: %{public}d", limit, offset, isQueryCount);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "GetAllDuplicateAssets failed, rdbStore is nullptr");
+
     MediaLibraryTracer tracer;
-    if (find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end()) {
+    if (isQueryCount) {
         tracer.Start("QueryAllDuplicateAssets_count");
         std::call_once(onceFlag_, [&]() { rdbStore->ExecuteSql(IDX_DUPLICATE_ASSETS); });
-        return rdbStore->QueryByStep(SQL_QUERY_ALL_DUPLICATE_ASSETS_COUNT);
+        return rdbStore->QueryByStep(GetQueryAllDuplicateAssetsCountSql());
     }
 
     tracer.Start("QueryAllDuplicateAssets_records");
-    std::unordered_set<std::string> columnSet{ "Photos.file_id", "Photos.title", "Photos.size", "Photos.orientation" };
-    for (const auto &column : columns) {
-        if (MediaFileUtils::StartsWith(column, "Photos.")) {
-            columnSet.insert(column);
-        } else {
-            columnSet.insert("Photos." + column);
-        }
-    }
-
-    std::string selectColumns = GetSelectColumns(columnSet);
-    std::string sql = SQL_QUERY_ALL_DUPLICATE_ASSETS;
-    MediaFileUtils::ReplaceAll(sql, SELECT_COLUMNS, selectColumns);
-
-    const std::vector<NativeRdb::ValueObject> bindArgs{ NativeRdb::ValueObject(limit), NativeRdb::ValueObject(offset) };
+    std::string sql = GetQueryAllDuplicateAssetsSql();
+    std::vector<NativeRdb::ValueObject> bindArgs {};
+    AppendLimitOffsetClause(sql, bindArgs, limit, offset);
     return rdbStore->QueryByStep(sql, bindArgs);
 }
 
-std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetCanDelDuplicateAssets(
-    const std::vector<std::string> &columns, const int offset, const int limit)
+std::shared_ptr<NativeRdb::ResultSet> DuplicatePhotoOperation::GetDuplicateAssetsToDelete(
+    const NativeRdb::RdbPredicates& predicates, const std::vector<std::string>& columns)
 {
+    int limit = predicates.GetLimit();
+    int offset = predicates.GetOffset();
+    bool isQueryCount = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end();
+    MEDIA_INFO_LOG("Limit: %{public}d, Offset: %{public}d, isQueryCount: %{public}d", limit, offset, isQueryCount);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetAllDuplicateAssets failed, rdbStore is nullptr");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "GetAllDuplicateAssets failed, rdbStore is nullptr");
+
     MediaLibraryTracer tracer;
-    if (find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT) != columns.end()) {
+    if (isQueryCount) {
         tracer.Start("QueryCanDelDuplicateAssets_count");
-        return rdbStore->QueryByStep(SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS_COUNT);
+        return rdbStore->QueryByStep(GetDuplicateAssetsToDeleteCountSql());
     }
 
     tracer.Start("QueryCanDelDuplicateAssets_records");
     std::unordered_set<std::string> columnSet{ "file_id", "title", "size", "orientation" };
     columnSet.insert(columns.begin(), columns.end());
-
+    std::string sql = GetDuplicateAssetsToDeleteSql();
     std::string selectColumns = GetSelectColumns(columnSet);
-    std::string sql = SQL_QUERY_CAN_DEL_DUPLICATE_ASSETS;
     MediaFileUtils::ReplaceAll(sql, SELECT_COLUMNS, selectColumns);
-
-    const std::vector<NativeRdb::ValueObject> bindArgs{ NativeRdb::ValueObject(limit), NativeRdb::ValueObject(offset) };
+    std::vector<NativeRdb::ValueObject> bindArgs {};
+    AppendLimitOffsetClause(sql, bindArgs, limit, offset);
     return rdbStore->QueryByStep(sql, bindArgs);
 }
 } // namespace Media

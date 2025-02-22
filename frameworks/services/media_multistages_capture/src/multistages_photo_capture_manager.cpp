@@ -71,10 +71,7 @@ bool MultiStagesPhotoCaptureManager::Init()
 
 void MultiStagesPhotoCaptureManager::CancelRequestAndRemoveImage(const vector<string> &columns)
 {
-    if (columns.size() < 1) {
-        MEDIA_ERR_LOG("invalid param");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(columns.size() >= 1, "invalid param");
     int32_t fileId = stoi(columns[0]);
     string photoId = MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(fileId);
     MEDIA_INFO_LOG("fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
@@ -98,7 +95,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesPhotoCaptureManager::HandleMul
             break;
         }
         case OperationType::SET_LOCATION: {
-            UpdateLocation(cmd.GetValueBucket());
+            UpdateLocation(cmd.GetValueBucket(), false);
             break;
         }
         case OperationType::CANCEL_PROCESS_IMAGE: {
@@ -145,12 +142,10 @@ void MultiStagesPhotoCaptureManager::DealLowQualityPicture(const std::string &im
     std::shared_ptr<Media::Picture> picture, bool isEdited)
 {
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread == nullptr) {
-        return;
-    }
-    if (pictureManagerThread->IsExsitPictureByImageId(imageId)) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pictureManagerThread != nullptr, "pictureManagerThread not init yet");
+    CHECK_AND_RETURN_LOG(!pictureManagerThread->IsExsitPictureByImageId(imageId),
+        "current photo already in the cache");
+
     // 将低质量图存入缓存
     time_t currentTime;
     if ((currentTime = time(NULL)) == -1) {
@@ -176,9 +171,7 @@ void MultiStagesPhotoCaptureManager::SaveLowQualityPicture(const std::string &im
 {
     MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pictureManagerThread != nullptr, "pictureManagerThread not init yet");
     pictureManagerThread->SaveLowQualityPicture(imageId);
 }
 
@@ -188,9 +181,7 @@ void MultiStagesPhotoCaptureManager::DealHighQualityPicture(const std::string &i
 {
     MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
-    if (pictureManagerThread == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(pictureManagerThread != nullptr, "pictureManagerThread not init yet");
     // 将低质量图存入缓存
     time_t currentTime;
     if ((currentTime = time(NULL)) == -1) {
@@ -225,12 +216,62 @@ int32_t MultiStagesPhotoCaptureManager::UpdateDbInfo(MediaLibraryCommand &cmd)
     return result;
 }
 
-void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucket &values)
+static std::string QueryPathByFileId(const int32_t &fileId)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    std::string where = MediaColumn::MEDIA_ID + " = " + to_string(fileId);
+    queryCmd.GetAbsRdbPredicates()->SetWhereClause(where);
+    
+    std::vector<std::string> columns { MediaColumn::MEDIA_FILE_PATH };
+    auto resultSet = DatabaseAdapter::Query(queryCmd, columns);
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, "", "result set is empty");
+
+    std::string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    return path;
+}
+
+static int32_t WriteGpsInfoAndUpdateDb(const std::string &path, const int32_t &fileId, const double longitude,
+    const double latitude)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("WriteGpsInfoAndUpdateDb, path");
+    auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
+    tracer.Finish();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "write gps info fail");
+
+    std::string originPath = MediaLibraryAssetOperations::GetEditDataSourcePath(path);
+    if (MediaFileUtils::IsFileExists(originPath)) {
+        // write gps info if this photo was edited.
+        tracer.Start("WriteGpsInfoAndUpdateDb, originPath");
+        auto ret = ExifUtils::WriteGpsExifInfo(originPath, longitude, latitude);
+        tracer.Finish();
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "write origin file gps info fail");
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
+
+    ValuesBucket updateValues;
+    updateValues.PutDouble(PhotoColumn::PHOTO_LATITUDE, latitude);
+    updateValues.PutDouble(PhotoColumn::PHOTO_LONGITUDE, longitude);
+    cmd.SetValueBucket(updateValues);
+
+    auto result = DatabaseAdapter::Update(cmd);
+    CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK, E_ERR, "update fail fileId: %{public}d", fileId);
+
+    return E_OK;
+}
+
+void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucket &values, bool isWriteGpsAdvanced,
+    const std::string &path, const int32_t &id)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLocation");
-    double longitude = 0;
+    MEDIA_INFO_LOG("UpdateLocation begin, isWriteGpsAdvanced: %{public}d, path: %{public}s, fileId: %{public}d",
+        isWriteGpsAdvanced, MediaFileUtils::DesensitizePath(path).c_str(), id);
     ValueObject valueObject;
+    double longitude = 0;
     if (values.GetObject(PhotoColumn::PHOTO_LONGITUDE, valueObject)) {
         valueObject.GetDouble(longitude);
     }
@@ -239,51 +280,20 @@ void MultiStagesPhotoCaptureManager::UpdateLocation(const NativeRdb::ValuesBucke
         valueObject.GetDouble(latitude);
     }
 
+    std::string filePath;
     int32_t fileId = 0;
-    if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
-        valueObject.GetInt(fileId);
-    }
-
-    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = MediaColumn::MEDIA_ID + " = " + to_string(fileId);
-    queryCmd.GetAbsRdbPredicates()->SetWhereClause(where);
-    vector<string> columns { MediaColumn::MEDIA_FILE_PATH };
-
-    auto resultSet = DatabaseAdapter::Query(queryCmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
-        MEDIA_ERR_LOG("result set is empty");
-        return;
-    }
-    string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-
-    // update exif info
-    auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("write gps info fail");
-        return;
-    }
-
-    string originPath = MediaLibraryAssetOperations::GetEditDataSourcePath(path);
-    if (MediaFileUtils::IsFileExists(originPath)) {
-        // write gps info if this photo was edited.
-        auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("write origin file gps info fail");
-            return;
+    if (isWriteGpsAdvanced) {
+        filePath = path;
+        fileId = id;
+    } else {
+        if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
+            valueObject.GetInt(fileId);
         }
+        filePath = QueryPathByFileId(fileId);
     }
-
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, fileId);
-    ValuesBucket updateValues;
-    updateValues.PutDouble(MEDIA_DATA_DB_LATITUDE, latitude);
-    updateValues.PutDouble(MEDIA_DATA_DB_LONGITUDE, longitude);
-    cmd.SetValueBucket(updateValues);
-
-    auto result = DatabaseAdapter::Update(cmd);
-    if (result != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("update fail fileId: %{public}d", fileId);
-    }
+    CHECK_AND_RETURN_LOG((!filePath.empty() && fileId > 0), "UpdateLocation invalid value!");
+    WriteGpsInfoAndUpdateDb(filePath, fileId, longitude, latitude);
+    MEDIA_INFO_LOG("UpdateLocation success");
 }
 
 void MultiStagesPhotoCaptureManager::AddImageInternal(int32_t fileId, const string &photoId, int32_t deferredProcType,
@@ -370,10 +380,7 @@ int32_t MultiStagesPhotoCaptureManager::UpdatePictureQuality(const std::string &
     updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
     updateCmd.SetValueBucket(updateValuesDirty);
     auto isDirtyResult = DatabaseAdapter::Update(updateCmd);
-    if (isDirtyResult < 0) {
-        MEDIA_WARN_LOG("update dirty flag fail, photoId: %{public}s", photoId.c_str());
-    }
- 
+    CHECK_AND_PRINT_LOG(isDirtyResult >= 0, "update dirty flag fail, photoId: %{public}s", photoId.c_str());
     return updatePhotoQualityResult;
 }
 
@@ -388,17 +395,13 @@ void MultiStagesPhotoCaptureManager::SyncWithDeferredProcSessionInternal()
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     vector<string> columns { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_DATE_TRASHED,
         MEDIA_DATA_DB_DEFERRED_PROC_TYPE };
-    
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
-        MEDIA_ERR_LOG("result set is empty");
-        return;
-    }
-
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != 0);
+    CHECK_AND_RETURN_LOG(!cond, "result set is empty");
     MediaLibraryTracer tracer;
     tracer.Start("MultiStagesPhotoCaptureManager::SyncWithDeferredProcSession");
-
     deferredProcSession_->BeginSynchronize();
+
     do {
         int32_t fileId = GetInt32Val(MEDIA_DATA_DB_ID, resultSet);
         string photoId = GetStringVal(MEDIA_DATA_DB_PHOTO_ID, resultSet);
@@ -413,7 +416,6 @@ void MultiStagesPhotoCaptureManager::SyncWithDeferredProcSessionInternal()
         AddImageInternal(fileId, photoId, deferredProcType, isTrashed);
     } while (!resultSet->GoToNextRow());
     resultSet->Close();
-    
     deferredProcSession_->EndSynchronize();
     MEDIA_INFO_LOG("exit");
 }
@@ -426,38 +428,24 @@ static void SyncWithDeferredPhotoProcSessionAsync(AsyncTaskData *data)
 void MultiStagesPhotoCaptureManager::SyncWithDeferredProcSession()
 {
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_INFO_LOG("can not get async worker");
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "can not get async worker");
     shared_ptr<MediaLibraryAsyncTask> asyncTask =
         make_shared<MediaLibraryAsyncTask>(SyncWithDeferredPhotoProcSessionAsync, nullptr);
-    if (asyncTask == nullptr) {
-        MEDIA_ERR_LOG("SyncWithDeferredProcSession create task fail");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(asyncTask != nullptr, "SyncWithDeferredProcSession create task fail");
     MEDIA_INFO_LOG("SyncWithDeferredProcSession add task success");
     asyncWorker->AddTask(asyncTask, false);
 }
 
 bool MultiStagesPhotoCaptureManager::CancelProcessRequest(const string &photoId)
 {
-    if (!MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(photoId)) {
-        MEDIA_ERR_LOG("photoId is empty or not in process");
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(photoId), false,
+        "photoId is empty or not in process");
     int32_t currentRequestCount =
         MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(photoId, RequestType::CANCEL_REQUEST);
-    if (currentRequestCount > 0) {
-        MEDIA_ERR_LOG("not cancel request because request count(%{public}d) greater than 0", currentRequestCount);
-
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(currentRequestCount <= 0, false,
+        "not cancel request because request count(%{public}d) greater than 0", currentRequestCount);
     auto isCancelSucc = deferredProcSession_->CancelProcessImage(photoId);
     MEDIA_INFO_LOG("cancel request isCancelSucc: %{public}d", isCancelSucc);
-
     return true;
 }
 
@@ -474,10 +462,7 @@ void MultiStagesPhotoCaptureManager::RemoveImage(const string &photoId, bool isR
 
 void MultiStagesPhotoCaptureManager::RestoreImage(const string &photoId)
 {
-    if (photoId.empty()) {
-        MEDIA_DEBUG_LOG("photoId is empty");
-    }
-
+    CHECK_AND_PRINT_LOG(!photoId.empty(), "photoId is empty");
     MultiStagesCaptureRequestTaskManager::UpdatePhotoInProgress(photoId);
     deferredProcSession_->RestoreImage(photoId);
 }
@@ -485,13 +470,10 @@ void MultiStagesPhotoCaptureManager::RestoreImage(const string &photoId)
 void MultiStagesPhotoCaptureManager::ProcessImage(int fileId, int deliveryMode)
 {
     string photoId = MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(fileId) ;
-    if (photoId.size() == 0) {
-        MEDIA_ERR_LOG("processimage image id is invalid, fileId: %{public}d", fileId);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(photoId.size() != 0, "processimage image id is invalid, fileId:"
+        " %{public}d", fileId);
 
     string callerBundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-
     MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::THIRD_PART);
     MultiStagesCaptureDfxRequestPolicy::GetInstance().SetPolicy(callerBundleName,
         static_cast<RequestPolicy>(deliveryMode));

@@ -48,6 +48,9 @@ MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<
         dir_ = path;
     } else if (type_ == FILE) {
         path_ = path;
+    } else if (type_ == CAMERA_SHOT_MOVING_PHOTO) {
+        path_ = path;
+        isCameraShotMovingPhoto_ = true;
     }
     // when path is /Photo, it means update or clone scene
     skipPhoto_ = path.compare("/storage/cloud/files/Photo") != 0;
@@ -123,6 +126,7 @@ void MediaScannerObj::Scan()
 {
     switch (type_) {
         case FILE:
+        case CAMERA_SHOT_MOVING_PHOTO:
             ScanFile();
             break;
         case DIRECTORY:
@@ -144,7 +148,7 @@ void MediaScannerObj::Scan()
 
 int32_t MediaScannerObj::InvokeCallback(int32_t err)
 {
-    if (callback_ == nullptr) {
+    if (callback_ == nullptr || err == E_NO_THUMB) {
         return E_OK;
     }
 
@@ -269,12 +273,13 @@ int32_t MediaScannerObj::Commit()
 {
     string tableName;
     auto watch = MediaLibraryNotify::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
         uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_);
         if (!isSkipAlbumUpdate_) {
             mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
         }
-        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
+        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT && data_->GetBurstCoverLevel() == COVER) {
             if (data_->GetForAdd()) {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
             } else {
@@ -310,7 +315,7 @@ int32_t MediaScannerObj::GetMediaInfo()
     string mimePrefix = data_->GetFileMimeType().substr(0, pos) + "/*";
     if (find(EXTRACTOR_SUPPORTED_MIME.begin(), EXTRACTOR_SUPPORTED_MIME.end(),
         mimePrefix) != EXTRACTOR_SUPPORTED_MIME.end()) {
-        return MetadataExtractor::Extract(data_);
+        return MetadataExtractor::Extract(data_, isCameraShotMovingPhoto_);
     }
 
     return E_OK;
@@ -604,6 +609,7 @@ int32_t MediaScannerObj::ScanFileInternal()
         // no return here for fs metadata being updated or inserted
     }
 
+    bool isShareScene = data_->GetForAdd() && data_->GetOwnerPackage() == "com.huawei.hmos.instantshare";
     err = Commit();
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to commit err %{public}d", err);
@@ -613,7 +619,7 @@ int32_t MediaScannerObj::ScanFileInternal()
         return err;
     }
 
-    return E_OK;
+    return isShareScene ? E_NO_THUMB : E_OK;
 }
 
 int32_t MediaScannerObj::BuildFileInfo(const string &parent, int32_t parentId)
