@@ -343,6 +343,7 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
     }
 
     std::string dateTaken = ThumbnailUriUtils::GetDateTakenFromUri(uri);
+    std::string dateModified = ThumbnailUriUtils::GetDateModifiedFromUri(uri);
     std::string fileUri = ThumbnailUriUtils::GetFileUriFromUri(uri);
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
@@ -350,6 +351,7 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
         .table = tableName,
         .row = fileId,
         .dateTaken = dateTaken,
+        .dateModified = dateModified,
         .fileUri = fileUri,
         .screenSize = screenSize_
     };

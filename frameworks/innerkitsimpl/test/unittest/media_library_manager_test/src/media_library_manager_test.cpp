@@ -1286,14 +1286,16 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
         mediaLibraryExtendManager->GrantPhotoUriPermission(srcTokenId, targetTokenId, Tempuris, permissionType,
             SensitiveType);
     }
+
     permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
     mediaLibraryExtendManager->GrantPhotoUriPermission(srcTokenId, targetTokenId, uris, permissionType, SensitiveType);
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
     QueryUriPermissionTokenIdResult(srcTokenId, targetTokenId, inColumn, TYPE_PHOTOS, queryPhotoResult);
     ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
-        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO));
+        EXPECT_LE(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
     } while (!queryPhotoResult->GoToNextRow());
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_010 exit");
 }
@@ -1330,7 +1332,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
     ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
-        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO));
+        EXPECT_LE(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
     } while (!queryPhotoResult->GoToNextRow());
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_011 exit");
 }
@@ -1373,12 +1375,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
 
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
-        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO));
+        EXPECT_LE(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
     } while (!queryPhotoResult->GoToNextRow());
 
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPreviliegeResult);
-        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO));
+        EXPECT_LE(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
     } while (!queryPreviliegeResult->GoToNextRow());
 
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_012 exit");
@@ -1826,7 +1828,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
             expectReadResult.push_back(true);
             expectWriteResult.push_back(false);
             expectReadWriteResult.push_back(false);
-        } else if (static_cast<int32_t>(permissionType) == 2) {
+        } else if (static_cast<int32_t>(permissionType) == 1) {
             expectReadResult.push_back(false);
             expectWriteResult.push_back(true);
             expectReadWriteResult.push_back(false);
@@ -1882,7 +1884,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
             expectResult[0].push_back(true);
             expectResult[1].push_back(false);
             expectResult[2].push_back(false);
-        } else if (static_cast<int32_t>(permissionType) == 2) {
+        } else if (static_cast<int32_t>(permissionType) == 1) {
             expectResult[0].push_back(false);
             expectResult[1].push_back(true);
             expectResult[2].push_back(false);

@@ -108,6 +108,7 @@ const std::string GALLERY_ALBUM_ID = "albumId";
 const std::string GALLERY_UNIQUE_ID = "uniqueId";
 const std::string GALLERY_LOCAL_THUMB_PATH_ID = "localThumbPath";
 const std::string GALLERY_LOCAL_BIG_THUMB_PATH_ID = "localBigThumbPath";
+const std::string GALLERY_RESOLUTION = "resolution";
 
 // dentryInfo fileType
 const std::string DENTRY_INFO_ORIGIN = "CONTENT";
@@ -165,6 +166,7 @@ const std::string STAT_TYPE_VIDEO = "video";
 const std::string STAT_TYPE_AUDIO = "audio";
 const std::string STAT_TYPE_TOTAL_SIZE = "totalSize";
 const std::string STAT_TYPE_PHOTO_VIDEO = "photo&video";
+const std::string STAT_TYPE_GALLERY_DATA = "galleryData";
 const std::string STAT_TYPE_UPDATE = "update";
 const std::string STAT_TYPE_THUMBNAIL = "thumbnail";
 const std::string STAT_TYPE_OTHER = "other";
@@ -347,6 +349,7 @@ struct FileInfo {
     std::string cloudId;
     std::string localThumbPath;
     std::string localBigThumbPath;
+    std::string resolution;
 
     int32_t thumbType {-1};
     int32_t fileIdOld {-1};
@@ -517,7 +520,6 @@ struct FaceInfo {
     std::string faceId;
     std::string tagIdOld;
     std::string tagIdNew;
-    std::string landmarks;
 };
 
 struct AnalysisAlbumTbl {
@@ -645,7 +647,11 @@ const std::string QUERY_MAX_ID_ALL = "SELECT max(local_media_id) AS max_id FROM 
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
     (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
 
-const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relative_bucket_id IS NULL OR \
+const std::string LOCAL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relative_bucket_id IS NULL OR \
+    relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) AND _size > 0 \
+    AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
+
+const std::string ALL_PHOTOS_WHERE_CLAUSE = "(relative_bucket_id IS NULL OR \
     relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) AND _size > 0 \
     AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
 
@@ -665,6 +671,9 @@ const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count",
 const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operation", "rename_operation", "group_tag",
     "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};
 const std::vector<std::string> EXCLUDED_IMAGE_FACE_COLUMNS = {"id"};
+const std::string SQL_SELECT_ERROR_BURST_PHOTOS  = "burst_key IS NOT NULL and NOT EXISTS ( \
+        SELECT 1 FROM Photos p1 WHERE p1.burst_key = photos.burst_key AND p1.burst_cover_level = 1)";
+const std::string SQL_SELECT_CLONE_FILE_IDS = "SELECT file_id FROM tab_old_photos";
 } // namespace Media
 } // namespace OHOS
 

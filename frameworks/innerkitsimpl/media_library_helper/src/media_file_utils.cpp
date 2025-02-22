@@ -60,6 +60,7 @@ const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
 constexpr unsigned short MAX_RECURSION_DEPTH = 4;
 constexpr size_t DEFAULT_TIME_SIZE = 32;
+constexpr int32_t CROSS_POLICY_ERR = 18;
 const int32_t HMFS_MONITOR_FL = 2;
 const int32_t INTEGER_MAX_LENGTH = 10;
 const std::string LISTENING_BASE_PATH = "/storage/media/local/files/";
@@ -629,14 +630,17 @@ void MediaFileUtils::RecoverMediaTempDir()
     }
 }
 
-bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
+bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath, bool isSupportCrossPolicy)
 {
     bool errRet = false;
-
-    if (IsFileExists(oldPath) && !IsFileExists(newPath)) {
-        errRet = (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
+    if (!IsFileExists(oldPath) || IsFileExists(newPath)) {
+        return errRet;
     }
 
+    errRet = (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
+    if (!errRet && isSupportCrossPolicy && errno == CROSS_POLICY_ERR) {
+        errRet = CopyFileAndDelSrc(oldPath, newPath);
+    }
     return errRet;
 }
 
@@ -885,8 +889,8 @@ static inline int32_t CheckTitle(const string &title)
         return -EINVAL;
     }
     
-    static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(title, TITLE_REGEX_CHECK)) {
+    static const string titleRegexCheck = R"([\\/:*?"<>|])";
+    if (RegexCheck(title, titleRegexCheck)) {
         MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
         return -EINVAL;
     }
@@ -938,7 +942,7 @@ int32_t MediaFileUtils::CheckFileDisplayName(const string &displayName)
     if (displayName.at(0) == '.') {
         return -EINVAL;
     }
-    static const string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
+    static const string TITLE_REGEX_CHECK = R"([\\/:*?"<>|])";
     if (RegexCheck(displayName, TITLE_REGEX_CHECK)) {
         MEDIA_ERR_LOG("Failed to check displayName regex: %{private}s", displayName.c_str());
         return -EINVAL;
@@ -1177,12 +1181,27 @@ string MediaFileUtils::StrCreateTimeSafely(const string &format, int64_t time)
     return strTime;
 }
 
-string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
+std::string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";
     int64_t times = time / MSEC_TO_SEC;
-    auto tm = localtime(&times);
-    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
+    struct tm localTm;
+
+    if (localtime_noenv_r(&times, &localTm) == nullptr) {
+        MEDIA_ERR_LOG("localtime_noenv_r error: %{public}d", errno);
+        if (time < 0) {
+            MEDIA_ERR_LOG("Time value is negative: %{public}lld", static_cast<long long>(time));
+        }
+        return strTime;
+    }
+
+    if (strftime(strTime, sizeof(strTime), format.c_str(), &localTm) == 0) {
+        MEDIA_ERR_LOG("strftime error: %{public}d", errno);
+    }
+
+    if (time < 0) {
+        MEDIA_ERR_LOG("Time value is negative: %{public}lld", static_cast<long long>(time));
+    }
     return strTime;
 }
 
@@ -2183,7 +2202,7 @@ bool MediaFileUtils::IsValidInteger(const std::string &value)
     while (unsignedStr.size() > 0 && unsignedStr[0] == '-') {
         unsignedStr = unsignedStr.substr(1);
     }
-    for (int32_t i = 0; i < unsignedStr.size(); i++) {
+    for (size_t i = 0; i < unsignedStr.size(); i++) {
         if (!std::isdigit(unsignedStr[i])) {
             MEDIA_INFO_LOG("KeyWord invalid char of:%{public}c", unsignedStr[i]);
             unsignedStr = unsignedStr.substr(0, i);
@@ -2280,5 +2299,27 @@ void MediaFileUtils::StatDirSize(const std::string& rootPath, size_t& totalSize)
     }
 
     MEDIA_INFO_LOG("Directory size: %s = %{public}lld bytes", rootPath.c_str(), static_cast<long long>(totalSize));
+}
+
+std::string MediaFileUtils::GetMimeTypeFromDisplayName(const std::string &displayName)
+{
+    std::string mimeType = "";
+    CHECK_AND_RETURN_RET_LOG(!displayName.empty(), mimeType, "displayName is empty.");
+    std::string extension;
+    string::size_type currentPos = displayName.rfind('.');
+    if (currentPos != std::string::npos) {
+        extension = displayName.substr(currentPos + 1);
+    }
+    CHECK_AND_RETURN_RET_LOG(!extension.empty(), mimeType, "extension is empty.");
+    mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
+    return mimeType;
+}
+
+std::string MediaFileUtils::DesensitizeUri(const std::string &fileUri)
+{
+    string result = fileUri;
+    size_t slashIndex = result.rfind('/');
+    CHECK_AND_RETURN_RET(slashIndex != std::string::npos, result);
+    return result.replace(slashIndex + 1, result.length() - slashIndex - 1, "*");
 }
 } // namespace OHOS::Media

@@ -400,13 +400,13 @@ SyncEventStat PostEventUtils::GetSyncEventStat(const VariantMap &stat)
                                             std::max(GetIntValue(KEY_REFRESH_IMAGEVIDEO_ALBUM_TOTAL_COUNT, stat), 1);
  
     std::set<int32_t> user_set(user_alubm_count_.begin(), user_alubm_count_.end());
-    syncEventStat.refreshUserAndSourceAlbumCount = user_set.size();
+    syncEventStat.refreshUserAndSourceAlbumCount = static_cast<int32_t>(user_set.size());
     syncEventStat.avgRefreshUserAndSourceAlbumTime =
         GetIntValue(KEY_REFRESH_USER_AND_SOURCE_ALBUM_TOTAL_TIME, stat) /
         std::max(static_cast<int32_t>(user_alubm_count_.size()), 1);
  
     std::set<int32_t> analysis_set(analysis_alunm_count_.begin(), analysis_alunm_count_.end());
-    syncEventStat.refreshAnalysisAlbumCount = analysis_set.size();
+    syncEventStat.refreshAnalysisAlbumCount = static_cast<int32_t>(analysis_set.size());
     syncEventStat.avgRefreshAnalysisAlbumTime = GetIntValue(KEY_REFRESH_ANALYSIS_ALBUM_TOTAL_TIME, stat) /
                                                 std::max(static_cast<int32_t>(analysis_alunm_count_.size()), 1);
     return syncEventStat;

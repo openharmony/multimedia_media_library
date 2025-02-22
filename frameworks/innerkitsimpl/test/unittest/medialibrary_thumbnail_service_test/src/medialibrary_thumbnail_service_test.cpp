@@ -999,10 +999,11 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, Tes
     bool isSourceEx = true;
     std::shared_ptr<Picture> pictureEx = Picture::Create(pixelMap);
     data.source.SetPictureEx(pictureEx);
-    auto res = ThumbnailUtils::CompressPicture(data, isSourceEx);
+    std::string tempOutputPath;
+    auto res = ThumbnailUtils::CompressPicture(data, isSourceEx, tempOutputPath);
     EXPECT_EQ(res, false);
     bool isSourceEx2 = false;
-    auto res2 = ThumbnailUtils::CompressPicture(data, isSourceEx2);
+    auto res2 = ThumbnailUtils::CompressPicture(data, isSourceEx2, tempOutputPath);
     EXPECT_EQ(res2, false);
 }
 

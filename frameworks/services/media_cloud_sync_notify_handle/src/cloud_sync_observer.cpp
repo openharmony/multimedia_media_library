@@ -20,6 +20,7 @@
 
 #include "cloud_sync_observer.h"
 
+#include "cloud_media_asset_manager.h"
 #include "cloud_sync_notify_handler.h"
 #include "media_analysis_helper.h"
 #include "media_file_utils.h"
@@ -58,8 +59,8 @@ void CloudSyncObserver::DealCloudSync(const ChangeInfo &changeInfo)
     if (jsonData.contains("taskType")) {
         info.taskType = jsonData["taskType"];
     }
-    if (jsonData.contains("sycnId")) {
-        info.syncId = jsonData["sycnId"];
+    if (jsonData.contains("syncId")) {
+        info.syncId = jsonData["syncId"];
     }
     if (jsonData.contains("syncType")) {
         info.syncType = jsonData["syncType"];
@@ -95,14 +96,18 @@ void CloudSyncObserver::DealAlbumGallery(CloudSyncNotifyInfo &notifyInfo)
     }
     PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
 }
- 
+
 void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
 {
     if (notifyInfo.type == ChangeType::UPDATE || notifyInfo.type == ChangeType::OTHER) {
         CloudSyncHandleData handleData;
         handleData.orgInfo = notifyInfo;
         shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(GALLERY_PHOTO_DELETE);
-        chain->Handle(handleData);
+        if (chain != nullptr) {
+            chain->Handle(handleData);
+        } else {
+            MEDIA_ERR_LOG("uri OR type is Invalid");
+        }
     }
     SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, PHOTO_URI_TYPE);
     AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
@@ -115,6 +120,9 @@ void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
         map = {{KEY_TOTAL_ASSET_NUM, info.urisSize}, {KEY_DELETE_ASSET_NUM, info.urisSize}};
     }
     PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
+    if (notifyInfo.type == ChangeType::DELETE) {
+        CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
+    }
 }
 
 void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)

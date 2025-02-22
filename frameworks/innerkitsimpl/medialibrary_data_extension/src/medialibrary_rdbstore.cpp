@@ -67,6 +67,7 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "tab_old_photos_table_event_handler.h"
+#include "tab_facard_photos_table_event_handler.h"
 #include "vision_column.h"
 #include "vision_ocr_column.h"
 #include "form_map.h"
@@ -234,7 +235,13 @@ const std::string MediaLibraryRdbStore::PhotoAlbumNotifyFunc(const std::vector<s
         MEDIA_ERR_LOG("Invalid input: args must contain at least 1 strings");
         return "";
     }
+
     std::string albumId = args[0].c_str();
+    if (!all_of(albumId.begin(), albumId.end(), ::isdigit)) {
+        MEDIA_ERR_LOG("Invalid albunId PhotoAlbumNotifyFunc Abortion");
+        return "";
+    }
+
     MEDIA_DEBUG_LOG("albumId = %{public}s", albumId.c_str());
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, "", "Failed to get MediaLibraryNotify");
@@ -583,6 +590,16 @@ void GetAllNetworkId(vector<string> &networkIds)
 }
 #endif
 
+static void AddDefaultPhotoValues(ValuesBucket& values)
+{
+    ValueObject tmpValue;
+    if (values.GetObject(MediaColumn::MEDIA_NAME, tmpValue)) {
+        string newDisplayName {};
+        tmpValue.GetString(newDisplayName);
+        values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(newDisplayName));
+    }
+}
+
 int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 {
     DfxTimer dfxTimer(DfxType::RDB_INSERT, INVALID_DFX, RDB_TIME_OUT, false);
@@ -591,6 +608,9 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     if (!MediaLibraryRdbStore::CheckRdbStore()) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
+    }
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        AddDefaultPhotoValues(cmd.GetValueBucket());
     }
 
     int32_t ret = ExecSqlWithRetry([&]() {
@@ -607,13 +627,18 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 }
 
 int32_t MediaLibraryRdbStore::BatchInsert(int64_t &outRowId, const std::string &table,
-    const std::vector<NativeRdb::ValuesBucket> &values)
+    std::vector<NativeRdb::ValuesBucket> &values)
 {
     DfxTimer dfxTimer(DfxType::RDB_INSERT, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryRdbStore::BatchInsert");
     CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), E_HAS_DB_ERROR,
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+    if (table == PhotoColumn::PHOTOS_TABLE) {
+        for (auto& value : values) {
+            AddDefaultPhotoValues(value);
+        }
+    }
     int32_t ret = ExecSqlWithRetry([&]() {
         return MediaLibraryRdbStore::GetRaw()->BatchInsert(outRowId, table, values);
     });
@@ -628,13 +653,18 @@ int32_t MediaLibraryRdbStore::BatchInsert(int64_t &outRowId, const std::string &
 }
 
 int32_t MediaLibraryRdbStore::BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
-    const std::vector<ValuesBucket>& values)
+    std::vector<ValuesBucket>& values)
 {
     DfxTimer dfxTimer(DfxType::RDB_BATCHINSERT, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryRdbStore::BatchInsert");
     CHECK_AND_RETURN_RET_LOG(MediaLibraryRdbStore::CheckRdbStore(), E_HAS_DB_ERROR,
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        for (auto& value : values) {
+            AddDefaultPhotoValues(value);
+        }
+    }
     int32_t ret = ExecSqlWithRetry([&]() {
         return MediaLibraryRdbStore::GetRaw()->BatchInsert(outInsertNum, cmd.GetTableName(), values);
     });
@@ -1657,6 +1687,9 @@ static int32_t ExecuteSql(RdbStore &store)
     }
     CHECK_AND_RETURN_RET(TabOldPhotosTableEventHandler().OnCreate(store) == NativeRdb::E_OK,
         NativeRdb::E_ERROR);
+    if (TabFaCardPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
     return NativeRdb::E_OK;
 }
 
@@ -3185,6 +3218,16 @@ static void AddCloudEnhancementColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddIsAutoColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_IS_AUTO + " INT DEFAULT 0 NOT NULL",
+    };
+    MEDIA_INFO_LOG("start add is_auto column for auto cloud enhancement");
+    ExecSqls(sqls, store);
+}
+
 static void AddThumbnailReady(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4153,6 +4196,24 @@ static void FixSourceAlbumUpdateTriggerToUseLPath(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void AddMediaSuffixColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_MEDIA_SUFFIX + " TEXT",
+    };
+    ExecSqls(sqls, store);
+}
+
+static void AddIsRecentShow(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_IS_RECENT_SHOW  +
+            " INT NOT NULL DEFAULT 1",
+    };
+    MEDIA_INFO_LOG("add is_recent_show column start");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
@@ -4161,6 +4222,26 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_HIGHLIGHT_SUBTITLE) {
         AddHighlightUseSubtitle(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_AUTO) {
+        AddIsAutoColumns(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MEDIA_SUFFIX_COLUMN) {
+        AddMediaSuffixColumn(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN) {
+        UpdateSourcePhotoAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN) {
+        AddIsRecentShow(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS) {
+        TabFaCardPhotosTableEventHandler().OnCreate(store);
     }
 }
 
@@ -4204,6 +4285,7 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
         UpdateSearchStatusTriggerForOwnerAlbumId(store);
     }
+
     if (oldVersion < VERSION_ADD_CHECK_FLAG) {
         AddCheckFlag(store);
     }
@@ -4653,11 +4735,14 @@ int MediaLibraryRdbStore::Update(int &changedRows, const ValuesBucket &row, cons
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Update(changedRows, row, predicates); });
 }
 
-int MediaLibraryRdbStore::Insert(int64_t &outRowId, const std::string &table, const ValuesBucket &row)
+int MediaLibraryRdbStore::Insert(int64_t &outRowId, const std::string &table, ValuesBucket &row)
 {
     if (!MediaLibraryRdbStore::CheckRdbStore()) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
+    }
+    if (table == PhotoColumn::PHOTOS_TABLE) {
+        AddDefaultPhotoValues(row);
     }
     return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Insert(outRowId, table, row); });
 }

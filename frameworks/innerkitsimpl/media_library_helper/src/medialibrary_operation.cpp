@@ -23,6 +23,7 @@
 #include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "media_old_photos_column.h"
+#include "media_facard_photos_column.h"
 #include "medialibrary_db_const.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -63,6 +64,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ALBUM, OperationObject::PAH_ALBUM },
         { PAH_MAP, OperationObject::PAH_MAP },
         { PAH_ANA_ALBUM, OperationObject::ANALYSIS_PHOTO_ALBUM },
+        { PAH_HIGHLIGHT_ADD_ASSETS, OperationObject::ADD_ASSET_HIGHLIGHT_ALBUM },
         { PAH_ANA_MAP, OperationObject::ANALYSIS_PHOTO_MAP },
         { TOOL_PHOTO, OperationObject::TOOL_PHOTO },
         { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
@@ -90,6 +92,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
         { PAH_CLOUD_ENHANCEMENT_OPERATE, OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE },
         { TAB_OLD_PHOTO, OperationObject::TAB_OLD_PHOTO },
+        { TAB_FACARD_PHOTO, OperationObject::TAB_FACARD_PHOTO },
         { CLOUD_MEDIA_ASSET_OPERATE, OperationObject::CLOUD_MEDIA_ASSET_OPERATE},
 
         // use in Vision
@@ -199,6 +202,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::CONVERT_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
         { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
+        { OperationObject::ADD_ASSET_HIGHLIGHT_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
         { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
         { OperationObject::ANALYSIS_ADDRESS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::ANALYSIS_ADDRESS_ASSETS, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
@@ -207,6 +211,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
             { { OperationType::UNKNOWN_TYPE, VISION_ANALYSIS_ALBUM_TOTAL_TABLE } } },
         { OperationObject::TAB_OLD_PHOTO, { { OperationType::UNKNOWN_TYPE, TabOldPhotosColumn::OLD_PHOTOS_TABLE } }},
+        { OperationObject::TAB_FACARD_PHOTO,
+        { { OperationType::UNKNOWN_TYPE, TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE } }},
 
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
@@ -297,6 +303,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_BATCH_UPDATE_FAV, OperationType::BATCH_UPDATE_FAV },
         { OPRN_BATCH_UPDATE_USER_COMMENT, OperationType::BATCH_UPDATE_USER_COMMENT },
         { OPRN_BATCH_UPDATE_OWNER_ALBUM_ID, OperationType::BATCH_UPDATE_OWNER_ALBUM_ID },
+        { OPRN_BATCH_UPDATE_RECENT_SHOW, OperationType::BATCH_UPDATE_RECENT_SHOW },
         { OPRN_SET_PHOTO_QUALITY, OperationType::SET_PHOTO_QUALITY },
         { OPRN_ADD_IMAGE, OperationType::ADD_IMAGE },
         { OPRN_PROCESS_IMAGE, OperationType::PROCESS_IMAGE },
@@ -345,6 +352,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_DELETE_LOCAL_ASSETS_PERMANENTLY, OperationType::DELETE_LOCAL_ASSETS_PERMANENTLY },
         { MTH_AND_YEAR_ASTC, OperationType::MTH_AND_YEAR_ASTC },
         { OPRN_HIGHLIGHT_SUBTITLE, OperationType::HIGHLIGHT_SUBTITLE},
+        { OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE, OperationType::UPDATE_SUPPORTED_WATERMARK_TYPE },
     };
     return oprnTypeMap;
 }

@@ -1520,7 +1520,7 @@ void SpecialCharacterExtensionCheck(const shared_ptr<FileAsset> &parent, const s
     for (int i = 0; i <= MAX_ASCII; i ++) {
         string displayName = title + "." + static_cast<char>(i);
         string filePath = parent->GetPath() + "/" + displayName;
-        static const string DISPLAYNAME_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
+        static const string DISPLAYNAME_REGEX_CHECK = R"([\\/:*?"<>|])";
         std::regex express(DISPLAYNAME_REGEX_CHECK);
         bool bValid = std::regex_search(displayName, express);
         int32_t ret = MediaFileExtentionUtils::CreateFile(parentUri, displayName, newUri);

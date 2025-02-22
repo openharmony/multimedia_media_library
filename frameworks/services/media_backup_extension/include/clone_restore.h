@@ -35,6 +35,7 @@
 #include "photo_album_clone.h"
 #include "photos_clone.h"
 #include "clone_restore_geo.h"
+#include "clone_restore_geo_dictionary.h"
 
 namespace OHOS {
 namespace Media {
@@ -257,6 +258,7 @@ private:
     std::atomic<uint64_t> lcdMigrateFileNumber_{0};
     std::atomic<uint64_t> thumbMigrateFileNumber_{0};
     std::atomic<uint64_t> migrateCloudSuccessNumber_{0};
+    CloneRestoreGeoDictionary cloneRestoreGeoDictionary_;
 };
 
 template<typename T>

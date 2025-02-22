@@ -62,7 +62,7 @@ napi_value HighlightAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setHighlightUserActionData", JSSetHighlightUserActionData),
             DECLARE_NAPI_FUNCTION("getHighlightResource", JSGetHighlightResource),
             DECLARE_NAPI_FUNCTION("getOrderPosition", JSGetOrderPosition),
-            DECLARE_NAPI_FUNCTION("setSubtitle", JSSetHighlightSubtitle),
+            DECLARE_NAPI_FUNCTION("setSubTitle", JSSetHighlightSubtitle),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -143,8 +143,8 @@ static const map<int32_t, struct HighlightAlbumInfo> HIGHLIGHT_ALBUM_INFO_MAP = 
         REMARKS, HIGHLIGHT_STATUS, RATIO, BACKGROUND, FOREGROUND, WORDART, IS_COVERED, COLOR,
         RADIUS, SATURATION, BRIGHTNESS, BACKGROUND_COLOR_TYPE, SHADOW_LEVEL, TITLE_SCALE_X,
         TITLE_SCALE_Y, TITLE_RECT_WIDTH, TITLE_RECT_HEIGHT, BACKGROUND_SCALE_X, BACKGROUND_SCALE_Y,
-        BACKGROUND_RECT_WIDTH, BACKGROUND_RECT_HEIGHT, LAYOUT_INDEX, COVER_ALGO_VERSION, COVER_KEY,
-        HIGHLIGHT_IS_MUTED, HIGHLIGHT_IS_FAVORITE, HIGHLIGHT_THEME } } },
+        BACKGROUND_RECT_WIDTH, BACKGROUND_RECT_HEIGHT, LAYOUT_INDEX, COVER_ALGO_VERSION, COVER_KEY, COVER_STATUS,
+        HIGHLIGHT_IS_MUTED, HIGHLIGHT_IS_FAVORITE, HIGHLIGHT_THEME, HIGHLIGHT_PIN_TIME, HIGHLIGHT_USE_SUBTITLE } } },
     { PLAY_INFO, { PAH_QUERY_HIGHLIGHT_PLAY, { ID, HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
         MUSIC, FILTER, HIGHLIGHT_PLAY_INFO, IS_CHOSEN, PLAY_INFO_VERSION, PLAY_INFO_ID } } },
 };
@@ -580,7 +580,7 @@ napi_value HighlightAlbumNapi::JSGetHighlightAlbumInfo(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only and smart highlight album can get highlight album info");
-    
+
     asyncContext->albumId = photoAlbum->GetAlbumId();
     asyncContext->subType = photoAlbum->GetPhotoAlbumSubType();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
@@ -649,6 +649,7 @@ napi_value HighlightAlbumNapi::JSSetHighlightSubtitle(napi_env env, napi_callbac
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->subtitle),
         JS_ERR_PARAMETER_INVALID);
 
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckAlbumName(asyncContext->subtitle) == E_OK, "Invalid subtitle");
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
     CHECK_COND_WITH_MESSAGE(env,

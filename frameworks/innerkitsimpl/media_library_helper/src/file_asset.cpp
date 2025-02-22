@@ -326,6 +326,16 @@ void FileAsset::SetFavorite(bool isFavorite)
     member_[MEDIA_DATA_DB_IS_FAV] = isFavorite;
 }
 
+bool FileAsset::IsRecentShow() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_RECENT_SHOW);
+}
+
+void FileAsset::SetRecentShow(bool isRecentShow)
+{
+    member_[PhotoColumn::PHOTO_IS_RECENT_SHOW] = isRecentShow;
+}
+
 double FileAsset::GetLatitude()
 {
     return GetDoubleMember(MEDIA_DATA_DB_LATITUDE);
@@ -607,6 +617,16 @@ void FileAsset::SetSupportedWatermarkType(int32_t watermarkType)
     member_[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = watermarkType;
 }
 
+int32_t FileAsset::GetIsAuto() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_AUTO);
+}
+
+void FileAsset::SetIsAuto(int32_t isAuto)
+{
+    member_[PhotoColumn::PHOTO_IS_AUTO] = isAuto;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
@@ -672,6 +692,16 @@ double FileAsset::GetDoubleMember(const string &name) const
 int32_t FileAsset::GetPhotoIndex() const
 {
     return GetInt32Member(PHOTO_INDEX);
+}
+
+int32_t FileAsset::GetUserId()
+{
+    return userId_;
+}
+ 
+void FileAsset::SetUserId(int32_t userId)
+{
+    userId_ = userId;
 }
 
 void FileAsset::SetResultTypeMap(const string &colName, ResultSetDataType type)

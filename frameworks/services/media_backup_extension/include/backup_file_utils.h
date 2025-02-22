@@ -69,6 +69,7 @@ public:
     static bool IsLivePhoto(const FileInfo &fileInfo);
     static bool ConvertToMovingPhoto(FileInfo &fileInfo);
     static string ConvertLowQualityPath(int32_t sceneCode, const std::string &filePath, const string &relativePath);
+    static void ParseResolution(const std::string &resolution, int32_t &width, int32_t &height);
     static int32_t IsLowQualityImage(std::string &filePath, int32_t sceneCode,
         string relativePath, bool hasLowQualityImage);
     static size_t GetLastSlashPosFromPath(const std::string &path);

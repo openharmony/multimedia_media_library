@@ -160,6 +160,28 @@ string BackupFileUtils::ConvertLowQualityPath(int32_t sceneCode, const std::stri
     return result;
 }
 
+void BackupFileUtils::ParseResolution(const std::string &resolution, int32_t &width,
+    int32_t &height)
+{
+    //default 0
+    width = 0, height = 0;
+    if (resolution.empty()) {
+        return;
+    }
+    size_t delimiter_pos = resolution.find('x');
+    if (delimiter_pos == std::string::npos) {
+        return;
+    }
+    std::string width_str = resolution.substr(0, delimiter_pos);
+    std::string height_str = resolution.substr(delimiter_pos + 1);
+    width = std::atoi(width_str.c_str());
+    height = std::atoi(height_str.c_str());
+    if (width == 0 || height == 0) {
+        width = 0;
+        height = 0;
+    }
+}
+
 int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
 {
     string extension = ScannerUtils::GetFileExtension(data->GetFileName()); // in case when trashed or hidden
