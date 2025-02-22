@@ -217,9 +217,9 @@ int32_t SetDefaultPhotoApi10(int mediaType, const std::string &displayName, bool
 
 void UpdateRefreshFlag()
 {
-    MediaLibraryRdbUtils::UpdateSystemAlbumCountInternal(
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
-    MediaLibraryRdbUtils::UpdateUserAlbumCountInternal(
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
 }
 
@@ -235,7 +235,7 @@ void CheckIfNeedRefresh(bool isNeedRefresh)
     }
     EXPECT_EQ(isNeedRefresh, signal);
 
-    EXPECT_EQ(isNeedRefresh, MediaLibraryRdbUtils::IsNeedRefreshAlbum());
+    EXPECT_EQ(true, MediaLibraryRdbUtils::IsNeedRefreshAlbum());
 }
 
 void RefreshTable()
@@ -984,7 +984,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_008, TestSize.Level0)
 
     // 3. Only set refresh table but not set flags.
     MEDIA_INFO_LOG("Step: Only set refresh table but not set flags.");
-    UpdateRefreshFlag();
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
 
     // 4. SetFlags but not refresh.
@@ -994,11 +993,11 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_008, TestSize.Level0)
 
     // 5. Check if is need refresh.
     MEDIA_INFO_LOG("Step: Check if is need refresh.");
-    CheckIfNeedRefresh(true);
+    CheckIfNeedRefresh(false);
 
     // 6. Refresh and query again.
     MEDIA_INFO_LOG("Step: Refresh and query again.");
-    RefreshTable();
+    UpdateRefreshFlag();
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(false);
 }

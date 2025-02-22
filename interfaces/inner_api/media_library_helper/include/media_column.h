@@ -138,6 +138,9 @@ public:
     static const std::string PHOTO_METADATA_FLAGS EXPORT;
     static const std::string PHOTO_CHECK_FLAG EXPORT;
     static const std::string STAGE_VIDEO_TASK_STATUS EXPORT;
+    static const std::string PHOTO_IS_AUTO EXPORT;
+    static const std::string PHOTO_MEDIA_SUFFIX EXPORT;
+    static const std::string PHOTO_IS_RECENT_SHOW EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -313,37 +316,6 @@ public:
 
     // create table sql
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;
-};
-
-
-
-class PhotoQueryFilter {
-public:
-    enum class Option {
-        CUSTOM_FILTER,
-        FILTER_VISIBLE,
-        FILTER_HIDDEN,
-        FILTER_TRASHED,
-    };
-
-    enum class ConfigType {
-        INCLUDE,
-        EXCLUDE,
-        IGNORE,
-    };
-
-    struct Config {
-        ConfigType hiddenConfig = ConfigType::EXCLUDE;
-        ConfigType trashedConfig = ConfigType::EXCLUDE;
-        ConfigType tempConfig = ConfigType::EXCLUDE;
-        ConfigType pendingConfig = ConfigType::EXCLUDE;
-        ConfigType burstCoverOnly = ConfigType::INCLUDE;
-        ConfigType syncStatusConfig = ConfigType::EXCLUDE;
-        ConfigType cleanFlagConfig = ConfigType::EXCLUDE;
-    };
-
-    static std::string GetSqlWhereClause(const PhotoQueryFilter::Option option) EXPORT;
-    static std::string GetSqlWhereClause(const PhotoQueryFilter::Config& config) EXPORT;
 };
 
 } // namespace OHOS::Media

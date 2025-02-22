@@ -14,6 +14,7 @@
  */
 
 #include "photo_accesshelper_ffi.h"
+#include "photo_asset_helper.h"
 
 using namespace OHOS::FFI;
 
@@ -880,6 +881,45 @@ extern "C" {
         }
         return changeRequest->ApplyChanges();
     }
+}
+
+enum class CJCameraShotType : int32_t {
+    IMAGE = 0,
+    VIDEO,
+    MOVING_PHOTO,
+    BURST,
+};
+
+int64_t CreatePhotoAssetImpl(const std::string &uri, int32_t cameraShotType, const std::string &burstKey)
+{
+    if (uri.empty()) {
+        return 0;
+    }
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetUri(uri);
+    std::string fileId = MediaFileUtils::GetIdFromUri(uri);
+    if (MediaFileUtils::IsValidInteger(fileId)) {
+        fileAsset->SetId(stoi(fileId));
+    }
+
+    fileAsset->SetDisplayName(MediaFileUtils::GetFileName(uri));
+    if (cameraShotType == static_cast<int32_t>(CJCameraShotType::IMAGE)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
+    } else if (cameraShotType == static_cast<int32_t>(CJCameraShotType::MOVING_PHOTO)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
+    } else if (cameraShotType == static_cast<int32_t>(CJCameraShotType::BURST)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::BURST));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
+        fileAsset->SetBurstKey(burstKey);
+    } else if (cameraShotType == static_cast<int32_t>(CJCameraShotType::VIDEO)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_VIDEO);
+    }
+    fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    auto photoAssetImpl = FFIData::Create<PhotoAssetImpl>(fileAsset);
+    return photoAssetImpl->GetID();
 }
 }
 }

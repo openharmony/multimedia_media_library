@@ -101,6 +101,7 @@ bool MtpPacket::IsNeedDataPhase(uint16_t operationCode)
         case MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE:
         case MTP_OPERATION_GET_OBJECT_PROP_LIST_CODE:
         case MTP_OPERATION_GET_OBJECT_REFERENCES_CODE:
+        case MTP_OPERATION_GET_PARTIAL_OBJECT_CODE:
             return true;
         default:
             break;

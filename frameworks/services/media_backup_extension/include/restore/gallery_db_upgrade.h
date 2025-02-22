@@ -27,6 +27,7 @@ public:
 private:
     int32_t OnUpgrade(NativeRdb::RdbStore &store);
     int32_t AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &store);
+    int32_t AddResolutionOfGalleryMedia(NativeRdb::RdbStore &store);
     int32_t AddRelativeBucketIdOfGalleryAlbum(NativeRdb::RdbStore &store);
     int32_t GarbageAlbumUpgrade(NativeRdb::RdbStore &store);
     int32_t GarbageAlbumCheckOrAddRelativeBucketId(NativeRdb::RdbStore &store);
@@ -39,6 +40,8 @@ private:
     // But we should set it to 1 for the existing data.
     const std::string SQL_GALLERY_MEDIA_TABLE_ADD_PHOTO_QUALITY = "\
         ALTER TABLE gallery_media ADD COLUMN photo_quality INTEGER DEFAULT 1;";
+    const std::string SQL_GALLERY_MEDIA_TABLE_ADD_RESOLUTION = "\
+        ALTER TABLE gallery_media ADD COLUMN resolution TEXT;";
     const std::string SQL_GALLERY_ALBUM_TABLE_ADD_RELATIVE_BUCKET_ID = "\
         ALTER TABLE gallery_album ADD COLUMN relativeBucketId TEXT;";
     const std::string SQL_GARBAGE_ALBUM_TABLE_ADD_RELATIVE_BUCKET_ID = "\

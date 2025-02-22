@@ -57,8 +57,9 @@ DfxTimer::~DfxTimer()
     }
 
     if (timeCost_ > timeOut_) {
-        MEDIA_WARN_LOG("timeout! bundleName: %{public}s, type: %{public}d, object: %{public}d, cost %{public}d",
-            bundleName.c_str(), type_, object_, (int) (timeCost_));
+        std::string caller = (bundleName == "") ? "uid=" + std::to_string(IPCSkeleton::GetCallingUid()) : bundleName;
+        MEDIA_WARN_LOG("timeout! caller: %{public}s, type: %{public}d, object: %{public}d, cost %{public}d",
+            caller.c_str(), type_, object_, (int) (timeCost_));
 
         if (timeCost_ > TO_MILLION)
             DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, (int) (timeCost_));

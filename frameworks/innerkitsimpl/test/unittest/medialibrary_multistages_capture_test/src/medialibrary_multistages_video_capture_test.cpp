@@ -405,6 +405,7 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_process_video_done
     PrepareTempVideoFile(filePath);
 
     callback->OnProcessVideoDone(videoId, ipcFd);
+    delete callback;
 
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));
     EXPECT_TRUE(!PathToRealPath(tempFilePath, absTempFilePath));
@@ -441,6 +442,7 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_process_video_done
     SetEdited(fileId);
 
     callback->OnProcessVideoDone(videoId, ipcFd);
+    delete callback;
 
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));
     EXPECT_TRUE(PathToRealPath(tempFilePath, absTempFilePath));
@@ -476,6 +478,7 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest,
     PrepareTempVideoFile(filePath);
 
     callback->OnProcessVideoDone("42345678", ipcFd);
+    delete callback;
 
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));
     EXPECT_TRUE(PathToRealPath(tempFilePath, absTempFilePath));
@@ -510,6 +513,7 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_error_001, TestSiz
     PrepareTempVideoFile(filePath);
 
     callback->OnError(videoId, CameraStandard::ERROR_SESSION_SYNC_NEEDED);
+    delete callback;
 
     EXPECT_TRUE(PathToRealPath(filePath, absFilePath));
     EXPECT_TRUE(PathToRealPath(tempFilePath, absTempFilePath));

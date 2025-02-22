@@ -22,6 +22,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
+#include "photo_query_filter.h"
 
 namespace OHOS {
 namespace Media {

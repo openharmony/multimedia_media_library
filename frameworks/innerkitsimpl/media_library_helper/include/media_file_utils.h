@@ -93,7 +93,8 @@ public:
     EXPORT static std::string GetParentPath(const std::string &path);
     EXPORT static std::string GetTitleFromDisplayName(const std::string &displayName);
     EXPORT static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
-    EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath);
+    EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath,
+        bool isSupportCrossPolicy = false);
     EXPORT static bool CopyDirAndDelSrc(const std::string &srcPath, const std::string &destPath,
         unsigned short curRecursionDepth = 0);
     EXPORT static bool CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile);
@@ -198,6 +199,8 @@ public:
     EXPORT static int64_t GetTotalSize();
     EXPORT static int64_t GetFreeSize();
     EXPORT static void StatDirSize(const std::string& rootPath, size_t& totalSize);
+    EXPORT static std::string GetMimeTypeFromDisplayName(const std::string &displayName);
+    EXPORT static std::string DesensitizeUri(const std::string &fileUri);
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);

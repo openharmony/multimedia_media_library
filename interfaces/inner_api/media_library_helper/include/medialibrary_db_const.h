@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 160;
+const int32_t MEDIA_RDB_VERSION = 165;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -186,6 +186,11 @@ enum {
     VERSION_FIX_PHOTO_QUALITY_CLONED = 158,
     VERSION_ADD_STAGE_VIDEO_TASK_STATUS = 159,
     VERSION_HIGHLIGHT_SUBTITLE = 160,
+    VERSION_ADD_IS_AUTO = 161,
+    VERSION_ADD_MEDIA_SUFFIX_COLUMN = 162,
+    VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN = 163,
+    VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN = 164,
+    VERSION_CREATE_TAB_FACARD_PHOTOS = 165,
 };
 
 enum {
@@ -229,6 +234,7 @@ const std::string ML_URI_TIME_ID = "&time_id=";
 const std::string ML_URI_OFFSET = "&offset=";
 const std::string ML_URI_DATE_ADDED = "date_added";
 const std::string ML_URI_DATE_TAKEN = "date_taken";
+const std::string ML_URI_DATE_MODIFIED = "date_modified";
 const std::string ML_URI_AUTHORITY = "media";
 const std::string ML_DATA_SHARE_SCHEME = "datashare";
 const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
@@ -291,6 +297,11 @@ const std::string MEDIA_DATA_DB_CLOUD_ID = "cloud_id";
 const std::string MEDIA_DATA_DB_META_DATE_MODIFIED = "meta_date_modified";
 const std::string MEDIA_DATA_DB_SYNC_STATUS = "sync_status";
 const std::string MEDIA_DATA_DB_THUMBNAIL_READY = "thumbnail_ready";
+const std::string MEDIA_DATA_DB_ALL_EXIF = "all_exif";
+const std::string MEDIA_DATA_DB_SHOOTING_MODE = "shooting_mode";
+const std::string MEDIA_DATA_DB_SHOOTING_MODE_TAG = "shooting_mode_tag";
+const std::string MEDIA_DATA_DB_PHOTOS_LATITUDE = "photos." + MEDIA_DATA_DB_LATITUDE;
+const std::string MEDIA_DATA_DB_PHOTOS_LONGITUDE = "photos." + MEDIA_DATA_DB_LONGITUDE;
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";

@@ -419,14 +419,21 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
 
     MtpFileRange object;
     object.fd = fd;
-    object.offset = 0;
     struct stat sstat;
     int result = fstat(object.fd, &sstat);
     PreDealFd(result < 0, fd);
     CHECK_AND_RETURN_RET_LOG(result == MTP_SUCCESS, MTP_ERROR_INCOMPLETE_TRANSFER,
         "GetObjectDataDeal fstat error = %{public}d", errno);
 
-    object.length = sstat.st_size;
+    object.offset = context_->offset;
+    if (context_->length == 0 || context_->length == MTP_ALL_HANDLE_ID) {
+        object.length = sstat.st_size;
+    } else {
+        if (context_->offset + context_->length > static_cast<uint64_t>(sstat.st_size)) {
+            context_->length = static_cast<uint32_t>(sstat.st_size - context_->offset);
+        }
+        object.length = context_->length;
+    }
     object.command = context_->operationCode;
     object.transaction_id = context_->transactionID;
     result = context_->mtpDriver->SendObj(object);
@@ -635,11 +642,10 @@ uint16_t MtpOperationUtils::GetPartialObject(shared_ptr<PayloadData> &data)
         return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
     }
 
-    uint32_t length = 0;
     shared_ptr<GetPartialObjectData> getPartialObject = make_shared<GetPartialObjectData>(context_);
-    getPartialObject->SetLength(length);
+    getPartialObject->SetLength(context_->length);
     data = getPartialObject;
-    return MTP_SUCCESS;
+    return MTP_OK_CODE;
 }
 
 uint16_t MtpOperationUtils::GetObjectPropsSupported(shared_ptr<PayloadData> &data)

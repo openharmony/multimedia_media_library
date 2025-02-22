@@ -38,6 +38,7 @@
 #define private public
 #include "medialibrary_data_manager.h"
 #include "photo_day_month_year_operation.h"
+#include "albums_refresh_manager.h"
 #undef private
 #include "userfilemgr_uri.h"
 
@@ -1552,6 +1553,18 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, PhotoDayMonthYearOperation_test, TestS
     EXPECT_EQ(ret, E_OK);
     ret = PhotoDayMonthYearOperation::UpdatePhotosDateIdx(rdbStore);
     EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, RefreshPhotoAlbums_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start RefreshPhotoAlbums_test");
+    AlbumsRefreshManager &instance =  AlbumsRefreshManager::GetInstance();
+    EXPECT_NE(instance.refreshWorker_, nullptr);
+
+    SyncNotifyInfo info;
+    info.taskType = TIME_BEGIN_SYNC;
+    instance.RefreshPhotoAlbums(info);
+    MEDIA_INFO_LOG("end RefreshPhotoAlbums_test");
 }
 } // namespace Media
 } // namespace OHOS

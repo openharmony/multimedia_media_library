@@ -35,7 +35,7 @@ public:
         NativeRdb::RdbPredicates &rdbPredicate, std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static int32_t InsertOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchInsertOperation(MediaLibraryCommand &cmd,
-        const std::vector<NativeRdb::ValuesBucket> &values,
+        std::vector<NativeRdb::ValuesBucket> &values,
         std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static int32_t DeleteOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t GrantUriSensitive(MediaLibraryCommand &cmd,

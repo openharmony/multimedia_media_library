@@ -527,6 +527,10 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
         ChangeInfo changeInfoCopy = changeInfo;
         if (changeInfo.data_ != nullptr && changeInfo.size_ > 0) {
             changeInfoCopy.data_ = malloc(changeInfo.size_);
+            if (changeInfoCopy.data_ == nullptr) {
+                MEDIA_ERR_LOG("changeInfoCopy.data_ is nullptr.");
+                return;
+            }
             if (memcpy_s(const_cast<void*>(changeInfoCopy.data_),
                 changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
                 MEDIA_ERR_LOG("changeInfoCopy copy data failed");

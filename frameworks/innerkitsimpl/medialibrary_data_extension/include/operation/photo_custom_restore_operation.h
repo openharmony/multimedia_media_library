@@ -38,6 +38,8 @@ struct RestoreTaskInfo {
     std::string firstFileUri;
     std::string appId;
     int32_t albumId;
+    std::string imageAlbumUri;
+    std::string videoAlbumUri;
     std::string sourceDir;
     int64_t beginTime;
     int64_t endTime;
@@ -66,7 +68,7 @@ struct UniqueNumber {
 
 const std::string CUSTOM_RESTORE_DIR = ROOT_MEDIA_DIR + CUSTOM_RESTORE_VALUES;
 const int MAX_RESTORE_FILE_NUM = 200;
-const int MAX_RESTORE_THREAD_NUM = 3;
+const int MAX_RESTORE_THREAD_NUM = 2;
 const int RESTORE_URI_TYPE_PHOTO = 1;
 const int RESTORE_URI_TYPE_ALBUM = 2;
 const int PROGRESS_MULTI_NUM = 100;
@@ -94,7 +96,8 @@ private:
     void DoCustomRestore(RestoreTaskInfo &restoreTaskInfo);
     void InitRestoreTask(RestoreTaskInfo &restoreTaskInfo, int32_t fileNum);
     void ReleaseCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
-    int32_t HandleCustomRestore(RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst);
+    int32_t HandleCustomRestore(RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst,
+        UniqueNumber &uniqueNumber);
     bool HandleFirstRestoreFile(
         RestoreTaskInfo &restoreTaskInfo, vector<string> &files, int32_t index, int32_t &firstRestoreIndex);
     void HandleBatchCustomRestore(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, vector<string> subFiles);
@@ -110,9 +113,10 @@ private:
     int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     int32_t RenameFiles(vector<FileInfo> &restoreFiles);
     int32_t UpdatePhotoAlbum(RestoreTaskInfo &restoreTaskInfo, FileInfo fileInfo);
-    void SendNotifyMessage(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum);
+    void SendNotifyMessage(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum,
+        const UniqueNumber &uniqueNumber);
     InnerRestoreResult GenerateCustomRestoreNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType);
-    void SendPhotoAlbumNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType);
+    void SendPhotoAlbumNotify(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, const UniqueNumber &uniqueNumber);
     bool IsCancelTask(RestoreTaskInfo &restoreTaskInfo);
     void CancelTaskFinish(RestoreTaskInfo &restoreTaskInfo);
     void ApplyEfficiencyQuota(int32_t fileNum);
@@ -120,8 +124,9 @@ private:
     int32_t InitPhotoCache(RestoreTaskInfo &restoreTaskInfo);
     void QueryAlbumId(RestoreTaskInfo &restoreTaskInfo);
     void ReportCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
-    int32_t MoveLivePhoto(string originFilePath, string filePath);
-    void DeleteDatabaseRecord(int32_t fileId);
+    int32_t MoveLivePhoto(const string &originFilePath, const string &filePath);
+    void DeleteDatabaseRecord(const string &filePath);
+    int32_t GetAlbumUriBySubType(int32_t subType, string &albumUri);
 
 private:
     std::atomic<bool> isRunning_{false};
@@ -130,7 +135,7 @@ private:
     std::queue<RestoreTaskInfo> taskQueue_;
     std::unordered_set<std::string> cancelKeySet_;
     std::mutex uniqueNumberLock_;
-    std::mutex cancelOprationLock_;
+    std::shared_mutex cancelOprationLock_;
     std::atomic<int32_t> successNum_{0};
     std::atomic<int32_t> failNum_{0};
     std::atomic<int32_t> sameNum_{0};

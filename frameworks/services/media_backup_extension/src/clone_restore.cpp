@@ -186,7 +186,8 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
         {
             { PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_NAME + " IS NOT NULL" },
             { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
-                to_string(PhotoAlbumSubType::SHOOTING_MODE) + ")" },
+                to_string(PhotoAlbumSubType::SHOOTING_MODE) + ", " +
+                to_string(PhotoAlbumSubType::GEOGRAPHY_CITY) + ")" },
         }},
 };
 const vector<string> CLONE_ALBUMS = { PhotoAlbumColumns::TABLE, ANALYSIS_ALBUM_TABLE };
@@ -288,6 +289,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeo_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
+    cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreHighlight_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
     cloneRestoreCVAnalysis_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
     MEDIA_INFO_LOG("Init db succ.");
@@ -343,13 +345,6 @@ void CloneRestore::RestorePhoto()
         RestorePhotoBatch(offset);
     }
     this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
-
-    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
-    BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
-    cloneRestoreGeo_.ReportGeoRestoreTask();
-    cloneRestoreHighlight_.UpdateAlbums();
-    cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
-    ReportPortraitCloneStat(sceneCode_);
 }
 
 void CloneRestore::GetAccountValid()
@@ -466,6 +461,7 @@ void CloneRestore::RestoreAlbum()
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
     cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
+    cloneRestoreGeoDictionary_.RestoreAlbums();
     RestoreHighlightAlbums(CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
 }
 
@@ -728,8 +724,6 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos);
-    cloneRestoreGeo_.RestoreMaps(fileInfos);
-    cloneRestoreHighlight_.RestoreMaps(fileInfos);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
@@ -1205,6 +1199,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(fileInfo.displayName));
     values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
     values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation); // photos need orientation
@@ -1219,6 +1214,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
         values.PutString(MediaColumn::MEDIA_OWNER_APPID, "");
     }
     values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
+    values.PutInt(PhotoColumn::STAGE_VIDEO_TASK_STATUS, static_cast<int32_t>(StageVideoTaskStatus::NO_NEED_TO_STAGE));
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
@@ -1719,6 +1715,13 @@ void CloneRestore::RestoreGallery()
         (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
     MEDIA_INFO_LOG("singlCloud Start update group tags");
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
+    cloneRestoreGeo_.ReportGeoRestoreTask();
+    cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
+    cloneRestoreHighlight_.UpdateAlbums();
+    cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
+    ReportPortraitCloneStat(sceneCode_);
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
@@ -1783,14 +1786,17 @@ void CloneRestore::RestoreAudio(void)
         AudioColumn::AUDIOS_TABLE);
     CHECK_AND_RETURN_LOG(PrepareCommonColumnInfoMap(AudioColumn::AUDIOS_TABLE, srcColumnInfoMap,
         dstColumnInfoMap), "Prepare common column info failed");
+    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
+    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
+    if (totalNumber <= 0) {
+        return;
+    }
+    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
+    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
         MEDIA_INFO_LOG("music dir is not exists!!!");
         MediaFileUtils::CreateDirectory(RESTORE_MUSIC_LOCAL_DIR);
     }
-    int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
-    MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
-    audioTotalNumber_ += static_cast<uint64_t>(totalNumber);
-    MEDIA_INFO_LOG("onProcess Update audioTotalNumber_: %{public}lld", (long long)audioTotalNumber_);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
@@ -1955,15 +1961,17 @@ size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> med
         totalVolume += mediaSize;
     }
     resultSet->Close();
-
+    size_t totalAssetSize = static_cast<size_t>(totalVolume);
     // other meta data dir size
-    size_t EditDataTotalSize {0};
-    size_t RdbtotalSize {0};
-    size_t KvdbTotalSize {0};
-    MediaFileUtils::StatDirSize(CLONE_STAT_EDIT_DATA_DIR, EditDataTotalSize);
-    MediaFileUtils::StatDirSize(CLONE_STAT_RDB_DIR, RdbtotalSize);
-    MediaFileUtils::StatDirSize(CLONE_STAT_KVDB_DIR, KvdbTotalSize);
-    size_t totalSize = totalVolume + EditDataTotalSize + RdbtotalSize + KvdbTotalSize;
+    size_t editDataTotalSize {0};
+    size_t rdbTotalSize {0};
+    size_t kvdbTotalSize {0};
+    size_t highlightTotalSize {0};
+    MediaFileUtils::StatDirSize(CLONE_STAT_EDIT_DATA_DIR, editDataTotalSize);
+    MediaFileUtils::StatDirSize(CLONE_STAT_RDB_DIR, rdbTotalSize);
+    MediaFileUtils::StatDirSize(CLONE_STAT_KVDB_DIR, kvdbTotalSize);
+    MediaFileUtils::StatDirSize(CLONE_STAT_HIGHLIGHT_DIR, highlightTotalSize);
+    size_t totalSize = totalAssetSize + editDataTotalSize + rdbTotalSize + kvdbTotalSize + highlightTotalSize;
     return totalSize;
 }
 
@@ -2126,6 +2134,8 @@ void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos)
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("query new file_id cost %{public}ld, insert %{public}ld maps cost %{public}ld",
         (long)(startInsert - startQuery), (long)mapRowNum, (long)(end - startInsert));
+    cloneRestoreGeo_.RestoreMaps(fileInfos);
+    cloneRestoreHighlight_.RestoreMaps(fileInfos);
 }
 
 void CloneRestore::SetFileIdReference(const vector<FileInfo> &fileInfos, string &selection,

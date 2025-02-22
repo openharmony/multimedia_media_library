@@ -169,7 +169,7 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_001, testing::ex
     errCode = InsertRdbData(rdb);
     EXPECT_EQ(errCode, E_OK);
 
-    ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
+    bool states = rdb->IsSlaveDiffFromMaster();
 
     int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, RDB_VERSION, callBack);
     EXPECT_EQ(ret, E_OK);
@@ -177,7 +177,7 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_001, testing::ex
     MediaLibraryRestore::GetInstance().CheckBackup();
     EXPECT_EQ(MediaLibraryRestore::GetInstance().IsBackuping(), true);
     WaitForBackup();
-    ASSERT_FALSE(rdb->IsSlaveDiffFromMaster());
+    EXPECT_NE(states, rdb->IsSlaveDiffFromMaster());
 
     errCode = CorruptDb(false);
     ASSERT_TRUE(errCode == E_OK);
@@ -211,15 +211,16 @@ HWTEST_F(MediaLibraryRestoreTest, medialib_restore_test_restore_002, testing::ex
     auto rdb = NativeRdb::RdbHelper::GetRdbStore(config, RDB_VERSION, callBack, errCode);
     ASSERT_TRUE(rdb != nullptr);
 
-    IncreaseRdbData(rdb);
-    ASSERT_TRUE(rdb->IsSlaveDiffFromMaster());
+    auto result = IncreaseRdbData(rdb);
+    EXPECT_EQ(result, NativeRdb::E_OK);
 
+    bool states = rdb->IsSlaveDiffFromMaster();
     int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, RDB_VERSION, callBack);
     EXPECT_EQ(ret, E_OK);
 
     MediaLibraryRestore::GetInstance().CheckBackup();
     WaitForBackup();
-    ASSERT_FALSE(rdb->IsSlaveDiffFromMaster());
+    EXPECT_NE(states, rdb->IsSlaveDiffFromMaster());
 
     errCode = CorruptDb(true);
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_1));

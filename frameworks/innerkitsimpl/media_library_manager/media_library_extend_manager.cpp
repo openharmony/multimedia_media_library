@@ -160,7 +160,7 @@ static void CheckAccessTokenPermissionExecute(uint32_t tokenId, uint32_t checkFl
     isWritable = checkWriteResult == PermissionState::PERMISSION_GRANTED;
 }
 static void CheckAccessTokenPermission(uint32_t tokenId, uint32_t checkFlag,
-    TableType mediaType, int32_t &queryFlag)
+    TableType mediaType, int64_t &queryFlag)
 {
     bool isReadable = false;
     bool isWritable = false;
@@ -183,7 +183,7 @@ static void CheckAccessTokenPermission(uint32_t tokenId, uint32_t checkFlag,
     }
 }
 
-static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSharePredicates &predicates,
+static void MakePredicatesForCheckPhotoUriPermission(int64_t &checkFlag, DataSharePredicates &predicates,
     uint32_t targetTokenId, TableType mediaType, vector<string> &fileIds)
 {
     predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
@@ -220,7 +220,7 @@ static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSha
                 to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
             break;
         default:
-            MEDIA_ERR_LOG("error flag object: %{public}d", checkFlag);
+            MEDIA_ERR_LOG("error flag object: %{public}ld", (long)checkFlag);
             return;
     }
     predicates.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
@@ -315,8 +315,8 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermission(uint32_t tokenId,
     if (ret != E_SUCCESS) {
         return E_ERR;
     }
-    int32_t queryPhotoFlag = URI_PERMISSION_FLAG_READWRITE;
-    int32_t queryAudioFlag = URI_PERMISSION_FLAG_READWRITE;
+    int64_t queryPhotoFlag = URI_PERMISSION_FLAG_READWRITE;
+    int64_t queryAudioFlag = URI_PERMISSION_FLAG_READWRITE;
     if (photoFileIds.empty()) {
         queryPhotoFlag = -1;
     } else {

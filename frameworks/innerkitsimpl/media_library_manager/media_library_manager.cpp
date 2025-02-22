@@ -535,8 +535,13 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     size_t pos = str.find(MULTI_USER_URI_FLAG);
     std::string userId = "";
     if (pos != std::string::npos) {
-        userId = str.substr(pos + MULTI_USER_URI_FLAG.length());
-        MEDIA_DEBUG_LOG("OpenThumbnail for other user is %{public}s", userId.c_str());
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == std::string::npos) {
+            end = str.length();
+        }
+        userId = str.substr(pos, end - pos);
+        MEDIA_ERR_LOG("OpenThumbnail for other user is %{public}s", userId.c_str());
     }
     shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ? DataShare::DataShareHelper::Creator(token_,
         MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) : sDataShareHelper_;
@@ -782,6 +787,7 @@ static int32_t GetAstcsByOffset(const vector<string> &uriBatch, vector<vector<ui
     int32_t start = 0;
     int32_t count = 0;
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    CHECK_AND_RETURN_RET_LOG(!timeIdBatch.empty(), E_INVALID_URI, "GetTimeIdFromUri failed");
     MEDIA_INFO_LOG("GetAstcsByOffset image batch size: %{public}zu, begin: %{public}s, end: %{public}s,"
         "start: %{public}d, count: %{public}d", uriBatch.size(), timeIdBatch.back().c_str(),
         timeIdBatch.front().c_str(), start, count);
@@ -821,6 +827,7 @@ static int32_t GetAstcsBatch(const vector<string> &uriBatch, vector<vector<uint8
     }
     vector<string> timeIdBatch;
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch);
+    CHECK_AND_RETURN_RET_LOG(!timeIdBatch.empty(), E_INVALID_URI, "GetTimeIdFromUri failed");
     MEDIA_INFO_LOG("GetAstcsBatch image batch size: %{public}zu, begin: %{public}s, end: %{public}s",
         uriBatch.size(), timeIdBatch.back().c_str(), timeIdBatch.front().c_str());
 
@@ -939,6 +946,21 @@ int32_t MediaLibraryManager::OpenReadOnlyAppSandboxVideo(const string& uri)
 
 int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const string &option)
 {
+    std::string str = uri;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    std::string userId = "";
+    if (pos != std::string::npos) {
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == std::string::npos) {
+            end = str.length();
+        }
+        userId = str.substr(pos, end - pos);
+        MEDIA_INFO_LOG("ReadMovingPhotoVideo for other user is %{public}s", userId.c_str());
+    }
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ?
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) :
+        sDataShareHelper_;
     if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
         return OpenReadOnlyAppSandboxVideo(uri);
     }
@@ -947,12 +969,12 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri, const strin
         return E_ERR;
     }
 
-    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_ERR,
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR,
         "Failed to read video of moving photo, datashareHelper is nullptr");
     string videoUri = uri;
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, option);
     Uri openVideoUri(videoUri);
-    return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+    return dataShareHelper->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
 }
 
 int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
@@ -1367,6 +1389,7 @@ shared_ptr<PhotoAssetProxy> MediaLibraryManager::CreatePhotoAssetProxy(CameraSho
 {
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    MEDIA_INFO_LOG("dataShareHelper is ready, ret = %{public}d.", dataShareHelper != nullptr);
     shared_ptr<PhotoAssetProxy> photoAssetProxy = make_shared<PhotoAssetProxy>(dataShareHelper, cameraShotType,
         callingUid, userId);
     return photoAssetProxy;
