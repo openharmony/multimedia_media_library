@@ -672,7 +672,7 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
         UniqueFd(open(videoPath.c_str(), O_RDONLY)));
     off_t extraDataSize{0};
     if (MovingPhotoFileUtils::GetExtraDataLen(data->GetFilePath(), videoPath,
-            frameIndex, videoData->GetCoverPosition(), extraDataSize, isCameraShotMovingPhoto) != E_OK) {
+        frameIndex, videoData->GetCoverPosition(), extraDataSize, isCameraShotMovingPhoto) != E_OK) {
         MEDIA_WARN_LOG("Failed to get extra data file size");
     }
     data->SetFileSize(data->GetFileSize() + videoData->GetFileSize() + extraDataSize);
