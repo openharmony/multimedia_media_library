@@ -35,6 +35,7 @@
 #include "photo_album_clone.h"
 #include "photos_clone.h"
 #include "clone_restore_geo.h"
+#include "clone_restore_geo_dictionary.h"
 
 namespace OHOS {
 namespace Media {
@@ -219,6 +220,7 @@ private:
     CloneRestoreGeo cloneRestoreGeo_;
     CloneRestoreHighlight cloneRestoreHighlight_;
     CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;
+    CloneRestoreGeoDictionary cloneRestoreGeoDictionary_;
 };
 
 template<typename T>
