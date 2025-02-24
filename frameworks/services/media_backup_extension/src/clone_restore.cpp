@@ -609,8 +609,10 @@ void CloneRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_
     MEDIA_INFO_LOG("singleClone MoveMigrateCloudFile start");
     unordered_map<string, CloudPhotoFileExistFlag> resultExistMap;
     for (size_t i = 0; i < fileInfos.size(); i++) {
+        if (!fileInfos[i].needMove) {
+            continue;
+        }
         MoveCloudThumbnailDir(fileInfos[i]);
-        videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
         if (!isInitKvstoreSuccess_) {
             MEDIA_ERR_LOG("singleClone isInitKvstoreSuccess_ false, id:%{public}d, path:%{public}s",
                 fileInfos[i].fileIdNew, MediaFileUtils::DesensitizePath(fileInfos[i].cloudPath).c_str());
@@ -629,6 +631,7 @@ void CloneRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_
         CloudPhotoFileExistFlag tmpFlag;
         tmpFlag.isYearAstcExist = true;
         resultExistMap[fileInfos[i].cloudPath] = tmpFlag;
+        videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
     }
     std::vector<FileInfo> LCDNotFound;
     std::vector<FileInfo> THMNotFound;
