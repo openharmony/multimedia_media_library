@@ -531,7 +531,7 @@ void MtpDataUtils::GetFormatByPath(const std::string &path, uint16_t &outFormat)
     if (slashIndex != std::string::npos) {
         displayName = path.substr(slashIndex + 1);
     }
-    size_t extensionIndex = displayName.find(".");
+    size_t extensionIndex = displayName.rfind(".");
     std::string extension;
     if (extensionIndex != std::string::npos) {
         extension = displayName.substr(extensionIndex);
