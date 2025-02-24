@@ -8457,6 +8457,19 @@ napi_value MediaLibraryNapi::CreateDynamicRangeTypeEnum(napi_env env)
     return CreateNumberEnumProperty(env, dynamicRangeTypeEnum, sDynamicRangeType_);
 }
 
+static bool CheckTitleCompatible(MediaLibraryAsyncContext* context)
+{
+    if (!context->isCreateByComponent) {
+        return true;
+    }
+    bool hasTitleParam = false;
+    const string title = context->valuesBucket.Get(MediaColumn::MEDIA_TITLE, hasTitleParam);
+    if (!hasTitleParam) {
+        return true;
+    }
+    return MediaFileUtils::CheckTitleCompatible(title) == E_OK;
+}
+
 static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -8464,6 +8477,10 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     if (!CheckDisplayNameParams(context)) {
+        context->error = JS_E_DISPLAYNAME;
+        return;
+    }
+    if (!CheckTitleCompatible(context)) {
         context->error = JS_E_DISPLAYNAME;
         return;
     }
@@ -8653,6 +8670,13 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
     }
     Uri createFileUri(uri);
     for (const auto& valuesBucket : context->valuesBucketArray) {
+        bool inValid = false;
+        string title = valuesBucket.Get(MediaColumn::MEDIA_TITLE, inValid);
+        if (!title.empty() && MediaFileUtils::CheckTitleCompatible(title) != E_OK) {
+            NAPI_ERR_LOG("Title contains invalid characters: %{private}s, skipping", title.c_str());
+            context->uriArray.push_back(to_string(E_INVALID_DISPLAY_NAME));
+            continue;
+        }
         string outUri;
         int index = UserFileClient::InsertExt(createFileUri, valuesBucket, outUri, GetUserIdFromContext(context));
         if (index < 0) {
@@ -8666,8 +8690,7 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
                 index = OHOS_INVALID_PARAM_CODE;
             }
             context->uriArray.push_back(to_string(index));
-            bool isValid = false;
-            string title = valuesBucket.Get(MediaColumn::MEDIA_TITLE, isValid);
+
             NAPI_ERR_LOG("InsertExt fail, index: %{public}d title: %{public}s.", index, title.c_str());
         } else {
             context->uriArray.push_back(move(outUri));
