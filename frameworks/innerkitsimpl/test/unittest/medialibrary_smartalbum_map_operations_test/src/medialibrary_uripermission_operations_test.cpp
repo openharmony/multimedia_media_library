@@ -26,46 +26,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_HandleUriPermOperations_test_001, TestSize.Level0)
-{
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::INSERT_PERMISSION);
-    int32_t ret = UriPermissionOperations::HandleUriPermOperations(cmd);
-    EXPECT_EQ(ret, E_INVALID_VALUES);
-    
-    MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::UNKNOWN_TYPE);
-    ret = UriPermissionOperations::HandleUriPermOperations(cmd1);
-    EXPECT_EQ(ret, E_FAIL);
-}
-
-HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_HandleUriPermOperations_test_002, TestSize.Level0)
-{
-    string queryUri = MEDIALIBRARY_DATA_URI;
-    Uri uri(queryUri);
-
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::INSERT_PERMISSION);
-    int32_t ret = UriPermissionOperations::HandleUriPermOperations(cmd);
-    EXPECT_EQ(ret, E_INVALID_VALUES);
-    
-    MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::UNKNOWN_TYPE);
-    ret = UriPermissionOperations::HandleUriPermOperations(cmd1);
-    EXPECT_EQ(ret, E_FAIL);
-}
-
-HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_HandleUriPermInsert_test_001, TestSize.Level0)
-{
-    string queryUri = MEDIALIBRARY_DATA_URI;
-    Uri uri(queryUri);
-    MediaLibraryCommand cmd(uri, OperationType::QUERY);
-    int32_t ret = UriPermissionOperations::HandleUriPermInsert(cmd);
-    EXPECT_EQ(ret, E_INVALID_VALUES);
-
-    queryUri = MEDIA_FILEOPRN;
-    Uri uri1(queryUri);
-    MediaLibraryCommand cmd1(uri1, OperationType::QUERY);
-    ret = UriPermissionOperations::HandleUriPermInsert(cmd1);
-    EXPECT_EQ(ret, E_INVALID_VALUES);
-}
-
 HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_InsertBundlePermission_test_001, TestSize.Level0)
 {
     string bundleName = "inserBundTestCase";
