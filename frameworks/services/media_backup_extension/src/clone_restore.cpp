@@ -632,7 +632,7 @@ void CloneRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_
     }
     std::vector<FileInfo> LCDNotFound;
     std::vector<FileInfo> THMNotFound;
-    CloudPhotoFileExistFlag(fileInfos, LCDNotFound, THMNotFound, resultExistMap);
+    CloudPhotoFileVerify(fileInfos, LCDNotFound, THMNotFound, resultExistMap);
     MEDIA_INFO_LOG("singleClone LCDNotFound:%{public}zu, THMNotFound:%{public}zu",
         LCDNotFound.size(), THMNotFound.size());
     std::vector<std::string> dentryFailedLCD;
@@ -2965,14 +2965,14 @@ void CloneRestore::BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
         NativeRdb::ValuesBucket updateBucket;
         updateBucket.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, thumbStatus);
         updateBucket.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY,
-            thumbReady == 0 ? 0 : fileInfos[i].thumbReady);
+            thumbReady == 0 ? 0 : fileInfos[i].thumbnailReady);
         updateBucket.PutInt(PhotoColumn::PHOTO_LCD_VISIT_TIME, lcdVisitTime);
         updateBucket.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
             thumbReady == 0 ? 0 : RESTORE_THUMBNAIL_VISIBLE_TRUE);
 
         int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, updatedRows, updateBucket, predicates);
-        if (changeRows < 0 || ret < 0) {
-            MEDIA_ERR_LOG("BatchInsertFileInfoData Failed to update column: %{public}S",
+        if (updatedRows < 0 || ret < 0) {
+            MEDIA_ERR_LOG("BatchInsertFileInfoData Failed to update column: %s",
                 fileInfos[i].cloudPath.c_str());
         }
         MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(fileInfos[i].fileIdNew),
