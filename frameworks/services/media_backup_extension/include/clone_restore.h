@@ -65,7 +65,7 @@ protected:
     void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode) override;
     void GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPhotoFileExistFlag &resultExistFlag);
-    void CloudPhotoFileVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound
+    void CloudPhotoFileVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound,
         std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
 
 private:
@@ -219,7 +219,7 @@ private:
     void PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
         const std::optional<T>& optionalValue, const T& defaultValue);
     std::string GetThumbnailLocalPath(const string path);
-    void BatchInsertFileInfoData(std::vector<FileInfo> &fileInfos,
+    void BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
         unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
     int32_t CheckThumbReady(const FileInfo &fileInfo,
         CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);

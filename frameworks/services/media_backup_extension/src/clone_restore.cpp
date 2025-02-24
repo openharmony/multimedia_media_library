@@ -559,17 +559,17 @@ void CloneRestore::GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPho
     }
     
     std::string lcdPath = dirPath + "LCD.jpg";
-    resultExistFlag.isLcdExist = MediaFileUtils.IsFileExists(lcdPath) ? true : false;
+    resultExistFlag.isLcdExist = MediaFileUtils::IsFileExists(lcdPath) ? true : false;
     std::string thmPath = dirPath + "THM.jpg";
-    resultExistFlag.isThmExist = MediaFileUtils.IsFileExists(thmPath) ? true : false;
+    resultExistFlag.isThmExist = MediaFileUtils::IsFileExists(thmPath) ? true : false;
     std::string astcPath = dirPath + "THM_ASTC.astc";
-    resultExistFlag.isAstcExist = MediaFileUtils.IsFileExists(astcPath) ? true : false;
+    resultExistFlag.isAstcExist = MediaFileUtils::IsFileExists(astcPath) ? true : false;
 
     if (fileInfo.orientation != 0) {
         std::string exLcdPath = dirPath + "/THM_EX/LCD.jpg";
-        resultExistFlag.isExLcdExist = MediaFileUtils.IsFileExists(exLcdPath) ? true : false;
+        resultExistFlag.isExLcdExist = MediaFileUtils::IsFileExists(exLcdPath) ? true : false;
         std::string exThmPath = dirPath + "/THM_EX/THM.jpg";
-        resultExistFlag.isExThmExist = MediaFileUtils.IsFileExists(exThmPath) ? true : false;
+        resultExistFlag.isExThmExist = MediaFileUtils::IsFileExists(exThmPath) ? true : false;
     }
     MEDIA_DEBUG_LOG("%{public}s, isexist lcd:%{public}d, thm:%{public}d, astc:%{public}d,"
         "yearastc:%{public}d, exlcd:%{public}d, exthm:%{public}d",
@@ -578,7 +578,7 @@ void CloneRestore::GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPho
         resultExistFlag.isExLcdExist, resultExistFlag.isExThmExist);
 }
 
-void CloneRestore::CloudPhotoFileVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound
+void CloneRestore::CloudPhotoFileVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound,
     std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap)
 {
     for (size_t i = 0; i < fileInfos.size(); i++) {
@@ -2983,8 +2983,8 @@ bool CloneRestore::BackupKvStore()
     return true;
 }
 
-void CloneRestore::BatchInsertFileInfoData(std::vector<FileInfo> &fileInfos,
-        unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap)
+void CloneRestore::BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
+    unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap)
 {
     for (size_t i = 0; i < fileInfos.size(); i++) {
         CloudPhotoFileExistFlag fileExistFlag;
@@ -3023,7 +3023,7 @@ void CloneRestore::BatchInsertFileInfoData(std::vector<FileInfo> &fileInfos,
 }
 
 int32_t CloneRestore::CheckThumbReady(const FileInfo &fileInfo,
-        CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
+    CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
 {
     if (fileInfo.orientation == ORIETATION_ZERO) {
         if (cloudPhotoFileExistFlag.isThmExist &&
@@ -3042,7 +3042,7 @@ int32_t CloneRestore::CheckThumbReady(const FileInfo &fileInfo,
 }
 
 int32_t CloneRestore::CheckThumbStatus(const FileInfo &fileInfo,
-        CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
+    CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
 {
     if (fileInfo.orientation == ORIETATION_ZERO) {
         if (cloudPhotoFileExistFlag.isThmExist &&
