@@ -8651,6 +8651,46 @@ napi_value MediaLibraryNapi::PhotoAccessCancelPhotoUriPermission(napi_env env, n
         PhotoAccessCancelPhotoUriPermissionExecute, JSPhotoUriPermissionCallback);
 }
 
+static bool CheckAlbumUri(napi_env env, OHOS::DataShare::DataShareValuesBucket &valueBucket,
+    MediaLibraryAsyncContext *context)
+{
+    bool isValid = false;
+    string ownerAlbumId = valueBucket.Get(PhotoColumn::PHOTO_OWNER_ALBUM_ID, isValid);
+    if (!isValid || ownerAlbumId.empty()) {
+        return false;
+    }
+    string queryUri = PAH_QUERY_PHOTO_ALBUM;
+    Uri uri(queryUri);
+    DataSharePredicates predicates;
+    vector selectionArgs = { to_string(PhotoAlbumSubType::USER_GENERIC), to_string(PhotoAlbumSubType::SOURCE_GENERIC) };
+    predicates.In(PhotoAlbumColumns::ALBUM_SUBTYPE, selectionArgs);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, ownerAlbumId);
+    int errCode = 0;
+    vector<string> columns;
+    columns.push_back(MEDIA_COLUMN_COUNT_1);
+    shared_ptr<DataShareResultSet> resultSet =
+        UserFileClient::Query(uri, predicates, columns, errCode, GetUserIdFromContext(context));
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet is null, errCode: %{public}d", errCode);
+        return false;
+    }
+    int err = resultSet->GoToFirstRow();
+    if (err != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("Invalid albumuri, Failed GoToFirstRow %{public}d", err);
+        resultSet->Close();
+        return false;
+    }
+    int32_t count = 0;
+    resultSet->GetInt(0, count);
+    if (count == 0) {
+        NAPI_ERR_LOG("Invalid albumuri!");
+        resultSet->Close();
+        return false;
+    }
+    resultSet->Close();
+    return true;
+}
+
 static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -8667,6 +8707,11 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
     if (context->tokenId != 0) {
         NAPI_INFO_LOG("tokenId: %{public}d", context->tokenId);
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, TOKEN_ID, to_string(context->tokenId));
+        bool isValid = CheckAlbumUri(env, context->valuesBucketArray[0], context);
+        if (!isValid) {
+            context->error = JS_ERR_PARAMETER_INVALID;
+            return;
+        }
     }
     Uri createFileUri(uri);
     for (const auto& valuesBucket : context->valuesBucketArray) {
