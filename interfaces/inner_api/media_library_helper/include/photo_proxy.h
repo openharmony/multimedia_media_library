@@ -27,6 +27,7 @@ enum class PhotoFormat : int32_t {
     MP4,
     HEIF,
     YUV,
+    DNG,
 };
 
 enum class PhotoQuality : int32_t {
