@@ -714,7 +714,7 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
 vector<NativeRdb::ValuesBucket> CloneRestore::GetCloudInsertValues(int32_t sceneCode, vector<FileInfo> &fileInfos,
     int32_t sourceType)
 {
-    MEDIA_INFO_LOG("singleClone GetCloudInsertValues: %{public}lu", fileInfos.size());
+    MEDIA_INFO_LOG("singleClone GetCloudInsertValues: %{public}u", fileInfos.size());
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
@@ -1125,7 +1125,7 @@ void CloneRestore::GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::
     values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_TRUE);
 }
 
-void CloneRestore::GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
+void CloneRestore::GetCloudThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values)
 {
     values.PutInt(PhotoColumn::PHOTO_POSITION, fileInfo.position);
     values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.cloudId);
