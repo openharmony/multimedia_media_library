@@ -828,9 +828,6 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
-        err = CheckPermFromUri(cmd, true);
-    }
-    if (err != E_SUCCESS) {
         return err;
     }
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
@@ -849,9 +846,6 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
-    if (err != E_SUCCESS) {
-        err = CheckPermFromUri(cmd, true);
-    }
     if ((err != E_SUCCESS) && cmd.GetUriStringWithoutSegment() == PAH_CREATE_PHOTO)
         err = HandleShortPermission(needToResetTime);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
@@ -902,9 +896,6 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     if (err != E_SUCCESS) {
-        err = CheckPermFromUri(cmd, true);
-    }
-    if (err != E_SUCCESS) {
         err = HandleRestorePermission(cmd);
     }
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
@@ -942,9 +933,6 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
     cmd.SetDataSharePred(predicates);
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
-    if (err != E_SUCCESS) {
-        err = CheckPermFromUri(cmd, true);
-    }
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err != E_SUCCESS) {
@@ -965,9 +953,6 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     cmd.SetDataSharePred(predicates);
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
-    if (err != E_SUCCESS) {
-        err = CheckPermFromUri(cmd, false);
-    }
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
@@ -1008,7 +993,10 @@ string MediaDataShareExtAbility::GetType(const Uri &uri)
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     MediaLibraryCommand cmd(uri);
-    int32_t err = CheckPermFromUri(cmd, false);
+    PermParam permParam = {.isWrite = false};
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, "", "permissionHandler_ is nullptr");
+    int err = permissionHandler_->CheckPermission(cmd, permParam);
+    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err != E_SUCCESS) {
@@ -1029,9 +1017,6 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShare
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
-    if (err != E_SUCCESS) {
-        err = CheckPermFromUri(cmd, true);
-    }
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err != E_SUCCESS) {
