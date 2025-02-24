@@ -648,61 +648,6 @@ void CloneRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_
     MEDIA_INFO_LOG("singleClone MoveMigrateCloudFile end");
 }
 
-bool CloneRestore::RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode)
-{
-    if (fileInfo.cloudPath.empty()) {
-        MEDIA_ERR_LOG("singleClond cloudPath is empty!");
-        return false;
-    }
-    std::string tmpTargetFileName;
-    if (type == MIGRATE_CLOUD_LCD_TYPE) {
-        tmpTargetFileName = "/LCD.jpg";
-    } else if (type == MIGRATE_CLOUD_THM_TYPE) {
-        tmpTargetFileName = "/THM.jpg";
-    } else {
-        tmpTargetFileName = "/THM_ASTC.astc";
-    }
-    std::string prefixStr = sceneCode == CLONE_RESTORE_ID ? backupRestoreDir_ : garbagePath_;
-    std::string srcPath = prefixStr + "/storage/media/local/files/.thumbs/" + fileInfo.relativePath;
-    std::string srcFilePath = srcPath + tmpTargetFileName;
-    if (access(srcFilePath.c_str(), E_OK) != 0) {
-        CHECK_AND_RETURN_RET_LOG(false, false, "singleCloud src path access failed");
-    }
-    std::string saveNoRotatePath = fileInfo.orientation == ORIETATION_ZERO ? "" : THM_SAVE_WITHOUT_ROTATE_PATH;
-    std::string dstDirPath = GetThumbnailLocalPath(fileInfo.cloudPath) + saveNoRotatePath;
-    if (!MediaFileUtils::CreateDirectory(dstDirPath)) {
-        CHECK_AND_RETURN_RET_LOG(false, false, "singleClone Prepare thumbnail dir path failed");
-    }
-    std::string dstFilePath = dstDirPath + tmpTargetFileName;
-    if (MediaFileUtils::IsFileExists(dstFilePath) && !MediaFileUtils::DeleteFile(dstFilePath)) {
-        CHECK_AND_RETURN_RET_LOG(false, false, "Delete thumbnail new dir failed, errno: %{public}d", errno);
-    }
-    int32_t errCode = MediaFileUtils::ModifyAsset(srcFilePath, dstFilePath);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false, "MoveFile failed");
-    do {
-        if (fileInfo.orientation == ORIETATION_ZERO) {
-            break;
-        }
-        std::string rotateDirPath = dstDirPath.replace(dstDirPath.find(THM_SAVE_WITHOUT_ROTATE_PATH),
-            THM_SAVE_WITHOUT_ROTATE_PATH.length(), "");
-        if (type == MIGRATE_CLOUD_THM_TYPE &&
-            MediaFileUtils::IsFileExists(rotateDirPath + tmpTargetFileName + ".jpg")) {
-            rotateThmMigrateFileNumber_++;
-            break;
-        }
-        CHECK_AND_RETURN_RET_LOG(BackupFileUtils::HandleRotateImage(dstFilePath, rotateDirPath,
-            fileInfo.orientation, type == MIGRATE_CLOUD_LCD_TYPE), false, "Rotate image fail!");
-        type == MIGRATE_CLOUD_LCD_TYPE ? rotateLcdMigrateFileNumber_++ : rotateThmMigrateFileNumber_++;
-    } while (0);
-    type == MIGRATE_CLOUD_LCD_TYPE ? lcdMigrateFileNumber_++ : thumbMigrateFileNumber_++;
-    return true;
-}
-
-bool CloneRestore::RestoreLcdAndThumbFromKvdb(const FileInfo &fileInfo, int32_t type, int32_t sceneCode)
-{
-    return false;
-}
-
 int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 {
     CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ is null");
