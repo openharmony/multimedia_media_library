@@ -66,7 +66,7 @@ protected:
     void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode) override;
     void GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPhotoFileExistFlag &resultExistFlag);
-    void CloudPhotoFileVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound,
+    void CloudPhotoFilesVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound,
         std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
 
 private:
@@ -221,9 +221,9 @@ private:
     void BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
         unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
     int32_t CheckThumbReady(const FileInfo &fileInfo,
-        CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
+        const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
     int32_t CheckThumbStatus(const FileInfo &fileInfo,
-        CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
+        const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
     int32_t CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
 
 private:

@@ -554,11 +554,11 @@ void CloneRestore::GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPho
         return;
     }
     
-    std::string lcdPath = dirPath + "LCD.jpg";
+    std::string lcdPath = dirPath + "/LCD.jpg";
     resultExistFlag.isLcdExist = MediaFileUtils::IsFileExists(lcdPath) ? true : false;
-    std::string thmPath = dirPath + "THM.jpg";
+    std::string thmPath = dirPath + "/THM.jpg";
     resultExistFlag.isThmExist = MediaFileUtils::IsFileExists(thmPath) ? true : false;
-    std::string astcPath = dirPath + "THM_ASTC.astc";
+    std::string astcPath = dirPath + "/THM_ASTC.astc";
     resultExistFlag.isDayAstcExist = MediaFileUtils::IsFileExists(astcPath) ? true : false;
 
     if (fileInfo.orientation != 0) {
@@ -569,12 +569,12 @@ void CloneRestore::GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPho
     }
     MEDIA_DEBUG_LOG("%{public}s, isexist lcd:%{public}d, thm:%{public}d, astc:%{public}d,"
         "yearastc:%{public}d, exlcd:%{public}d, exthm:%{public}d",
-        dirPath.c_str(), resultExistFlag.isLcdExist, resultExistFlag.isLcdExist,
+        dirPath.c_str(), resultExistFlag.isLcdExist, resultExistFlag.isThmExist,
         resultExistFlag.isDayAstcExist, resultExistFlag.isYearAstcExist,
         resultExistFlag.isExLcdExist, resultExistFlag.isExThmExist);
 }
 
-void CloneRestore::CloudPhotoFileVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound,
+void CloneRestore::CloudPhotoFilesVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound,
     std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap)
 {
     for (size_t i = 0; i < fileInfos.size(); i++) {
@@ -632,7 +632,7 @@ void CloneRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_
     }
     std::vector<FileInfo> LCDNotFound;
     std::vector<FileInfo> THMNotFound;
-    CloudPhotoFileVerify(fileInfos, LCDNotFound, THMNotFound, resultExistMap);
+    CloudPhotoFilesVerify(fileInfos, LCDNotFound, THMNotFound, resultExistMap);
     MEDIA_INFO_LOG("singleClone LCDNotFound:%{public}zu, THMNotFound:%{public}zu",
         LCDNotFound.size(), THMNotFound.size());
     std::vector<std::string> dentryFailedLCD;
@@ -2953,11 +2953,11 @@ void CloneRestore::BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
         }
         fileExistFlag = iter->second;
         int32_t thumbReady = CheckThumbReady(fileInfos[i], fileExistFlag);
-        int32_t thumbStatus = CheckThumbReady(fileInfos[i], fileExistFlag);
+        int32_t thumbStatus = CheckThumbStatus(fileInfos[i], fileExistFlag);
         int32_t lcdVisitTime = CheckLcdVisitTime(fileExistFlag);
 
         std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
-            make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
+            std::make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
         std::string whereClause = "data = '" + fileInfos[i].cloudPath + "'";
         predicates->SetWhereClause(whereClause);
 
@@ -2981,7 +2981,7 @@ void CloneRestore::BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
 }
 
 int32_t CloneRestore::CheckThumbReady(const FileInfo &fileInfo,
-    CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
+    const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
 {
     if (fileInfo.orientation == ORIETATION_ZERO) {
         if (cloudPhotoFileExistFlag.isThmExist &&
@@ -3000,7 +3000,7 @@ int32_t CloneRestore::CheckThumbReady(const FileInfo &fileInfo,
 }
 
 int32_t CloneRestore::CheckThumbStatus(const FileInfo &fileInfo,
-    CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
+    const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag)
 {
     if (fileInfo.orientation == ORIETATION_ZERO) {
         if (cloudPhotoFileExistFlag.isThmExist &&
