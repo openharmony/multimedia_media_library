@@ -138,8 +138,6 @@ private:
     size_t StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
     std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount, size_t totalSize);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount, int64_t &videoFileMoveCount);
-    bool RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode) override;
-    bool RestoreLcdAndThumbFromKvdb(const FileInfo &fileInfo, int32_t type, int32_t sceneCode) override;
     void RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreAudioBatch(int32_t offset);
