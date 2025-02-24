@@ -40,7 +40,7 @@ public:
     EXPORT virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &rowId) = 0;
     EXPORT virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &rowId) = 0;
     EXPORT virtual int32_t BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
-        const std::vector<NativeRdb::ValuesBucket>& values) = 0;
+        std::vector<NativeRdb::ValuesBucket>& values) = 0;
     EXPORT virtual std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns)
     {

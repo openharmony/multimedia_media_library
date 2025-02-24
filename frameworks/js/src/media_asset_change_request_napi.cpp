@@ -63,6 +63,7 @@ thread_local napi_ref MediaAssetChangeRequestNapi::constructor_ = nullptr;
 std::atomic<uint32_t> MediaAssetChangeRequestNapi::cacheFileId_ = 0;
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
+const std::string SET_USER_ID_VALUE = "1";
 
 static const std::array<int, 4> ORIENTATION_ARRAY = {0, 90, 180, 270};
 
@@ -77,15 +78,18 @@ constexpr int32_t MAX_PHOTO_ID_LEN = 32;
 
 const std::string PAH_SUBTYPE = "subtype";
 const std::string CAMERA_SHOT_KEY = "cameraShotKey";
+const std::string USER_ID = "userId";
 const std::map<std::string, std::string> PHOTO_CREATE_OPTIONS_PARAM = {
     { PAH_SUBTYPE, PhotoColumn::PHOTO_SUBTYPE },
     { CAMERA_SHOT_KEY, PhotoColumn::CAMERA_SHOT_KEY },
+    { USER_ID, SET_USER_ID_VALUE },
 };
 
 const std::string TITLE = "title";
 const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
     { TITLE, PhotoColumn::MEDIA_TITLE },
     { PAH_SUBTYPE, PhotoColumn::PHOTO_SUBTYPE },
+    { USER_ID, SET_USER_ID_VALUE },
 };
 
 const std::string DEFAULT_TITLE_TIME_FORMAT = "%Y%m%d_%H%M%S";
@@ -601,6 +605,12 @@ static napi_status ParseAssetCreateOptions(napi_env env, napi_value arg, MediaAs
         napi_valuetype valueType = napi_undefined;
         result = napi_typeof(env, value, &valueType);
         CHECK_COND_RET(result == napi_ok, result, "Failed to get value type");
+        if (param == USER_ID && valueType == napi_number) {
+            int32_t number = -1;
+            result = napi_get_value_int32(env, value, &number);
+            CHECK_COND_RET(result == napi_ok, result, "Failed to get int32_t");
+            context.userId_ = number;
+        }
         if (valueType == napi_number) {
             int32_t number = 0;
             result = napi_get_value_int32(env, value, &number);
@@ -716,10 +726,10 @@ static napi_value ParseArgsCreateAsset(
 {
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_FOUR;
+    napi_value result = nullptr;
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
-    CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
 
     napi_valuetype valueType;
     CHECK_COND_WITH_MESSAGE(
@@ -730,13 +740,15 @@ static napi_value ParseArgsCreateAsset(
             return nullptr;
         }
         CHECK_COND_WITH_MESSAGE(env, context->argc <= ARGS_THREE, "Number of args is invalid");
-        return ParseArgsCreateAssetSystem(env, info, context);
+        result = ParseArgsCreateAssetSystem(env, info, context);
     } else if (valueType == napi_number) {
-        return ParseArgsCreateAssetCommon(env, info, context);
+        result = ParseArgsCreateAssetCommon(env, info, context);
     } else {
         NAPI_ERR_LOG("param type %{public}d is invalid", static_cast<int32_t>(valueType));
         return nullptr;
     }
+    CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info, context->userId_), JS_INNER_FAIL);
+    return result;
 }
 
 napi_value MediaAssetChangeRequestNapi::JSCreateAssetRequest(napi_env env, napi_callback_info info)
@@ -755,6 +767,7 @@ napi_value MediaAssetChangeRequestNapi::JSCreateAssetRequest(napi_env env, napi_
     emptyFileAsset->SetPhotoSubType(subtype);
     emptyFileAsset->SetTimePending(CREATE_ASSET_REQUEST_PENDING);
     emptyFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    emptyFileAsset->SetUserId(asyncContext->userId_);
     napi_value fileAssetNapi = FileAssetNapi::CreateFileAsset(env, emptyFileAsset);
     CHECK_COND(env, fileAssetNapi != nullptr, JS_INNER_FAIL);
 
@@ -1380,7 +1393,7 @@ static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& contex
     string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + cacheFileName;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri openCacheUri(uri);
-    int32_t ret = UserFileClient::OpenFile(openCacheUri, MEDIA_FILEMODE_WRITEONLY);
+    int32_t ret = UserFileClient::OpenFile(openCacheUri, MEDIA_FILEMODE_WRITEONLY, fileAsset->GetUserId());
     if (ret == E_PERMISSION_DENIED) {
         context.error = OHOS_PERMISSION_DENIED_CODE;
         NAPI_ERR_LOG("Open cache file failed, permission denied");
@@ -1869,7 +1882,8 @@ void HandleValueBucketForSetLocation(std::shared_ptr<FileAsset> fileAsset, DataS
     }
 }
 
-int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced)
+int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffectMode,
+    bool isWriteGpsAdvanced, const int32_t userId)
 {
     CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
     CHECK_COND_RET(!cacheFileName_.empty() || !cacheMovingPhotoVideoName_.empty(), E_FAIL,
@@ -1895,7 +1909,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
             creationValuesBucket_.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
         }
         HandleValueBucketForSetLocation(fileAsset_, creationValuesBucket_, isWriteGpsAdvanced);
-        ret = UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri);
+        ret = UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri, userId);
     } else {
         DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset_->GetId());
@@ -1910,7 +1924,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
             valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
         }
         HandleValueBucketForSetLocation(fileAsset_, valuesBucket, isWriteGpsAdvanced);
-        ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
+        ret = UserFileClient::Insert(submitCacheUri, valuesBucket, userId);
     }
     if (ret > 0 && isCreation) {
         SetNewFileAsset(ret, assetUri);
@@ -1929,7 +1943,8 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
     bool isSetEffectMode = IsSetEffectMode(context);
     auto changeRequest = context.objectInfo;
     bool isWriteGpsAdvanced = changeRequest->GetIsWriteGpsAdvanced();
-    int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode, isWriteGpsAdvanced);
+    int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode, isWriteGpsAdvanced,
+        changeRequest->GetFileAssetInstance()->GetUserId());
     if (ret < 0) {
         context.SaveError(ret);
         NAPI_ERR_LOG("Failed to write cache, ret: %{public}d", ret);
@@ -2424,9 +2439,24 @@ static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    if (fileAsset == nullptr) {
+        NAPI_ERR_LOG("Fail to get fileAsset");
+        return false;
+    }
+    NAPI_INFO_LOG("enter SetSupportedWatermarkTypeExecute: %{public}d", fileAsset->GetSupportedWatermarkType());
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+    
+    string uri = PAH_UPDATE_PHOTO_SUPPORTED_WATERMARK_TYPE;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(uri);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update supported_watermark_type of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
 }
 
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {

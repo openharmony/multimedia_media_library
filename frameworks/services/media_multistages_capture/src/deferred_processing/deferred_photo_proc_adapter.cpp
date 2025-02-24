@@ -40,16 +40,12 @@ DeferredPhotoProcessingAdapter::DeferredPhotoProcessingAdapter()
     const static int32_t BASE_USER_RANGE = 200000;
 
     int uid = IPCSkeleton::GetCallingUid();
-    if (uid <= INVALID_UID) {
-        MEDIA_ERR_LOG("DeferredPhotoProcessingAdapter invalid uid: %{public}d", uid);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(uid > INVALID_UID, "DeferredPhotoProcessingAdapter invalid uid: %{public}d", uid);
+
     int32_t userId = uid / BASE_USER_RANGE;
     deferredPhotoProcSession_ = CameraManager::CreateDeferredPhotoProcessingSession(userId,
         make_shared<MultiStagesCaptureDeferredPhotoProcSessionCallback>());
-    if (deferredPhotoProcSession_ == nullptr) {
-        MEDIA_ERR_LOG("CreateDeferredPhotoProcessingSession err");
-    }
+    CHECK_AND_PRINT_LOG(deferredPhotoProcSession_ != nullptr, "CreateDeferredPhotoProcessingSession err");
 #endif
     MEDIA_INFO_LOG("DeferredPhotoProcessingAdapter init succ");
 }

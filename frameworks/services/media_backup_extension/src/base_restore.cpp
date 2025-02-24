@@ -170,7 +170,8 @@ bool BaseRestore::IsRestorePhoto()
             continue;
         }
         for (const auto& backupInfo : item["detail"]) {
-            if (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO || backupInfo == "galleryData") {
+            if (backupInfo == STAT_TYPE_PHOTO || backupInfo == STAT_TYPE_VIDEO||
+                backupInfo == STAT_TYPE_GALLERY_DATA) {
                 return true;
             }
         }
@@ -457,7 +458,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetCloudInsertValues(const int32_t 
         }
         values.emplace_back(value);
     }
-    MEDIA_INFO_LOG("END STEP 3 GET INSERT VALUES");
     return values;
 }
 
@@ -535,6 +535,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
 
     value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
+    value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
     value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
     if (fileInfo.fileSize != 0) {
@@ -752,7 +753,6 @@ int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std
         MEDIA_ERR_LOG("failCloudIds size: %{public}zu, first one: %{public}s", failCloudIds.size(),
             failCloudIds[0].c_str());
     }
-    MEDIA_INFO_LOG("END STEP 4 CREATE DENTRY");
     return ret;
 }
 
@@ -811,8 +811,7 @@ std::string BaseRestore::GetThumbFile(const FileInfo &fileInfo, int32_t type, in
             return srcPath;
         }
     }
-    CHECK_AND_RETURN_RET_LOG(!fileInfo.albumId.empty(), "", "albumId is empty: %{public}d", fileInfo.localMediaId);
-    CHECK_AND_RETURN_RET_LOG(!fileInfo.uniqueId.empty(), "", "uniqueId is empty: %{public}d", fileInfo.localMediaId);
+
     std::string newPrefixStr = sceneCode == DUAL_FRAME_CLONE_RESTORE_ID ?
         (backupRestoreDir_ + "/storage/emulated/0") : upgradeRestoreDir_;
     std::string tmpStr = type == MIGRATE_CLOUD_LCD_TYPE ? "lcd/" : "thumb/";
@@ -821,7 +820,7 @@ std::string BaseRestore::GetThumbFile(const FileInfo &fileInfo, int32_t type, in
     if (MediaFileUtils::IsFileExists(newSrcPath)) {
         return newSrcPath;
     }
-    MEDIA_WARN_LOG("GetThumbFile fail: %{public}s, %{public}s, %{public}s, %{public}d",
+    MEDIA_DEBUG_LOG("GetThumbFile fail: %{public}s, %{public}s, %{public}s, %{public}d",
         BackupFileUtils::GarbleFilePath(fileInfo.localBigThumbPath, sceneCode).c_str(),
         BackupFileUtils::GarbleFilePath(fileInfo.localThumbPath, sceneCode).c_str(),
         BackupFileUtils::GarbleFilePath(newSrcPath, sceneCode).c_str(),
@@ -901,9 +900,9 @@ void BaseRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t
         HandleFailData(fileInfos, dentryFailedThumb, DENTRY_INFO_THM);
     }
     fileMoveCount = SetVisiblePhoto(fileInfos);
-    successCloudMetaNumber_ = fileMoveCount;
+    successCloudMetaNumber_ += fileMoveCount;
+    migrateFileNumber_ += fileMoveCount;
     migrateVideoFileNumber_ += videoFileMoveCount;
-    MEDIA_INFO_LOG("END STEP 6 MOVE");
 }
 
 void BaseRestore::UpdateLcdVisibleColumn(const FileInfo &fileInfo)
@@ -956,7 +955,6 @@ void BaseRestore::HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<s
         }
     }
     DeleteMoveFailedData(dentryFailedData);
-    MEDIA_INFO_LOG("END STEP 5 HANDLE FAIL");
 }
 
 int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
@@ -1031,8 +1029,6 @@ int32_t BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
         MEDIA_ERR_LOG("Failed to update visible column, changeRows: %{public}d, ret: %{public}d", changeRows, ret);
         changeRows = 0;
     }
-    MEDIA_INFO_LOG("END STEP 7 SET VISIBLE: visibleIds: %{public}zu, changeRows: %{public}d",
-        visibleIds.size(), changeRows);
     return changeRows;
 }
 
@@ -1086,7 +1082,6 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
         (long)(startInsert - startGenerate), (long)rowNum, (long)(startInsertRelated - startInsert),
         (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
         (long)videoFileMoveCount, (long)(end - startMove));
-    MEDIA_INFO_LOG("END STEP 2 INSERT CLOUD");
     return E_OK;
 }
 

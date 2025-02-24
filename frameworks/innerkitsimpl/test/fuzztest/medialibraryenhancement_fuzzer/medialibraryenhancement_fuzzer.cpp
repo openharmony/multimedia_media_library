@@ -132,7 +132,7 @@ static inline Media::CloudEnhancementAvailableType FuzzCloudEnhancementAvailable
         value <= static_cast<int32_t>(Media::CloudEnhancementAvailableType::TRASH)) {
         return static_cast<Media::CloudEnhancementAvailableType>(value);
     }
-    return Media::CloudEnhancementAvailableType::PROCESSING;
+    return Media::CloudEnhancementAvailableType::PROCESSING_MANUAL;
 }
 
 static inline void FuzzMimeTypeAndDisplayNameExtension(const uint8_t *data, size_t size, string &mimeType,

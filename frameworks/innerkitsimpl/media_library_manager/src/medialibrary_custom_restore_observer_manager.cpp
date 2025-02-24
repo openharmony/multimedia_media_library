@@ -23,13 +23,17 @@ namespace OHOS::Media {
 void CustomRestoreNotifyObserver::OnChange(const ChangeInfo &changeInfo)
 {
     MEDIA_DEBUG_LOG("CustomRestoreCallback OnChange");
+    if (customRestoreCallback_ == nullptr) {
+        MEDIA_ERR_LOG("CustomRestoreCallback is nullptr");
+        return;
+    }
     if (changeInfo.valueBuckets_.empty()) {
         MEDIA_ERR_LOG("changeInfo.valueBuckets_ is empty");
         return;
     }
     ChangeInfo::VBucket vBucket = changeInfo.valueBuckets_[0];
     if (vBucket.empty()) {
-        MEDIA_ERR_LOG("changeInfo.valueBuckets_ is empty");
+        MEDIA_ERR_LOG("vBucket is empty");
         return;
     }
     RestoreResult restoreResult;
@@ -91,7 +95,7 @@ bool CustomRestoreObserverManager::DetachObserver(std::shared_ptr<CustomRestoreC
 {
     MEDIA_DEBUG_LOG("DetachObserver callback");
     if (callback == nullptr) {
-        MEDIA_ERR_LOG("AttachObserver callback is nullptr");
+        MEDIA_ERR_LOG("DetachObserver callback is nullptr");
         return false;
     }
     callbackMap_.Erase(callback);

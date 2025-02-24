@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <regex>
+#include <sstream>
 #include <unordered_set>
 #include "medialibrary_errno.h"
 #include "medialibrary_db_const.h"
@@ -24,6 +25,7 @@
 #include "media_directory_type_column.h"
 #include "media_log.h"
 #include "media_old_photos_column.h"
+#include "media_facard_photos_column.h"
 #include "media_smart_album_column.h"
 #include "openssl/sha.h"
 #include "vision_aesthetics_score_column.h"
@@ -39,6 +41,7 @@ namespace Media {
 using namespace std;
 
 const std::string ALBUM_LPATH = "lpath";
+const std::string ALBUM_BUNDLE_NAME = "bundle_name";
 
 const vector<string> CHAR2HEX_TABLE = {
     "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D", "0E", "0F",
@@ -172,8 +175,16 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_CE_AVAILABLE,
     PhotoColumn::PHOTO_LCD_VISIT_TIME,
     PhotoColumn::PHOTO_DETAIL_TIME,
+    PhotoColumn::PHOTO_MEDIA_SUFFIX,
     TabOldPhotosColumn::MEDIA_OLD_ID,
     TabOldPhotosColumn::MEDIA_OLD_FILE_PATH,
+    TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI,
+    TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID,
+    MEDIA_DATA_DB_ALL_EXIF,
+    MEDIA_DATA_DB_SHOOTING_MODE,
+    MEDIA_DATA_DB_SHOOTING_MODE_TAG,
+    MEDIA_DATA_DB_PHOTOS_LATITUDE,
+    MEDIA_DATA_DB_PHOTOS_LONGITUDE,
 
     // Photos table columns
     COMPAT_HIDDEN,
@@ -184,6 +195,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     // PhotoAlbum table columns
     COMPAT_ALBUM_SUBTYPE,
     ALBUM_LPATH,
+    ALBUM_BUNDLE_NAME,
 
     // Analysis table columns
     TAG_ID,
@@ -336,6 +348,14 @@ void MediaLibraryCommonUtils::AppendSelections(std::string &selections)
         return;
     }
     selections = "(" + selections + ")";
+}
+
+bool MediaLibraryCommonUtils::CanConvertStrToInt32(const std::string &str)
+{
+    std::istringstream iss(str);
+    int32_t num = 0;
+    iss >> num;
+    return iss.eof() && !iss.fail();
 }
 } // namespace Media
 } // namespace OHOS

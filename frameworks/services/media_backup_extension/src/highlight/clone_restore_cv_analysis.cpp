@@ -37,8 +37,9 @@ const std::string EFFECTLINE_TYPE_MASK2 = "TYPE_MASK2";
 const std::string HIGHLIGHT_ASSET_URI_PREFIX = "file://media/highlight/video/";
 const std::string HIGHLIGHT_ASSET_URI_SUFFIX = "?oper=highlight";
 const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
+const std::string GARBLE_DST_PATH = "/storage/media/local/files";
 
-const std::unordered_map<std::string, std::unordered_set<std::string>> NEEDED_COLUMNS_MAP = {
+const std::unordered_map<std::string, std::unordered_set<std::string>> ALBUM_COLUMNS_MAP = {
     { "tab_analysis_label",
         {
             "id",
@@ -50,7 +51,8 @@ const std::unordered_map<std::string, std::unordered_set<std::string>> NEEDED_CO
             "sim_result",
             "label_version",
             "saliency_sub_prob",
-            "analysis_version"
+            "analysis_version",
+            "duplicate_checking"
         }
     },
     { "tab_analysis_saliency_detect",
@@ -85,20 +87,6 @@ const std::unordered_map<std::string, std::unordered_set<std::string>> NEEDED_CO
     }
 };
 
-const std::unordered_map<std::string, std::unordered_set<std::string>> COMPARED_COLUMNS_MAP = {
-    { "tab_analysis_label",
-        {
-            "duplicate_checking"
-        }
-    },
-    { "tab_analysis_saliency_detect",
-        {}
-    },
-    { "tab_analysis_recommendation",
-        {}
-    }
-};
-
 template<typename Key, typename Value>
 Value GetValueFromMap(const std::unordered_map<Key, Value> &map, const Key &key, const Value &defaultValue = Value())
 {
@@ -118,19 +106,14 @@ void CloneRestoreCVAnalysis::Init(int32_t sceneCode, const std::string &taskId,
     mediaLibraryRdb_ = mediaLibraryRdb;
     mediaRdb_ = mediaRdb;
     assetPath_ = backupRestoreDir + "/storage/media/local/files/highlight/video/";
+    garblePath_ = backupRestoreDir + GARBLE_DST_PATH;
     failCnt_ = 0;
 }
 
 void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight)
 {
-    if (mediaRdb_ == nullptr || mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
-    }
-
-    if (!cloneHighlight.IsCloneHighlight()) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(mediaRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr.");
+    CHECK_AND_RETURN_LOG(cloneHighlight.IsCloneHighlight(), "clone highlight flag is false.");
 
     MEDIA_INFO_LOG("restore highlight cv analysis album start.");
     GetAssetMapInfos(cloneHighlight);
@@ -149,12 +132,12 @@ void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight
 
 void CloneRestoreCVAnalysis::GetAssetMapInfos(CloneRestoreHighlight &cloneHighlight)
 {
-    const std::string querySql = "SELECT * FROM tab_analysis_asset_sd_map LIMIT ?, ?";
+    const std::string QUERY_SQL = "SELECT * FROM tab_analysis_asset_sd_map LIMIT ?, ?";
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
-        auto resultSet = mediaRdb_->QuerySql(querySql, params);
+        auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
         if (resultSet == nullptr) {
             MEDIA_ERR_LOG("resultSet is nullptr");
             break;
@@ -186,7 +169,6 @@ int32_t CloneRestoreCVAnalysis::GetNewAssetId(int32_t assetId)
             }
         }
         assetId += GENERATE_GAP;
-        MEDIA_INFO_LOG("try new assetId: %{public}d", assetId);
     }
     MEDIA_ERR_LOG("create dirPath failed");
     return -1;
@@ -194,12 +176,12 @@ int32_t CloneRestoreCVAnalysis::GetNewAssetId(int32_t assetId)
 
 void CloneRestoreCVAnalysis::GetAssetAlbumInfos(CloneRestoreHighlight &cloneHighlight)
 {
-    const std::string querySql = "SELECT * FROM tab_analysis_album_asset_map LIMIT ?, ?";
+    const std::string QUERY_SQL = "SELECT * FROM tab_analysis_album_asset_map LIMIT ?, ?";
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
-        auto resultSet = mediaRdb_->QuerySql(querySql, params);
+        auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
         if (resultSet == nullptr) {
             MEDIA_ERR_LOG("resultSet is nullptr");
             break;
@@ -231,9 +213,9 @@ void CloneRestoreCVAnalysis::InsertIntoAssetMap()
     }
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry("tab_analysis_album_asset_map", values, rowNum);
-    if (errCode != E_OK || rowNum != (long)values.size()) {
-        int32_t failNums = values.size() - rowNum;
-        MEDIA_ERR_LOG("insert into assetMap failed, num:%{public}d", failNums);
+    if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
+        int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
+        MEDIA_ERR_LOG("insert into assetMap failed, num:%{public}" PRId64, failNums);
         ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
             "insert into AssetMap fail. num:" + std::to_string(failNums));
         failCnt_ += failNums;
@@ -252,9 +234,9 @@ void CloneRestoreCVAnalysis::InsertIntoSdMap()
     }
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry("tab_analysis_asset_sd_map", values, rowNum);
-    if (errCode != E_OK || rowNum != (long)values.size()) {
-        int32_t failNums = values.size() - rowNum;
-        MEDIA_ERR_LOG("insert into sdMap failed, num:%{public}d", failNums);
+    if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
+        int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
+        MEDIA_ERR_LOG("insert into sdMap failed, num:%{public}" PRId64, failNums);
         ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
             "insert into sdMap fail. num:" + std::to_string(failNums));
         failCnt_ += failNums;
@@ -274,7 +256,7 @@ int32_t CloneRestoreCVAnalysis::BatchInsertWithRetry(const std::string &tableNam
     std::function<int(void)> func = [&]()->int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
         if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
+            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}" PRId64, errCode, rowNum);
         }
         return errCode;
     };
@@ -290,9 +272,9 @@ void CloneRestoreCVAnalysis::GetAnalysisLabelInfos(CloneRestoreHighlight &cloneH
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string querySql = "SELECT * FROM tab_analysis_label LIMIT " + std::to_string(offset) + ", " +
+        const std::string QUERY_SQL = "SELECT * FROM tab_analysis_label LIMIT " + std::to_string(offset) + ", " +
             std::to_string(PAGE_SIZE);
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
+        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         if (resultSet == nullptr) {
             MEDIA_INFO_LOG("query resultSql is null.");
             break;
@@ -314,35 +296,38 @@ void CloneRestoreCVAnalysis::GetAnalysisLabelInfos(CloneRestoreHighlight &cloneH
 
 void CloneRestoreCVAnalysis::GetLabelRowInfo(AnalysisLabelInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    info.id = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "id");
-    info.fileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "file_id");
-    info.categoryId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "category_id");
-    info.subLabel = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "sub_label");
-    info.prob = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, "prob");
-    info.feature = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "feature");
-    info.simResult = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "sim_result");
-    info.labelVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "label_version");
-    info.saliencySubprob = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "saliency_sub_prob");
-    info.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "analysis_version");
-    info.duplicateChecking = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "duplicate_checking");
+    if (intersectionMap_.find("tab_analysis_label") == intersectionMap_.end()) {
+        intersectionMap_.insert(std::make_pair("tab_analysis_label", GetCommonColumns("tab_analysis_label")));
+    }
+    std::unordered_set<std::string>& intersection = intersectionMap_["tab_analysis_label"];
+    CloneRestoreHighlight::GetIfInIntersection("id", info.id, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("file_id", info.fileId, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("category_id", info.categoryId, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("sub_label", info.subLabel, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("prob", info.prob, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("feature", info.feature, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("sim_result", info.simResult, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("label_version", info.labelVersion, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("saliency_sub_prob", info.saliencySubprob, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("analysis_version", info.analysisVersion, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("duplicate_checking", info.duplicateChecking, intersection, resultSet);
 }
 
 void CloneRestoreCVAnalysis::InsertIntoAnalysisLabel()
 {
-    std::unordered_set<std::string> intersection = GetCommonColumns("tab_analysis_label");
     size_t offset = 0;
     do {
         std::vector<NativeRdb::ValuesBucket> values;
         for (size_t index = 0; index < PAGE_SIZE && index + offset < labelInfos_.size(); index++) {
             NativeRdb::ValuesBucket value;
-            GetLabelInsertValue(value, labelInfos_[index + offset], intersection);
+            GetLabelInsertValue(value, labelInfos_[index + offset]);
             values.emplace_back(value);
         }
         int64_t rowNum = 0;
         int32_t errCode = BatchInsertWithRetry("tab_analysis_label", values, rowNum);
-        if (errCode != E_OK || rowNum != (long)values.size()) {
-            int32_t failNums = values.size() - rowNum;
-            MEDIA_ERR_LOG("insert into tab_analysis_label fail, num: %{public}d", failNums);
+        if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
+            int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
+            MEDIA_ERR_LOG("insert into tab_analysis_label fail, num: %{public}" PRId64, failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_analysis_label fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -352,9 +337,9 @@ void CloneRestoreCVAnalysis::InsertIntoAnalysisLabel()
     } while (offset < labelInfos_.size());
 }
 
-void CloneRestoreCVAnalysis::GetLabelInsertValue(NativeRdb::ValuesBucket &value, const AnalysisLabelInfo &info,
-    const std::unordered_set<std::string> &intersection)
+void CloneRestoreCVAnalysis::GetLabelInsertValue(NativeRdb::ValuesBucket &value, const AnalysisLabelInfo &info)
 {
+    std::unordered_set<std::string>& intersection = intersectionMap_["tab_analysis_label"];
     CloneRestoreHighlight::PutIfInIntersection(value, "file_id", info.fileIdNew, intersection);
     CloneRestoreHighlight::PutIfInIntersection(value, "category_id", info.categoryId, intersection);
     CloneRestoreHighlight::PutIfInIntersection(value, "sub_label", info.subLabel, intersection);
@@ -373,9 +358,8 @@ std::unordered_set<std::string> CloneRestoreCVAnalysis::GetCommonColumns(const s
         BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_, tableName);
     std::unordered_map<std::string, std::string> dstColumnInfoMap =
         BackupDatabaseUtils::GetColumnInfoMap(mediaLibraryRdb_, tableName);
-    auto neededColumns = GetValueFromMap(NEEDED_COLUMNS_MAP, tableName);
-    std::unordered_set<std::string> result = neededColumns;
-    auto comparedColumns = GetValueFromMap(COMPARED_COLUMNS_MAP, tableName);
+    std::unordered_set<std::string> result;
+    auto comparedColumns = GetValueFromMap(ALBUM_COLUMNS_MAP, tableName);
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
         if (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() && comparedColumns.count(it->first) > 0) {
             result.insert(it->first);
@@ -389,9 +373,9 @@ void CloneRestoreCVAnalysis::GetAnalysisSaliencyInfos(CloneRestoreHighlight &clo
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string querySql = "SELECT * FROM tab_analysis_saliency_detect LIMIT " + std::to_string(offset) +
+        const std::string QUERY_SQL = "SELECT * FROM tab_analysis_saliency_detect LIMIT " + std::to_string(offset) +
             ", " + std::to_string(PAGE_SIZE);
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
+        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         if (resultSet == nullptr) {
             MEDIA_INFO_LOG("query resultSql is null.");
             break;
@@ -414,30 +398,34 @@ void CloneRestoreCVAnalysis::GetAnalysisSaliencyInfos(CloneRestoreHighlight &clo
 void CloneRestoreCVAnalysis::GetSaliencyRowInfo(AnalysisSaliencyInfo &info,
     std::shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    info.id = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "id");
-    info.fileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "file_id");
-    info.saliencyX = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, "saliency_x");
-    info.saliencyY = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, "saliency_y");
-    info.saliencyVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "saliency_version");
-    info.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "analysis_version");
+    if (intersectionMap_.find("tab_analysis_saliency_detect") == intersectionMap_.end()) {
+        intersectionMap_.insert(
+            std::make_pair("tab_analysis_saliency_detect", GetCommonColumns("tab_analysis_saliency_detect")));
+    }
+    std::unordered_set<std::string>& intersection = intersectionMap_["tab_analysis_saliency_detect"];
+    CloneRestoreHighlight::GetIfInIntersection("id", info.id, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("file_id", info.fileId, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("saliency_x", info.saliencyX, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("saliency_y", info.saliencyY, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("saliency_version", info.saliencyVersion, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("analysis_version", info.analysisVersion, intersection, resultSet);
 }
 
 void CloneRestoreCVAnalysis::InsertIntoAnalysisSaliency()
 {
-    std::unordered_set<std::string> intersection = GetCommonColumns("tab_analysis_saliency_detect");
     size_t offset = 0;
     do {
         std::vector<NativeRdb::ValuesBucket> values;
         for (size_t index = 0; index < PAGE_SIZE && index + offset < saliencyInfos_.size(); index++) {
             NativeRdb::ValuesBucket value;
-            GetSaliencyInsertValue(value, saliencyInfos_[index + offset], intersection);
+            GetSaliencyInsertValue(value, saliencyInfos_[index + offset]);
             values.emplace_back(value);
         }
         int64_t rowNum = 0;
         int32_t errCode = BatchInsertWithRetry("tab_analysis_saliency_detect", values, rowNum);
-        if (errCode != E_OK || rowNum != (long)values.size()) {
-            int32_t failNums = values.size() - rowNum;
-            MEDIA_ERR_LOG("insert into tab_analysis_saliency_detect fail, num: %{public}d", failNums);
+        if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
+            int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
+            MEDIA_ERR_LOG("insert into tab_analysis_saliency_detect fail, num: %{public}" PRId64, failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_analysis_saliency_detect fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -447,9 +435,9 @@ void CloneRestoreCVAnalysis::InsertIntoAnalysisSaliency()
     } while (offset < saliencyInfos_.size());
 }
 
-void CloneRestoreCVAnalysis::GetSaliencyInsertValue(NativeRdb::ValuesBucket &value, const AnalysisSaliencyInfo &info,
-    const std::unordered_set<std::string> &intersection)
+void CloneRestoreCVAnalysis::GetSaliencyInsertValue(NativeRdb::ValuesBucket &value, const AnalysisSaliencyInfo &info)
 {
+    std::unordered_set<std::string>& intersection = intersectionMap_["tab_analysis_saliency_detect"];
     CloneRestoreHighlight::PutIfInIntersection(value, "file_id", info.fileIdNew, intersection);
     CloneRestoreHighlight::PutIfInIntersection(value, "saliency_x", info.saliencyX, intersection);
     CloneRestoreHighlight::PutIfInIntersection(value, "saliency_y", info.saliencyY, intersection);
@@ -462,9 +450,9 @@ void CloneRestoreCVAnalysis::GetAnalysisRecommendationInfos(CloneRestoreHighligh
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string querySql = "SELECT * FROM tab_analysis_recommendation LIMIT " + std::to_string(offset) +
+        const std::string QUERY_SQL = "SELECT * FROM tab_analysis_recommendation LIMIT " + std::to_string(offset) +
             ", " + std::to_string(PAGE_SIZE);
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
+        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         if (resultSet == nullptr) {
             MEDIA_INFO_LOG("query resultSql is null.");
             break;
@@ -487,40 +475,47 @@ void CloneRestoreCVAnalysis::GetAnalysisRecommendationInfos(CloneRestoreHighligh
 void CloneRestoreCVAnalysis::GetRecommendationRowInfo(AnalysisRecommendationInfo &info,
     std::shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    info.id = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "id");
-    info.fileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "file_id");
-    info.rcmdId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "recommendation_id");
-    info.rcmdResolution = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "recommendation_resolution");
-    info.rcmdScaleX = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "recommendation_scale_x");
-    info.rcmdScaleY = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "recommendation_scale_y");
-    info.rcmdScaleWidth = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "recommendation_scale_width");
-    info.rcmdScaleHeight = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "recommendation_scale_height");
-    info.rcmdVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "recommendation_version");
-    info.scaleX = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, "scale_x");
-    info.scaleY = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, "scale_y");
-    info.scaleWidth = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, "scale_width");
-    info.scaleHeight = BackupDatabaseUtils::GetOptionalValue<double>(resultSet, "scale_height");
-    info.analysisVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "analysis_version");
-    info.movementCrop = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "movement_crop");
-    info.movementVersion = BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "movement_version");
+    if (intersectionMap_.find("tab_analysis_recommendation") == intersectionMap_.end()) {
+        intersectionMap_.insert(
+            std::make_pair("tab_analysis_recommendation", GetCommonColumns("tab_analysis_recommendation")));
+    }
+    std::unordered_set<std::string>& intersection = intersectionMap_["tab_analysis_recommendation"];
+    CloneRestoreHighlight::GetIfInIntersection("id", info.id, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("file_id", info.fileId, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("recommendation_id", info.rcmdId, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("recommendation_resolution", info.rcmdResolution, intersection,
+        resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("recommendation_scale_x", info.rcmdScaleX, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("recommendation_scale_y", info.rcmdScaleY, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("recommendation_scale_width", info.rcmdScaleWidth, intersection,
+        resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("recommendation_scale_height", info.rcmdScaleHeight, intersection,
+        resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("recommendation_version", info.rcmdVersion, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("scale_x", info.scaleX, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("scale_y", info.scaleY, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("scale_width", info.scaleWidth, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("scale_height", info.scaleHeight, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("analysis_version", info.analysisVersion, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("movement_crop", info.movementCrop, intersection, resultSet);
+    CloneRestoreHighlight::GetIfInIntersection("movement_version", info.movementVersion, intersection, resultSet);
 }
 
 void CloneRestoreCVAnalysis::InsertIntoAnalysisRecommendation()
 {
-    std::unordered_set<std::string> intersection = GetCommonColumns("tab_analysis_recommendation");
     size_t offset = 0;
     do {
         std::vector<NativeRdb::ValuesBucket> values;
         for (size_t index = 0; index < PAGE_SIZE && index + offset < recommendInfos_.size(); index++) {
             NativeRdb::ValuesBucket value;
-            GetRecommendationInsertValue(value, recommendInfos_[index + offset], intersection);
+            GetRecommendationInsertValue(value, recommendInfos_[index + offset]);
             values.emplace_back(value);
         }
         int64_t rowNum = 0;
         int32_t errCode = BatchInsertWithRetry("tab_analysis_recommendation", values, rowNum);
-        if (errCode != E_OK || rowNum != (long)values.size()) {
-            int32_t failNums = values.size() - rowNum;
-            MEDIA_ERR_LOG("insert into tab_analysis_recommendation fail, num: %{public}d", failNums);
+        if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
+            int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
+            MEDIA_ERR_LOG("insert into tab_analysis_recommendation fail, num: %{public}" PRId64, failNums);
             ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
                 "insert into tab_analysis_recommendation fail, num:" + std::to_string(failNums));
             failCnt_ += failNums;
@@ -531,8 +526,9 @@ void CloneRestoreCVAnalysis::InsertIntoAnalysisRecommendation()
 }
 
 void CloneRestoreCVAnalysis::GetRecommendationInsertValue(NativeRdb::ValuesBucket &value,
-    const AnalysisRecommendationInfo &info, const std::unordered_set<std::string> &intersection)
+    const AnalysisRecommendationInfo &info)
 {
+    std::unordered_set<std::string>& intersection = intersectionMap_["tab_analysis_recommendation"];
     CloneRestoreHighlight::PutIfInIntersection(value, "file_id", info.fileIdNew, intersection);
     CloneRestoreHighlight::PutIfInIntersection(value, "recommendation_id", info.rcmdId, intersection);
     CloneRestoreHighlight::PutIfInIntersection(value, "recommendation_resolution", info.rcmdResolution, intersection);
@@ -554,11 +550,7 @@ void CloneRestoreCVAnalysis::GetRecommendationInsertValue(NativeRdb::ValuesBucke
 std::string CloneRestoreCVAnalysis::ParsePlayInfo(const std::string &oldPlayInfo, CloneRestoreHighlight &cloneHighlight)
 {
     nlohmann::json newPlayInfo = nlohmann::json::parse(oldPlayInfo, nullptr, false);
-    if (newPlayInfo.is_discarded()) {
-        MEDIA_ERR_LOG("parse json string failed");
-        return "";
-    }
-
+    CHECK_AND_RETURN_RET_LOG(!newPlayInfo.is_discarded(), "", "parse json string failed.");
     if (newPlayInfo["effectline"].contains("effectline")) {
         for (size_t effectlineIndex = 0; effectlineIndex < newPlayInfo["effectline"]["effectline"].size();
             effectlineIndex++) {
@@ -608,7 +600,7 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
             newPlayInfo["effectline"]["effectline"][effectlineIndex]["transitionVideoUri"], cloneHighlight);
         newPlayInfo["effectline"]["effectline"][effectlineIndex]["transitionVideoUri"] = transVideoUri;
 
-        if (effectlineIndex - 1 >= 0 &&
+        if (effectlineIndex > 0 &&
             newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["effect"] == EFFECTLINE_TYPE_MASK1) {
             newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["transitionVideoUri"] = transVideoUri;
         }
@@ -629,6 +621,9 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
         for (size_t uriIndex = 0;
             uriIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]].size();
             uriIndex++) {
+            if (uriIndex >= newFileIds.size()) {
+                break;
+            }
             std::string newFileUri = cloneHighlight.GetNewHighlightPhotoUri(newFileIds[uriIndex]);
             newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex] = newFileUri;
         }
@@ -637,16 +632,18 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
 
 std::string CloneRestoreCVAnalysis::GetNewEffectVideoUri(const std::string &oldVideoUri)
 {
-    if (oldVideoUri == "") {
-        return "";
-    }
-    int32_t rightIndex = oldVideoUri.rfind("/");
-    int32_t leftIndex = oldVideoUri.rfind("/", rightIndex - 1);
+    CHECK_AND_RETURN_RET(oldVideoUri != "", "");
+    size_t rightIndex = oldVideoUri.rfind("/");
+    CHECK_AND_RETURN_RET(rightIndex != std::string::npos && rightIndex > 0, "");
+    size_t leftIndex = oldVideoUri.rfind("/", rightIndex - 1);
+    CHECK_AND_RETURN_RET(leftIndex != std::string::npos && rightIndex > leftIndex + 1, "");
     int32_t oldAssetId = std::atoi((oldVideoUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
     int32_t newAssetId = assetIdMap_[oldAssetId];
 
-    int32_t suffixLeftIndex = oldVideoUri.find("_", rightIndex);
-    int32_t suffixRightIndex = oldVideoUri.find("?", suffixLeftIndex);
+    size_t suffixLeftIndex = oldVideoUri.find("_", rightIndex);
+    CHECK_AND_RETURN_RET(suffixLeftIndex != std::string::npos, "");
+    size_t suffixRightIndex = oldVideoUri.find("?", suffixLeftIndex);
+    CHECK_AND_RETURN_RET(suffixRightIndex != std::string::npos && suffixRightIndex > suffixLeftIndex, "");
     std::string suffix = oldVideoUri.substr(suffixLeftIndex, suffixRightIndex - suffixLeftIndex);
     std::string newVideoUri = HIGHLIGHT_ASSET_URI_PREFIX + std::to_string(newAssetId)
         + "/" + std::to_string(newAssetId) + suffix + HIGHLIGHT_ASSET_URI_SUFFIX;
@@ -662,21 +659,24 @@ std::string CloneRestoreCVAnalysis::GetNewEffectVideoUri(const std::string &oldV
 std::string CloneRestoreCVAnalysis::GetNewTransitionVideoUri(const std::string &oldVideoUri,
     CloneRestoreHighlight &cloneHighlight)
 {
-    if (oldVideoUri == "") {
-        return "";
-    }
-    int32_t rightIndex = oldVideoUri.rfind("/");
-    int32_t leftIndex = oldVideoUri.rfind("/", rightIndex - 1);
+    CHECK_AND_RETURN_RET(oldVideoUri != "", "");
+    size_t rightIndex = oldVideoUri.rfind("/");
+    CHECK_AND_RETURN_RET(rightIndex != std::string::npos && rightIndex > 0, "");
+    size_t leftIndex = oldVideoUri.rfind("/", rightIndex - 1);
+    CHECK_AND_RETURN_RET(leftIndex != std::string::npos && rightIndex > leftIndex + 1, "");
     int32_t oldAssetId = std::atoi((oldVideoUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
     int32_t newAssetId = assetIdMap_[oldAssetId];
 
-    int32_t secondLeftIndex = oldVideoUri.find("_", rightIndex);
-    int32_t secondRightIndex = oldVideoUri.find("_", secondLeftIndex + 1);
+    size_t secondLeftIndex = oldVideoUri.find("_", rightIndex);
+    CHECK_AND_RETURN_RET(secondLeftIndex != std::string::npos, "");
+    size_t secondRightIndex = oldVideoUri.find("_", secondLeftIndex + 1);
+    CHECK_AND_RETURN_RET(secondRightIndex != std::string::npos && secondRightIndex > secondLeftIndex + 1, "");
     int32_t oldNextAssetId = std::atoi((oldVideoUri.substr(secondLeftIndex + 1,
-        secondRightIndex - secondRightIndex - 1)).c_str());
+        secondRightIndex - secondLeftIndex - 1)).c_str());
     int32_t newNextPhotoId = cloneHighlight.GetNewHighlightPhotoId(oldNextAssetId);
 
-    int32_t suffixRightIndex = oldVideoUri.find("?", secondRightIndex);
+    size_t suffixRightIndex = oldVideoUri.find("?", secondRightIndex);
+    CHECK_AND_RETURN_RET(suffixRightIndex != std::string::npos && suffixRightIndex > secondRightIndex, "");
     std::string suffix = oldVideoUri.substr(secondRightIndex, suffixRightIndex - secondRightIndex);
 
     std::string newVideoUri = HIGHLIGHT_ASSET_URI_PREFIX + std::to_string(newAssetId) + "/" +
@@ -693,11 +693,14 @@ std::string CloneRestoreCVAnalysis::GetNewTransitionVideoUri(const std::string &
 std::string CloneRestoreCVAnalysis::GetNewPhotoUriByUri(const std::string &oldUri,
     CloneRestoreHighlight &cloneHighlight)
 {
-    if (oldUri == "") {
-        return "";
-    }
-    int32_t rightIndex = oldUri.rfind("/", oldUri.rfind("/") - 1);
-    int32_t leftIndex = oldUri.rfind("/", rightIndex - 1);
+    CHECK_AND_RETURN_RET(oldUri != "", "");
+    size_t rightIndex = oldUri.rfind("/");
+    CHECK_AND_RETURN_RET(rightIndex != std::string::npos && rightIndex > 0, "");
+    rightIndex = oldUri.rfind("/", rightIndex - 1);
+    CHECK_AND_RETURN_RET(rightIndex != std::string::npos && rightIndex > 0, "");
+    size_t leftIndex = oldUri.rfind("/", rightIndex - 1);
+    CHECK_AND_RETURN_RET(leftIndex != std::string::npos && rightIndex > leftIndex + 1, "");
+
     int32_t oldPhotoId = std::atoi((oldUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
     int32_t newPhotoId = cloneHighlight.GetNewHighlightPhotoId(oldPhotoId);
     std::string newUri = cloneHighlight.GetNewHighlightPhotoUri(newPhotoId);
@@ -710,7 +713,8 @@ void CloneRestoreCVAnalysis::MoveAnalysisAssets(const std::string &srcPath, cons
     int32_t errCode = BackupFileUtils::MoveFile(srcPath.c_str(), dstPath.c_str(), sceneCode_);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("move file failed, srcPath:%{public}s, dstPath:%{public}s, errcode:%{public}d",
-            srcPath.c_str(), dstPath.c_str(), errCode);
+            BackupFileUtils::GarbleFilePath(srcPath, sceneCode_, garblePath_).c_str(),
+            BackupFileUtils::GarbleFilePath(dstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
     }
 }
 
@@ -719,9 +723,9 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string querySql = "SELECT album_id, play_info_id, play_info FROM tab_highlight_play_info LIMIT "
+        const std::string QUERY_SQL = "SELECT album_id, play_info_id, play_info FROM tab_highlight_play_info LIMIT "
             + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
+        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         if (resultSet == nullptr) {
             MEDIA_INFO_LOG("query resultSql is null.");
             return;
@@ -765,7 +769,7 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
 void CloneRestoreCVAnalysis::ReportCloneRestoreCVAnalysisTask()
 {
     const int32_t ERR_STATUS = 1;
-    MEDIA_INFO_LOG("Highlight restore failCnt_: %{public}d", failCnt_);
+    MEDIA_INFO_LOG("Highlight restore failCnt_: %{public}" PRId64, failCnt_);
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
         .Report("Highlight restore", std::to_string(ERR_STATUS), "failCnt_: " + std::to_string(failCnt_));
 }
