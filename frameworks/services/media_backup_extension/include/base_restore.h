@@ -70,8 +70,8 @@ protected:
     virtual std::string CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
-    std::vector<NativeRdb::ValuesBucket> GetCloudInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
-        int32_t sourceType);
+    virtual std::vector<NativeRdb::ValuesBucket> GetCloudInsertValues(int32_t sceneCode,
+        std::vector<FileInfo> &fileInfos, int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
     virtual void GetAccountValid();
     void GetSourceDeviceInfo();
@@ -80,7 +80,7 @@ protected:
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
     int InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
-    int InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
+    virtual int InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
@@ -112,8 +112,8 @@ protected:
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
         int32_t sceneCode);
 
-    bool RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
-    bool RestoreLcdAndThumbFromKvdb(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
+    virtual bool RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
+    virtual bool RestoreLcdAndThumbFromKvdb(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
     std::string GetThumbFile(const FileInfo &fileInfo, int32_t type, int32_t sceneCode);
 
     int32_t BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
@@ -121,8 +121,8 @@ protected:
     int32_t SetVisiblePhoto(std::vector<FileInfo> &fileInfos);
     void HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
         std::string fileType);
-    void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
-        int32_t sceneCode);
+    virtual void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount,
+        int32_t &videoFileMoveCount, int32_t sceneCode);
     void SetParameterForClone();
     void StopParameterForClone(int32_t sceneCode);
     void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType);
