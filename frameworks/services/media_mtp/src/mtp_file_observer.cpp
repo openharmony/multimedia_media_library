@@ -129,6 +129,12 @@ void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &p
     if ((event.mask & IN_ISDIR) && (event.mask & (IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO))) {
         DealWatchMap(event, fileName);
     }
+    // when create or delete or modifiy file path, the parent path mtime changed
+    if (event.mask & (IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO | IN_CREATE | IN_DELETE)) {
+        MEDIA_INFO_LOG("path:%{public}s mask:0x%{public}x name:%{public}s",
+            path.c_str(), event.mask, event.name);
+        eventPtr->SendObjectInfoChanged(path);
+    }
 }
 
 bool MtpFileObserver::AddInotifyEvents(const int &inotifyFd, const ContextSptr &context)
