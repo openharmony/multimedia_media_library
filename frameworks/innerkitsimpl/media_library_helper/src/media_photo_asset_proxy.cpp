@@ -440,6 +440,10 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
     PhotoFormat photoFormat = photoProxy->GetFormat();
     if (photoFormat == PhotoFormat::RGBA) {
         PackAndSaveImage(fd, uri, photoProxy);
+    } else if (photoFormat == PhotoFormat::DNG) {
+        auto ret = SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(),
+            photoProxy->GetFileSize());
+        MEDIA_INFO_LOG("direct save dng file, ret: %{public}d", ret);
     } else {
         SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(), photoProxy->GetFileSize());
     }
