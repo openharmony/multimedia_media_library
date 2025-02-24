@@ -42,6 +42,7 @@ const string IS_LOCAL = "2";
 const std::string HIDDEN_ALBUM = ".hiddenAlbum";
 const string POSITION = "2";
 const string INVALID_FILE_ID = "-1";
+constexpr uint64_t DELAY_MS = 5000;
 bool startsWith(const std::string& str, const std::string& prefix)
 {
     if (prefix.size() > str.size() || prefix.empty() || str.empty()) {
@@ -179,6 +180,46 @@ vector<string> MediaSyncObserver::GetAllDeleteHandles()
     return handlesResult;
 }
 
+void MediaSyncObserver::StartDealyInfoThread()
+{
+    CHECK_AND_RETURN_LOG(!isRunningDelay_.load(), "MediaSyncObserver delay thread is already running");
+    isRunningDelay_.store(true);
+    delayThread_ = std::thread([&] { DealyInfoThread(); });
+}
+
+void MediaSyncObserver::StopDealyInfoThread()
+{
+    isRunningDelay_.store(false);
+    cvDelay_.notify_all();
+    if (delayThread_.joinable()) {
+        delayThread_.join();
+    }
+}
+
+void MediaSyncObserver::DealyInfoThread()
+{
+    while (isRunningDelay_.load()) {
+        DelayInfo delayInfo;
+        {
+            std::unique_lock<std::mutex> lock(mutexDelay_);
+            cvDelay_.wait(lock, [&] { return !delayQueue_.empty() || !isRunningDelay_.load(); });
+            if (!isRunningDelay_.load()) {
+                std::queue<DelayInfo>().swap(delayQueue_);
+                MEDIA_INFO_LOG("delay thread is stopped");
+                break;
+            }
+            delayInfo = delayQueue_.front();
+            delayQueue_.pop();
+        }
+        auto now = std::chrono::steady_clock::now();
+        if (now < delayInfo.tp) {
+            std::this_thread::sleep_until(delayInfo.tp);
+        }
+        SendEventPackets(delayInfo.objectHandle, delayInfo.eventCode);
+        SendEventPacketAlbum(delayInfo.objectHandleAlbum, delayInfo.eventCodeAlbum);
+    }
+}
+
 void MediaSyncObserver::AddPhotoHandle(int32_t handle)
 {
     CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Mtp AddPhotoHandle fail to get datasharehelper");
@@ -199,8 +240,20 @@ void MediaSyncObserver::AddPhotoHandle(int32_t handle)
     int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
     int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
-        SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+        DelayInfo delayInfo = {
+            .objectHandle = handle + COMMON_MOVING_OFFSET,
+            .eventCode = MTP_EVENT_OBJECT_ADDED_CODE,
+            .objectHandleAlbum = ownerAlbumId,
+            .eventCodeAlbum = MTP_EVENT_OBJECT_INFO_CHANGED_CODE,
+            .tp = std::chrono::steady_clock::now() + std::chrono::milliseconds(DELAY_MS)
+        };
+        {
+            std::lock_guard<std::mutex> lock(mutexDelay_);
+            if (isRunningDelay_.load()) {
+                delayQueue_.push(delayInfo);
+            }
+        }
+        cvDelay_.notify_all();
     }
     auto albumHandles = PtpAlbumHandles::GetInstance();
     if (!albumHandles->FindHandle(ownerAlbumId)) {
@@ -550,11 +603,13 @@ void MediaSyncObserver::StartNotifyThread()
     CHECK_AND_RETURN_LOG(!isRunning_.load(), "MediaSyncObserver notify thread is already running");
     isRunning_.store(true);
     notifythread_ = std::thread([this] {this->ChangeNotifyThread();});
+    StartDealyInfoThread();
 }
 
 void MediaSyncObserver::StopNotifyThread()
 {
     MEDIA_INFO_LOG("stop notify thread");
+    StopDealyInfoThread();
     isRunning_.store(false);
     cv_.notify_all();
     {
