@@ -41,7 +41,7 @@ int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::UpdateVideoQuality(
 {
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     NativeRdb::ValuesBucket updateValues;
-    updateValues.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_MDIRTY));
+    updateValues.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
 
     int32_t subType = MultiStagesCaptureManager::QuerySubType(videoId);
     if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
@@ -73,7 +73,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::PHOTO_SUBTYPE };
+        PhotoColumn::STAGE_VIDEO_TASK_STATUS };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         MEDIA_INFO_LOG("result set is empty");
@@ -84,8 +84,8 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
         return;
     }
 
-    bool isMovingPhoto = (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) ==
-        static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    bool isMovingPhoto = (GetInt32Val(PhotoColumn::STAGE_VIDEO_TASK_STATUS, resultSet) ==
+        static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED));
     int32_t mediaType = isMovingPhoto ? static_cast<int32_t>(MultiStagesCaptureMediaType::MOVING_PHOTO_VIDEO) :
         static_cast<int32_t>(MultiStagesCaptureMediaType::VIDEO);
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);

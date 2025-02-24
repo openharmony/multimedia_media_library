@@ -29,6 +29,7 @@
 #include "rdb_result_set_bridge.h"
 #include "vision_column.h"
 #include "medialibrary_async_worker.h"
+#include "medialibrary_rdb_transaction.h"
 
 namespace OHOS {
 namespace Media {
@@ -69,6 +70,8 @@ public:
     static void DealwithNoAlbumAssets(const std::vector<std::string> &whereArgs);
     static void RecoverAlbum(const string &assetId, const string &lPath, bool &isUserAlbum, int64_t &newAlbumId);
     static int32_t GetLPathFromSourcePath(const string &sourcePath, string &lPath, int32_t mediaType);
+    static int32_t RenewDeletedPhotoAlbum(int32_t id, const NativeRdb::ValuesBucket &albumValues,
+        std::shared_ptr<TransactionOperations> trans);
 };
 } // namespace Media
 } // namespace OHOS

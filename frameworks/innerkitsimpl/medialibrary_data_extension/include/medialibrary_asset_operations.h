@@ -115,7 +115,8 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_DETAIL_TIME, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, MEMBER_TYPE_STRING },
-    { PhotoColumn::PHOTO_METADATA_FLAGS, MEMBER_TYPE_INT32 }
+    { PhotoColumn::PHOTO_METADATA_FLAGS, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_IS_AUTO, MEMBER_TYPE_INT32 },
 };
 
 typedef struct {
@@ -153,6 +154,7 @@ public:
     EXPORT static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
     EXPORT static int32_t CreateAssetUniqueId(int32_t type,
         std::shared_ptr<TransactionOperations> trans = nullptr);
+    EXPORT static int32_t CreateAssetUniqueIds(int32_t type, int32_t num, int32_t &startUniqueNumber);
     EXPORT static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,

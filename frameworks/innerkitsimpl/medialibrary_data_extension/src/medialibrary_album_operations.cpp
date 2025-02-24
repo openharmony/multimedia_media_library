@@ -33,7 +33,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
@@ -512,15 +511,24 @@ static unordered_map<string, pair<bool, string>> QueryPhotoAlbumSchema()
     return photoAlbumSchema;
 }
 
-static int32_t UpdateDeletedPhotoAlbum(int32_t id, const string& lpath, const ValuesBucket& albumValues,
-    std::shared_ptr<TransactionOperations>& trans)
+int32_t MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(int32_t id, const ValuesBucket& albumValues,
+    std::shared_ptr<TransactionOperations> trans)
 {
+    MEDIA_INFO_LOG("Renew deleted PhotoAlbum start, album id: %{public}d", id);
     unordered_map<string, pair<bool, string>> photoAlbumSchema = QueryPhotoAlbumSchema();
     vector<NativeRdb::ValueObject> bindArgs;
-    const string sql = BuildReuseSql(id, albumValues, photoAlbumSchema, bindArgs);
-    int32_t ret = trans->ExecuteSql(sql, bindArgs);
+    string sql = BuildReuseSql(id, albumValues, photoAlbumSchema, bindArgs);
+    int32_t ret {};
+    if (trans) {
+        ret = trans->ExecuteSql(sql, bindArgs);
+    } else {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR,
+            "Renew deleted PhotoAlbum execute sql failed, RdbStore is nullptr");
+        ret = rdbStore->ExecuteSql(sql, bindArgs);
+    }
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
-        "Update failed, lpath is: %{public}s", lpath.c_str());
+        "Renew deleted PhotoAlbum execute sql failed, id is: %{public}d", id);
     return E_OK;
 }
 
@@ -550,7 +558,9 @@ int CreatePhotoAlbum(const string &albumName)
         MEDIA_INFO_LOG("%{public}s photo album with the same lpath exists, reuse the record id %{public}d.",
             isDeleted ? "Deleted" : "Existing", id);
         if (isDeleted) {
-            return UpdateDeletedPhotoAlbum(id, ALBUM_LPATH_PREFIX + albumName, albumValues, trans);
+            int32_t ret = MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(id, albumValues, trans);
+            CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to update deleted album: %{public}s", albumName.c_str());
+            return ret;
         }
         return E_OK;
     };
@@ -1412,7 +1422,8 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs, NotifyAlbumType::SYS_ALBUM);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs, NotifyAlbumType::SYS_ALBUM, false,
+        AlbumOperationType::RECOVER_PHOTO);
 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");

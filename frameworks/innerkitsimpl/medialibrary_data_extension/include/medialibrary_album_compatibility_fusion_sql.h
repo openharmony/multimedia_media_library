@@ -74,7 +74,7 @@ const std::string FILL_ALBUM_ID_FOR_PHOTOS =
     " OR bundle_name = NEW.owner_package) AND " +
     PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
-    " AND dirty != 4 ORDER BY priority DESC LIMIT 1) WHERE file_id = new.file_id";
+    " AND dirty != 4 ORDER BY priority DESC LIMIT 1) WHERE file_id = new.file_id AND new.owner_album_id = 0";
 
 const std::string PHOTO_ALBUM_NOTIFY_FUNC =
     "SELECT photo_album_notify_func((SELECT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +

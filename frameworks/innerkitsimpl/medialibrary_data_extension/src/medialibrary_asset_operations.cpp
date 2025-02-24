@@ -56,6 +56,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_urisensitive_operations.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
@@ -322,6 +323,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     int32_t errCode = DropAllTables(rdbStore);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Drop table failed, errCode=%{public}d", errCode);
     errCode = rdbStore->DataCallBackOnCreate();
+    UriSensitiveOperations::DeleteAllSensitiveAsync();
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "DataCallBackOnCreate failed, errCode=%{public}d", errCode);
 
     MediaLibraryRdbStore::ResetAnalysisTables();
@@ -791,6 +793,19 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
     outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
 }
 
+static void HandleOwnerAlbumId(MediaLibraryCommand &cmd, ValuesBucket &outValues)
+{
+    string ownerAlbumId;
+    ValueObject valueOwnerAlbumId;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_OWNER_ALBUM_ID, valueOwnerAlbumId)) {
+        valueOwnerAlbumId.GetString(ownerAlbumId);
+    }
+    if (!ownerAlbumId.empty()) {
+        outValues.PutString(PhotoColumn::PHOTO_OWNER_ALBUM_ID, ownerAlbumId);
+        MEDIA_INFO_LOG("insert ownerAlbumId: %{public}s", ownerAlbumId.c_str());
+    }
+}
+
 static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &fileAsset, ValuesBucket &outValues)
 {
     if (!fileAsset.GetOwnerPackage().empty() && PermissionUtils::IsNativeSAApp()) {
@@ -837,6 +852,7 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
     if (!packageName.empty()) {
         outValues.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
     }
+    HandleOwnerAlbumId(cmd, outValues);
 }
 
 static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, const std::string displayName)
@@ -950,6 +966,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
+        assetInfo.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, extension);
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
         HandlePhotoInfo(cmd, assetInfo, fileAsset);
@@ -970,11 +987,15 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 static ValuesBucket GetOwnerPermissionBucket(MediaLibraryCommand &cmd, int64_t fileId, int32_t callingUid)
 {
     int64_t tokenId = 0;
-    if (callingUid > 0 && PermissionUtils::IsNativeSAApp()) {
-        string bundleName;
-        PermissionUtils::GetClientBundle(callingUid, bundleName);
-        string appId = PermissionUtils::GetAppIdByBundleName(bundleName, callingUid);
-        PermissionUtils::GetMainTokenId(appId, tokenId);
+    string tokenIdFromClient = cmd.GetQuerySetParam("tokenId");
+    tokenId = static_cast<int64_t>(std::atoi(tokenIdFromClient.c_str()));
+    if (tokenId == 0) {
+        if (callingUid > 0 && PermissionUtils::IsNativeSAApp()) {
+            string bundleName;
+            PermissionUtils::GetClientBundle(callingUid, bundleName);
+            string appId = PermissionUtils::GetAppIdByBundleName(bundleName, callingUid);
+            PermissionUtils::GetMainTokenId(appId, tokenId);
+        }
     }
     if (tokenId == 0) {
         tokenId = PermissionUtils::GetTokenId();
@@ -1245,6 +1266,9 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Input displayName invalid %{private}s", newDisplayName.c_str());
     values.PutString(MediaColumn::MEDIA_TITLE, newTitle);
     values.PutString(MediaColumn::MEDIA_NAME, newDisplayName);
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(newDisplayName));
+    }
     isNameChanged = true;
     return E_OK;
 }
@@ -1498,7 +1522,9 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     MEDIA_DEBUG_LOG("Asset Operation:OpenAsset, type is %{public}d", type);
     int32_t fd = OpenFileWithPrivacy(path, lowerMode, fileId, type);
     if (fd < 0) {
-        MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
+        MEDIA_ERR_LOG(
+            "open file, userId: %{public}d, uri: %{public}s, path: %{private}s, fd %{public}d, errno %{public}d",
+            fileAsset->GetUserId(), fileAsset->GetUri().c_str(), fileAsset->GetPath().c_str(), fd, errno);
         return E_HAS_FS_ERROR;
     }
     tracer.Start("AddWatchList");
@@ -2082,6 +2108,58 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type,
     return GetInt32Val(UNIQUE_NUMBER, resultSet);
 }
 
+int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t num, int32_t &startUniqueNumber)
+{
+    if (num == 0) {
+        return E_OK;
+    }
+    string typeString;
+    switch (type) {
+        case MediaType::MEDIA_TYPE_IMAGE:
+            typeString = IMAGE_ASSET_TYPE;
+            break;
+        case MediaType::MEDIA_TYPE_VIDEO:
+            typeString = VIDEO_ASSET_TYPE;
+            break;
+        case MediaType::MEDIA_TYPE_AUDIO:
+            typeString = AUDIO_ASSET_TYPE;
+            break;
+        default:
+            MEDIA_ERR_LOG("This type %{public}d can not get unique id", type);
+            return E_INVALID_VALUES;
+    }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    const string updateSql = "UPDATE " + ASSET_UNIQUE_NUMBER_TABLE + " SET " + UNIQUE_NUMBER +
+        "=" + UNIQUE_NUMBER + "+" + to_string(num) + " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
+    const string querySql = "SELECT " + UNIQUE_NUMBER + " FROM " + ASSET_UNIQUE_NUMBER_TABLE +
+        " WHERE " + ASSET_MEDIA_TYPE + "='" + typeString + "';";
+    lock_guard<mutex> lock(g_uniqueNumberLock);
+    int32_t errCode = rdbStore->ExecuteSql(updateSql);
+    if (errCode < 0) {
+        MEDIA_ERR_LOG("CreateAssetUniqueIds ExecuteSql err, ret=%{public}d", errCode);
+        return errCode;
+    }
+    auto resultSet = rdbStore->QuerySql(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("CreateAssetUniqueIds resultSet is null");
+        return E_HAS_DB_ERROR;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("CreateAssetUniqueIds first row empty");
+        resultSet->Close();
+        return E_HAS_DB_ERROR;
+    }
+    int32_t endUniqueNumber = GetInt32Val(UNIQUE_NUMBER, resultSet);
+    resultSet->Close();
+    startUniqueNumber = endUniqueNumber - num + 1;
+    MEDIA_INFO_LOG("CreateAssetUniqueIds type: %{public}d, num: %{public}d, startUniqueNumber: %{public}d",
+        type, num, startUniqueNumber);
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::CreateAssetRealName(int32_t fileId, int32_t mediaType,
     const string &extension, string &name)
 {
@@ -2204,6 +2282,8 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_OWNER_ALBUM_ID, { IsInt32 } },
     { PhotoColumn::PHOTO_CE_AVAILABLE, { IsInt32 } },
     { PhotoColumn::SUPPORTED_WATERMARK_TYPE, { IsInt32 } },
+    { PhotoColumn::PHOTO_IS_AUTO, { IsInt32 } },
+    { PhotoColumn::PHOTO_IS_RECENT_SHOW, { IsBool, IsUniqueValue } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
@@ -2364,6 +2444,11 @@ static void TaskDataFileProccess(DeleteFilesTask *taskData)
             if (!MediaFileUtils::DeleteFile(videoPath) && (errno != ENOENT)) {
                 MEDIA_WARN_LOG("Failed to delete video file, errno: %{public}d, path: %{private}s", errno,
                     videoPath.c_str());
+            }
+            string livePhotoPath = MovingPhotoFileUtils::GetLivePhotoCachePath(filePath);
+            if (MediaFileUtils::IsFileExists(livePhotoPath) && !MediaFileUtils::DeleteFile(livePhotoPath)) {
+                MEDIA_WARN_LOG("Failed to delete cache live photo, errno: %{public}d, path: %{private}s", errno,
+                    livePhotoPath.c_str());
             }
         }
     }

@@ -47,6 +47,7 @@ struct ThumbRdbOpt {
     EXPORT std::string uri;
     EXPORT std::string dateAdded;
     EXPORT std::string dateTaken;
+    EXPORT std::string dateModified;
     EXPORT std::string fileUri;
     EXPORT std::string fileId;
     EXPORT Size screenSize;
@@ -61,7 +62,7 @@ public:
         std::unique_ptr<PixelMap> &pixelMap);
     EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
         bool isAstc = false, bool forceSdr = true, const uint8_t quality = THUMBNAIL_MID);
-    EXPORT static bool CompressPicture(ThumbnailData &data, bool isSourceEx);
+    EXPORT static bool CompressPicture(ThumbnailData &data, bool isSourceEx, std::string &tempOutputPath);
     EXPORT static bool CopyPictureSource(std::shared_ptr<Picture> &picture, std::shared_ptr<Picture> &copySource);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
@@ -90,6 +91,8 @@ public:
     EXPORT static bool LoadSourceImage(ThumbnailData &data);
     EXPORT static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
 
+    EXPORT static bool SaveAfterPacking(const std::string &path, const std::string &tempOutputPath);
+    EXPORT static void CancelAfterPacking(const std::string &tempOutputPath);
     EXPORT static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);

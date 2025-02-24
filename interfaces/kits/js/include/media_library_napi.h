@@ -219,10 +219,11 @@ public:
     static void ReplaceSelection(std::string &selection, std::vector<std::string> &selectionArgs,
         const std::string &key, const std::string &keyInstead, const int32_t mode = ReplaceSelectionMode::DEFAULT);
     static void OnThumbnailGenerated(napi_env env, napi_value cb, void *context, void *data);
+    int32_t GetUserId();
+    void SetUserId(const int32_t &userId);
 
     EXPORT MediaLibraryNapi();
     EXPORT ~MediaLibraryNapi();
-
     static std::mutex sUserFileClientMutex_;
 
 private:
@@ -300,6 +301,7 @@ private:
     EXPORT static napi_value CheckShortTermPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateAssetsHasPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateAssetWithShortTermPermission(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateAssetsForAppWithAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value ShowAssetsCreationDialog(napi_env env, napi_callback_info info);
     EXPORT static napi_value RequestPhotoUrisReadPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
@@ -318,7 +320,10 @@ private:
     EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbumsSync(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessSaveGalleryFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessRemoveGalleryFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessUpdateGalleryFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetFileAssetsInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info);
@@ -371,6 +376,7 @@ private:
     static bool CheckRef(napi_env env,
         napi_ref ref, ChangeListenerNapi &listObj, bool isOff, const std::string &uri);
     napi_env env_;
+    int32_t userId_ = -1;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
@@ -489,6 +495,9 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::string indexProgress;
     std::shared_ptr<PickerCallBack> pickerCallBack;
     std::vector<std::string> analysisDatas;
+    uint32_t tokenId;
+    std::vector<std::string> albumIds;
+    std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

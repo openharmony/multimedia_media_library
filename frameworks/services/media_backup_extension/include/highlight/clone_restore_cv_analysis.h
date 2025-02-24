@@ -122,19 +122,16 @@ private:
     void GetAnalysisLabelInfos(CloneRestoreHighlight &cloneHighlight);
     void GetLabelRowInfo(AnalysisLabelInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoAnalysisLabel();
-    void GetLabelInsertValue(NativeRdb::ValuesBucket &value, const AnalysisLabelInfo &info,
-        const std::unordered_set<std::string> &intersection);
+    void GetLabelInsertValue(NativeRdb::ValuesBucket &value, const AnalysisLabelInfo &info);
     std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
     void GetAnalysisSaliencyInfos(CloneRestoreHighlight &cloneHighlight);
     void GetSaliencyRowInfo(AnalysisSaliencyInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoAnalysisSaliency();
-    void GetSaliencyInsertValue(NativeRdb::ValuesBucket &value, const AnalysisSaliencyInfo &info,
-        const std::unordered_set<std::string> &intersection);
+    void GetSaliencyInsertValue(NativeRdb::ValuesBucket &value, const AnalysisSaliencyInfo &info);
     void GetAnalysisRecommendationInfos(CloneRestoreHighlight &cloneHighlight);
     void GetRecommendationRowInfo(AnalysisRecommendationInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoAnalysisRecommendation();
-    void GetRecommendationInsertValue(NativeRdb::ValuesBucket &value, const AnalysisRecommendationInfo &info,
-        const std::unordered_set<std::string> &intersection);
+    void GetRecommendationInsertValue(NativeRdb::ValuesBucket &value, const AnalysisRecommendationInfo &info);
     std::string ParsePlayInfo(const std::string &oldPlayInfo, CloneRestoreHighlight &cloneHighlight);
     void ParseEffectline(nlohmann::json &newPlayInfo, size_t effectlineIndex, CloneRestoreHighlight &cloneHighlight);
     void UpdateHighlightPlayInfos(CloneRestoreHighlight &cloneHighlight);
@@ -151,16 +148,18 @@ private:
     // new media_liabrary.db
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string assetPath_;
+    std::string garblePath_;
     std::vector<std::pair<int32_t, int32_t>> assetMapDatas_;
     std::vector<std::pair<int32_t, int32_t>> sdMapDatas_;
     std::unordered_map<int32_t, int32_t> fileIdMap_;
     std::unordered_map<int32_t, int32_t> albumIdMap_;
     std::unordered_map<int32_t, int32_t> assetIdMap_;
     std::unordered_map<std::string, std::string> assetUriMap_;
+    std::unordered_map<std::string, std::unordered_set<std::string>> intersectionMap_;
     std::vector<AnalysisLabelInfo> labelInfos_;
     std::vector<AnalysisSaliencyInfo> saliencyInfos_;
     std::vector<AnalysisRecommendationInfo> recommendInfos_;
-    int32_t failCnt_{0};
+    int64_t failCnt_{0};
 };
 } // namespace OHOS::Media
 #endif // CLONE_RESTORE_CV_ANALYSIS_H

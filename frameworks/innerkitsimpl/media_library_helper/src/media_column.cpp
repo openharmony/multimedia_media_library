@@ -116,6 +116,9 @@ const std::string PhotoColumn::SUPPORTED_WATERMARK_TYPE = "supported_watermark_t
 const std::string PhotoColumn::PHOTO_METADATA_FLAGS = "metadata_flags";
 const std::string PhotoColumn::PHOTO_CHECK_FLAG = "check_flag";
 const std::string PhotoColumn::STAGE_VIDEO_TASK_STATUS = "stage_video_task_status";
+const std::string PhotoColumn::PHOTO_IS_AUTO = "is_auto";
+const std::string PhotoColumn::PHOTO_MEDIA_SUFFIX = "media_suffix";
+const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -254,7 +257,10 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     SUPPORTED_WATERMARK_TYPE + " INT, " +
     PHOTO_METADATA_FLAGS + " INT DEFAULT 0, " +
     PHOTO_CHECK_FLAG + " INT DEFAULT 0, " +
-    STAGE_VIDEO_TASK_STATUS + " INT NOT NULL DEFAULT 0) ";
+    STAGE_VIDEO_TASK_STATUS + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_IS_AUTO + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_MEDIA_SUFFIX + " TEXT, " +
+    PHOTO_IS_RECENT_SHOW + " INT NOT NULL DEFAULT 1) ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -501,7 +507,8 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_COVER_POSITION,
     PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_DETAIL_TIME,
     PhotoColumn::PHOTO_CE_AVAILABLE, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::SUPPORTED_WATERMARK_TYPE,
-    PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, PhotoColumn::PHOTO_QUALITY,
+    PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_IS_AUTO,
+    PhotoColumn::PHOTO_MEDIA_SUFFIX, PhotoColumn::PHOTO_IS_RECENT_SHOW,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
@@ -667,61 +674,6 @@ const std::string PhotoColumn::PHOTOS_QUERY_FILTER =
     MediaColumn::MEDIA_TIME_PENDING + " = 0" + " AND " +
     PhotoColumn::PHOTO_IS_TEMP + " = 0" + " AND " +
     PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 ";
-
-std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Option option)
-{
-    PhotoQueryFilter::Config config {};
-    switch (option) {
-        case PhotoQueryFilter::Option::FILTER_VISIBLE:
-            return GetSqlWhereClause(config);
-            break;
-        case PhotoQueryFilter::Option::FILTER_HIDDEN:
-            config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
-            return GetSqlWhereClause(config);
-            break;
-        case PhotoQueryFilter::Option::FILTER_TRASHED:
-            config.trashedConfig = PhotoQueryFilter::ConfigType::INCLUDE;
-            return GetSqlWhereClause(config);
-            break;
-        default:
-            MEDIA_ERR_LOG("Invalid option: %{public}d", static_cast<int>(option));
-            return "";
-            break;
-    }
-}
-
-std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Config &config)
-{
-    string whereClause = "";
-    if (config.syncStatusConfig != ConfigType::IGNORE) {
-        whereClause += "sync_status = " + string(config.syncStatusConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.cleanFlagConfig != ConfigType::IGNORE) {
-        whereClause += " AND clean_flag = " + string(config.cleanFlagConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.pendingConfig != ConfigType::IGNORE) {
-        if (config.pendingConfig == ConfigType::INCLUDE) {
-            whereClause += " AND time_pending > 0";
-        } else {
-            whereClause += " AND time_pending = 0";
-        }
-    }
-    if (config.tempConfig != ConfigType::IGNORE) {
-        whereClause += " AND is_temp = " + string(config.tempConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.hiddenConfig != ConfigType::IGNORE) {
-        whereClause += " AND hidden = " + string(config.hiddenConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.trashedConfig != ConfigType::IGNORE) {
-        whereClause += " AND date_trashed = " + string(config.trashedConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.burstCoverOnly != ConfigType::IGNORE) {
-        whereClause += " AND burst_cover_level = " +
-            string(config.burstCoverOnly == ConfigType::INCLUDE ? "1" : "0");
-    }
-
-    return whereClause;
-}
 
 }  // namespace Media
 }  // namespace OHOS

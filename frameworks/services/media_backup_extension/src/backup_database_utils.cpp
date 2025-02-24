@@ -322,29 +322,6 @@ int32_t BackupDatabaseUtils::GetBlob(const std::string &columnName, std::shared_
     return E_OK;
 }
 
-std::string BackupDatabaseUtils::GetLandmarksStr(const std::string &columnName,
-    std::shared_ptr<NativeRdb::ResultSet> resultSet)
-{
-    std::vector<uint8_t> blobVal;
-    CHECK_AND_RETURN_RET_LOG(GetBlob(columnName, resultSet, blobVal) == E_OK, "", "Get blob failed");
-    return GetLandmarksStr(blobVal);
-}
-
-std::string BackupDatabaseUtils::GetLandmarksStr(const std::vector<uint8_t> &bytes)
-{
-    CHECK_AND_RETURN_RET_LOG(bytes.size() == LANDMARKS_SIZE * XY_DIMENSION * BYTE_LEN, "",
-        "Get landmarks bytes size: %{public}zu, not %{public}zu", bytes.size(),
-        LANDMARKS_SIZE * XY_DIMENSION * BYTE_LEN);
-    nlohmann::json landmarksJson;
-    for (size_t index = 0; index < bytes.size(); index += XY_DIMENSION * BYTE_LEN) {
-        nlohmann::json landmarkJson;
-        landmarkJson[LANDMARK_X] = GetUint32ValFromBytes(bytes, index);
-        landmarkJson[LANDMARK_Y] = GetUint32ValFromBytes(bytes, index + BYTE_LEN);
-        landmarksJson.push_back(landmarkJson);
-    }
-    return landmarksJson.dump();
-}
-
 uint32_t BackupDatabaseUtils::GetUint32ValFromBytes(const std::vector<uint8_t> &bytes, size_t start)
 {
     uint32_t uint32Val = 0;
@@ -408,44 +385,6 @@ bool BackupDatabaseUtils::SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
 {
     portraitAlbumInfo.tagIdNew = TAG_ID_PREFIX + std::to_string(MediaFileUtils::UTCTimeNanoSeconds());
     tagIdMap[portraitAlbumInfo.tagIdOld] = portraitAlbumInfo.tagIdNew;
-    return true;
-}
-
-bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap)
-{
-    if (faceInfo.hash.empty() || fileInfoMap.count(faceInfo.hash) == 0) {
-        MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, no such file hash", faceInfo.faceId.c_str());
-        return false;
-    }
-    FileInfo fileInfo = fileInfoMap.at(faceInfo.hash);
-    if (fileInfo.width == 0 || fileInfo.height == 0) {
-        MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, invalid width %{public}d or height %{public}d",
-            faceInfo.faceId.c_str(), fileInfo.width, fileInfo.height);
-        return false;
-    }
-    float scale = GetLandmarksScale(fileInfo.width, fileInfo.height);
-    CHECK_AND_RETURN_RET_LOG(scale != 0, false,
-        "Set landmarks for face %{public}s failed, scale = 0", faceInfo.faceId.c_str());
-
-    nlohmann::json landmarksJson = nlohmann::json::parse(faceInfo.landmarks, nullptr, false);
-    CHECK_AND_RETURN_RET_LOG(!landmarksJson.is_discarded(), false,
-        "Set landmarks for face %{public}s failed, parse landmarks failed", faceInfo.faceId.c_str());
-    for (auto &landmark : landmarksJson) {
-        if (!landmark.contains(LANDMARK_X) || !landmark.contains(LANDMARK_Y)) {
-            MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, lack of x or y", faceInfo.faceId.c_str());
-            return false;
-        }
-        landmark[LANDMARK_X] = static_cast<float>(landmark[LANDMARK_X]) / fileInfo.width / scale;
-        landmark[LANDMARK_Y] = static_cast<float>(landmark[LANDMARK_Y]) / fileInfo.height / scale;
-        if (IsLandmarkValid(faceInfo, landmark[LANDMARK_X], landmark[LANDMARK_Y])) {
-            continue;
-        }
-        MEDIA_WARN_LOG("Given landmark may be invalid, (%{public}f, %{public}f), rect TL: (%{public}f, %{public}f), "
-            "rect BR: (%{public}f, %{public}f)", static_cast<float>(landmark[LANDMARK_X]),
-            static_cast<float>(landmark[LANDMARK_Y]), faceInfo.scaleX, faceInfo.scaleY,
-            faceInfo.scaleX + faceInfo.scaleWidth, faceInfo.scaleY + faceInfo.scaleHeight);
-    }
-    faceInfo.landmarks = landmarksJson.dump();
     return true;
 }
 
@@ -750,6 +689,14 @@ void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb:
     const std::vector<FileIdPair>& fileIdPair)
 {
     std::string fileIdNewFilterClause = GetFileIdNewFilterClause(mediaLibraryRdb, fileIdPair);
+    std::string deleteAnalysisPhotoMapSql =
+        "DELETE FROM AnalysisPhotoMap WHERE map_asset IN ("
+        "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " + VISION_IMAGE_FACE_TABLE +
+        " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause +
+        ") AND map_album IN (SELECT album_id FROM AnalysisAlbum WHERE album_type = 4096 AND album_subtype = 4102)";
+
+    // 删除 AnalysisPhotoMap 表中的重复记录
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteAnalysisPhotoMapSql);
 
     std::string deleteFaceSql = "DELETE FROM " + VISION_IMAGE_FACE_TABLE +
         " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
@@ -1001,6 +948,16 @@ std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::QuerySql(
         return nullptr;
     }
     return rdbStore->QuerySql(querySql, params);
+}
+
+void BackupDatabaseUtils::UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    const string updateSql =
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1," +
+        PhotoColumn::PHOTO_BURST_KEY + " = NULL WHERE " + SQL_SELECT_ERROR_BURST_PHOTOS +
+        "AND file_id IN (" + SQL_SELECT_CLONE_FILE_IDS + ")";
+    int32_t erroCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
+    CHECK_AND_PRINT_LOG(erroCode >= 0, "execute update continuous shooting photos, ret=%{public}d", erroCode);
 }
 } // namespace Media
 } // namespace OHOS

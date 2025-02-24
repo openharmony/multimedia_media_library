@@ -451,7 +451,7 @@ static void UpdateLastVisitTime(MediaLibraryCommand &cmd, const string &id)
 
 static void GetType(string &uri, int32_t &type)
 {
-    int pos = uri.find("type=");
+    size_t pos = uri.find("type=");
     if (pos != uri.npos) {
         type = uri[pos + OFFSET] - ZERO_ASCII;
     }
@@ -802,8 +802,11 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
         watch->Notify(notifyUris[0], NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
         watch->Notify(notifyUris[0], NotifyType::NOTIFY_ALBUM_ADD_ASSET, trashAlbumId);
     } else {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_REMOVE);
-        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_REMOVE);
+        for (auto &uri : notifyUris) {
+            watch->Notify(uri, NotifyType::NOTIFY_REMOVE);
+        }
     }
     vector<int64_t> formIds;
     for (const auto &notifyUri : notifyUris) {
@@ -901,7 +904,8 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 #endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM, false,
+        AlbumOperationType::DELETE_PHOTO);
     CHECK_AND_WARN_LOG(static_cast<size_t>(updatedRows) == notifyUris.size(),
         "Try to notify %{public}zu items, but only %{public}d items updated.", notifyUris.size(), updatedRows);
     TrashPhotosSendNotify(notifyUris, albumData);
@@ -1135,7 +1139,8 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM, false,
+        hiddenState != 0 ? AlbumOperationType::HIDE_PHOTO : AlbumOperationType::UNHIDE_PHOTO);
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
 }
@@ -1459,6 +1464,37 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
     return updateRows;
 }
 
+static int32_t GetRecentShowState(const ValuesBucket& values)
+{
+    ValueObject obj;
+    bool isValid = values.GetObject(PhotoColumn::PHOTO_IS_RECENT_SHOW, obj);
+    CHECK_AND_RETURN_RET(isValid, E_INVALID_VALUES);
+
+    int32_t recentShowState = -1;
+    int ret = obj.GetInt(recentShowState);
+    bool cond = (ret != E_OK || (recentShowState != 0 && recentShowState != 1));
+    CHECK_AND_RETURN_RET(!cond, E_INVALID_VALUES);
+    return recentShowState;
+}
+
+int32_t MediaLibraryPhotoOperations::BatchSetRecentShow(MediaLibraryCommand &cmd)
+{
+    int32_t recentShowState = GetRecentShowState(cmd.GetValueBucket());
+    CHECK_AND_RETURN_RET_LOG(recentShowState >= 0, recentShowState, "Failed to get recentShowState");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
+
+    RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+    vector<string> notifyUris = predicates.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_IS_RECENT_SHOW, recentShowState);
+    int32_t updatedRows = rdbStore->UpdateWithDateTime(values, predicates);
+    CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Failed to set recentShow, err: %{public}d",
+        updatedRows);
+    return updatedRows;
+}
+
 static void RevertOrientation(const shared_ptr<FileAsset> &fileAsset, string &currentOrientation)
 {
     CHECK_AND_RETURN_LOG(fileAsset != nullptr, "fileAsset is null");
@@ -1592,6 +1628,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return BatchSetUserComment(cmd);
         case OperationType::BATCH_UPDATE_OWNER_ALBUM_ID:
             return BatchSetOwnerAlbumId(cmd);
+        case OperationType::BATCH_UPDATE_RECENT_SHOW:
+            return BatchSetRecentShow(cmd);
         case OperationType::DISCARD_CAMERA_PHOTO:
             return DiscardCameraPhoto(cmd);
         case OperationType::SAVE_CAMERA_PHOTO:
@@ -1604,6 +1642,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return DegenerateMovingPhoto(cmd);
         case OperationType::SET_OWNER_ALBUM_ID:
             return UpdateOwnerAlbumId(cmd);
+        case OperationType::UPDATE_SUPPORTED_WATERMARK_TYPE:
+            return UpdateSupportedWatermarkType(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
@@ -2010,6 +2050,7 @@ int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, std:
     updateValues.PutString(MediaColumn::MEDIA_FILE_PATH, modifyFilePath);
     updateValues.PutString(MediaColumn::MEDIA_NAME, modifyDisplayName);
     updateValues.PutString(MediaColumn::MEDIA_MIME_TYPE, mimeType);
+    updateValues.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(modifyDisplayName));
     updateCmd.SetValueBucket(updateValues);
     int32_t updateRows = -1;
     int32_t errCode = rdbStore->Update(updateCmd, updateRows);
@@ -2261,7 +2302,8 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,
             "Can not modify %{private}s to %{private}s", sourcePath.c_str(), path.c_str());
         int32_t movingPhotoSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
-        if (subtype == movingPhotoSubtype || fileAsset->GetOriginalSubType() == movingPhotoSubtype) {
+        if (MovingPhotoFileUtils::IsMovingPhoto(subtype,
+            fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType())) {
             string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
             string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourcePath);
             CHECK_AND_RETURN_RET_LOG(Move(sourceVideoPath, videoPath) == E_OK, E_HAS_FS_ERROR,
@@ -2273,7 +2315,8 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
         CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData) == E_OK, E_FAIL,
             "Failed to add filters to photo");
-        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        if (MovingPhotoFileUtils::IsMovingPhoto(subtype,
+            fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType())) {
             CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset, false) == E_OK, E_FAIL,
                 "Failed to add filters to video");
         }
@@ -3322,7 +3365,10 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, bool
 {
     MEDIA_INFO_LOG("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
         DfxUtils::GetSafePath(path).c_str(), isEdited, isMovingPhoto);
-    return FileUtils::SaveVideo(path, isEdited, isMovingPhoto);
+    if (isMovingPhoto) {
+        return FileUtils::SaveMovingPhotoVideo(path);
+    }
+    return FileUtils::SaveVideo(path, isEdited);
 }
 
 int32_t MediaLibraryPhotoOperations::RemoveTempVideo(const std::string &path)
@@ -3607,6 +3653,19 @@ int32_t MediaLibraryPhotoOperations::CancelCustomRestore(MediaLibraryCommand& cm
     RestoreTaskInfo restoreTaskInfo = {.keyPath = keyPath};
     PhotoCustomRestoreOperation::GetInstance().CancelTask(restoreTaskInfo);
     return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(MediaLibraryCommand &cmd)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
+    auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
+    auto args = cmd.GetAbsRdbPredicates()->GetWhereArgs();
+    int32_t updateRows = -1;
+    int32_t errCode = rdbStore->Update(updateRows, PhotoColumn::PHOTOS_TABLE, cmd.GetValueBucket(), whereClause, args);
+    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Update subtype field failed. errCode:%{public}d,", errCode);
+    return updateRows;
 }
 } // namespace Media
 } // namespace OHOS

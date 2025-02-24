@@ -29,6 +29,7 @@ group("media_backup_package") {
 ohos_shared_library("mediabackup") {
   include_dirs = [
     "./include",
+    "./include/geo_dictionary",
     "./include/geo_knowledge",
     "./include/highlight",
     "./include/log",
@@ -55,6 +56,7 @@ ohos_shared_library("mediabackup") {
     "./src/base_restore.cpp",
     "./src/burst_key_generator.cpp",
     "./src/clone_restore.cpp",
+    "./src/geo_dictionary/clone_restore_geo_dictionary.cpp",
     "./src/geo_knowledge/clone_restore_geo.cpp",
     "./src/geo_knowledge/geo_knowledge_restore.cpp",
     "./src/highlight/clone_restore_cv_analysis.cpp",

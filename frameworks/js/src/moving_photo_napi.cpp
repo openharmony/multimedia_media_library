@@ -165,11 +165,24 @@ int32_t MovingPhotoNapi::OpenReadOnlyLivePhoto(const string& destLivePhotoUri)
         return E_ERR;
     }
     if (MediaFileUtils::IsMediaLibraryUri(destLivePhotoUri)) {
+        std::string str = destLivePhotoUri;
+        std::string MULTI_USER_URI_FLAG = "user=";
+        size_t pos = str.find(MULTI_USER_URI_FLAG);
+        std::string userId = "";
+        if (pos != std::string::npos) {
+            pos += MULTI_USER_URI_FLAG.length();
+            size_t end = str.find_first_of("&?", pos);
+            if (end == std::string::npos) {
+                end = str.length();
+            }
+            userId = str.substr(pos, end - pos);
+            NAPI_ERR_LOG("ReadMovingPhotoVideo for other user is %{public}s", userId.c_str());
+        }
         string livePhotoUri = destLivePhotoUri;
         MediaFileUtils::UriAppendKeyValue(livePhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
             OPEN_PRIVATE_LIVE_PHOTO);
         Uri uri(livePhotoUri);
-        return UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
+        return UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY, userId !="" ? stoi(userId) : -1);
     }
     return E_ERR;
 }

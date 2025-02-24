@@ -63,6 +63,7 @@ ohos_unittest("medialibrary_dfx_test") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
+    "ipc:ipc_core",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "preferences:native_preferences",
