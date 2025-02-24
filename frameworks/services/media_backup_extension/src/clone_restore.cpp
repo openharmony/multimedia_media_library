@@ -559,7 +559,7 @@ void CloneRestore::GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPho
     std::string thmPath = dirPath + "THM.jpg";
     resultExistFlag.isThmExist = MediaFileUtils::IsFileExists(thmPath) ? true : false;
     std::string astcPath = dirPath + "THM_ASTC.astc";
-    resultExistFlag.isAstcExist = MediaFileUtils::IsFileExists(astcPath) ? true : false;
+    resultExistFlag.isDayAstcExist = MediaFileUtils::IsFileExists(astcPath) ? true : false;
 
     if (fileInfo.orientation != 0) {
         std::string exLcdPath = dirPath + "/THM_EX/LCD.jpg";
@@ -630,6 +630,9 @@ void CloneRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_
         tmpFlag.isYearAstcExist = true;
         resultExistMap[fileInfos[i].cloudPath] = tmpFlag;
     }
+    std::vector<FileInfo> LCDNotFound;
+    std::vector<FileInfo> THMNotFound;
+    CloudPhotoFileExistFlag(fileInfos, LCDNotFound, THMNotFound, resultExistMap);
     MEDIA_INFO_LOG("singleClone LCDNotFound:%{public}zu, THMNotFound:%{public}zu",
         LCDNotFound.size(), THMNotFound.size());
     std::vector<std::string> dentryFailedLCD;
