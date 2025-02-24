@@ -72,6 +72,7 @@ private:
     void SendEventPacket(uint32_t objectHandle, uint16_t eventCode);
     uint16_t HasStorage(int &errorCode);
     int32_t RecevieSendObject(MtpFileRange &object, int fd);
+    void ModifyObjectInfo();
 
     std::shared_ptr<MtpOperationContext> context_;
     std::shared_ptr<MtpMedialibraryManager> mtpMedialibraryManager_;
