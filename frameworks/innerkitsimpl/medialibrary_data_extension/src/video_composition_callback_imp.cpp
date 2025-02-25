@@ -77,7 +77,11 @@ void VideoCompositionCallbackImpl::onResult(VEFResult result, VEFError errorCode
         Task task = std::move(waitQueue_.front());
         waitQueue_.pop();
         mutex_.unlock();
-        CallStartComposite(task.sourceVideoPath_, task.videoPath_, task.editData_);
+        if (CallStartComposite(task.sourceVideoPath_, task.videoPath_, task.editData_) != E_OK) {
+            mutex_.lock();
+            --curWorkerNum_;
+            mutex_.unlock();
+        }
     }
 }
 
@@ -156,6 +160,9 @@ void VideoCompositionCallbackImpl::AddCompositionTask(std::string& assetPath, st
         ++curWorkerNum_;
         mutex_.unlock();
         if (CallStartComposite(sourceVideoPath, videoPath, editData) != E_OK) {
+            mutex_.lock();
+            --curWorkerNum_;
+            mutex_.unlock();
             MEDIA_ERR_LOG("Failed to CallStartComposite, path:%{private}s", videoPath.c_str());
             CHECK_AND_RETURN_LOG(MediaFileUtils::CopyFileUtil(sourceVideoPath, videoPath),
                 "Copy sourceVideoPath to videoPath, path:%{private}s", sourceVideoPath.c_str());
