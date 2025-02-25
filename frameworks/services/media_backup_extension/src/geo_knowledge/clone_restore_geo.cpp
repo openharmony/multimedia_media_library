@@ -121,10 +121,8 @@ void CloneRestoreGeo::Init(int32_t sceneCode, const std::string &taskId,
 
 void CloneRestoreGeo::RestoreGeoKnowledgeInfos()
 {
-    if (mediaRdb_ == nullptr || mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
-    }
+    bool cond = (mediaRdb_ == nullptr || mediaLibraryRdb_ == nullptr);
+    CHECK_AND_RETURN_LOG(!cond, "rdbStore is nullptr");
     GetGeoKnowledgeInfos();
     GetAnalysisGeoInfos();
 }
@@ -309,10 +307,8 @@ void CloneRestoreGeo::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
     }
     querySql << ")";
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql.str(), params);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val(FILE_ID, resultSet);
         std::string data = GetStringVal(DATA, resultSet);
@@ -332,10 +328,9 @@ std::string CloneRestoreGeo::UpdateMapInsertValues(std::vector<NativeRdb::Values
     std::vector<std::string> &analysisIds, const FileInfo &fileInfo, int32_t &batchCnt, int32_t &batchAnaCnt)
 {
     // no need restore or info missing
-    if ((fabs(fileInfo.latitude) < DOUBLE_EPSILON && fabs(fileInfo.longitude) < DOUBLE_EPSILON)
-        || fileInfo.fileIdNew <= 0) {
-        return NOT_MATCH;
-    }
+    bool cond = ((fabs(fileInfo.latitude) < DOUBLE_EPSILON && fabs(fileInfo.longitude) < DOUBLE_EPSILON)
+        || fileInfo.fileIdNew <= 0);
+    CHECK_AND_RETURN_RET(!cond, NOT_MATCH);
     return UpdateByGeoLocation(values, analysisIds, fileInfo, batchCnt, batchAnaCnt);
 }
 
@@ -351,9 +346,8 @@ std::string CloneRestoreGeo::UpdateByGeoLocation(std::vector<NativeRdb::ValuesBu
     }
     auto itGeo = std::find_if(geoInfos_.begin(), geoInfos_.end(),
         [latitude, longitude, language](const GeoCloneInfo& info) {
-            if (!info.latitude.has_value() || !info.longitude.has_value() || !info.language.has_value()) {
-                return false;
-            }
+            bool cond = (!info.latitude.has_value() || !info.longitude.has_value() || !info.language.has_value());
+            CHECK_AND_RETURN_RET(!cond, false);
             return fabs(info.latitude.value() - latitude) < 0.0001
                 && fabs(info.longitude.value() - longitude) < 0.0001 && info.language.value() == language;
         });
@@ -361,6 +355,7 @@ std::string CloneRestoreGeo::UpdateByGeoLocation(std::vector<NativeRdb::ValuesBu
         MEDIA_INFO_LOG("not match fileId: %{public}d", fileInfo.fileIdNew);
         return NOT_MATCH;
     }
+
     std::unordered_set<std::string> intersection = GetCommonColumns(GEO_KNOWLEDGE_TABLE);
     NativeRdb::ValuesBucket value;
     GetMapInsertValue(value, itGeo, intersection, fileInfo.fileIdNew);
@@ -437,15 +432,13 @@ int32_t CloneRestoreGeo::BatchInsertWithRetry(const std::string &tableName,
     trans.SetBackupRdbStore(mediaLibraryRdb_);
     std::function<int(void)> func = [&]()->int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
-        }
+        CHECK_AND_PRINT_LOG(errCode == E_OK, "InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.",
+            errCode, (long)rowNum);
         return errCode;
     };
+
     errCode = trans.RetryTrans(func, true);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
     return errCode;
 }
 
@@ -458,10 +451,9 @@ int32_t CloneRestoreGeo::BatchUpdate(const std::string &tableName, std::vector<s
     rdbValues.PutInt(GEO, UPDATE_GEO);
     int32_t changedRows = -1;
     int32_t errCode = E_OK;
+
     errCode = BackupDatabaseUtils::Update(mediaLibraryRdb_, changedRows, rdbValues, updatePredicates);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Database update failed, errCode = %{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "Database update failed, errCode = %{public}d", errCode);
     return errCode;
 }
 
@@ -475,9 +467,7 @@ int32_t CloneRestoreGeo::BatchUpdateAna(const std::string &tableName, std::vecto
     int32_t changedRows = -1;
     int32_t errCode = E_OK;
     errCode = BackupDatabaseUtils::Update(mediaLibraryRdb_, changedRows, rdbValues, updatePredicates);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Database update failed, errCode = %{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "Database update failed, errCode = %{public}d", errCode);
     return errCode;
 }
 

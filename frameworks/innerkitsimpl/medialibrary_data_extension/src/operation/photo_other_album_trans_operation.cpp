@@ -175,10 +175,8 @@ int32_t PhotoOtherAlbumTransOperation::DealWithOtherAlbumTrans(const std::shared
         sourcePathName + "/') WHERE owner_album_id = " + std::to_string(otherAlbumId) + " AND " + sqlWherePrefix;
     int32_t err = upgradeStore->ExecuteSql(UPDATE_OTHER_ALBUM_TRANS);
     MEDIA_INFO_LOG("Trans other sql is: %{public}s", UPDATE_OTHER_ALBUM_TRANS.c_str());
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", UPDATE_OTHER_ALBUM_TRANS.c_str());
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "Fatal error! Failed to exec: %{public}s",
+        UPDATE_OTHER_ALBUM_TRANS.c_str());
     MEDIA_INFO_LOG("Trans other album success");
     return E_OK;
 }
@@ -189,15 +187,11 @@ bool PhotoOtherAlbumTransOperation::IsOtherAlbumEmpty(
     const std::string QUERY_OTHER_ALBUM_COUNT =
         "SELECT * FROM PhotoAlbum WHERE album_id = " + std::to_string(otherAlbumId);
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_OTHER_ALBUM_COUNT);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Query other album count fail");
-        return true;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, true, "Query other album count fail");
+
     int32_t albumDataCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
-    if (albumDataCount <= 0) {
-        MEDIA_INFO_LOG("Other album empty");
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(albumDataCount > 0, true, "Other album empty");
     MEDIA_INFO_LOG("Other album not empty");
     return false;
 }
@@ -209,10 +203,8 @@ void PhotoOtherAlbumTransOperation::GetOtherAlbumIdInfo(const std::shared_ptr<Me
         "SELECT * FROM PhotoAlbum WHERE lpath IN "
         "('/Pictures/Screenshots', '/Pictures/Screenrecords', '/DCIM/Camera', '/Pictures/WeiXin', '/Pictures/其它')";
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_TRANS_ALBUM_INFO);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query not matched data fails");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Query not matched data fails");
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int64_t albumId = GetInt64Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         std::string albumName = GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet);
@@ -229,10 +221,7 @@ int32_t PhotoOtherAlbumTransOperation::TransOtherAlbumData(const std::shared_ptr
     bool &isNeedUpdate)
 {
     MEDIA_INFO_LOG("Start trans other Album to origin album");
-    if (upgradeStore == nullptr) {
-        MEDIA_ERR_LOG("fail to get rdbstore");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(upgradeStore != nullptr, E_DB_FAIL, "fail to get rdbstore");
 
     std::vector<std::pair<int64_t, std::string>> transAlbum;
     int64_t otherAlbumId = -1;
@@ -241,6 +230,7 @@ int32_t PhotoOtherAlbumTransOperation::TransOtherAlbumData(const std::shared_ptr
         MEDIA_INFO_LOG("No other album data need trans");
         return E_DB_FAIL;
     }
+
     if (IsOtherAlbumEmpty(otherAlbumId, upgradeStore)) {
         return E_DB_FAIL;
     }
