@@ -1833,12 +1833,12 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
             napi_get_undefined(env, &jsContext->error);
             jsContext->status = true;
         } else {
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, OHOS_INVALID_PARAM_CODE,
                 "Get thumbnail failed");
             napi_get_undefined(env, &jsContext->data);
         }
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, OHOS_INVALID_PARAM_CODE,
             "Ability helper or thumbnail helper is null");
         napi_get_undefined(env, &jsContext->data);
     }
@@ -1916,14 +1916,6 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
 {
     asyncContext->size.width = DEFAULT_THUMB_SIZE;
     asyncContext->size.height = DEFAULT_THUMB_SIZE;
-
-    if (argc == ARGS_ONE) {
-        napi_valuetype valueType = napi_undefined;
-        if (napi_typeof(env, argv[PARAM0], &valueType) == napi_ok &&
-            (valueType == napi_undefined || valueType == napi_null)) {
-            argc -= 1;
-        }
-    }
 
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
