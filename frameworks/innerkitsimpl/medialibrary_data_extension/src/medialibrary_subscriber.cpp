@@ -118,6 +118,8 @@ bool MedialibrarySubscriber::currentStatus_ = false;
 // BetaVersion will upload the DB, and the true uploadDBFlag indicates that uploading is enabled.
 const std::string KEY_HIVIEW_VERSION_TYPE = "const.logsystem.versiontype";
 std::atomic<bool> uploadDBFlag(true);
+int64_t g_lastTime = MediaFileUtils::UTCTimeMilliSeconds();
+const int32_t HALF_HOUR_MS = 1800000;
 
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
@@ -210,6 +212,16 @@ static bool IsBetaVersion()
     return isBetaVersion;
 }
 
+static bool IsLastHalfHourDb()
+{
+    int64_t curTime = MediaFileUtils::UTCTimeMilliSeconds();
+    if (curTime - g_lastTime >= HALF_HOUR_MS) {
+        g_lastTime = curTime;
+        return true;
+    }
+    return false;
+}
+
 static void UploadDBFile()
 {
     uploadDBFlag.store(false);
@@ -256,7 +268,7 @@ static void UploadDBFile()
 void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
-        if (IsBetaVersion() && uploadDBFlag.load()) {
+        if (IsBetaVersion() && uploadDBFlag.load() && IsLastHalfHourDb()) {
             MEDIA_INFO_LOG("Version is BetaVersion, UploadDBFile");
             UploadDBFile();
         }
