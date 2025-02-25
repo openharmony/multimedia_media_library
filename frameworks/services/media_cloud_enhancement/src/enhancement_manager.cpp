@@ -898,10 +898,7 @@ int32_t EnhancementManager::HandlePauseAllOperation()
 {
     MEDIA_INFO_LOG("EnhancementManager::HandlePauseAllOperation");
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    if (!enhancementService_->IsConnected()) {
-        MEDIA_INFO_LOG("enhancementService not connected");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(enhancementService_->IsConnected(), E_ERR, "enhancementService not connected");
     MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
     int32_t ret = enhancementService_->PauseAllTasks(mediaEnhanceBundle);
     enhancementService_->DestroyBundle(mediaEnhanceBundle);
@@ -917,10 +914,7 @@ int32_t EnhancementManager::HandleResumeAllOperation()
 {
     MEDIA_INFO_LOG("EnhancementManager::HandleResumeAllOperation");
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    if (!enhancementService_->IsConnected()) {
-        MEDIA_INFO_LOG("enhancementService not connected");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(enhancementService_->IsConnected(), E_ERR, "enhancementService not connected");
     MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
     int32_t ret = enhancementService_->ResumeAllTasks(mediaEnhanceBundle);
     enhancementService_->DestroyBundle(mediaEnhanceBundle);
@@ -937,10 +931,9 @@ int32_t EnhancementManager::HandleSyncOperation()
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     MEDIA_INFO_LOG("photos start, begin to sync photos cloud enhancement available");
     vector<string> taskIdList;
-    if (!LoadService() || enhancementService_->GetPendingTasks(taskIdList) != E_OK) {
-        MEDIA_ERR_LOG("sync tasks failed: enhancment service error");
-        return E_ERR;
-    }
+    bool cond = (!LoadService() || enhancementService_->GetPendingTasks(taskIdList) != E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "sync tasks failed: enhancment service error");
+
     CHECK_AND_RETURN_RET_LOG(!taskIdList.empty(), E_OK, "no pending tasks from cloud enhancement service");
     MEDIA_INFO_LOG("enhancement pending tasks count from cloud enhancement: %{public}zu",
         taskIdList.size());
@@ -1017,11 +1010,9 @@ int32_t EnhancementManager::HandleStateChangedOperation(const bool isCameraIdle)
         return E_OK;
     }
     isCameraIdle_ = isCameraIdle;
+    bool cond = ((!isWifiConnected_ && !isCellularNetConnected_) || (photosAutoOption_ == PHOTO_OPTION_CLOSE));
+    CHECK_AND_RETURN_RET_LOG(!cond, E_OK, "HandleStateChangedOperation option is not allowed");
 
-    if ((!isWifiConnected_ && !isCellularNetConnected_) || (photosAutoOption_ == PHOTO_OPTION_CLOSE)) {
-        MEDIA_INFO_LOG("HandleStateChangedOperation option is not allowed");
-        return E_OK;
-    }
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     if (isCameraIdle_) {
         HandleResumeAllOperation();

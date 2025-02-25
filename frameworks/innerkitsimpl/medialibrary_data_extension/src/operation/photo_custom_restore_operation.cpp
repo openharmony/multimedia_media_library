@@ -117,10 +117,8 @@ void PhotoCustomRestoreOperation::ApplyEfficiencyQuota(int32_t fileNum)
     string reason = "Custom Restore";
     MEDIA_DEBUG_LOG("ApplyEfficiencyQuota. quota: %{public}" PRId64, quota);
     void *resourceQuotaMgrHandle = dlopen(ABNORMAL_MANAGER_LIB.c_str(), RTLD_NOW);
-    if (!resourceQuotaMgrHandle) {
-        MEDIA_ERR_LOG("Not find resource_quota_manager lib.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resourceQuotaMgrHandle, "Not find resource_quota_manager lib.");
+
     using HandleQuotaFunc = bool (*)(const std::string &, uint32_t, int64_t, const std::string &);
     auto handleQuotaFunc =
         reinterpret_cast<HandleQuotaFunc>(dlsym(resourceQuotaMgrHandle, "ApplyAbnormalControlQuota"));
@@ -129,9 +127,7 @@ void PhotoCustomRestoreOperation::ApplyEfficiencyQuota(int32_t fileNum)
         dlclose(resourceQuotaMgrHandle);
         return;
     }
-    if (!handleQuotaFunc(module, MODULE_POWER_OVERUSED, quota, reason)) {
-        MEDIA_ERR_LOG("Do handleQuotaFunc failed.");
-    }
+    CHECK_AND_PRINT_LOG(handleQuotaFunc(module, MODULE_POWER_OVERUSED, quota, reason), "Do handleQuotaFunc failed.");
     dlclose(resourceQuotaMgrHandle);
 #endif
 }
@@ -194,9 +190,7 @@ void PhotoCustomRestoreOperation::PhotoCustomRestoreOperation::ReleaseCustomRest
     RestoreTaskInfo &restoreTaskInfo)
 {
     photoCache_.clear();
-    if (!MediaFileUtils::DeleteDir(restoreTaskInfo.sourceDir)) {
-        MEDIA_ERR_LOG("delete dir failed.");
-    }
+    CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteDir(restoreTaskInfo.sourceDir), "delete dir failed.");
     ReportCustomRestoreTask(restoreTaskInfo);
     if (IsCancelTask(restoreTaskInfo)) {
         CancelTaskFinish(restoreTaskInfo);
@@ -283,10 +277,8 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     vector<FileInfo> restoreFiles = GetFileInfos(filePathVector, uniqueNumber);
     MEDIA_DEBUG_LOG("GetFileInfos finished");
     int32_t errCode = UpdateUniqueNumber(uniqueNumber);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("UpdateUniqueNumber failed. errCode: %{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "UpdateUniqueNumber failed. errCode: %{public}d", errCode);
+
     MEDIA_DEBUG_LOG("UpdateUniqueNumber success.");
     vector<FileInfo> destRestoreFiles = SetDestinationPath(restoreFiles, uniqueNumber);
     if (destRestoreFiles.size() == 0) {
@@ -318,16 +310,12 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
 int32_t PhotoCustomRestoreOperation::UpdatePhotoAlbum(RestoreTaskInfo &restoreTaskInfo, FileInfo fileInfo)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, E_HAS_DB_ERROR);
     const string querySql = "SELECT " + MediaColumn::MEDIA_ID + "," + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " FROM " +
                             PhotoColumn::PHOTOS_TABLE + " WHERE data ='" + fileInfo.filePath + "';";
     auto resultSet = rdbStore->QuerySql(querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("execute select unique number failed.");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "execute select unique number failed.");
+
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("execute GoToFirstRow err.");
         resultSet->Close();
@@ -529,9 +517,8 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
     TransactionOperations trans{__func__};
     std::function<int(void)> func = [&]() -> int {
         errCode = trans.BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("BatchInsert failed, errCode: %{public}d, rowNum: %{public}" PRId64, errCode, rowNum);
-        }
+        CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsert failed, errCode: %{public}d,"
+            " rowNum: %{public}" PRId64, errCode, rowNum);
         return errCode;
     };
     errCode = trans.RetryTrans(func, false);
@@ -547,10 +534,7 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
 void PhotoCustomRestoreOperation::QueryAlbumId(RestoreTaskInfo &restoreTaskInfo)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("QueryAlbumId: get rdb store fail!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "QueryAlbumId: get rdb store fail!");
 
     const string queryAlbumPathSql =
         "SELECT lpath from album_plugin WHERE (bundle_name = ? OR album_name = ?) AND priority = '1';";
@@ -574,10 +558,8 @@ void PhotoCustomRestoreOperation::QueryAlbumId(RestoreTaskInfo &restoreTaskInfo)
                             PhotoAlbumColumns::ALBUM_LPATH + " = ? ;";
     std::vector<NativeRdb::ValueObject> params = {lpath};
     auto resultSet = rdbStore->QuerySql(querySql, params);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("QueryAlbumId: query PhotoAlbum failed!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "QueryAlbumId: query PhotoAlbum failed!");
+
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_WARN_LOG("album is not exits, skip check duplication.");
         restoreTaskInfo.isDeduplication = false;
@@ -596,18 +578,15 @@ void PhotoCustomRestoreOperation::QueryAlbumId(RestoreTaskInfo &restoreTaskInfo)
 int32_t PhotoCustomRestoreOperation::GetAlbumUriBySubType(int32_t subType, string &albumUri)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetAlbumUriBySubType: get rdb store fail!");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "GetAlbumUriBySubType: get rdb store fail!");
+
     const string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = ? ;";
     std::vector<NativeRdb::ValueObject> params = {subType};
     auto resultSet = rdbStore->QuerySql(querySql, params);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("GetAlbumUriBySubType: query PhotoAlbum failed! subType=%{public}d", subType);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR,
+        "GetAlbumUriBySubType: query PhotoAlbum failed! subType=%{public}d", subType);
+
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("GetAlbumUriBySubType first row empty.");
         resultSet->Close();
@@ -621,30 +600,25 @@ int32_t PhotoCustomRestoreOperation::GetAlbumUriBySubType(int32_t subType, strin
 
 bool PhotoCustomRestoreOperation::IsDuplication(RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo)
 {
-    if (!restoreTaskInfo.isDeduplication || restoreTaskInfo.albumId == 0) {
-        return false;
-    }
+    bool cond = (!restoreTaskInfo.isDeduplication || restoreTaskInfo.albumId == 0);
+    CHECK_AND_RETURN_RET(!cond, false);
     int32_t mediaType = fileInfo.mediaType;
     if (restoreTaskInfo.hasPhotoCache) {
         string photoId = fileInfo.fileName + "_" + to_string(fileInfo.size) + "_" + to_string(mediaType) + "_" +
                          to_string(fileInfo.orientation);
         return photoCache_.count(photoId) > 0;
     }
+
     const string querySql =
         "SELECT COUNT(1) as count FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
         "=" + to_string(restoreTaskInfo.albumId) + " AND " + MediaColumn::MEDIA_NAME + "='" + fileInfo.fileName +
         "' AND " + MediaColumn::MEDIA_SIZE + "=" + to_string(fileInfo.size) + " AND " + MediaColumn::MEDIA_TYPE + "=" +
         to_string(mediaType) + " AND " + PhotoColumn::PHOTO_ORIENTATION + "=" + to_string(fileInfo.orientation) + ";";
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("IsDuplication: get rdb store fail!");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "IsDuplication: get rdb store fail!");
+
     auto resultSet = rdbStore->QuerySql(querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("IsDuplication: query PhotoAlbum failed!");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "IsDuplication: query PhotoAlbum failed!");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("IsDuplication first row empty.");
         resultSet->Close();
@@ -657,27 +631,22 @@ bool PhotoCustomRestoreOperation::IsDuplication(RestoreTaskInfo &restoreTaskInfo
 
 int32_t PhotoCustomRestoreOperation::InitPhotoCache(RestoreTaskInfo &restoreTaskInfo)
 {
-    if (!restoreTaskInfo.isDeduplication || restoreTaskInfo.albumId == 0) {
-        return E_OK;
-    }
+    bool cond = (!restoreTaskInfo.isDeduplication || restoreTaskInfo.albumId == 0);
+    CHECK_AND_RETURN_RET(!cond, E_OK);
     MEDIA_INFO_LOG("InitPhotoCache begin, albumId: %{public}d", restoreTaskInfo.albumId);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("InitPhotoCache: get rdb store fail!");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "InitPhotoCache: get rdb store fail!");
+
     const string queryCountSql = "SELECT COUNT(1) as count FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
                                  PhotoColumn::PHOTO_OWNER_ALBUM_ID + "=" + to_string(restoreTaskInfo.albumId) + ";";
     auto resultSet = rdbStore->QuerySql(queryCountSql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("InitPhotoCache: get resultSet fail!");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "InitPhotoCache: get resultSet fail!");
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("InitPhotoCache first row empty.");
         resultSet->Close();
         return E_HAS_DB_ERROR;
     }
+
     int32_t count = GetInt32Val("count", resultSet);
     resultSet->Close();
     if (count > MAX_PHOTO_CACHE_NUM) {
@@ -689,9 +658,8 @@ int32_t PhotoCustomRestoreOperation::InitPhotoCache(RestoreTaskInfo &restoreTask
                                  PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + "=" +
                                  to_string(restoreTaskInfo.albumId) + ";";
     auto resultCacheSet = rdbStore->QuerySql(queryCacheSql);
-    if (resultCacheSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(resultCacheSet != nullptr, E_HAS_DB_ERROR);
+
     while (resultCacheSet->GoToNextRow() == NativeRdb::E_OK) {
         string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultCacheSet);
         int64_t mediaSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultCacheSet);
@@ -710,18 +678,13 @@ int32_t PhotoCustomRestoreOperation::UpdateUniqueNumber(UniqueNumber &uniqueNumb
 {
     int32_t errCode = MediaLibraryAssetOperations::CreateAssetUniqueIds(
         MediaType::MEDIA_TYPE_IMAGE, uniqueNumber.imageTotalNumber, uniqueNumber.imageCurrentNumber);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("CreateAssetUniqueNumber IMAGE fail!, ret:%{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "CreateAssetUniqueNumber IMAGE fail!, ret:%{public}d", errCode);
+
     MEDIA_DEBUG_LOG("imageTotalNumber: %{public}d imageCurrentNumber: %{public}d",
         uniqueNumber.imageTotalNumber, uniqueNumber.imageCurrentNumber);
     errCode = MediaLibraryAssetOperations::CreateAssetUniqueIds(
         MediaType::MEDIA_TYPE_VIDEO, uniqueNumber.videoTotalNumber, uniqueNumber.videoCurrentNumber);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("CreateAssetUniqueNumber VIDEO fail!, ret:%{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "CreateAssetUniqueNumber VIDEO fail!, ret:%{public}d", errCode);
     MEDIA_DEBUG_LOG("videoTotalNumber: %{public}d videoCurrentNumber: %{public}d",
         uniqueNumber.videoTotalNumber, uniqueNumber.videoCurrentNumber);
     return E_OK;
@@ -855,10 +818,7 @@ int32_t PhotoCustomRestoreOperation::FillMetadata(std::unique_ptr<Metadata> &dat
         err = MetadataExtractor::ExtractAVMetadata(data, Scene::AV_META_SCENE_CLONE);
         MEDIA_INFO_LOG("Extract av metadata end");
     }
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("failed to extension data");
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "failed to extension data");
     return E_OK;
 }
 
@@ -889,17 +849,13 @@ int32_t PhotoCustomRestoreOperation::GetFileMetadata(std::unique_ptr<Metadata> &
 static void UpdateCoverPosition(const string &filePath, int64_t coverPosition)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UpdateCoverPosition: get rdb store fail!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "UpdateCoverPosition: get rdb store fail!");
     string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_COVER_POSITION +
         " = ? WHERE " + PhotoColumn::MEDIA_FILE_PATH + " = ?;";
     std::vector<NativeRdb::ValueObject> params = {coverPosition, filePath};
     int32_t errCode = rdbStore->ExecuteSql(updateSql, params);
-    if (errCode < 0) {
-        MEDIA_ERR_LOG("UpdateCoverPosition: execute update cover_position failed, ret = %{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode >= 0, "UpdateCoverPosition: execute update cover_position failed,"
+        " ret = %{public}d", errCode);
 }
 
 int32_t PhotoCustomRestoreOperation::RenameFiles(vector<FileInfo> &restoreFiles)
@@ -938,6 +894,7 @@ int32_t PhotoCustomRestoreOperation::MoveLivePhoto(const string &originFilePath,
         MEDIA_WARN_LOG("Failed to create local extra data dir");
         return E_HAS_FS_ERROR;
     }
+
     int32_t ret = MovingPhotoFileUtils::ConvertToMovingPhoto(originFilePath, filePath, videoPath, extraDataPath);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to convert live photo, ret:%{public}d", ret);
@@ -972,11 +929,9 @@ void PhotoCustomRestoreOperation::DeleteDatabaseRecord(const string &filePath)
     if (rdbStore == nullptr) {
         return;
     }
+
     int32_t ret = rdbStore->ExecuteSql(deleteSql, params);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("delete data from database failed, ret:%{public}d", ret);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "delete data from database failed, ret:%{public}d", ret);
 }
 
 void PhotoCustomRestoreOperation::CleanTimeoutCustomRestoreTaskDir()
@@ -1006,9 +961,7 @@ void PhotoCustomRestoreOperation::CleanTimeoutCustomRestoreTaskDir()
             MEDIA_ERR_LOG("no timeout file");
             continue;
         }
-        if (!MediaFileUtils::DeleteDir(fileStr)) {
-            MEDIA_ERR_LOG("clean timeout task dir failed");
-        }
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteDir(fileStr), "clean timeout task dir failed");
     }
     closedir(dir);
 }

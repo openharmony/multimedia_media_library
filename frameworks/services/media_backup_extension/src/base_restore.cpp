@@ -72,10 +72,7 @@ static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
 {
     int32_t restoreMode = RESTORE_MODE_PROC_ALL_DATA;
     nlohmann::json jsonObj = nlohmann::json::parse(restoreInfo, nullptr, false);
-    if (jsonObj.is_discarded()) {
-        MEDIA_ERR_LOG("parse json failed");
-        return restoreMode;
-    }
+    CHECK_AND_RETURN_RET_LOG(!jsonObj.is_discarded(), restoreMode, "parse json failed");
 
     for (auto &obj : jsonObj) {
         if (!obj.contains("type") || obj.at("type") != "appTwinDataRestoreState" || !obj.contains("detail")) {
@@ -106,10 +103,8 @@ void BaseRestore::GetAccountValid()
     string oldId = "";
     string newId = "";
     nlohmann::json json_arr = nlohmann::json::parse(restoreInfo_, nullptr, false);
-    if (json_arr.is_discarded()) {
-        MEDIA_ERR_LOG("cloud account parse failed.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!json_arr.is_discarded(), "cloud account parse failed.");
+
     for (const auto& item : json_arr) {
         if (!item.contains("type") || !item.contains("detail") || item["type"] != "dualAccountId") {
             continue;
@@ -137,10 +132,8 @@ void BaseRestore::GetAccountValid()
 void BaseRestore::GetSourceDeviceInfo()
 {
     nlohmann::json jsonArray = nlohmann::json::parse(restoreInfo_, nullptr, false);
-    if (jsonArray.is_discarded()) {
-        MEDIA_ERR_LOG("GetSourceDeviceInfo parse restoreInfo_ fail.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!jsonArray.is_discarded(), "GetSourceDeviceInfo parse restoreInfo_ fail.");
+
     for (const auto& item : jsonArray) {
         if (!item.contains("type") || !item.contains("detail")) {
             continue;
@@ -161,10 +154,8 @@ bool BaseRestore::IsRestorePhoto()
         return true;
     }
     nlohmann::json jsonArray = nlohmann::json::parse(restoreInfo_, nullptr, false);
-    if (jsonArray.is_discarded()) {
-        MEDIA_ERR_LOG("IsRestorePhoto parse restoreInfo_ fail.");
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(!jsonArray.is_discarded(), true, "IsRestorePhoto parse restoreInfo_ fail.");
+
     for (const auto& item : jsonArray) {
         if (!item.contains("type") || !item.contains("detail") || item["type"] != STAT_KEY_BACKUP_INFO) {
             continue;
@@ -216,22 +207,17 @@ int32_t BaseRestore::Init(void)
         return E_OK;
     }
     auto context = AbilityRuntime::Context::GetApplicationContext();
-    if (context == nullptr) {
-        MEDIA_ERR_LOG("Failed to get context");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, E_FAIL, "Failed to get context");
+
     int32_t err = BackupDatabaseUtils::InitDb(mediaLibraryRdb_, MEDIA_DATA_ABILITY_DB_NAME, DATABASE_PATH, BUNDLE_NAME,
         true, context->GetArea());
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("medialibrary rdb fail, err = %{public}d", err);
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_FAIL, "medialibrary rdb fail, err = %{public}d", err);
+
     int32_t sceneCode = 0;
     int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr, sceneCode, false);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("When restore, InitMediaLibraryMgr fail, errcode = %{public}d", errCode);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "When restore, InitMediaLibraryMgr fail, errcode = %{public}d", errCode);
+
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;
     migrateVideoFileNumber_ = 0;
@@ -280,11 +266,8 @@ bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::s
 
 shared_ptr<NativeRdb::ResultSet> BaseRestore::QuerySql(const string &sql, const vector<string> &selectionArgs) const
 {
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdb_ is nullptr. Maybe it didn't init successfully.");
-        return nullptr;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, nullptr,
+        "Pointer rdb_ is nullptr. Maybe it didn't init successfully.");
     return mediaLibraryRdb_->QuerySql(sql, selectionArgs);
 }
 
