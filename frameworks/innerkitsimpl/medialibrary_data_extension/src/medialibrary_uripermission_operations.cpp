@@ -594,43 +594,7 @@ static void ConvertVirtualIdToRealId(ValuesBucket &valuesBucket, int32_t &fileId
 
 int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
 {
-    int32_t fileId;
-    string bundleName;
-    string inputMode;
-    int32_t tableType;
-    ValuesBucket &valuesBucket = cmd.GetValueBucket();
-    auto ret = CheckUriPermValues(valuesBucket, fileId, bundleName, tableType, inputMode);
-    CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
-
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    if (cmd.GetApi() != MediaLibraryApi::API_10) {
-        ConvertVirtualIdToRealId(valuesBucket, fileId, tableType);
-    }
-#endif
-
-    string permissionMode;
-    ret = GetUriPermissionMode(to_string(fileId), bundleName, tableType, permissionMode);
-    if ((ret != E_SUCCESS) && (ret != E_PERMISSION_DENIED)) {
-        return ret;
-    }
-
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "uniStore is nullptr!");
-
-    if (ret == E_PERMISSION_DENIED) {
-        int64_t outRowId = -1;
-        return uniStore->Insert(cmd, outRowId);
-    }
-    if (permissionMode.find(inputMode) != string::npos) {
-        return E_SUCCESS;
-    }
-    ValuesBucket updateValues;
-    updateValues.PutString(PERMISSION_MODE, MEDIA_FILEMODE_READWRITE);
-    MediaLibraryCommand updateCmd(Uri(MEDIALIBRARY_BUNDLEPERM_URI), updateValues);
-    updateCmd.GetAbsRdbPredicates()->EqualTo(PERMISSION_FILE_ID, to_string(fileId))->And()->
-        EqualTo(PERMISSION_BUNDLE_NAME, bundleName);
-    int32_t updatedRows = -1;
-    return uniStore->Update(updateCmd, updatedRows);
+    return E_SUCCESS;
 }
 
 static inline int32_t GetTableTypeFromTableName(const std::string &tableName)
