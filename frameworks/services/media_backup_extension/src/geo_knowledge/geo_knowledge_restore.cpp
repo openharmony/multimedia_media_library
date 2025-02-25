@@ -70,10 +70,8 @@ void GeoKnowledgeRestore::Init(int32_t sceneCode, std::string taskId,
 
 void GeoKnowledgeRestore::RestoreGeoKnowledgeInfos()
 {
-    if (galleryRdb_ == nullptr || mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
-    }
+    bool cond = (galleryRdb_ == nullptr || mediaLibraryRdb_ == nullptr);
+    CHECK_AND_RETURN_LOG(!cond, "rdbStore is nullptr");
     GetGeoKnowledgeInfos();
 }
 
@@ -174,10 +172,8 @@ void GeoKnowledgeRestore::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
     }
     querySql << ")";
     auto resultSet = mediaLibraryRdb_->QuerySql(querySql.str(), params);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
+
     std::vector<NativeRdb::ValuesBucket> values;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val(FILE_ID, resultSet);
@@ -198,10 +194,9 @@ std::string GeoKnowledgeRestore::UpdateMapInsertValues(std::vector<NativeRdb::Va
     const FileInfo &fileInfo)
 {
     // no need restore or info missing
-    if ((fabs(fileInfo.latitude) < DOUBLE_EPSILON && fabs(fileInfo.latitude) < DOUBLE_EPSILON)
-        || fileInfo.fileIdNew <= 0) {
-        return NOT_MATCH;
-    }
+    bool cond =  ((fabs(fileInfo.latitude) < DOUBLE_EPSILON && fabs(fileInfo.latitude) < DOUBLE_EPSILON)
+    || fileInfo.fileIdNew <= 0);
+    CHECK_AND_RETURN_RET(!cond, NOT_MATCH);
     return UpdateByGeoLocation(values, fileInfo, fileInfo.latitude, fileInfo.longitude);
 }
 
@@ -275,15 +270,12 @@ int32_t GeoKnowledgeRestore::BatchInsertWithRetry(const std::string &tableName,
     trans.SetBackupRdbStore(mediaLibraryRdb_);
     std::function<int(void)> func = [&]()->int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
-        }
+        CHECK_AND_PRINT_LOG(errCode == E_OK, "InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.",
+            errCode, (long)rowNum);
         return errCode;
     };
     errCode = trans.RetryTrans(func, true);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
     return errCode;
 }
 
@@ -296,9 +288,7 @@ int32_t GeoKnowledgeRestore::BatchUpdate(const std::string &tableName, std::vect
     int32_t changedRows = -1;
     int32_t errCode = E_OK;
     errCode = mediaLibraryRdb_->Update(changedRows, rdbValues, updatePredicates);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Database update failed, errCode = %{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "Database update failed, errCode = %{public}d", errCode);
     return errCode;
 }
 
