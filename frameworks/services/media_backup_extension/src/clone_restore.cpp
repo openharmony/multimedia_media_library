@@ -2541,15 +2541,19 @@ void CloneRestore::RestorePortraitClusteringInfo()
     migratePortraitTotalTimeCost_ += end - start;
 }
 
-vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
+std::vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
 {
-    vector<FaceTagTbl> result;
+    std::vector<FaceTagTbl> result;
+    bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
+
     std::string querySql = "SELECT DISTINCT " + inClause +
         " FROM " + VISION_FACE_TAG_TABLE + " vft" +
         " LEFT JOIN AnalysisAlbum aa ON aa.tag_id = vft.tag_id" +
         " LEFT JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
-        " LEFT JOIN Photos ph ON ph.file_id = apm.map_asset"
-        " WHERE ph.position IN (1, 3)";
+        " LEFT JOIN Photos ph ON ph.file_id = apm.map_asset" +
+        " WHERE " +
+        ((isAccountValid_ && isSyncSwitchOpen) ? "ph.position IN (1, 2, 3)" : "ph.position IN (1, 3)");
+
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
