@@ -336,9 +336,7 @@ static shared_ptr<ResultSet> QueryGoToFirst(const shared_ptr<MediaLibraryRdbStor
     MediaLibraryTracer tracer;
     tracer.Start("QueryGoToFirst");
     auto resultSet = rdbStore->StepQueryWithoutCheck(predicates, columns);
-    if (resultSet == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, nullptr);
 
     MediaLibraryTracer goToFirst;
     goToFirst.Start("GoToFirstRow");
@@ -353,9 +351,7 @@ static shared_ptr<ResultSet> QueryGoToFirstByTrans(const std::shared_ptr<Transac
     MediaLibraryTracer tracer;
     tracer.Start("QueryGoToFirstByTrans");
     auto resultSet = trans->QueryByStep(predicates, columns, false);
-    if (resultSet == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, nullptr);
 
     MediaLibraryTracer goToFirst;
     goToFirst.Start("GoToFirstRowByTrans");
@@ -706,6 +702,7 @@ static int32_t SetAlbumCoverHiddenUri(const shared_ptr<MediaLibraryRdbStore> rdb
     GetAlbumPredicates(subtype, albumId, predicates, true);
     predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
     predicates.Limit(1);
+
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
     CHECK_AND_RETURN_RET_LOG(fetchResult != nullptr, E_HAS_DB_ERROR, "QueryGoToFirst failed");
     uri = GetCover(fetchResult);
@@ -1066,10 +1063,8 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<MediaLibraryRdbStore> rd
     string albumId = to_string(data.albumId);
     GetPortraitAlbumCountPredicates(albumId, predicates);
     shared_ptr<ResultSet> countResult = QueryGoToFirst(rdbStore, predicates, countColumns);
-    if (countResult == nullptr) {
-        MEDIA_ERR_LOG("Failed to query Portrait Album Count");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(countResult != nullptr, E_HAS_DB_ERROR, "Failed to query Portrait Album Count");
+
     int32_t newCount = SetCount(countResult, data, values, false, PhotoAlbumSubType::PORTRAIT);
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, albumId, coverId, isCoverSatisfied)) {
         return E_SUCCESS;
@@ -1587,10 +1582,8 @@ int32_t MediaLibraryRdbUtils::UpdateHighlightPlayInfo(const shared_ptr<MediaLibr
         "WHERE album_id = (SELECT id FROM tab_highlight_album WHERE album_id = " + albumId + " LIMIT 1)";
     
     int32_t ret = rdbStore->ExecuteSql(UPDATE_HIGHLIGHT_PLAY_INFO);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to execute sql:%{public}s", UPDATE_HIGHLIGHT_PLAY_INFO.c_str());
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Failed to execute sql:%{public}s",
+        UPDATE_HIGHLIGHT_PLAY_INFO.c_str());
     return ret;
 }
 
@@ -1816,10 +1809,9 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<MediaLibra
     int err = E_HAS_DB_ERROR;
     int32_t deletedRows = 0;
     err = rdbStore->Delete(deletedRows, predicates);
-    if (err != E_OK || deletedRows <= 0) {
-        MEDIA_ERR_LOG("Failed Delete AnalysisPhotoMap");
-        return;
-    }
+
+    bool cond = (err != E_OK || deletedRows <= 0);
+    CHECK_AND_RETURN_LOG(!cond, "Failed Delete AnalysisPhotoMap");
     UpdateAnalysisAlbumInternal(rdbStore, albumIds, fileIds);
 }
 
@@ -2443,10 +2435,8 @@ int RefreshAnalysisPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         PhotoAlbumColumns::ALBUM_COUNT,
     };
     auto resultSet = GetAnalysisAlbum(rdbStore, albumIds, columns);
-    if (resultSet == nullptr) {
-        ret = E_HAS_DB_ERROR;
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_HAS_DB_ERROR);
+
     std::vector<UpdateAlbumData> datas;
     while (resultSet->GoToNextRow() == E_OK) {
         UpdateAlbumData data;
@@ -2836,10 +2826,8 @@ void MediaLibraryRdbUtils::TransformAppId2TokenId(const shared_ptr<MediaLibraryR
 {
     MEDIA_INFO_LOG("TransformAppId2TokenId start!");
     auto resultSet = QueryNeedTransformPermission(store);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("TransformAppId2TokenId failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "TransformAppId2TokenId failed");
+
     std::map<std::string, int64_t> tokenIdMap = QueryTokenIdMap(resultSet);
     resultSet->Close();
     if (tokenIdMap.size() == 0) {
