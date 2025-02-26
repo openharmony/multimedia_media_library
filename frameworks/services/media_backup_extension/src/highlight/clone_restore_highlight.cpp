@@ -467,9 +467,12 @@ void CloneRestoreHighlight::UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb
     }
 
     std::string fileCoverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-        std::to_string(fileInfo.fileIdOld), MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath));
+        std::to_string(fileInfo.fileIdOld), MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.oldPath));
     if (it->oldCoverUri.has_value() && fileCoverUri == it->oldCoverUri.value()) {
         it->coverUri = photoUriMap_.ReadVal(fileInfo.fileIdNew);
+        MEDIA_INFO_LOG("oldCoverUri: %{public}s, newCoverUri: %{public}s.",
+            BackupFileUtils::GarbleFilePath(it->oldCoverUri.value(), DEFAULT_RESTORE_ID).c_str(),
+            BackupFileUtils::GarbleFilePath(photoUriMap_.ReadVal(fileInfo.fileIdNew), DEFAULT_RESTORE_ID).c_str());
     }
 
     std::optional<int32_t> order = std::nullopt;
