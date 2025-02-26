@@ -59,7 +59,7 @@ const int32_t URI_SLASH_NUM_API10 = 4;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
 const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int32_t BASE_USER_RANGE = 200000;
-static set<int> readPermSet{0, 1, 3, 4};
+static set<int> readPermSet{0, 1, 2, 3, 4};
 static set<int> writePermSet{2, 3, 4};
 static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },
