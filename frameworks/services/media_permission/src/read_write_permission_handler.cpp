@@ -74,6 +74,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_ASSET_SD_MAP,
     OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
     OperationObject::CLOUD_MEDIA_ASSET_OPERATE,
+    OperationObject::ANALYSIS_ADDRESS,
 };
 
 std::string USER_STR = "user";
@@ -315,10 +316,12 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
         return err;
     }
 
-    string perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
-    err = PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
-    if (err < 0) {
-        return err;
+    string perm = isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO;
+    if (!PermissionUtils::CheckCallerPermission(perm)) {
+        perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
+        if (!PermissionUtils::CheckCallerPermission(perm)) {
+            return E_PERMISSION_DENIED;
+        }
     }
     UnifyOprnObject(cmd);
     return E_SUCCESS;
