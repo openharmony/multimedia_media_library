@@ -17,6 +17,7 @@
 #include "mtp_media_library.h"
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <shared_mutex>
 #include "mtp_data_utils.h"
 #include "media_file_utils.h"
@@ -49,6 +50,7 @@ constexpr uint32_t BASE_USER_RANGE                   = 200000;
 constexpr int32_t NORMAL_WIDTH                       = 256;
 constexpr int32_t NORMAL_HEIGHT                      = 256;
 constexpr int32_t COMPRE_SIZE_LEVEL_2                = 204800;
+constexpr int32_t PATH_TIMEVAL_MAX                   = 2;
 const std::string THUMBNAIL_FORMAT                   = "image/jpeg";
 static constexpr uint8_t THUMBNAIL_MID               = 90;
 static std::unordered_map<uint32_t, std::string> handleToPathMap;
@@ -138,6 +140,45 @@ static bool IsRootPath(const std::string &path)
         }
     }
     return false;
+}
+
+static void GetStatTime(const std::string &fromPath, const std::string &toPath, bool recursive,
+    std::unordered_map<std::string, std::pair<long, long>> &statTimeMap)
+{
+    std::error_code ec;
+    std::vector<std::string> pathList;
+    pathList.push_back(fromPath);
+    if (recursive && sf::is_directory(fromPath, ec)) {
+        for (const auto& entry : sf::recursive_directory_iterator(fromPath, ec)) {
+            if (ec.value() == MTP_SUCCESS) {
+                pathList.push_back(entry.path().string());
+            }
+        }
+    }
+
+    struct stat statInfo = {};
+    for (const auto &path : pathList) {
+        if (stat(path.c_str(), &statInfo) != 0) {
+            MEDIA_WARN_LOG("stat fromPath:%{public}s failed", path.c_str());
+            continue;
+        }
+        std::string to = path;
+        to.replace(0, fromPath.size(), toPath);
+        statTimeMap[to].first = statInfo.st_ctime;
+        statTimeMap[to].second = statInfo.st_mtime;
+    }
+}
+
+static void SetStatTime(const std::unordered_map<std::string, std::pair<long, long>> &statTimeMap)
+{
+    struct timeval times[PATH_TIMEVAL_MAX] = { { 0, 0 }, { 0, 0 } };
+    for (auto it = statTimeMap.begin(); it != statTimeMap.end(); it++) {
+        times[0].tv_sec = it->second.first;
+        times[1].tv_sec = it->second.second;
+        if (utimes(it->first.c_str(), times) != 0) {
+            MEDIA_WARN_LOG("utimes toPath:%{public}s failed", it->first.c_str());
+        }
+    }
 }
 
 int32_t MtpMediaLibrary::ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out)
@@ -753,6 +794,9 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
     // compare the prefix of the two paths
     const auto len = PUBLIC_REAL_PATH_PRE.size();
     bool isSameStorage = from.substr(0, len).compare(to.substr(0, len)) == 0;
+    MEDIA_INFO_LOG("from[%{public}s],to[%{public}s] %{public}d", fromPath.c_str(), toPath.c_str(), isSameStorage);
+    std::unordered_map<std::string, std::pair<long, long>> statTimeMap;
+    GetStatTime(fromPath.string(), toPath.string(), !isSameStorage, statTimeMap);
     {
         WriteLock lock(g_mutex);
         if (isSameStorage) {
@@ -764,12 +808,11 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
             CrossCopyAfter(isDir, toPath);
             isDir ? sf::remove_all(fromPath, ec) : sf::remove(fromPath, ec);
         }
-
-        MEDIA_INFO_LOG("MTP:MoveObject:from[%{public}s],to[%{public}s]", fromPath.c_str(), toPath.c_str());
         CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveMoveObjectError(E_FAIL),
             "MtpMediaLibrary::MoveObject failed");
         MoveObjectSub(fromPath, toPath, isDir, repeatHandle);
     }
+    SetStatTime(statTimeMap);
     return MTP_SUCCESS;
 }
 
@@ -795,9 +838,13 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
     auto toPath = sf::path(to) / sf::path(from).filename();
     CHECK_AND_RETURN_RET_LOG(!sf::exists(toPath, ec), MtpErrorUtils::SolveCopyObjectError(E_FILE_EXIST),
         "MtpMediaLibrary::CopyObject toPath exists");
+    MEDIA_INFO_LOG("from[%{public}s],to[%{public}s]", fromPath.c_str(), toPath.c_str());
+    std::unordered_map<std::string, std::pair<long, long>> statTimeMap;
+    GetStatTime(fromPath.string(), toPath.string(), true, statTimeMap);
     sf::copy(fromPath, toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
     CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveCopyObjectError(E_FAIL),
         "MtpMediaLibrary::CopyObject failed");
+    SetStatTime(statTimeMap);
     {
         WriteLock lock(g_mutex);
         outObjectHandle = AddPathToMap(toPath.string());
