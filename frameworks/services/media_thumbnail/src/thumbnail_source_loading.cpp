@@ -587,7 +587,7 @@ bool LocalOriginSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 std::string CloudThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     std::string tmpPath = data.orientation != 0 ?
-        GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX) : GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
+        GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX) : GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!IsCloudSourceAvailable(tmpPath)) {
         return "";
