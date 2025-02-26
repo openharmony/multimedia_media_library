@@ -68,6 +68,7 @@ private:
         std::vector<std::string> &dateTakens);
     static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
     int32_t UpdateCloudMeidaAssets();
+    int32_t DeleteEmptyCloudAlbums();
 
 private:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;
