@@ -16,6 +16,7 @@
 #include "mtp_medialibrary_manager.h"
 
 #include <unistd.h>
+#include <sys/time.h>
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "datashare_result_set.h"
@@ -72,6 +73,8 @@ const string BURST_COVER_LEVEL = "1";
 const string EMPTY_COLUMN_NAME = "0";
 const string PARENT_ID_STRING = "0";
 const std::string MOVING_PHOTO_SUFFIX = ".mp4";
+constexpr int32_t MILLI_TO_SECOND = 1000;
+constexpr int32_t PATH_TIMEVAL_MAX = 2;
 namespace {
 std::vector<std::string> g_photoColumns = {
     MediaColumn::MEDIA_ID + " + " + to_string(COMMON_PHOTOS_OFFSET) + " as " + MEDIA_DATA_DB_ID,
@@ -93,6 +96,19 @@ std::shared_ptr<MtpMedialibraryManager> MtpMedialibraryManager::instance_ = null
 std::mutex MtpMedialibraryManager::mutex_;
 shared_ptr<DataShare::DataShareHelper> MtpMedialibraryManager::dataShareHelper_ = nullptr;
 std::shared_ptr<MediaSyncObserver> mediaPhotoObserver_ = nullptr;
+
+std::string MtpMedialibraryManager::GetHmdfsPath(const std::string &path)
+{
+    const std::string FILES = "/files/";
+    const std::string HMDFS_DIR = "/mnt/hmdfs/100/account/device_view/local";
+    size_t filesPos = path.find(FILES);
+    if (filesPos == std::string::npos) {
+        MEDIA_WARN_LOG("path:%{public}s", path.c_str());
+        return path;
+    }
+    return HMDFS_DIR + path.substr(filesPos);
+}
+
 MtpMedialibraryManager::MtpMedialibraryManager(void)
 {
 }
@@ -996,15 +1012,28 @@ int32_t MtpMedialibraryManager::InsertCopyObject(const std::string &displayName,
 }
 
 int32_t MtpMedialibraryManager::CopyAndDumpFile(const std::shared_ptr<MtpOperationContext> &context,
-    const std::string &oldDataPath, const std::string &newDataPath)
+    const std::string &oldDataPath, std::shared_ptr<FileAsset> &oldFileAsset)
 {
+    CHECK_AND_RETURN_RET_LOG(oldFileAsset != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "oldFileAsset is nullptr");
+
+    std::shared_ptr<FileAsset> newFileAsset;
+    int32_t errCode = GetFileAssetFromPhotosInfo(context, newFileAsset);
+    CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to GetFileAssetFromPhotosInfo");
+    CHECK_AND_RETURN_RET_LOG(newFileAsset != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "newFileAsset is nullptr");
+
     int newFd = 0;
-    int32_t errCode = GetFdByOpenFile(context, newFd);
+    errCode = GetFdByOpenFile(context, newFd);
     CHECK_AND_RETURN_RET_LOG((newFd > 0) && (errCode == MTP_SUCCESS), MTP_ERROR_NO_THIS_FILE,
         "MTP GetFdByOpenFile open file failed newfd:%{public}d, errCode:%{public}d", newFd, errCode);
-    bool copyRet = MediaFileUtils::CopyFileUtil(oldDataPath, newDataPath);
+    bool copyRet = MediaFileUtils::CopyFileUtil(oldDataPath, newFileAsset->GetFilePath());
     if (copyRet && errCode == MTP_SUCCESS) {
-        MEDIA_DEBUG_LOG("MTP CopyAndDumpFile success copy");
+        struct timeval times[PATH_TIMEVAL_MAX] = { { 0, 0 }, { 0, 0 } };
+        times[0].tv_sec = oldFileAsset->GetDateAdded() / MILLI_TO_SECOND;
+        times[1].tv_sec = oldFileAsset->GetDateModified() / MILLI_TO_SECOND;
+        std::string hdfsPath = GetHmdfsPath(newFileAsset->GetFilePath());
+        if (utimes(hdfsPath.c_str(), times) != 0) {
+            MEDIA_WARN_LOG("utimes hdfsPath:%{public}s failed", hdfsPath.c_str());
+        }
         errCode = CloseFd(context, newFd);
         return errCode;
     }
@@ -1048,14 +1077,7 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     std::shared_ptr<MtpOperationContext> newFileContext = std::make_shared<MtpOperationContext>();
     newFileContext->handle = static_cast<uint32_t>(insertId) + COMMON_PHOTOS_OFFSET;
     newFileContext->parent = context->parent;
-    std::shared_ptr<FileAsset> newFileAsset;
-    errCode = GetFileAssetFromPhotosInfo(newFileContext, newFileAsset);
-    CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to GetFileAssetFromPhotosInfo");
-    CHECK_AND_RETURN_RET_LOG(newFileAsset != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "newFileAsset is nullptr");
-    std::string newDataPath = newFileAsset->GetFilePath();
-    MEDIA_DEBUG_LOG("mtp CopyObject movingPhotoDataPath:%{private}s, newDataPath:%{private}s",
-        movingPhotoDataPath.c_str(), newDataPath.c_str());
-    errCode = CopyAndDumpFile(newFileContext, movingPhotoDataPath, newDataPath);
+    errCode = CopyAndDumpFile(newFileContext, movingPhotoDataPath, oldFileAsset);
     CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to CopyObjectSub");
     outObjectHandle = newFileContext->handle;
     return MTP_SUCCESS;

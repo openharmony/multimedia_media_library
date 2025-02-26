@@ -20,6 +20,7 @@
 #include <iremote_object.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include "application_context.h"
 #include "ability_manager_client.h"
@@ -86,6 +87,7 @@ const std::string PUBLIC_DOC = "/storage/media/local/files/Docs";
 static constexpr uint32_t HEADER_LEN = 12;
 static constexpr uint32_t READ_LEN = 1024;
 static constexpr uint32_t SEND_OBJECT_FILE_MAX_SIZE = 0xFFFFFFFF;
+constexpr int32_t PATH_TIMEVAL_MAX = 2;
 static bool g_isDevicePropSet = false;
 
 MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context) : context_(context)
@@ -459,6 +461,39 @@ uint16_t MtpOperationUtils::GetObject(shared_ptr<PayloadData> &data, int errorCo
     return CheckErrorCode(errorCode);
 }
 
+void MtpOperationUtils::ModifyObjectInfo()
+{
+    CHECK_AND_RETURN_LOG(context_ != nullptr, "DoRecevieSendObject context_ is null");
+    CHECK_AND_RETURN_LOG(mtpMediaLibrary_ != nullptr, "mtpMediaLibrary_ is null");
+    CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr, "mtpMedialibraryManager_ is null");
+
+    std::tm tmCreated = {};
+    std::tm tmModified = {};
+    std::istringstream created(context_->created);
+    std::istringstream modified(context_->modified);
+    created >> std::get_time(&tmCreated, "%Y%m%dT%H%M%S");
+    modified >> std::get_time(&tmModified, "%Y%m%dT%H%M%S");
+    if (created.fail() || modified.fail()) {
+        MEDIA_ERR_LOG("get_time failed");
+        return;
+    }
+
+    std::string path;
+    if (MtpManager::GetInstance().IsMtpMode()) {
+        mtpMediaLibrary_->GetPathById(context_->handle, path);
+    } else {
+        mtpMedialibraryManager_->GetPathById(context_->handle, path);
+        path = mtpMedialibraryManager_->GetHmdfsPath(path);
+    }
+
+    struct timeval times[PATH_TIMEVAL_MAX] = { { 0, 0 }, { 0, 0 } };
+    times[0].tv_sec = mktime(&tmCreated);
+    times[1].tv_sec = mktime(&tmModified);
+    if (utimes(path.c_str(), times) != 0) {
+        MEDIA_WARN_LOG("utimes path:%{public}s failed", path.c_str());
+    }
+}
+
 int32_t MtpOperationUtils::DoRecevieSendObject()
 {
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_INVALID_PARAMETER_CODE, "DoRecevieSendObject context_ is null");
@@ -499,6 +534,7 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_RESPONSE_GENERAL,
         "DoRecevieSendObject ReceiveObj fail errorCode = %{public}d", errorCode);
 
+    ModifyObjectInfo();
     errorCode = fsync(fd);
     PreDealFd(errorCode != MTP_SUCCESS, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_RESPONSE_GENERAL,
