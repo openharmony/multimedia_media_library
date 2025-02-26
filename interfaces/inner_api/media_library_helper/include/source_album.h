@@ -291,6 +291,7 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " , " +
     PhotoAlbumColumns::ALBUM_LPATH + " , " +
     PhotoAlbumColumns::ALBUM_PRIORITY + " , " +
+    PhotoAlbumColumns::ALBUM_DATE_MODIFIED + " , " +
     PhotoAlbumColumns::ALBUM_DATE_ADDED +
     " ) VALUES ( " +
     std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " , " +
@@ -299,7 +300,7 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE + " , " +
     SELECT_LPATH_BY_ALBUM_NAME_OR_BUNDLE_NAME + " , " +
     "1, "
-    "strftime('%s000', 'now')" +
+    "strftime('%s000', 'now'), strftime('%s000', 'now')" +
     ");" + UPDATE_PHOTO_OWNER_ALBUM_ID + "; " + PHOTO_ALBUM_NOTIFY_FUNC + " END;";
 
 } // namespace Media
