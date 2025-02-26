@@ -665,6 +665,7 @@ static void DeleteHighlightAlbumsCompleteCallback(napi_env env, napi_status stat
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSDeleteHighlightAlbumsCompleteCallback");
+    int32_t deleteAlbumFailed = 1;
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
@@ -672,8 +673,10 @@ static void DeleteHighlightAlbumsCompleteCallback(napi_env env, napi_status stat
     napi_get_undefined(env, &jsContext->data);
     napi_get_undefined(env, &jsContext->error);
     if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS(env, napi_create_int32(env, E_SUCCESS, &jsContext->data), JS_INNER_FAIL);
         jsContext->status = true;
     } else {
+        CHECK_ARGS(env, napi_create_int32(env, deleteAlbumFailed, &jsContext->data), JS_INNER_FAIL);
         context->HandleError(env, jsContext->error);
     }
 
