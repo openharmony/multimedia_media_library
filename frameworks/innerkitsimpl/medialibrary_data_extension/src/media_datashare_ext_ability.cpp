@@ -187,8 +187,6 @@ void MediaDataShareExtAbility::InitPermissionHandler()
 
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
-    MultiStagesPhotoCaptureManager::GetInstance().Init();
-    MultiStagesVideoCaptureManager::GetInstance().Init();
 #ifdef MEDIALIBRARY_MTP_ENABLE
     std::string param(MTP_DISABLE);
     bool mtpDisable = system::GetBoolParameter(param, false);

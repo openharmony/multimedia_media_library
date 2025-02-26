@@ -37,10 +37,7 @@ using namespace OHOS::CameraStandard;
 
 namespace OHOS {
 namespace Media {
-MultiStagesVideoCaptureManager::MultiStagesVideoCaptureManager()
-{
-    deferredProcSession_ = make_shared<DeferredVideoProcessingAdapter>();
-}
+MultiStagesVideoCaptureManager::MultiStagesVideoCaptureManager() {}
 
 MultiStagesVideoCaptureManager::~MultiStagesVideoCaptureManager() {}
 
@@ -130,14 +127,14 @@ void MultiStagesVideoCaptureManager::AddVideo(const std::string &videoId,
 
 bool MultiStagesVideoCaptureManager::Init()
 {
-    SyncWithDeferredVideoProcSession();
+    SyncWithDeferredVideoProcSessionInternal();
     return true;
 }
 
 void MultiStagesVideoCaptureManager::SyncWithDeferredVideoProcSessionInternal()
 {
     MEDIA_INFO_LOG("SyncWithDeferredVideoProcSessionInternal enter");
-
+    deferredProcSession_ = make_shared<DeferredVideoProcessingAdapter>();
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     string where = MEDIA_DATA_DB_PHOTO_ID + " IS NOT NULL AND " +
         "((" + MEDIA_DATA_DB_PHOTO_QUALITY + " > 0 AND (" + MEDIA_DATA_DB_MEDIA_TYPE + " = " +
