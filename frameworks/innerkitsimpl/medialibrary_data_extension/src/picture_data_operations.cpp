@@ -62,6 +62,8 @@ static bool IsPictureEdited(const string &photoId)
 void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap,
     PictureType pictureType)
 {
+    MEDIA_INFO_LOG("enter CleanPictureMapData, pictureMap size: %{public}d, pictureType: %{public}d",
+        static_cast<int32_t>(pictureMap.size()), static_cast<int32_t>(pictureType));
     auto iter = pictureMap.begin();
     while (iter != pictureMap.end()) {
         time_t now = time(nullptr);
@@ -80,10 +82,13 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
             iter++;
         }
     }
+    MEDIA_INFO_LOG("end CleanPictureMapData, pictureMap size: %{public}d, pictureType: %{public}d",
+        static_cast<int32_t>(pictureMap.size()), static_cast<int32_t>(pictureType));
 }
 
 void PictureDataOperations::CleanDateForPeriodical()
 {
+    MEDIA_INFO_LOG("enter CleanDateForPeriodical.");
     lock_guard<mutex> lock(pictureMapMutex_);
     enum PictureType pictureType;
     for (pictureType = LOW_QUALITY_PICTURE; pictureType <= HIGH_QUALITY_PICTURE;
@@ -99,6 +104,7 @@ void PictureDataOperations::CleanDateForPeriodical()
                 break;
         }
     }
+    MEDIA_INFO_LOG("end CleanDateForPeriodical.");
 }
 
 void PictureDataOperations::InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair,

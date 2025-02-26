@@ -2422,6 +2422,7 @@ static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& conte
 
     string uri = PAH_DISCARD_CAMERA_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     Uri updateAssetUri(uri);
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
