@@ -913,13 +913,52 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     return updatedRows;
 }
 
+int32_t GetPhotoIdByFileId(int32_t fileId, std::string &photoId)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
+
+    std::vector<std::string> columns = { PhotoColumn::PHOTO_ID };
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        E_FILE_EXIST, "result set is empty");
+    
+    photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    return E_OK;
+}
+
 static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd)
 {
+    std::string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
+    bool isClearCachedPicture = false;
+    std::string photoId;
+    int32_t ret = E_ERR;
+    if (!fileId.empty() && MediaLibraryDataManagerUtils::IsNumber(fileId)) {
+        MEDIA_INFO_LOG("MultistagesCapture start discard fileId: %{public}s.", fileId.c_str());
+        isClearCachedPicture = true;
+        ret = GetPhotoIdByFileId(stoi(fileId), photoId);
+        if (ret != E_OK || photoId.empty()) {
+            MEDIA_WARN_LOG("MultistagesCapture Memory leak may occur, please check yuv picture.");
+            isClearCachedPicture = false;
+        }
+    }
+
+    if (isClearCachedPicture) {
+        MEDIA_INFO_LOG("MultistagesCapture start clear cached picture, photoId: %{public}s.", photoId.c_str());
+        auto pictureManagerThread = PictureManagerThread::GetInstance();
+        if (pictureManagerThread != nullptr) {
+            pictureManagerThread->DeleteDataWithImageId(photoId, LOW_QUALITY_PICTURE);
+        }
+        MultiStagesPhotoCaptureManager::GetInstance().CancelProcessRequest(photoId);
+    }
+
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(cmd.GetDataSharePred(),
         PhotoColumn::PHOTOS_TABLE);
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
-    return MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicate, false, true);
+    ret = MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicate, false, true);
+    MEDIA_INFO_LOG("MultistagesCapture discard end, ret: %{public}d.", ret);
+    return ret;
 }
 
 static string GetUriWithoutSeg(const string &oldUri)
@@ -2632,15 +2671,8 @@ std::shared_ptr<FileAsset> MediaLibraryPhotoOperations::GetFileAsset(MediaLibrar
 int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
     bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture)
 {
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, std::to_string(fileId));
-    vector<string> columns = { PhotoColumn::PHOTO_ID };
-    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_FILE_EXIST, "result set is empty");
-
-    photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
-    resultSet->Close();
-    if (photoId.empty()) {
+    int32_t ret = GetPhotoIdByFileId(fileId, photoId);
+    if (ret != E_OK || photoId.empty()) {
         MEDIA_ERR_LOG("photoId is emply fileId is: %{public}d", fileId);
         return E_FILE_EXIST;
     }
