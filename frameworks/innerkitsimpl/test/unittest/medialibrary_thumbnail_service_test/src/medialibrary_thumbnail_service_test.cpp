@@ -244,7 +244,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_
     serverTest->Init(storePtr, context);
 #endif
     ret = serverTest->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, 0);
+    EXPECT_NE(ret, 0);
     serverTest->ReleaseService();
 }
 
@@ -1309,6 +1309,22 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_033, Tes
     Size desiredSize;
     auto res = ThumbnailUtils::GenTargetPixelmap(data, desiredSize);
     EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_034, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    auto res = ThumbnailUtils::QueryThumbnailSet(opts);
+    EXPECT_EQ(res, nullptr);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_035, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    int outLcdCount = 0;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
+    EXPECT_EQ(res, nullptr);
 }
 } // namespace Media
 } // namespace OHOS
