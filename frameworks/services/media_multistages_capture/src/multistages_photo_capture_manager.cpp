@@ -50,10 +50,7 @@ namespace OHOS {
 namespace Media {
 const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
 
-MultiStagesPhotoCaptureManager::MultiStagesPhotoCaptureManager()
-{
-    deferredProcSession_ = make_shared<DeferredPhotoProcessingAdapter>();
-}
+MultiStagesPhotoCaptureManager::MultiStagesPhotoCaptureManager() {}
 
 MultiStagesPhotoCaptureManager::~MultiStagesPhotoCaptureManager() {}
 
@@ -65,7 +62,7 @@ MultiStagesPhotoCaptureManager& MultiStagesPhotoCaptureManager::GetInstance()
 
 bool MultiStagesPhotoCaptureManager::Init()
 {
-    SyncWithDeferredProcSession();
+    SyncWithDeferredProcSessionInternal();
     return true;
 }
 
@@ -387,6 +384,7 @@ int32_t MultiStagesPhotoCaptureManager::UpdatePictureQuality(const std::string &
 void MultiStagesPhotoCaptureManager::SyncWithDeferredProcSessionInternal()
 {
     MEDIA_INFO_LOG("enter");
+    deferredProcSession_ = make_shared<DeferredPhotoProcessingAdapter>();
     // 进程重启场景，媒体库需要和延时子服务同步
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     string where = MEDIA_DATA_DB_PHOTO_ID + " is not null and " +
