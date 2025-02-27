@@ -10,12 +10,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import("//build/config/components/ets_frontend/es2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
+import("//build/templates/abc/ohos_abc.gni")
 import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
 import("//foundation/ability/ability_runtime/ability_runtime.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
-import("../../../../../../arkcompiler/ets_frontend/es2panda/es2abc_config.gni")
 import("../../../../../../foundation/arkui/ace_engine/ace_config.gni")
 
 js_declaration("medialibrary_js") {
@@ -90,6 +91,44 @@ config("napi_config") {
       defined(
           global_parts_info.device_cloud_gateway_media_cloud_enhance_service)) {
     include_dirs += [ "${MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH}/interfaces/inner_api/include/c_api" ]
+  }
+
+  ldflags = [ "-Wl,--gc-sections" ]
+
+  cflags = [
+    "-fvisibility=hidden",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Os",
+  ]
+
+  cflags_cc = [
+    "-fvisibility-inlines-hidden",
+    "-Os",
+  ]
+}
+
+config("napi_config_photoaccesshelpernative") {
+  include_dirs = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
+    "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
+    "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_SERVICES_PATH}/media_library/include",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/media_cloud_asset_download",
+  ]
+
+  if (media_library_feature_mtp) {
+    include_dirs += [ "${MEDIALIB_MTP_PATH}/include" ]
   }
 
   ldflags = [ "-Wl,--gc-sections" ]
@@ -378,53 +417,19 @@ ohos_shared_library("userfilemanager") {
   part_name = "media_library"
 }
 
-js_declaration("photoaccesshelper_js") {
+ohos_abc("photoaccesshelper") {
+  sources = [ "${MEDIALIB_JS_PATH}/src/photoaccesshelperinf.js" ]
+  output_name = "photoaccesshelper"
+  install_images = [ "system" ]
+  module_install_dir = "etc/abc/file"
+  subsystem_name = "multimedia"
   part_name = "media_library"
-  sources = [ "./@ohos.file.photoAccessHelper.d.ts" ]
 }
 
-# compile .js to .abc.
-action("gen_photoaccesshelperinf_abc") {
-  visibility = [ ":*" ]
-  script = "../../../../../../arkcompiler/ets_frontend/es2panda/scripts/generate_js_bytecode.py"
-
-  args = [
-    "--src-js",
-    rebase_path("${MEDIALIB_JS_PATH}/src/photoaccesshelperinf.js"),
-    "--dst-file",
-    rebase_path(target_out_dir + "/photoaccesshelperinf.abc"),
-    "--frontend-tool-path",
-    rebase_path("${es2abc_build_path}"),
-    "--module",
-  ]
-  deps =
-      [ "../../../../../../arkcompiler/ets_frontend/es2panda:es2panda_build" ]
-
-  inputs = [ "${MEDIALIB_JS_PATH}/src/photoaccesshelperinf.js" ]
-  outputs = [ target_out_dir + "/photoaccesshelperinf.abc" ]
-}
-
-base_output_path = get_label_info(":photoaccesshelperinf_js", "target_out_dir")
-photoaccesshelperinf_obj_path = base_output_path + "/photoaccesshelperinf.o"
-gen_js_obj("photoaccesshelperinf_js") {
-  input = "${MEDIALIB_JS_PATH}/src/photoaccesshelperinf.js"
-  output = photoaccesshelperinf_obj_path
-  dep = ":gen_photoaccesshelperinf_abc"
-}
-
-abc_output_path = get_label_info(":photoaccesshelperinf_abc", "target_out_dir")
-photoaccesshelperinf_abc_obj_path =
-    abc_output_path + "/photoaccesshelperinf_abc.o"
-gen_js_obj("photoaccesshelperinf_abc") {
-  input = "$target_out_dir/photoaccesshelperinf.abc"
-  output = photoaccesshelperinf_abc_obj_path
-  dep = ":gen_photoaccesshelperinf_abc"
-}
-
-ohos_shared_library("photoaccesshelper") {
+ohos_shared_library("photoaccesshelpernative") {
   configs = [
     ":public_napi_config",
-    ":napi_config",
+    ":napi_config_photoaccesshelpernative",
   ]
 
   sources =
@@ -432,8 +437,6 @@ ohos_shared_library("photoaccesshelper") {
 
   deps = [
     ":medialibrary_nutils",
-    ":photoaccesshelperinf_abc",
-    ":photoaccesshelperinf_js",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
   ]
 
@@ -446,7 +449,10 @@ ohos_shared_library("photoaccesshelper") {
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
+    "device_manager:devicemanagersdk",
+    "e2fsprogs:libext2_blkid",
     "hilog:libhilog",
+    "i18n:intl_util",
     "napi:ace_napi",
     "player_framework:media_client",
   ]

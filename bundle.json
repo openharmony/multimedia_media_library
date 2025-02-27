@@ -103,7 +103,7 @@
             "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
             "//foundation/multimedia/media_library/interfaces/kits/js:userfilemanager",
             "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper",
-            "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper_js",
+            "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelpernative",
             "//foundation/multimedia/media_library/interfaces/kits/js:photopickercomponent",
             "//foundation/multimedia/media_library/interfaces/kits/js:photopickercomponent_js",
             "//foundation/multimedia/media_library/interfaces/kits/c:native_media_asset_manager",
