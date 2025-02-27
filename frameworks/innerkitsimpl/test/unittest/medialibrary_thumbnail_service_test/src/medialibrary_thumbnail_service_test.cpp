@@ -1324,7 +1324,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_035, Tes
     int outLcdCount = 0;
     int err = E_ERR;
     auto res = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
-    EXPECT_EQ(res, nullptr);
+    EXPECT_EQ(res, false);
 }
 } // namespace Media
 } // namespace OHOS
