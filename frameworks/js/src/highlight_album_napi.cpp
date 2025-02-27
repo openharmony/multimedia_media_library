@@ -673,10 +673,10 @@ static void DeleteHighlightAlbumsCompleteCallback(napi_env env, napi_status stat
     napi_get_undefined(env, &jsContext->data);
     napi_get_undefined(env, &jsContext->error);
     if (context->error == ERR_DEFAULT) {
-        CHECK_ARGS(env, napi_create_int32(env, E_SUCCESS, &jsContext->data), JS_INNER_FAIL);
+        napi_create_int32(env, E_SUCCESS, &jsContext->data);
         jsContext->status = true;
     } else {
-        CHECK_ARGS(env, napi_create_int32(env, deleteAlbumFailed, &jsContext->data), JS_INNER_FAIL);
+        napi_create_int32(env, deleteAlbumFailed, &jsContext->data);
         context->HandleError(env, jsContext->error);
     }
 
