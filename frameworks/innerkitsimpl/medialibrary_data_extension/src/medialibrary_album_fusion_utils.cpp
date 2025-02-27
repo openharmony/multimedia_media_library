@@ -510,10 +510,11 @@ struct MediaAssetCopyInfo {
     bool isCopyThumbnail;
     int32_t ownerAlbumId;
     std::string displayName;
+    bool isCopyDateAdded;
     MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId,
-        const std::string& displayName = "")
+        const std::string& displayName = "", bool isCopyDateAdded = true)
         : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId),
-        displayName(displayName) {}
+        displayName(displayName), isCopyDateAdded(isCopyDateAdded) {}
 };
 
 static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -565,6 +566,10 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
         values.PutString(PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, cloudId);
         values.PutInt(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, CLOUD_COPY_DIRTY_FLAG);
+    }
+    if (!copyInfo.isCopyDateAdded) {
+        values.Delete(MediaColumn::MEDIA_DATE_ADDED);
+        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     }
     HandleLowQualityAssetValuesBucket(resultSet, values);
     return E_OK;
@@ -773,7 +778,7 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
         return E_ERR;
     }
 
-    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName);
+    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false);
     err = CopyMateData(upgradeStore, resultSet, newAssetId, targetPath, copyInfo);
     if (err != E_OK) {
         MEDIA_INFO_LOG("Failed to copy local file.");
