@@ -147,7 +147,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
         CHECK_AND_RETURN_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
             "CreateAstcBackgroundTask free size is not enough, id:%{public}s, path:%{public}s",
             thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str());
-        if (thumbnailData.isLocalFile) {
+        if (thumbnailData.isLocalFile || thumbnailData.position == 3) {
             thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
             IThumbnailHelper::CreateThumbnail(data);
         } else {
@@ -222,8 +222,8 @@ int32_t ThumbnailGenerateHelper::CreateAstcMthAndYear(ThumbRdbOpt &opts)
         MEDIA_ERR_LOG("CreateAstcMthAndYear query data from fileId failed, id: %{public}s", opts.fileId.c_str());
         return err;
     }
-    data.loaderOpts.loadingStates = data.isLocalFile ? SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES :
-        SourceLoader::CLOUD_SOURCE_LOADING_STATES;
+    data.loaderOpts.loadingStates = (data.isLocalFile || data.position == 3) ?
+        SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
     if (!IThumbnailHelper::DoCreateAstcMthAndYear(opts, data)) {
         return E_ERR;
     }
@@ -296,7 +296,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
     for (auto& info : infos) {
         opts.row = info.id;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
-        if (info.isLocalFile) {
+        if (info.isLocalFile || info.position == 3) {
             info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
             IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail, opts, info, requestId);
         } else {
