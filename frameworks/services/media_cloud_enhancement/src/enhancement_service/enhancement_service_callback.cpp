@@ -96,7 +96,7 @@ static int32_t SetAssetPathInCreate(FileAsset &fileAsset, std::shared_ptr<Transa
     return E_OK;
 }
 
-static int32_t checkAddrAndBytes(CloudEnhancementThreadTask& task)
+static int32_t CheckAddrAndBytes(CloudEnhancementThreadTask& task)
 {
     if (task.addr == nullptr || task.bytes == 0) {
         MEDIA_ERR_LOG("task.addr is nullptr or task.bytes(%{public}u) is 0", task.bytes);
@@ -110,7 +110,7 @@ static int32_t checkAddrAndBytes(CloudEnhancementThreadTask& task)
 int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEnhancementFileInfo> info,
     CloudEnhancementThreadTask& task, shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    CHECK_AND_RETURN_RET(checkAddrAndBytes(task) == E_OK, E_ERR);
+    CHECK_AND_RETURN_RET(CheckAddrAndBytes(task) == E_OK, E_ERR);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(info->displayName) == E_OK,
         E_ERR, "display name not valid");
     auto pos = info->displayName.rfind('.');
@@ -144,15 +144,13 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
         MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(newFileId,
             newFileInfo->filePath, editDataCameraSourcePath, mimeType);
     }
+    int64_t permId = EnhancementDatabaseOperations::InsertCloudEnhancementPerm(info->fileId, newFileId);
+    MEDIA_INFO_LOG("Add Permission for cloud enhancement photo, perm row: %{public}ld", permId);
     MediaLibraryObjectUtils::ScanFileSyncWithoutAlbumUpdate(newFileInfo->filePath,
         to_string(newFileId), MediaLibraryApi::API_10);
     string newFileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(newFileId),
         MediaFileUtils::GetExtraUri(newFileInfo->displayName, newFileInfo->filePath));
     needUpdateUris.emplace_back(newFileUri);
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch != nullptr) {
-        watch->Notify(newFileUri, NotifyType::NOTIFY_ADD);
-    }
     return newFileId;
 }
 

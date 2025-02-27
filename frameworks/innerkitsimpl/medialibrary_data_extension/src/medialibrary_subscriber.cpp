@@ -80,6 +80,7 @@
 #include "background_cloud_file_processor.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#include "cloud_enhancement_checker.h"
 #endif
 
 using namespace OHOS::AAFwk;
@@ -621,6 +622,10 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     CloudUploadChecker::HandleNoOriginPhoto();
 
     CloudUploadChecker::RepairNoDetailTime();
+#ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
+    // add permission for cloud enhancement photo
+    CloudEnhancementChecker::AddPermissionForCloudEnhancement();
+#endif
     // migration highlight info to new path
     if (MediaFileUtils::IsFileExists(ROOT_MEDIA_DIR + HIGHLIGHT_INFO_OLD)) {
         MEDIA_INFO_LOG("Migration highlight info to new path");
