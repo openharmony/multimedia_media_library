@@ -169,6 +169,27 @@ static void FillBundleWithWaterMarkInfo(MediaEnhanceBundleHandle* mediaEnhanceBu
     EnhancementManager::GetInstance().enhancementService_->PutString(mediaEnhanceBundle,
         MediaEnhance_Bundle_Key::METADATA, metaDataJson.c_str());  // meta data
 }
+
+static bool ShouldAddTask(bool isAuto, int32_t photoIsAuto, int32_t ceAvailable, const string &photoId)
+{
+    if (isAuto && (photoIsAuto != static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO))) {
+        MEDIA_INFO_LOG("photoId: %{public}s doesn't support auto enhancement", photoId.c_str());
+        return false;
+    } else if (ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO)) {
+        MEDIA_INFO_LOG("changing auto enhance to preview or manual enhance");
+    } else if (ceAvailable != static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT) &&
+        ceAvailable != static_cast<int32_t>(CloudEnhancementAvailableType::FAILED_RETRY)) {
+        MEDIA_INFO_LOG("cloud enhancement task in db not support, photoId: %{public}s", photoId.c_str());
+        return false;
+    } else if (EnhancementTaskManager::InProcessingTask(photoId)) {
+        MEDIA_INFO_LOG("cloud enhancement task in cache is processing, photoId: %{public}s", photoId.c_str());
+        return false;
+    }
+    if (!EnhancementManager::GetInstance().LoadService()) {
+        return false;
+    }
+    return true;
+}
 #endif
 
 static void InitCloudEnhancementAsync(AsyncTaskData *data)
@@ -196,12 +217,11 @@ bool EnhancementManager::Init()
         MEDIA_ERR_LOG("load enhancement service error");
         return false;
     }
+    ResetProcessingAutoToSupport();
     InitPhotosSettingsMonitor();
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
-    vector<string> columns = {
-        MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_ID,
-        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK,
-    };
+    vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_ID,
+        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK };
     servicePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL));
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
@@ -251,9 +271,7 @@ void EnhancementManager::InitPhotosSettingsMonitor()
     isCellularNetConnected_ = MedialibrarySubscriber::IsCellularNetConnected();
     shouldAddWaterMark_ = SettingsMonitor::QueryPhotosWaterMark();
     photosAutoOption_ = SettingsMonitor::QueryPhotosAutoOption();
-    HandleAutoAddOperation(true);
-    MEDIA_INFO_LOG("WiFi is %{public}s, Cellular is %{public}s", isWifiConnected_ ? "true" : "false",
-        isCellularNetConnected_ ? "true" : "false");
+    HandleAutoAddOperation();
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
 #endif
@@ -498,7 +516,7 @@ void EnhancementManager::GenerateAddServicePredicates(bool isAuto, RdbPredicates
     servicePredicates.EndWrap();
 }
 
-void EnhancementManager::GenerateAddAutoServicePredicates(bool isReboot, RdbPredicates &servicePredicates)
+void EnhancementManager::GenerateAddAutoServicePredicates(RdbPredicates &servicePredicates)
 {
     servicePredicates.EqualTo(PhotoColumn::PHOTO_IS_AUTO, static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO));
     servicePredicates.And();
@@ -508,12 +526,11 @@ void EnhancementManager::GenerateAddAutoServicePredicates(bool isReboot, RdbPred
     servicePredicates.Or();
     servicePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::FAILED_RETRY));
-    if (isReboot) {
-        servicePredicates.Or();
-        servicePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-            static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO));
-    }
     servicePredicates.EndWrap();
+    servicePredicates.And();
+    servicePredicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
+    servicePredicates.And();
+    servicePredicates.EqualTo(PhotoColumn::PHOTO_EDIT_TIME, "0");
 }
 
 void EnhancementManager::GenerateCancelOperationPredicates(int32_t fileId, RdbPredicates &servicePredicates)
@@ -531,6 +548,10 @@ void EnhancementManager::GenerateCancelOperationPredicates(int32_t fileId, RdbPr
 
 int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const bool hasCloudWatermark, int triggerMode)
 {
+    if (!IsAddOperationEnabled(triggerMode)) {
+        MEDIA_INFO_LOG("HandleAddOperation failed, conditions not met");
+        return E_ERR;
+    }
     unordered_map<int32_t, string> fileId2Uri;
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_IS_AUTO,
         PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE };
@@ -547,21 +568,8 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
         int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
         MEDIA_INFO_LOG("HandleAddOperation fileId: %{public}d, photoId: %{public}s, ceAvailable: %{public}d",
             fileId, photoId.c_str(), ceAvailable);
-        if (isAuto && (photoIsAuto != static_cast<int32_t>(CloudEnhancementIsAutoType::AUTO))) {
-            continue;
-        } else if (ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO)) {
-            MEDIA_INFO_LOG("changing auto enhance to preview or manual enhance");
-        } else if (ceAvailable != static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT) &&
-            ceAvailable != static_cast<int32_t>(CloudEnhancementAvailableType::FAILED_RETRY)) {
-            MEDIA_INFO_LOG("cloud enhancement task in db not support, photoId: %{public}s", photoId.c_str());
+        if (!ShouldAddTask(isAuto, photoIsAuto, ceAvailable, photoId)) {
             errCode = E_ERR;
-            continue;
-        } else if (EnhancementTaskManager::InProcessingTask(photoId)) {
-            MEDIA_INFO_LOG("cloud enhancement task in cache is processing, photoId: %{public}s", photoId.c_str());
-            errCode = E_ERR;
-            continue;
-        }
-        if (!LoadService()) {
             continue;
         }
         MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
@@ -581,7 +589,32 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
     return errCode;
 }
 
-int32_t EnhancementManager::HandleAutoAddOperation(const bool isReboot)
+bool EnhancementManager::IsAddOperationEnabled(int32_t triggerMode)
+{
+    if (triggerMode == static_cast<int>(CloudEnhancementTriggerModeType::TRIGGER_MANUAL)) {
+        MEDIA_INFO_LOG("manual enhancement task always enabled");
+        return true;
+    }
+    MEDIA_INFO_LOG("triggerMode: %{public}d, photos option: %{public}s, WiFi: %{public}s, CellularNet: %{public}s",
+        triggerMode, photosAutoOption_.c_str(), isWifiConnected_ ? "true" : "false",
+        isCellularNetConnected_ ? "true" : "false");
+    if (triggerMode == static_cast<int>(CloudEnhancementTriggerModeType::TRIGGER_AUTO)) {
+        if ((photosAutoOption_ == PHOTO_OPTION_CLOSE) || (!isWifiConnected_ && !isCellularNetConnected_)) {
+            return false;
+        }
+
+        if (photosAutoOption_ == PHOTO_OPTION_WLAN_AND_NETWORK) {
+            return true;
+        }
+
+        if (photosAutoOption_ == PHOTO_OPTION_WLAN_ONLY) {
+            return isWifiConnected_;
+        }
+    }
+    return false;
+}
+
+int32_t EnhancementManager::HandleAutoAddOperation()
 {
     MEDIA_INFO_LOG("HandleAutoAddOperation");
     if (!IsAutoTaskEnabled()) {
@@ -591,7 +624,7 @@ int32_t EnhancementManager::HandleAutoAddOperation(const bool isReboot)
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE,
         PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE };
-    GenerateAddServicePredicates(isReboot, servicePredicates);
+    GenerateAddAutoServicePredicates(servicePredicates);
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
     if (CheckResultSet(resultSet) != E_OK) {
         MEDIA_INFO_LOG("no auto photo");
@@ -741,6 +774,17 @@ int32_t EnhancementManager::HandleCancelAllAutoOperation()
         CloudEnhancementGetCount::GetInstance().RemoveStartTime(photoId);
     }
     return E_OK;
+}
+
+void EnhancementManager::ResetProcessingAutoToSupport()
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO));
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
+    EnhancementDatabaseOperations::Update(values, predicates);
 }
 #endif
 

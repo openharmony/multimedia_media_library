@@ -55,7 +55,7 @@ public:
     EXPORT int32_t HandleAddOperation(MediaLibraryCommand &cmd, const bool hasCloudWatermark, int triggerMode = 0);
     EXPORT int32_t AddServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
         const std::string &photoId, const bool hasCloudWatermark, const bool isAuto = false);
-    EXPORT int32_t HandleAutoAddOperation(const bool isReboot = false);
+    EXPORT int32_t HandleAutoAddOperation();
     EXPORT int32_t AddAutoServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
         const std::string &photoId);
 #endif
@@ -90,12 +90,14 @@ private:
     const EnhancementManager &operator=(const EnhancementManager &manager) = delete;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     void GenerateAddServicePredicates(bool isAuto, NativeRdb::RdbPredicates &servicePredicates);
-    void GenerateAddAutoServicePredicates(bool isReboot, NativeRdb::RdbPredicates &servicePredicates);
+    void GenerateAddAutoServicePredicates(NativeRdb::RdbPredicates &servicePredicates);
     void GenerateCancelOperationPredicates(int32_t fileId, NativeRdb::RdbPredicates &servicePredicates);
     sptr<PhotosAutoOptionObserver> photosAutoOptionObserver_ = nullptr;
     sptr<PhotosWaterMarkObserver> photosWaterMarkObserver_ = nullptr;
     bool IsAutoTaskEnabled();
     int32_t HandleCancelAllAutoOperation();
+    void ResetProcessingAutoToSupport();
+    bool IsAddOperationEnabled(int32_t triggerMode);
 #endif
     void InitPhotosSettingsMonitor();
     bool isCameraIdle_ = true;
