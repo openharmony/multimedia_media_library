@@ -27,6 +27,8 @@
 #include "result_set_utils.h"
 #include "rdb_utils.h"
 #include "photo_album_column.h"
+#include "media_app_uri_permission_column.h"
+#include "media_library_extend_manager.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -36,7 +38,7 @@ namespace OHOS {
 namespace Media {
 static const int32_t MAX_UPDATE_RETRY_TIMES = 5;
 
-std::shared_ptr<ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryCommand &cmd,
+std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryCommand &cmd,
     RdbPredicates &servicePredicates, const vector<string> &columns)
 {
     RdbPredicates clientPredicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
@@ -51,7 +53,7 @@ std::shared_ptr<ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryComm
     return MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
 }
 
-std::shared_ptr<ResultSet> EnhancementDatabaseOperations::BatchQuery(MediaLibraryCommand &cmd,
+std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::BatchQuery(MediaLibraryCommand &cmd,
     const vector<string> &columns, unordered_map<int32_t, string> &fileId2Uri)
 {
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
@@ -178,6 +180,61 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
         "Insert into db failed, errCode = %{public}d", errCode);
     MEDIA_INFO_LOG("insert success, rowId = %{public}d", (int)outRowId);
     return static_cast<int32_t>(outRowId);
+}
+
+int64_t EnhancementDatabaseOperations::InsertCloudEnhancementPerm(int32_t sourceFileId,
+    int32_t targetFileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
+    RdbPredicates queryPredicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    queryPredicates.EqualTo(AppUriPermissionColumn::FILE_ID, sourceFileId);
+    queryPredicates.And();
+    queryPredicates.EqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
+        static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
+    vector<string> columns = { AppUriPermissionColumn::APP_ID,
+        AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::DATE_MODIFIED,
+        AppUriPermissionColumn::SOURCE_TOKENID, AppUriPermissionColumn::TARGET_TOKENID };
+    auto resultSet = MediaLibraryRdbStore::StepQueryWithoutCheck(queryPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        E_HAS_DB_ERROR, "cannot get permission from origin photo: %{public}d", sourceFileId);
+    string appId = GetStringVal(AppUriPermissionColumn::APP_ID, resultSet);
+    int32_t uriType = GetInt32Val(AppUriPermissionColumn::URI_TYPE, resultSet);
+    int64_t dateModified = GetInt64Val(AppUriPermissionColumn::DATE_MODIFIED, resultSet);
+    int64_t sourceTokenId = GetInt64Val(AppUriPermissionColumn::SOURCE_TOKENID, resultSet);
+    int64_t targetTokenId = GetInt64Val(AppUriPermissionColumn::TARGET_TOKENID, resultSet);
+    resultSet->Close();
+
+    int64_t outRowId = -1;
+    RdbPredicates checkPredicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    checkPredicates.EqualTo(AppUriPermissionColumn::FILE_ID, targetFileId);
+    checkPredicates.EqualTo(AppUriPermissionColumn::URI_TYPE, uriType);
+    checkPredicates.EqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
+        static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
+    checkPredicates.EqualTo(AppUriPermissionColumn::DATE_MODIFIED, dateModified);
+    checkPredicates.EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, sourceTokenId);
+    checkPredicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, targetTokenId);
+    resultSet = MediaLibraryRdbStore::StepQueryWithoutCheck(checkPredicates, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("cloud enhancement permission record has already exists: %{public}d", targetFileId);
+        return outRowId;
+    }
+
+    ValuesBucket valueBucket;
+    valueBucket.PutString(AppUriPermissionColumn::APP_ID, appId);
+    valueBucket.PutInt(AppUriPermissionColumn::FILE_ID, targetFileId);
+    valueBucket.PutInt(AppUriPermissionColumn::URI_TYPE, uriType);
+    valueBucket.PutInt(AppUriPermissionColumn::PERMISSION_TYPE,
+        static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
+    valueBucket.PutLong(AppUriPermissionColumn::DATE_MODIFIED, dateModified);
+    valueBucket.PutLong(AppUriPermissionColumn::SOURCE_TOKENID, sourceTokenId);
+    valueBucket.PutLong(AppUriPermissionColumn::TARGET_TOKENID, targetTokenId);
+
+    int32_t errCode = MediaLibraryRdbStore::InsertInternal(outRowId,
+        AppUriPermissionColumn::APP_URI_PERMISSION_TABLE, valueBucket);
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "insert permission failed: %{public}d", errCode);
+    MEDIA_INFO_LOG("Add permission for cloud enhancement photo success: %{public}d", targetFileId);
+    return outRowId;
 }
 
 bool IsEditedTrashedHidden(const std::shared_ptr<NativeRdb::ResultSet> &ret)
