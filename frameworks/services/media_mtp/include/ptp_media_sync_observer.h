@@ -52,6 +52,9 @@ public:
     void StartNotifyThread();
     void StopNotifyThread();
     void ChangeNotifyThread();
+
+    void StartDealyInfoThread();
+    void StopDealyInfoThread();
 private:
     void SendEventPackets(uint32_t objectHandle, uint16_t eventCode);
     void SendEventPacketAlbum(uint32_t objectHandle, uint16_t eventCode);
@@ -67,12 +70,27 @@ private:
     void SendPhotoRemoveEvent(std::string &suffixString);
     bool ParseNotifyData(const ChangeInfo &changeInfo, std::vector<std::string> &fileIds);
     void HandleMovePhotoEvent(const ChangeInfo &changeInfo);
+
+    void DealyInfoThread();
 private:
     std::thread notifythread_;
     std::queue<ChangeInfo> changeInfoQueue_;
     std::mutex mutex_;
     std::condition_variable cv_;
     std::atomic<bool> isRunning_ {false};
+
+    struct DelayInfo {
+        uint32_t objectHandle;
+        uint16_t eventCode;
+        uint32_t objectHandleAlbum;
+        uint16_t eventCodeAlbum;
+        std::chrono::steady_clock::time_point tp;
+    };
+    std::thread delayThread_;
+    std::queue<DelayInfo> delayQueue_;
+    std::mutex mutexDelay_;
+    std::condition_variable cvDelay_;
+    std::atomic<bool> isRunningDelay_ {false};
 };
 
 class MediaSyncNotifyData : public AsyncTaskData {
