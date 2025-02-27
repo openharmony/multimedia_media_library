@@ -137,6 +137,7 @@ bool MultiStagesVideoCaptureManager::Init()
 void MultiStagesVideoCaptureManager::SyncWithDeferredVideoProcSessionInternal()
 {
     MEDIA_INFO_LOG("SyncWithDeferredVideoProcSessionInternal enter");
+
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
     string where = MEDIA_DATA_DB_PHOTO_ID + " IS NOT NULL AND " +
         "((" + MEDIA_DATA_DB_PHOTO_QUALITY + " > 0 AND (" + MEDIA_DATA_DB_MEDIA_TYPE + " = " +
