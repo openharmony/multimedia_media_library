@@ -98,5 +98,5 @@ void DynamicLoader::CloseDynamicHandle(std::string dynamicLibrary)
             dynamicLibrary.c_str());
     }
 }
-}  // namespace Camera
+}  // namespace Media
 }  // namespace OHOS

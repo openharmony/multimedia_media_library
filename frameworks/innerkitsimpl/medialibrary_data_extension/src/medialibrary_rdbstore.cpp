@@ -678,6 +678,12 @@ int32_t MediaLibraryRdbStore::BatchInsert(MediaLibraryCommand &cmd, int64_t& out
     return ret;
 }
 
+int32_t MediaLibraryRdbStore::InsertInternal(int64_t &outRowId, const std::string &table,
+    NativeRdb::ValuesBucket &row)
+{
+    return ExecSqlWithRetry([&]() { return MediaLibraryRdbStore::GetRaw()->Insert(outRowId, table, row); });
+}
+
 int32_t MediaLibraryRdbStore::DoDeleteFromPredicates(const AbsRdbPredicates &predicates, int32_t &deletedRows)
 {
     DfxTimer dfxTimer(DfxType::RDB_DELETE, INVALID_DFX, RDB_TIME_OUT, false);
