@@ -162,7 +162,8 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
         {
             { PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_NAME + " IS NOT NULL" },
             { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
-                to_string(PhotoAlbumSubType::SHOOTING_MODE) + ")" },
+                to_string(PhotoAlbumSubType::SHOOTING_MODE) + ", " +
+                to_string(PhotoAlbumSubType::GEOGRAPHY_CITY) + ")" },
         }},
 };
 const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLAUSE_MAP_WITH_CLOUD = {
