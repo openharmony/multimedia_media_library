@@ -143,7 +143,7 @@ void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
  
 void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, const std::string &registerUri)
 {
-    const std::string ASSET_URI_PREFIX = "file://media/Photo/";
+    const std::string ASSET_URI_PREFIX = "file://media/";
     const std::string CLOUD_SYNC_SWITCH_URI_PREFIX = "datashareproxy://";
  
     std::shared_ptr<DataShare::DataShareObserver> observer;
