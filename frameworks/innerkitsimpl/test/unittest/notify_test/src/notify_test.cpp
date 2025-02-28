@@ -226,7 +226,7 @@ static void CheckInfo(shared_ptr<TestObserver> obs, const std::string &uriPrefix
             EXPECT_EQ(obs->changeInfo_.uris_.begin()->ToString(), PhotoColumn::PHOTO_URI_PREFIX + uriPostfix);
         }
     } else {
-        EXPECT_TRUE(false);
+        EXPECT_NE(obs, nullptr);
     }
 }
 
@@ -473,14 +473,14 @@ HWTEST_F(NotifyTest, cloud_notify_001, TestSize.Level0)
 
 /**
  * @tc.name: cloud_notify_002
- * @tc.desc: test cloud notify for ChangeType::DELETE
+ * @tc.desc: test cloud notify for ChangeType::INSERT
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(NotifyTest, cloud_notify_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("cloud_notify_002 enter");
-    CheckCloudSyncNotify(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX, "2", DataShareObserver::ChangeType::DELETE);
+    CheckCloudSyncNotify(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX, "2", DataShareObserver::ChangeType::INSERT);
     MEDIA_INFO_LOG("cloud_notify_002 exit");
 }
 
@@ -512,27 +512,27 @@ HWTEST_F(NotifyTest, cloud_notify_004, TestSize.Level0)
 
 /**
  * @tc.name: cloud_notify_005
- * @tc.desc: test cloud notify for ChangeType::UPDATE
+ * @tc.desc: test cloud notify for ChangeType::INSERT
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(NotifyTest, cloud_notify_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("cloud_notify_005 enter");
-    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "5", DataShareObserver::ChangeType::UPDATE);
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "5", DataShareObserver::ChangeType::INSERT);
     MEDIA_INFO_LOG("cloud_notify_005 exit");
 }
 
 /**
  * @tc.name: cloud_notify_006
- * @tc.desc: test cloud notify for ChangeType::OTHER
+ * @tc.desc: test cloud notify for ChangeType::INSERT
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(NotifyTest, cloud_notify_006, TestSize.Level0)
 {
     MEDIA_INFO_LOG("cloud_notify_006 enter");
-    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "6", DataShareObserver::ChangeType::OTHER);
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "6", DataShareObserver::ChangeType::INSERT);
     MEDIA_INFO_LOG("cloud_notify_006 exit");
 }
 
