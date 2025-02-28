@@ -9843,14 +9843,40 @@ Ace::UIContent *GetSubWindowUIContent(napi_env env, unique_ptr<MediaLibraryAsync
     return currentWindow->GetUIContent();
 }
 
+static bool IsPcPicker(napi_env env, unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
+{
+    bool present = false;
+    napi_status status = napi_has_named_property(env, AsyncContext->argv[ARGS_ONE], "parameters", &present);
+    if (status != napi_ok || !present) {
+        return false;
+    }
+    napi_value paramValue;
+    status = napi_get_named_property(env, AsyncContext->argv[ARGS_ONE], "parameters", &paramValue);
+    CHECK_COND_RET(status == napi_ok, false, "failed to get named property of parameters");
+    present = false;
+    status = napi_has_named_property(env, paramValue, "isPc", &present);
+    if (status != napi_ok || !present) {
+        return false;
+    }
+    napi_value isPc;
+    status = napi_get_named_property(env, paramValue, "isPc", &isPc);
+    CHECK_COND_RET(status == napi_ok, false, "failed to get named property of isPc");
+    bool isPcPicker;
+    napi_get_value_bool(env, isPc, &isPcPicker);
+    return isPcPicker;
+}
+
 Ace::UIContent *GetUIContent(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
 {
     NAPI_INFO_LOG("GetUIContent start");
-    Ace::UIContent *uiContent = GetSubWindowUIContent(env, AsyncContext);
-    if (uiContent != nullptr) {
-        NAPI_INFO_LOG("GetSubWindowUIContent success");
-        return uiContent;
+    if (!IsPcPicker(env, AsyncContext)) {
+        NAPI_INFO_LOG("GetUIContent is not from PcPicker");
+        Ace::UIContent *uiContent = GetSubWindowUIContent(env, AsyncContext);
+        if (uiContent != nullptr) {
+            NAPI_INFO_LOG("GetSubWindowUIContent success");
+            return uiContent;
+        }
     }
 
     bool isStageMode = false;
