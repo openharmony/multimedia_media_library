@@ -470,9 +470,16 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
     // !! Do not add upgrade code here !!
 }
 
+static void OtherLongRunningInitDBOperation()
+{
+    MultiStagesPhotoCaptureManager::GetInstance().Init();
+    MultiStagesVideoCaptureManager::GetInstance().Init();
+}
+
 void MediaLibraryDataManager::HandleUpgradeRdbAsync()
 {
     std::thread([&] {
+        OtherLongRunningInitDBOperation();
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         if (rdbStore == nullptr) {
             MEDIA_ERR_LOG("rdbStore is nullptr!");
