@@ -287,7 +287,6 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     OnStartSub(want);
     Media::MedialibrarySubscriber::Subscribe();
     dataManager->SetStartupParameter();
-    RestartCloudMediaAssetDownload();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
 }
 
