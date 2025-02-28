@@ -77,6 +77,8 @@
 #include "medialibrary_astc_stat.h"
 #include "photo_mimetype_operation.h"
 #include "photo_other_album_trans_operation.h"
+#include "preferences.h"
+#include "preferences_helper.h"
 #include "background_cloud_file_processor.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
@@ -107,6 +109,8 @@ const int32_t MegaByte = 1024*1024;
 const int32_t MAX_FILE_SIZE_MB = 10240;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
+static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
+static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
 
 // The network should be available in this state
 const int32_t NET_CONN_STATE_CONNECTED = 3;
@@ -541,6 +545,28 @@ static int32_t DoUpdateBurstFromGallery()
     return E_SUCCESS;
 }
 
+static void UpdateDirtyForCloudClone(AsyncTaskData *data)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
+
+    int32_t result = dataManager->UpdateDirtyForCloudClone();
+    CHECK_AND_PRINT_LOG(result == E_OK, "UpdateDirtyForCloudClone faild, result = %{public}d", result);
+}
+
+static int32_t DoUpdateDirtyForCloudClone()
+{
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
+        "Failed to get async worker instance!");
+    shared_ptr<MediaLibraryAsyncTask> updateDirtyForCloudTask =
+        make_shared<MediaLibraryAsyncTask>(UpdateDirtyForCloudClone, nullptr);
+    CHECK_AND_RETURN_RET_LOG(updateDirtyForCloudTask != nullptr, E_FAIL,
+        "Failed to create async task for updateDirtyForCloudTask !");
+    asyncWorker->AddTask(updateDirtyForCloudTask, false);
+    return E_SUCCESS;
+}
+
 static void RecoverBackgroundDownloadCloudMediaAsset()
 {
     if (!CloudMediaAssetManager::GetInstance().SetBgDownloadPermission(true)) {
@@ -599,6 +625,19 @@ static int32_t DoUpdateBurstCoverLevelFromGallery()
     return E_SUCCESS;
 }
 
+static void UpdateDirtyForBeta()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+    CHECK_AND_RETURN_LOG(prefs, "Get preferences error: %{public}d", errCode);
+    if (IsBetaVersion() && prefs != nullptr && (prefs->GetInt(NO_UPDATE_DIRTY, 0) != 1)) {
+        int32_t ret = DoUpdateDirtyForCloudClone();
+        CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
+    }
+    return;
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     bool cond = (!backgroundDelayTask_.IsDelayTaskTimeOut() || !currentStatus_);
@@ -609,6 +648,8 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 #endif
     // delete temporary photos
     DeleteTemporaryPhotos();
+    // clear dirty data
+    UpdateDirtyForBeta();
     BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
         BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
