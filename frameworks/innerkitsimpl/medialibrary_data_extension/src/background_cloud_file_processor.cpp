@@ -89,8 +89,9 @@ const std::string DOWNLOAD_CNT_CONFIG = "/data/storage/el2/base/preferences/down
 const std::string DOWNLOAD_LATEST_FINISHED = "download_latest_finished";
 const std::string LAST_DOWNLOAD_MILLISECOND = "last_download_millisecond";
 // when kernel hibernates, the timer expires longer, and the number of download images needs to be compensated
-int32_t MIN_DOWNLOAD_NUM = 1;
-int32_t MAX_DOWNLOAD_NUM = 5;
+const int32_t MIN_DOWNLOAD_NUM = 1;
+const int32_t MAX_DOWNLOAD_NUM = 30;
+const double HALF = 0.5;
 
 void BackgroundCloudFileProcessor::SetDownloadLatestFinished(bool downloadLatestFinished)
 {
@@ -343,12 +344,16 @@ void BackgroundCloudFileProcessor::GetDownloadNum(int64_t &downloadNum)
     int64_t lastDownloadMilliSecond = GetLastDownloadMilliSecond();
 
     int64_t minutes = (currentMilliSecond - lastDownloadMilliSecond) / downloadInterval_;
-    if (minutes <= MIN_DOWNLOAD_NUM) {
+    if (minutes < MIN_DOWNLOAD_NUM) {
         downloadNum = MIN_DOWNLOAD_NUM;
     } else if (minutes >= MAX_DOWNLOAD_NUM) {
         downloadNum = MAX_DOWNLOAD_NUM;
     } else {
         downloadNum = minutes;
+        if ((currentMilliSecond - lastDownloadMilliSecond) - (minutes * downloadInterval_)
+            > (HALF * downloadInterval_)) {
+            downloadNum++;
+        }
     }
 }
 
