@@ -64,11 +64,8 @@ bool PictureHandlerService::OpenPicture(const std::string &fileId, int32_t &fd)
     std::string name = PICTURE_ASHMEM_NAME + fileId;
     fd = AshmemCreate(name.c_str(), msgParcel.GetDataSize());
     MEDIA_DEBUG_LOG("PictureHandlerService::OpenPicture fd:  %{public}d", fd);
-    if (fd < 0) {
-        MEDIA_ERR_LOG("PictureHandlerService::OpenPicture AshmemCreate failed, name: %{public}s, fd: %{public}d",
-            name.c_str(), fd);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, false,
+        "PictureHandlerService::OpenPicture AshmemCreate failed, name: %{public}s, fd: %{public}d", name.c_str(), fd);
 
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
     if (result < 0) {
@@ -103,16 +100,12 @@ bool PictureHandlerService::WritePicture(const int32_t &fileId, MessageParcel &d
     std::string photoId;
     bool isHighQualityPicture = false;
     int32_t ret = MediaLibraryPhotoOperations::GetPicture(fileId, picture, false, photoId, isHighQualityPicture);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("PictureHandlerService::GetPicture picture is not exist, fileId: %{public}d", fileId);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
+        "PictureHandlerService::GetPicture picture is not exist, fileId: %{public}d", fileId);
 
     std::shared_ptr<PixelMap> mainPixel = picture->GetMainPixel();
-    if (mainPixel == nullptr) {
-        MEDIA_ERR_LOG("PictureHandlerService::GetPicture mainPixel is not exist, fileId: %{public}d", fileId);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(mainPixel != nullptr, false,
+        "PictureHandlerService::GetPicture mainPixel is not exist, fileId: %{public}d", fileId);
 
     WritePixelMap(data, mainPixel);
 
@@ -249,9 +242,7 @@ bool PictureHandlerService::WriteSurfaceBuffer(MessageParcel &data, std::shared_
     bool hasBufferHandle = (handle != nullptr);
     MEDIA_DEBUG_LOG("PictureHandlerService::WriteSurfaceBuffer hasBufferHandle: %{public}d", hasBufferHandle);
     data.WriteBool(hasBufferHandle);
-    if (!hasBufferHandle) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(hasBufferHandle, false);
     return WriteBufferHandler(data, *handle);
 }
 
@@ -304,9 +295,7 @@ bool PictureHandlerService::WriteExifMetadata(MessageParcel &data, std::shared_p
     bool hasExifMetadata = (exifMetadata != nullptr);
     MEDIA_DEBUG_LOG("PictureHandlerService WriteExifMetadata hasExifMetadata :%{public}d", hasExifMetadata);
     data.WriteBool(hasExifMetadata);
-    if (!hasExifMetadata) {
-        return true;
-    }
+    CHECK_AND_RETURN_RET(hasExifMetadata, true);
     return exifMetadata->Marshalling(data);
 }
 
@@ -316,9 +305,7 @@ bool PictureHandlerService::WriteMaintenanceData(MessageParcel &data, std::share
     bool hasMaintenanceData = (surfaceBuffer != nullptr);
     MEDIA_DEBUG_LOG("PictureHandlerService WriteMaintenanceData hasMaintenanceData :%{public}d", hasMaintenanceData);
     data.WriteBool(hasMaintenanceData);
-    if (!hasMaintenanceData) {
-        return true;
-    }
+    CHECK_AND_RETURN_RET(hasMaintenanceData, true);
     BufferHandle *handle = surfaceBuffer->GetBufferHandle();
     return WriteBufferHandler(data, *handle);
 }

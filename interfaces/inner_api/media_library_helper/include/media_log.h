@@ -89,4 +89,12 @@
         }                                              \
     } while (0)
 
+#define CHECK_AND_RETURN_WARN_LOG(cond, fmt, ...)      \
+    do {                                               \
+        if (!(cond)) {                                 \
+            MEDIA_WARN_LOG(fmt, ##__VA_ARGS__);        \
+            return;                                    \
+        }                                              \
+    } while (0)
+
 #endif // OHOS_MEDIA_LOG_H

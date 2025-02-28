@@ -219,16 +219,12 @@ void BackgroundCloudFileProcessor::UpdateCloudData()
 void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYearExecutor(AsyncTaskData *data)
 {
     auto *taskData = static_cast<UpdateAbnormalDayMonthYearData *>(data);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("taskData is nullptr!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is nullptr!");
 
     std::vector<std::string> fileIds = taskData->fileIds_;
     auto ret = PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(fileIds);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update abnormal day month year data task! err: %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+        "Failed to update abnormal day month year data task! err: %{public}d", ret);
 }
 
 void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYear()
@@ -238,27 +234,17 @@ void BackgroundCloudFileProcessor::UpdateAbnormalDayMonthYear()
     auto [ret, needUpdateFileIds] =
         PhotoDayMonthYearOperation::QueryNeedUpdateFileIds(UPDATE_DAY_MONTH_YEAR_BATCH_SIZE);
 
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to query abnormal day month year data! err: %{public}d", ret);
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Failed to query abnormal day month year data! err: %{public}d", ret);
     if (needUpdateFileIds.empty()) {
         MEDIA_DEBUG_LOG("No abnormal day month year data need to update");
         return;
     }
 
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "Failed to get async worker instance!");
 
     auto *taskData = new (std::nothrow) UpdateAbnormalDayMonthYearData(needUpdateFileIds);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for update abnormal day month year data!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to alloc async data for update abnormal day month year data!");
 
     auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(UpdateAbnormalDayMonthYearExecutor, taskData);
     asyncWorker->AddTask(asyncTask, false);
@@ -504,27 +490,24 @@ void BackgroundCloudFileProcessor::StopDownloadFiles()
 void BackgroundCloudFileProcessor::HandleSuccessCallback(const DownloadProgressObj& progress)
 {
     lock_guard<mutex> downloadLock(downloadResultMutex_);
-    if (progress.downloadId != downloadId_ || downloadResult_.find(progress.path) == downloadResult_.end()) {
-        MEDIA_WARN_LOG("downloadId or uri is err, uri: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
-            MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
-            to_string(downloadId_).c_str());
-        return;
-    }
+    bool cond = (progress.downloadId != downloadId_ || downloadResult_.find(progress.path) == downloadResult_.end());
+    CHECK_AND_RETURN_WARN_LOG(!cond,
+        "downloadId or uri is err, uri: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
+        MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
+        to_string(downloadId_).c_str());
 
     downloadResult_[progress.path] = DownloadStatus::SUCCESS;
-
     MEDIA_INFO_LOG("download success, uri: %{public}s.", MediaFileUtils::DesensitizePath(progress.path).c_str());
 }
 
 void BackgroundCloudFileProcessor::HandleFailedCallback(const DownloadProgressObj& progress)
 {
     lock_guard<mutex> downloadLock(downloadResultMutex_);
-    if (progress.downloadId != downloadId_ || downloadResult_.find(progress.path) == downloadResult_.end()) {
-        MEDIA_WARN_LOG("downloadId or uri is err, uri: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
-            MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
-            to_string(downloadId_).c_str());
-        return;
-    }
+    bool cond = (progress.downloadId != downloadId_ || downloadResult_.find(progress.path) == downloadResult_.end());
+    CHECK_AND_RETURN_WARN_LOG(!cond,
+        "downloadId or uri is err, uri: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
+        MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
+        to_string(downloadId_).c_str());
 
     MEDIA_ERR_LOG("download failed, error type: %{public}d, uri: %{public}s.", progress.downloadErrorType,
         MediaFileUtils::DesensitizePath(progress.path).c_str());
@@ -548,12 +531,11 @@ void BackgroundCloudFileProcessor::HandleFailedCallback(const DownloadProgressOb
 void BackgroundCloudFileProcessor::HandleStoppedCallback(const DownloadProgressObj& progress)
 {
     lock_guard<mutex> downloadLock(downloadResultMutex_);
-    if (progress.downloadId != downloadId_ || downloadResult_.find(progress.path) == downloadResult_.end()) {
-        MEDIA_WARN_LOG("downloadId or uri is err, uri: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
-            MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
-            to_string(downloadId_).c_str());
-        return;
-    }
+    bool cond = (progress.downloadId != downloadId_ || downloadResult_.find(progress.path) == downloadResult_.end());
+    CHECK_AND_RETURN_WARN_LOG(!cond,
+        "downloadId or uri is err, uri: %{public}s, downloadId: %{public}s, downloadId_: %{public}s.",
+        MediaFileUtils::DesensitizePath(progress.path).c_str(), to_string(progress.downloadId).c_str(),
+        to_string(downloadId_).c_str());
 
     downloadResult_[progress.path] = DownloadStatus::STOPPED;
     UpdateDownloadCnt(progress.path, 0);

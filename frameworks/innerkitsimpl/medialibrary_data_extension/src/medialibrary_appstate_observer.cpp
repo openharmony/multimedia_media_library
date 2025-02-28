@@ -37,17 +37,10 @@ sptr<IAppMgr> MedialibraryAppStateObserverManager::GetAppManagerInstance()
 {
     sptr<ISystemAbilityManager> systemAbilityManager =
         SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (systemAbilityManager == nullptr) {
-        MEDIA_ERR_LOG("systemAbilityManager is nullptr");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(systemAbilityManager != nullptr, nullptr, "systemAbilityManager is nullptr");
 
     sptr<IRemoteObject> object = systemAbilityManager->GetSystemAbility(APP_MGR_SERVICE_ID);
-    if (object == nullptr) {
-        MEDIA_ERR_LOG("systemAbilityManager remote object is nullptr");
-        return nullptr;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "systemAbilityManager remote object is nullptr");
     return iface_cast<IAppMgr>(object);
 }
 
@@ -55,21 +48,11 @@ void MedialibraryAppStateObserverManager::SubscribeAppState()
 {
     MEDIA_INFO_LOG("SubscribeAppState");
     sptr<IAppMgr> appManager = GetAppManagerInstance();
-    if (appManager == nullptr) {
-        MEDIA_ERR_LOG("GetAppManagerInstance failed");
-        return;
-    }
-
-    if (appStateObserver_ != nullptr) {
-        MEDIA_INFO_LOG("appStateObserver has been registed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(appManager != nullptr, "GetAppManagerInstance failed");
+    CHECK_AND_RETURN_INFO_LOG(appStateObserver_ == nullptr, "appStateObserver has been registed");
 
     appStateObserver_ = new (std::nothrow) MedialibraryAppStateObserver();
-    if (appStateObserver_ == nullptr) {
-        MEDIA_ERR_LOG("get appStateObserver failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(appStateObserver_ != nullptr, "get appStateObserver failed");
 
     int32_t result = appManager->RegisterApplicationStateObserver(appStateObserver_);
     if (result != E_SUCCESS) {
@@ -84,22 +67,13 @@ void MedialibraryAppStateObserverManager::SubscribeAppState()
 
 void MedialibraryAppStateObserverManager::UnSubscribeAppState()
 {
-    if (appStateObserver_ == nullptr) {
-        MEDIA_ERR_LOG("appStateObserver_ is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(appStateObserver_ != nullptr, "appStateObserver_ is nullptr");
 
     sptr<IAppMgr> appManager = GetAppManagerInstance();
-    if (appManager == nullptr) {
-        MEDIA_ERR_LOG("GetAppManagerInstance failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(appManager != nullptr, "GetAppManagerInstance failed");
 
     int32_t result = appManager->UnregisterApplicationStateObserver(appStateObserver_);
-    if (result != E_SUCCESS) {
-        MEDIA_ERR_LOG("UnregisterApplicationStateObserver failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(result == E_SUCCESS, "UnregisterApplicationStateObserver failed");
 
     appStateObserver_ = nullptr;
     MEDIA_INFO_LOG("UnSubscribeAppState success");
@@ -125,18 +99,11 @@ static int32_t CountTemporaryPermission(const std::shared_ptr<MediaLibraryRdbSto
     predicatesUnSubscribe.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
     vector<string> columns = { AppUriPermissionColumn::ID };
     auto resultSet = rdbStore->Query(predicatesUnSubscribe, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not query URIPERMISSION");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Can not query URIPERMISSION");
 
     int32_t count = 0;
     auto ret = resultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "GetRowCount failed ret:%{public}d", ret);
     return count;
 }
 
@@ -145,18 +112,11 @@ static int32_t CountHideSensitive(const std::shared_ptr<MediaLibraryRdbStore> rd
     NativeRdb::AbsRdbPredicates predicatesUnSubscribe(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     vector<string> columns = { AppUriPermissionColumn::ID };
     auto resultSet = rdbStore->Query(predicatesUnSubscribe, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not query URIPERMISSION");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "Can not query URIPERMISSION");
 
     int32_t count = 0;
     auto ret = resultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "GetRowCount failed ret:%{public}d", ret);
     return count;
 }
 
@@ -164,9 +124,9 @@ static void TryUnSubscribeAppState(const std::shared_ptr<MediaLibraryRdbStore> r
 {
     int32_t countPermission = CountTemporaryPermission(rdbStore);
     int32_t countSensitive = CountHideSensitive(rdbStore);
-    if (countPermission < 0 || countSensitive < 0) {
-        MEDIA_ERR_LOG("TryUnSubscribeAppState System exception");
-    }
+    bool cond = (countPermission < 0 || countSensitive < 0);
+    CHECK_AND_PRINT_LOG(!cond, "TryUnSubscribeAppState System exception");
+
     if (countPermission == 0 && countSensitive == 0) {
         MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
         MEDIA_INFO_LOG("No temporary permission record remains ,UnSubscribeAppState");
@@ -186,10 +146,10 @@ static int32_t DeleteTemporaryPermission(const std::shared_ptr<MediaLibraryRdbSt
         static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
     predicates.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
     int32_t deletedRows = -1;
+
     auto ret = rdbStore->Delete(deletedRows, predicates);
-    if (ret != NativeRdb::E_OK || deletedRows < 0) {
-        MEDIA_ERR_LOG("Story Delete db failed, errCode = %{public}d", ret);
-    }
+    bool cond = (ret != NativeRdb::E_OK || deletedRows < 0);
+    CHECK_AND_PRINT_LOG(!cond, "Story Delete db failed, errCode = %{public}d", ret);
     MEDIA_INFO_LOG("Uripermission Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
 
     return deletedRows;
@@ -201,9 +161,8 @@ static int32_t DeleteHideSensitive(const std::shared_ptr<MediaLibraryRdbStore> r
     predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
     int32_t deletedRows = -1;
     auto ret = rdbStore->Delete(deletedRows, predicates);
-    if (ret != NativeRdb::E_OK || deletedRows < 0) {
-        MEDIA_ERR_LOG("Story Delete db failed, errCode = %{public}d", ret);
-    }
+    bool cond = (ret != NativeRdb::E_OK || deletedRows < 0);
+    CHECK_AND_PRINT_LOG(!cond, "Story Delete db failed, errCode = %{public}d", ret);
     MEDIA_INFO_LOG("Uripermission Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
 
     return deletedRows;
@@ -213,12 +172,9 @@ void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData
 {
     auto tokenId = appStateData.accessTokenId;
     MEDIA_INFO_LOG("MedialibraryAppStateObserver OnAppStopped, tokenId:%{public}d", tokenId);
-
     auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Uripermission Delete failed, rdbStore is null.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Uripermission Delete failed, rdbStore is null.");
+
     int32_t deletedRowsPermission = DeleteTemporaryPermission(rdbStore, tokenId);
     int32_t deletedRowsSensitive = DeleteHideSensitive(rdbStore, tokenId);
     if (deletedRowsPermission == 0 && deletedRowsSensitive == 0) {
