@@ -64,7 +64,6 @@
 #include "userfilemgr_uri.h"
 #include "parameters.h"
 #include "media_tool_permission_handler.h"
-#include "media_param_watcher_ability.h"
 #include "grant_permission_handler.h"
 #include "read_write_permission_handler.h"
 #include "db_permission_handler.h"
@@ -188,13 +187,7 @@ void MediaDataShareExtAbility::InitPermissionHandler()
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
 #ifdef MEDIALIBRARY_MTP_ENABLE
-    std::string param(MTP_DISABLE);
-    bool mtpDisable = system::GetBoolParameter(param, false);
-    if (!mtpDisable) {
-        MtpManager::GetInstance().Init();
-    } else {
-        DelayedSingleton<MtpParamWatcher>::GetInstance()->RegisterMtpParamListener();
-    }
+    MtpManager::GetInstance().Init();
 #endif
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     EnhancementManager::GetInstance().InitAsync();

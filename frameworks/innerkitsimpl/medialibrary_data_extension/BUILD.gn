@@ -288,7 +288,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/hi_audit.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
-    "src/media_param_watcher_ability.cpp",
     "src/medialibrary_album_fusion_utils.cpp",
     "src/medialibrary_album_operations.cpp",
     "src/medialibrary_album_refresh.cpp",

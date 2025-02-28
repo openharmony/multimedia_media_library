@@ -22,6 +22,7 @@
 #include "mtp_subscriber.h"
 #include "mtp_medialibrary_manager.h"
 #include "os_account_manager.h"
+#include "parameter.h"
 #include "parameters.h"
 #include "usb_srv_client.h"
 #include "usb_srv_support.h"
@@ -38,6 +39,7 @@ namespace {
     const std::string CUST_DEFAULT = "phone";
     const std::string CUST_TOBBASIC = "tobbasic";
     const std::string CUST_HWIT = "hwit";
+    const char *MTP_SERVER_DISABLE = "persist.edm.mtp_server_disable";
 } // namespace
 
 MtpManager &MtpManager::GetInstance()
@@ -68,6 +70,8 @@ void MtpManager::Init()
         // IT管控 PC - tobasic/hwit 不启动MTP服务 end
         bool result = MtpSubscriber::Subscribe();
         MEDIA_INFO_LOG("MtpManager Subscribe result = %{public}d", result);
+        // param 监听注册
+        MtpManager::GetInstance().RegisterMtpParamListener();
 
         int32_t funcs = 0;
         int ret = OHOS::USB::UsbSrvClient::GetInstance().GetCurrentFunctions(funcs);
@@ -75,7 +79,14 @@ void MtpManager::Init()
         CHECK_AND_RETURN_LOG(ret == 0, "GetCurrentFunctions failed");
         uint32_t unsignedfuncs = static_cast<uint32_t>(funcs);
         if (unsignedfuncs & USB::UsbSrvSupport::Function::FUNCTION_MTP) {
-            MtpManager::GetInstance().StartMtpService(MtpMode::MTP_MODE);
+            std::string param(MTP_SERVER_DISABLE);
+            bool mtpDisable = system::GetBoolParameter(param, false);
+            if (mtpDisable) {
+                MEDIA_INFO_LOG("MtpManager Init MTP Manager persist.edm.mtp_server_disable = true");
+            } else {
+                MEDIA_INFO_LOG("MtpManager Init USB MTP connected");
+                MtpManager::GetInstance().StartMtpService(MtpMode::MTP_MODE);
+            }
             return;
         }
         if (unsignedfuncs & USB::UsbSrvSupport::Function::FUNCTION_PTP) {
@@ -87,6 +98,7 @@ void MtpManager::Init()
         }
         MEDIA_INFO_LOG("MtpManager Init success end");
     }).detach();
+    MtpManager::GetInstance().RemoveMtpParamListener();
 }
 
 void MtpManager::StartMtpService(const MtpMode mode)
@@ -137,5 +149,49 @@ void MtpManager::StopMtpService()
     }
 }
 
+void MtpManager::RegisterMtpParamListener()
+{
+    MEDIA_INFO_LOG("RegisterMTPParamListener");
+    WatchParameter(MTP_SERVER_DISABLE, OnMtpParamDisableChanged, this);
+}
+
+void MtpManager::RemoveMtpParamListener()
+{
+    MEDIA_INFO_LOG("RemoveMtpParamListener");
+    RemoveParameterWatcher(MTP_SERVER_DISABLE, OnMtpParamDisableChanged, this);
+}
+
+void MtpManager::OnMtpParamDisableChanged(const char *key, const char *value, void *context)
+{
+    if (key == nullptr || value == nullptr) {
+        MEDIA_ERR_LOG("OnMtpParamDisableChanged return invalid value");
+        return;
+    }
+    MEDIA_INFO_LOG("OnMTPParamDisable, key = %{public}s, value = %{public}s", key, value);
+    if (strcmp(key, MTP_SERVER_DISABLE) != 0) {
+        MEDIA_INFO_LOG("event key mismatch");
+        return;
+    }
+    MtpManager *instance = reinterpret_cast<MtpManager*>(context);
+    std::string param(MTP_SERVER_DISABLE);
+    bool mtpDisable = system::GetBoolParameter(param, false);
+    if (!mtpDisable) {
+        int32_t funcs = 0;
+        int ret = OHOS::USB::UsbSrvClient::GetInstance().GetCurrentFunctions(funcs);
+        MEDIA_INFO_LOG("OnMtpparamDisableChanged GetCurrentFunction = %{public}d ret = %{public}d", funcs, ret);
+        if (ret == 0) {
+            MEDIA_INFO_LOG("OnMtpparamDisableChanged GetCurrentFunction failed");
+            return;
+        }
+        uint32_t unsignedFuncs = static_cast<uint32_t>(funcs);
+        if (unsignedFuncs && USB::UsbSrvSupport::Function::FUNCTION_MTP) {
+            instance->StartMtpService(MtpMode::MTP_MODE);
+            return;
+        }
+    } else {
+        MEDIA_INFO_LOG("MTP Manager not init");
+        instance->StopMtpService();
+    }
+}
 } // namespace Media
 } // namespace OHOS
