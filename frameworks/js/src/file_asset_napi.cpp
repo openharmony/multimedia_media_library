@@ -456,6 +456,11 @@ int32_t FileAssetNapi::GetFileId() const
     return fileAssetPtr->GetId();
 }
 
+int32_t FileAssetNapi::GetUserId() const
+{
+    return fileAssetPtr->GetUserId();
+}
+
 Media::MediaType FileAssetNapi::GetMediaType() const
 {
     return fileAssetPtr->GetMediaType();

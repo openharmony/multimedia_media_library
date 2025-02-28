@@ -58,6 +58,7 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace Media {
 static const string EMPTY_STRING = "";
+static const string MULTI_USER_URI_FLAG = "user=";
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -269,6 +270,22 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
     }
 
     return id;
+}
+
+string MediaLibraryNapiUtils::GetUserIdFromUri(const string &uri)
+{
+    string userId = "-1";
+    string str = uri;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    if (pos != string::npos) {
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == string::npos) {
+            end = str.length();
+        }
+        userId = str.substr(pos, end - pos);
+    }
+    return userId;
 }
 
 int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
@@ -1753,7 +1770,11 @@ napi_value MediaLibraryNapiUtils::GetUriArrayFromAssets(
             NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
             continue;
         }
-        values.push_back(GetUriFromAsset(obj));
+        std::string uri = GetUriFromAsset(obj);
+        if (obj->GetUserId() != -1) {
+            MediaLibraryNapiUtils::UriAppendKeyValue(uri, "user", to_string(obj->GetUserId()));
+        }
+        values.push_back(uri);
     }
     napi_value ret = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
