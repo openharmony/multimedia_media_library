@@ -172,12 +172,12 @@ void MtpManager::OnMtpParamDisableChanged(const char *key, const char *value, vo
         MEDIA_INFO_LOG("event key mismatch");
         return;
     }
-    MtpManager *instance = reinterpret_cast<MtpManager>(context);
+    MtpManager *instance = reinterpret_cast<MtpManager*>(context);
     std::string param(MTP_SERVER_DISABLE);
     bool mtpDisable = system::GetBoolParameter(param, false);
     if (!mtpDisable) {
         int32_t funcs = 0;
-        int ret = OHOS::USB::UsbSrvClient::GetInstance().GetCurrentFunctions();
+        int ret = OHOS::USB::UsbSrvClient::GetInstance().GetCurrentFunctions(funcs);
         MEDIA_INFO_LOG("OnMtpparamDisableChanged GetCurrentFunction = %{public}d ret = %{public}d", funcs, ret);
         if (ret == 0) {
             MEDIA_INFO_LOG("OnMtpparamDisableChanged GetCurrentFunction failed");
@@ -185,7 +185,7 @@ void MtpManager::OnMtpParamDisableChanged(const char *key, const char *value, vo
         }
         uint32_t unsignedFuncs = static_cast<uint32_t>(funcs);
         if (unsignedFuncs && USB::UsbSrvSupport::Function::FUNCTION_MTP) {
-            instance->StartMtpService("MtpMode::MTP_MODE");
+            instance->StartMtpService(MtpMode::MTP_MODE);
             return;
         }
     } else {
