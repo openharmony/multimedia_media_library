@@ -117,8 +117,10 @@ void PictureManagerThread::Run()
             pictureDataOperations_ = new PictureDataOperations();
         }
         pictureDataOperations_->CleanDateForPeriodical();
-        unique_lock<mutex> locker(threadMutex_);
-        condition_.wait_for(locker, std::chrono::seconds(1)); // 实际1S扫描一次
+        {
+            unique_lock<mutex> locker(threadMutex_);
+            condition_.wait_for(locker, std::chrono::seconds(1)); // 实际1S扫描一次
+        }
         int32_t taskSize = pictureDataOperations_->GetPendingTaskSize();
         if (lastPendingTaskSize_ != 0 && taskSize == 0) {
             pauseFlag_ = true;
@@ -127,6 +129,7 @@ void PictureManagerThread::Run()
         }
         lastPendingTaskSize_ = taskSize;
     }
+    MEDIA_INFO_LOG("end thread run:");
 }
 
 void PictureManagerThread::InsertPictureData(const std::string& imageId, sptr<PicturePair>& PicturePair,
