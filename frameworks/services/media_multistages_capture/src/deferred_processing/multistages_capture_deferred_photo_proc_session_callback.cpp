@@ -174,6 +174,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
 {
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK);
     CHECK_AND_RETURN_LOG(!cond, "resultset is empty.");
+
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
@@ -187,10 +188,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
         auto metadata = picture->GetExifMetadata();
         CHECK_AND_RETURN_LOG(metadata != nullptr, "metadata is null");
         auto imageSourceOrientation = ORIENTATION_MAP.find(orientation);
-        if (imageSourceOrientation == ORIENTATION_MAP.end()) {
-            MEDIA_ERR_LOG("imageSourceOrientation value is invalid.");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(imageSourceOrientation != ORIENTATION_MAP.end(),
+            "imageSourceOrientation value is invalid.");
         metadata->SetValue(PHOTO_DATA_IMAGE_ORIENTATION, std::to_string(imageSourceOrientation->second));
     }
 

@@ -424,9 +424,7 @@ int32_t MovingPhotoProcessor::ProcessLocalLivePhoto(LivePhotoData& data)
 {
     data.isLivePhoto = false;
     bool isLivePhoto = MovingPhotoFileUtils::IsLivePhoto(data.path);
-    if (!isLivePhoto) {
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET(isLivePhoto, E_OK);
 
     string livePhotoPath = data.path;
     string compatImagePath;

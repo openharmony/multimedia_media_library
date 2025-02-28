@@ -27,10 +27,9 @@ namespace OHOS {
 namespace Media {
 void MediaCloudDownloadCallback::OnDownloadProcess(const DownloadProgressObj& progress)
 {
-    if (!operation_ || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
-        MEDIA_ERR_LOG("operation is nullptr or taskStatus is IDLE");
-        return;
-    }
+    bool cond = (!operation_ || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE);
+    CHECK_AND_RETURN_LOG(!cond, "operation is nullptr or taskStatus is IDLE");
+
     switch (progress.state) {
         case DownloadProgressObj::Status::COMPLETED: {
             if (progress.downloadErrorType == static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NO_ERROR)) {

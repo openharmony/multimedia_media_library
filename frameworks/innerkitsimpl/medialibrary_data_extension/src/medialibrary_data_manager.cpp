@@ -230,15 +230,11 @@ void MediaLibraryDataManager::ReCreateMediaDir()
     // create C policy dir
     InitACLPermission();
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "Can not get asyncWorker");
+
     AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to new taskData");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to new taskData");
+
     shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
     if (makeRootDirTask != nullptr) {
         asyncWorker->AddTask(makeRootDirTask, true);
@@ -273,15 +269,11 @@ void MediaLibraryDataManager::HandleOtherInitOperations()
 static int32_t ExcuteAsyncWork()
 {
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ERR, "Can not get asyncWorker");
+
     AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to new taskData");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to new taskData");
+
     taskData->dataDisplay = E_POLICY;
     shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
     if (makeRootDirTask != nullptr) {
@@ -390,9 +382,7 @@ static void FillMediaSuffixForHistoryData(const shared_ptr<MediaLibraryRdbStore>
                  " SET " + PhotoColumn::PHOTO_MEDIA_SUFFIX + " = " + calculatedSuffix +
                  " WHERE " + PhotoColumn::PHOTO_MEDIA_SUFFIX + " IS NULL";
     int ret = store->ExecuteSql(sql);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("FillMediaSuffixForHistoryData failed: execute sql failed");
-    }
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "FillMediaSuffixForHistoryData failed: execute sql failed");
     MEDIA_INFO_LOG("end fill media suffix for history data");
 }
 
@@ -481,15 +471,11 @@ void MediaLibraryDataManager::HandleUpgradeRdbAsync()
     std::thread([&] {
         OtherLongRunningInitDBOperation();
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        if (rdbStore == nullptr) {
-            MEDIA_ERR_LOG("rdbStore is nullptr!");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr!");
         int32_t oldVersion = rdbStore->GetOldVersion();
-        if (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION) {
-            MEDIA_INFO_LOG("No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
-            return;
-        }
+        bool cond = (oldVersion == -1 || oldVersion >= MEDIA_RDB_VERSION);
+        CHECK_AND_RETURN_INFO_LOG(!cond, "No need to upgrade rdb, oldVersion: %{public}d", oldVersion);
+
         MEDIA_INFO_LOG("oldVersion:%{public}d", oldVersion);
         // compare older version, update and set old version
         if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
@@ -570,10 +556,8 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
     BackgroundCloudFileProcessor::StopTimer();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
-    if (shareHelper == nullptr) {
-        MEDIA_ERR_LOG("DataShareHelper is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(shareHelper != nullptr, "DataShareHelper is null");
+
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX), cloudPhotoObserver_);
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
@@ -615,17 +599,12 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
     }
 
     int32_t ret = MediaLibraryUnistoreManager::GetInstance().Init(context_);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("init MediaLibraryUnistoreManager failed");
-        return ret;
-    }
-    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return E_ERR;
-    }
-    CHECK_AND_WARN_LOG(MediaLibraryRdbUtils::AnalyzePhotosDataAsync(), "Analyze photos data failed");
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "init MediaLibraryUnistoreManager failed");
 
+    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_ERR, "rdbStore is nullptr");
+
+    CHECK_AND_WARN_LOG(MediaLibraryRdbUtils::AnalyzePhotosDataAsync(), "Analyze photos data failed");
     return E_OK;
 }
 
@@ -669,25 +648,17 @@ int32_t MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAss
     int32_t count = -1;
     vector<string> columns;
     AbsRdbPredicates dirAbsPred(MEDIATYPE_DIRECTORY_TABLE);
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore_ is nullptr");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_ERR, "rdbStore_ is nullptr");
+
     auto queryResultSet = rdbStore_->QueryByStep(dirAbsPred, columns);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("queryResultSet is nullptr");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_ERR, "queryResultSet is nullptr");
+
     auto ret = queryResultSet->GetRowCount(count);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("rdb failed");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "rdb failed");
+
     MEDIA_INFO_LOG("MakeDirQuerySetMap count = %{public}d", count);
-    if (count == 0) {
-        MEDIA_ERR_LOG("can not find any dirAsset");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(count != 0, E_ERR, "can not find any dirAsset");
+
     DirAsset dirAsset;
     string dirVal;
     outDirQuerySetMap.clear();
@@ -824,10 +795,8 @@ static int32_t LogMovingPhoto(MediaLibraryCommand &cmd, const DataShareValuesBuc
 {
     bool isValid = false;
     bool adapted = bool(dataShareValue.Get("adapted", isValid));
-    if (!isValid) {
-        MEDIA_ERR_LOG("Invalid adapted value");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(isValid, E_ERR, "Invalid adapted value");
+
     string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     CHECK_AND_WARN_LOG(!packageName.empty(), "Package name is empty, adapted: %{public}d", static_cast<int>(adapted));
     DfxManager::GetInstance()->HandleAdaptationToMovingPhoto(packageName, adapted);
@@ -887,9 +856,8 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     OperationType oprnType = cmd.GetOprnType();
     if (oprnType == OperationType::CREATE || oprnType == OperationType::SUBMIT_CACHE
         || oprnType == OperationType::ADD_FILTERS) {
-        if (SetCmdBundleAndDevice(cmd) != ERR_OK) {
-            MEDIA_ERR_LOG("MediaLibraryDataManager SetCmdBundleAndDevice failed.");
-        }
+        CHECK_AND_PRINT_LOG(SetCmdBundleAndDevice(cmd) == ERR_OK,
+            "MediaLibraryDataManager SetCmdBundleAndDevice failed.");
     }
     // boardcast operation
     if (oprnType == OperationType::SCAN) {
@@ -916,9 +884,7 @@ int32_t MediaLibraryDataManager::InsertExt(MediaLibraryCommand &cmd, const DataS
 
 int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &cmd)
 {
-    if (thumbnailService_ == nullptr) {
-        return E_THUMBNAIL_SERVICE_NULLPTR;
-    }
+    CHECK_AND_RETURN_RET(thumbnailService_ != nullptr, E_THUMBNAIL_SERVICE_NULLPTR);
     int32_t result = E_FAIL;
     switch (cmd.GetOprnType()) {
         case OperationType::GENERATE:
@@ -941,10 +907,7 @@ int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &
 int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vector<DataShareValuesBucket> &values)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
-    if (refCnt_.load() <= 0) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager is not initialized");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(refCnt_.load() > 0, E_FAIL, "MediaLibraryDataManager is not initialized");
 
     string uriString = cmd.GetUri().ToString();
     if (uriString == UFM_PHOTO_ALBUM_ADD_ASSET || uriString == PAH_PHOTO_ALBUM_ADD_ASSET) {
@@ -991,18 +954,14 @@ int32_t MediaLibraryDataManager::Delete(MediaLibraryCommand &cmd, const DataShar
     if (MediaFileUtils::StartsWith(uriString, PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
         return MediaLibraryAssetOperations::DeleteOperation(cmd);
     }
+    CHECK_AND_RETURN_RET_LOG(uriString.find(MEDIALIBRARY_DATA_URI) != string::npos,
+        E_INVALID_URI, "Not Data ability Uri");
 
-    if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
-        MEDIA_ERR_LOG("Not Data ability Uri");
-        return E_INVALID_URI;
-    }
     MediaLibraryTracer tracer;
     tracer.Start("CheckWhereClause");
     auto whereClause = predicates.GetWhereClause();
-    if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
-        MEDIA_ERR_LOG("illegal query whereClause input %{private}s", whereClause.c_str());
-        return E_SQL_CHECK_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryCommonUtils::CheckWhereClause(whereClause), E_SQL_CHECK_FAIL,
+        "illegal query whereClause input %{private}s", whereClause.c_str());
     tracer.Finish();
 
     // MEDIALIBRARY_TABLE just for RdbPredicates
@@ -1155,9 +1114,8 @@ static std::vector<std::string> SplitUriString(const std::string& str, char deli
 static std::string ExtractFileIdFromUri(const std::string& uri)
 {
     auto uriParts = SplitUriString(uri, '/');
-    if (uriParts.size() >= MediaLibraryDataManager::URI_MIN_NUM) {
-        return uriParts[uriParts.size() - MediaLibraryDataManager::URI_MIN_NUM];
-    }
+    CHECK_AND_RETURN_RET(uriParts.size() < MediaLibraryDataManager::URI_MIN_NUM,
+        uriParts[uriParts.size() - MediaLibraryDataManager::URI_MIN_NUM]);
     return "";
 }
 
@@ -1207,10 +1165,8 @@ static int HandleAnalysisFaceUpdate(MediaLibraryCommand& cmd, NativeRdb::ValuesB
     for (size_t i = 1; i < clauses.size(); ++i) {
         uris.push_back(clauses[i]);
     }
-    if (uris.empty()) {
-        MEDIA_ERR_LOG("No URIs found after album ID.");
-        return E_INVALID_FILEID;
-    }
+    CHECK_AND_RETURN_RET_LOG(!uris.empty(), E_INVALID_FILEID, "No URIs found after album ID.");
+
     std::string predicate = BuildWhereClause(uris, albumId);
     cmd.SetValueBucket(value);
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicate);
@@ -1675,9 +1631,8 @@ int32_t MediaLibraryDataManager::DistributeDeviceAging()
 
 int MediaLibraryDataManager::GetThumbnail(const string &uri)
 {
-    if (thumbnailService_ == nullptr) {
-        return E_THUMBNAIL_SERVICE_NULLPTR;
-    }
+    CHECK_AND_RETURN_RET(thumbnailService_ != nullptr, E_THUMBNAIL_SERVICE_NULLPTR);
+
     if (!uri.empty() && MediaLibraryObjectUtils::CheckUriPending(uri)) {
         MEDIA_ERR_LOG("failed to get thumbnail, the file:%{private}s is pending", uri.c_str());
         return E_FAIL;
@@ -1702,9 +1657,7 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const stri
             return;
         }
         int32_t err = thumbnailService_->CreateThumbnailFileScaned(uri, path);
-        if (err != E_SUCCESS) {
-            MEDIA_ERR_LOG("ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
-        }
+        CHECK_AND_PRINT_LOG(err == E_SUCCESS, "ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
     }
 }
 
@@ -1871,22 +1824,16 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
 shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, const vector<string> &columns)
 {
     auto queryResult = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
-    if (queryResult == nullptr) {
-        MEDIA_ERR_LOG("Query Geographic Information Failed, queryResult is nullptr");
-        return queryResult;
-    }
+    CHECK_AND_RETURN_RET_LOG(queryResult != nullptr, queryResult,
+        "Query Geographic Information Failed, queryResult is nullptr");
 
     const vector<string> &whereArgs = rdbPredicates.GetWhereArgs();
-    if (whereArgs.empty() || whereArgs.front().empty()) {
-        MEDIA_ERR_LOG("Query Geographic Information can not get fileId");
-        return queryResult;
-    }
+    bool cond = (whereArgs.empty() || whereArgs.front().empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, queryResult, "Query Geographic Information can not get fileId");
 
     string fileId = whereArgs.front();
-    if (queryResult->GoToNextRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Query Geographic Information Failed, fileId: %{public}s", fileId.c_str());
-        return queryResult;
-    }
+    CHECK_AND_RETURN_RET_LOG(queryResult->GoToNextRow() == NativeRdb::E_OK, queryResult,
+        "Query Geographic Information Failed, fileId: %{public}s", fileId.c_str());
 
     string latitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LATITUDE, queryResult);
     string longitude = GetStringVal(PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, queryResult);
@@ -1930,10 +1877,9 @@ shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicat
         return queryResult;
     }
     const vector<string> &whereArgs = rdbPredicates.GetWhereArgs();
-    if (whereArgs.empty() || whereArgs.front().empty()) {
-        MEDIA_ERR_LOG("Query Geographic Information can not get info");
-        return queryResult;
-    }
+    bool cond = (whereArgs.empty() || whereArgs.front().empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, queryResult, "Query Geographic Information can not get info");
+ 
     if (isForce) {
         std::vector<std::string> geoInfo;
         while (queryResult->GoToNextRow() == NativeRdb::E_OK) {
@@ -2252,11 +2198,9 @@ int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId
     ValuesBucket values;
     values.PutLong(Media::MEDIA_DATA_DB_TIME_PENDING, 0);
     cmd.SetValueBucket(values);
+
     int32_t retVal = MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, fileId);
-    if (retVal <= 0) {
-        MEDIA_ERR_LOG("failed to revert pending error, fileId:%{private}s", fileId.c_str());
-        return retVal;
-    }
+    CHECK_AND_RETURN_RET_LOG(retVal > 0, retVal, "failed to revert pending error, fileId:%{private}s", fileId.c_str());
     auto fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(fileId);
     string srcPath = fileAsset->GetPath();
     MediaLibraryObjectUtils::ScanFileAsync(srcPath, fileId, MediaLibraryApi::API_10);
@@ -2385,14 +2329,11 @@ void MediaLibraryDataManager::UploadDBFileInner(int64_t totalFileSize)
             "Failed to delete destDb file, path:%{private}s", destDbPath.c_str());
     }
     zipFile compressZip = Media::ZipUtil::CreateZipFile(destPath);
-    if (compressZip == nullptr) {
-        MEDIA_ERR_LOG("open zip file failed.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(compressZip != nullptr, "open zip file failed.");
+
     auto errcode = Media::ZipUtil::AddFileInZip(compressZip, zipFileName, Media::KEEP_NONE_PARENT_PATH);
-    if (errcode != 0) {
-        MEDIA_ERR_LOG("AddFileInZip failed, errCode = %{public}d", errcode);
-    }
+    CHECK_AND_PRINT_LOG(errcode == 0, "AddFileInZip failed, errCode = %{public}d", errcode);
+
     Media::ZipUtil::CloseZipFile(compressZip);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("Zip db file success, cost %{public}ld ms", (long)(end - begin));
@@ -2426,12 +2367,8 @@ int32_t MediaLibraryDataManager::AstcMthAndYearInsert(MediaLibraryCommand &cmd,
             successCount++;
         }
     }
-    if (successCount == 0) {
-        return -1;
-    }
-    if (successCount == insertCount) {
-        return 1;
-    }
+    CHECK_AND_RETURN_RET(successCount != 0, -1);
+    CHECK_AND_RETURN_RET(successCount != insertCount, 1);
     return E_OK;
 }
 
@@ -2446,11 +2383,10 @@ static int32_t SearchDateTakenWhenZero(const shared_ptr<MediaLibraryRdbStore> rd
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "failed to acquire result from visitor query.");
     int32_t count;
     int32_t retCount = resultSet->GetRowCount(count);
-    if (retCount != E_SUCCESS || count < 0) {
-        return E_HAS_DB_ERROR;
-    }
-    CHECK_AND_RETURN_RET_LOG(count != 0, E_OK, "No dateTaken need to update");
+    bool cond = (retCount != E_SUCCESS || count < 0);
+    CHECK_AND_RETURN_RET(!cond, E_HAS_DB_ERROR);
 
+    CHECK_AND_RETURN_RET_LOG(count != 0, E_OK, "No dateTaken need to update");
     needUpdate = true;
     MEDIA_INFO_LOG("Have dateTaken need to update, count = %{public}d", count);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
