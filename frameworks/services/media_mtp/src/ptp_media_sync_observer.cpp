@@ -180,14 +180,14 @@ vector<string> MediaSyncObserver::GetAllDeleteHandles()
     return handlesResult;
 }
 
-void MediaSyncObserver::StartDealyInfoThread()
+void MediaSyncObserver::StartDelayInfoThread()
 {
     CHECK_AND_RETURN_LOG(!isRunningDelay_.load(), "MediaSyncObserver delay thread is already running");
     isRunningDelay_.store(true);
-    delayThread_ = std::thread([&] { DealyInfoThread(); });
+    delayThread_ = std::thread([&] { DelayInfoThread(); });
 }
 
-void MediaSyncObserver::StopDealyInfoThread()
+void MediaSyncObserver::StopDelayInfoThread()
 {
     isRunningDelay_.store(false);
     cvDelay_.notify_all();
@@ -196,7 +196,7 @@ void MediaSyncObserver::StopDealyInfoThread()
     }
 }
 
-void MediaSyncObserver::DealyInfoThread()
+void MediaSyncObserver::DelayInfoThread()
 {
     while (isRunningDelay_.load()) {
         DelayInfo delayInfo;
@@ -603,13 +603,13 @@ void MediaSyncObserver::StartNotifyThread()
     CHECK_AND_RETURN_LOG(!isRunning_.load(), "MediaSyncObserver notify thread is already running");
     isRunning_.store(true);
     notifythread_ = std::thread([this] {this->ChangeNotifyThread();});
-    StartDealyInfoThread();
+    StartDelayInfoThread();
 }
 
 void MediaSyncObserver::StopNotifyThread()
 {
     MEDIA_INFO_LOG("stop notify thread");
-    StopDealyInfoThread();
+    StopDelayInfoThread();
     isRunning_.store(false);
     cv_.notify_all();
     {
