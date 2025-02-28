@@ -204,10 +204,7 @@ bool MediaLibraryAstcStat::WriteJsonFile(const std::string &filePath, const nloh
     }
 
     std::ofstream outFile(filePath, std::ofstream::out | std::ofstream::trunc);
-    if (!outFile.is_open()) {
-        MEDIA_ERR_LOG("open filePath: %{private}s failed", filePath.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(outFile.is_open(), false, "open filePath: %{private}s failed", filePath.c_str());
     outFile << j << std::endl;
     outFile.close();
     return true;
@@ -216,10 +213,8 @@ bool MediaLibraryAstcStat::WriteJsonFile(const std::string &filePath, const nloh
 bool MediaLibraryAstcStat::ReadJsonFile(const std::string &filePath, nlohmann::json &j)
 {
     std::ifstream inFile(filePath);
-    if (!inFile.is_open()) {
-        MEDIA_ERR_LOG("open filePath: %{private}s failed", filePath.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(inFile.is_open(), false, "open filePath: %{private}s failed", filePath.c_str());
+    
     std::string buffer = std::string((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
     j = nlohmann::json::parse(buffer, nullptr, false);
     inFile.close();
@@ -257,10 +252,7 @@ static bool IsBackupGroundTaskEmpty()
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
-    if (thumbnailWorker == nullptr) {
-        MEDIA_ERR_LOG("thumbnailWorker is null");
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(thumbnailWorker != nullptr, true, "thumbnailWorker is null");
     return thumbnailWorker->IsLowerQueueEmpty();
 }
 

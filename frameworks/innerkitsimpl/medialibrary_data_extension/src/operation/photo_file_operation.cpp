@@ -43,10 +43,10 @@ std::string PhotoFileOperation::ToString(const PhotoAssetInfo &photoInfo)
 int32_t PhotoFileOperation::CopyPhoto(
     const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath)
 {
-    if (resultSet == nullptr || targetPath.empty()) {
-        MEDIA_ERR_LOG("Media_Operation: CopyPhoto failed, resultSet is null or targetPath is empty");
-        return E_FAIL;
-    }
+    bool cond = (resultSet == nullptr || targetPath.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, E_FAIL,
+        "Media_Operation: CopyPhoto failed, resultSet is null or targetPath is empty");
+
     // Build the Original Photo Asset Info
     PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
     sourcePhotoInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
@@ -81,10 +81,9 @@ int32_t PhotoFileOperation::CopyPhoto(
 int32_t PhotoFileOperation::CopyThumbnail(
     const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &targetPath, int64_t &newAssetId)
 {
-    if (resultSet == nullptr || targetPath.empty()) {
-        MEDIA_ERR_LOG("Media_Operation: CopyPhoto failed, resultSet is null or targetPath is empty");
-        return E_FAIL;
-    }
+    bool cond = (resultSet == nullptr || targetPath.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, E_FAIL,
+        "Media_Operation: CopyPhoto failed, resultSet is null or targetPath is empty");
 
     // Build the Original Photo Asset Info
     PhotoFileOperation::PhotoAssetInfo sourcePhotoInfo;
@@ -101,9 +100,7 @@ int32_t PhotoFileOperation::CopyThumbnail(
     targetPhotoInfo.filePath = targetPath;
     targetPhotoInfo.thumbnailFolder = this->BuildThumbnailFolder(targetPhotoInfo);
     int32_t opRet = this->CopyPhotoRelatedThumbnail(sourcePhotoInfo, targetPhotoInfo);
-    if (opRet != E_OK) {
-        return opRet;
-    }
+    CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
 
     std::string dateTaken = to_string(GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet));
     std::string oldAssetId = to_string(GetInt64Val(MediaColumn::MEDIA_ID, resultSet));
@@ -138,13 +135,11 @@ int32_t PhotoFileOperation::CopyPhoto(const PhotoFileOperation::PhotoAssetInfo &
     const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
 {
     int32_t opRet = this->CopyPhotoFile(sourcePhotoInfo, targetPhotoInfo);
-    if (opRet != E_OK) {
-        return opRet;
-    }
+    CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+
     opRet = this->CopyPhotoRelatedVideoFile(sourcePhotoInfo, targetPhotoInfo);
-    if (opRet != E_OK) {
-        return opRet;
-    }
+    CHECK_AND_RETURN_RET(opRet == E_OK, opRet);
+
     return this->CopyPhotoRelatedExtraData(sourcePhotoInfo, targetPhotoInfo);
 }
 
@@ -171,9 +166,8 @@ std::string PhotoFileOperation::FindVideoFilePath(const PhotoFileOperation::Phot
         return "";
     }
     // If file path is empty, return empty string. Trace log will be printed in CopyPhotoFile.
-    if (photoInfo.filePath.empty()) {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(!photoInfo.filePath.empty(), "");
+
     std::string videoFilePath = this->GetVideoFilePath(photoInfo);
     if (!MediaFileUtils::IsFileExists(videoFilePath)) {
         MEDIA_WARN_LOG("Media_Operation: videoFilePath not exists, videoFilePath: %{public}s, Object: %{public}s.",
@@ -195,14 +189,11 @@ std::string PhotoFileOperation::FindRelativePath(const std::string &filePath)
 {
     std::string prefix = "/storage/cloud/files";
     size_t pos = filePath.find(prefix);
-    if (pos != std::string::npos) {
-        return filePath.substr(pos + prefix.size());
-    }
+    CHECK_AND_RETURN_RET(pos == std::string::npos, filePath.substr(pos + prefix.size()));
+
     prefix = "/storage/media/local/files";
     pos = filePath.find(prefix);
-    if (pos != std::string::npos) {
-        return filePath.substr(pos + prefix.size());
-    }
+    CHECK_AND_RETURN_RET(pos == std::string::npos, filePath.substr(pos + prefix.size()));
     MEDIA_ERR_LOG("Media_Operation: Find RelativePath failed, filePath: %{public}s", filePath.c_str());
     return "";
 }
@@ -374,16 +365,14 @@ int32_t PhotoFileOperation::CopyPhotoRelatedVideoFile(const PhotoFileOperation::
     const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
 {
     // If photoSubtype is MOVING_PHOTO, copy video file.
-    if (sourcePhotoInfo.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET(sourcePhotoInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), E_OK);
     std::string srcVideoPath = sourcePhotoInfo.videoFilePath;
     std::string targetVideoPath = targetPhotoInfo.videoFilePath;
     int64_t dateModified = targetPhotoInfo.dateModified;
     // If video file is empty, return E_OK. Trace log will be printed in FindVideoFilePath.
-    if (srcVideoPath.empty() || targetVideoPath.empty()) {
-        return E_OK;
-    }
+    bool cond = (srcVideoPath.empty() || targetVideoPath.empty());
+    CHECK_AND_RETURN_RET(!cond, E_OK);
+
     int32_t opRet = this->CopyFile(srcVideoPath, targetVideoPath);
     CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet,
         "Media_Operation: CopyPhoto Video failed, srcPath: %{public}s, targetPath: %{public}s", srcVideoPath.c_str(),
@@ -399,20 +388,19 @@ int32_t PhotoFileOperation::CopyPhotoRelatedData(const PhotoFileOperation::Photo
     const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo,
     const std::string& srcFolder, const std::string& targetFolder)
 {
-    if (srcFolder.empty() || targetFolder.empty()) {
-        return E_OK;
-    }
+    bool cond = (srcFolder.empty() || targetFolder.empty());
+    CHECK_AND_RETURN_RET(!cond, E_OK);
+    
     if (!MediaFileUtils::IsFileExists(srcFolder)) {
         MEDIA_ERR_LOG("Media_Operation: %{public}s doesn't exist. %{public}s",
             srcFolder.c_str(), this->ToString(sourcePhotoInfo).c_str());
         return E_NO_SUCH_FILE;
     }
     int32_t opRet = MediaFileUtils::CopyDirectory(srcFolder, targetFolder);
-    if (opRet != E_OK) {
-        MEDIA_ERR_LOG("Media_Operation: CopyPhoto extraData failed, sourceInfo: %{public}s, targetInfo: %{public}s",
-            this->ToString(sourcePhotoInfo).c_str(), this->ToString(targetPhotoInfo).c_str());
-        return opRet;
-    }
+    CHECK_AND_RETURN_RET_LOG(opRet == E_OK, opRet,
+        "Media_Operation: CopyPhoto extraData failed, sourceInfo: %{public}s, targetInfo: %{public}s",
+        this->ToString(sourcePhotoInfo).c_str(), this->ToString(targetPhotoInfo).c_str());
+
     MEDIA_INFO_LOG("Media_Operation: CopyPhotoRelatedExtraData success, sourceInfo:%{public}s, targetInfo:%{public}s",
         this->ToString(sourcePhotoInfo).c_str(), this->ToString(targetPhotoInfo).c_str());
     return E_OK;

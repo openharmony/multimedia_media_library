@@ -273,10 +273,7 @@ int32_t PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(std::vector<std::
     MEDIA_DEBUG_LOG("update abnormal day month year data start");
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr!");
-        return NativeRdb::E_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, NativeRdb::E_ERROR, "rdbStore is nullptr!");
 
     auto needChangedSize = fileIds.size();
     CHECK_AND_RETURN_RET(needChangedSize > 0, NativeRdb::E_OK);
@@ -291,12 +288,11 @@ int32_t PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(std::vector<std::
     }
     updateSql << " );";
     int64_t changedRowCount = 0;
+
     auto errCode = rdbStore->ExecuteForChangedRowCount(changedRowCount, updateSql.str());
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("update abnormal day month year data failed, errCode: %{public}d, needChangedSize: %{public}zu",
-            errCode, needChangedSize);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, errCode,
+        "update abnormal day month year data failed, errCode: %{public}d, needChangedSize: %{public}zu",
+        errCode, needChangedSize);
     MEDIA_DEBUG_LOG(
         "update abnormal day month year data end, needChangedSize: %{public}zu, changedRowCount: %{public}" PRId64,
         needChangedSize, changedRowCount);

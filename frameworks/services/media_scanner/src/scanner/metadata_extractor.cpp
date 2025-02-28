@@ -79,18 +79,14 @@ static bool IsMovingPhoto(unique_ptr<Metadata> &data)
 double GetLongitudeLatitude(string inputStr, const string& ref = "")
 {
     auto pos = inputStr.find(',');
-    if (pos == string::npos) {
-        return 0;
-    }
-    double ret = stringToNum<double>(inputStr.substr(0, pos));
+    CHECK_AND_RETURN_RET(pos != string::npos, 0);
 
+    double ret = stringToNum<double>(inputStr.substr(0, pos));
     inputStr = inputStr.substr(pos + OFFSET_NUM);
     pos = inputStr.find(',');
-    if (pos == string::npos) {
-        return 0;
-    }
-    ret += stringToNum<double>(inputStr.substr(0, pos)) / DEGREES2MINUTES;
+    CHECK_AND_RETURN_RET(pos != string::npos, 0);
 
+    ret += stringToNum<double>(inputStr.substr(0, pos)) / DEGREES2MINUTES;
     inputStr = inputStr.substr(pos + OFFSET_NUM);
     ret += stringToNum<double>(inputStr) / DEGREES2SECONDS;
     return (ref.compare("W") == 0 || ref.compare("S") == 0) ? -ret : ret;
@@ -120,9 +116,10 @@ static time_t convertUTCTimeStrToTimeStamp(string &timeStr)
     strptime(timeStr.c_str(), "%Y:%m:%d %H:%M:%S", &timeinfo);
     time_t convertOnceTime = mktime(&timeinfo);
     time_t convertTwiceTime = mktime(gmtime(&convertOnceTime));
-    if (convertOnceTime == -1 || convertTwiceTime == -1) {
-        return 0;
-    }
+
+    bool cond = (convertOnceTime == -1 || convertTwiceTime == -1);
+    CHECK_AND_RETURN_RET(!cond, 0);
+
     time_t offset = convertOnceTime - convertTwiceTime;
     time_t utcTimeStamp = convertOnceTime + offset;
     return utcTimeStamp;
@@ -574,18 +571,12 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
 static void FillFrameIndex(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
     std::unique_ptr<Metadata> &data)
 {
-    if (!IsMovingPhoto(data)) {
-        MEDIA_WARN_LOG("data is not moving photo");
-        return;
-    }
-
+    CHECK_AND_RETURN_WARN_LOG(IsMovingPhoto(data), "data is not moving photo");
     uint64_t coverPosition = static_cast<uint64_t>(data->GetCoverPosition());
     uint32_t frameIndex = 0;
+
     int32_t err = avMetadataHelper->GetFrameIndexByTime(coverPosition, frameIndex);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get frame index, err: %{public}d", err);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(err == E_OK, "Failed to get frame index, err: %{public}d", err);
     data->SetFrameIndex(static_cast<int32_t>(frameIndex));
 }
 
@@ -597,10 +588,7 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
     tracer.Start("CreateAVMetadataHelper");
     std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     tracer.Finish();
-    if (avMetadataHelper == nullptr) {
-        MEDIA_ERR_LOG("AV metadata helper is null");
-        return E_AVMETADATA;
-    }
+    CHECK_AND_RETURN_RET_LOG(avMetadataHelper != nullptr, E_AVMETADATA, "AV metadata helper is null");
 
     // notify media_service clone event.
     if (scene == Scene::AV_META_SCENE_CLONE) {
@@ -610,10 +598,8 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
     string filePath = data->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_AVMETADATA, "AV metadata file path is empty");
     int32_t fd = open(filePath.c_str(), O_RDONLY);
-    if (fd <= 0) {
-        MEDIA_ERR_LOG("Open file descriptor failed, errno = %{public}d", errno);
-        return E_SYSCALL;
-    }
+    CHECK_AND_RETURN_RET_LOG(fd > 0, E_SYSCALL, "Open file descriptor failed, errno = %{public}d", errno);
+
     struct stat64 st;
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed for the given fd");
@@ -661,10 +647,8 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
     videoData->SetFilePath(videoPath);
     videoData->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     int32_t err = ExtractAVMetadata(videoData);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to extract video metadata for moving photo: %{private}s", videoPath.c_str());
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err,
+        "Failed to extract video metadata for moving photo: %{private}s", videoPath.c_str());
 
     data->SetCoverPosition(videoData->GetCoverPosition());
 

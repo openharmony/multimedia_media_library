@@ -56,16 +56,14 @@ std::vector<PhotoSourcePathOperation::PhotoAssetInfo> PhotoSourcePathOperation::
     std::shared_ptr<MediaLibraryRdbStore> mediaRdbStorePtr, const int32_t offset, const int32_t limit)
 {
     std::vector<PhotoSourcePathOperation::PhotoAssetInfo> photoAssetInfos;
-    if (mediaRdbStorePtr == nullptr) {
-        MEDIA_ERR_LOG("Media_Operation: mediaRdbStorePtr is null.");
-        return photoAssetInfos;
-    }
+    CHECK_AND_RETURN_RET_LOG(mediaRdbStorePtr != nullptr, photoAssetInfos,
+        "Media_Operation: mediaRdbStorePtr is null.");
+
     const std::vector<NativeRdb::ValueObject> params = {offset, limit};
     std::string querySql = this->SQL_PHOTO_SOURCE_PATH_MISSING_QUERY;
     auto resultSet = mediaRdbStorePtr->QuerySql(querySql, params);
-    if (resultSet == nullptr) {
-        return photoAssetInfos;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, photoAssetInfos);
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         PhotoSourcePathOperation::PhotoAssetInfo info;
         info.albumId = GetInt64Val("album_id", resultSet);
