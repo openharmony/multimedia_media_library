@@ -34,11 +34,7 @@ PhotoAlbumCopyMetaDataOperation &PhotoAlbumCopyMetaDataOperation::SetRdbStore(
 
 int64_t PhotoAlbumCopyMetaDataOperation::CopyAlbumMetaData(NativeRdb::ValuesBucket &values)
 {
-    if (this->mediaRdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is null");
-        return -1;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(this->mediaRdbStore_ != nullptr, -1, "rdbStore is null");
     AlbumInfo albumInfo;
     this->ReadAlbumValue(albumInfo, values);
     this->FindAlbumInfo(albumInfo);
@@ -108,10 +104,7 @@ void PhotoAlbumCopyMetaDataOperation::UpdateMetaData(const AlbumInfo &albumInfo,
 
 int64_t PhotoAlbumCopyMetaDataOperation::GetOrCreateAlbum(const std::string &lPath, NativeRdb::ValuesBucket &values)
 {
-    if (this->mediaRdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is null");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaRdbStore_ != nullptr, -1, "rdbStore is null");
     int32_t dirty = 0;
     int64_t albumId = this->GetLatestAlbumIdBylPath(lPath, dirty);
     bool isExist = (albumId > 0);
@@ -125,6 +118,7 @@ int64_t PhotoAlbumCopyMetaDataOperation::GetOrCreateAlbum(const std::string &lPa
         }
         return albumId;
     }
+
     int64_t newAlbumId = -1;
     int32_t ret = this->mediaRdbStore_->Insert(newAlbumId, PhotoAlbumColumns::TABLE, values);
     CHECK_AND_PRINT_LOG(ret == E_OK, "Insert copyed album failed, ret = %{public}d", ret);
@@ -135,26 +129,21 @@ int64_t PhotoAlbumCopyMetaDataOperation::GetOrCreateAlbum(const std::string &lPa
 
 int64_t PhotoAlbumCopyMetaDataOperation::GetLatestAlbumIdBylPath(const std::string &lPath, int32_t &dirty)
 {
-    if (lPath.empty() || this->mediaRdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore or lpath is null, lPath: %{public}s", DfxUtils::GetSafeAlbumName(lPath).c_str());
-        return -1;
-    }
+    bool cond = (lPath.empty() || this->mediaRdbStore_ == nullptr);
+    CHECK_AND_RETURN_RET_LOG(!cond, -1, "rdbStore or lpath is null, lPath: %{public}s",
+        DfxUtils::GetSafeAlbumName(lPath).c_str());
 
     const std::vector<NativeRdb::ValueObject> params = {lPath};
     auto resultSet = this->mediaRdbStore_->QuerySql(this->SQL_PHOTO_ALBUM_SELECT_MAX_ALBUM_ID_BY_LPATH, params);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "resultSet is nullptr");
+
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_INFO_LOG("No exist album found by lpath");
         return -1;
     }
     int64_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
-    if (albumId <= 0) {
-        MEDIA_ERR_LOG("invalid album id");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG(albumId > 0, -1, "invalid album id");
+
     dirty = GetInt32Val(PhotoAlbumColumns::ALBUM_DIRTY, resultSet);
     return albumId;
 }
@@ -162,10 +151,8 @@ int64_t PhotoAlbumCopyMetaDataOperation::GetLatestAlbumIdBylPath(const std::stri
 int32_t PhotoAlbumCopyMetaDataOperation::QueryAlbumPluginInfo(std::string &lPath, std::string &bundle_name,
     std::string &album_name)
 {
-    if (this->mediaRdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is null");
-        return E_INVALID_ARGUMENTS;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaRdbStore_ != nullptr, E_INVALID_ARGUMENTS, "rdbStore is null");
+
     std::string queryExpiredAlbumInfo = "";
     std::vector<NativeRdb::ValueObject> bindArgs = {album_name, album_name};
     if (bundle_name.empty()) {
@@ -175,10 +162,8 @@ int32_t PhotoAlbumCopyMetaDataOperation::QueryAlbumPluginInfo(std::string &lPath
         bindArgs.emplace_back(bundle_name);
     }
     auto resultSet = this->mediaRdbStore_->QuerySql(queryExpiredAlbumInfo, bindArgs);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return E_INVALID_ARGUMENTS;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_ARGUMENTS, "resultSet is nullptr");
+
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         lPath = "/Pictures/" + album_name;
         return E_OK;

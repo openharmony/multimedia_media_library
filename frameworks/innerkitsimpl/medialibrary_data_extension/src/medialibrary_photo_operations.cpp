@@ -3319,9 +3319,8 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
             tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto AddFiltersToPhoto");
             // (1) 先替换低质量裸图
             int ret = FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
-            if (ret != E_OK) {
-                return ret;
-            }
+            CHECK_AND_RETURN_RET(ret == E_OK, ret);
+
             // (2) 生成高质量水印滤镜图片
             string editData;
             CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
@@ -3379,10 +3378,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::Picture> &inPicture,
     const std::string &outputPath, string &editdata, const std::string &mime_type)
 {
-    if (inPicture == nullptr) {
-        MEDIA_ERR_LOG("AddFiltersToPicture: picture is null");
-        return E_ERR;
-    }
+    (inPicture != nullptr, E_ERR, "AddFiltersToPicture: picture is null");
     MEDIA_INFO_LOG("AddFiltersToPicture outputPath: %{public}s, editdata: %{public}s",
         outputPath.c_str(), editdata.c_str());
     size_t lastSlash = outputPath.rfind('/');
@@ -3397,9 +3393,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, bool
 {
     MEDIA_INFO_LOG("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
         DfxUtils::GetSafePath(path).c_str(), isEdited, isMovingPhoto);
-    if (isMovingPhoto) {
-        return FileUtils::SaveMovingPhotoVideo(path);
-    }
+    CHECK_AND_RETURN_RET(!isMovingPhoto, FileUtils::SaveMovingPhotoVideo(path));
     return FileUtils::SaveVideo(path, isEdited);
 }
 
@@ -3536,9 +3530,8 @@ int32_t MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(MediaLibraryComm
     }
     const ValuesBucket &values = cmd.GetValueBucket();
     string uriString;
-    if (!GetStringFromValuesBucket(values, MEDIA_DATA_DB_URI, uriString)) {
-        return E_INVALID_VALUES;
-    }
+    CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, MEDIA_DATA_DB_URI, uriString), E_INVALID_VALUES);
+
     string path = MediaFileUri::GetPathFromUri(uriString, true);
     string fileIdStr = MediaFileUri::GetPhotoId(uriString);
     int32_t fileId = 0;
@@ -3617,10 +3610,8 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
     CHECK_AND_RETURN_RET(
         GetInt32FromValuesBucket(values, PhotoColumn::PHOTO_OWNER_ALBUM_ID, targetAlbumId), E_HAS_DB_ERROR);
     int32_t rowId = UpdateFileInDb(cmd);
-    if (rowId < 0) {
-        MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
-        return rowId;
-    }
+    CHECK_AND_RETURN_RET_LOG(rowId >= 0, rowId, "Update Photo In database failed, rowId=%{public}d", rowId);
+
     PhotoAlbumType type;
     PhotoAlbumSubType subType;
     CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(to_string(targetAlbumId), type, subType) ==

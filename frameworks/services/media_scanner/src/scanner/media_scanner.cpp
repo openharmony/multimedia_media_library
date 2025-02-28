@@ -214,16 +214,13 @@ static string GetAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 {
     NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore nullptr");
-        return "";
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, "", "rdbStore nullptr");
+
     vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
     auto albumResult = rdbStore->Query(predicates, columns);
-    if (albumResult == nullptr || albumResult->GoToNextRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("query fails, no target shootingmode");
-        return "";
-    }
+    bool cond = (albumResult == nullptr || albumResult->GoToNextRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, "", "query fails, no target shootingmode");
+
     int32_t index = 0;
     if (albumResult->GetColumnIndex(PhotoAlbumColumns::ALBUM_ID, index) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("get column index fails");
@@ -252,19 +249,13 @@ static int32_t MaintainShootingModeMap(std::unique_ptr<Metadata> &data,
 static int32_t MaintainAlbumRelationship(std::unique_ptr<Metadata> &data)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbstore is nullptr");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbstore is nullptr");
+
     auto ret = MaintainShootingModeMap(data, rdbStore);
-    if (ret != E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(ret == E_OK, ret);
+
     string album_id = GetAlbumId(rdbStore, data->GetShootingMode());
-    if (album_id.empty()) {
-        MEDIA_ERR_LOG("Failed to query album_id,Album cover and count update fails");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(!album_id.empty(), E_ERR, "Failed to query album_id,Album cover and count update fails");
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, {album_id});
     return E_OK;
 }
@@ -930,10 +921,7 @@ int32_t MediaScannerObj::ScanDirInternal()
 int32_t MediaScannerObj::Start()
 {
     int32_t ret = ScanError(true);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("scann error fail %{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "scann error fail %{public}d", ret);
 
     /*
      * primary key wouldn't be duplicate
@@ -996,11 +984,7 @@ int32_t MediaScannerObj::ScanError(bool isBoot)
 int32_t MediaScannerObj::SetError()
 {
     int32_t ret = mediaScannerDb_->RecordError(errorPath_);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("record err fail %{public}d", ret);
-        return ret;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "record err fail %{public}d", ret);
     return E_OK;
 }
 } // namespace Media

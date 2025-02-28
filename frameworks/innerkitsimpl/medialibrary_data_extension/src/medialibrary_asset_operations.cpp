@@ -516,10 +516,8 @@ int32_t MediaLibraryAssetOperations::CheckExist(const std::string &path)
     predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, path);
 
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryPhotoOperations error\n");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "MediaLibraryPhotoOperations error\n");
+
     int rowCount = 0;
     if (resultSet->GetRowCount(rowCount) != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("GetRowCount error\n");
