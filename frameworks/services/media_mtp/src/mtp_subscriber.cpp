@@ -18,12 +18,15 @@
 #include "common_event_manager.h"
 #include "common_event_support.h"
 #include "media_log.h"
+#include "parameters.h"
+#include "usb_srv_client.h"
 #include "usb_srv_support.h"
 #include "mtp_service.h"
 #include "mtp_manager.h"
 
 namespace OHOS {
 namespace Media {
+const char *MTP_SERVER_DISABLE = "persist.edm.mtp_server_disable";
 
 MtpSubscriber::MtpSubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
     : EventFwk::CommonEventSubscriber(subscriberInfo)
@@ -44,6 +47,7 @@ void MtpSubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
     MEDIA_INFO_LOG("MtpSubscriber OnReceiveEvent");
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
+    MEDIA_INFO_LOG("MtpSubscriber OnReceiveEvent action = %{public}s", action.c_str());
     if (action != EventFwk::CommonEventSupport::COMMON_EVENT_USB_STATE) {
         MEDIA_INFO_LOG("MtpSubscriber OnReceiveEvent action = %{public}s", action.c_str());
     }
@@ -61,8 +65,14 @@ void MtpSubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
     MtpManager::GetInstance().StopMtpService();
     bool isMtp = want.GetBoolParam(std::string {USB::UsbSrvSupport::FUNCTION_NAME_MTP}, false);
     if (isMtp) {
-        MEDIA_INFO_LOG("MtpSubscriber OnReceiveEvent USB MTP connected");
-        MtpManager::GetInstance().StartMtpService(MtpManager::MtpMode::MTP_MODE);
+        std::string param(MTP_SERVER_DISABLE);
+        bool mtpDisable = system::GetParameter(param, false);
+        if (mtpDisable) {
+            MEDIA_INFO_LOG("MtpSubscriber MTP Manager persist.edm.mtp_server_disable = true");
+        } else {
+            MEDIA_INFO_LOG("MtpSubscriber OnReceiveEvent USB MTP connected");
+            MtpManager::GetInstance().StartMtpService(MtpManager::MtpMode::MTP_MODE);
+        }
         return;
     }
     bool isPtp = want.GetBoolParam(std::string {USB::UsbSrvSupport::FUNCTION_NAME_PTP}, false);
