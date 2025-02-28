@@ -3321,7 +3321,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
     tracer.Finish();
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("MultistagesCapture, TakeEffect error. ret = %d", ret);
+        MEDIA_ERR_LOG("MultistagesCapture, TakeEffect error. ret = %{public}d", ret);
         return E_ERR;
     }
 
