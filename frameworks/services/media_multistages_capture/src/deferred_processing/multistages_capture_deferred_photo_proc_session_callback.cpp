@@ -250,6 +250,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
     tracer.Finish();
     int32_t isTemp = GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet);
     if (isTemp) {
+        MEDIA_INFO_LOG("MultistagesCapture, this picture is temp.");
         MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
         UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag);
         return;

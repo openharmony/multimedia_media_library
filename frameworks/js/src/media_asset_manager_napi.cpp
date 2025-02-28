@@ -326,10 +326,10 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
     int currentPhotoQuality = HIGH_QUALITY_IMAGE;
     resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
     if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
-        NAPI_DEBUG_LOG("query photo status : lowQuality");
+        NAPI_INFO_LOG("query photo status : lowQuality");
         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
     }
-    NAPI_DEBUG_LOG("query photo status quality: %{public}d", currentPhotoQuality);
+    NAPI_INFO_LOG("query photo status quality: %{public}d", currentPhotoQuality);
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 
@@ -668,7 +668,7 @@ void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env, MediaAssetManager
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(asyncContext->photoUri);
-    NAPI_INFO_LOG("uri: %{public}s, %{public}s", asyncContext->photoUri.c_str(), uriLocal.c_str());
+    NAPI_INFO_LOG("MultistagesCapture, uri: %{public}s, %{public}s", asyncContext->photoUri.c_str(), uriLocal.c_str());
     Uri uri(asyncContext->photoUri);
     std::unique_lock<std::mutex> registerLock(registerTaskLock);
     if (multiStagesObserverMap.find(uriLocal) == multiStagesObserverMap.end()) {
@@ -812,6 +812,7 @@ static int32_t GetPhotoSubtype(napi_env env, napi_value photoAssetArg)
 
 napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("Begin JSRequestImageData");
     if (env == nullptr || info == nullptr) {
         NAPI_ERR_LOG("JSRequestImageData js arg invalid");
         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImageData js arg invalid");
@@ -852,7 +853,7 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
 
 napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("JSRequestImage");
+    NAPI_INFO_LOG("Begin JSRequestImage");
     if (env == nullptr || info == nullptr) {
         NAPI_ERR_LOG("JSRequestImage js arg invalid");
         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImage js arg invalid");
@@ -1006,6 +1007,8 @@ napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback
 
 void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
+    NAPI_INFO_LOG("OnHandleRequestImage mode: %{public}d.", static_cast<int32_t>(asyncContext->deliveryMode));
     MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     switch (asyncContext->deliveryMode) {
         case DeliveryMode::FAST:
@@ -1197,7 +1200,7 @@ static void SavePicture(std::string &fileUri)
 
 void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *context, void *data)
 {
-    NAPI_DEBUG_LOG("OnDataPrepared");
+    NAPI_INFO_LOG("Begin OnDataPrepared.");
     AssetHandler *assetHandler = reinterpret_cast<AssetHandler *>(data);
     CHECK_NULL_PTR_RETURN_VOID(assetHandler, "assetHandler is nullptr");
     auto dataHandler = assetHandler->dataHandler;
@@ -1375,7 +1378,7 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
     }
     for (auto &uri : changeInfo.uris_) {
         string uriString = uri.ToString();
-        NAPI_DEBUG_LOG("%{public}s", uriString.c_str());
+        NAPI_INFO_LOG("Onchange, before onDataPrepared, uri: %{public}s", uriString.c_str());
         std::string photoId = "";
         if (MediaAssetManagerNapi::QueryPhotoStatus(fileId_, uriString, photoId, true, -1) !=
             MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
