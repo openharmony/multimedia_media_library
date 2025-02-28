@@ -66,7 +66,7 @@ void MtpSubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
     bool isMtp = want.GetBoolParam(std::string {USB::UsbSrvSupport::FUNCTION_NAME_MTP}, false);
     if (isMtp) {
         std::string param(MTP_SERVER_DISABLE);
-        bool mtpDisable = system::GetParameter(param, false);
+        bool mtpDisable = system::GetBoolParameter(param, false);
         if (mtpDisable) {
             MEDIA_INFO_LOG("MtpSubscriber MTP Manager persist.edm.mtp_server_disable = true");
         } else {
