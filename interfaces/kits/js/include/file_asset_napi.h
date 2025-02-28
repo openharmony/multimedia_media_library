@@ -63,6 +63,7 @@ public:
     std::string GetTitle() const;
     std::string GetFileUri() const;
     int32_t GetFileId() const;
+    int32_t GetUserId() const;
     int32_t GetOrientation() const;
     MediaType GetMediaType() const;
     const std::string GetNetworkId() const;

@@ -75,6 +75,7 @@ public:
     std::vector<std::string> GetDismissAssetArray() const;
     std::vector<std::pair<std::string, int32_t>> GetIdOrderPositionPairs() const;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> GetMoveMap() const;
+    int32_t GetUserId() const;
     void RecordMoveAssets(std::vector<std::string>& assetArray, std::shared_ptr<PhotoAlbum>& targetAlbum);
     void ClearAddAssetArray();
     void ClearRemoveAssetArray();
@@ -121,6 +122,7 @@ private:
     std::vector<std::string> assetsToRecover_;
     std::vector<std::string> assetsToDelete_;
     std::vector<std::string> dismissAssets_;
+    int32_t userId_ = -1;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> moveMap_;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
     std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;

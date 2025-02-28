@@ -54,7 +54,7 @@ public:
     EXPORT static void UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
     EXPORT static int OpenFile(Uri &uri, const std::string &mode, const int32_t userId = -1);
     EXPORT static int Update(Uri &uri, const DataShare::DataSharePredicates &predicates,
-        const DataShare::DataShareValuesBucket &value);
+        const DataShare::DataShareValuesBucket &value, const int32_t userId = -1);
     EXPORT static void RegisterObserverExt(const Uri &uri,
         std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants);
     EXPORT static void UnregisterObserverExt(const Uri &uri,

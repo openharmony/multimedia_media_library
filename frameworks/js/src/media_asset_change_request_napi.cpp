@@ -913,6 +913,7 @@ static napi_value ParseArgsDeleteAssets(
 
     CHECK_COND_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty array");
     for (const auto& uri : uris) {
+        context->userId_ = stoi(MediaLibraryNapiUtils::GetUserIdFromUri(uri));
         CHECK_COND(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI);
     }
 
@@ -932,7 +933,8 @@ static void DeleteAssetsExecute(napi_env env, void* data)
     string trashUri = PAH_TRASH_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(trashUri);
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, context->predicates, context->valuesBucket);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, context->predicates, context->valuesBucket,
+        context->userId_);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Failed to delete assets, err: %{public}d", changedRows);
