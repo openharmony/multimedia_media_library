@@ -34,6 +34,9 @@ public:
     EXPORT void StartMtpService(const MtpMode mode);
     EXPORT void StopMtpService();
     EXPORT bool IsMtpMode() const { return mtpMode_ == MtpMode::MTP_MODE; }
+    void RegisterMtpParamListener();
+    void RemoveMtpParamListener();
+    static void OnMtpParamDisableChanged(const char *key, const char *value, void *context);
 private:
     MtpMode mtpMode_ { MtpMode::NONE_MODE };
 };

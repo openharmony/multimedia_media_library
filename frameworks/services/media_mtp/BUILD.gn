@@ -133,6 +133,7 @@ ohos_shared_library("media_mtp") {
     "drivers_interface_usb:usbfn_mtp_idl_headers",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "init:libbeget_proxy",
     "init:libbegetutil",
     "ipc:ipc_core",
     "os_account:os_account_innerkits",
