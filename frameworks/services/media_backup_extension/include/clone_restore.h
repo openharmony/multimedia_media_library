@@ -34,6 +34,7 @@
 #include "backup_database_utils.h"
 #include "photo_album_clone.h"
 #include "photos_clone.h"
+#include "clone_restore_classify.h"
 #include "clone_restore_geo.h"
 #include "clone_restore_geo_dictionary.h"
 
@@ -250,6 +251,7 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets;
+    CloneRestoreClassify cloneRestoreClassify_;
     CloneRestoreGeo cloneRestoreGeo_;
     CloneRestoreHighlight cloneRestoreHighlight_;
     CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;

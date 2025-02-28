@@ -163,7 +163,8 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
             { PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_NAME + " IS NOT NULL" },
             { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
                 to_string(PhotoAlbumSubType::SHOOTING_MODE) + ", " +
-                to_string(PhotoAlbumSubType::GEOGRAPHY_CITY) + ")" },
+                to_string(PhotoAlbumSubType::GEOGRAPHY_CITY) + ", " +
+                to_string(PhotoAlbumSubType::CLASSIFY) + ")" },
         }},
 };
 const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLAUSE_MAP_WITH_CLOUD = {
@@ -188,7 +189,8 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
             { PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_NAME + " IS NOT NULL" },
             { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
                 to_string(PhotoAlbumSubType::SHOOTING_MODE) + ", " +
-                to_string(PhotoAlbumSubType::GEOGRAPHY_CITY) + ")" },
+                to_string(PhotoAlbumSubType::GEOGRAPHY_CITY) + ", " +
+                to_string(PhotoAlbumSubType::CLASSIFY) + ")" },
         }},
 };
 const vector<string> CLONE_ALBUMS = { PhotoAlbumColumns::TABLE, ANALYSIS_ALBUM_TABLE };
@@ -289,6 +291,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     InitThumbnailStatus();
     this->photoAlbumClone_.OnStart(this->mediaRdb_, this->mediaLibraryRdb_);
     this->photosClone_.OnStart(this->mediaLibraryRdb_, this->mediaRdb_);
+    cloneRestoreClassify_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeo_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreGeoDictionary_.Init(this->sceneCode_, this->taskId_, this->mediaLibraryRdb_, this->mediaRdb_);
     cloneRestoreHighlight_.Init(this->sceneCode_, this->taskId_, mediaLibraryRdb_, mediaRdb_, backupRestoreDir);
@@ -461,6 +464,7 @@ void CloneRestore::RestoreAlbum()
 
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
+    cloneRestoreClassify_.RestoreClassifyInfos();
     cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
     cloneRestoreGeoDictionary_.RestoreAlbums();
     RestoreHighlightAlbums(CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
@@ -1669,6 +1673,7 @@ void CloneRestore::RestoreGallery()
     BackupDatabaseUtils::UpdateFaceGroupTagsUnion(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
+    cloneRestoreClassify_.ReportClassifyRestoreTask();
     cloneRestoreGeo_.ReportGeoRestoreTask();
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     cloneRestoreHighlight_.UpdateAlbums();
@@ -2086,6 +2091,8 @@ void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos)
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("query new file_id cost %{public}ld, insert %{public}ld maps cost %{public}ld",
         (long)(startInsert - startQuery), (long)mapRowNum, (long)(end - startInsert));
+    cloneRestoreClassify_.RestoreMaps(fileInfos);
+    cloneRestoreClassify_.RestoreVideoMaps(fileInfos);
     cloneRestoreGeo_.RestoreMaps(fileInfos);
     cloneRestoreHighlight_.RestoreMaps(fileInfos);
 }
