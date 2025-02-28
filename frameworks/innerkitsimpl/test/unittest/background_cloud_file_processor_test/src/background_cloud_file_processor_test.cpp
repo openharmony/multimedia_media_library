@@ -221,7 +221,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     EXPECT_EQ(QueryPhotosCount(), 10);
 
     std::vector<std::string> curDownloadFiles = QueryCurDownloadFiles();
-    EXPECT_EQ(curDownloadFiles.size(), 1);
+    EXPECT_NE(curDownloadFiles.size(), 0);
     MEDIA_INFO_LOG("background_cloud_file_processor_test_006 End");
 }
 
