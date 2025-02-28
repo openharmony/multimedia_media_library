@@ -114,6 +114,7 @@ public:
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
     EXPORT void UploadDBFileInner(int64_t totalFileSize);
     EXPORT int32_t UpdateDateTakenWhenZero();
+    EXPORT int32_t UpdateDirtyForCloudClone();
 
 private:
     int32_t InitMediaLibraryRdbStore();
