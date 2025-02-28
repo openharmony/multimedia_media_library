@@ -53,8 +53,8 @@ public:
     void StopNotifyThread();
     void ChangeNotifyThread();
 
-    void StartDealyInfoThread();
-    void StopDealyInfoThread();
+    void StartDelayInfoThread();
+    void StopDelayInfoThread();
 private:
     void SendEventPackets(uint32_t objectHandle, uint16_t eventCode);
     void SendEventPacketAlbum(uint32_t objectHandle, uint16_t eventCode);
@@ -71,7 +71,7 @@ private:
     bool ParseNotifyData(const ChangeInfo &changeInfo, std::vector<std::string> &fileIds);
     void HandleMovePhotoEvent(const ChangeInfo &changeInfo);
 
-    void DealyInfoThread();
+    void DelayInfoThread();
 private:
     std::thread notifythread_;
     std::queue<ChangeInfo> changeInfoQueue_;
