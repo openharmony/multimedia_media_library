@@ -15,6 +15,7 @@
 
 const photoAccessHelper = requireInternal('file.photoAccessHelper');
 const bundleManager = requireNapi('bundle.bundleManager');
+const deviceinfo = requireInternal('deviceInfo');
 
 const ARGS_ZERO = 0;
 const ARGS_ONE = 1;
@@ -689,6 +690,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
     config.parameters.userId = option.userId;
+    config.parameters.isPc = deviceinfo.deviceType === '2in1';
   }
 
   return config;
