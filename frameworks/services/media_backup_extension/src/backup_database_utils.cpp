@@ -31,6 +31,7 @@ const int32_t SCALE_FACTOR = 2;
 const int32_t SCALE_MIN_SIZE = 1080;
 const int32_t SCALE_MAX_SIZE = 2560;
 const int32_t UPDATE_COUNT = 200;
+const int32_t STAMP_PARAM = 4;
 const float SCALE_DEFAULT = 0.25;
 const size_t MIN_GARBLE_SIZE = 2;
 const size_t GARBLE_START = 1;
@@ -63,6 +64,7 @@ int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
         config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
         config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
         config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
+        config.SetScalarFunction("begin_generate_highlight_thumbnail", STAMP_PARAM, BeginGenerateHighlightThumbnail);
     }
     int32_t err;
     RdbCallback cb;
@@ -94,6 +96,11 @@ std::string BackupDatabaseUtils::IsCallerSelfFunc(const std::vector<std::string>
 }
 
 std::string BackupDatabaseUtils::PhotoAlbumNotifyFunc(const std::vector<std::string> &args)
+{
+    return "";
+}
+
+std::string BackupDatabaseUtils::BeginGenerateHighlightThumbnail(const std::vector<std::string> &args)
 {
     return "";
 }

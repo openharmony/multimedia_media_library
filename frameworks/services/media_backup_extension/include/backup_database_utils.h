@@ -141,6 +141,7 @@ private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     static std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
+    static std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
 };
 
 class RdbCallback : public NativeRdb::RdbOpenCallback {
@@ -229,6 +230,8 @@ std::optional<T> BackupDatabaseUtils::GetOptionalValue(const std::shared_ptr<Nat
         errCode = resultSet->GetDouble(columnIndex, value);
     } else if constexpr (std::is_same_v<T, std::string>) {
         errCode = resultSet->GetString(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, std::vector<uint8_t>>) {
+        errCode = resultSet->GetBlob(columnIndex, value);
     } else {
         static_assert(always_false<T>::value, "Unsupported type for GetOptionalValue");
     }
