@@ -93,8 +93,6 @@ public:
         const std::vector<NativeRdb::ValueObject> &args = {});
     static void UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::vector<FileIdPair>& fileIdPair);
-    static std::string GetFileIdNewFilterClause(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-        const std::vector<FileIdPair>& fileIdPair);
     static void UpdateFaceAnalysisTblStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         const std::vector<FileIdPair>& fileIdPair);
