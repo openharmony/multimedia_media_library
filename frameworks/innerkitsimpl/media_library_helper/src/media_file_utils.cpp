@@ -1293,6 +1293,12 @@ string MediaFileUtils::SplitByChar(const string &str, const char split)
     return (splitIndex == string::npos) ? ("") : (str.substr(splitIndex + 1));
 }
 
+string MediaFileUtils::UnSplitByChar(const string &str, const char split)
+{
+    size_t splitIndex = str.find_last_of(split);
+    return (splitIndex == string::npos) ? ("") : (str.substr(0, splitIndex));
+}
+
 string MediaFileUtils::GetExtensionFromPath(const string &path)
 {
     string extention = SplitByChar(path, '.');

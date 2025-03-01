@@ -131,6 +131,11 @@ private:
         const std::string &cachePath, const std::string &destPath);
     static int32_t UpdateMovingPhotoSubtype(int32_t fileId, int32_t currentPhotoSubType);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
+    static int32_t HandleNeedSetDisplayName(MediaLibraryCommand &cmd, bool isNameChanged,
+        std::shared_ptr<FileAsset> &fileAsset, bool &isNeedScan);
+    static int32_t HandleNeedSetDisplayName(MediaLibraryCommand &cmd, int32_t id);
+    static int32_t HandleCacheFile(MediaLibraryCommand& cmd, std::string cachePath);
+    static int32_t HandleCacheFile(MediaLibraryCommand &cmd, int32_t id);
     static int32_t UpdateOrientationAllExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         std::string &currentOrientation);
     static int32_t UpdateOrientationExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
