@@ -100,8 +100,8 @@ MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::GetWriteCacheHandler(int32_t
 
 MediaLibrary_ErrorCode MediaAssetChangeRequestImpl::SaveCameraPhoto(MediaLibrary_ImageFileType imageFileType)
 {
-    CHECK_AND_RETURN_RET_LOG(imageFileType == MEDIA_LIBRARY_IMAGE_JPEG, MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED,
-        "imageFileType not support");
+    CHECK_AND_RETURN_RET_LOG((imageFileType >= MEDIA_LIBRARY_IMAGE_JPEG && imageFileType <= MEDIA_LIBRARY_IMAGE_HEIF),
+        MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED, "imageFileType not support");
 
     unique_lock<mutex> ulock(mutex_);
     auto fileAsset = mediaAsset_->GetFileAssetInstance();

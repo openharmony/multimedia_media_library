@@ -106,6 +106,7 @@ constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
+const std::string OLD_DISPLAY_NAME = "old_displayName";
 
 enum ImageFileType : int32_t {
     JPEG = 1,
@@ -1602,6 +1603,40 @@ void HandleUpdateIndex(MediaLibraryCommand &cmd, string id)
     }
 }
 
+int32_t MediaLibraryPhotoOperations::HandleNeedSetDisplayName(MediaLibraryCommand &cmd, bool isNameChanged,
+    shared_ptr<FileAsset> &fileAsset, bool &isNeedScan)
+{
+    if (IsNeedSetDisplayName(cmd) && isNameChanged) {
+        bool ret = UpdateFileAssetBySetDisplayName(cmd, fileAsset->GetId());
+        if (!ret) {
+            MEDIA_ERR_LOG("Failed to setDisplayName due to update file, displayName: %{public}s",
+                fileAsset->GetDisplayName().c_str());
+            RevertSetDisplayName(cmd, fileAsset->GetId(), "update");
+            return E_ERR;
+        }
+        isNeedScan = true;
+        std::string newPath;
+        ret = GetStringFromValuesBucket(cmd.GetValueBucket(), MediaColumn::MEDIA_FILE_PATH, newPath);
+        fileAsset->SetPath(newPath);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::HandleNeedSetDisplayName(MediaLibraryCommand &cmd, int32_t id)
+{
+    if (IsNeedSetDisplayName(cmd)) {
+        CHECK_AND_RETURN_RET_LOG(UpdateBySetDisplayName(cmd, id) == NativeRdb::E_OK, E_FAIL,
+            "Failed to setDisplayName, fileId: %{public}d.", id);
+        bool ret = UpdateFileAssetBySetDisplayName(cmd, id);
+        if (!ret) {
+            MEDIA_ERR_LOG("Failed to setDisplayName due to updateFile fail, fileId: %{public}d.", id);
+            RevertSetDisplayName(cmd, id, "delete");
+            return E_FAIL;
+        }
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
@@ -1637,6 +1672,8 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
         RevertOrientation(fileAsset, currentOrientation);
         return rowId;
     }
+    CHECK_AND_RETURN_RET_LOG(HandleNeedSetDisplayName(cmd, isNameChanged, fileAsset, isNeedScan) == E_OK, errCode,
+        "Failed to update file");
     HandleUpdateIndex(cmd, to_string(fileAsset->GetId()));
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
     errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
@@ -2736,11 +2773,13 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
 {
     // moving photo video save and add filters
     const ValuesBucket& values = cmd.GetValueBucket();
-    string videoSaveFinishedUri;
+    int32_t id = -1;
+    CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id),
+        E_INVALID_VALUES, "Failed to get fileId");
+    HandleNeedSetDisplayName(cmd, id);
+    
+    std::string videoSaveFinishedUri;
     if (GetStringFromValuesBucket(values, NOTIFY_VIDEO_SAVE_FINISHED, videoSaveFinishedUri)) {
-        int32_t id = -1;
-        CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id),
-            E_INVALID_VALUES, "Failed to get fileId");
         vector<string> columns = { videoSaveFinishedUri };
         ScanMovingPhoto(cmd, columns);
 
@@ -3169,6 +3208,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEffectModeExecute(MediaLibraryCommand
     const ValuesBucket& values = cmd.GetValueBucket();
     CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id) && id > 0,
         E_INVALID_VALUES, "Failed to get file id");
+    HandleNeedSetDisplayName(cmd, id);
     CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode) &&
         MediaFileUtils::CheckMovingPhotoEffectMode(effectMode), E_INVALID_VALUES,
         "Failed to check effect mode: %{public}d", effectMode);
@@ -3216,6 +3256,32 @@ int32_t MediaLibraryPhotoOperations::SubmitEffectModeExecute(MediaLibraryCommand
     return E_OK;
 }
 
+int32_t MediaLibraryPhotoOperations::HandleCacheFile(MediaLibraryCommand& cmd, std::string cachePath)
+{
+    if (IsNeedSetDisplayName(cmd)) {
+        std::string oldCacheFile = MediaFileUtils::UnSplitByChar(cachePath, '.') + "." +
+                                   MediaFileUtils::GetExtensionFromPath(cmd.GetQuerySetParam(OLD_DISPLAY_NAME));
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(oldCacheFile), E_NO_SUCH_FILE,
+            "oldCacheFile: %{public}s does not exist.", oldCacheFile.c_str());
+        CHECK_AND_RETURN_RET_LOG((MediaFileUtils::ModifyAsset(oldCacheFile, cachePath) == E_SUCCESS),
+            E_MODIFY_DATA_FAIL, "Failed to rename file, cachePath: %{public}s.", oldCacheFile.c_str());
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::HandleCacheFile(MediaLibraryCommand &cmd, int32_t id)
+{
+    if (IsNeedSetDisplayName(cmd)) {
+        bool ret = UpdateFileAssetBySetDisplayName(cmd, id);
+        if (!ret) {
+            MEDIA_ERR_LOG("Failed to setDisplayName due to updateFile fail, fileId: %{public}d.", id);
+            RevertSetDisplayName(cmd, id, "delete");
+            return E_FAIL;
+        }
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
 {
     MediaLibraryTracer tracer;
@@ -3231,6 +3297,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
         E_INVALID_VALUES, "Failed to get fileName");
     string cacheDir = GetAssetCacheDir();
     string cachePath = cacheDir + "/" + fileName;
+    CHECK_AND_RETURN_RET_LOG(HandleCacheFile(cmd, cachePath) == E_OK, E_INVALID_VALUES, "Failed to HandleCacheFile.");
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(cachePath), E_NO_SUCH_FILE,
         "cachePath: %{private}s does not exist!", cachePath.c_str());
     string movingPhotoVideoName;
@@ -3251,8 +3318,10 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
         id = CreateV10(cmd);
         CHECK_AND_RETURN_RET_LOG(id > 0, E_FAIL, "Failed to create asset");
         cmd.SetValueBucket(reservedValues);
+        CHECK_AND_RETURN_RET_LOG(HandleCacheFile(cmd, id) == E_OK, E_INVALID_VALUES, "Failed to HandleCacheFile.");
+    } else {
+        CHECK_AND_RETURN_RET(HandleNeedSetDisplayName(cmd, id) == E_OK, E_FAIL);
     }
-
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
         PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
         PhotoColumn::PHOTO_EDIT_TIME };

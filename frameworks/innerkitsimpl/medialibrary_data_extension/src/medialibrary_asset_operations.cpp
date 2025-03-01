@@ -65,6 +65,7 @@
 #endif
 #include "permission_utils.h"
 #include "photo_album_column.h"
+#include "photo_file_utils.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
 #include "rdb_store.h"
@@ -101,6 +102,9 @@ constexpr int32_t LOCAL_PHOTO_POSITION = 1;
 constexpr int32_t BOTH_LOCAL_CLOUD_PHOTO_POSITION = 3;
 constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
+const std::string SET_DISPLAY_NAME_KEY = "set_displayName";
+const std::string IS_CAN_FALLBACK = "is_can_fallback";
+const std::string OLD_DISPLAY_NAME = "old_displayName";
 
 struct DeletedFilesParams {
     vector<string> ids;
@@ -1225,9 +1229,34 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
     return deletedRows;
 }
 
+bool MediaLibraryAssetOperations::IsNeedSetDisplayName(MediaLibraryCommand &cmd)
+{
+    std::string newDisplayName = cmd.GetQuerySetParam(SET_DISPLAY_NAME_KEY);
+    CHECK_AND_RETURN_RET(!newDisplayName.empty(), false);
+    MEDIA_INFO_LOG("new display name is %{public}s.", newDisplayName.c_str());
+    return true;
+}
+
+bool MediaLibraryAssetOperations::CheckUriBySetDisplayName(MediaLibraryCommand &cmd)
+{
+    CHECK_AND_RETURN_RET(IsNeedSetDisplayName(cmd), false);
+
+    std::string oldDisplayName = cmd.GetQuerySetParam(OLD_DISPLAY_NAME);
+    CHECK_AND_RETURN_RET_LOG(!oldDisplayName.empty(), false,
+        "Failed to setDisplayName, due to uri is not contain old displayName");
+    MEDIA_INFO_LOG("Old display name is %{public}s.", oldDisplayName.c_str());
+
+    std::string isCallFallback = cmd.GetQuerySetParam(IS_CAN_FALLBACK);
+    CHECK_AND_RETURN_RET_LOG(!isCallFallback.empty(), false,
+        "Failed to setDisplayName, due to uri is not contain is_can_fallback.");
+    return true;
+}
+
 int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged)
 {
+    // if uri contains "set_displayName", it will do ChangeDisplayName();
+    CHECK_AND_RETURN_RET(!IsNeedSetDisplayName(cmd), ChangeDisplayName(cmd, fileAsset, isNameChanged));
     ValuesBucket &values = cmd.GetValueBucket();
     ValueObject valueObject;
     string newTitle;
@@ -1269,6 +1298,254 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     }
     isNameChanged = true;
     return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::ChangeDisplayName(MediaLibraryCommand &cmd, const shared_ptr<FileAsset> &fileAsset,
+    bool &isNameChanged)
+{
+    CHECK_AND_RETURN_RET_LOG(cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE, E_INVALID_VALUES, "invalid input table");
+    CHECK_AND_RETURN_RET_LOG(CheckUriBySetDisplayName(cmd), E_INVALID_VALUES, "invalid input uri");
+
+    NativeRdb::ValuesBucket valuesBucket;
+    CHECK_AND_RETURN_RET_LOG(GetUpdateValuesBucket(cmd, valuesBucket, false), E_INVALID_VALUES,
+        "invalid input valuesBucket");
+    
+    std::string newDisplayName;
+    std::string newTitle;
+    GetStringFromValuesBucket(valuesBucket, MediaColumn::MEDIA_NAME, newDisplayName);
+    GetStringFromValuesBucket(valuesBucket, MediaColumn::MEDIA_TITLE, newTitle);
+    CHECK_AND_RETURN_RET_LOG(CheckDisplayNameWithType(newDisplayName, fileAsset->GetMediaType()) == E_OK,
+        E_INVALID_VALUES, "Invalid display name: %{public}s.", newDisplayName.c_str());
+
+    std::string newMimeType = MediaFileUtils::GetMimeTypeFromDisplayName(newDisplayName);
+    std::string newExtension = MediaFileUtils::GetExtensionFromPath(newDisplayName);
+    std::string newPath = MediaFileUtils::UnSplitByChar(fileAsset->GetPath(), '.') + "." + newExtension;
+
+    NativeRdb::ValuesBucket &values = cmd.GetValueBucket();
+    values.PutString(MediaColumn::MEDIA_NAME, newDisplayName);
+    values.PutString(MediaColumn::MEDIA_TITLE, newTitle);
+    values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
+    values.PutString(MediaColumn::MEDIA_MIME_TYPE, newMimeType);
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, newExtension);
+    values.PutLong(PhotoColumn::MEDIA_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    isNameChanged = true;
+    return E_OK;
+}
+
+bool MediaLibraryAssetOperations::GetUpdateValuesBucket(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &values,
+    bool isContainPath)
+{
+    NativeRdb::ValuesBucket reservedValues = cmd.GetValueBucket();
+    std::string displayName;
+    std::string title;
+    std::string val = cmd.GetQuerySetParam(SET_DISPLAY_NAME_KEY);
+    std::string oldDisplayName = cmd.GetQuerySetParam(OLD_DISPLAY_NAME);
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(reservedValues, MediaColumn::MEDIA_NAME, displayName), false,
+        "Invalid input, not contain displayName: %{public}s.", val.c_str());
+    CHECK_AND_RETURN_RET_LOG(val == displayName, false,
+        "Invalid input, not contain displayName: %{public}s.", val.c_str());
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(reservedValues, MediaColumn::MEDIA_TITLE, title), false,
+        "Invalid input, not contain title: %{public}s.", val.c_str());
+
+    values.PutString(MediaColumn::MEDIA_NAME, displayName);
+    values.PutString(MediaColumn::MEDIA_TITLE, title);
+    
+    if (isContainPath) {
+        std::string path;
+        std::string mimeType;
+
+        CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(reservedValues, MediaColumn::MEDIA_FILE_PATH, path), false,
+            "Invalid input, not contain path: %{public}s.", val.c_str());
+
+        CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(reservedValues, MediaColumn::MEDIA_MIME_TYPE, mimeType),
+            false, "Invalid input, not contain mimeType: %{public}s.", val.c_str());
+        
+        std::string oldFilePath =
+            MediaFileUtils::UnSplitByChar(path, '.') + "." + MediaFileUtils::SplitByChar(oldDisplayName, '.');
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(oldFilePath), false,
+            "Invalid input, old file is not exist: %{public}s.", MediaFileUtils::DesensitizePath(oldFilePath).c_str());
+
+        values.PutString(MediaColumn::MEDIA_FILE_PATH, path);
+        values.PutString(MediaColumn::MEDIA_MIME_TYPE, mimeType);
+        values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(displayName));
+    }
+    return true;
+}
+
+int32_t MediaLibraryAssetOperations::UpdateBySetDisplayName(MediaLibraryCommand &cmd, const int32_t &id)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "Update operation failed. rdbStore is null");
+    CHECK_AND_RETURN_RET_LOG(CheckUriBySetDisplayName(cmd), E_ERR, "Invalid input uri.");
+
+    NativeRdb::ValuesBucket valuesBucket;
+    CHECK_AND_RETURN_RET_LOG(GetUpdateValuesBucket(cmd, valuesBucket, true), E_INVALID_VALUES,
+        "invalid input valuesBucket");
+
+    valuesBucket.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    valuesBucket.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    valuesBucket.PutLong(PhotoColumn::MEDIA_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    std::string whereClauses = MediaColumn::MEDIA_ID + " = ?";
+    std::vector<std::string> whereArgs = {std::to_string(id)};
+
+    int32_t updateRows = 0;
+    int32_t ret = rdbStore->Update(updateRows, PhotoColumn::PHOTOS_TABLE, valuesBucket, whereClauses, whereArgs);
+    CHECK_AND_RETURN_RET_LOG((ret == NativeRdb::E_OK && updateRows >= 0), E_ERR,
+        "failed to update, ret: %{public}d, updateRows: %{public}d.", ret, updateRows);
+    return ret;
+}
+
+std::string MediaLibraryAssetOperations::FindRelativePath(const std::string &filePath)
+{
+    std::string prefix = "/storage/cloud/files";
+    size_t pos = filePath.find(prefix);
+    if (pos != std::string::npos) {
+        return filePath.substr(pos + prefix.size());
+    }
+
+    prefix = "/storage/media/local/files";
+    pos = filePath.find(prefix);
+    if (pos != std::string::npos) {
+        return filePath.substr(pos + prefix.size());
+    }
+    MEDIA_ERR_LOG("Failed to FindRelativePath, filePath: %{public}s.", filePath.c_str());
+    return "";
+}
+
+std::string MediaLibraryAssetOperations::FindPrefixOfEditDataFolder(const std::string &filePath)
+{
+    std::string prefix = "/storage/cloud/files";
+    size_t pos = filePath.find(prefix);
+    if (pos != std::string::npos) {
+        return "/storage/cloud/files/.editdata";
+    }
+
+    prefix = "/storage/media/local/files";
+    pos = filePath.find(prefix);
+    if (pos != std::string::npos) {
+        return "/storage/media/local/files/.editdata";
+    }
+    MEDIA_ERR_LOG("Failed to FindPrefixOfEditDataFolder, filePath: %{public}s.", filePath.c_str());
+    return "";
+}
+
+bool MediaLibraryAssetOperations::UpdateFileAssetBySetDisplayName(MediaLibraryCommand &cmd, const int32_t id)
+{
+    NativeRdb::ValuesBucket reservedValues;
+    CHECK_AND_RETURN_RET_LOG(GetUpdateValuesBucket(cmd, reservedValues, true) && CheckUriBySetDisplayName(cmd), false,
+        "Failed to check uri.");
+    std::string newPath = "";
+    std::string oldDisplayName = cmd.GetQuerySetParam(OLD_DISPLAY_NAME);
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(reservedValues, MediaColumn::MEDIA_FILE_PATH, newPath),
+        false, "Failed to get newPath.");
+    std::string oldPath =
+        MediaFileUtils::UnSplitByChar(newPath, '.') + "." + MediaFileUtils::SplitByChar(oldDisplayName, '.');
+    std::string newEditDataFloder = FindPrefixOfEditDataFolder(newPath) + FindRelativePath(newPath);
+    std::string oldEditDataFloder = FindPrefixOfEditDataFolder(newPath) + FindRelativePath(oldPath);
+    std::string newEditDataFilePath = newEditDataFloder + "/source." + MediaFileUtils::GetExtensionFromPath(oldPath);
+    
+    if (cmd.GetQuerySetParam(IS_CAN_FALLBACK) == "0" && !MediaFileUtils::IsDirectory(oldEditDataFloder)) {
+        if (!DeleteThumbByFileId(cmd, id, oldPath) || MediaFileUtils::ModifyAsset(oldPath, newPath) != E_SUCCESS) {
+            MEDIA_ERR_LOG("Failed to delete thumb, oldDisplayName: %{public}s.", oldDisplayName.c_str());
+            RevertSetDisplayName(cmd, id, "update");
+            return false;
+        }
+        return true;
+    }
+
+    if (cmd.GetQuerySetParam(IS_CAN_FALLBACK) == "1" && !MediaFileUtils::IsDirectory(oldEditDataFloder)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(newEditDataFilePath), false, "Create editDataPath fail.");
+        int32_t rfd = open(oldPath.c_str(), O_RDONLY);
+        int32_t wfd = open(newEditDataFilePath.c_str(), O_RDWR);
+        if (!MediaFileUtils::CopyFile(rfd, wfd)) {
+            close(rfd);
+            close(wfd);
+            MediaFileUtils::DeleteFile(newEditDataFilePath);
+            return false;
+        }
+        close(rfd);
+        close(wfd);
+        return true;
+    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(oldPath, newPath) == E_OK, false,
+        "Failed to rename file: %{private}s", oldPath.c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::RenameDir(oldEditDataFloder, newEditDataFloder), false,
+        "Failed to rename file: %{private}s", oldEditDataFloder.c_str());
+    CHECK_AND_RETURN_RET_LOG(DeleteThumbByFileId(cmd, id), false, "Delete thumb by id: %{public}d.", id);
+    return true;
+}
+
+bool MediaLibraryAssetOperations::DeleteThumbByFileId(MediaLibraryCommand &cmd, const int32_t id,
+    const std::string &oldPath)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Update operation failed. rdbStore is null");
+
+    int64_t dataTaken;
+    std::string path;
+    std::vector<std::string> columns = { MediaColumn::MEDIA_DATE_TAKEN };
+    
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    std::string whereClause = MediaColumn::MEDIA_ID + " = " + std::to_string(id);
+    predicates.SetWhereClause(whereClause);
+
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr && resultSet->GoToNextRow() == NativeRdb::E_OK, false,
+        "ResultSet is nullptr or fileId is not exist.");
+    dataTaken = GetInt64Val(MediaColumn::MEDIA_DATE_TAKEN, resultSet);
+    return ThumbnailService::GetInstance()->HasInvalidateThumbnail(
+        to_string(id), PhotoColumn::PHOTOS_TABLE, oldPath, to_string(dataTaken));
+}
+
+void MediaLibraryAssetOperations::RevertSetDisplayName(MediaLibraryCommand &cmd, const int32_t id,
+    const std::string &revertIndex)
+{
+    if (revertIndex == "delete") {
+        RevertSetDisplayNameByDelete(cmd, id);
+    }
+    if (revertIndex == "update") {
+        RevertSetDisplayNameByUpdate(cmd, id);
+    }
+}
+
+void MediaLibraryAssetOperations::RevertSetDisplayNameByDelete(MediaLibraryCommand &cmd, const int32_t id)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Update operation failed. rdbStore is null");
+
+    std::string deleteSetDisplayNameIdSql = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+        MediaColumn::MEDIA_ID + " = " + std::to_string(id);
+    int32_t ret = rdbStore->ExecuteSql(deleteSetDisplayNameIdSql);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "revert delete when setDisplayName: %{public}s",
+        cmd.GetQuerySetParam(OLD_DISPLAY_NAME).c_str());
+}
+
+void MediaLibraryAssetOperations::RevertSetDisplayNameByUpdate(MediaLibraryCommand &cmd, const int32_t id)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Update operation failed. rdbStore is null");
+
+    std::string oldDisplayName = cmd.GetQuerySetParam(OLD_DISPLAY_NAME);
+    std::string path;
+    std::string oldPath;
+    std::string oldExtension = MediaFileUtils::GetExtensionFromPath(oldDisplayName);
+    if (GetStringFromValuesBucket(cmd.GetValueBucket(), MediaColumn::MEDIA_FILE_PATH, path)) {
+        oldPath = MediaFileUtils::UnSplitByChar(path, '.') + "." + oldExtension;
+    }
+
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutString(MediaColumn::MEDIA_NAME, oldDisplayName);
+    valuesBucket.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(oldDisplayName));
+    valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, oldPath);
+    valuesBucket.PutString(MediaColumn::MEDIA_MIME_TYPE, MediaFileUtils::GetMimeTypeFromDisplayName(oldDisplayName));
+    valuesBucket.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, oldExtension);
+    std::string whereClauses = MediaColumn::MEDIA_ID + " = ?";
+    std::vector<std::string> whereArgs = {std::to_string(id)};
+    int32_t updateRows = 0;
+    int32_t ret = rdbStore->Update(updateRows, PhotoColumn::PHOTOS_TABLE, valuesBucket, whereClauses, whereArgs);
+    CHECK_AND_RETURN_LOG((ret == NativeRdb::E_OK && updateRows >= 0),
+        "failed to update, ret: %{public}d, updateRows: %{public}d.", ret, updateRows);
+    MEDIA_INFO_LOG("RevertSetDisplayNameByUpdate success, oldDisplayName: %{public}s.", oldDisplayName.c_str());
 }
 
 int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
