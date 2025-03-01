@@ -1017,7 +1017,7 @@ bool MtpPacketTool::DumpChar(uint8_t u8, std::unique_ptr<char[]> &hexBuf, int he
     if (isprint(intData)) {
         CHECK_AND_RETURN_RET(sprintf_s(txtTmp, sizeof(txtTmp), "%d", intData) != -1, false);
     } else {
-        CHECK_AND_RETURN_RET(sprintf_s(txtTmp, sizeof(txtTmp), "%c", '.') =! -1, false);
+        CHECK_AND_RETURN_RET(sprintf_s(txtTmp, sizeof(txtTmp), "%c", '.') != -1, false);
     }
 
     CHECK_AND_RETURN_RET(strcat_s(hexBuf.get(), hexBufSize, hexTmp) == EOK, false);
