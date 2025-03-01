@@ -5456,7 +5456,10 @@ static napi_value ParseArgsCreatePhotoAssetForAppWithAlbum(napi_env env, napi_ca
         albumUri) == napi_ok, "Failed to get albumUri");
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamBool(env, context->argv[ARGS_TWO],
         isAuthorization) == napi_ok, "Failed to get isAuthorization");
+    MediaFileUri fileUri = MediaFileUri(albumUri);
+    CHECK_COND_WITH_MESSAGE(env, fileUri.GetUriType() == API10_PHOTOALBUM_URI, "Failed to get photoAlbum");
     bundleInfo.ownerAlbumId = MediaFileUtils::GetIdFromUri(albumUri);
+    context->isContainsAlbumUri = true;
     if (isAuthorization) {
         context->tokenId = bundleInfo.tokenId;
     }
@@ -8704,20 +8707,22 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
 
     string uri;
     GetCreateUri(context, uri);
-    if (context->tokenId != 0) {
-        NAPI_INFO_LOG("tokenId: %{public}d", context->tokenId);
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, TOKEN_ID, to_string(context->tokenId));
+    if (context->isContainsAlbumUri) {
         bool isValid = CheckAlbumUri(env, context->valuesBucketArray[0], context);
         if (!isValid) {
             context->error = JS_ERR_PARAMETER_INVALID;
             return;
         }
     }
+    if (context->tokenId != 0) {
+        NAPI_INFO_LOG("tokenId: %{public}d", context->tokenId);
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, TOKEN_ID, to_string(context->tokenId));
+    }
     Uri createFileUri(uri);
     for (const auto& valuesBucket : context->valuesBucketArray) {
         bool inValid = false;
         string title = valuesBucket.Get(MediaColumn::MEDIA_TITLE, inValid);
-        if (!title.empty() && MediaFileUtils::CheckTitleCompatible(title) != E_OK) {
+        if (!context->isContainsAlbumUri && !title.empty() && MediaFileUtils::CheckTitleCompatible(title) != E_OK) {
             NAPI_ERR_LOG("Title contains invalid characters: %{private}s, skipping", title.c_str());
             context->uriArray.push_back(to_string(E_INVALID_DISPLAY_NAME));
             continue;
