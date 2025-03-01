@@ -319,13 +319,13 @@ int UserFileClient::OpenFile(Uri &uri, const std::string &mode, const int32_t us
 }
 
 int UserFileClient::Update(Uri &uri, const DataSharePredicates &predicates,
-    const DataShareValuesBucket &value)
+    const DataShareValuesBucket &value, const int32_t userId)
 {
-    if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("update fail, helper null, userId is %{public}d", GetUserId());
+    if (!IsValid(userId)) {
+        NAPI_ERR_LOG("update fail, helper null, userId is %{public}d", userId);
         return E_FAIL;
     }
-    return GetDataShareHelperByUser(GetUserId())->Update(uri, predicates, value);
+    return GetDataShareHelperByUser(userId)->Update(uri, predicates, value);
 }
 
 void UserFileClient::RegisterObserverExt(const Uri &uri,
