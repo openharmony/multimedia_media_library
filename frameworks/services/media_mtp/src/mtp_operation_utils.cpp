@@ -440,7 +440,7 @@ void MtpOperationUtils::ModifyObjectInfo()
     std::istringstream modified(context_->modified);
     created >> std::get_time(&tmCreated, "%Y%m%dT%H%M%S");
     modified >> std::get_time(&tmModified, "%Y%m%dT%H%M%S");
-    CHECK_AND_RETURN_RET_LOG(!(created.fail() || modified.fail()), "get_time failed");
+    CHECK_AND_RETURN_LOG(!(created.fail() || modified.fail()), "get_time failed");
 
     std::string path;
     if (MtpManager::GetInstance().IsMtpMode()) {
