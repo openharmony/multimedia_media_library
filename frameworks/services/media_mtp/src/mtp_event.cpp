@@ -124,10 +124,7 @@ void MtpEvent::SendStoreAdded(const std::string &fsUuid)
     CHECK_AND_RETURN_LOG(handleptr_ != nullptr, "SendStoreAdded handleptr_ is nullptr");
 
     uint32_t storageId{0};
-    if (!handleptr_->TryAddExternalStorage(fsUuid, storageId)) {
-        MEDIA_ERR_LOG("TryAddExternalStorage fail");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(handleptr_->TryAddExternalStorage(fsUuid, storageId), "TryAddExternalStorage fail");
     MEDIA_INFO_LOG("SendStoreAdded storageId[%{public}d]", storageId);
     mtpContextPtr_->storageInfoID = storageId;
     SendEvent(MTP_EVENT_STORE_ADDED_CODE);
@@ -140,10 +137,7 @@ void MtpEvent::SendStoreRemoved(const std::string &fsUuid)
     CHECK_AND_RETURN_LOG(handleptr_ != nullptr, "SendStoreRemoved handleptr_ is nullptr");
 
     uint32_t storageId{0};
-    if (!handleptr_->TryRemoveExternalStorage(fsUuid, storageId)) {
-        MEDIA_ERR_LOG("TryRemoveExternalStorage fail");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(handleptr_->TryRemoveExternalStorage(fsUuid, storageId), "TryRemoveExternalStorage fail");
     MEDIA_INFO_LOG("SendStoreRemoved storageId[%{public}d]", storageId);
     mtpContextPtr_->storageInfoID = storageId;
     SendEvent(MTP_EVENT_STORE_REMOVED_CODE);
