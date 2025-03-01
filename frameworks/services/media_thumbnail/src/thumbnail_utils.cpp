@@ -2209,6 +2209,7 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
             int position = 0;
             err = resultSet->GetInt(index, position);
             data.isLocalFile = (position == 1);
+            data.position = position;
         } else if (columnValue == MEDIA_DATA_DB_HEIGHT) {
             err = resultSet->GetInt(index, data.photoHeight);
         } else if (columnValue == MEDIA_DATA_DB_WIDTH) {
