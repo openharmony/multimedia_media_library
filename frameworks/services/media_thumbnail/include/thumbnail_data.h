@@ -182,6 +182,7 @@ public:
     EXPORT std::string trigger;
     EXPORT std::string frame;
     EXPORT std::string timeStamp;
+    EXPORT int32_t position;
     EXPORT Size lcdDesiredSize;
     EXPORT Size thumbDesiredSize;
     EXPORT GenerateStats stats;
