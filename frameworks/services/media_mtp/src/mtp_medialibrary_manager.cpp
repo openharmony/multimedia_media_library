@@ -720,14 +720,8 @@ int32_t MtpMedialibraryManager::GetThumbnailFromPath(string &path, shared_ptr<UI
 {
     MediaLibraryTracer tracer;
     tracer.Start("MTP MtpMedialibraryManager::GetThumbnailFromPath");
-    if (outThumb == nullptr) {
-        MEDIA_ERR_LOG("mtp outThumb is null");
-        return E_ERR;
-    }
-    if (path.empty()) {
-        MEDIA_ERR_LOG("mtp path is null");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(outThumb != nullptr, E_ERR, "mtp outThumb is null");
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_ERR, "mtp path is null");
     string openUriStr = path + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
         "=" + THUMBNAIL_WIDTH + "&" + MEDIA_DATA_DB_HEIGHT + "=" + THUMBNAIL_HEIGHT;
     MEDIA_DEBUG_LOG("mtp openUriStr::%{public}s", openUriStr.c_str());
@@ -735,10 +729,7 @@ int32_t MtpMedialibraryManager::GetThumbnailFromPath(string &path, shared_ptr<UI
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
     int32_t fd = dataShareHelper_->OpenFile(openUri, "R");
-    if (fd < 0) {
-        MEDIA_ERR_LOG("mtp get fd fail");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, E_ERR, "mtp get fd fail");
     struct stat fileInfo;
     if (fstat(fd, &fileInfo) != E_OK) {
         int32_t ret = close(fd);
@@ -880,9 +871,7 @@ int32_t MtpMedialibraryManager::GetAssetById(const int32_t id, shared_ptr<FileAs
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
     shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, columns);
-    if (resultSet == nullptr) {
-        return E_NO_SUCH_FILE;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_NO_SUCH_FILE);
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(resultSet);
     CHECK_AND_RETURN_RET_LOG(fetchFileResult != nullptr,
         MTP_ERROR_INVALID_OBJECTHANDLE, "fetchFileResult is nullptr");
@@ -914,9 +903,7 @@ int32_t MtpMedialibraryManager::GetIdByPath(const std::string &path, uint32_t &o
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
     shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, columns);
-    if (resultSet == nullptr) {
-        return E_NO_SUCH_FILE;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_NO_SUCH_FILE);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
         MTP_ERROR_STORE_NOT_AVAILABLE, "fail to get handles");
     unique_ptr<FetchResult<FileAsset>> fetchFileResult = make_unique<FetchResult<FileAsset>>(resultSet);
@@ -1067,10 +1054,8 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     } else {
         mediaType = oldFileAsset->GetMediaType();
     }
-    if ((mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) || context->parent == uint32_t(-1)) {
-        MEDIA_ERR_LOG("file type not support");
-        return MTP_ERROR_INVALID_OBJECTHANDLE;
-    }
+    bool cond = (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) || context->parent == uint32_t(-1);
+    CHECK_AND_RETURN_RET_LOG(!cond, MTP_ERROR_INVALID_OBJECTHANDLE, "file type not support");
     int insertId = InsertCopyObject(displayName, mediaType);
     CHECK_AND_RETURN_RET_LOG(insertId > 0,
         MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR), "fail to create assset");
