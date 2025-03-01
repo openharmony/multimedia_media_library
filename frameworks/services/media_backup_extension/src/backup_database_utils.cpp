@@ -362,7 +362,9 @@ void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb:
 void BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
     const std::vector<FileIdPair>& fileIdPair)
 {
-    std::string fileIdNewFilterClause = GetFileIdNewFilterClause(rdbStore, fileIdPair);
+    auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPair);
+    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(newFileIds, ", ") + ")";
+
     std::string updateSql =
         "UPDATE tab_analysis_total "
         "SET face = CASE "
@@ -565,7 +567,7 @@ std::pair<std::vector<int32_t>, std::vector<int32_t>> BackupDatabaseUtils::Unzip
         newFileIds.push_back(pair.second);
     }
 
-    return {std::move(oldFileIds), std::move(newFileIds)};
+    return {oldFileIds, newFileIds};
 }
 
 std::vector<std::string> BackupDatabaseUtils::SplitString(const std::string& str, char delimiter)
@@ -654,48 +656,12 @@ int32_t BackupDatabaseUtils::BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rd
     return ExecSqlWithRetry([&]() { return rdbStore->BatchInsert(rowNum, tableName, value); });
 }
 
-std::string BackupDatabaseUtils::GetFileIdNewFilterClause(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-    const std::vector<FileIdPair>& fileIdPair)
-{
-    std::vector<int32_t> result;
-    auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPair);
-    std::string fileIdNewInClause = "(" + BackupDatabaseUtils::JoinValues<int>(newFileIds, ", ") + ")";
-    std::string querySql = "SELECT " + IMAGE_FACE_COL_FILE_ID +
-        " FROM " + VISION_IMAGE_FACE_TABLE +
-        " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewInClause;
-
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultSet is null.");
-        return "()";
-    }
-
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t value;
-        int32_t columnIndex;
-        int32_t err = resultSet->GetColumnIndex(IMAGE_FACE_COL_FILE_ID, columnIndex);
-        if (err == E_OK) {
-            resultSet->GetInt(columnIndex, value);
-            result.emplace_back(value);
-        }
-    }
-
-    std::vector<int32_t> newFileIdsToDelete;
-    for (const auto& fileId : result) {
-        auto it = std::find_if(fileIdPair.begin(), fileIdPair.end(),
-            [fileId](const FileIdPair& pair) { return pair.second == fileId; });
-        if (it != fileIdPair.end()) {
-            newFileIdsToDelete.push_back(it->second);
-        }
-    }
-
-    return "(" + BackupDatabaseUtils::JoinValues<int>(newFileIdsToDelete, ", ") + ")";
-}
-
 void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::vector<FileIdPair>& fileIdPair)
 {
-    std::string fileIdNewFilterClause = GetFileIdNewFilterClause(mediaLibraryRdb, fileIdPair);
+    auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPair);
+    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(newFileIds, ", ") + ")";
+
     std::string deleteAnalysisPhotoMapSql =
         "DELETE FROM AnalysisPhotoMap WHERE map_asset IN ("
         "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " + VISION_IMAGE_FACE_TABLE +
