@@ -201,6 +201,11 @@ map<shared_ptr<PhotoAlbum>, vector<string>, PhotoAlbumPtrCompare> MediaAlbumChan
     return moveMap_;
 }
 
+int32_t MediaAlbumChangeRequestNapi::GetUserId() const
+{
+    return userId_;
+}
+
 void MediaAlbumChangeRequestNapi::RecordMoveAssets(vector<string>& assetArray, shared_ptr<PhotoAlbum>& targetAlbum)
 {
     if (targetAlbum == nullptr || assetArray.empty()) {
@@ -599,6 +604,7 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
     }
     changeRequest->assetsToDelete_.insert(
         changeRequest->assetsToDelete_.end(), assetUriArray.begin(), assetUriArray.end());
+    changeRequest->userId_ = photoAlbum->GetUserId();
     changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::DELETE_ASSETS);
     RETURN_NAPI_UNDEFINED(env);
 }
@@ -1146,7 +1152,7 @@ static bool DeleteAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
 
     Uri deleteAssetsUri(PAH_DELETE_PHOTOS);
-    int ret = UserFileClient::Update(deleteAssetsUri, predicates, valuesBucket);
+    int ret = UserFileClient::Update(deleteAssetsUri, predicates, valuesBucket, context.objectInfo->GetUserId());
     context.objectInfo->ClearDeleteAssetArray();
     if (ret < 0) {
         context.SaveError(ret);
