@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-const photoAccessHelper = requireInternal('file.photoAccessHelper');
+const photoAccessHelper = requireNapi('file.photoAccessHelperNative');
 const bundleManager = requireNapi('bundle.bundleManager');
 const deviceinfo = requireInternal('deviceInfo');
 
