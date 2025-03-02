@@ -81,6 +81,9 @@ void VideoCompositionCallbackImpl::onResult(VEFResult result, VEFError errorCode
             mutex_.lock();
             --curWorkerNum_;
             mutex_.unlock();
+            MEDIA_ERR_LOG("Failed to CallStartComposite, path:%{private}s", task.videoPath_.c_str());
+            CHECK_AND_RETURN_LOG(MediaFileUtils::CopyFileUtil(task.sourceVideoPath_, task.videoPath_),
+                "Copy sourceVideoPath to videoPath, path:%{private}s", task.sourceVideoPath_.c_str());
         }
     }
 }

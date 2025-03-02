@@ -111,6 +111,7 @@ private:
     static thread_local PhotoAlbum *pAlbumData_;
     static thread_local napi_ref constructor_;
     static thread_local napi_ref photoAccessConstructor_;
+    static std::mutex mutex_;
 };
 
 struct PhotoAlbumNapiAsyncContext : public NapiError {
