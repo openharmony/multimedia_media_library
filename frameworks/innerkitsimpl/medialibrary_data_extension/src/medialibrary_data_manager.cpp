@@ -1640,7 +1640,8 @@ int MediaLibraryDataManager::GetThumbnail(const string &uri)
     return thumbnailService_->GetThumbnailFd(uri);
 }
 
-void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const string &path)
+void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const string &path,
+    std::shared_ptr<Media::Picture> originalPhotoPicture)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
@@ -1656,7 +1657,12 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const stri
             MEDIA_ERR_LOG("failed to get thumbnail, the file:%{private}s is pending", uri.c_str());
             return;
         }
-        int32_t err = thumbnailService_->CreateThumbnailFileScaned(uri, path);
+        int32_t err = 0;
+        if (originalPhotoPicture == nullptr) {
+            err = thumbnailService_->CreateThumbnailFileScaned(uri, path);
+        } else {
+            err = thumbnailService_->CreateThumbnailFileScanedWithPicture(uri, path, originalPhotoPicture, false);
+        }
         CHECK_AND_PRINT_LOG(err == E_SUCCESS, "ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
     }
 }
@@ -2148,7 +2154,7 @@ int32_t ScanFileCallback::OnScanFinished(const int32_t status, const string &uri
 {
     auto instance = MediaLibraryDataManager::GetInstance();
     if (instance != nullptr) {
-        instance->CreateThumbnailAsync(uri, path);
+        instance->CreateThumbnailAsync(uri, path, originalPhotoPicture);
     }
     return E_OK;
 }

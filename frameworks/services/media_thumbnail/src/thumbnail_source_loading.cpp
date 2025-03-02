@@ -25,6 +25,7 @@
 #include "media_file_utils.h"
 #include "medialibrary_tracer.h"
 #include "post_proc.h"
+#include "thumbnail_image_framework_utils.h"
 #include "thumbnail_utils.h"
 #include "thumbnail_const.h"
 
@@ -452,8 +453,54 @@ bool SourceLoader::CreateSourcePixelMap()
     return true;
 }
 
+bool SourceLoader::CreateSourceFromOriginalPhotoPicture()
+{
+    if (data_.loaderOpts.decodeInThumbSize) {
+        data_.originalPhotoPicture = nullptr;
+        return false;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateSourceFromOriginalPhotoPicture");
+    if (data_.orientation == 0) {
+        int32_t err = ThumbnailImageFrameWorkUtils::GetPictureOrientation(
+            data_.originalPhotoPicture, data_.orientation);
+        CHECK_AND_WARN_LOG(err == E_OK, "SourceLoader Failed to get picture orientation, path: %{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
+    }
+    if (data_.mediaType == MEDIA_TYPE_VIDEO) {
+        data_.orientation = 0;
+    }
+    std::shared_ptr<Picture> picture = ThumbnailImageFrameWorkUtils::CopyPictureSource(data_.originalPhotoPicture);
+    data_.originalPhotoPicture = nullptr;
+    CHECK_AND_RETURN_RET_LOG(picture != nullptr, false, "CopyPictureSource failed");
+    auto pixelMap = picture->GetMainPixel();
+    auto gainMap = picture->GetGainmapPixelMap();
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr && gainMap != nullptr, false,
+        "PixelMap or gainMap is nullptr");
+    CHECK_AND_RETURN_RET_LOG(pixelMap->GetWidth() * pixelMap->GetHeight() != 0, false,
+        "Picture is invalid");
+
+    Size originSize = { .width = pixelMap->GetWidth(),
+                        .height = pixelMap->GetHeight() };
+    Size targetSize = ConvertDecodeSize(data_, originSize, desiredSize_);
+
+    float widthScale = (1.0f * targetSize.width) / pixelMap->GetWidth();
+    float heightScale = (1.0f * targetSize.height) / pixelMap->GetHeight();
+    pixelMap->resize(widthScale, heightScale);
+    gainMap->resize(widthScale, heightScale);
+    data_.source.SetPicture(picture);
+
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, data_.mediaType, originSize.width,
+        originSize.height);
+    return true;
+}
+
 bool SourceLoader::RunLoading()
 {
+    if (data_.originalPhotoPicture != nullptr && CreateSourceFromOriginalPhotoPicture()) {
+        return true;
+    }
+
     if (data_.loaderOpts.loadingStates.empty()) {
         MEDIA_ERR_LOG("source loading run loading failed, the given states is empty");
         return false;

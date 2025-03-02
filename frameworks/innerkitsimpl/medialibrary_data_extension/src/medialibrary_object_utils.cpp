@@ -853,7 +853,7 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
 }
 
 void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api,
-    bool isCameraShotMovingPhoto)
+    bool isCameraShotMovingPhoto, std::shared_ptr<Media::Picture> resultPicture)
 {
     string tableName;
     if (MediaFileUtils::IsFileTablePath(path)) {
@@ -873,6 +873,7 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
     }
+    scanFileCb->SetOriginalPhotoPicture(resultPicture);
     int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb, api, isCameraShotMovingPhoto);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");

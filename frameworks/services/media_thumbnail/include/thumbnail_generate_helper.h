@@ -28,6 +28,8 @@ public:
     ThumbnailGenerateHelper() = delete;
     virtual ~ThumbnailGenerateHelper() = delete;
     EXPORT static int32_t CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync);
+    EXPORT static int32_t CreateThumbnailFileScanedWithPicture(ThumbRdbOpt &opts,
+        std::shared_ptr<Picture> originalPhotoPicture, bool isSync);
     EXPORT static int32_t CreateThumbnailBackground(ThumbRdbOpt &opts);
     EXPORT static int32_t CreateAstcBackground(ThumbRdbOpt &opts);
     EXPORT static int32_t CreateAstcCloudDownload(ThumbRdbOpt &opts, bool isCloudInsertTaskPriorityHigh = false);

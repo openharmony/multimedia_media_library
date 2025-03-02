@@ -189,6 +189,7 @@ public:
     EXPORT SourceLoaderOptions loaderOpts;
     EXPORT int64_t thumbnailReady { -1 };
     EXPORT int64_t lcdVisitTime { -1 };
+    EXPORT std::shared_ptr<Picture> originalPhotoPicture = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

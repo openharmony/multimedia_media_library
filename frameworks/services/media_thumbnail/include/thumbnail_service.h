@@ -18,6 +18,8 @@
 
 #include <mutex>
 
+#include "picture.h"
+
 #include "fa_ability_context.h"
 #include "media_file_uri.h"
 #include "medialibrary_rdbstore.h"
@@ -58,6 +60,8 @@ public:
 #endif
     EXPORT int32_t CreateThumbnailFileScaned(const std::string &uri, const std::string &path,
         bool isSync = false);
+    EXPORT int32_t CreateThumbnailFileScanedWithPicture(const std::string &uri, const std::string &path,
+        std::shared_ptr<Picture> originalPhotoPicture, bool isSync = false);
     EXPORT int32_t CreateThumbnailPastDirtyDataFix(const std::string &fileId);
     EXPORT int32_t CreateLcdPastDirtyDataFix(const std::string &fileId, const uint8_t quality = THUMBNAIL_MID);
     bool HasInvalidateThumbnail(const std::string &id, const std::string &tableName,

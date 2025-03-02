@@ -194,7 +194,9 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     }
 
     // 裸picture落盘处理
-    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(isEdited, data, picture, fileId, mimeType);
+    std::shared_ptr<Media::Picture> resultPicture = nullptr;
+    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(
+        isEdited, data, picture, fileId, mimeType, resultPicture);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,
@@ -204,7 +206,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
 
     MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), isEdited);
     UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag);
-    MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto);
+    MediaLibraryObjectUtils::ScanFileAsync(
+        data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto, resultPicture);
     NotifyIfTempFile(resultSet);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);

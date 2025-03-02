@@ -187,6 +187,7 @@ private:
     EXPORT bool GeneratePictureSource(std::unique_ptr<ImageSource> &imageSource, const Size &targetSize);
     EXPORT bool GeneratePixelMapSource(std::unique_ptr<ImageSource> &imageSource, const Size &sourceSize,
         const Size &targetSize);
+    EXPORT bool CreateSourceFromOriginalPhotoPicture();
 
     bool IsFinal();
 

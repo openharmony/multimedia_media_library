@@ -46,6 +46,7 @@
           "device_manager",
           "device_security_level",
           "dfs_service",
+          "drivers_interface_display",
           "drivers_interface_usb",
           "e2fsprogs",
           "eventhandler",
