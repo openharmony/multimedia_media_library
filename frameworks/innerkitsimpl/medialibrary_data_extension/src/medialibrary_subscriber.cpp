@@ -644,7 +644,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     }
     ret = DoUpdateBurstCoverLevelFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstCoverLevelFromGallery faild");
-    RecoverBackgroundDownloadCloudMediaAsset();
     CloudMediaAssetManager::GetInstance().StartDeleteCloudMediaAssets();
     // compat old-version moving photo
     MovingPhotoProcessor::StartProcess();
