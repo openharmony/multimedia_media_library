@@ -91,9 +91,7 @@ template<typename Key, typename Value>
 Value GetValueFromMap(const std::unordered_map<Key, Value> &map, const Key &key, const Value &defaultValue = Value())
 {
     auto it = map.find(key);
-    if (it == map.end()) {
-        return defaultValue;
-    }
+    CHECK_AND_RETURN_RET(it != map.end(), defaultValue);
     return it->second;
 }
 
@@ -164,9 +162,7 @@ int32_t CloneRestoreCVAnalysis::GetNewAssetId(int32_t assetId)
     for (size_t time = 0; time < MAX_GENERATE_TIMES; time++) {
         std::string dirPath = "/storage/media/local/files/highlight/video/" + std::to_string(assetId);
         if (!MediaFileUtils::IsDirectory(dirPath)) {
-            if (MediaFileUtils::CreateDirectory(dirPath)) {
-                return assetId;
-            }
+            CHECK_AND_RETURN_RET(!MediaFileUtils::CreateDirectory(dirPath), assetId);
         }
         assetId += GENERATE_GAP;
     }
@@ -247,23 +243,18 @@ void CloneRestoreCVAnalysis::InsertIntoSdMap()
 int32_t CloneRestoreCVAnalysis::BatchInsertWithRetry(const std::string &tableName,
     const std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum)
 {
-    if (values.empty()) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(!values.empty(), 0);
     int32_t errCode = E_ERR;
     TransactionOperations trans{ __func__ };
     trans.SetBackupRdbStore(mediaLibraryRdb_);
     std::function<int(void)> func = [&]()->int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}" PRId64, errCode, rowNum);
-        }
+        CHECK_AND_PRINT_LOG(errCode == E_OK,
+            "InsertSql failed, errCode: %{public}d, rowNum: %{public}" PRId64, errCode, rowNum);
         return errCode;
     };
     errCode = trans.RetryTrans(func, true);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
     return errCode;
 }
 
@@ -726,10 +717,8 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
         const std::string QUERY_SQL = "SELECT album_id, play_info_id, play_info FROM tab_highlight_play_info LIMIT "
             + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
-        if (resultSet == nullptr) {
-            MEDIA_INFO_LOG("query resultSql is null.");
-            return;
-        }
+        CHECK_AND_RETURN_INFO_LOG(resultSet != nullptr, "query resultSql is null.");
+
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             std::optional<int32_t> oldAlbumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "album_id");
             if (!oldAlbumId.has_value()) {
@@ -756,9 +745,7 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
                 ret = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updatePlayInfoSql,
                     { newPlayInfo, albumId });
             }
-            if (ret != E_OK) {
-                MEDIA_ERR_LOG("executeSql err, errCode: %{public}d", ret);
-            }
+            CHECK_AND_PRINT_LOG(ret == E_OK, "executeSql err, errCode: %{public}d", ret);
         }
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;

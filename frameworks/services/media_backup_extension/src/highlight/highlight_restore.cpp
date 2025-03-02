@@ -65,10 +65,9 @@ void HighlightRestore::Init(int32_t sceneCode, std::string taskId,
 
 void HighlightRestore::RestoreAlbums(const std::string &albumOdid)
 {
-    if (galleryRdb_ == nullptr || mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
-    }
+    bool cond = (galleryRdb_ == nullptr || mediaLibraryRdb_ == nullptr);
+    CHECK_AND_RETURN_LOG(!cond, "rdbStore is nullptr");
+
     GetAlbumInfos(albumOdid);
     InsertIntoAnalysisAlbum();
     UpdateAlbumIds();
@@ -134,10 +133,9 @@ bool HighlightRestore::HasSameHighlightAlbum(HighlightAlbumInfo &info)
     };
     std::shared_ptr<NativeRdb::ResultSet> resultSet =
         BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, QUERY_SQL, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("query highlight album failed.");
-        return false;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "query highlight album failed.");
+
     info.id = GetInt32Val("id", resultSet);
     info.albumIdNew = GetInt32Val("album_id", resultSet);
     info.aiAlbumIdNew = GetInt32Val("ai_album_id", resultSet);
@@ -230,9 +228,7 @@ NativeRdb::ValuesBucket HighlightRestore::GetAnalysisAlbumValuesBucket(const Hig
 
 void HighlightRestore::UpdateAlbumIds()
 {
-    if (albumInfos_.empty()) {
-        return;
-    }
+    CHECK_AND_RETURN(!albumInfos_.empty());
     const std::string QUERY_SQL =
         "SELECT album_id, album_subtype, album_name, date_modified FROM AnalysisAlbum "
         "WHERE album_subtype IN (4104, 4105) LIMIT ?, ?";
@@ -347,9 +343,7 @@ void HighlightRestore::InsertIntoHighlightCoverAndPlayInfo()
 
 void HighlightRestore::UpdateHighlightIds()
 {
-    if (albumInfos_.empty()) {
-        return;
-    }
+    CHECK_AND_RETURN(!albumInfos_.empty());
     const std::string QUERY_SQL = "SELECT album_id, id FROM tab_highlight_album LIMIT ?, ?";
     int rowCount = 0;
     int offset = 0;
@@ -416,11 +410,9 @@ void HighlightRestore::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
     if (params.empty()) {
         return;
     }
+
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql.str(), params);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
     std::vector<NativeRdb::ValuesBucket> values;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val("file_id", resultSet);
@@ -439,9 +431,7 @@ void HighlightRestore::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
 
 void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo)
 {
-    if (fileInfo.fileIdNew <= 0) {
-        return;
-    }
+    CHECK_AND_RETURN(fileInfo.fileIdNew > 0);
     int32_t fileIdOld = fileInfo.fileIdOld;
     auto it = std::find_if(albumInfos_.begin(), albumInfos_.end(),
         [fileIdOld](const HighlightAlbumInfo &info) { return info.coverId == fileIdOld; });
@@ -451,9 +441,8 @@ void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket
         MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.", it->albumName.c_str(), it->coverUri.c_str());
     }
 
-    if (fileInfo.storyIds.empty() && fileInfo.portraitIds.empty()) {
-        return;
-    }
+    bool cond = (fileInfo.storyIds.empty() && fileInfo.portraitIds.empty());
+    CHECK_AND_RETURN(!cond);
     std::stringstream storyIdss(fileInfo.storyIds);
     std::string storyId;
     while (std::getline(storyIdss, storyId, ',')) {
@@ -476,10 +465,9 @@ void HighlightRestore::UpdateMapInsertValuesByStoryId(std::vector<NativeRdb::Val
     int32_t albumIdOld = std::atoi(storyId.c_str());
     auto it = std::find_if(albumInfos_.begin(), albumInfos_.end(),
         [albumIdOld](const HighlightAlbumInfo &info) { return info.albumIdOld == albumIdOld; });
-    if (it == albumInfos_.end() || it->albumIdNew <= 0 || it->aiAlbumIdNew <= 0) {
-        MEDIA_ERR_LOG("no such album of albumIdOld: %{public}d", albumIdOld);
-        return;
-    }
+    bool cond = (it == albumInfos_.end() || it->albumIdNew <= 0 || it->aiAlbumIdNew <= 0);
+    CHECK_AND_RETURN_LOG(!cond, "no such album of albumIdOld: %{public}d", albumIdOld);
+
     if (fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
         it->effectline.push_back(GetEffectline(fileInfo));
     }
@@ -525,9 +513,9 @@ nlohmann::json HighlightRestore::GetEffectVideoTrack(const std::string &hashCode
         "WHERE hash = ? ORDER BY confidence_probability DESC LIMIT 1";
     std::vector<NativeRdb::ValueObject> params = { hashCode };
     auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_, QUERY_SQL, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return nlohmann::json::array();
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, nlohmann::json::array());
+
     std::string tracks = GetStringVal("tracks", resultSet);
     resultSet->Close();
     nlohmann::json effectVideoTrack = nlohmann::json::parse(tracks, nullptr, false);
@@ -550,23 +538,18 @@ NativeRdb::ValuesBucket HighlightRestore::GetMapInsertValue(int32_t albumId, int
 int32_t HighlightRestore::BatchInsertWithRetry(const std::string &tableName,
     std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum)
 {
-    if (values.empty()) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(!values.empty(), 0);
     int32_t errCode = E_ERR;
     TransactionOperations trans{ __func__ };
     trans.SetBackupRdbStore(mediaLibraryRdb_);
     std::function<int(void)> func = [&]() -> int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
-        }
+        CHECK_AND_PRINT_LOG(errCode == E_OK,
+            "InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
         return errCode;
     };
     errCode = trans.RetryTrans(func, true);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("BatchInsertWithRetry: trans finish fail!, ret:%{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsertWithRetry: trans finish fail!, ret:%{public}d", errCode);
     return errCode;
 }
 

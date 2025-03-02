@@ -60,10 +60,10 @@
         }                                              \
     } while (0)
 
-#define CHECK_AND_RETURN_INFO_LOG(cond, fmt, ...)           \
+#define CHECK_AND_RETURN_INFO_LOG(cond, fmt, ...)      \
     do {                                               \
         if (!(cond)) {                                 \
-            MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);         \
+            MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);        \
             return;                                    \
         }                                              \
     } while (0)
@@ -75,10 +75,10 @@
         }                                              \
     } while (0)
 
-#define CHECK_AND_WARN_LOG(cond, fmt, ...)            \
+#define CHECK_AND_WARN_LOG(cond, fmt, ...)             \
     do {                                               \
         if (!(cond)) {                                 \
-            MEDIA_WARN_LOG(fmt, ##__VA_ARGS__);         \
+            MEDIA_WARN_LOG(fmt, ##__VA_ARGS__);        \
         }                                              \
     } while (0)
 
@@ -97,4 +97,10 @@
         }                                              \
     } while (0)
 
+#define CHECK_AND_RETURN(cond)                         \
+    do {                                               \
+        if (!(cond)) {                                 \
+            return;                                    \
+        }                                              \
+    } while (0)
 #endif // OHOS_MEDIA_LOG_H

@@ -135,23 +135,19 @@ void BackupHiAudit::GetWriteFilePath()
     close(writeFd_);
     ZipAuditLog();
     CleanOldAuditFile();
-    
+
     writeFd_ = open(HIAUDIT_LOG_NAME.c_str(), O_CREAT | O_TRUNC | O_RDWR,
         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (writeFd_ < 0) {
-        MEDIA_ERR_LOG("fd open error errno: %{public}d", errno);
-    }
-    
+    CHECK_AND_PRINT_LOG(writeFd_ >= 0, "fd open error errno: %{public}d", errno);
+
     writeLogSize_ = 0;
 }
 
 void BackupHiAudit::CleanOldAuditFile()
 {
     DIR* dir = opendir(HIAUDIT_CONFIG.logPath.c_str());
-    if (dir == nullptr) {
-        MEDIA_ERR_LOG("failed open dir, errno: %{public}d.", errno);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dir != nullptr, "failed open dir, errno: %{public}d.", errno);
+
     uint32_t zipFileSize = 0;
     std::string oldestAuditFile;
     struct dirent *ptr = nullptr;
