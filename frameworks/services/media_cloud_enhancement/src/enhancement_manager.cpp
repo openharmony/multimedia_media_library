@@ -375,6 +375,8 @@ bool EnhancementManager::RevertEditUpdateInternal(int32_t fileId)
 
 bool EnhancementManager::RecoverTrashUpdateInternal(const vector<string> &fildIds)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("EnhancementManager::RecoverTrashUpdateInternal");
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     RdbPredicates updatePredicates(PhotoColumn::PHOTOS_TABLE);
     updatePredicates.In(MediaColumn::MEDIA_ID, fildIds);

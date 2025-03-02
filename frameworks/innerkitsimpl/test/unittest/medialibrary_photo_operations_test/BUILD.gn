@@ -44,6 +44,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_asset_copy_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_burst_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_displayname_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_owner_album_id_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_lpath_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_merge_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
@@ -61,6 +62,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "./src/operation/photo_asset_copy_operation_test.cpp",
     "./src/operation/photo_burst_operation_test.cpp",
     "./src/operation/photo_displayname_operation_test.cpp",
+    "./src/operation/photo_owner_album_id_operation_test.cpp",
     "./src/photo_album_operation/photo_album_lpath_operation_test.cpp",
   ]
 
