@@ -399,11 +399,9 @@ void FileAsset::SetSelfId(const string &selfId)
 
 int32_t FileAsset::GetIsTrash() const
 {
-    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR ||
-        resultNapiType_ == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-        return static_cast<int32_t>(GetInt64Member(MediaColumn::MEDIA_DATE_TRASHED));
-    }
-
+    bool cond = (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR ||
+        resultNapiType_ == ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    CHECK_AND_RETURN_RET(!cond, static_cast<int32_t>(GetInt64Member(MediaColumn::MEDIA_DATE_TRASHED)));
     return GetInt32Member(MEDIA_DATA_DB_IS_TRASH);
 }
 
@@ -639,18 +637,15 @@ void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 void FileAsset::RemoveOpenStatus(int32_t fd)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
-    if (openStatusMap_ == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN(openStatusMap_ != nullptr);
     openStatusMap_->erase(fd);
 }
 
 int32_t FileAsset::GetOpenStatus(int32_t fd)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
-    if (openStatusMap_ == nullptr) {
-        return E_INVALID_VALUES;
-    }
+    CHECK_AND_RETURN_RET(openStatusMap_ != nullptr, E_INVALID_VALUES);
+
     if (openStatusMap_->find(fd) != openStatusMap_->end()) {
         return openStatusMap_->at(fd);
     } else {

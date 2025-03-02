@@ -169,11 +169,10 @@ static int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
 
 static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off_t needSize)
 {
-    if (fileSize < 0 || offset < 0 || needSize < 0) {
-        MEDIA_ERR_LOG("failed to check fileSize: %{public}" PRId64 ", offset: %{public}" PRId64
-                      ", needSize: %{public}" PRId64, fileSize, offset, needSize);
-        return "";
-    }
+    bool cond = (fileSize < 0 || offset < 0 || needSize < 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, "", "failed to check fileSize: %{public}" PRId64
+        ", offset: %{public}" PRId64 ", needSize: %{public}" PRId64, fileSize, offset, needSize);
+
     off_t readPosition = fileSize >= offset ? fileSize - offset : 0;
     if (lseek(fd.Get(), readPosition, SEEK_SET) == E_ERR) {
         MEDIA_ERR_LOG("failed to lseek extra file errno: %{public}d", errno);
