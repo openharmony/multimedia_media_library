@@ -38,6 +38,7 @@ thread_local napi_ref PhotoAlbumNapi::photoAccessConstructor_ = nullptr;
 static const string PHOTO_ALBUM_CLASS = "UserFileMgrPhotoAlbum";
 static const string PHOTOACCESS_PHOTO_ALBUM_CLASS = "PhotoAccessPhotoAlbum";
 static const string COUNT_GROUP_BY = "count(*) AS count";
+std::mutex PhotoAlbumNapi::mutex_;
 
 struct TrashAlbumExecuteOpt {
     napi_env env;
@@ -295,6 +296,7 @@ napi_value PhotoAlbumNapi::PhotoAlbumNapiConstructor(napi_env env, napi_callback
 void PhotoAlbumNapi::PhotoAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalizeHint)
 {
     auto *album = reinterpret_cast<PhotoAlbumNapi*>(nativeObject);
+    lock_guard<mutex> lockGuard(mutex_);
     if (album != nullptr) {
         delete album;
         album = nullptr;

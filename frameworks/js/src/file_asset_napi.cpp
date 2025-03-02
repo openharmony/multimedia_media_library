@@ -1595,13 +1595,13 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
 #endif
     Uri closeAssetUri(closeUri);
     bool isValid = false;
+    int32_t mediaFd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
     if (!isValid) {
         context->error = ERR_INVALID_OUTPUT;
         NAPI_ERR_LOG("getting fd is invalid");
         return;
     }
 
-    int32_t mediaFd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
     if (!CheckFileOpenStatus(context, mediaFd)) {
         return;
     }
