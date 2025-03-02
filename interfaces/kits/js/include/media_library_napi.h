@@ -498,6 +498,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     uint32_t tokenId;
     std::vector<std::string> albumIds;
     std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
+    bool isContainsAlbumUri = false;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
