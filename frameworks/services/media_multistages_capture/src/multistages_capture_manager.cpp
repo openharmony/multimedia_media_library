@@ -21,6 +21,7 @@
 #include "media_log.h"
 #include "medialibrary_rdbstore.h"
 #include "result_set_utils.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 
@@ -92,7 +93,8 @@ void MultiStagesCaptureManager::RestorePhotos(const NativeRdb::AbsRdbPredicates 
         MEDIA_INFO_LOG("Invalid table name: %{public}s", predicates.GetTableName().c_str());
         return;
     }
-
+    MediaLibraryTracer tracer;
+    tracer.Start("MultiStagesCaptureManager::RestorePhotos");
     NativeRdb::AbsRdbPredicates predicatesNew(predicates.GetTableName());
     string where = predicates.GetWhereClause() + " AND " + PhotoColumn::PHOTO_QUALITY + "=" +
         to_string(static_cast<int32_t>(MultiStagesPhotoQuality::LOW));

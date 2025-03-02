@@ -1155,6 +1155,9 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
 
 static int32_t HidePhotos(MediaLibraryCommand &cmd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::HidePhotos");
+
     int32_t hiddenState = GetHiddenState(cmd.GetValueBucket());
     CHECK_AND_RETURN_RET(hiddenState >= 0, hiddenState);
 
