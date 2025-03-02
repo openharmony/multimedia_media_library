@@ -77,6 +77,34 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
     return E_OK;
 }
 
+int32_t ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(ThumbRdbOpt &opts,
+    std::shared_ptr<Picture> originalPhotoPicture, bool isSync)
+{
+    ThumbnailData thumbnailData;
+    ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
+    thumbnailData.needResizeLcd = true;
+    thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    thumbnailData.originalPhotoPicture = originalPhotoPicture;
+    ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::LOCAL, LoadSourceType::LOCAL_PHOTO);
+
+    MEDIA_INFO_LOG("Delete THM_EX directory successsully:%{public}d, originalPhotoPicture exists:%{public}d, "
+        "path: %{public}s, id: %{public}s", ThumbnailUtils::DeleteThumbExDir(thumbnailData),
+        originalPhotoPicture != nullptr, DfxUtils::GetSafePath(thumbnailData.path).c_str(), thumbnailData.id.c_str());
+
+    if (isSync) {
+        WaitStatus status;
+        bool isSuccess = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData, status);
+        if (status == WaitStatus::INSERT) {
+            IThumbnailHelper::UpdateThumbnailState(opts, thumbnailData, isSuccess);
+        }
+        ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
+    } else {
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
+            opts, thumbnailData, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);
+    }
+    return E_OK;
+}
+
 int32_t ThumbnailGenerateHelper::CreateThumbnailBackground(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {

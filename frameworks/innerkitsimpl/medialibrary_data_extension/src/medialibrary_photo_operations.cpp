@@ -1037,8 +1037,9 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET(ret >= 0, 0);
     string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
     tracer.Start("MediaLibraryPhotoOperations::SavePicture");
+    std::shared_ptr<Media::Picture> resultPicture = nullptr;
     if (!fileType.empty()) {
-        SavePicture(stoi(fileType), stoi(fileId));
+        SavePicture(stoi(fileType), stoi(fileId), resultPicture);
     }
     tracer.Finish();
 
@@ -1051,9 +1052,10 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     tracer.Start("MediaLibraryPhotoOperations::Scan");
     if (!path.empty()) {
         if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
-            ScanFile(path, false, true, true, stoi(fileId));
+            ScanFile(path, false, true, true, stoi(fileId), resultPicture);
         } else {
-            MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, true, true, stoi(fileId));
+            MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(
+                path, false, true, true, stoi(fileId), resultPicture);
         }
     }
     tracer.Finish();
@@ -2774,13 +2776,15 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     }
     resultSet->Close();
     string uri = cmd.GetQuerySetParam("uri");
-    SavePicture(fileType, fileId);
+    std::shared_ptr<Media::Picture> resultPicture = nullptr;
+    SavePicture(fileType, fileId, resultPicture);
     string path = MediaFileUri::GetPathFromUri(uri, true);
-    MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId);
+    MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId, resultPicture);
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId)
+int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId,
+    std::shared_ptr<Media::Picture> &resultPicture)
 {
     MEDIA_INFO_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
     std::shared_ptr<Media::Picture> picture;
@@ -2816,6 +2820,7 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         CHECK_AND_PRINT_LOG(updatedRows >= 0, "update photo quality fail.");
     }
 
+    resultPicture = picture;
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
         pictureManagerThread->FinishAccessingPicture(photoId);
@@ -3299,7 +3304,8 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
 }
 
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
-    std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type)
+    std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type,
+    std::shared_ptr<Media::Picture> &resultPicture)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
@@ -3308,10 +3314,12 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
 
     if (isEdited) {
         // 图片编辑过了只替换低质量裸图
+        resultPicture = nullptr;
         return FileUtils::SavePicture(editDataSourcePath, picture, mime_type, isEdited);
     } else {
         if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
             // 图片没编辑过且没有editdata_camera，只落盘在Photo目录
+            resultPicture = picture;
             return FileUtils::SavePicture(path, picture, mime_type, isEdited);
         } else {
             // 图片没编辑过且有editdata_camera
@@ -3327,6 +3335,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
                 "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
             CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData, mime_type) == E_OK, E_FAIL,
                 "Failed to add filters to photo");
+            resultPicture = picture;
             return E_OK;
         }
     }

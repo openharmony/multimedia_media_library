@@ -104,7 +104,8 @@ public:
         int32_t &sceneCode, bool isNeedCreateDir = true);
     EXPORT void ClearMediaLibraryMgr();
     EXPORT int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
-    EXPORT void CreateThumbnailAsync(const std::string &uri, const std::string &path);
+    EXPORT void CreateThumbnailAsync(const std::string &uri, const std::string &path,
+        std::shared_ptr<Media::Picture> originalPhotoPicture = nullptr);
     EXPORT static std::unordered_map<std::string, DirAsset> GetDirQuerySetMap();
     EXPORT std::shared_ptr<MediaDataShareExtAbility> GetOwner();
     EXPORT void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
@@ -182,6 +183,13 @@ public:
     ScanFileCallback() = default;
     ~ScanFileCallback() = default;
     int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
+    void SetOriginalPhotoPicture(std::shared_ptr<Media::Picture> resultPicture)
+    {
+        originalPhotoPicture = resultPicture;
+    }
+
+private:
+    std::shared_ptr<Media::Picture> originalPhotoPicture = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

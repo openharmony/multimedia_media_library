@@ -31,6 +31,7 @@
 #include "medialibrary_async_worker.h"
 #include "medialibrary_command.h"
 #include "photo_album.h"
+#include "picture.h"
 #include "value_object.h"
 #include "values_bucket.h"
 #include "medialibrary_rdb_transaction.h"
@@ -229,9 +230,9 @@ protected:
     EXPORT static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
         const std::string &fileId, int32_t type = -1);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-        bool isForceScan = false, int32_t fileId = 0);
+        bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
     static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-        bool isForceScan = false, int32_t fileId = 0);
+        bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
 
     EXPORT static std::string GetEditDataDirPath(const std::string &path);
     EXPORT static std::string GetEditDataPath(const std::string &path);
@@ -261,9 +262,14 @@ private:
         {
             isInvalidateThumb = isInvalidate;
         }
+        void SetOriginalPhotoPicture(std::shared_ptr<Media::Picture> resultPicture)
+        {
+            originalPhotoPicture = resultPicture;
+        }
     private:
         bool isCreateThumbSync = false;
         bool isInvalidateThumb = true;
+        std::shared_ptr<Media::Picture> originalPhotoPicture = nullptr;
     };
 };
 

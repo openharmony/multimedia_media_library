@@ -367,6 +367,36 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
     return E_OK;
 }
 
+int32_t ThumbnailService::CreateThumbnailFileScanedWithPicture(const std::string &uri, const string &path,
+    std::shared_ptr<Picture> originalPhotoPicture, bool isSync)
+{
+    CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_ERR, "Uri is empty");
+    string fileId;
+    string networkId;
+    string tableName;
+
+    int err = ParseThumbnailParam(uri, fileId, networkId, tableName);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "ParseThumbnailParam failed, err:%{public}d", err);
+
+    std::string dateTaken = ThumbnailUriUtils::GetDateTakenFromUri(uri);
+    std::string dateModified = ThumbnailUriUtils::GetDateModifiedFromUri(uri);
+    std::string fileUri = ThumbnailUriUtils::GetFileUriFromUri(uri);
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .path = path,
+        .table = tableName,
+        .row = fileId,
+        .dateTaken = dateTaken,
+        .dateModified = dateModified,
+        .fileUri = fileUri,
+        .screenSize = screenSize_
+    };
+
+    err = ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(opts, originalPhotoPicture, isSync);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "CreateThumbnailFileScaned failed:%{public}d", err);
+    return E_OK;
+}
+
 void ThumbnailService::InterruptBgworker()
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
