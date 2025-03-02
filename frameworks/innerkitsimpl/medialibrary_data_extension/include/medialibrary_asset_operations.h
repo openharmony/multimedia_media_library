@@ -200,6 +200,20 @@ protected:
 
     EXPORT static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
+    static bool IsNeedSetDisplayName(MediaLibraryCommand &cmd);
+    static bool CheckUriBySetDisplayName(MediaLibraryCommand &cmd);
+    static int32_t ChangeDisplayName(
+        MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset, bool &isNameChanged);
+    static bool GetUpdateValuesBucket(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &values,
+        bool isContainPath = false);
+    static int32_t UpdateBySetDisplayName(MediaLibraryCommand &cmd, const int32_t &id);
+    static std::string FindRelativePath(const std::string &filePath);
+    static std::string FindPrefixOfEditDataFolder(const std::string &filePath);
+    static bool UpdateFileAssetBySetDisplayName(MediaLibraryCommand &cmd, const int32_t id);
+    static bool DeleteThumbByFileId(MediaLibraryCommand &cmd, const int32_t id, const std::string &oldPath = "");
+    static void RevertSetDisplayName(MediaLibraryCommand &cmd, const int32_t id, const std::string &revertIndex);
+    static void RevertSetDisplayNameByDelete(MediaLibraryCommand &cmd, const int32_t id);
+    static void RevertSetDisplayNameByUpdate(MediaLibraryCommand &cmd, const int32_t id);
     EXPORT static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
