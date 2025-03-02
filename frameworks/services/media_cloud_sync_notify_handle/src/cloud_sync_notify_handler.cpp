@@ -93,7 +93,9 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
         }
         ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString, isCloudInsertTaskPriorityHigh);
     }
-    UpdateCloudAssetDownloadTask(verifyFlag);
+    if (verifyFlag) {
+        CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
+    }
 }
 
 void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
