@@ -1201,5 +1201,138 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_038, TestSize.
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
     EXPECT_EQ(OH_MediaAssetChangeRequest_Release(changeRequest), MEDIA_LIBRARY_OK);
 }
+
+/**
+ * @tc.name: media_library_capi_test_039
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto imageFileType is SET_EDIT_DATA
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_039, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_IMAGE_HEIF;
+    AssetChangeOperation changeOperation = AssetChangeOperation::SET_EDIT_DATA;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_040
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto changeOperation is ADD_FILTERS
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_040, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_IMAGE_HEIF;
+    AssetChangeOperation changeOperation = AssetChangeOperation::ADD_FILTERS;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_041
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto changeOperation is CREATE_FROM_SCRATCH
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_041, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_IMAGE_HEIF;
+    AssetChangeOperation changeOperation = AssetChangeOperation::CREATE_FROM_SCRATCH;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_042
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto changeOperation is GET_WRITE_CACHE_HANDLER
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_042, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_IMAGE_HEIF;
+    AssetChangeOperation changeOperation = AssetChangeOperation::GET_WRITE_CACHE_HANDLER;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_043
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto changeOperation is ADD_RESOURCE
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_043, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_IMAGE_HEIF;
+    AssetChangeOperation changeOperation = AssetChangeOperation::ADD_RESOURCE;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
 } // namespace Media
 } // namespace OHOS

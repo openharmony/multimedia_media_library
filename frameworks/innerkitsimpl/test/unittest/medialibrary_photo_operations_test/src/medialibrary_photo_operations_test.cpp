@@ -31,7 +31,12 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#define protected public
+#define private public
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_photo_operations.h"
+#undef protected
+#undef private
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_data_manager.h"
@@ -39,7 +44,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
-#include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
@@ -79,6 +83,11 @@ using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
 using ExceptBoolFunction = void (*) (bool);
 using ExceptStringFunction = void (*) (const string&);
+
+const std::string API_VERSION = "api_version";
+const std::string SET_DISPLAY_NAME_KEY = "set_displayName";
+const std::string IS_CAN_FALLBACK = "is_can_fallback";
+const std::string OLD_DISPLAY_NAME = "old_displayName";
 
 namespace {
 void CleanTestTables()
@@ -4077,6 +4086,24 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestS
     columns.push_back(MEDIA_COLUMN_COUNT);
     resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
     EXPECT_NE(resultSet, nullptr);
+}
+
+void UriAppendKeyValue(string &uri, const string &key, std::string value)
+{
+    string uriKey = key + '=';
+    if (uri.find(uriKey) != string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
+    string append = queryMark + key + '=' + value;
+
+    size_t pos = uri.find('#');
+    if (pos == string::npos) {
+        uri += append;
+    } else {
+        uri.insert(pos, append);
+    }
 }
 } // namespace Media
 } // namespace OHOS
