@@ -56,6 +56,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
 #include "vision_total_column.h"
+#include "photo_owner_album_id_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1288,87 +1289,17 @@ void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const stri
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "Update new album is fails");
 }
 
-static int32_t RebuildDeletedAlbum(shared_ptr<NativeRdb::ResultSet> &photoResultSet, std::string &assetId)
-{
-    string sourcePath;
-    string lPath;
-    GetStringValueFromResultSet(photoResultSet, PhotoColumn::PHOTO_SOURCE_PATH, sourcePath);
-    int32_t mediaType =
-        GetInt32Val(PhotoColumn::MEDIA_TYPE, photoResultSet);
-    bool isUserAlbum = false;
-    int64_t newAlbumId = -1;
-    MediaLibraryAlbumOperations::GetLPathFromSourcePath(sourcePath, lPath, mediaType);
-    MediaLibraryAlbumOperations::RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
-    if (newAlbumId == -1) {
-        MEDIA_ERR_LOG("Recover album fails");
-        return E_INVALID_ARGUMENTS;
-    }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    if (isUserAlbum) {
-        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, {to_string(newAlbumId)});
-    } else {
-        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore, {to_string(newAlbumId)});
-    }
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(
-        PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(newAlbumId)), NotifyType::NOTIFY_ADD);
-    return E_OK;
-}
-
-static void CheckAlbumStatusAndFixDirtyState(shared_ptr<MediaLibraryRdbStore> uniStore,
-    shared_ptr<NativeRdb::ResultSet> &resultSetAlbum, int32_t &ownerAlbumId)
-{
-    int dirtyIndex;
-    int32_t dirty;
-    resultSetAlbum->GetColumnIndex(PhotoColumn::PHOTO_DIRTY, dirtyIndex);
-    if (resultSetAlbum->GetInt(dirtyIndex, dirty) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not find dirty status for album %{public}d", ownerAlbumId);
-        return;
-    }
-    if (dirty == static_cast<int32_t>(DirtyType::TYPE_DELETED)) {
-        std::string updateDirtyForRecoverAlbum = "UPDATE PhotoAlbum SET dirty = '1'"
-        " WHERE album_id =" + to_string(ownerAlbumId);
-        int32_t err = uniStore->ExecuteSql(updateDirtyForRecoverAlbum);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to reset dirty exec: %{public}s fails", updateDirtyForRecoverAlbum.c_str());
-        }
-    }
-}
-
 void MediaLibraryAlbumOperations::DealwithNoAlbumAssets(const vector<string> &whereArgs)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryAlbumOperations::DealwithNoAlbumAssets");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("get uniStore fail");
         return;
     }
-    for (std::string assetId: whereArgs) {
-        if (assetId.empty() || std::atoi(assetId.c_str()) <= 0) {
-            continue;
-        }
-        string queryFileOnPhotos = "SELECT * FROM Photos WHERE file_id = " + assetId;
-        shared_ptr<NativeRdb::ResultSet> resultSetPhoto = uniStore->QuerySql(queryFileOnPhotos);
-        if (resultSetPhoto == nullptr || resultSetPhoto->GoToFirstRow() != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("fail to query file on photo");
-            continue;
-        }
-        int32_t ownerAlbumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_OWNER_ALBUM_ID,
-            resultSetPhoto, TYPE_INT32));
-        const std::string queryAlbum = "SELECT * FROM PhotoAlbum WHERE album_id = " + to_string(ownerAlbumId);
-        shared_ptr<NativeRdb::ResultSet> resultSetAlbum = uniStore->QuerySql(queryAlbum);
-        if (resultSetAlbum == nullptr || resultSetAlbum->GoToFirstRow() != NativeRdb::E_OK) {
-            int32_t err = RebuildDeletedAlbum(resultSetPhoto, assetId);
-            if (err == E_INVALID_ARGUMENTS) {
-                continue;
-            }
-        } else {
-            CheckAlbumStatusAndFixDirtyState(uniStore, resultSetAlbum, ownerAlbumId);
-            MEDIA_INFO_LOG("no need to build exits album");
-            continue;
-        }
-    }
+    int32_t ret = PhotoOwnerAlbumIdOperation().SetRdbStore(uniStore).SetFileIds(whereArgs).FixPhotoRelation();
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Fix photo relation failed");
 }
 
 static bool isRecoverToHiddenAlbum(const string& uri)
