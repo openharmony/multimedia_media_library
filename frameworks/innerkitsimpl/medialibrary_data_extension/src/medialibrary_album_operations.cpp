@@ -2387,7 +2387,7 @@ int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicat
 
     int32_t currentCoverStatus = 0;
     GetHighlightCoverStatus(targetAlbumId, currentCoverStatus);
-    int32_t newCoverStatus = currentCoverStatus | HIGHLIGHT_COVER_STATUS_COVER;
+    int32_t newCoverStatus = static_cast<uint32_t>(currentCoverStatus) | HIGHLIGHT_COVER_STATUS_COVER;
     std::string updateAnalysisAlbum = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
         "' WHERE " + ALBUM_ID + " = " + targetAlbumId;
     std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE +
@@ -2426,7 +2426,7 @@ int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredica
 
     int32_t currentCoverStatus = 0;
     GetHighlightCoverStatus(highlightAlbumId, currentCoverStatus);
-    int32_t newCoverStatus = currentCoverStatus | HIGHLIGHT_COVER_STATUS_TITLE;
+    int32_t newCoverStatus = static_cast<uint32_t>(currentCoverStatus) | HIGHLIGHT_COVER_STATUS_TITLE;
     std::string updateAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
         "' WHERE " + ALBUM_ID + " = " + highlightAlbumId;
     std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " +
@@ -2458,7 +2458,7 @@ int32_t SetHighlightSubtitle(const ValuesBucket &values, const DataSharePredicat
     }
     string albumSubtitle;
     int err = GetStringVal(values, SUB_TITLE, albumSubtitle);
-    if (err < 0 || albumSubtitle.empty()) {
+    if (err < 0) {
         MEDIA_ERR_LOG("invalid album name");
         return E_INVALID_VALUES;
     }
@@ -2467,7 +2467,7 @@ int32_t SetHighlightSubtitle(const ValuesBucket &values, const DataSharePredicat
         albumSubtitle.c_str(), highlightAlbumId.c_str());
     int32_t currentCoverStatus = 0;
     GetHighlightCoverStatus(highlightAlbumId, currentCoverStatus);
-    int32_t newCoverStatus = currentCoverStatus | HIGHLIGHT_COVER_STATUS_TITLE;
+    int32_t newCoverStatus = static_cast<uint32_t>(currentCoverStatus) | HIGHLIGHT_COVER_STATUS_TITLE;
     std::string updateAlbumName = "UPDATE " + HIGHLIGHT_ALBUM_TABLE + " SET " + SUB_TITLE + " = '" + albumSubtitle +
         "', " + HIGHLIGHT_USE_SUBTITLE + " = 1" + " WHERE " + ALBUM_ID + " = " + highlightAlbumId;
     std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE + " SET " +
