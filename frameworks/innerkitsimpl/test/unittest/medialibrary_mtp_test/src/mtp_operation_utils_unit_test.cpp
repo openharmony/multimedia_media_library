@@ -22,6 +22,7 @@
 #include "media_mtp_utils.h"
 #include "mtp_manager.h"
 #include "mtp_driver.h"
+#include "parameters.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -1456,7 +1457,8 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_068, Te
     std::string property = "persist.device.name";
     std::string defValue = "";
     std::string res = mtpOperationUtils->GetPropertyInner(property, defValue);
-    EXPECT_NE(res, "");
+    std::string propertyInner = OHOS::system::GetParameter(property, defValue);
+    EXPECT_EQ(res, propertyInner);
 }
 
 /*
