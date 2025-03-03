@@ -1100,6 +1100,22 @@ int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
     return E_OK;
 }
 
+int32_t MediaFileUtils::CheckHighlightSubtitle(const string &highlightSubtitle)
+{
+    size_t size = highlightSubtitle.length();
+    if (size > DISPLAYNAME_MAX) {
+        MEDIA_ERR_LOG("Highlight subtitle string size check failed: size is %{public}zu", size);
+        return -ENAMETOOLONG;
+    }
+
+    static const string ALBUM_NAME_REGEX = R"([\.\\/:*?"'`<>|{}\[\]])";
+    if (RegexCheck(albumName, ALBUM_NAME_REGEX)) {
+        MEDIA_ERR_LOG("Failed to check album name regex: %{private}s", albumName.c_str());
+        return -EINVAL;
+    }
+    return E_OK;
+}
+
 int32_t MediaFileUtils::CheckDentryName(const string &dentryName)
 {
     int err = CheckStringSize(dentryName, DISPLAYNAME_MAX);
