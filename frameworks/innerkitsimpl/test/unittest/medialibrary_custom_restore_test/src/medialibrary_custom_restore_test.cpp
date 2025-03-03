@@ -154,5 +154,17 @@ HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_test_004, TestSize.Level0
     MEDIA_INFO_LOG("custom_restore_test_004 End");
 }
 
+HWTEST_F(MediaLibraryCustomRestoreTest, custom_restore_stop_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("custom_restore_stop_test Start");
+    CustomRestore customRestore("/Share", "test", true);
+    auto result = customRestore.Restore();
+    EXPECT_NE(result, E_OK);
+
+    customRestore.Init("testbundle", "test");
+    auto ret = customRestore.StopRestore();
+    EXPECT_NE(ret, E_OK);
+    MEDIA_INFO_LOG("custom_restore_stop_test End");
+}
 }
 }
