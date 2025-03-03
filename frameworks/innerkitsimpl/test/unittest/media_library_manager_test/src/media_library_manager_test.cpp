@@ -2503,5 +2503,28 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_emptyUris, TestSiz
     auto pixelMap = mediaLibraryManager->GetAstc(Uri(uriStr));
     EXPECT_EQ(pixelMap, nullptr);
 }
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstcYearAndMonth_test, TestSize.Level0)
+{
+    vector<string> uris;
+    int32_t ret = mediaLibraryManager->GetAstcYearAndMonth(uris);
+    EXPECT_EQ(ret, E_ERR);
+
+    for (int i = 0; i < 5; i++) {
+        uris.push_back(CreatePhotoAsset("test.mp4"));
+    }
+    ret = ret = mediaLibraryManager->GetAstcYearAndMonth(uris);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadPrivateMovingPhoto_test, TestSize.Level0)
+{
+    EXPECT_NE(mediaLibraryExtendManager, nullptr);
+    string uri = "test";
+    EXPECT_EQ(mediaLibraryExtendManager->ReadPrivateMovingPhoto(uri, HideSensitiveType::ALL_DESENSITIZE), E_ERR);
+    uri = "../test/test.txt";
+    EXPECT_EQ(mediaLibraryExtendManager->ReadPrivateMovingPhoto(uri, HideSensitiveType::ALL_DESENSITIZE), E_ERR);
+    uri = CreatePhotoAsset("test.mp4");
+    EXPECT_EQ(mediaLibraryExtendManager->ReadPrivateMovingPhoto(uri, HideSensitiveType::ALL_DESENSITIZE), E_ERR);
+}
 } // namespace Media
 } // namespace OHOS
