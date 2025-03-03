@@ -787,8 +787,9 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
 
-    CHECK_AND_RETURN_RET_LOG(!(!sf::exists(from) || !sf::exists(to)), MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
-        "MtpMediaLibrary::CopyObject handle or parent path not found");
+    CHECK_AND_RETURN_RET_LOG(!(!sf::exists(from) || !sf::exists(to)),
+        MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
+            "MtpMediaLibrary::CopyObject handle or parent path not found");
     CHECK_AND_RETURN_RET_LOG(sf::is_directory(to), MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
         "MtpMediaLibrary::CopyObject parent path is not dir");
     std::error_code ec;
