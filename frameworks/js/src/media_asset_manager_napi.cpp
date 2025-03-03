@@ -277,9 +277,8 @@ static ProgressHandler* InsertProgressHandler(napi_env env, MediaAssetManagerAsy
     napi_threadsafe_function threadSafeFunc;
     dataHandlerRef = asyncContext->progressHandlerRef;
     threadSafeFunc = asyncContext->onProgressPtr;
-    RetProgressValue retProgressValue;
     ProgressHandler *progressHandler = new ProgressHandler(env, threadSafeFunc, asyncContext->requestId,
-        retProgressValue, dataHandlerRef);
+        dataHandlerRef);
     MediaAssetManagerNapi::progressHandlerMap_.EnsureInsert(asyncContext->requestId, progressHandler);
     NAPI_DEBUG_LOG("InsertProgressHandler");
     return  progressHandler;
