@@ -27,11 +27,10 @@ public:
     ~MediaCallTranscode() = default;
     static void CallTranscodeHandle(napi_env env, int srcFd, int destFd,
         napi_value &result, off_t &size, std::string requestId);
+    static bool DoTranscode(int srcFd, int destFd, off_t &size, std::string requestId);
     static void CallTranscodeRelease(const std::string &requestId);
     using CallbackType = std::function<void(int, int, std::string)>;
     static void RegisterCallback(const CallbackType &cb);
-private:
-    static void TransCodeError(napi_env env, napi_value &result, int srcFd, int destFd, const std::string& errorMsg);
 };
 
 } // namespace Media
