@@ -73,7 +73,7 @@ struct ProgressHandler {
     RetProgressValue retProgressValue;
     napi_ref progressRef;
     ProgressHandler(napi_env env, napi_threadsafe_function func, const std::string &requestId,
-        RetProgressValue &retProgressValue, napi_ref progressRef) : env(env), progressFunc(func),
+        napi_ref progressRef) : env(env), progressFunc(func),
         requestId(requestId), progressRef(progressRef) {}
 };
 
