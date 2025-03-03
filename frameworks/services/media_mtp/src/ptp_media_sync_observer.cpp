@@ -45,8 +45,8 @@ const string INVALID_FILE_ID = "-1";
 constexpr uint64_t DELAY_MS = 5000;
 bool startsWith(const std::string& str, const std::string& prefix)
 {
-    CHECK_AND_RETURN_RET_LOG(!(prefix.size() > str.size() || prefix.empty() || str.empty()), false,
-        "MtpMediaLibrary::StartsWith prefix size error");
+    bool cond = (prefix.size() > str.size() || prefix.empty() || str.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "MtpMediaLibrary::StartsWith prefix size error");
 
     for (size_t i = 0; i < prefix.size(); ++i) {
         CHECK_AND_RETURN_RET(str[i] == prefix[i], false);
