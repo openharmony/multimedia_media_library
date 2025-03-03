@@ -388,8 +388,12 @@ static int32_t ArrayBufferToTranscode(napi_env env, MovingPhotoAsyncContext* con
         return E_ERR;
     }
     MediaCallTranscode::RegisterCallback(context->callback);
-    MediaCallTranscode::CallTranscodeHandle(env, uniqueFd.Get(), uniqueDestFd.Get(), resultNapiValue,
-        statSrc.st_size, context->requestId);
+    bool result = MediaCallTranscode::DoTranscode(uniqueFd.Get(), uniqueDestFd.Get(), statSrc.st_size,
+        context->requestId);
+    if (!result) {
+        NAPI_INFO_LOG("DoTranscode fail");
+        return E_GET_PRAMS_FAIL;
+    }
     {
         std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
         isMovingPhotoTranscoderMap.Insert(context->requestId, true);
@@ -648,13 +652,10 @@ int32_t MovingPhotoNapi::DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, 
     }
     UniqueFd uniqueDestFd(destFd);
     MediaCallTranscode::RegisterCallback(context->callback);
-    napi_value resultNapiValue = nullptr;
-    MediaCallTranscode::CallTranscodeHandle(env, uniqueVideoFd.Get(), uniqueDestFd.Get(), resultNapiValue,
-        statSrc.st_size, context->requestId);
-    bool result;
-    napi_get_value_bool(env, resultNapiValue, &result);
+    bool result = MediaCallTranscode::DoTranscode(uniqueVideoFd.Get(), uniqueDestFd.Get(), statSrc.st_size,
+        context->requestId);
     if (!result) {
-        NAPI_ERR_LOG("Open dest file failed, error: %{public}d", errno);
+        NAPI_ERR_LOG("DoTranscode fail");
         return E_GET_PRAMS_FAIL;
     }
     {
