@@ -433,4 +433,20 @@ int32_t TransactionOperations::Delete(MediaLibraryCommand &cmd, int32_t &deleted
     }
     return ret;
 }
+
+std::shared_ptr<NativeRdb::ResultSet> TransactionOperations::QueryByStep(const NativeRdb::AbsRdbPredicates &predicates,
+    const std::vector<std::string> &columns, bool preCount)
+{
+    if (transaction_ == nullptr) {
+        MEDIA_ERR_LOG("transaction_ is null");
+        return nullptr;
+    }
+    /* local query */
+    auto ret = transaction_->QueryByStep(predicates, columns, preCount);
+    if (ret == nullptr) {
+        MEDIA_ERR_LOG("transaction_->QueryByStep failed");
+        return nullptr;
+    }
+    return ret;
+}
 } // namespace OHOS::Media
