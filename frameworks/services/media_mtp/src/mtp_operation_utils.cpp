@@ -434,12 +434,12 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
     CHECK_AND_RETURN_RET_LOG(result == MTP_SUCCESS, MTP_ERROR_INCOMPLETE_TRANSFER,
         "GetObjectDataDeal fstat error = %{public}d", errno);
 
-    object.offset = context_->offset;
+    object.offset = static_cast<loff_t>(context_->offset);
     if (context_->length == 0 || context_->length == MTP_ALL_HANDLE_ID) {
         object.length = sstat.st_size;
     } else {
         if (context_->offset + context_->length > static_cast<uint64_t>(sstat.st_size)) {
-            context_->length = static_cast<uint32_t>(sstat.st_size - context_->offset);
+            context_->length = static_cast<uint32_t>(static_cast<uint64_t>(sstat.st_size) - context_->offset);
         }
         object.length = context_->length;
     }
