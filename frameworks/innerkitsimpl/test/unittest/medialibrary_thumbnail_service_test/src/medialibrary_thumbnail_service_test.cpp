@@ -1326,5 +1326,18 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_035, Tes
     auto res = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
     EXPECT_EQ(res, false);
 }
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAsync_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string url = "";
+    ThumbnailService serverTest;
+    std::shared_ptr<Picture> originalPhotoPicture = nullptr;
+    int32_t ret = serverTest.CreateThumbnailFileScanedWithPicture(url, "", originalPhotoPicture, true);
+    EXPECT_NE(ret, E_OK);
+    serverTest.ReleaseService();
+}
 } // namespace Media
 } // namespace OHOS

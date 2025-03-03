@@ -1907,7 +1907,7 @@ void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int3
 }
 
 void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-    bool isForceScan, int32_t fileId)
+    bool isForceScan, int32_t fileId, std::shared_ptr<Media::Picture> resultPicture)
 {
     // Force Scan means medialibrary will scan file without checking E_SCANNED
     shared_ptr<ScanAssetCallback> scanAssetCallback = make_shared<ScanAssetCallback>();
@@ -1915,6 +1915,7 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return;
     }
+    scanAssetCallback->SetOriginalPhotoPicture(resultPicture);
     if (isCreateThumbSync) {
         scanAssetCallback->SetSync(true);
     }
@@ -1930,7 +1931,7 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
 }
 
 void MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(const string &path, bool isCreateThumbSync,
-    bool isInvalidateThumb, bool isForceScan, int32_t fileId)
+    bool isInvalidateThumb, bool isForceScan, int32_t fileId, std::shared_ptr<Media::Picture> resultPicture)
 {
     // Force Scan means medialibrary will scan file without checking E_SCANNED
     shared_ptr<ScanAssetCallback> scanAssetCallback = make_shared<ScanAssetCallback>();
@@ -1938,6 +1939,7 @@ void MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(const string &path,
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return;
     }
+    scanAssetCallback->SetOriginalPhotoPicture(resultPicture);
     if (isCreateThumbSync) {
         scanAssetCallback->SetSync(true);
     }
@@ -2659,17 +2661,21 @@ bool AssetInputParamVerification::IsUniqueValue(ValueObject &value, MediaLibrary
     return true;
 }
 
-static void CreateThumbnailFileScaned(const string &uri, const string &path, bool isSync)
+static void CreateThumbnailFileScaned(const string &uri, const string &path, bool isSync,
+    std::shared_ptr<Media::Picture> originalPhotoPicture)
 {
     if (ThumbnailService::GetInstance() == nullptr) {
         return;
     }
-    if (!uri.empty()) {
-        int32_t err = ThumbnailService::GetInstance()->CreateThumbnailFileScaned(uri, path, isSync);
-        if (err != E_SUCCESS) {
-            MEDIA_ERR_LOG("ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
-        }
+    CHECK_AND_RETURN_LOG(!uri.empty(), "Uri is empty");
+    int32_t err = 0;
+    if (originalPhotoPicture != nullptr) {
+        err = ThumbnailService::GetInstance()->CreateThumbnailFileScanedWithPicture(
+            uri, path, originalPhotoPicture, isSync);
+    } else {
+        err = ThumbnailService::GetInstance()->CreateThumbnailFileScaned(uri, path, isSync);
     }
+    CHECK_AND_RETURN_LOG(err == E_SUCCESS, "ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
 }
 
 int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int32_t status,
@@ -2689,7 +2695,7 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         !PhotoFileUtils::IsThumbnailLatest(path)) {
         InvalidateThumbnail(fileId, type);
     }
-    CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);
+    CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync, originalPhotoPicture);
     MediaFileUtils::DeleteFile(MovingPhotoFileUtils::GetLivePhotoCachePath(path));
 
 #ifdef META_RECOVERY_SUPPORT
