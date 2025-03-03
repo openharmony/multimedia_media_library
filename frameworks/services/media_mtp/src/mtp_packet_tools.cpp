@@ -1007,7 +1007,8 @@ bool MtpPacketTool::DumpClear(size_t loc, std::unique_ptr<char[]> &hexBuf, int h
 bool MtpPacketTool::DumpChar(uint8_t u8, std::unique_ptr<char[]> &hexBuf, int hexBufSize,
     std::unique_ptr<char[]> &txtBuf, int txtBufSize)
 {
-    CHECK_AND_RETURN_RET(!((hexBuf == nullptr) || (txtBuf == nullptr)), false);
+    bool cond = ((hexBuf == nullptr) || (txtBuf == nullptr));
+    CHECK_AND_RETURN_RET(!cond, false);
 
     char hexTmp[BIT_4] = {0};
     CHECK_AND_RETURN_RET(sprintf_s(hexTmp, sizeof(hexTmp), "%02X", u8) != -1, false);
