@@ -72,7 +72,12 @@ bool ParseArgGetPhotoAsset(int64_t photoAssetId, int &fileId, string &uri,
     fileId = photoAssetImpl->GetFileId();
     uri = photoAssetImpl->GetFileUri();
     displayName = photoAssetImpl->GetFileDisplayName();
-    subType = static_cast<PhotoSubType>(photoAssetImpl->GetFileAssetInstance()->GetPhotoSubType());
+    std::shared_ptr<FileAsset> fileAsset = photoAssetImpl->GetFileAssetInstance();
+    if (fileAsset == nullptr) {
+        LOGE("Invalid object FileAsset");
+        return false;
+    }
+    subType = static_cast<PhotoSubType>(fileAsset->GetPhotoSubType());
     return true;
 }
 
@@ -185,6 +190,12 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode,
     int64_t dataHandlerRef = asyncContext->dataHandler;
     AssetHandler *assetHandler = new AssetHandler(asyncContext->photoId, asyncContext->requestId,
         asyncContext->photoUri, dataHandlerRef, asyncContext->returnDataType);
+    if (assetHandler == nullptr)
+    {
+        LOGE("assetHandler is nullptr");
+        return nullptr;
+    }
+    
     assetHandler->photoQuality = asyncContext->photoQuality;
     assetHandler->needsExtraInfo = asyncContext->needsExtraInfo;
     assetHandler->notifyMode = notifyMode;
@@ -693,6 +704,10 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         std::map<std::string, AssetHandler *> assetHandlers = inProcessUriMap[uriString];
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
+            if (assetHandler == nullptr) 
+            {
+                continue;
+            }
             assetHandler->photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
             MediaAssetManagerImpl::NotifyMediaDataPrepared(assetHandler);
         }
