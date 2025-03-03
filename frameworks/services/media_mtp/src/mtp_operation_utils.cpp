@@ -440,7 +440,8 @@ void MtpOperationUtils::ModifyObjectInfo()
     std::istringstream modified(context_->modified);
     created >> std::get_time(&tmCreated, "%Y%m%dT%H%M%S");
     modified >> std::get_time(&tmModified, "%Y%m%dT%H%M%S");
-    CHECK_AND_RETURN_LOG(!(created.fail() || modified.fail()), "get_time failed");
+    bool cond = (created.fail() || modified.fail());
+    CHECK_AND_RETURN_LOG(!cond, "get_time failed");
 
     std::string path;
     if (MtpManager::GetInstance().IsMtpMode()) {
@@ -527,7 +528,8 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
         "mtpMedialibraryManager_ is null");
 
     int32_t errorCode = context_->mtpDriver->ReceiveObj(object);
-    CHECK_AND_RETURN_RET(!(errorCode != RECEVIE_OBJECT_CANCELLED && errorCode != RECEVIE_OBJECT_FAILED), errorCode);
+    bool cond = (errorCode != RECEVIE_OBJECT_CANCELLED && errorCode != RECEVIE_OBJECT_FAILED);
+    CHECK_AND_RETURN_RET(!cond, errorCode);
 
     PreDealFd(errorCode != MTP_SUCCESS, fd);
     string filePath;
@@ -672,8 +674,8 @@ uint16_t MtpOperationUtils::DeleteObject(shared_ptr<PayloadData> &data, int &err
 
 uint16_t MtpOperationUtils::MoveObject(shared_ptr<PayloadData> &data, int &errorCode)
 {
-    CHECK_AND_RETURN_RET_LOG(!(context_ == nullptr || mtpMediaLibrary_ == nullptr ||
-        mtpMedialibraryManager_ == nullptr), CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL), "param is null");
+    bool cond = (context_ == nullptr || mtpMediaLibrary_ == nullptr || mtpMedialibraryManager_ == nullptr);
+    CHECK_AND_RETURN_RET_LOG(!cond, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL), "param is null");
 
     uint32_t repeatHandle = 0;
     if (MtpManager::GetInstance().IsMtpMode()) {
@@ -1003,7 +1005,8 @@ int32_t MtpOperationUtils::GetBatteryLevel()
 #ifdef HAS_BATTERY_MANAGER_PART
     auto &batterySrvClient = PowerMgr::BatterySrvClient::GetInstance();
     int32_t capacity = batterySrvClient.GetCapacity();
-    CHECK_AND_RETURN_RET(!(capacity > MAX_BATTERY || capacity < EMPTY_BATTERY), ERROR_BATTERY);
+    bool cond = (capacity > MAX_BATTERY || capacity < EMPTY_BATTERY);
+    CHECK_AND_RETURN_RET(!cond, ERROR_BATTERY);
     return capacity;
 #else
     return EMPTY_BATTERY;
