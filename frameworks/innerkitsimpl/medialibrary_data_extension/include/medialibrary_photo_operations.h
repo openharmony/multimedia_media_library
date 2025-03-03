@@ -60,12 +60,14 @@ public:
     EXPORT static bool HasDroppedThumbnailSize(const std::string& photoId);
     EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
     EXPORT static int32_t ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
-        std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type);
+        std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type,
+        std::shared_ptr<Media::Picture> &resultPicture);
     EXPORT static int32_t Save(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
         const std::string &outputPath, std::string &editdata, const std::string &mime_type);
-    EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId);
+    EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId,
+        std::shared_ptr<Media::Picture> &resultPicture);
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
         bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture);
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);

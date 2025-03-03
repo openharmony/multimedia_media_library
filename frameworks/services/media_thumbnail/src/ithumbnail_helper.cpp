@@ -41,6 +41,7 @@
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "medialibrary_astc_stat.h"
 using namespace std;
@@ -676,10 +677,8 @@ bool IThumbnailHelper::SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &da
     if (lcdDesiredWidth != lcdSource->GetMainPixel()->GetWidth()) {
         MEDIA_INFO_LOG("Copy and resize picture source for lcd desiredSize: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
-        if (!ThumbnailUtils::CopyPictureSource(lcdSource, copySource)) {
-            MEDIA_ERR_LOG("SaveLcdPictureSource failed, CopyPictureSource failed");
-            return false;
-        }
+        copySource = ThumbnailImageFrameWorkUtils::CopyPictureSource(lcdSource);
+        CHECK_AND_RETURN_RET_LOG(copySource != nullptr, false, "SaveLcdPictureSource failed, CopyPictureSource failed");
         if (lcdSource->GetMainPixel()->GetWidth() * lcdSource->GetMainPixel()->GetHeight() == 0) {
             MEDIA_ERR_LOG("SaveLcdPictureSource failed, invalid mainpixel size");
             return false;

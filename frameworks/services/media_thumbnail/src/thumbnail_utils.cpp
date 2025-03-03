@@ -53,6 +53,7 @@
 #include "rdb_errno.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
+#include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "unique_fd.h"
 #include "wifi_device.h"
@@ -1671,46 +1672,6 @@ void PostProcPixelMapSource(ThumbnailData &data)
     pixelMap->ModifyImageProperty(PHOTO_DATA_IMAGE_ORIENTATION, DEFAULT_EXIF_ORIENTATION);
 }
 
-bool ThumbnailUtils::CopyPictureSource(std::shared_ptr<Picture> &picture, std::shared_ptr<Picture> &copySource)
-{
-    auto pixelMap = picture->GetMainPixel();
-    auto gainMap = picture->GetGainmapPixelMap();
-    if (pixelMap == nullptr || gainMap == nullptr) {
-        return false;
-    }
-    Media::InitializationOptions pixelMapOpts = {
-        .size = {pixelMap->GetWidth(), pixelMap->GetHeight()},
-        .pixelFormat = pixelMap->GetPixelFormat(),
-        .alphaType = pixelMap->GetAlphaType()
-    };
-    auto copyPixelMapPtr = PixelMap::Create(*pixelMap, pixelMapOpts);
-    std::shared_ptr<PixelMap> copyPixelMap = std::move(copyPixelMapPtr);
-    if (copyPixelMap == nullptr) {
-        return false;
-    }
-
-    Media::InitializationOptions gainMapOpts = {
-        .size = {gainMap->GetWidth(), gainMap->GetHeight()},
-        .pixelFormat = gainMap->GetPixelFormat(),
-        .alphaType = gainMap->GetAlphaType()
-    };
-    auto copyGainMapPtr = PixelMap::Create(*gainMap, gainMapOpts);
-    std::shared_ptr<PixelMap> copyGainMap = std::move(copyGainMapPtr);
-    if (copyGainMap == nullptr) {
-        return false;
-    }
-    Size copyGainMapSize = {copyGainMap->GetWidth(), copyGainMap->GetHeight()};
-    auto auxiliaryPicturePtr = AuxiliaryPicture::Create(copyGainMap, AuxiliaryPictureType::GAINMAP, copyGainMapSize);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(auxiliaryPicturePtr);
-    if (auxiliaryPicture == nullptr) {
-        return false;
-    }
-    auto copySourcePtr = Picture::Create(copyPixelMap);
-    copySource = std::move(copySourcePtr);
-    copySource->SetAuxiliaryPicture(auxiliaryPicture);
-    return true;
-}
-
 void PostProcPictureSource(ThumbnailData &data)
 {
     auto picture = data.source.GetPicture();
@@ -1724,8 +1685,7 @@ void PostProcPictureSource(ThumbnailData &data)
     }
     if (data.orientation != 0) {
         if (data.isLocalFile) {
-            std::shared_ptr<Picture> copySource;
-            ThumbnailUtils::CopyPictureSource(picture, copySource);
+            std::shared_ptr<Picture> copySource = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
             data.source.SetPictureEx(copySource);
         }
         pixelMap->rotate(static_cast<float>(data.orientation));
