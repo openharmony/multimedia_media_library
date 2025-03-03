@@ -457,18 +457,10 @@ int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundleHandle* mediaEnhanc
     servicePredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     GenerateAddServicePredicates(isAuto, servicePredicates);
     ValuesBucket rdbValues;
-    if (isAuto) {
-        rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
-            static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO));
-    } else {
-        rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
-            static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL));
-    }
-    if (hasCloudWatermark) {
-        rdbValues.PutInt(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, YES);
-    } else {
-        rdbValues.PutInt(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, NO);
-    }
+    rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
+        isAuto ? static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO) :
+        static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL));
+    rdbValues.PutInt(PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, hasCloudWatermark ? YES : NO);
     int32_t errCode = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
     if (errCode != E_OK) {
         EnhancementTaskManager::RemoveEnhancementTask(photoId);
@@ -480,13 +472,9 @@ int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundleHandle* mediaEnhanc
         enhancementService_->DestroyBundle(mediaEnhanceBundle);
         RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
         predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-        if (isAuto) {
-            predicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-                static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO));
-        } else {
-            predicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-                static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL));
-        }
+        predicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+            isAuto ? static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO) :
+            static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL));
         ValuesBucket values;
         values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
             static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));

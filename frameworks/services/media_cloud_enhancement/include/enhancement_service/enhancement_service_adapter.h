@@ -55,7 +55,7 @@ public:
     void PutString(MediaEnhance::MediaEnhanceBundleHandle* bundle, const char* key,
         const char* value);
     void DeleteRawData(MediaEnhance::Raw_Data* rawData, uint32_t size);
-    void DeletePendingTasks(MediaEnhance::Pendding_Task* taskIdList, uint32_t size);
+    void DeletePendingTasks(MediaEnhance::Pending_Task* taskIdList, uint32_t size);
     EXPORT int32_t AddTask(const std::string& taskId, MediaEnhance::MediaEnhanceBundleHandle* bundle);
     EXPORT int32_t RemoveTask(const std::string &taskId);
     EXPORT int32_t CancelTask(const std::string &taskId);
