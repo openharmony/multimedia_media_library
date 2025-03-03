@@ -45,15 +45,11 @@ const string INVALID_FILE_ID = "-1";
 constexpr uint64_t DELAY_MS = 5000;
 bool startsWith(const std::string& str, const std::string& prefix)
 {
-    if (prefix.size() > str.size() || prefix.empty() || str.empty()) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::StartsWith prefix size error");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!(prefix.size() > str.size() || prefix.empty() || str.empty()), false,
+        "MtpMediaLibrary::StartsWith prefix size error");
 
     for (size_t i = 0; i < prefix.size(); ++i) {
-        if (str[i] != prefix[i]) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(str[i] == prefix[i], false);
     }
     return true;
 }
@@ -98,9 +94,7 @@ static bool IsNumber(const string& str)
 {
     CHECK_AND_RETURN_RET_LOG(!str.empty(), false, "IsNumber input is empty");
     for (char const& c : str) {
-        if (isdigit(c) == 0) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(isdigit(c) != 0, false);
     }
     return true;
 }
@@ -452,10 +446,7 @@ bool MediaSyncObserver::ParseNotifyData(const ChangeInfo &changeInfo, vector<str
     }
     MEDIA_DEBUG_LOG("changeInfo.size_ is %{public}d.", changeInfo.size_);
     uint8_t *parcelData = static_cast<uint8_t *>(malloc(changeInfo.size_));
-    if (parcelData == nullptr) {
-        MEDIA_ERR_LOG("parcelData malloc failed");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(parcelData != nullptr, false, "parcelData malloc failed");
     if (memcpy_s(parcelData, changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
         MEDIA_ERR_LOG("parcelData copy parcel data failed");
         free(parcelData);
@@ -469,21 +460,12 @@ bool MediaSyncObserver::ParseNotifyData(const ChangeInfo &changeInfo, vector<str
         return false;
     }
     uint32_t len = 0;
-    if (!parcel->ReadUint32(len)) {
-        MEDIA_ERR_LOG("Failed to read sub uri list length");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!(!parcel->ReadUint32(len)), false, "Failed to read sub uri list length");
     MEDIA_DEBUG_LOG("read sub uri list length: %{public}u .", len);
-    if (len > MAX_PARCEL_LEN_LIMIT) {
-        MEDIA_ERR_LOG("len length exceed the limit.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(len <= MAX_PARCEL_LEN_LIMIT, false, "len length exceed the limit.");
     for (uint32_t i = 0; i < len; i++) {
         string subUri = parcel->ReadString();
-        if (subUri.empty()) {
-            MEDIA_ERR_LOG("Failed to read sub uri");
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(!subUri.empty(), false, "Failed to read sub uri");
         MEDIA_DEBUG_LOG("notify data subUri string %{public}s.", subUri.c_str());
         MediaFileUri fileUri(subUri);
         string fileId = fileUri.GetFileId();
@@ -580,10 +562,7 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
         ChangeInfo changeInfoCopy = changeInfo;
         if (changeInfo.data_ != nullptr && changeInfo.size_ > 0) {
             changeInfoCopy.data_ = malloc(changeInfo.size_);
-            if (changeInfoCopy.data_ == nullptr) {
-                MEDIA_ERR_LOG("changeInfoCopy.data_ is nullptr.");
-                return;
-            }
+            CHECK_AND_RETURN_LOG(changeInfoCopy.data_ != nullptr, "changeInfoCopy.data_ is nullptr.");
             if (memcpy_s(const_cast<void*>(changeInfoCopy.data_),
                 changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
                 MEDIA_ERR_LOG("changeInfoCopy copy data failed");
