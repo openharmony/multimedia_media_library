@@ -2443,7 +2443,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_069, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 16, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 };
+    std::vector<uint8_t> targetData = { 16, 0, 0, 0, 3, 0, 1, 32, 4, 0, 0, 0, 255, 255, 255, 255 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
