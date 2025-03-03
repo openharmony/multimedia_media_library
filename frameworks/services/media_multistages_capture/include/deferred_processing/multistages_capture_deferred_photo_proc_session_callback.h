@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace Media {
+class Picture;
 #define EXPORT __attribute__ ((visibility ("default")))
 class MultiStagesCaptureDeferredPhotoProcSessionCallback : public CameraStandard::IDeferredPhotoProcSessionCallback {
 public:
@@ -34,9 +35,10 @@ public:
 
     void OnProcessImageDone(const std::string &imageId, const uint8_t *addr, const long bytes,
         uint32_t cloudImageEnhanceFlag) override;
-    void OnProcessImageDone(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
+    void OnProcessImageDone(const std::string &imageId, std::shared_ptr<CameraStandard::PictureIntf> picture,
         uint32_t cloudImageEnhanceFlag) override;
-    void OnDeliveryLowQualityImage(const std::string &imageId, std::shared_ptr<Media::Picture> picture) override;
+    void OnDeliveryLowQualityImage(const std::string &imageId,
+        std::shared_ptr<CameraStandard::PictureIntf> picture) override;
     EXPORT void OnError(const std::string &imageId, const CameraStandard::DpsErrorCode error) override;
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
 

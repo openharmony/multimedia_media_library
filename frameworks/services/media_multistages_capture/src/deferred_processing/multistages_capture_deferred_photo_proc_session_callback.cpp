@@ -37,6 +37,7 @@
 #include "result_set_utils.h"
 #include "media_change_effect.h"
 #include "exif_metadata.h"
+#include "picture_adapter.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
 #endif
@@ -223,11 +224,24 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     MEDIA_INFO_LOG("MultistagesCapture yuv success photoid: %{public}s", imageId.c_str());
 }
 
+std::shared_ptr<Media::Picture> GetPictureFromPictureIntf(std::shared_ptr<CameraStandard::PictureIntf> pictureIntf)
+{
+    if (pictureIntf == nullptr) {
+        return nullptr;
+    }
+    auto pictureAdapter = reinterpret_cast<CameraStandard::PictureAdapter*>(pictureIntf.get());
+    if (pictureAdapter == nullptr) {
+        return nullptr;
+    }
+    return pictureAdapter->GetPicture();
+}
+
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(const std::string &imageId,
-    std::shared_ptr<Media::Picture> picture, uint32_t cloudImageEnhanceFlag)
+    std::shared_ptr<CameraStandard::PictureIntf> pictureIntf, uint32_t cloudImageEnhanceFlag)
 {
     MediaLibraryTracer tracer;
     tracer.Start("OnProcessImageDone " + imageId);
+    std::shared_ptr<Media::Picture> picture = GetPictureFromPictureIntf(pictureIntf);
     if (picture == nullptr || picture->GetMainPixel() == nullptr) {
         tracer.Finish();
         MEDIA_ERR_LOG("MultistagesCapture picture is null");
@@ -288,9 +302,10 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateHighQualityPictur
 
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnDeliveryLowQualityImage(const std::string &imageId,
-    std::shared_ptr<Media::Picture> picture)
+    std::shared_ptr<PictureIntf> pictureIntf)
 {
     MEDIA_INFO_LOG("MultistagesCapture photoid: %{public}s", imageId.c_str());
+    std::shared_ptr<Media::Picture> picture = GetPictureFromPictureIntf(pictureIntf);
     if (picture != nullptr && picture->GetMainPixel() != nullptr) {
         MEDIA_INFO_LOG("MultistagesCapture picture is not null");
     } else {
