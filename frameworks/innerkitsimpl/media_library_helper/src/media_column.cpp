@@ -151,6 +151,10 @@ const std::string PhotoColumn::PHOTO_DATE_DAY_FORMAT = "%Y%m%d";
 const std::string PhotoColumn::PHOTO_DETAIL_TIME_FORMAT = "%Y:%m:%d %H:%M:%S";
 
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
+const std::string PhotoColumn::TAB_OLD_PHOTOS_TABLE = "tab_old_photos";
+
+const std::string PhotoColumn::FILES_CLOUD_DIR = "/storage/cloud/files/";
+const std::string PhotoColumn::FILES_LOCAL_DIR = "/storage/media/local/files/";
 
 const std::string PhotoColumn::HIGHLIGHT_TABLE = "tab_analysis_video_label";
 const std::string PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER = "trigger_generate_thumbnail";

@@ -189,6 +189,11 @@ public:
     // table name
     static const std::string PHOTOS_TABLE EXPORT;
     static const std::string HIGHLIGHT_TABLE EXPORT;
+    static const std::string TAB_OLD_PHOTOS_TABLE EXPORT;
+
+    // path
+    static const std::string FILES_CLOUD_DIR EXPORT;
+    static const std::string FILES_LOCAL_DIR EXPORT;
 
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE EXPORT;
