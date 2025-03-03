@@ -62,8 +62,9 @@ using CreateMCEBundle = MediaEnhanceBundleHandle* (*)();
 using DestroyMCEBundle = void (*)(MediaEnhanceBundleHandle* bundle);
 using ClientLoadSA = int32_t (*)(MediaEnhanceClientHandle* client);
 using ClientIsConnected = bool (*)(MediaEnhanceClientHandle* client);
-using ClientQueryTaskState = MediaEnhanceBundleHandle* (*)(MediaEnhanceClientHandle* client, const char* taskId);
-using BundleHandleGetInt = int32_t (*)(MediaEnhanceBundleHandle* bundle, const char* key);
+using ClientQueryTaskState = MediaEnhanceBundleHandle* (*)(MediaEnhanceClientHandle* client, const char* taskId,
+                                uint32_t taskIdLen);
+using BundleHandleGetInt = int32_t (*)(MediaEnhanceBundleHandle* bundle, const char* key, uint32_t keyLen);
 
 
 static CreateMCEClient createMCEClientFunc = nullptr;
@@ -259,7 +260,7 @@ static MediaEnhanceBundleHandle* QueryTaskState(const string &photoId)
         return nullptr;
     }
     NAPI_INFO_LOG("QueryTaskState photoId: %{public}s", photoId.c_str());
-    return clientQueryTaskStateFunc(clientWrapper, photoId.c_str());
+    return clientQueryTaskStateFunc(clientWrapper, photoId.c_str(), strlen(photoId.c_str()));
 }
 
 static int32_t GetInt(MediaEnhanceBundleHandle* bundle, const char* key)
@@ -271,7 +272,7 @@ static int32_t GetInt(MediaEnhanceBundleHandle* bundle, const char* key)
         NAPI_ERR_LOG("MediaEnhanceBundle_GetInt dlsym failed. error:%{public}s", dlerror());
         return E_ERR;
     }
-    return bundleHandleGetIntFunc(bundle, key);
+    return bundleHandleGetIntFunc(bundle, key, strlen(key));
 }
 
 static void InitCloudEnhancementFunc()
