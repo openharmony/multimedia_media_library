@@ -37,6 +37,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "values_bucket.h"
+#include "picture_adapter.h"
 #define private public
 #define protected public
 #include "exif_utils.h"
@@ -738,9 +739,9 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, ProcessAndSaveHighQualityImage
 
     MultiStagesCaptureDeferredPhotoProcSessionCallback * callback =
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    shared_ptr<Media::Picture> picture = make_shared<Media::Picture>();
-    shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
-    picture->SetMainPixel(pixelMap);
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    std::shared_ptr<CameraStandard::PictureIntf> picture = std::make_shared<CameraStandard::PictureAdapter>();
+    picture->Create(surfaceBuffer);
 
     callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, true);
     callback->OnProcessImageDone(to_string(fileId), picture, false);
@@ -784,14 +785,10 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, OnDeliveryLowQualityImage_test
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
 
-    shared_ptr<Media::Picture> picture;
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    std::shared_ptr<CameraStandard::PictureIntf> picture = std::make_shared<CameraStandard::PictureAdapter>();
     callback->OnDeliveryLowQualityImage(to_string(fileId), picture);
-
-    picture = make_shared<Media::Picture>();
-    callback->OnDeliveryLowQualityImage(to_string(fileId), picture);
-
-    shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
-    picture->SetMainPixel(pixelMap);
+    picture->Create(surfaceBuffer);
     callback->OnDeliveryLowQualityImage(to_string(fileId), picture);
     callback->OnDeliveryLowQualityImage("fileId", picture);
     delete callback;
