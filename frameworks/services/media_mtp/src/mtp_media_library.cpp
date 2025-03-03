@@ -790,7 +790,7 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
 
     bool cond = (!sf::exists(from) || !sf::exists(to));
     CHECK_AND_RETURN_RET_LOG(!cond, MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
-            "MtpMediaLibrary::CopyObject handle or parent path not found");
+        "MtpMediaLibrary::CopyObject handle or parent path not found");
     CHECK_AND_RETURN_RET_LOG(sf::is_directory(to), MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
         "MtpMediaLibrary::CopyObject parent path is not dir");
     std::error_code ec;
@@ -861,7 +861,7 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
     string to = sf::path(path).parent_path().string() + "/" + get<std::string>(colValue);
     bool cond = (sf::exists(to, ec) || ec.value() != MTP_SUCCESS);
     CHECK_AND_RETURN_RET_LOG(!cond, MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
-            "MtpMediaLibrary::SetObjectPropValue rename failed, file/doc exists");
+        "MtpMediaLibrary::SetObjectPropValue rename failed, file/doc exists");
     {
         WriteLock lock(g_mutex);
         sf::rename(path, to, ec);
