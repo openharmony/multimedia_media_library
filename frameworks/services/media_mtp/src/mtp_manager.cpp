@@ -63,7 +63,7 @@ void MtpManager::Init()
         MEDIA_INFO_LOG("MtpManager Init");
         // IT管控 PC - tobasic/hwit 不启动MTP服务 start
         std::string cust = OHOS::system::GetParameter(KEY_CUST, CUST_DEFAULT);
-        bool cond = cust.find(CUST_TOBBASIC) != std::string::npos || cust.find(CUST_HWIT) != std::string::npos;
+        bool cond = (cust.find(CUST_TOBBASIC) != std::string::npos || cust.find(CUST_HWIT) != std::string::npos);
         CHECK_AND_RETURN_INFO_LOG(!cond, "MtpManager Init Return cust = [%{public}s]", cust.c_str());
         // IT管控 PC - tobasic/hwit 不启动MTP服务 end
         bool result = MtpSubscriber::Subscribe();
@@ -105,7 +105,8 @@ void MtpManager::StartMtpService(const MtpMode mode)
     bool isForeground = true;
     OHOS::ErrCode errCode = OHOS::AccountSA::OsAccountManager::IsOsAccountForeground(isForeground);
     // not current user foreground, return
-    CHECK_AND_RETURN_LOG(!(errCode == ERR_OK && !isForeground),
+    bool cond = (errCode == ERR_OK && !isForeground);
+    CHECK_AND_RETURN_LOG(!cond,
         "StartMtpService errCode = %{public}d isForeground %{public}d", errCode, isForeground);
     {
         std::unique_lock lock(mutex_);
@@ -155,7 +156,8 @@ void MtpManager::RemoveMtpParamListener()
 
 void MtpManager::OnMtpParamDisableChanged(const char *key, const char *value, void *context)
 {
-    CHECK_AND_RETURN_LOG(!(key == nullptr || value == nullptr), "OnMtpParamDisableChanged return invalid value");
+    bool cond = (key == nullptr || value == nullptr);
+    CHECK_AND_RETURN_LOG(!cond, "OnMtpParamDisableChanged return invalid value");
     MEDIA_INFO_LOG("OnMTPParamDisable, key = %{public}s, value = %{public}s", key, value);
     CHECK_AND_RETURN_INFO_LOG(strcmp(key, MTP_SERVER_DISABLE) == 0, "event key mismatch");
     MtpManager *instance = reinterpret_cast<MtpManager*>(context);
