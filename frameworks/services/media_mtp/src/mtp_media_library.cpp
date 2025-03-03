@@ -471,7 +471,7 @@ int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &conte
 
     outFd = open(realPath.c_str(), mode);
     MEDIA_INFO_LOG("MTP:file %{public}s fd %{public}d", realPath.c_str(), outFd);
-    CHECK_AND_RETURN_RET_LOG(outFd <= 0, MtpErrorUtils::SolveGetFdError(E_SUCCESS));
+    CHECK_AND_RETURN_RET(outFd <= 0, MtpErrorUtils::SolveGetFdError(E_SUCCESS));
     return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
 }
 
@@ -787,8 +787,9 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
 
-    CHECK_AND_RETURN_RET_LOG(!(!sf::exists(from) || !sf::exists(to)), MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
-        "MtpMediaLibrary::CopyObject handle or parent path not found");
+    CHECK_AND_RETURN_RET_LOG(!(!sf::exists(from) || !sf::exists(to)),
+        MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
+            "MtpMediaLibrary::CopyObject handle or parent path not found");
     CHECK_AND_RETURN_RET_LOG(sf::is_directory(to), MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
         "MtpMediaLibrary::CopyObject parent path is not dir");
     std::error_code ec;
