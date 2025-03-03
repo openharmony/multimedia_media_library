@@ -40,6 +40,7 @@ private:
 
 private:
     std::shared_ptr<MediaFuseDaemon> fuseDaemon_;
+    bool isInLinux_;
 };
 
 class MediafusePermCheckInfo {
