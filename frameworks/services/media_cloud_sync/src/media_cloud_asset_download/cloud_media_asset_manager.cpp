@@ -239,9 +239,7 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
 
 static string GetEditDataDirPath(const string &path)
 {
-    if (path.length() < ROOT_MEDIA_DIR.length()) {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(path.length() >= ROOT_MEDIA_DIR.length(), "");
     return MEDIA_EDIT_DATA_DIR + path.substr(ROOT_MEDIA_DIR.length());
 }
 
@@ -305,16 +303,12 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
 void CloudMediaAssetManager::DeleteAllCloudMediaAssetsAsync()
 {
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "Can not get asyncWorker");
+
     shared_ptr<MediaLibraryAsyncTask> deleteAsyncTask =
         make_shared<MediaLibraryAsyncTask>(DeleteAllCloudMediaAssetsOperation, nullptr);
-    if (deleteAsyncTask == nullptr) {
-        MEDIA_ERR_LOG("Can not get deleteAsyncTask");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(deleteAsyncTask != nullptr, "Can not get deleteAsyncTask");
+
     asyncWorker->AddTask(deleteAsyncTask, true);
 }
 
@@ -528,9 +522,7 @@ bool CloudMediaAssetManager::SetIsThumbnailUpdate()
 
 int32_t CloudMediaAssetManager::GetTaskStatus()
 {
-    if (operation_ == nullptr) {
-        return static_cast<int32_t>(CloudMediaAssetTaskStatus::IDLE);
-    }
+    CHECK_AND_RETURN_RET(operation_ != nullptr, static_cast<int32_t>(CloudMediaAssetTaskStatus::IDLE));
     return static_cast<int32_t>(operation_->GetTaskStatus());
 }
 

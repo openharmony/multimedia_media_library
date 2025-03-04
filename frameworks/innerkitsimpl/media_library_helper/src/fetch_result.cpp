@@ -147,9 +147,8 @@ template <class T>
 int32_t FetchResult<T>::GetCount()
 {
     int32_t count = 0;
-    if (resultset_ == nullptr || resultset_->GetRowCount(count) != NativeRdb::E_OK) {
-        return 0;
-    }
+    bool cond = (resultset_ == nullptr || resultset_->GetRowCount(count) != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
     return count < 0 ? 0 : count;
 }
 
@@ -243,22 +242,11 @@ int32_t FetchResult<T>::GetUserId()
 template <class T>
 unique_ptr<T> FetchResult<T>::GetObjectAtPosition(int32_t index)
 {
-    if (resultset_ == nullptr) {
-        MEDIA_ERR_LOG("rs is null");
-        return nullptr;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(resultset_ != nullptr, nullptr, "rs is null");
     int32_t count = GetCount();
-    if ((index < 0) || (index > (count - 1))) {
-        MEDIA_ERR_LOG("index not proper");
-        return nullptr;
-    }
-
-    if (resultset_->GoToRow(index) != 0) {
-        MEDIA_ERR_LOG("failed to go to row at index pos");
-        return nullptr;
-    }
-
+    bool cond = ((index < 0) || (index > (count - 1)));
+    CHECK_AND_RETURN_RET_LOG(!cond, nullptr, "index not proper");
+    CHECK_AND_RETURN_RET_LOG(resultset_->GoToRow(index) == 0, nullptr, "failed to go to row at index pos");
     return GetObject();
 }
 
@@ -269,7 +257,6 @@ unique_ptr<T> FetchResult<T>::GetFirstObject()
         MEDIA_DEBUG_LOG("resultset is null|first row failed");
         return nullptr;
     }
-
     return GetObject();
 }
 
@@ -430,10 +417,9 @@ void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
 template<class T>
 void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
-    if ((resultset_ == nullptr) && (resultSet == nullptr)) {
-        MEDIA_ERR_LOG("SetFileAsset fail, result is nullptr");
-        return;
-    }
+    bool cond = ((resultset_ == nullptr) && (resultSet == nullptr));
+    CHECK_AND_RETURN_LOG(!cond, "SetFileAsset fail, result is nullptr");
+
     vector<string> columnNames;
     if (resultSet != nullptr) {
         resultSet->GetAllColumnNames(columnNames);
@@ -512,11 +498,8 @@ unique_ptr<T> FetchResult<T>::GetObject()
 template <class T>
 unique_ptr<T> FetchResult<T>::GetObjectFromRdb(shared_ptr<NativeRdb::ResultSet> &resultSet, int idx)
 {
-    if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != 0) || (resultSet->GoTo(idx))) {
-        MEDIA_ERR_LOG("resultset is null|first row failed");
-        return nullptr;
-    }
-
+    bool cond = ((resultSet == nullptr) || (resultSet->GoToFirstRow() != 0) || (resultSet->GoTo(idx)));
+    CHECK_AND_RETURN_RET_LOG(!cond, nullptr, "resultset is null|first row failed");
     return GetObject(resultSet);
 }
 
