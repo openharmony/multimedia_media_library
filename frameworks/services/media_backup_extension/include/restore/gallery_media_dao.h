@@ -66,7 +66,7 @@ private:
             ON gallery_media.albumId=gallery_album.albumId \
             LEFT JOIN gallery_album AS album_v2 \
             ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
-        WHERE (local_media_id == -1) AND uniqueId is NOT NULL AND \
+        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \
@@ -185,7 +185,7 @@ private:
             ON gallery_media.albumId=gallery_album.albumId \
             LEFT JOIN gallery_album AS album_v2 \
             ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
-        WHERE (local_media_id == -1) AND uniqueId is NOT NULL AND \
+        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \

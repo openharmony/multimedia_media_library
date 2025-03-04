@@ -40,6 +40,7 @@ std::vector<AlbumMediaStatisticInfo> GalleryMediaCountStatistic::Load()
         this->GetSdCardStatInfo(),
         this->GetDuplicateStatInfo(),
         this->GetAppTwinStatInfo(),
+        this->GetOnlyHDCInfo(),
         this->GetLiveStatInfo(),
         this->GetTempInfo(),
         this->GetNotSyncInfo(),
@@ -442,6 +443,11 @@ int32_t GalleryMediaCountStatistic::QueryGalleryAppTwinDataCount()
     return BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
 }
 
+int32_t GalleryMediaCountStatistic::QueryGalleryOnlyHDCDataCount()
+{
+    return BackupDatabaseUtils::QueryInt(galleryRdb_, SQL_ONLY_HDC_META_QUERY_COUNT, CUSTOM_COUNT);
+}
+
 AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetAllStatInfo()
 {
     AlbumMediaStatisticInfo info;
@@ -735,6 +741,31 @@ AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetAppTwinStatInfo()
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
     std::string albumName = "APP_TWIN";
+    std::string lPath = "";
+    int32_t period = 0;  // 0 - BEFORE, 1 - AFTER
+    int32_t dbType = 0;  // 0 - GALLERY, 1 - MEDIA
+    info.albumName = AlbumNameInfo()
+                         .SetAlbumName(albumName)
+                         .SetLPath(lPath)
+                         .SetCostTime(costTime)
+                         .SetPeriod(period)
+                         .SetDbType(dbType)
+                         .ToString();
+    return info;
+}
+
+AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetOnlyHDCInfo()
+{
+    AlbumMediaStatisticInfo info;
+    info.sceneCode = this->sceneCode_;
+    info.taskId = this->taskId_;
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    // build the statistic info.
+    info.totalCount = this->QueryGalleryOnlyHDCDataCount();
+    // build the album name.
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t costTime = endTime - startTime;
+    std::string albumName = "ONLY_HDC";
     std::string lPath = "";
     int32_t period = 0;  // 0 - BEFORE, 1 - AFTER
     int32_t dbType = 0;  // 0 - GALLERY, 1 - MEDIA
