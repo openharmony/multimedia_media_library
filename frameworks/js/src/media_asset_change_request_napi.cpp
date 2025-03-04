@@ -2311,7 +2311,11 @@ static bool UpdateAssetProperty(MediaAssetChangeRequestAsyncContext& context, st
 {
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(uri);
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    int32_t userId = -1;
+    if (context.objectInfo != nullptr && context.objectInfo->GetFileAssetInstance() != nullptr) {
+        userId = context.objectInfo->GetFileAssetInstance()->GetUserId();
+    }
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket, userId);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
