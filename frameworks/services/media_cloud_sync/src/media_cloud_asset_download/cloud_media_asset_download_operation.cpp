@@ -68,10 +68,9 @@ std::mutex CloudMediaAssetDownloadOperation::callbackMutex_;
 std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetDownloadOperation::instance_ = nullptr;
 static const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL_HOT = 3;
 static const int32_t BATCH_DOWNLOAD_CLOUD_FILE = 10;
-static constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 static constexpr int CLOUD_MANAGER_MANAGER_ID = 5204;
-static const std::string CLOUD_DATASHARE_URI = "datashareproxy://generic.cloudstorage/cloud_sp?Proxy=true";
-static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "&key=useMobileNetworkData";
+static const std::string CLOUD_DATASHARE_URI = "datashareproxy://generic.cloudstorage";
+static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "/cloud_sp?key=useMobileNetworkData";
 static const int64_t DOWNLOAD_ID_DEFAULT = -1;
 static const std::string TOTAL_COUNT = "COUNT(1)";
 static const std::string TOTAL_SIZE = "SUM(size)";
@@ -422,12 +421,9 @@ int32_t CloudMediaAssetDownloadOperation::SetDeathRecipient()
 int32_t CloudMediaAssetDownloadOperation::DoRelativedRegister()
 {
     // register unlimit traffic status
-    auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    CHECK_AND_RETURN_RET_LOG(saMgr != nullptr, E_ERR, "Failed to get SystemAbilityManagerClient.");
-
-    OHOS::sptr<OHOS::IRemoteObject> remoteObject = saMgr->CheckSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    CHECK_AND_RETURN_RET_LOG(remoteObject != nullptr, E_ERR, "remoteObject is null.");
-    cloudHelper_ = DataShare::DataShareHelper::Creator(remoteObject, CLOUD_DATASHARE_URI);
+    CreateOptions options;
+    options.enabled_ = true;
+    cloudHelper_ = DataShare::DataShareHelper::Creator(CLOUD_DATASHARE_URI, options);
     CHECK_AND_RETURN_RET_LOG(cloudHelper_ != nullptr, E_ERR, "cloudHelper_ is null.");
 
     cloudMediaAssetObserver_ = std::make_shared<CloudMediaAssetObserver>(instance_);
