@@ -642,6 +642,12 @@ int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> 
         return E_OK;
     }
 
+    size_t videoSize = 0;
+    if (!MediaFileUtils::GetFileSize(videoPath, videoSize) || videoSize == 0) {
+        MEDIA_INFO_LOG("Video of moving photo is empty now, path: %{private}s", videoPath.c_str());
+        return E_OK;
+    }
+
     unique_ptr<Metadata> videoData = make_unique<Metadata>();
     videoData->SetMovingPhotoImagePath(data->GetFilePath());
     videoData->SetFilePath(videoPath);
