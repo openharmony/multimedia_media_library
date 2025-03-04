@@ -491,7 +491,8 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
 
 void ConvertColumnsForPortrait(SendablePhotoAlbumNapiAsyncContext *context)
 {
-    if (context == nullptr) {
+    if (context == nullptr || context->objectInfo == nullptr) {
+        NAPI_ERR_LOG("context is null or PhotoAlbumNapi is null");
         return;
     }
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
