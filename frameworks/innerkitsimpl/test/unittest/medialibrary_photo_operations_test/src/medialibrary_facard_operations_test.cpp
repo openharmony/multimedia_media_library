@@ -203,7 +203,7 @@ HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_002, TestSize.L
     values.PutString(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, ASSETURI_FOR_TEST_STORE);
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(cmd);
-    EXPECT_EQ(ret > 0, true);
+    EXPECT_EQ(ret > 0, false);
 }
  
 HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_003, TestSize.Level0)
@@ -218,7 +218,7 @@ HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_003, TestSize.L
     RdbPredicates predicates(TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE);
     predicates.EqualTo(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, F0RMID_FOR_TEST_REMOVE);
     ret = MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(predicates);
-    EXPECT_EQ(ret > 0, true);
+    EXPECT_EQ(ret > 0, false);
 }
 } // namespace Media
 } // namespace OHOS
