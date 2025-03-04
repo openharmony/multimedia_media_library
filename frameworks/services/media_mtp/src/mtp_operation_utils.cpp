@@ -131,14 +131,11 @@ uint16_t MtpOperationUtils::GetDeviceInfo(shared_ptr<PayloadData> &data, uint16_
 
 uint16_t MtpOperationUtils::GetNumObjects(shared_ptr<PayloadData> &data)
 {
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("GetNumObjects context_ is null");
-        return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL),
+        "GetNumObjects context_ is null");
 
-    if (!MtpStorageManager::GetInstance()->HasStorage(context_->storageID)) {
-        return MTP_INVALID_STORAGEID_CODE;
-    }
+    CHECK_AND_RETURN_RET(MtpStorageManager::GetInstance()->HasStorage(context_->storageID),
+        MTP_INVALID_STORAGEID_CODE);
 
     shared_ptr<GetNumObjectsData> getNumObjects = make_shared<GetNumObjectsData>();
     data = getNumObjects;
@@ -147,21 +144,12 @@ uint16_t MtpOperationUtils::GetNumObjects(shared_ptr<PayloadData> &data)
 
 uint16_t MtpOperationUtils::HasStorage(int &errorCode)
 {
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("GetObjectHandles context_ is null");
-        errorCode = MTP_ERROR_CONTEXT_IS_NULL;
-        return errorCode;
-    }
-    if (context_->sessionOpen == false) {
-        MEDIA_ERR_LOG("GetObjectHandles session not open");
-        errorCode = MTP_ERROR_SESSION_NOT_OPEN;
-        return errorCode;
-    }
-    if (!MtpStorageManager::GetInstance()->HasStorage(context_->storageID)) {
-        MEDIA_ERR_LOG("GetObjectHandles no this storage");
-        errorCode = MTP_ERROR_INVALID_STORAGE_ID;
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_ERROR_CONTEXT_IS_NULL,
+        "GetObjectHandles context_ is null");
+    CHECK_AND_RETURN_RET_LOG(context_->sessionOpen != false, MTP_ERROR_SESSION_NOT_OPEN,
+        "GetObjectHandles session not open");
+    CHECK_AND_RETURN_RET_LOG(MtpStorageManager::GetInstance()->HasStorage(context_->storageID),
+        MTP_ERROR_INVALID_STORAGE_ID, "GetObjectHandles no this storage");
     return MTP_SUCCESS;
 }
 
@@ -176,9 +164,7 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
         "mtpMedialibraryManager_ is null");
 
     uint16_t ret = HasStorage(errorCode);
-    if (ret != MTP_SUCCESS) {
-        return CheckErrorCode(ret);
-    }
+    CHECK_AND_RETURN_RET(ret == MTP_SUCCESS, CheckErrorCode(ret));
     // Determine whether the device is a Mac computer
     // WIN/MAC parent is 0, Linux parent is 0xffffffff
     // WIN set device prop, MAC/Linux do not set device prop
@@ -200,10 +186,8 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
         errorCode = isMac ? mtpMedialibraryManager_->GetAllHandles(context_, objectHandles) :
             mtpMedialibraryManager_->GetHandles(context_, objectHandles);
     }
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("GetObjectHandles GetHandles fail!");
-        return CheckErrorCode(errorCode);
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS,
+        CheckErrorCode(errorCode), "GetObjectHandles GetHandles fail!");
 
     shared_ptr<GetObjectHandlesData> getObjectHandles = make_shared<GetObjectHandlesData>();
     getObjectHandles->SetObjectHandles(objectHandles);
@@ -230,9 +214,7 @@ uint16_t MtpOperationUtils::GetObjectInfo(shared_ptr<PayloadData> &data, uint16_
         "mtpMedialibraryManager_ is null");
 
     uint16_t ret = HasStorage(errorCode);
-    if (ret != MTP_SUCCESS) {
-        return CheckErrorCode(ret);
-    }
+    CHECK_AND_RETURN_RET(errorCode == MTP_SUCCESS, CheckErrorCode(ret));
 
     shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(context_->handle);
     if (MtpManager::GetInstance().IsMtpMode()) {
@@ -240,10 +222,8 @@ uint16_t MtpOperationUtils::GetObjectInfo(shared_ptr<PayloadData> &data, uint16_
     } else {
         errorCode = mtpMedialibraryManager_->GetObjectInfo(context_, objectInfo);
     }
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("GetObjectHandles GetObjectInfo fail!");
-        return CheckErrorCode(errorCode);
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS,
+        CheckErrorCode(errorCode), "GetObjectHandles GetObjectInfo fail!");
     shared_ptr<GetObjectInfoData> getObjectInfo = make_shared<GetObjectInfoData>();
     getObjectInfo->SetObjectInfo(objectInfo);
     data = getObjectInfo;
@@ -258,11 +238,8 @@ uint16_t MtpOperationUtils::GetObjectPropDesc(shared_ptr<PayloadData> &data, uin
         return CheckErrorCode(errorCode);
     }
 
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("GetObjectPropDesc context_ is null");
-        errorCode = MTP_ERROR_CONTEXT_IS_NULL;
-        return CheckErrorCode(errorCode);
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL),
+        "GetObjectPropDesc context_ is null");
 
     data = make_shared<GetObjectPropDescData>(context_);
     errorCode = MTP_SUCCESS;
@@ -276,11 +253,8 @@ uint16_t MtpOperationUtils::GetObjectPropValue(shared_ptr<PayloadData> &data, ui
         return CheckErrorCode(errorCode);
     }
 
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("GetObjectPropValue context_ is null");
-        errorCode = MTP_ERROR_CONTEXT_IS_NULL;
-        return CheckErrorCode(errorCode);
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL),
+        "GetObjectPropValue context_ is null");
     CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
     CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
         "mtpMedialibraryManager_ is null");
@@ -348,11 +322,8 @@ uint16_t MtpOperationUtils::GetObjectPropList(shared_ptr<PayloadData> &data,
         return CheckErrorCode(errorCode);
     }
 
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("GetObjectPropList context_ is null");
-        errorCode = MTP_ERROR_CONTEXT_IS_NULL;
-        return CheckErrorCode(errorCode);
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL),
+        "GetObjectPropList context_ is null");
     CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
     CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
         "mtpMedialibraryManager_ is null");
@@ -380,9 +351,7 @@ uint16_t MtpOperationUtils::GetObjectReferences(shared_ptr<PayloadData> &data, u
     }
 
     uint16_t ret = HasStorage(errorCode);
-    if (ret != MTP_SUCCESS) {
-        return CheckErrorCode(ret);
-    }
+    CHECK_AND_RETURN_RET(ret == MTP_SUCCESS, CheckErrorCode(ret));
 
     shared_ptr<UInt32List> objectHandles = nullptr;
     shared_ptr<GetObjectReferencesData> getObjectReferences = make_shared<GetObjectReferencesData>(context_);
@@ -394,10 +363,8 @@ uint16_t MtpOperationUtils::GetObjectReferences(shared_ptr<PayloadData> &data, u
 
 uint16_t MtpOperationUtils::SetObjectReferences(shared_ptr<PayloadData> &data)
 {
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("SetObjectReferences context_ is null");
-        return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL),
+        "SetObjectReferences context_ is null");
 
     uint16_t result = MTP_INVALID_OBJECTPROP_FORMAT_CODE;
     shared_ptr<SetObjectReferencesData> setObjectReferences = make_shared<SetObjectReferencesData>(context_);
@@ -473,10 +440,8 @@ void MtpOperationUtils::ModifyObjectInfo()
     std::istringstream modified(context_->modified);
     created >> std::get_time(&tmCreated, "%Y%m%dT%H%M%S");
     modified >> std::get_time(&tmModified, "%Y%m%dT%H%M%S");
-    if (created.fail() || modified.fail()) {
-        MEDIA_ERR_LOG("get_time failed");
-        return;
-    }
+    bool cond = (created.fail() || modified.fail());
+    CHECK_AND_RETURN_LOG(!cond, "get_time failed");
 
     std::string path;
     if (MtpManager::GetInstance().IsMtpMode()) {
@@ -563,9 +528,8 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
         "mtpMedialibraryManager_ is null");
 
     int32_t errorCode = context_->mtpDriver->ReceiveObj(object);
-    if (errorCode != RECEVIE_OBJECT_CANCELLED && errorCode != RECEVIE_OBJECT_FAILED) {
-        return errorCode;
-    }
+    bool cond = (errorCode != RECEVIE_OBJECT_CANCELLED && errorCode != RECEVIE_OBJECT_FAILED);
+    CHECK_AND_RETURN_RET(!cond, errorCode);
 
     PreDealFd(errorCode != MTP_SUCCESS, fd);
     string filePath;
@@ -579,9 +543,7 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
     } else {
         mtpMedialibraryManager_->DeleteCanceledObject(context_->handle);
     }
-    if (errorCode == RECEVIE_OBJECT_FAILED) {
-        return MTP_ERROR_TRANSFER_FAILED;
-    }
+    CHECK_AND_RETURN_RET(errorCode != RECEVIE_OBJECT_FAILED, MTP_ERROR_TRANSFER_FAILED);
     return MTP_ERROR_TRANSFER_CANCELLED;
 }
 
@@ -594,9 +556,7 @@ void MtpOperationUtils::PreDealFd(const bool deal, const int fd)
     CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr, "mtpMedialibraryManager_ is null");
     int32_t ret = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
         mtpMedialibraryManager_->CloseFdForGet(context_, fd);
-    if (ret != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("DealFd CloseFd fail!");
-    }
+    CHECK_AND_PRINT_LOG(ret == MTP_SUCCESS, "DealFd CloseFd fail!");
 }
 
 uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode)
@@ -612,9 +572,7 @@ uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t con
     }
 
     uint16_t ret = HasStorage(errorCode);
-    if (ret != MTP_SUCCESS) {
-        return CheckErrorCode(ret);
-    }
+    CHECK_AND_RETURN_RET(ret == MTP_SUCCESS, CheckErrorCode(ret));
 
     shared_ptr<UInt8List> thumb = make_shared<UInt8List>();
     errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetThumb(context_, thumb) :
@@ -680,10 +638,8 @@ uint16_t MtpOperationUtils::GetRespCommonData(shared_ptr<PayloadData> &data, int
 
 uint16_t MtpOperationUtils::GetPartialObject(shared_ptr<PayloadData> &data)
 {
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("context_ is null");
-        return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL),
+        "GetPartialObject context_ is null");
 
     shared_ptr<GetPartialObjectData> getPartialObject = make_shared<GetPartialObjectData>(context_);
     getPartialObject->SetLength(context_->length);
@@ -693,10 +649,8 @@ uint16_t MtpOperationUtils::GetPartialObject(shared_ptr<PayloadData> &data)
 
 uint16_t MtpOperationUtils::GetObjectPropsSupported(shared_ptr<PayloadData> &data)
 {
-    if (context_ == nullptr) {
-        MEDIA_ERR_LOG("context_ is null");
-        return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
-    }
+    CHECK_AND_RETURN_RET_LOG(context_ != nullptr, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL),
+        "GetObjectPropsSupported context_ is null");
 
     data = make_shared<GetObjectPropsSupportedData>(context_);
     return MTP_OK_CODE;
@@ -720,10 +674,8 @@ uint16_t MtpOperationUtils::DeleteObject(shared_ptr<PayloadData> &data, int &err
 
 uint16_t MtpOperationUtils::MoveObject(shared_ptr<PayloadData> &data, int &errorCode)
 {
-    if (context_ == nullptr || mtpMediaLibrary_ == nullptr || mtpMedialibraryManager_ == nullptr) {
-        MEDIA_ERR_LOG("param is null");
-        return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
-    }
+    bool cond = (context_ == nullptr || mtpMediaLibrary_ == nullptr || mtpMedialibraryManager_ == nullptr);
+    CHECK_AND_RETURN_RET_LOG(!cond, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL), "param is null");
 
     uint32_t repeatHandle = 0;
     if (MtpManager::GetInstance().IsMtpMode()) {
@@ -774,11 +726,8 @@ uint16_t MtpOperationUtils::GetStorageIDs(shared_ptr<PayloadData> &data, uint16_
         return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
     }
 
-    if (context_->sessionOpen == false) {
-        MEDIA_ERR_LOG("session isn't open");
-        errorCode = MTP_ERROR_SESSION_NOT_OPEN;
-        return CheckErrorCode(errorCode);
-    }
+    CHECK_AND_RETURN_RET_LOG(context_->sessionOpen != false, CheckErrorCode(MTP_ERROR_SESSION_NOT_OPEN),
+        "session isn't open");
     if (MtpManager::GetInstance().IsMtpMode()) {
         MtpStoreObserver::AttachContext(context_);
         mtpMediaLibrary_->GetStorageIds();
@@ -812,18 +761,12 @@ uint16_t MtpOperationUtils::GetStorageInfo(shared_ptr<PayloadData> &data, uint16
         return CheckErrorCode(errorCode);
     }
 
-    if (context_->sessionOpen == false) {
-        MEDIA_ERR_LOG("session isn't open error");
-        errorCode = MTP_ERROR_SESSION_NOT_OPEN;
-        return CheckErrorCode(errorCode);
-    }
+    CHECK_AND_RETURN_RET_LOG(context_->sessionOpen != false, CheckErrorCode(MTP_ERROR_SESSION_NOT_OPEN),
+        "session isn't open error");
 
     shared_ptr<Storage> storage = MtpStorageManager::GetInstance()->GetStorage(context_->storageInfoID);
-    if (storage == nullptr) {
-        MEDIA_ERR_LOG("invalid storage id error");
-        errorCode = MTP_ERROR_INVALID_STORAGE_ID;
-        return CheckErrorCode(errorCode);
-    }
+    CHECK_AND_RETURN_RET_LOG(storage != nullptr, CheckErrorCode(MTP_ERROR_INVALID_STORAGE_ID),
+        "invalid storage id error");
     shared_ptr<GetStorageInfoData> getStorageInfoData = make_shared<GetStorageInfoData>();
     getStorageInfoData->SetStorage(storage);
     data = getStorageInfoData;
@@ -992,9 +935,7 @@ uint16_t MtpOperationUtils::SetDevicePropValueResp(shared_ptr<PayloadData> &data
 
 uint16_t MtpOperationUtils::ResetDevicePropResp(shared_ptr<PayloadData> &data)
 {
-    if (!SetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME)) {
-        MEDIA_ERR_LOG("SetPropertyInner fail");
-    }
+    CHECK_AND_PRINT_LOG(SetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME), "SetPropertyInner fail");
     data = make_shared<RespCommonData>();
     return MTP_OK_CODE;
 }
@@ -1054,9 +995,8 @@ bool MtpOperationUtils::TryAddExternalStorage(const std::string &fsUuid, uint32_
 bool MtpOperationUtils::TryRemoveExternalStorage(const std::string &fsUuid, uint32_t &storageId)
 {
     CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, false, "mtpMediaLibrary_ is null");
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        return mtpMediaLibrary_->TryRemoveExternalStorage(fsUuid, storageId);
-    }
+    CHECK_AND_RETURN_RET(!MtpManager::GetInstance().IsMtpMode(),
+        mtpMediaLibrary_->TryRemoveExternalStorage(fsUuid, storageId));
     return false;
 }
 
@@ -1065,9 +1005,8 @@ int32_t MtpOperationUtils::GetBatteryLevel()
 #ifdef HAS_BATTERY_MANAGER_PART
     auto &batterySrvClient = PowerMgr::BatterySrvClient::GetInstance();
     int32_t capacity = batterySrvClient.GetCapacity();
-    if (capacity > MAX_BATTERY || capacity < EMPTY_BATTERY) {
-        return ERROR_BATTERY;
-    }
+    bool cond = (capacity > MAX_BATTERY || capacity < EMPTY_BATTERY);
+    CHECK_AND_RETURN_RET(!cond, ERROR_BATTERY);
     return capacity;
 #else
     return EMPTY_BATTERY;
