@@ -1049,58 +1049,38 @@ int64_t MediaLibraryManager::GetSandboxMovingPhotoTime(const string& uri)
     AppFileService::ModuleFileUri::FileUri imageFileUri(uris[MOVING_PHOTO_IMAGE_POS]);
     string imageRealPath = imageFileUri.GetRealPath();
     struct stat imageStatInfo {};
-    if (stat(imageRealPath.c_str(), &imageStatInfo) != 0) {
-        MEDIA_ERR_LOG("stat image error");
-        return E_ERR;
-    }
-    int64_t imageDateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(imageStatInfo.st_mtim));
+    CHECK_AND_RETURN_RET_LOG(stat(imageRealPath.c_str(), &imageStatInfo) == 0, E_ERR, "stat image error");
 
+    int64_t imageDateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(imageStatInfo.st_mtim));
     AppFileService::ModuleFileUri::FileUri videoFileUri(uris[MOVING_PHOTO_VIDEO_POS]);
     string videoRealPath = videoFileUri.GetRealPath();
     struct stat videoStatInfo {};
-    if (stat(videoRealPath.c_str(), &videoStatInfo) != 0) {
-        MEDIA_ERR_LOG("stat video error");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(stat(videoRealPath.c_str(), &videoStatInfo) == 0, E_ERR, "stat video error");
     int64_t videoDateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(videoStatInfo.st_mtim));
     return imageDateModified >= videoDateModified ? imageDateModified : videoDateModified;
 }
 
 int64_t MediaLibraryManager::GetMovingPhotoDateModified(const string &uri)
 {
-    if (uri.empty()) {
-        MEDIA_ERR_LOG("Failed to check empty uri");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_ERR, "Failed to check empty uri");
     if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
         return GetSandboxMovingPhotoTime(uri);
     }
 
-    if (!CheckPhotoUri(uri)) {
-        MEDIA_ERR_LOG("Failed to check invalid uri: %{public}s", uri.c_str());
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(uri), E_ERR, "Failed to check invalid uri: %{public}s", uri.c_str());
     Uri queryUri(PAH_QUERY_PHOTO);
     DataSharePredicates predicates;
     string fileId = MediaFileUtils::GetIdFromUri(uri);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     DatashareBusinessError businessError;
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("sDataShareHelper_ is null");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(sDataShareHelper_ != nullptr, E_ERR, "sDataShareHelper_ is null");
+
     vector<string> columns = {
         MediaColumn::MEDIA_DATE_MODIFIED,
     };
     auto queryResultSet = sDataShareHelper_->Query(queryUri, predicates, columns, &businessError);
-    if (queryResultSet == nullptr) {
-        MEDIA_ERR_LOG("queryResultSet is null");
-        return E_ERR;
-    }
-    if (queryResultSet->GoToNextRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to GoToNextRow");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_ERR, "queryResultSet is null");
+    CHECK_AND_RETURN_RET_LOG(queryResultSet->GoToNextRow() == NativeRdb::E_OK, E_ERR, "Failed to GoToNextRow");
     return GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, queryResultSet);
 }
 
@@ -1114,10 +1094,8 @@ static int32_t UrisSourceMediaTypeClassify(const vector<string> &urisSource,
                 tableType = static_cast<int32_t>(iter.second);
             }
         }
-        if (tableType == -1) {
-            MEDIA_ERR_LOG("Uri invalid error, uri:%{private}s", uri.c_str());
-            return E_ERR;
-        }
+
+        CHECK_AND_RETURN_RET_LOG(tableType != -1, E_ERR, "Uri invalid error, uri:%{private}s", uri.c_str());
         string fileId = MediaFileUtils::GetIdFromUri(uri);
         if (tableType == static_cast<int32_t>(TableType::TYPE_PHOTOS)) {
             photoFileIds.emplace_back(fileId);
@@ -1279,18 +1257,12 @@ static int32_t SetCheckPhotoUriPermissionResult(const vector<string> &urisSource
 
 static int32_t CheckInputParameters(const vector<string> &urisSource, uint32_t flag)
 {
-    if (urisSource.empty()) {
-        MEDIA_ERR_LOG("Media Uri list is empty");
-        return E_ERR;
-    }
-    if (urisSource.size() > URI_MAX_SIZE) {
-        MEDIA_ERR_LOG("Uri list is exceed one Thousand, current list size: %{public}d", (int)urisSource.size());
-        return E_ERR;
-    }
-    if (flag == 0 || flag > URI_PERMISSION_FLAG_READWRITE) {
-        MEDIA_ERR_LOG("Flag is invalid, current flag is: %{public}d", flag);
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(!urisSource.empty(), E_ERR, "Media Uri list is empty");
+    CHECK_AND_RETURN_RET_LOG(urisSource.size() <= URI_MAX_SIZE, E_ERR,
+        "Uri list is exceed one Thousand, current list size: %{public}d", (int)urisSource.size());
+
+    bool cond = (flag == 0 || flag > URI_PERMISSION_FLAG_READWRITE);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Flag is invalid, current flag is: %{public}d", flag);
     return E_SUCCESS;
 }
 
@@ -1340,21 +1312,18 @@ int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const 
     PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye)
 {
     vector<DataShareValuesBucket> valueSet;
-    if ((uris.empty()) || (uris.size() > URI_MAX_SIZE)) {
-        MEDIA_ERR_LOG("Media Uri list error, please check!");
-        return E_ERR;
-    }
-    if (photoPermissionType != PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO &&
+    bool cond = ((uris.empty()) || (uris.size() > URI_MAX_SIZE));
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Media Uri list error, please check!");
+
+    cond = (photoPermissionType != PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO &&
         photoPermissionType != PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO &&
-        photoPermissionType != PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO) {
-        MEDIA_ERR_LOG("photoPermissionType error, please check param!");
-        return E_ERR;
-    }
-    if (hideSensitiveTpye < HideSensitiveType::ALL_DESENSITIZE ||
-        hideSensitiveTpye > HideSensitiveType::NO_DESENSITIZE) {
-        MEDIA_ERR_LOG("HideSensitiveType error, please check param!");
-        return E_ERR;
-    }
+        photoPermissionType != PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "photoPermissionType error, please check param!");
+
+    cond = (hideSensitiveTpye < HideSensitiveType::ALL_DESENSITIZE ||
+        hideSensitiveTpye > HideSensitiveType::NO_DESENSITIZE);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "HideSensitiveType error, please check param!");
+
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
         DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
     CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR, "dataShareHelper is nullptr");
@@ -1366,10 +1335,8 @@ int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const 
                 tableType = static_cast<int32_t>(iter.second);
             }
         }
-        if (tableType == -1) {
-            MEDIA_ERR_LOG("Uri invalid error, uri:%{private}s", uri.c_str());
-            return E_ERR;
-        }
+
+        CHECK_AND_RETURN_RET_LOG(tableType != -1, E_ERR, "Uri invalid error, uri:%{private}s", uri.c_str());
         string fileId = MediaFileUtils::GetIdFromUri(uri);
         DataShareValuesBucket valuesBucket;
         valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);

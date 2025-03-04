@@ -49,9 +49,8 @@ static bool IsCloudInsertTaskPriorityHigh()
 
 static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 {
-    if (cloudNotifyInfo.empty()) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(!cloudNotifyInfo.empty(), false);
+
     for (char const& ch : cloudNotifyInfo) {
         if (isdigit(ch) == 0) {
             return false;
