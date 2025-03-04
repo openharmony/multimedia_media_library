@@ -2722,7 +2722,7 @@ int64_t MediaLibraryPhotoOperations::CloneSingleAsset(MediaLibraryCommand &cmd)
         return fileId;
     }
     string title;
-    GetStringFromValuesBucket(values, MediaColumn::MEDIA_NAME, title);
+    GetStringFromValuesBucket(values, MediaColumn::MEDIA_TITLE, title);
     return MediaLibraryAlbumFusionUtils::CloneSingleAsset(static_cast<int64_t>(fileId), title);
 }
 
