@@ -83,7 +83,7 @@ static string GetDurationTag(int64_t coverPosition, const string& data = "")
         MEDIA_WARN_LOG("coverPosition data err %{public}" PRId64, coverPosition);
     }
     string buffer;
-    if (data.size() != 0) {
+    if (data.size() != 0 && !MediaFileUtils::StartsWith(data, "0:0")) {
         buffer += data;
     } else {
         if (frame < AUTO_PLAY_DURATION_MS) {
