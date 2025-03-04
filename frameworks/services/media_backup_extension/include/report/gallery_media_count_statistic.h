@@ -257,10 +257,10 @@ private:
                     WHERE type = 1 \
                 ) \
             ) AND \
-            (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
+            (_size > 0 OR (_size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (storage_id IN (0, 65537) ) \
         ORDER BY _id ASC ;";
 };
 }  // namespace OHOS::Media
