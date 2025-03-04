@@ -190,8 +190,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode,
     int64_t dataHandlerRef = asyncContext->dataHandler;
     AssetHandler *assetHandler = new AssetHandler(asyncContext->photoId, asyncContext->requestId,
         asyncContext->photoUri, dataHandlerRef, asyncContext->returnDataType);
-    if (assetHandler == nullptr)
-    {
+    if (assetHandler == nullptr) {
         LOGE("assetHandler is nullptr");
         return nullptr;
     }
@@ -704,8 +703,7 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         std::map<std::string, AssetHandler *> assetHandlers = inProcessUriMap[uriString];
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
-            if (assetHandler == nullptr) 
-            {
+            if (assetHandler == nullptr) {
                 continue;
             }
             assetHandler->photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
