@@ -56,6 +56,7 @@ private:
     int32_t QueryGallerySdCardCount(SearchCondition searchCondition);
     bool HasLowQualityImage();
     int32_t QueryGalleryAppTwinDataCount();
+    int32_t QueryGalleryOnlyHDCDataCount();
     int32_t QueryAlbumAllVideoCount(SearchCondition searchCondition);
     std::vector<AlbumStatisticInfo> QueryAlbumCountByName(
         const std::string &albumName, SearchCondition searchCondition);
@@ -71,6 +72,7 @@ private:
     AlbumMediaStatisticInfo GetSdCardStatInfo();
     AlbumMediaStatisticInfo GetDuplicateStatInfo();
     AlbumMediaStatisticInfo GetAppTwinStatInfo();
+    AlbumMediaStatisticInfo GetOnlyHDCInfo();
     AlbumMediaStatisticInfo GetImageAlbumInfo();
     AlbumMediaStatisticInfo GetFavoriteAlbumStatInfo();
     AlbumMediaStatisticInfo GetTrashedAlbumStatInfo();
@@ -240,6 +242,26 @@ private:
         SELECT COUNT(1) AS count \
         FROM gallery_media \
         WHERE local_media_id = -3;";
+    const std::string SQL_ONLY_HDC_META_QUERY_COUNT = "\
+        SELECT COUNT(1) AS count \
+        FROM gallery_media \
+            LEFT JOIN gallery_album \
+            ON gallery_media.albumId=gallery_album.albumId \
+            LEFT JOIN gallery_album AS album_v2 \
+            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
+        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') = '' AND \
+            (relative_bucket_id IS NULL OR \
+                relative_bucket_id NOT IN ( \
+                    SELECT DISTINCT relative_bucket_id \
+                    FROM garbage_album \
+                    WHERE type = 1 \
+                ) \
+            ) AND \
+            (_size > 0 OR (_size = 0 AND photo_quality = 0)) AND \
+            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+            COALESCE(_data, '') <> '' AND \
+            (storage_id IN (0, 65537) ) \
+        ORDER BY _id ASC ;";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BACKUP_GALLERY_MEDIA_COUNT_STATISTIC_H
