@@ -64,6 +64,7 @@ struct RetProgressValue {
     int32_t progress;
     int32_t type;
     std::string errorMsg;
+    RetProgressValue() : progress(0), type(0), errorMsg("") {}
 };
 
 struct ProgressHandler {
