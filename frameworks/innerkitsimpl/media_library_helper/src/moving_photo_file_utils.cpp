@@ -141,7 +141,8 @@ static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
         return E_ERR;
     }
     char buffer[BUFFER_LENGTH];
-    ssize_t bytesRead, bytesWritten;
+    ssize_t bytesRead = 0;
+    ssize_t bytesWritten = 0;
     while ((bytesRead = read(srcFd.Get(), buffer, BUFFER_LENGTH)) > 0) {
         bytesWritten = write(destFd.Get(), buffer, bytesRead);
         if (bytesWritten != bytesRead) {
