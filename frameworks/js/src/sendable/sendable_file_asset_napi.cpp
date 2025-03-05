@@ -99,6 +99,7 @@ static const std::string MEDIA_FILEMODE = "mode";
 static const std::string ANALYSIS_NO_RESULTS = "[]";
 static const std::string ANALYSIS_INIT_VALUE = "0";
 static const std::string ANALYSIS_STATUS_ANALYZED = "Analyzed, no results";
+std::mutex SendableFileAssetNapi::mutex_;
 
 thread_local FileAsset *SendableFileAssetNapi::sFileAsset_ = nullptr;
 shared_ptr<ThumbnailManager> SendableFileAssetNapi::thumbnailManager_ = nullptr;
@@ -120,6 +121,7 @@ void SendableFileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeOb
 {
     SendableFileAssetNapi *fileAssetObj = reinterpret_cast<SendableFileAssetNapi*>(nativeObject);
     if (fileAssetObj != nullptr) {
+        lock_guard<mutex> lockGuard(mutex_);
         delete fileAssetObj;
         fileAssetObj = nullptr;
     }
