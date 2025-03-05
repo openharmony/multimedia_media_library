@@ -165,6 +165,7 @@ private:
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local napi_ref photoAccessHelperConstructor_;
     static thread_local std::shared_ptr<FileAsset> sFileAsset_;
+    static std::mutex mutex_;
     std::shared_ptr<FileAsset> fileAssetPtr = nullptr;
     static std::shared_ptr<ThumbnailManager> thumbnailManager_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
