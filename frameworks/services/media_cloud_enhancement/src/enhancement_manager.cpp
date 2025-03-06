@@ -260,7 +260,7 @@ void EnhancementManager::InitPhotosSettingsMonitor()
     isCellularNetConnected_ = MedialibrarySubscriber::IsCellularNetConnected();
     shouldAddWaterMark_ = SettingsMonitor::QueryPhotosWaterMark();
     photosAutoOption_ = SettingsMonitor::QueryPhotosAutoOption();
-    HandleAutoAddOperation();
+    HandleAutoAddOperation(true);
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
 #endif
@@ -596,7 +596,7 @@ bool EnhancementManager::IsAddOperationEnabled(int32_t triggerMode)
     return false;
 }
 
-int32_t EnhancementManager::HandleAutoAddOperation()
+int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
 {
     MEDIA_INFO_LOG("HandleAutoAddOperation");
     if (!IsAutoTaskEnabled()) {
@@ -620,7 +620,7 @@ int32_t EnhancementManager::HandleAutoAddOperation()
         int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
         MEDIA_INFO_LOG("fileId: %{public}d, photoId: %{public}s, ceAvailable: %{public}d",
             fileId, photoId.c_str(), ceAvailable);
-        if (EnhancementTaskManager::InProcessingTask(photoId)) {
+        if (!isReboot && EnhancementTaskManager::InProcessingTask(photoId)) {
             MEDIA_INFO_LOG("cloud enhancement task in cache is processing, photoId: %{public}s", photoId.c_str());
             errCode = E_ERR;
             continue;
@@ -1011,12 +1011,9 @@ shared_ptr<NativeRdb::ResultSet> EnhancementManager::HandleGetPairOperation(Medi
 
 int32_t EnhancementManager::HandleStateChangedOperation(const bool isCameraIdle)
 {
+#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     CHECK_AND_RETURN_RET(isCameraIdle_ != isCameraIdle, E_OK);
     isCameraIdle_ = isCameraIdle;
-    bool cond = ((!isWifiConnected_ && !isCellularNetConnected_) || (photosAutoOption_ == PHOTO_OPTION_CLOSE));
-    CHECK_AND_RETURN_RET_LOG(!cond, E_OK, "HandleStateChangedOperation option is not allowed");
-
-#ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     if (isCameraIdle_) {
         HandleResumeAllOperation();
         HandleAutoAddOperation();
