@@ -60,11 +60,7 @@ int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::UpdateVideoQuality(
 void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(const std::string& videoId,
     const sptr<IPCFileDescriptor> ipcFd)
 {
-    if (videoId.empty()) {
-        MEDIA_ERR_LOG("OnProcessVideoDone, videoId is empty");
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(!videoId.empty(), "OnProcessVideoDone, videoId is empty");
     MEDIA_INFO_LOG("OnProcessVideoDone, videoId: %{public}s", videoId.c_str());
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
