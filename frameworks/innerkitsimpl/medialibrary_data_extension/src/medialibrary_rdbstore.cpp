@@ -467,6 +467,16 @@ void MediaLibraryRdbStore::AddAlbumIndex(const shared_ptr<MediaLibraryRdbStore> 
     MEDIA_INFO_LOG("end add album index");
 }
 
+void MediaLibraryRdbStore::UpdateLocationKnowledgldx(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_LOCATION_KNOWLEDG_INDEX,
+        PhotoColumn::ADD_LOCATION_KNOWLEDG_INDEX,
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end update location knowledg index");
+}
+
 void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
