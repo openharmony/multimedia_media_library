@@ -6002,6 +6002,9 @@ static napi_status ParseUpdateGalleryFormInfoOption(napi_env env, napi_value arg
     result = napi_get_value_string_utf8(env, formIdValue, formIdBuffer, ARG_BUF_SIZE, &formIdLength);
     CHECK_COND_RET(result == napi_ok, result, "failed to get formId string");
     std::string formId = std::string(formIdBuffer);
+    if (CheckFormId(formId) != napi_ok) {
+        return napi_invalid_arg;
+    }
     context.formId = formId;
  
     bool urisPresent = false;
@@ -6020,7 +6023,10 @@ static napi_status ParseUpdateGalleryFormInfoOption(napi_env env, napi_value arg
     uint32_t arrayLength = 0;
     result = napi_get_array_length(env, urisValue, &arrayLength);
     CHECK_COND_RET(result == napi_ok, result, "failed to get array length");
- 
+    if (arrayLength == 0) {
+        return napi_invalid_arg;
+    }
+    
     for (uint32_t i = 0; i < arrayLength; ++i) {
         napi_value uriValue;
         result = napi_get_element(env, urisValue, i, &uriValue);
@@ -6061,7 +6067,10 @@ static napi_status ParseSaveGalleryFormInfoOption(napi_env env, napi_value arg, 
     CHECK_COND_RET(result == napi_ok, result, "failed to get formId string");
  
     std::string formId = std::string(formIdBuffer);
- 
+    if (CheckFormId(formId) != napi_ok) {
+        return napi_invalid_arg;
+    }
+    
     bool urisPresent = false;
     result = napi_has_named_property(env, arg, assetUrisKey.c_str(), &urisPresent);
     CHECK_COND_RET(result == napi_ok, result, "failed to check uris property");
@@ -6081,7 +6090,10 @@ static napi_status ParseSaveGalleryFormInfoOption(napi_env env, napi_value arg, 
     uint32_t arrayLength = 0;
     result = napi_get_array_length(env, urisValue, &arrayLength);
     CHECK_COND_RET(result == napi_ok, result, "failed to get array length");
- 
+    if (arrayLength == 0) {
+        return napi_invalid_arg;
+    }
+
     for (uint32_t i = 0; i < arrayLength; ++i) {
         napi_value uriValue;
         result = napi_get_element(env, urisValue, i, &uriValue);
