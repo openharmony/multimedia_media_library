@@ -471,8 +471,8 @@ void MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(const shared_ptr<MediaLibr
 {
     MEDIA_INFO_LOG("start update location knowledg index");
     const vector<string> sqls = {
-        PhotoColumn::DROP_LOCATION_KNOWLEDGE_INDEX,
-        PhotoColumn::ADD_LOCATION_KNOWLEDGE_INDEX,
+        DROP_KNOWLEDGE_INDEX,
+        CREATE_NEW_KNOWLEDGE_INDEX,
     };
     ExecSqls(sqls, *store->GetRaw().get());
     MEDIA_INFO_LOG("end update location knowledg index");
