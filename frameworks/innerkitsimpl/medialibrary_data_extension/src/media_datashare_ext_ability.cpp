@@ -660,6 +660,7 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string 
         predicates.And()->EqualTo("file_id", fileId);
         predicates.And()->EqualTo("owner_appid", clientAppId);
         auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+        CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, ret, "queryResultSet is nullptr");
         auto count = 0;
         queryResultSet->GetRowCount(count);
         if (count != 0) {
