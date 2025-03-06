@@ -464,7 +464,7 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
     }
 
      if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX) {
-        MediaLibraryRdbStore::UpdateLocationKnowledgldx(rdbStore);
+        MediaLibraryRdbStore::UpdateLocationKnowledgIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX);
     }   
 
