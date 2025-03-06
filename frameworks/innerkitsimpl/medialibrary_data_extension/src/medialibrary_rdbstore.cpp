@@ -467,8 +467,9 @@ void MediaLibraryRdbStore::AddAlbumIndex(const shared_ptr<MediaLibraryRdbStore> 
     MEDIA_INFO_LOG("end add album index");
 }
 
-void MediaLibraryRdbStore::UpdateLocationKnowledgldx(const shared_ptr<MediaLibraryRdbStore> store)
+void MediaLibraryRdbStore::UpdateLocationKnowledgIdx(const shared_ptr<MediaLibraryRdbStore> store)
 {
+    MEDIA_INFO_LOG("start update location knowledge index");
     const vector<string> sqls = {
         PhotoColumn::DROP_LOCATION_KNOWLEDG_INDEX,
         PhotoColumn::ADD_LOCATION_KNOWLEDG_INDEX,
