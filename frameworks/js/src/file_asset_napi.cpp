@@ -1889,8 +1889,8 @@ static bool GetNapiObjectFromNapiObject(napi_env env, napi_value configObj, std:
 
 static napi_status CheckType(int32_t &type)
 {
-    const int LCD_TYPE = 1;
-    const int THM_TYPE = 2;
+    const int lcdType = 1;
+    const int thmType = 2;
 
     if (type == LCD_TYPE || type == THM_TYPE) {
         return napi_ok;
