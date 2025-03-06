@@ -504,11 +504,11 @@ const std::string PhotoColumn::UPDATE_LCD_STATUS_NOT_UPLOADED =
                         " = 0 " + " WHERE " + PhotoColumn::PHOTO_DIRTY + " = 1; END;";
 
 const std::string PhotoColumn::DROP_LOCATION_KNOWLEDG_INDEX = BaseColumn::DropIndex() +
-                        PhotoColumn::LOCATION_KNOWLEDG_INDEX;
+    PhotoColumn::LOCATION_KNOWLEDG_INDEX;
 
 const std::string PhotoColumn::ADD_LOCATION_KNOWLEDG_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " +
-                        PhotoColumn::LOCATION_KNOWLEDG_INDEX + " ON " + PhotoColumn::GEO_KNOWLEDGE_TABLE +
-                        " (" + PhotoColumn::FILE_ID + "," + PhotoColumn::LANGUAGE + ")";
+    PhotoColumn::LOCATION_KNOWLEDG_INDEX + " ON " + PhotoColumn::GEO_KNOWLEDGE_TABLE +
+    " (" + PhotoColumn::FILE_ID + "," + PhotoColumn::LANGUAGE + ")";
 
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
