@@ -26,7 +26,6 @@ class CloneRestoreClassify {
 public:
     void Init(int32_t sceneCode, const std::string &taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
-    void RestoreClassifyInfos();
     void RestoreMaps(std::vector<FileInfo> &fileInfos);
     void RestoreVideoMaps(std::vector<FileInfo> &fileInfos);
     void ReportClassifyRestoreTask();
@@ -42,7 +41,8 @@ public:
 private:
     struct ClassifyCloneInfo {
         std::optional<int64_t> id;
-        std::optional<int64_t> fileId;
+        std::optional<int64_t> fileIdOld;
+        std::optional<int64_t> fileIdNew;
         std::optional<int64_t> categoryId;
         std::optional<std::string> subLabel;
         std::optional<double> prob;
@@ -54,7 +54,8 @@ private:
     };
     struct ClassifyVideoCloneInfo {
         std::optional<int64_t> id;
-        std::optional<int64_t> fileId;
+        std::optional<int64_t> fileIdOld;
+        std::optional<int64_t> fileIdNew;
         std::optional<std::string> categoryId;
         std::optional<double> confidenceProbability;
         std::optional<std::string> subCategory;
@@ -70,19 +71,24 @@ private:
         std::optional<int64_t> triggerGenerateThumbnail;
     };
 
-    void GetClassifyInfos(std::shared_ptr<NativeRdb::RdbStore> rdb,
-        std::vector<ClassifyCloneInfo> &classifyInfo);
-    void GetClassifyVideoInfos(std::shared_ptr<NativeRdb::RdbStore> rdb,
-        std::vector<ClassifyVideoCloneInfo> &classifyVideoInfo);
-    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo);
-    void UpdateVideoMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo);
+    void GetClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfo,
+        std::vector<FileInfo> &fileInfos, int32_t offset);
+    void GetClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfo,
+        std::vector<FileInfo> &fileInfos, int32_t offset);
+    void DeduplicateClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfos,
+        std::vector<FileInfo> &fileInfos);
+    void DeduplicateClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos,
+        std::vector<FileInfo> &fileInfos);
+    void InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &classifyInfos, std::vector<FileInfo> &fileInfos);
+    void InsertClassifyVideoAlbums(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos,
+        std::vector<FileInfo> &fileInfos);
 
     void GetClassifyInfo(ClassifyCloneInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    void GetMapInsertValue(NativeRdb::ValuesBucket &value, std::vector<ClassifyCloneInfo>::iterator it,
-        const std::unordered_set<std::string> &intersection, int32_t fileId);
+    void GetMapInsertValue(NativeRdb::ValuesBucket &value, ClassifyCloneInfo info,
+        const std::unordered_set<std::string> &intersection);
     void GetClassifyVideoInfo(ClassifyVideoCloneInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    void GetVideoMapInsertValue(NativeRdb::ValuesBucket &value, std::vector<ClassifyVideoCloneInfo>::iterator it,
-        const std::unordered_set<std::string> &intersection, int32_t fileId);
+    void GetVideoMapInsertValue(NativeRdb::ValuesBucket &value, ClassifyVideoCloneInfo info,
+        const std::unordered_set<std::string> &intersection);
 
     bool CheckTableColumns(const std::string& tableName, std::unordered_map<std::string, std::string>& columns);
     std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
@@ -94,10 +100,6 @@ private:
     std::string taskId_;
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
-    std::vector<ClassifyCloneInfo> classifyInfos_;
-    std::vector<ClassifyCloneInfo> dstClassifyInfos_;
-    std::vector<ClassifyVideoCloneInfo> classifyVideoInfos_;
-    std::vector<ClassifyVideoCloneInfo> dstClassifyVideoInfos_;
     std::atomic<int32_t> successInsertLabelCnt_{0};
     std::atomic<int32_t> successInsertVideoLabelCnt_{0};
     std::atomic<int32_t> failInsertLabelCnt_{0};
