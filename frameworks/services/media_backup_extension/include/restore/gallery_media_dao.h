@@ -40,11 +40,20 @@ private:
 
 private:
     const std::string SQL_GALLERY_MEDIA_QUERY_COUNT = "\
+        WITH album_v2 AS \
+        ( \
+            SELECT \
+                relativeBucketId, \
+                lPath \
+            FROM gallery_album \
+            WHERE COALESCE(relativeBucketId, '') <> '' \
+            GROUP BY relativeBucketId \
+        ) \
         SELECT COUNT(1) AS count \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN gallery_album AS album_v2 \
+            LEFT JOIN album_v2 \
             ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
@@ -60,11 +69,20 @@ private:
             (1 = ? OR storage_id IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_CLOUD_META_QUERY_COUNT = "\
+        WITH album_v2 AS \
+        ( \
+            SELECT \
+                relativeBucketId, \
+                lPath \
+            FROM gallery_album \
+            WHERE COALESCE(relativeBucketId, '') <> '' \
+            GROUP BY relativeBucketId \
+        ) \
         SELECT COUNT(1) AS count \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN gallery_album AS album_v2 \
+            LEFT JOIN album_v2 \
             ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
         WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
@@ -80,6 +98,15 @@ private:
             (1 = ? OR storage_id IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE = "\
+        WITH album_v2 AS \
+        ( \
+            SELECT \
+                relativeBucketId, \
+                lPath \
+            FROM gallery_album \
+            WHERE COALESCE(relativeBucketId, '') <> '' \
+            GROUP BY relativeBucketId \
+        ) \
         SELECT \
             _id, \
             local_media_id, \
@@ -123,7 +150,7 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN gallery_album AS album_v2 \
+            LEFT JOIN album_v2 \
             ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
@@ -140,6 +167,15 @@ private:
         ORDER BY _id ASC \
         LIMIT ?, ?;";
     const std::string SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE = "\
+        WITH album_v2 AS \
+        ( \
+            SELECT \
+                relativeBucketId, \
+                lPath \
+            FROM gallery_album \
+            WHERE COALESCE(relativeBucketId, '') <> '' \
+            GROUP BY relativeBucketId \
+        ) \
         SELECT \
             _id, \
             local_media_id, \
@@ -183,7 +219,7 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN gallery_album AS album_v2 \
+            LEFT JOIN album_v2 \
             ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
         WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
