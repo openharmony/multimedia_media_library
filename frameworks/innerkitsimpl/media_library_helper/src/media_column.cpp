@@ -119,7 +119,6 @@ const std::string PhotoColumn::STAGE_VIDEO_TASK_STATUS = "stage_video_task_statu
 const std::string PhotoColumn::PHOTO_IS_AUTO = "is_auto";
 const std::string PhotoColumn::PHOTO_MEDIA_SUFFIX = "media_suffix";
 const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
-const std::string PhotoColumn::LANGUAGE = "language";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -145,7 +144,6 @@ const std::string PhotoColumn::PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX = "idx_s
 const std::string PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX = "idx_schpt_cloud_enhancement_album_index";
 const std::string PhotoColumn::LATITUDE_INDEX = "idx_latitude";
 const std::string PhotoColumn::LONGITUDE_INDEX = "idx_longtitude";
-const std::string PhotoColumn::LOCATION_KNOWLEDGE_INDEX = "knowledge_index";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -159,7 +157,6 @@ const std::string PhotoColumn::FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string PhotoColumn::FILES_LOCAL_DIR = "/storage/media/local/files/";
 
 const std::string PhotoColumn::HIGHLIGHT_TABLE = "tab_analysis_video_label";
-const std::string PhotoColumn::GEO_KNOWLEDGE_TABLE = "tab_analysis_geo_knowledge";
 const std::string PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER = "trigger_generate_thumbnail";
 
 const std::string PhotoColumn::PHOTO_URI_PREFIX = "file://media/Photo/";
@@ -501,13 +498,6 @@ const std::string PhotoColumn::UPDATA_PHOTOS_DATA_UNIQUE = "CREATE UNIQUE INDEX 
 const std::string PhotoColumn::UPDATE_LCD_STATUS_NOT_UPLOADED =
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_LCD_VISIT_TIME +
                         " = 0 " + " WHERE " + PhotoColumn::PHOTO_DIRTY + " = 1; END;";
-
-const std::string PhotoColumn::DROP_LOCATION_KNOWLEDGE_INDEX = BaseColumn::DropIndex() +
-    PhotoColumn::LOCATION_KNOWLEDGE_INDEX;
-
-const std::string PhotoColumn::ADD_LOCATION_KNOWLEDGE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " +
-    PhotoColumn::LOCATION_KNOWLEDGE_INDEX + " ON " + PhotoColumn::GEO_KNOWLEDGE_TABLE +
-    " (" + PhotoColumn::MEDIA_ID + "," + PhotoColumn::LANGUAGE + ")";
 
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
