@@ -427,6 +427,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "ffrt:libffrt",
     "file_api:filemgmt_libn",
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
     "init:libbeget_proxy",
