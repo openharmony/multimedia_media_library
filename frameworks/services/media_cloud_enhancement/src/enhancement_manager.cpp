@@ -292,6 +292,12 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
             MEDIA_ERR_LOG("enhancment service error, photo_id: %{public}s", photoId.c_str());
             continue;
         }
+        int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(photoId);
+        if (type == CloudEnhancementAvailableType::EDIT) {
+            CloudEnhancementGetCount::GetInstance().Report("EditCancellationType", photoId, taskType);
+        } else if (type == CloudEnhancementAvailableType::TRASH) {
+            CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId, taskType);
+        }
         EnhancementTaskManager::RemoveEnhancementTask(photoId);
         photoIds.emplace_back(photoId);
         MEDIA_INFO_LOG("cancel task successful, photo_id: %{public}s", photoId.c_str());
@@ -315,13 +321,9 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
     ValuesBucket rdbValues;
     rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(type));
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, updatePredicates);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("update ce_available failed, type: %{public}d, failed count: %{public}zu",
-            static_cast<int32_t>(type), photoIds.size());
-        return;
-    }
-    MEDIA_INFO_LOG("cancel tasks successful, type: %{public}d, success count: %{public}zu",
+    CHECK_AND_RETURN_LOG(ret == E_OK, "update ce_available failed, type: %{public}d, failed count: %{public}zu",
         static_cast<int32_t>(type), photoIds.size());
+    MEDIA_INFO_LOG("type: %{public}d, success count: %{public}zu", static_cast<int32_t>(type), photoIds.size());
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
 #endif
