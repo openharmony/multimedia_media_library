@@ -34,7 +34,7 @@ struct EnhancementTaskInfo {
     int32_t requestCount;
     int32_t taskType;
     EnhancementTaskInfo() : taskId(""), fileId(0), requestCount(0), taskType(0) {}
-    EnhancementTaskInfo(std::string taskId, int32_t fileId, int32_t count)
+    EnhancementTaskInfo(std::string taskId, int32_t fileId, int32_t count, int32_t taskType)
         : taskId(taskId), fileId(fileId), requestCount(count), taskType(taskType) {}
 };
 
