@@ -145,7 +145,7 @@ const std::string PhotoColumn::PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX = "idx_s
 const std::string PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX = "idx_schpt_cloud_enhancement_album_index";
 const std::string PhotoColumn::LATITUDE_INDEX = "idx_latitude";
 const std::string PhotoColumn::LONGITUDE_INDEX = "idx_longtitude";
-const std::string PhotoColumn::LOCATION_KNOWLEDG_INDEX = "knowledge_index";
+const std::string PhotoColumn::LOCATION_KNOWLEDGE_INDEX = "knowledge_index";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -502,11 +502,11 @@ const std::string PhotoColumn::UPDATE_LCD_STATUS_NOT_UPLOADED =
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_LCD_VISIT_TIME +
                         " = 0 " + " WHERE " + PhotoColumn::PHOTO_DIRTY + " = 1; END;";
 
-const std::string PhotoColumn::DROP_LOCATION_KNOWLEDG_INDEX = BaseColumn::DropIndex() +
-    PhotoColumn::LOCATION_KNOWLEDG_INDEX;
+const std::string PhotoColumn::DROP_LOCATION_KNOWLEDGE_INDEX = BaseColumn::DropIndex() +
+    PhotoColumn::LOCATION_KNOWLEDGE_INDEX;
 
-const std::string PhotoColumn::ADD_LOCATION_KNOWLEDG_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " +
-    PhotoColumn::LOCATION_KNOWLEDG_INDEX + " ON " + PhotoColumn::GEO_KNOWLEDGE_TABLE +
+const std::string PhotoColumn::ADD_LOCATION_KNOWLEDGE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " +
+    PhotoColumn::LOCATION_KNOWLEDGE_INDEX + " ON " + PhotoColumn::GEO_KNOWLEDGE_TABLE +
     " (" + PhotoColumn::MEDIA_ID + "," + PhotoColumn::LANGUAGE + ")";
 
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
