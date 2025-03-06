@@ -223,8 +223,8 @@ public:
     static const std::string UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID EXPORT;
 
     // create locationTable sql
-    static const std::string DROP_LOCATION_KNOWLEDG_INDEX EXPORT;
-    static const std::string ADD_LOCATION_KNOWLEDG_INDEX EXPORT;
+    static const std::string DROP_LOCATION_KNOWLEDGE_INDEX EXPORT;
+    static const std::string ADD_LOCATION_KNOWLEDGE_INDEX EXPORT;
     
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
