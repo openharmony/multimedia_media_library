@@ -899,9 +899,6 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     vector<string> ids = rdbPredicate.GetWhereArgs();
     vector<string> photoIds;
     EnhancementManager::GetInstance().CancelTasksInternal(ids, photoIds, CloudEnhancementAvailableType::TRASH);
-    for (string& photoId : photoIds) {
-        CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId);
-    }
 #endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
@@ -3046,9 +3043,6 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     fileId.emplace_back(to_string(fileAsset->GetId()));
     vector<string> photoId;
     EnhancementManager::GetInstance().CancelTasksInternal(fileId, photoId, CloudEnhancementAvailableType::EDIT);
-    if (!photoId.empty()) {
-        CloudEnhancementGetCount::GetInstance().Report("EditCancellationType", photoId.front());
-    }
 #endif
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
