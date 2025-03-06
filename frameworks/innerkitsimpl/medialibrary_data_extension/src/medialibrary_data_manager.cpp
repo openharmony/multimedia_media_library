@@ -406,7 +406,7 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     }
 
     if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX) {
-        MediaLibraryRdbStore::UpdateLocationKnowledgIdx(rdbStore);
+        MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX);
     }
 }
