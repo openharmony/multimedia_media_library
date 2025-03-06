@@ -4241,6 +4241,17 @@ static void FixSourceAlbumCreateTriggersToUseLPath(RdbStore& store)
     ExecSqls(sqls, store);
 }
 
+static void AddAlbumPluginBundleName(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start updating album plugin");
+    const vector<string> sqls = {
+        "DROP TABLE IF EXISTS album_plugin;"
+    };
+    ExecSqls(sqls, store);
+    AlbumPluginTableEventHandler().OnCreate(store);
+    MEDIA_INFO_LOG("End updating album plugin");
+}
+
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
@@ -4273,6 +4284,9 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH) {
         FixSourceAlbumCreateTriggersToUseLPath(store);
+    }
+    if (oldVersion < VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME) {
+        AddAlbumPluginBundleName(store);
     }
 }
 
