@@ -463,11 +463,10 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         rdbStore->SetOldVersion(VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX);
     }
 
-     if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX) {
+    if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX) {
         MediaLibraryRdbStore::UpdateLocationKnowledgIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX);
-    }   
-
+    }
     HandleUpgradeRdbAsyncPart1(rdbStore, oldVersion);
     // !! Do not add upgrade code here !!
 }
