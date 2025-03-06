@@ -250,7 +250,7 @@ bool EnhancementManager::Init()
             continue;
         }
         enhancementService_->DestroyBundle(mediaEnhanceBundle);
-        EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+        EnhancementTaskManager::AddEnhancementTask(fileId, photoId, TYPE_MANUAL_ENHANCEMENT);
     }
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
@@ -452,7 +452,8 @@ shared_ptr<NativeRdb::ResultSet> EnhancementManager::HandleEnhancementQueryOpera
 int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
     const string &photoId, const bool hasCloudWatermark, const bool isAuto)
 {
-    EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+    EnhancementTaskManager::AddEnhancementTask(fileId, photoId,
+        (isAuto ? TYPE_AUTO_ENHANCEMENT_FOREGROUND : TYPE_MANUAL_ENHANCEMENT));
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     servicePredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     GenerateAddServicePredicates(isAuto, servicePredicates);
@@ -652,7 +653,7 @@ int32_t EnhancementManager::AddAutoServiceTask(MediaEnhanceBundleHandle* mediaEn
     const string &photoId)
 {
     MEDIA_INFO_LOG("adding auto enhancement service task");
-    EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+    EnhancementTaskManager::AddEnhancementTask(fileId, photoId, TYPE_AUTO_ENHANCEMENT_BACKGROUND);
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     servicePredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     servicePredicates.And();

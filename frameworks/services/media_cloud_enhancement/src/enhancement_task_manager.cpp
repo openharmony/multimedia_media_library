@@ -27,11 +27,13 @@ unordered_map<string, shared_ptr<EnhancementTaskInfo>>
 unordered_map<int32_t, string> EnhancementTaskManager::fileId2PhotoId_ = {};
 mutex EnhancementTaskManager::mutex_;
 
-void EnhancementTaskManager::AddEnhancementTask(int32_t fileId, const string &photoId)
+void EnhancementTaskManager::AddEnhancementTask(int32_t fileId, const string &photoId,
+    int32_t taskType)
 {
     unique_lock<mutex> lock(mutex_);
     fileId2PhotoId_.emplace(fileId, photoId);
-    taskInProcess_.emplace(photoId, make_shared<EnhancementTaskInfo>(photoId, fileId, 0));
+    taskInProcess_.emplace(photoId, make_shared<EnhancementTaskInfo>(photoId, fileId, 0, taskType));
+    taskInProcess_[photoId]->taskType = taskType;
 }
 
 void EnhancementTaskManager::RemoveEnhancementTask(const std::string &photoId)
@@ -70,6 +72,15 @@ string EnhancementTaskManager::QueryPhotoIdByFileId(int32_t fileId)
         return fileId2PhotoId_[fileId];
     }
     return "";
+}
+
+int32_t EnhancementTaskManager::QueryTaskTypeByPhotoId(const std::string& photoId)
+{
+    unique_lock<mutex> lock(mutex_);
+    if (taskInProcess_.find(photoId) != taskInProcess_.end()) {
+        return taskInProcess_[photoId]->taskType;
+    }
+    return -1;
 }
 
 void EnhancementTaskManager::SetTaskRequestCount(const string &photoId, int32_t count)

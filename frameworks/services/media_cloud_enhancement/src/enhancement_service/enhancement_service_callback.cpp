@@ -258,8 +258,9 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, servicePredicates);
     CHECK_AND_PRINT_LOG(ret == E_OK, "update source photo failed. ret: %{public}d, photoId: %{public}s",
         ret, taskId.c_str());
+    int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(taskId);
     EnhancementTaskManager::RemoveEnhancementTask(taskId);
-    CloudEnhancementGetCount::GetInstance().Report("SuccessType", taskId);
+    CloudEnhancementGetCount::GetInstance().Report("SuccessType", taskId, taskType);
     string fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(sourceFileId),
         MediaFileUtils::GetExtraUri(sourceDisplayName, sourceFilePath));
     auto watch = MediaLibraryNotify::GetInstance();
@@ -305,8 +306,9 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
         static_cast<int32_t>(CloudEnhancementAvailableType::SUCCESS));
     int32_t ret = EnhancementDatabaseOperations::Update(valueBucket, servicePredicates);
     CHECK_AND_RETURN_LOG(ret == E_OK, "enhancement callback error: db CE_AVAILABLE status update failed");
+    int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(taskId);
     EnhancementTaskManager::RemoveEnhancementTask(taskId);
-    CloudEnhancementGetCount::GetInstance().Report("FailedType", taskId);
+    CloudEnhancementGetCount::GetInstance().Report("FailedType", taskId, taskType);
     string fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
         MediaFileUtils::GetExtraUri(displayName, filePath));
     auto watch = MediaLibraryNotify::GetInstance();
