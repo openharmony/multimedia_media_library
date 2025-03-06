@@ -464,7 +464,6 @@ void CloneRestore::RestoreAlbum()
 
     RestoreFromGalleryPortraitAlbum();
     RestorePortraitClusteringInfo();
-    cloneRestoreClassify_.RestoreClassifyInfos();
     cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
     cloneRestoreGeoDictionary_.RestoreAlbums();
     RestoreHighlightAlbums(CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
