@@ -101,7 +101,7 @@ public:
     EXPORT static void AddReadyCountIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void RevertFixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
-    EXPORT static void UpdateLocationKnowledgIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void UpdateLocationKnowledgeIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddCloudEnhancementAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddPhotoDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store);
