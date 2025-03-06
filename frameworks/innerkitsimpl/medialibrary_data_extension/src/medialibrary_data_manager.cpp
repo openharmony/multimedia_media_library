@@ -404,6 +404,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         FillMediaSuffixForHistoryData(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_MEDIA_SUFFIX_COLUMN);
     }
+
+    if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX) {
+        MediaLibraryRdbStore::UpdateLocationKnowledgIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX);
+    }
 }
 
 void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
@@ -463,10 +468,6 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
         rdbStore->SetOldVersion(VERSION_UPDATE_MEDIA_TYPE_AND_THUMBNAIL_READY_IDX);
     }
 
-    if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX) {
-        MediaLibraryRdbStore::UpdateLocationKnowledgIdx(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX);
-    }
     HandleUpgradeRdbAsyncPart1(rdbStore, oldVersion);
     // !! Do not add upgrade code here !!
 }
