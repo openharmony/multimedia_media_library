@@ -74,6 +74,7 @@
           "user_file_service",
           "window_manager",
           "background_task_mgr",
+          "runtime_core",
           "ffrt",
           "preferences",
           "wifi",
@@ -120,6 +121,9 @@
             "//foundation/multimedia/media_library/frameworks/services/media_mtp:mtpservice"
           ]
         },
+        "sub_component": [
+          "//foundation/multimedia/media_library/frameworks/ani:media_library_ani"
+        ],
         "inner_kits": [
             {
                 "header": {
