@@ -110,10 +110,7 @@ static int32_t CheckResultSet(shared_ptr<NativeRdb::ResultSet> &resultSet)
     }
     int32_t count = 0;
     auto ret = resultSet->GetRowCount(count);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to get resultset row count, ret: %{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to get resultset row count, ret: %{public}d", ret);
     if (count <= 0) {
         MEDIA_INFO_LOG("Failed to get count, count: %{public}d", count);
         return E_FAIL;
@@ -141,10 +138,8 @@ static void FillBundleWithWaterMarkInfo(MediaEnhanceBundleHandle* mediaEnhanceBu
 {
     string filePath = CLOUD_ENHANCEMENT_WATER_MARK_DIR + "/" + "cloud_watermark_param.json";
     string metaDataStr;
-    if (!MediaFileUtils::ReadStrFromFile(filePath, metaDataStr)) {
-        MEDIA_ERR_LOG("Failed to read meta data from: %{public}s", filePath.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(MediaFileUtils::ReadStrFromFile(filePath, metaDataStr),
+        "Failed to read meta data from: %{public}s", filePath.c_str());
     if (!json::accept(metaDataStr)) {
         MEDIA_WARN_LOG("Failed to verify the meataData format, metaData is: %{private}s",
             metaDataStr.c_str());
@@ -152,11 +147,8 @@ static void FillBundleWithWaterMarkInfo(MediaEnhanceBundleHandle* mediaEnhanceBu
     }
     json metaData;
     json jsonObject = json::parse(metaDataStr);
-    if (CLOUD_ENHANCEMENT_MIME_TYPE_MAP.count(mimeType) == 0) {
-        MEDIA_WARN_LOG("Failed to verify the mimeType, mimeType is: %{public}s",
-            mimeType.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_WARN_LOG(CLOUD_ENHANCEMENT_MIME_TYPE_MAP.count(mimeType) != 0,
+        "Failed to verify the mimeType, mimeType is: %{public}s",  mimeType.c_str());
     metaData[FILE_TPYE] = CLOUD_ENHANCEMENT_MIME_TYPE_MAP.at(mimeType);
     metaData[IS_HDR_VIVID] = to_string(dynamicRangeType);
     metaData[HAS_WATER_MARK_INFO] = hasCloudWaterMark ? to_string(YES) : to_string(NO);
@@ -213,10 +205,7 @@ bool EnhancementManager::Init()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     // restart
-    if (!LoadService()) {
-        MEDIA_ERR_LOG("load enhancement service error");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(LoadService(), false, "load enhancement service error");
     ResetProcessingAutoToSupport();
     InitPhotosSettingsMonitor();
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
@@ -808,10 +797,7 @@ int32_t EnhancementManager::HandlePrioritizeOperation(MediaLibraryCommand &cmd)
             photoId.c_str());
         return E_ERR;
     }
-    if (!LoadService()) {
-        MEDIA_ERR_LOG("load enhancement service error");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(LoadService(), E_ERR, "load enhancement service error");
     MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
     if (mediaEnhanceBundle == nullptr) {
         return E_ERR;
@@ -1022,9 +1008,7 @@ shared_ptr<NativeRdb::ResultSet> EnhancementManager::HandleGetPairOperation(Medi
 
 int32_t EnhancementManager::HandleStateChangedOperation(const bool isCameraIdle)
 {
-    if (isCameraIdle_ == isCameraIdle) {
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET(isCameraIdle_ != isCameraIdle, E_OK);
     isCameraIdle_ = isCameraIdle;
     bool cond = ((!isWifiConnected_ && !isCellularNetConnected_) || (photosAutoOption_ == PHOTO_OPTION_CLOSE));
     CHECK_AND_RETURN_RET_LOG(!cond, E_OK, "HandleStateChangedOperation option is not allowed");
