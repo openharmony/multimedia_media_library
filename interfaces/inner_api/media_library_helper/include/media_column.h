@@ -217,7 +217,7 @@ public:
     static const std::string UPDATE_LCD_STATUS_NOT_UPLOADED EXPORT;
     static const std::string UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL EXPORT;
     static const std::string UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID EXPORT;
-    
+
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
     static const std::string DROP_INDEX_SCTHP_ADDTIME EXPORT;
