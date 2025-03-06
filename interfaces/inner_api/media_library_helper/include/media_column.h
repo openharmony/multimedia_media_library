@@ -141,6 +141,8 @@ public:
     static const std::string PHOTO_IS_AUTO EXPORT;
     static const std::string PHOTO_MEDIA_SUFFIX EXPORT;
     static const std::string PHOTO_IS_RECENT_SHOW EXPORT;
+    static const std::string FLIE_ID EXPORT;
+    static const std::string LANGUAGE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -164,6 +166,7 @@ public:
     static const std::string PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX EXPORT;
     static const std::string LATITUDE_INDEX EXPORT;
     static const std::string LONGITUDE_INDEX EXPORT;
+    static const std::string LOCATION_KNOWLEDG_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // for burst query
@@ -190,6 +193,7 @@ public:
     static const std::string PHOTOS_TABLE EXPORT;
     static const std::string HIGHLIGHT_TABLE EXPORT;
     static const std::string TAB_OLD_PHOTOS_TABLE EXPORT;
+    static const std::string GEO_KNOWLEDGE_TABLE EXPORT;
 
     // path
     static const std::string FILES_CLOUD_DIR EXPORT;
@@ -218,6 +222,9 @@ public:
     static const std::string UPDATE_LATITUDE_AND_LONGITUDE_DEFAULT_NULL EXPORT;
     static const std::string UPDATE_PHOTO_QUALITY_OF_NULL_PHOTO_ID EXPORT;
 
+    // create loactionTable sql
+    static const std::string DROP_LOCATION_KNOWLEDG_INDEX EXPORT;
+    static const std::string ADD_LOCATION_KNOWLEDG_INDEX EXPORT;
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
     static const std::string DROP_INDEX_SCTHP_ADDTIME EXPORT;
