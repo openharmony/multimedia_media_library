@@ -1892,7 +1892,7 @@ static napi_status CheckType(int32_t &type)
     const int lcdType = 1;
     const int thmType = 2;
 
-    if (type == LCD_TYPE || type == THM_TYPE) {
+    if (type == lcdType || type == thmType) {
         return napi_ok;
     }
     return napi_invalid_arg;
