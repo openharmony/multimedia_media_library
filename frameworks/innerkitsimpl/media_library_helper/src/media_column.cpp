@@ -119,7 +119,6 @@ const std::string PhotoColumn::STAGE_VIDEO_TASK_STATUS = "stage_video_task_statu
 const std::string PhotoColumn::PHOTO_IS_AUTO = "is_auto";
 const std::string PhotoColumn::PHOTO_MEDIA_SUFFIX = "media_suffix";
 const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
-const std::string PhotoColumn::FILE_ID = "file_id";
 const std::string PhotoColumn::LANGUAGE = "language";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
@@ -508,7 +507,7 @@ const std::string PhotoColumn::DROP_LOCATION_KNOWLEDG_INDEX = BaseColumn::DropIn
 
 const std::string PhotoColumn::ADD_LOCATION_KNOWLEDG_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " +
     PhotoColumn::LOCATION_KNOWLEDG_INDEX + " ON " + PhotoColumn::GEO_KNOWLEDGE_TABLE +
-    " (" + PhotoColumn::FILE_ID + "," + PhotoColumn::LANGUAGE + ")";
+    " (" + PhotoColumn::MEDIA_ID + "," + PhotoColumn::LANGUAGE + ")";
 
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
