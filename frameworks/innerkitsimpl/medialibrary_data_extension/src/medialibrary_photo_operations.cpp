@@ -58,6 +58,7 @@
 #include "multistages_moving_photo_capture_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
 #include "enhancement_manager.h"
+#include "enhancement_task_manager.h"
 #endif
 #include "parameters.h"
 #include "permission_utils.h"
@@ -900,7 +901,8 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     vector<string> photoIds;
     EnhancementManager::GetInstance().CancelTasksInternal(ids, photoIds, CloudEnhancementAvailableType::TRASH);
     for (string& photoId : photoIds) {
-        CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId);
+        int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(photoId);
+        CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId, taskType);
     }
 #endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
@@ -3060,7 +3062,8 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     vector<string> photoId;
     EnhancementManager::GetInstance().CancelTasksInternal(fileId, photoId, CloudEnhancementAvailableType::EDIT);
     if (!photoId.empty()) {
-        CloudEnhancementGetCount::GetInstance().Report("EditCancellationType", photoId.front());
+        int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(photoId.front());
+        CloudEnhancementGetCount::GetInstance().Report("EditCancellationType", photoId.front(), taskType);
     }
 #endif
     NotifyFormMap(id, assetPath, false);

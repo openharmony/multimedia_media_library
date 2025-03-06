@@ -76,6 +76,7 @@ const std::string KEY_RESULT = "RESULT";
 const std::string KEY_MEDIA_TYPE = "MEDIA_TYPE";
 
 const std::string KEY_CLOUD_ENHANCEMENT_COMPLETE_TYPE = "COMPLETE_TYPE";
+const std::string KEY_CLOUD_ENHANCEMENT_FINISH_TYPE = "FINISH_TYPE";
 
 const std::string KEY_DB_CORRUPT = "DB_CORRUPT_DATE";
 
