@@ -1622,6 +1622,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_VISION_DELETE_TRIGGER,
     CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
     CREATE_IMAGE_FACE_INDEX,
+    CREATE_IMAGE_FACE_TAG_ID_INDEX,
     CREATE_VIDEO_FACE_INDEX,
     CREATE_OBJECT_INDEX,
     CREATE_RECOMMENDATION_INDEX,
@@ -3009,6 +3010,15 @@ void AddHighlightChangeFunction(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddImageFaceTagIdIndex(RdbStore& store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_IMAGE_FACE_TAG_ID_INDEX
+    };
+    MEDIA_INFO_LOG("Adding TAG_ID index for VISION_IMAGE_FACE_TABLE");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -4276,6 +4286,9 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
     }
     if (oldVersion < VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME) {
         AddAlbumPluginBundleName(store);
+    }
+    if (oldVersion < VERSION_IMAGE_FACE_TAG_ID_INDEX) {
+        AddImageFaceTagIdIndex(store);
     }
 }
 
