@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "package": "",
+        "baseUrl": ".",
+        "paths": {
+            "std": [
+                "../../../../../arkcompiler/runtime_core/static_core/plugins/ets/stdlib/std"
+            ],
+            "escompat": [
+                "../../../../../arkcompiler/runtime_core/static_core/plugins/ets/stdlib/escompat"
+            ],
+            "@ohos.data.dataSharePredicates": [
+                "./ets/data_share_predicates.ets"
+            ]
+        },
+        "outDir": "./dist"
+    },
+    "include": [
+        "./ets/*.ets"
+    ],
+    "#files": [
+        "./tests/test.ets"
+    ]
+}
