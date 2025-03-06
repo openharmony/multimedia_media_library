@@ -1248,15 +1248,6 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_NAME };
     MediaLibraryRdbStore::ReplacePredicatesUriToId(*(cmd.GetAbsRdbPredicates()));
-    int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
-        OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
-        "Failed to query file asset vector from db, errCode=%{private}d", errCode);
-
-    for (const auto& fileAsset : fileAssetVector) {
-        errCode = SetUserComment(cmd, fileAsset);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to set user comment, errCode=%{private}d", errCode);
-    }
 
     int32_t updateRows = UpdateFileInDb(cmd);
     CHECK_AND_RETURN_RET_LOG(updateRows >= 0, updateRows,
@@ -1651,10 +1642,6 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     bool isNeedScan = false;
     int32_t errCode = RevertToOriginalEffectMode(cmd, fileAsset, isNeedScan);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to revert original effect mode: %{public}d", errCode);
-    if (cmd.GetOprnType() == OperationType::SET_USER_COMMENT) {
-        errCode = SetUserComment(cmd, fileAsset);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Edit user comment errCode = %{private}d", errCode);
-    }
 
     // Update if FileAsset.title or FileAsset.displayName is modified
     bool isNameChanged = false;
