@@ -115,6 +115,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_FACE_TAG, OperationObject::VISION_FACE_TAG },
         { PAH_ANA_HEAD, OperationObject::VISION_HEAD },
         { PAH_ANA_POSE, OperationObject::VISION_POSE },
+        { PAH_ANA_FOREGROUND, OperationObject::ANALYSIS_FOREGROUND},
 
         // use in Location Analyse
         { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
