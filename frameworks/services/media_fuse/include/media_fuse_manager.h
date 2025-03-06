@@ -37,6 +37,7 @@ private:
 
     int32_t MountFuse(std::string &mountpoint);
     int32_t UMountFuse();
+    bool CheckDeviceInLinux();
 
 private:
     std::shared_ptr<MediaFuseDaemon> fuseDaemon_;
