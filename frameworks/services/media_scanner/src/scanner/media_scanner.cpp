@@ -28,6 +28,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_vision_operations.h"
 #include "mimetype_utils.h"
 #include "post_event_utils.h"
 #include "photo_map_column.h"
@@ -273,6 +274,7 @@ int32_t MediaScannerObj::Commit()
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT && data_->GetBurstCoverLevel() == COVER) {
             if (data_->GetForAdd()) {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
+                MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis();
             } else {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_UPDATE);
             }

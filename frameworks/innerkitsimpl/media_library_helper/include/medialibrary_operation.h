@@ -108,6 +108,7 @@ enum class EXPORT OperationObject : uint32_t {
     PTP_OPERATION,
     EDIT_DATA_EXISTS,
     MTH_AND_YEAR_ASTC,
+    ANALYSIS_FOREGROUND,
 };
 
 enum class EXPORT OperationType : uint32_t {
