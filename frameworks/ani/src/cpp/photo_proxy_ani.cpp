@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "ani_class_name.h"
 #include "medialibrary_ani_log.h"
 #include "photo_proxy_ani.h"
 
@@ -36,13 +37,12 @@ PhotoProxyAni::~PhotoProxyAni()
 
 ani_status PhotoProxyAni::PhotoProxyAniInit(ani_env *env)
 {
-    // PhotoProxyHandle need user to implement
-    static const char *className = "Lphoto_proxy/PhotoProxyHandle;";
+    static const char *className = ANI_CLASS_PHOTO_PROXY.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
-        env->ThrowError(ani_error(status));
+        return status;
     }
 
     std::array methods = {
@@ -53,7 +53,7 @@ ani_status PhotoProxyAni::PhotoProxyAniInit(ani_env *env)
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
-        env->ThrowError(ani_error(status));
+        return status;
     }
     return ANI_OK;
 }
@@ -66,7 +66,7 @@ ani_object PhotoProxyAni::PhotoProxyAniConstructor(ani_env *env, [[maybe_unused]
     nativeHandle->env_ = env;
     nativeHandle->photoProxy_ = sPhotoProxy_;
 
-    static const char *className = "Lphoto_proxy/PhotoProxyHandle;";
+    static const char *className = ANI_CLASS_PHOTO_PROXY.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);

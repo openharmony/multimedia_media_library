@@ -32,10 +32,10 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
     ani_env *env;
     if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &env)) {
         ANI_ERR_LOG("Unsupported %{public}d", ANI_VERSION_1);
-        return (ani_status)ANI_ERROR;
+        return ANI_ERROR;
     }
 
-    static const char *staticClassName = "Lphoto_access_helper/ETSGLOBAL;";
+    static const char *staticClassName = "L@ohos/file/photoAccessHelper/photoAccessHelper;";
     ani_class staticCls;
     if (ANI_OK != env->FindClass(staticClassName, &staticCls)) {
         ANI_ERR_LOG("Not found %{public}s", staticClassName);
@@ -52,16 +52,11 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
         return ANI_ERROR;
     };
 
-    PhotoAccessHelperAni::PhotoAccessHelperInit(env);
-    PhotoAlbumAni::PhotoAccessInit(env);
-    FileAssetAni::FileAssetAniInit(env);
-    MediaAssetChangeRequestAni::MediaAssetChangeRequestAniInit(env);
-    MediaAlbumChangeRequestAni::MediaAlbumChangeRequestInit(env);
-    FetchFileResultAni::FetchFileResultInit(env);
-    MovingPhotoAni::MovingPhotoInit(env);
-    MediaAssetsChangeRequestAni::MediaAssetsChangeRequestAniInit(env);
-    PhotoProxyAni::PhotoProxyAniInit(env);
-    CloudEnhancementAni::CloudEnhancementAniInit(env);
+    CHECK_STATUS_RET(PhotoAccessHelperAni::PhotoAccessHelperInit(env), "PhotoAccessHelperInit fail");
+    CHECK_STATUS_RET(PhotoAlbumAni::PhotoAccessInit(env), "PhotoAccessInit fail");
+    CHECK_STATUS_RET(FileAssetAni::FileAssetAniInit(env), "FileAssetAniInit fail");
+    CHECK_STATUS_RET(FetchFileResultAni::FetchFileResultInit(env), "FetchFileResultInit fail");
+    CHECK_STATUS_RET(MovingPhotoAni::MovingPhotoInit(env), "MovingPhotoInit fail");
 
     *result = ANI_VERSION_1;
     return ANI_OK;

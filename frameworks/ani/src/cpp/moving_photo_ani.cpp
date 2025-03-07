@@ -14,6 +14,7 @@
  */
 #include <iostream>
 #include <array>
+#include "ani_class_name.h"
 #include "media_log.h"
 #include "moving_photo_ani.h"
 #include "medialibrary_ani_utils.h"
@@ -22,31 +23,24 @@ using namespace OHOS::Media;
 
 ani_status MovingPhotoAni::MovingPhotoInit(ani_env *env)
 {
-    static const char *className = "Lmoving_photo/MovingPhotoHandle;";
+    static const char *className = ANI_CLASS_MOVING_PHOTO.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
-        env->ThrowError(reinterpret_cast<ani_error>(status));
+        return status;
     }
     std::array methods = {
-        // 用下面哪个Context待调试后修改
-        ani_native_function {"create", "Lmedia_library_common/Context;:Lmoving_photo/MovingPhotoHandle;",
-            reinterpret_cast<void *>(MovingPhotoAni::Constructor) },
-        ani_native_function {"requestContent1", "Lstd/core/String;Lstd/core/String;:V",
-            reinterpret_cast<void *>(MovingPhotoAni::RequestContent1) },
-        ani_native_function {"requestContent2", "ILstd/core/String;:V",
-            reinterpret_cast<void *>(MovingPhotoAni::RequestContent2) },
-        ani_native_function {"requestContent3", "I:V",
-            reinterpret_cast<void *>(MovingPhotoAni::RequestContent3) },
-        ani_native_function {"getUri", ":Lstd/core/String;",
-            reinterpret_cast<void *>(MovingPhotoAni::GetUri) },
+        ani_native_function {"requestContent1", nullptr, reinterpret_cast<void *>(MovingPhotoAni::RequestContent1)},
+        ani_native_function {"requestContent2", nullptr, reinterpret_cast<void *>(MovingPhotoAni::RequestContent2)},
+        ani_native_function {"requestContent3", nullptr, reinterpret_cast<void *>(MovingPhotoAni::RequestContent3)},
+        ani_native_function {"getUri", nullptr, reinterpret_cast<void *>(MovingPhotoAni::GetUri)},
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
         MEDIA_ERR_LOG("Failed to bind native methods to: %{public}s", className);
-        env->ThrowError(reinterpret_cast<ani_error>(status));
+        return status;
     }
     return ANI_OK;
 }
@@ -56,7 +50,7 @@ ani_object MovingPhotoAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_un
 {
     auto nativeMovingPhotoHandle = new MovingPhotoAni();
 
-    static const char *className = "Lmoving_photo/MovingPhotoHandle;";
+    static const char *className = ANI_CLASS_MOVING_PHOTO.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         MEDIA_ERR_LOG("Failed to find class: %{public}s", className);

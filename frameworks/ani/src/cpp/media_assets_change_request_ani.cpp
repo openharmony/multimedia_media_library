@@ -17,6 +17,7 @@
 #include <iostream>
 #include <array>
 #include "ani_error.h"
+#include "ani_class_name.h"
 #include "media_assets_change_request_ani.h"
 #include "media_log.h"
 #include "userfile_client.h"
@@ -200,9 +201,8 @@ ani_object MediaAssetsChangeRequestAni::create([[maybe_unused]] ani_env *env, [[
         return nullobj;
     }
 
-    static const char *className = "LmediaAssetsChangeRequest/MediaAssetsChangeRequest;";
     ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
+    if (ANI_OK != env->FindClass(ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str(), &cls)) {
         ani_object nullobj = nullptr;
         return nullobj;
     }
@@ -224,23 +224,22 @@ ani_object MediaAssetsChangeRequestAni::create([[maybe_unused]] ani_env *env, [[
 ani_status MediaAssetsChangeRequestAni::MediaAssetsChangeRequestAniInit(ani_env *env)
 {
     DEBUG_LOG_T("aning MediaAssetsChangeRequestAniInit start");
-    static const char *className = "LmediaAssetsChangeRequest/MediaAssetsChangeRequest;";
     ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        return (ani_status)ANI_ERROR;
+    if (ANI_OK != env->FindClass(ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str(), &cls)) {
+        return ANI_ERROR;
     }
 
     std::array methods = {
-        ani_native_function {"SetFavoriteSync", "Z:V",
-            reinterpret_cast<void *>(MediaAssetsChangeRequestAni::SetFavorite) },
-        ani_native_function {"SetHiddenSync", "Z:V", reinterpret_cast<void *>(MediaAssetsChangeRequestAni::SetHidden) },
-        ani_native_function {"create", ":LmediaAssetsChangeRequest/MediaAssetsChangeRequest;",
-            reinterpret_cast<void *>(MediaAssetsChangeRequestAni::create) },
+        ani_native_function {"SetFavoriteSync", nullptr,
+            reinterpret_cast<void *>(MediaAssetsChangeRequestAni::SetFavorite)},
+        ani_native_function {"SetHiddenSync",
+            nullptr, reinterpret_cast<void *>(MediaAssetsChangeRequestAni::SetHidden)},
+        ani_native_function {"create", nullptr, reinterpret_cast<void *>(MediaAssetsChangeRequestAni::create)},
 
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
-        return (ani_status)ANI_ERROR;
+        return ANI_ERROR;
     };
 
     return ANI_OK;

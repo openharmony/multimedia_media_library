@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "ani_class_name.h"
 #include "datashare_values_bucket.h"
 #include "file_asset_ani.h"
 #include "medialibrary_ani_log.h"
@@ -133,36 +134,32 @@ void FileAssetAni::Destructor(ani_env env, void *nativeObject, void *finalize_hi
 
 ani_status FileAssetAni::FileAssetAniInit(ani_env *env)
 {
-    static const char *className = "Lphoto_asset/PhotoAssetHandle;";
+    static const char *className = ANI_CLASS_PHOTO_ASSET.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
-        env->ThrowError(reinterpret_cast<ani_error>(status));
+        return status;
     }
 
     std::array methods = {
-        ani_native_function {"create", ":Lphoto_asset/PhotoAssetHandle;",
-            reinterpret_cast<void *>(FileAssetAni::Constructor)},
-        ani_native_function {"set", "Lstd/core/String;Lstd/core/String;:V",
-            reinterpret_cast<void *>(FileAssetAni::Set)},
-        ani_native_function {"get", "Lstd/core/String;:Lstd/core/Object;",
-            reinterpret_cast<void *>(FileAssetAni::Get)},
-        ani_native_function {"commitModify", ":V", reinterpret_cast<void *>(FileAssetAni::CommitModify) },
-        ani_native_function {"setUserComment", "Lstd/core/String;:V",
-            reinterpret_cast<void *>(FileAssetAni::SetUserComment) },
-        ani_native_function {"open", "Lstd/core/String;:D", reinterpret_cast<void *>(FileAssetAni::Open) },
-        ani_native_function {"close", "D:V", reinterpret_cast<void *>(FileAssetAni::Close) },
-        ani_native_function {"getAnalysisData", nullptr, reinterpret_cast<void *>(FileAssetAni::GetAnalysisData) },
-        ani_native_function {"setHidden", "Z:V", reinterpret_cast<void *>(FileAssetAni::SetHidden) },
-        ani_native_function {"setFavorite", "Z:V", reinterpret_cast<void *>(FileAssetAni::SetFavorite) },
-        ani_native_function {"getThumbnail", nullptr, reinterpret_cast<void *>(FileAssetAni::GetThumbnail)},
+        ani_native_function {"create", nullptr, reinterpret_cast<void *>(FileAssetAni::Constructor)},
+        ani_native_function {"set", nullptr, reinterpret_cast<void *>(FileAssetAni::Set)},
+        ani_native_function {"get", nullptr, reinterpret_cast<void *>(FileAssetAni::Get)},
+        ani_native_function {"commitModifySync", nullptr, reinterpret_cast<void *>(FileAssetAni::CommitModify)},
+        ani_native_function {"setUserCommentSync", nullptr, reinterpret_cast<void *>(FileAssetAni::SetUserComment)},
+        ani_native_function {"openSync", nullptr, reinterpret_cast<void *>(FileAssetAni::Open)},
+        ani_native_function {"closeSync", nullptr, reinterpret_cast<void *>(FileAssetAni::Close)},
+        ani_native_function {"getAnalysisDataSync", nullptr, reinterpret_cast<void *>(FileAssetAni::GetAnalysisData)},
+        ani_native_function {"setHiddenSync", nullptr, reinterpret_cast<void *>(FileAssetAni::SetHidden)},
+        ani_native_function {"setFavoriteSync", nullptr, reinterpret_cast<void *>(FileAssetAni::SetFavorite)},
+        ani_native_function {"getThumbnailSync", nullptr, reinterpret_cast<void *>(FileAssetAni::GetThumbnail)},
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
-        env->ThrowError(reinterpret_cast<ani_error>(status));
+        return status;
     }
     return ANI_OK;
 }
@@ -172,7 +169,7 @@ ani_object FileAssetAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_unus
     std::shared_ptr<FileAsset> fileAssetPtr = std::make_shared<FileAsset>();
     std::unique_ptr<FileAssetAni> nativeFileAssetAni = std::make_unique<FileAssetAni>(fileAssetPtr);
 
-    static const char *className = "Lphoto_asset/PhotoAssetHandle;";
+    static const char *className = ANI_CLASS_PHOTO_ASSET.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
@@ -207,8 +204,7 @@ FileAssetAni* FileAssetAni::CreatePhotoAsset(ani_env *env, std::shared_ptr<FileA
         return nullptr;
     }
 
-    std::shared_ptr<FileAsset> fileAssetPtr = std::make_shared<FileAsset>();
-    std::unique_ptr<FileAssetAni> fileAssetAni = std::make_unique<FileAssetAni>(fileAssetPtr);
+    std::unique_ptr<FileAssetAni> fileAssetAni = std::make_unique<FileAssetAni>(fileAsset);
     return fileAssetAni.release();
 }
 
@@ -219,15 +215,14 @@ FileAssetAni* FileAssetAni::CreateFileAsset(ani_env *env, std::unique_ptr<FileAs
         return nullptr;
     }
     sFileAsset_ = std::move(fileAsset);
-    std::shared_ptr<FileAsset> fileAssetPtr = std::make_shared<FileAsset>();
-    std::unique_ptr<FileAssetAni> fileAssetAni = std::make_unique<FileAssetAni>(fileAssetPtr);
+    std::unique_ptr<FileAssetAni> fileAssetAni = std::make_unique<FileAssetAni>(sFileAsset_);
     sFileAsset_ = nullptr;
     return fileAssetAni.release();
 }
 
 ani_object FileAssetAni::Wrap(ani_env *env, FileAssetAni* fileAssetAni)
 {
-    static const char *className = "Lphoto_asset/PhotoAssetHandle;";
+    static const char *className = ANI_CLASS_PHOTO_ASSET.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
@@ -688,21 +683,18 @@ ani_object FileAssetAni::GetThumbnail(ani_env *env, ani_object object, ani_objec
     context->size.width = DEFAULT_THUMB_SIZE;
     context->size.height = DEFAULT_THUMB_SIZE;
 
-    ani_boolean isUndefined;
-    env->Reference_IsUndefined(size, &isUndefined);
-    if (!isUndefined) {
-        static const char *className = "Lphoto_asset/SizeImpl;";
+    if (MediaLibraryAniUtils::isUndefined(env, size) == ANI_FALSE) {
         ani_class cls;
-        if (ANI_OK != env->FindClass(className, &cls)) {
+        if (ANI_OK != env->FindClass(ANI_CLASS_SIZE.c_str(), &cls)) {
             return nullptr;
         }
         ani_method heightGetter;
         ani_method widthGetter;
         if (ANI_OK != env->Class_FindMethod(cls, "<get>height", nullptr, &heightGetter)) {
-            ANI_ERR_LOG("Class_FindMethod Fail %{public}s", className);
+            ANI_ERR_LOG("Class_FindMethod Fail %{public}s", ANI_CLASS_SIZE.c_str());
         }
         if (ANI_OK != env->Class_FindMethod(cls, "<get>width", nullptr, &widthGetter)) {
-            ANI_ERR_LOG("Class_FindMethod Fail %{public}s", className);
+            ANI_ERR_LOG("Class_FindMethod Fail %{public}s", ANI_CLASS_SIZE.c_str());
         }
 
         ani_double heightValue;
@@ -723,8 +715,7 @@ ani_object FileAssetAni::GetThumbnail(ani_env *env, ani_object object, ani_objec
     }
     std::string path = fileAssetPtr->GetPath();
 #ifndef MEDIALIBRARY_COMPATIBILITY
-    if (path.empty()
-            && !fileAssetPtr->GetRelativePath().empty() && !fileAssetPtr->GetDisplayName().empty()) {
+    if (path.empty() && !fileAssetPtr->GetRelativePath().empty() && !fileAssetPtr->GetDisplayName().empty()) {
         path = ROOT_MEDIA_DIR + fileAssetPtr->GetRelativePath() + fileAssetPtr->GetDisplayName();
     }
 #endif
@@ -781,10 +772,10 @@ ani_string FileAssetAni::GetAnalysisData([[maybe_unused]] ani_env *env, ani_obje
         ANI_ERR_LOG("fileAssetAni is nullptr");
         return aniString;
     }
- 
+
     int32_t value;
     MediaLibraryEnumAni::EnumGetValueInt32(env, EnumTypeInt32::AnalysisTypeAni, analysisType, value);
-    
+
     auto fileAssetPtr = fileAssetAni->GetFileAssetInstance();
     unique_ptr<FileAssetContext> context = make_unique<FileAssetContext>();
     context->objectPtr = fileAssetPtr;
