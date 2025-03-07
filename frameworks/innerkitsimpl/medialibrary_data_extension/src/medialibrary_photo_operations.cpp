@@ -1246,10 +1246,6 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
         PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_NAME };
     MediaLibraryRdbStore::ReplacePredicatesUriToId(*(cmd.GetAbsRdbPredicates()));
 
-    int32_t updateRows = UpdateFileInDb(cmd);
-    CHECK_AND_RETURN_RET_LOG(updateRows >= 0, updateRows,
-        "Update Photo in database failed, updateRows=%{public}d", updateRows);
-
     int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
@@ -1259,6 +1255,10 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
         errCode = SetUserComment(cmd, fileAsset);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to set user comment, errCode=%{private}d", errCode);
     }
+
+    int32_t updateRows = UpdateFileInDb(cmd);
+    CHECK_AND_RETURN_RET_LOG(updateRows >= 0, updateRows,
+        "Update Photo in database failed, updateRows=%{public}d", updateRows);
 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
