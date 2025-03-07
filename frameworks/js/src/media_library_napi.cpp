@@ -7099,7 +7099,8 @@ static napi_value ParseArgsStartAssetAnalysis(napi_env env, napi_callback_info i
     // Parse analysis type
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_ZERO],
         context->analysisType) == napi_ok, "analysisType invalid");
-    CHECK_COND_WITH_MESSAGE(env, context->analysisType > AnalysisType::ANALYSIS_INVALID, "analysisType invalid");
+    CHECK_COND_WITH_MESSAGE(env, context->analysisType > AnalysisType::ANALYSIS_INVALID,
+        "analysisType invalid:" + std::to_string(context->analysisType));
 
     // Parse asset uris
     if (context->argc == ARGS_TWO) {
@@ -7140,6 +7141,7 @@ static void JSStartAssetAnalysisCallback(napi_env env, napi_status status, void 
         CHECK_ARGS_RET_VOID(env, napi_create_int32(env, context->taskId, &jsContext->data), JS_INNER_FAIL);
         jsContext->status = true;
     } else {
+        CHECK_ARGS_RET_VOID(env, napi_create_int32(env, -1, &jsContext->data), JS_INNER_FAIL);
         context->HandleError(env, jsContext->error);
     }
 
