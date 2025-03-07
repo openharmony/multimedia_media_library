@@ -1246,6 +1246,16 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
         PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_NAME };
     MediaLibraryRdbStore::ReplacePredicatesUriToId(*(cmd.GetAbsRdbPredicates()));
 
+    int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
+        OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to query file asset vector from db, errCode=%{private}d", errCode);
+
+    for (const auto& fileAsset : fileAssetVector) {
+        errCode = SetUserComment(cmd, fileAsset);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to set user comment, errCode=%{private}d", errCode);
+    }
+
     int32_t updateRows = UpdateFileInDb(cmd);
     CHECK_AND_RETURN_RET_LOG(updateRows >= 0, updateRows,
         "Update Photo in database failed, updateRows=%{public}d", updateRows);
@@ -1657,6 +1667,10 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Update Photo In database failed, rowId=%{public}d", rowId);
         RevertOrientation(fileAsset, currentOrientation);
         return rowId;
+    }
+    if (cmd.GetOprnType() == OperationType::SET_USER_COMMENT) {
+        errCode = SetUserComment(cmd, fileAsset);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Edit user comment errCode = %{private}d", errCode);
     }
     CHECK_AND_RETURN_RET_LOG(HandleNeedSetDisplayName(cmd, isNameChanged, fileAsset, isNeedScan) == E_OK, errCode,
         "Failed to update file");
