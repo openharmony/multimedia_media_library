@@ -66,6 +66,7 @@ const string EMPTY_STR = "";
 const string TEST_FILE_PATH_PHOTO = "test_file_path_photo";
 const string TEST_FILE_PATH_VIDEO = "test_file_path_video";
 const string TEST_FILE_PATH_AUDIO = "test_file_path_audio";
+const string TASK_ID = "1";
 const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
     "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " != " +
@@ -75,6 +76,9 @@ const vector<string> CLEAR_SQLS = {
         to_string(PhotoAlbumSubType::SHOOTING_MODE),
     "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
     "DELETE FROM " + AudioColumn::AUDIOS_TABLE,
+    "DELETE FROM " + GEO_DICTIONARY_TABLE,
+    "DELETE FROM " + VISION_LABEL_TABLE,
+    "DELETE FROM " + VISION_VIDEO_LABEL_TABLE,
 };
 const vector<string> WHERE_CLAUSE_LIST_PHOTO = { WHERE_CLAUSE_SHOOTING_MODE, WHERE_CLAUSE_TRASHED,
     WHERE_CLAUSE_IS_FAVORITE, WHERE_CLAUSE_HIDDEN, WHERE_CLAUSE_EDIT,
@@ -385,6 +389,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_AUDIO);
     EXPECT_EQ(count, EXPECTED_AUDIO_COUNT);
     // need judge file count later
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_test_003, TestSize.Level0)
@@ -399,6 +404,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_AUDIO);
     EXPECT_EQ(count, EXPECTED_AUDIO_COUNT);
     // need judge file count later
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_is_file_valid_test_001, TestSize.Level0)
@@ -880,7 +886,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneD
 
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-    
+
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     system(cmdMkdir.c_str());
 
@@ -1208,7 +1214,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfil
 
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-    
+
     auto err = othersClone->GetAllfilesInCurrentDir("/storage/media/100/local/test/test");
     EXPECT_EQ(err, ERR_NOT_ACCESSIBLE);
 }
@@ -1219,7 +1225,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfil
 
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-    
+
     auto err = othersClone->GetAllfilesInCurrentDir("/storage/media/100/local/files/");
     EXPECT_EQ(err, E_OK);
 }
@@ -1360,7 +1366,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
 
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
-    
+
     FileInfo fileInfo;
     std::vector<FileInfo> fileInfos;
     fileInfos.push_back(fileInfo);
@@ -1375,7 +1381,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
-    
+
     string cmdMkdir = string("mkdir -p ") + "/storage/media/local/files/.backup/restore/storage/emulated/0";
     system(cmdMkdir.c_str());
 
@@ -1386,7 +1392,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
 
     othersClone->photosRestore_.OnStart(store, store);
-    
+
     EXPECT_FALSE(othersClone->HasSameFileForDualClone(fileInfo));
 }
 
@@ -1646,7 +1652,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleIns
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_rebackup_001 start");
-    
+
     BackupRestoreService &instance = BackupRestoreService::GetInstance();
     ASSERT_NE(&instance, nullptr);
     instance.StartBackup(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR);
@@ -1813,6 +1819,367 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_ast
     testFileInfo.isRelatedToPhotoMap = 0;
     EXPECT_EQ(restoreService->MoveAstc(testFileInfo), E_OK);
     MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_move_astc_test_003");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_001");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { GEO_DICTIONARY_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    std::shared_ptr<CloneRestoreGeoDictionary> cloneRestoreGeoDictionary = make_shared<CloneRestoreGeoDictionary>();
+    cloneRestoreGeoDictionary->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
+    EXPECT_EQ(cloneRestoreGeoDictionary->taskId_, TASK_ID);
+    EXPECT_EQ(cloneRestoreGeoDictionary->sceneCode_, CLONE_RESTORE_ID);
+    EXPECT_NE(cloneRestoreGeoDictionary->mediaRdb_, nullptr);
+    EXPECT_NE(cloneRestoreGeoDictionary->mediaLibraryRdb_, nullptr);
+
+    cloneRestoreGeoDictionary->RestoreAlbums();
+    EXPECT_EQ(cloneRestoreGeoDictionary->geoDictionaryInfos_.size(), 1);
+    EXPECT_EQ(cloneRestoreGeoDictionary->successInsertCnt_.load(), 1);
+
+    cloneRestoreGeoDictionary->successInsertCnt_ = 0;
+    cloneRestoreGeoDictionary->RestoreAlbums();
+    EXPECT_EQ(cloneRestoreGeoDictionary->geoDictionaryInfos_.size(), 0);
+    EXPECT_EQ(cloneRestoreGeoDictionary->successInsertCnt_.load(), 0);
+    VerifyGeoDictionaryRestore(cloneRestoreGeoDictionary->mediaLibraryRdb_);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+void MediaLibraryBackupCloneTest::VerifyGeoDictionaryRestore(const std::shared_ptr<NativeRdb::RdbStore>& db)
+{
+    std::string querySql = "SELECT * FROM " + GEO_DICTIONARY_TABLE;
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = db->QuerySql(querySql);
+    ASSERT_NE(resultSet, nullptr);
+
+    EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    int index;
+    std::string stringValue;
+
+    (void)resultSet->GetColumnIndex(CITY_ID, index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "945032946426347352");
+
+    (void)resultSet->GetColumnIndex(LANGUAGE, index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "zh-Hans");
+
+    (void)resultSet->GetColumnIndex(CITY_NAME, index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "武汉");
+
+    EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_002");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { GEO_DICTIONARY_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    shared_ptr<CloneRestoreGeoDictionary> cloneRestoreGeoDictionary = make_shared<CloneRestoreGeoDictionary>();
+    cloneRestoreGeoDictionary->Init(CLONE_RESTORE_ID, TASK_ID, nullptr, cloneSource.cloneStorePtr_);
+    EXPECT_NE(cloneRestoreGeoDictionary->mediaRdb_, nullptr);
+    EXPECT_EQ(cloneRestoreGeoDictionary->mediaLibraryRdb_, nullptr);
+    cloneRestoreGeoDictionary->RestoreAlbums();
+    EXPECT_EQ(cloneRestoreGeoDictionary->successInsertCnt_.load(), 0);
+
+    cloneRestoreGeoDictionary->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), nullptr);
+    EXPECT_EQ(cloneRestoreGeoDictionary->mediaRdb_, nullptr);
+    EXPECT_NE(cloneRestoreGeoDictionary->mediaLibraryRdb_, nullptr);
+    cloneRestoreGeoDictionary->RestoreAlbums();
+    EXPECT_EQ(cloneRestoreGeoDictionary->successInsertCnt_.load(), 0);
+
+    cloneRestoreGeoDictionary->Init(CLONE_RESTORE_ID, TASK_ID, nullptr, nullptr);
+    EXPECT_EQ(cloneRestoreGeoDictionary->mediaRdb_, nullptr);
+    EXPECT_EQ(cloneRestoreGeoDictionary->mediaLibraryRdb_, nullptr);
+    cloneRestoreGeoDictionary->RestoreAlbums();
+    EXPECT_EQ(cloneRestoreGeoDictionary->successInsertCnt_.load(), 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_003");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { GEO_DICTIONARY_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    std::shared_ptr<CloneRestoreGeoDictionary> cloneRestoreGeoDictionary = make_shared<CloneRestoreGeoDictionary>();
+    cloneRestoreGeoDictionary->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
+    cloneRestoreGeoDictionary->GetGeoDictionaryInfos();
+    EXPECT_EQ(cloneRestoreGeoDictionary->geoDictionaryInfos_.size(), 1);
+    cloneRestoreGeoDictionary->InsertIntoGeoDictionaryAlbums();
+    EXPECT_EQ(cloneRestoreGeoDictionary->successInsertCnt_.load(), 1);
+
+    cloneRestoreGeoDictionary->successInsertCnt_ = 0;
+    cloneRestoreGeoDictionary->geoDictionaryInfos_.clear();
+    cloneSource.Insert(tableList);
+    cloneRestoreGeoDictionary->GetGeoDictionaryInfos();
+    EXPECT_EQ(cloneRestoreGeoDictionary->geoDictionaryInfos_.size(), 2);
+    cloneRestoreGeoDictionary->InsertIntoGeoDictionaryAlbums();
+    EXPECT_EQ(cloneRestoreGeoDictionary->successInsertCnt_.load(), 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_004");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { GEO_DICTIONARY_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    std::shared_ptr<CloneRestoreGeoDictionary> cloneRestoreGeoDictionary = make_shared<CloneRestoreGeoDictionary>();
+    cloneRestoreGeoDictionary->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
+    cloneRestoreGeoDictionary->RestoreAlbums();
+    EXPECT_EQ(cloneRestoreGeoDictionary->geoDictionaryInfos_.size(), 1);
+
+    cloneRestoreGeoDictionary->GeoDictionaryDeduplicate();
+    EXPECT_EQ(cloneRestoreGeoDictionary->geoDictionaryInfos_.size(), 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_005");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { GEO_DICTIONARY_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    std::shared_ptr<CloneRestoreGeoDictionary> cloneRestoreGeoDictionary = make_shared<CloneRestoreGeoDictionary>();
+    cloneRestoreGeoDictionary->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
+    std::unordered_map<std::string, std::string> columns;
+    columns[CITY_ID] = "TEXT";
+    columns[LANGUAGE] = "TEXT";
+    columns[CITY_NAME] = "TEXT";
+    EXPECT_TRUE(cloneRestoreGeoDictionary->CheckTableColumns(GEO_DICTIONARY_TABLE, columns));
+    columns.clear();
+    columns[FILE_ID] = "INT";
+    EXPECT_FALSE(cloneRestoreGeoDictionary->CheckTableColumns(GEO_DICTIONARY_TABLE, columns));
+    EXPECT_EQ(cloneRestoreGeoDictionary->GetCommonColumns(GEO_DICTIONARY_TABLE).size(), 3);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_001");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    std::vector<FileInfo> fileInfos;
+    FileInfo fileInfo;
+    fileInfo.fileIdOld = 1;
+    fileInfo.fileIdNew = FILE_INFO_NEW_ID;
+    fileInfos.push_back(fileInfo);
+
+    shared_ptr<CloneRestoreClassify> cloneRestoreClassify = make_shared<CloneRestoreClassify>();
+    cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
+    EXPECT_EQ(cloneRestoreClassify->taskId_, TASK_ID);
+    EXPECT_EQ(cloneRestoreClassify->sceneCode_, CLONE_RESTORE_ID);
+    EXPECT_NE(cloneRestoreClassify->mediaRdb_, nullptr);
+    EXPECT_NE(cloneRestoreClassify->mediaLibraryRdb_, nullptr);
+
+    cloneRestoreClassify->RestoreMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreClassify->successInsertLabelCnt_, 1);
+    cloneRestoreClassify->RestoreVideoMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreClassify->successInsertVideoLabelCnt_, 1);
+    VerifyClassifyRestore(cloneRestoreClassify->mediaLibraryRdb_);
+    VerifyClassifyVideoRestore(cloneRestoreClassify->mediaLibraryRdb_);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+void MediaLibraryBackupCloneTest::VerifyClassifyRestore(const std::shared_ptr<NativeRdb::RdbStore>& db)
+{
+    std::string querySql = "SELECT * FROM " + VISION_LABEL_TABLE;
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = db->QuerySql(querySql);
+    ASSERT_NE(resultSet, nullptr);
+
+    EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    int index;
+    int intValue;
+    std::string stringValue;
+
+    (void)resultSet->GetColumnIndex("file_id", index);
+    resultSet->GetInt(index, intValue);
+    EXPECT_EQ(intValue, FILE_INFO_NEW_ID);
+
+    (void)resultSet->GetColumnIndex("sub_label", index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "44");
+
+    EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
+}
+
+void MediaLibraryBackupCloneTest::VerifyClassifyVideoRestore(const std::shared_ptr<NativeRdb::RdbStore>& db)
+{
+    std::string querySql = "SELECT * FROM " + VISION_VIDEO_LABEL_TABLE;
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = db->QuerySql(querySql);
+    ASSERT_NE(resultSet, nullptr);
+
+    EXPECT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    int index;
+    int intValue;
+    std::string stringValue;
+
+    (void)resultSet->GetColumnIndex("file_id", index);
+    resultSet->GetInt(index, intValue);
+    EXPECT_EQ(intValue, FILE_INFO_NEW_ID);
+
+    (void)resultSet->GetColumnIndex("sub_label", index);
+    resultSet->GetString(index, stringValue);
+    EXPECT_EQ(stringValue, "153");
+
+    EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_002");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    std::vector<FileInfo> fileInfos {};
+    shared_ptr<CloneRestoreClassify> cloneRestoreClassify = make_shared<CloneRestoreClassify>();
+    cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, nullptr, cloneSource.cloneStorePtr_);
+    EXPECT_NE(cloneRestoreClassify->mediaRdb_, nullptr);
+    EXPECT_EQ(cloneRestoreClassify->mediaLibraryRdb_, nullptr);
+    cloneRestoreClassify->RestoreMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreClassify->successInsertLabelCnt_.load(), 0);
+    cloneRestoreClassify->RestoreVideoMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreClassify->successInsertVideoLabelCnt_.load(), 0);
+
+    cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), nullptr);
+    EXPECT_EQ(cloneRestoreClassify->mediaRdb_, nullptr);
+    EXPECT_NE(cloneRestoreClassify->mediaLibraryRdb_, nullptr);
+    cloneRestoreClassify->RestoreMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreClassify->successInsertLabelCnt_.load(), 0);
+    cloneRestoreClassify->RestoreVideoMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreClassify->successInsertVideoLabelCnt_.load(), 0);
+
+    cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, nullptr, nullptr);
+    EXPECT_EQ(cloneRestoreClassify->mediaRdb_, nullptr);
+    EXPECT_EQ(cloneRestoreClassify->mediaLibraryRdb_, nullptr);
+    cloneRestoreClassify->RestoreMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreClassify->successInsertLabelCnt_.load(), 0);
+    cloneRestoreClassify->RestoreVideoMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreClassify->successInsertVideoLabelCnt_.load(), 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_003");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    shared_ptr<CloneRestoreClassify> cloneRestoreClassify = make_shared<CloneRestoreClassify>();
+    cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
+    std::vector<CloneRestoreClassify::ClassifyCloneInfo> classifyInfo;
+    std::vector<CloneRestoreClassify::ClassifyVideoCloneInfo> classifyVideoInfo;
+    std::vector<FileInfo> fileInfos;
+    FileInfo fileInfo;
+    cloneRestoreClassify->GetClassifyInfos(classifyInfo, fileInfos, 0);
+    cloneRestoreClassify->GetClassifyVideoInfos(classifyVideoInfo, fileInfos, 0);
+    EXPECT_EQ(classifyInfo.size(), 0);
+    EXPECT_EQ(classifyVideoInfo.size(), 0);
+
+    fileInfo.fileIdOld = 1;
+    fileInfo.fileIdNew = FILE_INFO_NEW_ID;
+    fileInfos.push_back(fileInfo);
+    cloneRestoreClassify->GetClassifyInfos(classifyInfo, fileInfos, 0);
+    cloneRestoreClassify->GetClassifyVideoInfos(classifyVideoInfo, fileInfos, 0);
+    EXPECT_EQ(classifyInfo.size(), 1);
+    EXPECT_EQ(classifyVideoInfo.size(), 1);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_004");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    shared_ptr<CloneRestoreClassify> cloneRestoreClassify = make_shared<CloneRestoreClassify>();
+    cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
+    std::vector<CloneRestoreClassify::ClassifyCloneInfo> classifyInfo;
+    std::vector<CloneRestoreClassify::ClassifyVideoCloneInfo> classifyVideoInfo;
+    std::vector<FileInfo> fileInfos;
+    FileInfo fileInfo;
+    fileInfo.fileIdOld = 1;
+    fileInfo.fileIdNew = FILE_INFO_NEW_ID;
+    fileInfos.push_back(fileInfo);
+    cloneRestoreClassify->GetClassifyInfos(classifyInfo, fileInfos, 0);
+    cloneRestoreClassify->InsertClassifyAlbums(classifyInfo, fileInfos);
+    EXPECT_EQ(classifyInfo.size(), 1);
+    cloneRestoreClassify->GetClassifyVideoInfos(classifyVideoInfo, fileInfos, 0);
+    cloneRestoreClassify->InsertClassifyVideoAlbums(classifyVideoInfo, fileInfos);
+    EXPECT_EQ(classifyVideoInfo.size(), 1);
+
+    fileInfos.clear();
+    cloneRestoreClassify->DeduplicateClassifyInfos(classifyInfo, fileInfos);
+    EXPECT_EQ(classifyInfo.size(), 0);
+    cloneRestoreClassify->DeduplicateClassifyVideoInfos(classifyVideoInfo, fileInfos);
+    EXPECT_EQ(classifyVideoInfo.size(), 0);
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_005");
+
+    ClearData();
+    CloneSource cloneSource;
+    vector<string> tableList = { VISION_LABEL_TABLE, VISION_VIDEO_LABEL_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+
+    shared_ptr<CloneRestoreClassify> cloneRestoreClassify = make_shared<CloneRestoreClassify>();
+    cloneRestoreClassify->Init(CLONE_RESTORE_ID, TASK_ID, g_rdbStore->GetRaw(), cloneSource.cloneStorePtr_);
+    std::unordered_map<std::string, std::string> columns;
+    columns[FILE_ID] = "INT";
+    EXPECT_TRUE(cloneRestoreClassify->CheckTableColumns(VISION_LABEL_TABLE, columns));
+    EXPECT_TRUE(cloneRestoreClassify->CheckTableColumns(VISION_VIDEO_LABEL_TABLE, columns));
+    columns.clear();
+    columns[LANGUAGE] = "TEXT";
+    EXPECT_FALSE(cloneRestoreClassify->CheckTableColumns(VISION_LABEL_TABLE, columns));
+    EXPECT_FALSE(cloneRestoreClassify->CheckTableColumns(VISION_VIDEO_LABEL_TABLE, columns));
+
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 } // namespace Media
 } // namespace OHOS
