@@ -2059,7 +2059,7 @@ static void AddSystemAlbum(set<string> &systemAlbum, shared_ptr<NativeRdb::Resul
     int minMediaType = GetIntValFromColumn(resultSet, "Min(" + MediaColumn::MEDIA_TYPE + ")");
     int maxMediaType = GetIntValFromColumn(resultSet, "Max(" + MediaColumn::MEDIA_TYPE + ")");
     int favorite = GetIntValFromColumn(resultSet, "Max(" + MediaColumn::MEDIA_IS_FAV + ")");
-    int cloud = GetIntValFromColumn(resultSet, "Max(" + PhotoColumn::PHOTO_ASSOCIATE_FILE_ID + ")");
+    int cloudAssociate = GetIntValFromColumn(resultSet, "Max(" + PhotoColumn::PHOTO_STRONG_ASSOCIATION + ")");
     if (minMediaType == MEDIA_TYPE_IMAGE) {
         systemAlbum.insert(to_string(PhotoAlbumSubType::IMAGE));
     }
@@ -2069,11 +2069,11 @@ static void AddSystemAlbum(set<string> &systemAlbum, shared_ptr<NativeRdb::Resul
     if (favorite > 0) {
         systemAlbum.insert(to_string(PhotoAlbumSubType::FAVORITE));
     }
-    if (cloud > 0) {
+    if (cloudAssociate > 0) {
         systemAlbum.insert(to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT));
     }
     MEDIA_INFO_LOG("AddSystemAlbum minMediaType:%{public}d, maxMediaType:%{public}d, favorite:%{public}d,"
-        " cloud:%{public}d,", minMediaType, maxMediaType, favorite, cloud);
+        " cloudAssociate:%{public}d,", minMediaType, maxMediaType, favorite, cloudAssociate);
 }
 
 static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &uris,
@@ -2100,7 +2100,7 @@ static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore
             "Min(" + MediaColumn::MEDIA_TYPE + ")",
             "Max(" + MediaColumn::MEDIA_TYPE + ")",
             "Max(" + MediaColumn::MEDIA_IS_FAV + ")",
-            "Max(" + PhotoColumn::PHOTO_ASSOCIATE_FILE_ID + ")",
+            "Max(" + PhotoColumn::PHOTO_STRONG_ASSOCIATION + ")",
         };
         auto resultSet = rdbStore->Query(predicates, columns);
         if (resultSet == nullptr) {

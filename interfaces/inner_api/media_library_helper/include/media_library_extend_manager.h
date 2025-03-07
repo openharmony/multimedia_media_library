@@ -151,6 +151,7 @@ private:
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
     int32_t CheckPhotoUriPermissionQueryOperation(const DataShare::DataSharePredicates &predicates,
         std::map<string, int32_t> &resultMap);
+    bool ForceReconnect();
 };
 } // namespace Media
 } // namespace OHOS
