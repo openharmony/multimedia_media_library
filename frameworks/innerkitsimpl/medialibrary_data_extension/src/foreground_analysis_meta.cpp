@@ -91,9 +91,12 @@ bool ForegroundAnalysisMeta::IsMetaDirtyed()
     std::time_t cvTime = frontCvModified_ / 1000;
     std::time_t indexTime = frontIndexModified_ / 1000;
     std::time_t curTime = MediaFileUtils::UTCTimeMilliSeconds() / 1000;
-    std::tm cvTm = *std::localtime(&cvTime);
-    std::tm indexTm = *std::localtime(&indexTime);
-    std::tm curTm = *std::localtime(&curTime);
+    std::tm cvTm;
+    localtime_r(&cvTime, &cvTm);
+    std::tm indexTm;
+    localtime_r(&indexTime, &indexTm);
+    std::tm curTm;
+    localtime_r(&curTime, &curTm);
     return (cvTm.tm_year != curTm.tm_year) || (cvTm.tm_mon != curTm.tm_mon) || (cvTm.tm_mday != curTm.tm_mday) ||
         (indexTm.tm_year != curTm.tm_year) || (indexTm.tm_mon != curTm.tm_mon) || (indexTm.tm_mday != curTm.tm_mday) ||
         !isInit_;
@@ -115,7 +118,7 @@ int32_t ForegroundAnalysisMeta::RefreshMeta()
     valuesBucket.Put(FRONT_CV_COUNT, frontCvCount_);
     valuesBucket.Put(FRONT_INDEX_MODIFIED, frontIndexModified_);
     valuesBucket.Put(FRONT_INDEX_COUNT, frontIndexCount_);
-    MEDIA_INFO_LOG("refresh cv meta, isIns:%{public}d", !isInit_);
+    MEDIA_INFO_LOG("refresh cv meta, insert:%{public}d", !isInit_);
     if (!isInit_) {
         int64_t outRowId = 0;
         int errCode = rdbStore->Insert(outRowId, USER_PHOTOGRAPHY_INFO_TABLE, valuesBucket);
@@ -170,19 +173,8 @@ void ForegroundAnalysisMeta::StartAnalysisService()
     if (opType_ == ForegroundAnalysisOpType::FOREGROUND_NOT_HANDLE) {
         return;
     }
-    std::thread([taskId = taskId_, opType = opType_, fileIds = fileIds_]()-> void {
-        MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}u", taskId, opType,
-            fileIds.size());
-        if (opType & ForegroundAnalysisOpType::OCR_AND_LABEL) {
-            MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
-                IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_OCR, fileIds, taskId);
-        }
-        if (opType & ForegroundAnalysisOpType::SEARCH_INDEX) {
-            const std::vector<std::string> tmp;
-            MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
-                IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX, tmp, taskId);
-        }
-    }).detach();
+    MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}u", taskId_, opType_,
+        fileIds_.size());
 }
 
 int32_t ForegroundAnalysisMeta::QueryPendingAnalyzeFileIds(MediaLibraryCommand &cmd, std::vector<std::string> &fileIds)
@@ -257,7 +249,7 @@ int32_t ForegroundAnalysisMeta::QueryPendingIndexCount(MediaLibraryCommand &cmd,
     std::string onClause = SEARCH_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE + "." +
         MediaColumn::MEDIA_ID;
     std::string colmun = "COUNT(1)";
-    std::string whereClause = SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_PHOTO_STATUS + " in (-1, 0)";
+    std::string whereClause = SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_PHOTO_STATUS + " in (0, 2)";
     std::string sql = "SELECT " + colmun + " FROM " + SEARCH_TOTAL_TABLE + " INNER JOIN " + PhotoColumn::PHOTOS_TABLE +
         " ON " + onClause + " WHERE " + whereClause;
     auto result = rdbStore->QuerySql(sql);
