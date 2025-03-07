@@ -1253,6 +1253,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             if (cmd.GetOprnType() == OperationType::UPDATE_ORDER) {
                 return MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
             }
+        case OperationObject::ANALYSIS_FOREGROUND:
+            return MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(cmd);
         default:
             break;
     }

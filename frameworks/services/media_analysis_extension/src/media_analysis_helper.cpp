@@ -126,5 +126,35 @@ bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> geoInfo, c
         addressDescription.c_str());
     return true;
 }
+
+void MediaAnalysisHelper::StartForegroundAnalysisServiceSync(int32_t code, const std::vector<std::string> &fileIds,
+    int32_t taskId)
+{
+    MessageParcel data;
+    MediaAnalysisProxy mediaAnalysisProxy(nullptr);
+    if (!data.WriteInterfaceToken(mediaAnalysisProxy.GetDescriptor())) {
+        MEDIA_ERR_LOG("Write InterfaceToken failed");
+        return;
+    }
+
+    if (!data.WriteInt32(taskId)) {
+        MEDIA_ERR_LOG("Write taskid failed");
+        return;
+    }
+
+    if (!fileIds.empty()) {
+        if (!data.WriteStringVector(fileIds)) {
+            MEDIA_ERR_LOG("write fileIds failed");
+            return;
+        }
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("Actively Calling Analysis For Foreground failed");
+        return;
+    }
+}
 } // namespace Media
 } // namespace OHOS

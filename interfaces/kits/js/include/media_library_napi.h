@@ -332,6 +332,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetForceHideSensitiveType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessStartAssetAnalysis(napi_env env, napi_callback_info info);
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -499,6 +500,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> albumIds;
     std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
     bool isContainsAlbumUri = false;
+    int32_t taskId = -1;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
