@@ -48,6 +48,7 @@ constexpr uint32_t URI_PERMISSION_FLAG_READ = 1;
 constexpr uint32_t URI_PERMISSION_FLAG_WRITE = 2;
 constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 3;
 constexpr int32_t DEFUALT_USER_ID = 100;
+constexpr int32_t DATASHARE_ERR = -1;
 
 static map<string, TableType> tableMap = {
     { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
@@ -95,6 +96,14 @@ void MediaLibraryExtendManager::InitMediaLibraryExtendManager()
         dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
         userId_ = activeUser;
     }
+}
+
+bool MediaLibraryExtendManager::ForceReconnect()
+{
+    dataShareHelper_ = nullptr;
+    InitMediaLibraryExtendManager();
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, false, "init manager fail");
+    return true;
 }
 
 static int32_t UrisSourceMediaTypeClassify(const vector<string> &urisSource,
@@ -232,6 +241,10 @@ int32_t MediaLibraryExtendManager::CheckPhotoUriPermissionQueryOperation(const D
 
     Uri uri(MEDIALIBRARY_CHECK_URIPERM_URI);
     auto queryResultSet = dataShareHelper_->Query(uri, predicates, columns);
+    if (queryResultSet == nullptr && ForceReconnect()) {
+        MEDIA_WARN_LOG("resultset is null, reconnect and retry");
+        queryResultSet = dataShareHelper_->Query(uri, predicates, columns);
+    }
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_ERR, "queryResultSet is null!");
 
     while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -366,6 +379,10 @@ int32_t MediaLibraryExtendManager::GrantPhotoUriPermission(uint32_t srcTokenId, 
     }
     Uri insertUri(MEDIALIBRARY_GRANT_URIPERM_URI);
     auto ret = dataShareHelper_->BatchInsert(insertUri, valueSet);
+    if (ret == DATASHARE_ERR && ForceReconnect()) {
+        MEDIA_WARN_LOG("Failed to BatchInsert and retry");
+        ret = dataShareHelper_->BatchInsert(insertUri, valueSet);
+    }
     return ret;
 }
 
@@ -438,7 +455,12 @@ int32_t MediaLibraryExtendManager::OpenAsset(string &uri, const string openMode,
     MediaFileUtils::UriAppendKeyValue(assetUri, "type", to_string(static_cast<int32_t>(type)));
     MEDIA_DEBUG_LOG("merged uri = %{public}s", assetUri.c_str());
     Uri openUri(assetUri);
-    return dataShareHelper_->OpenFile(openUri, openMode);
+    int ret = dataShareHelper_->OpenFile(openUri, openMode);
+    if (ret == DATASHARE_ERR && ForceReconnect()) {
+        MEDIA_WARN_LOG("Failed to OpenFile and retry");
+        ret = dataShareHelper_->OpenFile(openUri, openMode);
+    }
+    return ret;
 }
 
 int32_t MediaLibraryExtendManager::ReadPrivateMovingPhoto(string &uri, const HideSensitiveType type)
@@ -451,7 +473,12 @@ int32_t MediaLibraryExtendManager::ReadPrivateMovingPhoto(string &uri, const Hid
     MediaFileUtils::UriAppendKeyValue(movingPhotoUri, "type", to_string(static_cast<int32_t>(type)));
     MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
     Uri openMovingPhotoUri(movingPhotoUri);
-    return dataShareHelper_->OpenFile(openMovingPhotoUri, MEDIA_FILEMODE_READONLY);
+    int ret = dataShareHelper_->OpenFile(openMovingPhotoUri, MEDIA_FILEMODE_READONLY);
+    if (ret == DATASHARE_ERR && ForceReconnect()) {
+        MEDIA_WARN_LOG("Failed to OpenFile and retry");
+        ret = dataShareHelper_->OpenFile(openMovingPhotoUri, MEDIA_FILEMODE_READONLY);
+    }
+    return ret;
 }
 
 static bool CheckPhotoUri(const string &uri)
@@ -477,10 +504,8 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromP
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     DatashareBusinessError businessError;
     auto resultSet = dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultset is null, reconnect and retry");
-        dataShareHelper_ = nullptr;
-        InitMediaLibraryExtendManager();
+    if (resultSet == nullptr && ForceReconnect()) {
+        MEDIA_WARN_LOG("resultset is null, reconnect and retry");
         return dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
     } else {
         return resultSet;
@@ -500,10 +525,8 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromD
     predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     DatashareBusinessError businessError;
     auto resultSet = dataShareHelper_->Query(uri, predicates, columns, &businessError);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultset is null, reconnect and retry");
-        dataShareHelper_ = nullptr;
-        InitMediaLibraryExtendManager();
+    if (resultSet == nullptr && ForceReconnect()) {
+        MEDIA_WARN_LOG("resultset is null, reconnect and retry");
         return dataShareHelper_->Query(uri, predicates, columns, &businessError);
     } else {
         return resultSet;
