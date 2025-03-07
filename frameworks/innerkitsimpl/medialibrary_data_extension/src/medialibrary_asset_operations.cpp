@@ -1548,6 +1548,38 @@ void MediaLibraryAssetOperations::RevertSetDisplayNameByUpdate(MediaLibraryComma
     MEDIA_INFO_LOG("RevertSetDisplayNameByUpdate success, oldDisplayName: %{public}s.", oldDisplayName.c_str());
 }
 
+int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset> &fileAsset)
+{
+    ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+    string newUserComment;
+
+    if (values.GetObject(PhotoColumn::PHOTO_USER_COMMENT, valueObject)) {
+        valueObject.GetString(newUserComment);
+    } else {
+        return E_OK;
+    }
+
+    uint32_t err = 0;
+    SourceOptions opts;
+    string filePath = fileAsset->GetFilePath();
+    string extension = MediaFileUtils::GetExtensionFromPath(filePath);
+    opts.formatHint = "image/" + extension;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
+    if (err != 0 || imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain image source, err = %{public}d", err);
+        return E_OK;
+    }
+
+    string userComment;
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, userComment);
+    CHECK_AND_RETURN_RET_LOG(err == 0, E_OK, "Image does not exist user comment in exif, no need to modify");
+    err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT, newUserComment, filePath);
+    CHECK_AND_PRINT_LOG(err == 0, "Modify image property user comment failed");
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::UpdateRelativePath(MediaLibraryCommand &cmd,
     const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged)
 {
