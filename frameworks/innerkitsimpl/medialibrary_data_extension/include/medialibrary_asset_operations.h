@@ -215,6 +215,7 @@ protected:
     static void RevertSetDisplayName(MediaLibraryCommand &cmd, const int32_t id, const std::string &revertIndex);
     static void RevertSetDisplayNameByDelete(MediaLibraryCommand &cmd, const int32_t id);
     static void RevertSetDisplayNameByUpdate(MediaLibraryCommand &cmd, const int32_t id);
+    EXPORT static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
     static void UpdateVirtualPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
