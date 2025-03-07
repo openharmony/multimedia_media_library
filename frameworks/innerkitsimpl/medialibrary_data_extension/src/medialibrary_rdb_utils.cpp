@@ -436,35 +436,10 @@ static string GetTitleFromDisplayName(const string &displayName)
     return displayName.substr(0, pos);
 }
 
-static string Encode(const string &uri)
-{
-    const unordered_set<char> uriCompentsSet = {
-        ';', ',', '/', '?', ':', '@', '&',
-        '=', '+', '$', '-', '_', '.', '!',
-        '~', '*', '(', ')', '#', '\''
-    };
-    constexpr int32_t encodeLen = 2;
-    ostringstream outPutStream;
-    outPutStream.fill('0');
-    outPutStream << std::hex;
-
-    for (unsigned char tmpChar : uri) {
-        if (std::isalnum(tmpChar) || uriCompentsSet.find(tmpChar) != uriCompentsSet.end()) {
-            outPutStream << tmpChar;
-        } else {
-            outPutStream << std::uppercase;
-            outPutStream << '%' << std::setw(encodeLen) << static_cast<unsigned int>(tmpChar);
-            outPutStream << std::nouppercase;
-        }
-    }
-
-    return outPutStream.str();
-}
-
 static string GetExtraUri(const string &displayName, const string &path)
 {
     string extraUri = "/" + GetTitleFromDisplayName(GetFileName(path)) + "/" + displayName;
-    return Encode(extraUri);
+    return MediaFileUtils::Encode(extraUri);
 }
 
 static string GetUriByExtrConditions(const string &prefix, const string &fileId, const string &suffix)
