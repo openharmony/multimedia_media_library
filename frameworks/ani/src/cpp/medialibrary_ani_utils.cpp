@@ -655,6 +655,21 @@ ani_status MediaLibraryAniUtils::ToFileAssetAniArray(ani_env *env, std::vector<s
     return ANI_OK;
 }
 
+ani_status MediaLibraryAniUtils::ToFileAssetAniPtr(ani_env *env, std::unique_ptr<FetchResult<FileAsset>> fileAsset,
+    ani_object &aniPtr)
+{
+    if (fileAsset == nullptr) {
+        ANI_ERR_LOG("fileAsset is nullptr");
+        return ANI_ERROR;
+    }
+    aniPtr = FetchFileResultAni::CreateFetchFileResult(env, move(fileAsset));
+    if (aniPtr == nullptr) {
+        ANI_ERR_LOG("FetchFileResultAni::CreateFetchFileResult failed");
+        return ANI_ERROR;
+    }
+    return ANI_OK;
+}
+
 ani_status MediaLibraryAniUtils::GetPhotoAlbumAniArray(ani_env *env, ani_object arg, std::vector<PhotoAlbumAni*> &array)
 {
     CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
@@ -1336,6 +1351,16 @@ bool MediaLibraryAniUtils::IsFeaturedSinglePortraitAlbum(
         predicates = featuredSinglePortraitPredicates;
     }
     return isFeaturedSinglePortrait;
+}
+
+ani_status MediaLibraryAniUtils::FindClassMethod(ani_env *env, const std::string &className,
+    const std::string &methodName, ani_method *method)
+{
+    ani_class cls {};
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find class");
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, methodName.c_str(), nullptr, method), "Can't find method");
+
+    return ANI_OK;
 }
 
 template ani_status MediaLibraryAniUtils::GetFetchOption<unique_ptr<MediaLibraryAsyncContext>>(ani_env *env,

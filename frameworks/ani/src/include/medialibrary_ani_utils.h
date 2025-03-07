@@ -313,8 +313,10 @@ public:
         std::vector<std::string> &array);
 
     static ani_status GetUriArrayFromAssets(ani_env *env, ani_object arg, std::vector<std::string> &array);
-    static ani_status ToFileAssetAniArray(ani_env *env,
-        std::vector<std::unique_ptr<FileAsset>> &array, ani_object &aniArray);
+    static ani_status ToFileAssetAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
+        ani_object &aniArray);
+    static ani_status ToFileAssetAniPtr(ani_env *env, std::unique_ptr<FetchResult<FileAsset>> fileAsset,
+        ani_object &aniPtr);
 
     static ani_status GetPhotoAlbumAniArray(ani_env *env, ani_object arg, std::vector<PhotoAlbumAni*> &array);
     static ani_status ToPhotoAlbumAniArray(ani_env *env, std::vector<unique_ptr<PhotoAlbum>> &array,
@@ -385,6 +387,9 @@ public:
 
     static std::string GetStringValueByColumn(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::string columnName);
+
+    static ani_status FindClassMethod(ani_env *env, const std::string &className, const std::string &methodName,
+        ani_method *method);
 };
 
 } // namespace Media

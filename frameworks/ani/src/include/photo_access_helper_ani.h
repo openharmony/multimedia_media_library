@@ -47,6 +47,10 @@ public:
     static ani_status ApplyChanges(ani_env *env, ani_object object);
     static ani_object createAsset1([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object obj,
         [[maybe_unused]] ani_string stringObj);
+    static ani_object GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+        ani_object options);
+    static ani_object GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+        ani_object options);
     static std::mutex sUserFileClientMutex_;
 
 private:
@@ -119,8 +123,6 @@ struct MediaLibraryAsyncContext : public AniError {
     std::shared_ptr<PickerCallBack> pickerCallBack;
     std::vector<std::string> analysisDatas;
 };
-
-
 } // namespace Media
 } // namespace OHOS
 
