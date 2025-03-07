@@ -23,6 +23,7 @@ const BaseItemInfo = requireNapi('file.PhotoPickerComponent').BaseItemInfo;
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
+const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
 
 export class RecentPhotoComponent extends ViewPU {
     constructor(j3, k3, l3, m3 = -1, n3 = undefined, o3) {
@@ -136,6 +137,9 @@ export class RecentPhotoComponent extends ViewPU {
         }
         else if (n2 === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
             o2 = FILTER_MEDIA_TYPE_VIDEO;
+        } 
+        else if (n2 === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
+            o2 = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
         }
         else {
             o2 = FILTER_MEDIA_TYPE_ALL;
