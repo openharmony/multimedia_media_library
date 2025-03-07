@@ -41,6 +41,9 @@ const unordered_map<string, string> TABLE_CREATE_MAP = {
     { VISION_IMAGE_FACE_TABLE, CREATE_IMG_FACE_TBL_FOR_ONCREATE },
     { ANALYSIS_PHOTO_MAP_TABLE, CREATE_ANALYSIS_ALBUM_MAP },
     { AudioColumn::AUDIOS_TABLE, AudioColumn::CREATE_AUDIO_TABLE },
+    { GEO_DICTIONARY_TABLE, CREATE_GEO_DICTIONARY_TABLE },
+    { VISION_LABEL_TABLE, CREATE_TAB_ANALYSIS_LABEL },
+    { VISION_VIDEO_LABEL_TABLE, CREATE_TAB_ANALYSIS_VIDEO_LABEL },
 };
 const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, InsertType::PHOTOS },
@@ -51,6 +54,9 @@ const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { VISION_IMAGE_FACE_TABLE, InsertType::IMG_FACE_TBL },
     { ANALYSIS_PHOTO_MAP_TABLE, InsertType::ANALYSIS_PHOTO_MAP },
     { AudioColumn::AUDIOS_TABLE, InsertType::AUDIOS },
+    { GEO_DICTIONARY_TABLE, InsertType::ANALYSIS_GEO_DICTIONARY },
+    { VISION_LABEL_TABLE, InsertType::TAB_ANALYSIS_LABEL },
+    { VISION_VIDEO_LABEL_TABLE, InsertType::TAB_ANALYSIS_VIDEO_LABEL },
 };
 const string VALUES_BEGIN = " VALUES (";
 const string VALUES_END = ") ";
@@ -79,6 +85,16 @@ const string INSERT_AUDIO = "INSERT INTO " + AudioColumn::AUDIOS_TABLE + "(" + A
     AudioColumn::MEDIA_DATE_MODIFIED + ", " + AudioColumn::MEDIA_DATE_TAKEN + ", " +
     AudioColumn::MEDIA_DURATION + ", " + AudioColumn::MEDIA_IS_FAV + ", " + AudioColumn::MEDIA_DATE_TRASHED + ", " +
     AudioColumn::AUDIO_ARTIST + ")";
+const string INSERT_ANALYSIS_GEO_DICTIONARY = "INSERT INTO " + GEO_DICTIONARY_TABLE + "(" +
+    CITY_ID + ", " + LANGUAGE + ", " + CITY_NAME + ")";
+const string INSERT_TAB_ANALYSIS_LABEL = "INSERT INTO " + VISION_LABEL_TABLE + "(" +
+    ID + ", " + FILE_ID + ", " + CATEGORY_ID + ", " + SUB_LABEL + ", " + PROB + ", " + FEATURE + ", " + SIM_RESULT +
+    ", " + LABEL_VERSION + ", " + SALIENCY_SUB_PROB + ", " + ANALYSIS_VERSION + ")";
+const string INSERT_TAB_ANALYSIS_VIDEO_LABEL = "INSERT INTO " + VISION_VIDEO_LABEL_TABLE + "(" +
+    ID + ", " + FILE_ID + ", " + CATEGORY_ID + ", " + CONFIDENCE_PROBABILITY + ", " + SUB_CATEGORY + ", "
+    + SUB_CONFIDENCE_PROB + ", " + SUB_LABEL + ", " + SUB_LABEL_PROB + ", " + SUB_LABEL_TYPE + ", " + TRACKS +
+    ", " + VIDEO_PART_FEATURE + ", " + FILTER_TAG + ", " + ALGO_VERSION + ", " + ANALYSIS_VERSION + ", "
+    + TRIGGER_GENERATE_THUMBNAIL + ")";
 
 int32_t CloneOpenCall::OnCreate(NativeRdb::RdbStore &store)
 {
@@ -167,6 +183,18 @@ void CloneSource::InsertByType(InsertType insertType)
             InsertAudio();
             break;
         }
+        case InsertType::ANALYSIS_GEO_DICTIONARY: {
+            InsertAnalysisGeoDictionary();
+            break;
+        }
+        case InsertType::TAB_ANALYSIS_LABEL: {
+            InsertTabAnalysisLabel();
+            break;
+        }
+        case InsertType::TAB_ANALYSIS_VIDEO_LABEL: {
+            InsertTabAnalysisVideoLabel();
+            break;
+        }
         default:
             MEDIA_INFO_LOG("Invalid insert type");
     }
@@ -234,6 +262,12 @@ void CloneSource::InsertAnalysisAlbum()
     cloneStorePtr_->ExecuteSql("INSERT INTO " + ANALYSIS_ALBUM_TABLE + "("
         "album_type, album_subtype, album_name, tag_id, cover_uri, is_cover_satisfied) "
         "VALUES (4096, 4102, 'Test Portrait Album', 'test_tag_id', 'test_cover_uri', 1)");
+    cloneStorePtr_->ExecuteSql("INSERT INTO " + ANALYSIS_ALBUM_TABLE + "("
+        "album_type, album_subtype, album_name, tag_id, cover_uri, is_cover_satisfied) "
+        "VALUES (4096, 4100, 'Test City Album', 'test_tag_id', 'test_cover_uri', 1)");
+    cloneStorePtr_->ExecuteSql("INSERT INTO " + ANALYSIS_ALBUM_TABLE + "("
+        "album_type, album_subtype, album_name, tag_id, cover_uri, is_cover_satisfied) "
+        "VALUES (4096, 4097, 'Test Classify Album', 'test_tag_id', 'test_cover_uri', 1)");
 }
 
 void CloneSource::InsertFaceTag()
@@ -280,6 +314,30 @@ void CloneSource::InsertAudio()
         "'/storage/cloud/files/Audio/2/AUD_1501924014_003.mp3', 0, 'size_0', " +
         "'size_0.mp3', 3, 1501923914301, 1501923914326, 1704038400, 120633, 0, 0, " +
         "'Ed Napoli'" + VALUES_END); // size = 0
+}
+
+void CloneSource::InsertAnalysisGeoDictionary()
+{
+    //city_id, language, city_name,
+    cloneStorePtr_->ExecuteSql(INSERT_ANALYSIS_GEO_DICTIONARY + VALUES_BEGIN + "'945032946426347352', " +
+        "'zh-Hans', '武汉'" + VALUES_END);
+}
+
+void CloneSource::InsertTabAnalysisLabel()
+{
+    //id, file_id, category_id, sub_label, prob, feature,
+    //sim_result, label_version, saliency_sub_prob, analysis_version
+    cloneStorePtr_->ExecuteSql(INSERT_TAB_ANALYSIS_LABEL + VALUES_BEGIN + "1, 1, 2, '44', 1088, '5796', " +
+        "'68', '1.5', '123', '123'" + VALUES_END);
+}
+
+void CloneSource::InsertTabAnalysisVideoLabel()
+{
+    //id, file_id, category_id, confidence_probability, sub_category, sub_confidence_prob,
+    //sub_label, sub_label_prob, sub_label_type, tracks, video_part_feature, filter_tag, algo_version,
+    //analysis_version, trigger_generate_thumbnail
+    cloneStorePtr_->ExecuteSql(INSERT_TAB_ANALYSIS_VIDEO_LABEL + VALUES_BEGIN + "1, 1, '2', 9827, '103', 9827, " +
+        "'153', 9827, 0, 'beginFrame', '', '1', '1.5', '123', 1" + VALUES_END);
 }
 } // namespace Media
 } // namespace OHOS
