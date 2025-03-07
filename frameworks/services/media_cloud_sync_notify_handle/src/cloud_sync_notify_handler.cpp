@@ -59,13 +59,14 @@ static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
     return true;
 }
 
-static void UpdateCloudAssetDownloadTask(const bool verifyFlag)
+static void UpdateCloudAssetDownloadTask(const std::list<Uri> &uris)
 {
-    CHECK_AND_RETURN_LOG(verifyFlag, "Current status is not suitable for task.");
-    if (!CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate() && CloudSyncUtils::IsCloudSyncSwitchOn() &&
-        CloudSyncUtils::IsCloudDataAgingPolicyOn()) {
-        CloudMediaAssetManager::GetInstance().StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
-    }
+    string uriString = uris.front().ToString();
+    auto pos = uriString.find_last_of('/');
+    CHECK_AND_RETURN_LOG(pos != std::string::npos, "Current status is not suitable for SetIsThumbnailUpdate");
+    string idString = uriString.substr(pos + 1);
+    CHECK_AND_RETURN_LOG(IsCloudNotifyInfoValid(idString), "Failed to check idString");
+    CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
 }
 
 void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
@@ -75,7 +76,6 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
         MEDIA_INFO_LOG("current status is not suitable for task");
         return;
     }
-    bool verifyFlag = false;
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto pos = uriString.find_last_of('/');
@@ -87,13 +87,7 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             MEDIA_WARN_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
-        if (!verifyFlag) {
-            verifyFlag = true;
-        }
         ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString, isCloudInsertTaskPriorityHigh);
-    }
-    if (verifyFlag) {
-        CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
     }
 }
 
@@ -168,6 +162,7 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
     switch (type) {
         case ChangeType::INSERT:
             HandleInsertEvent(uris);
+            UpdateCloudAssetDownloadTask(uris);
             break;
         case ChangeType::DELETE:
             HandleDeleteEvent(uris);
