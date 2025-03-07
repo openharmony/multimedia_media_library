@@ -85,7 +85,7 @@ export class PhotoAccessHelperHandle implements PhotoAccessHelper {
     native static applyChanges(mediaChangeRequest: MediaChangeRequest): void;
     native static release(): void;
     native getAlbums(type: AlbumType, subtype: AlbumSubtype, options?: FetchOptions): FetchResult<Album>;
-    native static getAssets(options: FetchOptions): FetchResult<PhotoAsset>;
+    //native static getAssets(options: FetchOptions): FetchResult<PhotoAsset>;
     native static getBurstAssets(burstKey: string, options: FetchOptions): FetchResult<PhotoAsset>;
     native static createAsset(displayName: string, options: PhotoCreateOptions): PhotoAsset;
     native static createAsset(photoType: PhotoType, extension: string, options: CreateOptions): string;
@@ -94,6 +94,30 @@ export class PhotoAccessHelperHandle implements PhotoAccessHelper {
     native static unRegisterChange(uri: string): ChangeData;
     private native createAsset1(displayName: string): Result<PhotoAsset, PhotoAccessHelperError>;
     private native gettid(): int;
+
+    native getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
+    private native getAssetsInner(options: FetchOptions): FetchResult<PhotoAsset>;
+    getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
+        let p = new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void, reject: (error: BusinessError) => void) => {
+            let cb = (): undefined => {
+                this.getAssetsInner(options);
+                return undefined;
+            }
+
+            let p1 = taskpool.execute(cb);
+            p1.then((e :NullishType) => {
+                let r =  e as Result<FetchResult<PhotoAsset>, BusinessError>;
+                let err = r.error;
+                if(err.code != 0){
+                    reject(err);
+                }
+                else{
+                    resolve(r.result);
+                }
+            });
+        });
+        return p;
+    }
 }
 
 export native function getPhotoAccessHelper(context: Context): PhotoAccessHelper;

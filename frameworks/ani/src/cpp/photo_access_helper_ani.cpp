@@ -13,27 +13,33 @@
  * limitations under the License.
  */
 
+#include "photo_access_helper_ani.h"
+
+#include <iostream>
+#include <string>
 #include <array>
 #include <mutex>
+
 #include "ani.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_tracer.h"
-#include "photo_access_helper_ani.h"
 #include "userfile_client.h"
 #include "vision_column.h"
 #include "story_album_column.h"
 #include "media_change_request_ani.h"
 #include "medialibrary_ani_utils.h"
-#include <iostream>
-#include <string>
 #include "directory_ex.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_ani_enum_comm.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
+#include "media_ani_native_impl.h"
+#include "datashare_predicates.h"
 
 #define MEDIALIBRARY_COMPATIBILITY
+
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
@@ -64,9 +70,12 @@ ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
         ani_native_function {"release", ":V", reinterpret_cast<void *>(PhotoAccessHelperAni::Release) },
         ani_native_function {"applyChanges", "Lmedia_library_common/MediaChangeRequest:V",
             reinterpret_cast<void *>(PhotoAccessHelperAni::ApplyChanges) },
-        ani_native_function {"createAsset1", nullptr,
-            reinterpret_cast<void *>(PhotoAccessHelperAni::createAsset1) },
+        ani_native_function {"createAsset1", nullptr, reinterpret_cast<void *>(PhotoAccessHelperAni::createAsset1) },
         ani_native_function {"gettid", ":I", reinterpret_cast<void *>(mygettid)},
+        ani_native_function {"getAssetsSync", "LphotoAccessHelper/FetchOptions;:Lescompat/Array;",
+            reinterpret_cast<void *>(GetAssetsSync) },
+        ani_native_function {"getAssetsInner", "LphotoAccessHelper/FetchOptions;:LphotoAccessHelper/FetchResult;",
+            reinterpret_cast<void *>(GetAssetsInner) },
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
@@ -75,6 +84,91 @@ ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
         env->ThrowError(reinterpret_cast<ani_error>(status));
     }
     return ANI_OK;
+}
+
+ani_object PhotoAccessHelperAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+    ani_object options)
+{
+    ani_ref fetchColumns;
+    if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
+        ANI_ERR_LOG("get fieldname fetchCloumns failed");
+        return nullptr;
+    }
+    std::vector<std::string> fetchColumnsVec;
+    if (ANI_OK != MediaLibraryAniUtils::GetStringArray(env, (ani_object)fetchColumns, fetchColumnsVec)) {
+        ANI_ERR_LOG("GetStringArray failed");
+        return nullptr;
+    }
+
+    const std::string className = "Ldata_share_predicates/dataSharePredicates/DataSharePredicates;";
+    const std::string methodName = "getNativePtr";
+    ani_method getMethod = nullptr;
+    if (ANI_OK != MediaLibraryAniUtils::FindClassMethod(env, className, methodName, &getMethod)) {
+        ANI_ERR_LOG("find class: %{public}s method: %{public}s failed", className.c_str(), methodName.c_str());
+        return nullptr;
+    }
+    ani_ref predicates;
+    if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "predicates", &predicates)) {
+        ANI_ERR_LOG("get fieldname predicates failed");
+        return nullptr;
+    }
+    ani_long nativePtr = 0;
+    if (ANI_OK != env->Object_CallMethod_Long((ani_object)predicates, getMethod, &nativePtr)) {
+        ANI_ERR_LOG("call method: getNativePtr failed");
+        return nullptr;
+    }
+    std::shared_ptr<DataSharePredicates> predicate(reinterpret_cast<DataSharePredicates*>(nativePtr));
+    std::shared_ptr<DataShareAbsPredicates> absPredicate = static_cast<shared_ptr<DataShareAbsPredicates>>(predicate);
+    std::vector<std::unique_ptr<FileAsset>> fileAssetArray = MediaAniNativeImpl::GetAssetsSync(fetchColumnsVec,
+        predicate);
+
+    ani_object result = nullptr;
+    if (ANI_OK != MediaLibraryAniUtils::ToFileAssetAniArray(env, fileAssetArray, result)) {
+        ANI_ERR_LOG("MediaLibraryAniUtils::ToFileAssetAniArray failed");
+    }
+    return result;
+}
+
+ani_object PhotoAccessHelperAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+    ani_object options)
+{
+    ani_ref fetchColumns;
+    if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
+        ANI_ERR_LOG("get fieldname fetchCloumns failed");
+        return nullptr;
+    }
+    std::vector<std::string> fetchColumnsVec;
+    if (ANI_OK != MediaLibraryAniUtils::GetStringArray(env, (ani_object)fetchColumns, fetchColumnsVec)) {
+        ANI_ERR_LOG("GetStringArray failed");
+        return nullptr;
+    }
+
+    const std::string className = "Ldata_share_predicates/dataSharePredicates/DataSharePredicates;";
+    const std::string methodName = "getNativePtr";
+    ani_method getMethod = nullptr;
+    if (ANI_OK != MediaLibraryAniUtils::FindClassMethod(env, className, methodName, &getMethod)) {
+        ANI_ERR_LOG("find class: %{public}s method: %{public}s failed", className.c_str(), methodName.c_str());
+        return nullptr;
+    }
+    ani_ref predicates;
+    if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "predicates", &predicates)) {
+        ANI_ERR_LOG("get fieldname predicates failed");
+        return nullptr;
+    }
+    ani_long nativePtr = 0;
+    if (ANI_OK != env->Object_CallMethod_Long((ani_object)predicates, getMethod, &nativePtr)) {
+        ANI_ERR_LOG("call method: getNativePtr failed");
+        return nullptr;
+    }
+    std::shared_ptr<DataSharePredicates> predicate(reinterpret_cast<DataSharePredicates*>(nativePtr));
+    std::shared_ptr<DataShareAbsPredicates> absPredicate = static_cast<shared_ptr<DataShareAbsPredicates>>(predicate);
+    std::unique_ptr<FetchResult<FileAsset>> fileAsset = MediaAniNativeImpl::GetAssets(fetchColumnsVec, predicate);
+
+    ani_object result = nullptr;
+    if (ANI_OK != MediaLibraryAniUtils::ToFileAssetAniPtr(env, std::move(fileAsset), result)) {
+        ANI_ERR_LOG("MediaLibraryAniUtils::ToFileAssetAniPtr failed");
+    }
+    return result;
 }
 
 bool InitUserFileClient(ani_env *env, [[maybe_unused]] ani_object context, bool isAsync = false)
