@@ -1683,6 +1683,7 @@ static const vector<string> onCreateSqlStrs = {
     AddStatusColumnForRefreshAlbumTable(),
     PhotoColumn::INDEX_LATITUDE,
     PhotoColumn::INDEX_LONGITUDE,
+    CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -4220,6 +4221,20 @@ static void AddIsRecentShow(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddFrontAnalysisColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_INDEX_LIMIT + " INT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_INDEX_MODIFIED + " BIGINT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_INDEX_COUNT + " INT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_CV_MODIFIED + " BIGINT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_CV_COUNT + " INT DEFAULT 0",
+        CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
+    };
+    MEDIA_INFO_LOG("Add front analysis column start");
+    ExecSqls(sqls, store);
+}
+
 static void FixSourceAlbumCreateTriggersToUseLPath(RdbStore& store)
 {
     const vector<string> sqls = {
@@ -4276,6 +4291,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
     }
     if (oldVersion < VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME) {
         AddAlbumPluginBundleName(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FOREGROUND_ANALYSIS) {
+        AddFrontAnalysisColumn(store);
     }
 }
 
