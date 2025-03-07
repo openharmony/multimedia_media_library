@@ -100,21 +100,21 @@ std::shared_ptr<MediaLibraryAsyncContext> MediaAniNativeImpl::GetAssetsContext(s
 static bool HandleSpecialDateTypePredicate(const OperationItem &item,
     vector<OperationItem> &operations, const FetchOptionType &fetchOptType)
 {
-    constexpr int32_t FIELD_IDX = 0;
-    constexpr int32_t VALUE_IDX = 1;
+    constexpr int32_t fieldIdx = 0;
+    constexpr int32_t valueIdx = 1;
     vector<string>dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_DATE_TAKEN};
-    string dateType = item.GetSingle(FIELD_IDX);
+    string dateType = item.GetSingle(fieldIdx);
     auto it = find(dateTypes.begin(), dateTypes.end(), dateType);
     if (it != dateTypes.end() && item.operation != DataShare::ORDER_BY_ASC &&
         item.operation != DataShare::ORDER_BY_DESC) {
         dateType += "_s";
-        operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
+        operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(valueIdx)) } });
         return true;
     }
     if (DATE_TRANSITION_MAP.count(dateType) != 0) {
         dateType = DATE_TRANSITION_MAP.at(dateType);
-        operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
+        operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(valueIdx)) } });
         return true;
     }
     return false;
@@ -123,8 +123,8 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
     std::shared_ptr<DataShare::DataShareAbsPredicates> predicate, const FetchOptionType &fetchOptType)
 {
-    constexpr int32_t FIELD_IDX = 0;
-    constexpr int32_t VALUE_IDX = 1;
+    constexpr int32_t fieldIdx = 0;
+    constexpr int32_t valueIdx = 1;
     std::vector<OperationItem> operations;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
@@ -138,20 +138,20 @@ bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyn
         // change uri ->file id
         // get networkid
         // replace networkid with file id
-        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == DEVICE_DB_NETWORK_ID) {
-            if (item.operation != DataShare::EQUAL_TO || static_cast<string>(item.GetSingle(VALUE_IDX)).empty()) {
+        if (static_cast<string>(item.GetSingle(fieldIdx)) == DEVICE_DB_NETWORK_ID) {
+            if (item.operation != DataShare::EQUAL_TO || static_cast<string>(item.GetSingle(valueIdx)).empty()) {
                 MEDIA_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
                 return false;
             }
-            context->networkId = static_cast<string>(item.GetSingle(VALUE_IDX));
+            context->networkId = static_cast<string>(item.GetSingle(valueIdx));
             continue;
         }
-        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MEDIA_DATA_DB_URI) {
+        if (static_cast<string>(item.GetSingle(fieldIdx)) == MEDIA_DATA_DB_URI) {
             if (item.operation != DataShare::EQUAL_TO) {
                 MEDIA_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
                 return false;
             }
-            string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
+            string uri = static_cast<string>(item.GetSingle(valueIdx));
             MediaFileUri::RemoveAllFragment(uri);
             MediaFileUri fileUri(uri);
             context->uri = uri;
@@ -163,11 +163,11 @@ bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyn
             operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
             continue;
         }
-        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == PENDING_STATUS) {
+        if (static_cast<string>(item.GetSingle(fieldIdx)) == PENDING_STATUS) {
             // do not query pending files below API11
             continue;
         }
-        if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(FIELD_IDX))) != LOCATION_PARAM_MAP.end()) {
+        if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(fieldIdx))) != LOCATION_PARAM_MAP.end()) {
             continue;
         }
         operations.push_back(item);
@@ -179,21 +179,21 @@ bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyn
 bool MediaAniNativeImpl::GetLocationPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
     shared_ptr<DataShareAbsPredicates> predicate)
 {
-    constexpr int32_t FIELD_IDX = 0;
-    constexpr int32_t VALUE_IDX = 1;
+    constexpr int32_t fieldIdx = 0;
+    constexpr int32_t valueIdx = 1;
     map<string, string> locationMap;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
         if (item.singleParams.empty()) {
             continue;
         }
-        if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(FIELD_IDX))) != LOCATION_PARAM_MAP.end()) {
+        if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(fieldIdx))) != LOCATION_PARAM_MAP.end()) {
             if (item.operation != DataShare::EQUAL_TO) {
                 MEDIA_ERR_LOG("location predicates not support %{public}d", item.operation);
                 return false;
             }
-            string param = static_cast<string>(item.GetSingle(FIELD_IDX));
-            string value = static_cast<string>(item.GetSingle(VALUE_IDX));
+            string param = static_cast<string>(item.GetSingle(fieldIdx));
+            string value = static_cast<string>(item.GetSingle(valueIdx));
             locationMap.insert(make_pair(param, value));
             if (param == DIAMETER) {
                 continue;

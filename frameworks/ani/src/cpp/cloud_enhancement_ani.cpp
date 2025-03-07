@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "ani_class_name.h"
 #include "cloud_enhancement_ani.h"
 #include "medialibrary_ani_utils.h"
 #include "medialibrary_errno.h"
@@ -21,23 +22,22 @@ namespace OHOS {
 namespace Media {
 ani_status CloudEnhancementAni::CloudEnhancementAniInit(ani_env *env)
 {
-    static const char *className = "Lcloud_enhancement/CloudEnhancementHandle;";
+    static const char *className = ANI_CLASS_CLOUD_ENHANCEMENT.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
-        env->ThrowError(ani_error(status));
+        return status;
     }
 
     std::array methods = {
-        ani_native_function {"create", nullptr,
-            reinterpret_cast<void *>(CloudEnhancementAni::Constructor)},
+        ani_native_function {"create", nullptr, reinterpret_cast<void *>(CloudEnhancementAni::Constructor)},
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
-        env->ThrowError(ani_error(status));
+        return status;
     }
     return ANI_OK;
 }
@@ -51,7 +51,7 @@ ani_object CloudEnhancementAni::Constructor(ani_env *env, [[maybe_unused]] ani_c
     }
 
     std::unique_ptr<CloudEnhancementAni> nativeHandle = std::make_unique<CloudEnhancementAni>();
-    static const char *className = "Lcloud_enhancement/CloudEnhancementHandle;";
+    static const char *className = ANI_CLASS_CLOUD_ENHANCEMENT.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);

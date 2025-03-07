@@ -17,6 +17,7 @@
 #include "media_album_change_request_ani.h"
 #include "result_set_utils.h"
 #include "media_log.h"
+#include "ani_class_name.h"
 #include "medialibrary_ani_utils.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
@@ -29,48 +30,32 @@ using namespace std;
 namespace OHOS::Media {
 ani_status MediaAlbumChangeRequestAni::MediaAlbumChangeRequestInit(ani_env *env)
 {
-    static const char *className = "Lmedia_album_change_request/MediaAlbumChangeRequestHandle;";
+    static const char *className = ANI_CLASS_MEDIA_ALBUM_CHANGE_REQUEST.c_str();
     ani_class cls;
     auto status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
-        env->ThrowError((ani_error)status);
         return status;
     }
 
     std::array methods = {
-        ani_native_function {"create",
-            "Lphoto_album/AlbumHandle;:Lmedia_album_change_request/MediaAlbumChangeRequestHandle;",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::Constructor) },
-        ani_native_function {"placeBefore", "Lphoto_album/AlbumHandle;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::PlaceBefore) },
-        ani_native_function {"dismissAssets", "Lescompat/Array;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::DismissAssets) },
-        ani_native_function {"addAssets", "Lescompat/Array;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::AddAssets) },
-        ani_native_function {"moveAssets", "Lescompat/Array;Lphoto_album/AlbumHandle;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::MoveAssets) },
-        ani_native_function {"mergeAlbum", "Lphoto_album/AlbumHandle;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::MergeAlbum) },
-        ani_native_function {"setAlbumName", "Lstd/core/String;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::SetAlbumName) },
-        ani_native_function {"setCoverUri", "Lstd/core/String;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::SetCoverUri) },
-        ani_native_function {"recoverAssets", "Lescompat/Array;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::RecoverAssets) },
-        ani_native_function {"setDisplayLevel", "I:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::SetDisplayLevel) },
-        ani_native_function {"deleteAssets", "Lescompat/Array;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::DeleteAssets) },
-        ani_native_function {"deleteAlbums", "Lmedia_library_common/Context;Lescompat/Array;:V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::DeleteAlbums) },
-        ani_native_function {"setIsMe", ":V",
-            reinterpret_cast<void *>(MediaAlbumChangeRequestAni::SetIsMe) },
+        ani_native_function {"create", nullptr, reinterpret_cast<void *>(Constructor)},
+        ani_native_function {"placeBefore", nullptr, reinterpret_cast<void *>(PlaceBefore)},
+        ani_native_function {"dismissAssets", nullptr, reinterpret_cast<void *>(DismissAssets)},
+        ani_native_function {"addAssets", nullptr, reinterpret_cast<void *>(AddAssets)},
+        ani_native_function {"moveAssets", nullptr, reinterpret_cast<void *>(MoveAssets)},
+        ani_native_function {"mergeAlbum", nullptr, reinterpret_cast<void *>(MergeAlbum)},
+        ani_native_function {"setAlbumName", nullptr, reinterpret_cast<void *>(SetAlbumName)},
+        ani_native_function {"setCoverUri", nullptr, reinterpret_cast<void *>(SetCoverUri)},
+        ani_native_function {"recoverAssets", nullptr, reinterpret_cast<void *>(RecoverAssets)},
+        ani_native_function {"setDisplayLevel", nullptr, reinterpret_cast<void *>(SetDisplayLevel)},
+        ani_native_function {"deleteAssets", nullptr, reinterpret_cast<void *>(DeleteAssets)},
+        ani_native_function {"deleteAlbums", nullptr, reinterpret_cast<void *>(DeleteAlbums)},
+        ani_native_function {"setIsMe", nullptr, reinterpret_cast<void *>(SetIsMe)},
     };
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
         MEDIA_ERR_LOG("Failed to bind native methods to: %{public}s", className);
-        env->ThrowError((ani_error)status);
         return status;
     };
 
@@ -86,7 +71,7 @@ ani_object MediaAlbumChangeRequestAni::Constructor([[maybe_unused]] ani_env *env
     auto nativeHandle = std::make_unique<MediaAlbumChangeRequestAni>();
     nativeHandle->photoAlbum_ = albumAni->GetPhotoAlbumInstance();
 
-    static const char *className = "Lmedia_album_change_request/MediaAlbumChangeRequestHandle;";
+    static const char *className = ANI_CLASS_MEDIA_ALBUM_CHANGE_REQUEST.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         MEDIA_ERR_LOG("Failed to find class: %{public}s", className);

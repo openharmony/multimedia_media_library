@@ -15,6 +15,7 @@
 
 #include "fetch_result_ani.h"
 #include "media_log.h"
+#include "ani_class_name.h"
 #include <iostream>
 #include "medialibrary_ani_utils.h"
 
@@ -22,31 +23,25 @@ namespace OHOS::Media {
 ani_status FetchFileResultAni::FetchFileResultInit(ani_env *env)
 {
     DEBUG_LOG_T("FetchFileResultInit start.");
-    static const char *className = "Lfetch_result/FetchResultHandle;";
+    static const char *className = ANI_CLASS_FETCH_RESULT.c_str();
     ani_class cls;
     auto status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
         DEBUG_LOG_T("Failed to find class %s", className);
-        env->ThrowError((ani_error)status);
         return status;
     }
 
     std::array methods = {
-        ani_native_function {"getAllObjects", ":Lescompat/Array;",
-            reinterpret_cast<void *>(FetchFileResultAni::GetAllObjects) },
-        ani_native_function {"getFirstObject", ":Lstd/core/Object;",
-            reinterpret_cast<void *>(FetchFileResultAni::GetFirstObject) },
-        ani_native_function {"getNextObject", ":Lstd/core/Object;",
-            reinterpret_cast<void *>(FetchFileResultAni::GetNextObject) },
-        ani_native_function {"getCount", ":D",
-            reinterpret_cast<void *>(FetchFileResultAni::GetCount) },
-        ani_native_function {"close", ":V", reinterpret_cast<void *>(FetchFileResultAni::Close) },
+        ani_native_function {"getAllObjectsSync", nullptr, reinterpret_cast<void *>(GetAllObjects)},
+        ani_native_function {"getFirstObjectSync", nullptr, reinterpret_cast<void *>(GetFirstObject)},
+        ani_native_function {"getNextObjectSync", nullptr, reinterpret_cast<void *>(GetNextObject)},
+        ani_native_function {"getCount", nullptr, reinterpret_cast<void *>(GetCount)},
+        ani_native_function {"close", nullptr, reinterpret_cast<void *>(Close)},
     };
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
         MEDIA_ERR_LOG("Failed to bind native methods to: %{public}s", className);
-        env->ThrowError((ani_error)status);
         return status;
     };
 
@@ -126,7 +121,7 @@ ani_object FetchFileResultAni::FetchFileResultAniConstructor(ani_env *env, [[may
     GetFetchResult(obj);
     obj->propertyPtr->fetchResType_ = sFetchResType_;
 
-    static const char *className = "Lfetch_result/FetchResultHandle;";
+    static const char *className = ANI_CLASS_FETCH_RESULT.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
@@ -154,7 +149,7 @@ FetchFileResultAni* FetchFileResultAni::Unwrap(ani_env *env, ani_object fetchFil
 {
     ani_long fetchFileResultHandleLong;
     auto status = env->Object_GetFieldByName_Long(fetchFileResultHandle,
-        "nativeFetchFileResultLong", &fetchFileResultHandleLong);
+        "nativeValue", &fetchFileResultHandleLong);
     if (ANI_OK != status) {
         DEBUG_LOG_T("GetAllPhotoAssetHandleObjects nullptr");
         return nullptr;

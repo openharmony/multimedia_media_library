@@ -21,6 +21,7 @@
 #include "accesstoken_kit.h"
 #include "directory_ex.h"
 #include "file_uri.h"
+#include "ani_class_name.h"
 #include "image_packer.h"
 #include "ipc_skeleton.h"
 #include "media_asset_change_request_ani.h"
@@ -105,46 +106,33 @@ int32_t MediaDataSource::GetSize(int64_t& size)
 
 ani_status MediaAssetChangeRequestAni::MediaAssetChangeRequestAniInit(ani_env *env)
 {
-    static const char *className = "Lmedia_asset_change_request/MediaAssetChangeRequestHandle;";
+    static const char *className = ANI_CLASS_MEDIA_ASSET_CHANGE_REQUEST.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
-        env->ThrowError(ani_error(status));
+        return status;
     }
 
     std::array methods = {
-        ani_native_function {"create", nullptr,
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::Constructor)},
-        ani_native_function {"addResource", "Lmedia_library_enum/#ResourceType;Lstd/core/String;",
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::addResourceByFileUri)},
-        ani_native_function {"addResource", "Lmedia_library_enum/#ResourceType;Lescompat/ArrayBuffer;",
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::addResourceByArrayBuffer)},
-        ani_native_function {"addResource", "Lmedia_library_enum/#ResourceType;Lmedia_library_common/PhotoProxy;",
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::addResourceByPhotoProxy)},
-        ani_native_function {"createAssetRequest", "Lmedia_library_common/Context;Lstd/core/String;\
-            Lmedia_library_common/PhotoCreateOptions;:Lmedia_asset_change_request/MediaAssetChangeRequestHandle;",
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::createAssetRequestSystem)},
-        ani_native_function {"createAssetRequest", "Lmedia_library_common/Context;Lmedia_library_enum/#PhotoType;\
-            Lstd/core/String;Lmedia_library_common/CreateOptions;\
-            :Lmedia_asset_change_request/MediaAssetChangeRequestHandle;",
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::createAssetRequest)},
-        ani_native_function {"createImageAssetRequest", nullptr,
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::createImageAssetRequest)},
-        ani_native_function {"createVideoAssetRequest", nullptr,
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::createVideoAssetRequest)},
-        ani_native_function {"getAsset", nullptr,
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::getAsset)},
+        ani_native_function {"create", nullptr, reinterpret_cast<void *>(Constructor)},
+        ani_native_function {"addResource", nullptr, reinterpret_cast<void *>(addResourceByFileUri)},
+        ani_native_function {"addResource", nullptr, reinterpret_cast<void *>(addResourceByArrayBuffer)},
+        ani_native_function {"addResource", nullptr, reinterpret_cast<void *>(addResourceByPhotoProxy)},
+        ani_native_function {"createAssetRequest", nullptr, reinterpret_cast<void *>(createAssetRequestSystem)},
+        ani_native_function {"createAssetRequest", nullptr, reinterpret_cast<void *>(createAssetRequest)},
+        ani_native_function {"createImageAssetRequest", nullptr, reinterpret_cast<void *>(createImageAssetRequest)},
+        ani_native_function {"createVideoAssetRequest", nullptr, reinterpret_cast<void *>(createVideoAssetRequest)},
+        ani_native_function {"getAsset", nullptr, reinterpret_cast<void *>(getAsset)},
         ani_native_function {"deleteAssetsByPhotoAssetSync", nullptr,
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::deleteAssetsByPhotoAsset)},
-        ani_native_function {"deleteAssetsByUriListSync", nullptr,
-            reinterpret_cast<void *>(MediaAssetChangeRequestAni::deleteAssetsByUriList)},
+            reinterpret_cast<void *>(deleteAssetsByPhotoAsset)},
+        ani_native_function {"deleteAssetsByUriListSync", nullptr, reinterpret_cast<void *>(deleteAssetsByUriList)},
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
-        env->ThrowError(ani_error(status));
+        return status;
     }
     return ANI_OK;
 }
@@ -162,7 +150,7 @@ ani_object MediaAssetChangeRequestAni::Constructor(ani_env *env, [[maybe_unused]
     auto nativeHandle = std::make_unique<MediaAssetChangeRequestAni>(fileAssetAniPtr);
     nativeHandle->fileAsset_ = fileAssetPtr;
 
-    static const char *className = "Lmedia_asset_change_request/MediaAssetChangeRequestHandle;";
+    static const char *className = ANI_CLASS_MEDIA_ASSET_CHANGE_REQUEST.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
@@ -187,7 +175,7 @@ ani_object MediaAssetChangeRequestAni::Constructor(ani_env *env, [[maybe_unused]
 
 ani_object MediaAssetChangeRequestAni::Wrap(ani_env *env, MediaAssetChangeRequestAni* changeRequest)
 {
-    static const char *className = "Lmedia_asset_change_request/MediaAssetChangeRequestHandle;";
+    static const char *className = ANI_CLASS_MEDIA_ASSET_CHANGE_REQUEST.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
@@ -614,7 +602,7 @@ void MediaAssetChangeRequestAni::RecordChangeOperation(AssetChangeOperation chan
 bool MediaAssetChangeRequestAni::Contains(AssetChangeOperation changeOperation) const
 {
     return std::find(assetChangeOperations_.begin(), assetChangeOperations_.end(), changeOperation) !=
-           assetChangeOperations_.end();
+        assetChangeOperations_.end();
 }
 
 bool MediaAssetChangeRequestAni::ContainsResource(ResourceType resourceType) const

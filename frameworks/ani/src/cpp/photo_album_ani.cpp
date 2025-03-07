@@ -15,6 +15,7 @@
 
 #include "photo_album_ani.h"
 
+#include "ani_class_name.h"
 #include "fetch_result_ani.h"
 #include "file_asset_ani.h"
 #include "media_file_utils.h"
@@ -31,7 +32,6 @@ using namespace std;
 using namespace OHOS::DataShare;
 
 namespace OHOS::Media {
-static const char ETS_PHOTO_ALBUM_CLASS[] = "Lphoto_album/AlbumHandle;";
 
 struct PhotoAlbumAttributes {
     PhotoAlbumType albumType;
@@ -53,8 +53,8 @@ PhotoAlbumAni::~PhotoAlbumAni() = default;
 ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
 {
     ani_class cls;
-    if (ANI_OK != env->FindClass(ETS_PHOTO_ALBUM_CLASS, &cls)) {
-        ANI_ERR_LOG("Failed to find class: %{public}s", ETS_PHOTO_ALBUM_CLASS);
+    if (ANI_OK != env->FindClass(ANI_CLASS_PHOTO_ALBUM.c_str(), &cls)) {
+        ANI_ERR_LOG("Failed to find class: %{public}s", ANI_CLASS_PHOTO_ALBUM.c_str());
         return ANI_ERROR;
     }
 
@@ -72,7 +72,7 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
-        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", ETS_PHOTO_ALBUM_CLASS);
+        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", ANI_CLASS_PHOTO_ALBUM.c_str());
         return ANI_ERROR;
     }
 
@@ -184,24 +184,14 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
     ani_string coverUri {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.coverUri, coverUri), "ToAniString coverUri fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, coverUriSetter, coverUri), "<set>coverUri fail");
-
-    ani_method imageCountSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>imageCount", nullptr, &imageCountSetter), "No <set>imageCount");
-    ani_double imageCount = static_cast<ani_double>(attrs.imageCount);
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, imageCountSetter, imageCount), "<set>imageCount fail");
-
-    ani_method videoCountSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>videoCount", nullptr, &videoCountSetter), "No <set>videoCount");
-    ani_double videoCount = static_cast<ani_double>(attrs.videoCount);
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, videoCountSetter, videoCount), "<set>videoCount fail");
     return ANI_OK;
 }
 
 ani_object PhotoAlbumAni::PhotoAlbumAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz)
 {
     ani_class cls {};
-    CHECK_COND_RET(env->FindClass(ETS_PHOTO_ALBUM_CLASS, &cls) == ANI_OK, nullptr,
-        "Failed to find class: %{public}s", ETS_PHOTO_ALBUM_CLASS);
+    CHECK_COND_RET(env->FindClass(ANI_CLASS_PHOTO_ALBUM.c_str(), &cls) == ANI_OK, nullptr,
+        "Failed to find class: %{public}s", ANI_CLASS_PHOTO_ALBUM.c_str());
 
     ani_method ctor {};
     CHECK_COND_RET(env->Class_FindMethod(cls, "<ctor>", nullptr, &ctor) == ANI_OK, nullptr,

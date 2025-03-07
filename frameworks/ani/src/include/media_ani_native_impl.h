@@ -39,7 +39,8 @@ private:
     static bool AddDefaultAssetColumns(std::vector<std::string> &fetchColumn,
         std::function<bool(const std::string &columnName)> isValidColumn,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
-    static bool PhotoAccessGetAssetsExecuteSync(std::shared_ptr<MediaLibraryAsyncContext> context, std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
+    static bool PhotoAccessGetAssetsExecuteSync(std::shared_ptr<MediaLibraryAsyncContext> context,
+        std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
     static bool PhotoAccessGetAssetsExecute(std::shared_ptr<MediaLibraryAsyncContext> context);
     static std::shared_ptr<MediaLibraryAsyncContext> GetAssetsContext(std::vector<std::string> fetchColumns,
         std::shared_ptr<DataShare::DataShareAbsPredicates> predicate);

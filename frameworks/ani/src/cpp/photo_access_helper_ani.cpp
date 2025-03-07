@@ -19,8 +19,8 @@
 #include <string>
 #include <array>
 #include <mutex>
-
 #include "ani.h"
+#include "ani_class_name.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_tracer.h"
 #include "userfile_client.h"
@@ -49,39 +49,30 @@ thread_local std::unique_ptr<ChangeListenerAni> g_listObj = nullptr;
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
 
-static int mygettid(ani_env *env, ani_object obj)
-{
-    return gettid();
-}
-
 ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
 {
     DEBUG_LOG_T("PhotoAccessHelperInit begin");
-    static const char *className = "Lphoto_access_helper/PhotoAccessHelperHandle;";
+    static const char *className = ANI_CLASS_PHOTO_ACCESS_HELPER.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
-        env->ThrowError(reinterpret_cast<ani_error>(status));
+        return status;
     }
 
     std::array methods = {
-        ani_native_function {"getAlbums", nullptr, reinterpret_cast<void *>(PhotoAccessHelperAni::GetPhotoAlbums) },
-        ani_native_function {"release", ":V", reinterpret_cast<void *>(PhotoAccessHelperAni::Release) },
-        ani_native_function {"applyChanges", "Lmedia_library_common/MediaChangeRequest:V",
-            reinterpret_cast<void *>(PhotoAccessHelperAni::ApplyChanges) },
-        ani_native_function {"createAsset1", nullptr, reinterpret_cast<void *>(PhotoAccessHelperAni::createAsset1) },
-        ani_native_function {"gettid", ":I", reinterpret_cast<void *>(mygettid)},
-        ani_native_function {"getAssetsSync", "LphotoAccessHelper/FetchOptions;:Lescompat/Array;",
-            reinterpret_cast<void *>(GetAssetsSync) },
-        ani_native_function {"getAssetsInner", "LphotoAccessHelper/FetchOptions;:LphotoAccessHelper/FetchResult;",
-            reinterpret_cast<void *>(GetAssetsInner) },
+        ani_native_function {"getAlbums", nullptr, reinterpret_cast<void *>(GetPhotoAlbums)},
+        ani_native_function {"release", nullptr, reinterpret_cast<void *>(Release)},
+        ani_native_function {"applyChanges", nullptr, reinterpret_cast<void *>(ApplyChanges)},
+        ani_native_function {"createAsset1", nullptr, reinterpret_cast<void *>(createAsset1)},
+        ani_native_function {"getAssetsSync", nullptr, reinterpret_cast<void *>(GetAssetsSync)},
+        ani_native_function {"getAssetsInner", nullptr, reinterpret_cast<void *>(GetAssetsInner)},
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
-        env->ThrowError(reinterpret_cast<ani_error>(status));
+        return status;
     }
     return ANI_OK;
 }
@@ -204,12 +195,13 @@ ani_object PhotoAccessHelperAni::Constructor(ani_env *env, [[maybe_unused]] ani_
     }
 
     // Only !Async Need to init UserFileClient and be locked. How to solve Async?
-    if (!InitUserFileClient(env, context)) {
+    bool isAsync = false;
+    if (!InitUserFileClient(env, context, isAsync)) {
         DEBUG_LOG_T("Constructor InitUserFileClient failed");
         return result;
     }
 
-    static const char *className = "Lphoto_access_helper/PhotoAccessHelperHandle;";
+    static const char *className = ANI_CLASS_PHOTO_ACCESS_HELPER.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
@@ -272,7 +264,7 @@ static ani_status ParseAlbumTypes(ani_env *env, ani_int albumTypeIndex, ani_int 
     context->isAnalysisAlbum = (albumTypeInt == PhotoAlbumType::SMART) ? 1 : 0;
 
     /* Parse the second argument to photo album subType */
-    PhotoAlbumSubType photoAlbumSubType;  // 枚举用AlbumSubtype?
+    PhotoAlbumSubType photoAlbumSubType;
     int32_t albumSubTypeInt;
     CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, EnumTypeInt32::AlbumSubtypeAni,
         albumSubtypeIndex, albumSubTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumSubtype");
@@ -353,7 +345,7 @@ static ani_status GetAlbumFetchOption(ani_env *env, unique_ptr<MediaLibraryAsync
     ani_object fetchOptions)
 {
     CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryAniUtils::GetFetchOption(env, fetchOptions,
-        ALBUM_FETCH_OPT, context) != ANI_OK, ANI_INVALID_ARGS, "GetAlbumFetchOption error");
+        ALBUM_FETCH_OPT, context) == ANI_OK, ANI_INVALID_ARGS, "GetAlbumFetchOption error");
     if (!context->uri.empty()) {
         if (context->uri.find(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX) != std::string::npos) {
             context->isAnalysisAlbum = 1; // 1:is an analysis album
@@ -370,18 +362,18 @@ static ani_status ParseArgsGetPhotoAlbum(ani_env *env, ani_int albumTypeIndex, a
     ani_boolean isUndefined;
     env->Reference_IsUndefined(fetchOptions, &isUndefined);
     if (!isUndefined) {
-        CHECK_COND_WITH_RET_MESSAGE(env, GetAlbumFetchOption(env, context, fetchOptions) != ANI_OK,
+        CHECK_COND_WITH_RET_MESSAGE(env, GetAlbumFetchOption(env, context, fetchOptions) == ANI_OK,
             ANI_INVALID_ARGS, "GetAlbumFetchOption error");
     } else {
         ANI_INFO_LOG("fetchOptions is undefined. There is no need to parse fetchOptions.");
     }
     // Parse albumType and albumSubtype
     CHECK_COND_WITH_RET_MESSAGE(env, ParseAlbumTypes(env, albumTypeIndex, albumSubtypeIndex,
-        context) != ANI_OK, ANI_INVALID_ARGS, "ParseAlbumTypes error");
+        context) == ANI_OK, ANI_INVALID_ARGS, "ParseAlbumTypes error");
     RestrictAlbumSubtypeOptions(context);
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
-        CHECK_COND_WITH_RET_MESSAGE(env, AddDefaultPhotoAlbumColumns(env, context->fetchColumn) != ANI_OK,
+        CHECK_COND_WITH_RET_MESSAGE(env, AddDefaultPhotoAlbumColumns(env, context->fetchColumn) == ANI_OK,
             ANI_INVALID_ARGS, "AddDefaultPhotoAlbumColumns error");
         AddDefaultColumnsForNonAnalysisAlbums(*context);
         if (context->isHighlightAlbum) {
@@ -430,13 +422,25 @@ static void GetPhotoAlbumsExecute(ani_env *env, unique_ptr<MediaLibraryAsyncCont
         PhotoAlbumSubType::GEOGRAPHY_LOCATION);
 }
 
-static ani_object GetPhotoAlbumsCompleteCallback(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
+static ani_object GetPhotoAlbumsComplete(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("GetPhotoAlbumsCompleteCallback");
+    tracer.Start("GetPhotoAlbumsComplete");
 
-    ani_object fetchRes = FetchFileResultAni::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
-    context = nullptr;
+    ani_object fetchRes {};
+    ani_error errorObj {};
+    if (context->error != ERR_DEFAULT  || context->fetchPhotoAlbumResult == nullptr) {
+        ANI_ERR_LOG("No fetch file result found!");
+        context->HandleError(env, errorObj);
+    } else {
+        fetchRes = FetchFileResultAni::CreateFetchFileResult(env, move(context->fetchPhotoAlbumResult));
+        if (fetchRes == nullptr) {
+            MediaLibraryAniUtils::CreateAniErrorObject(env, errorObj, ERR_MEM_ALLOCATION,
+                "Failed to create ani object for FetchFileResult");
+        }
+    }
+    tracer.Finish();
+    context.reset();
     return fetchRes;
 }
 
@@ -446,9 +450,9 @@ ani_object PhotoAccessHelperAni::GetPhotoAlbums(ani_env *env, ani_object object,
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetPhotoAlbum(env, albumTypeIndex, albumSubtypeIndex,
-        fetchOptions, asyncContext), nullptr, "Failed to parse get albums options");
+        fetchOptions, asyncContext) == ANI_OK, nullptr, "Failed to parse get albums options");
     GetPhotoAlbumsExecute(env, asyncContext);
-    return(GetPhotoAlbumsCompleteCallback(env, asyncContext));
+    return(GetPhotoAlbumsComplete(env, asyncContext));
 }
 
 ani_status PhotoAccessHelperAni::Release(ani_env *env, ani_object object)
@@ -709,7 +713,7 @@ static void PhotoAccessCreateAssetExecute(MediaLibraryAsyncContext* context)
 {
     DEBUG_LOG_T("PhotoAccessCreateAssetExecute Begin");
     MediaLibraryTracer tracer;
-    tracer.Start("JScreateAsset1");
+    tracer.Start("PhotoAccessCreateAssetExecute");
 
     if (!CheckDisplayNameParams(context)) {
         context->error = JS_E_DISPLAYNAME;
@@ -754,75 +758,8 @@ ani_object PhotoAccessHelperAni::createAsset1([[maybe_unused]] ani_env *env, [[m
     tracer.Start("createAsset1");
     DEBUG_LOG_T("PhotoAccessHelperAni::createAsset1 Begin in thread");
     ani_object result_obj = {};
-
-    static const char *className = "Lphoto_access_helper/Result;";
-    ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        DEBUG_LOG_T("Not found '%s'", className);
-        return result_obj;
-    }
-
-    ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", nullptr, &ctor)) {
-        DEBUG_LOG_T("get ctor Failed '%s'", className);
-        return result_obj;
-    }
-
-    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
-    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
-    asyncContext->assetType = TYPE_PHOTO;
-    asyncContext->isCreateByComponent = false;
-    string displayName;
-    MediaLibraryAniUtils::GetString(env, stringObj, displayName);
-    DEBUG_LOG_T("PhotoAccessHelperAni::createAsset1 displayName: %s", displayName.c_str());
-    MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    if (!(mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO)) {
-        DEBUG_LOG_T("invalid file type");
-    }
-    asyncContext->valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
-    asyncContext->valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
-
-    PhotoAccessCreateAssetExecute(asyncContext.get());
-    ani_class errCls;
-    if (ANI_OK != env->FindClass("Lphoto_access_helper/PhotoAccessHelperError;", &errCls)) {
-        DEBUG_LOG_T("Not found Lphoto_access_helper/PhotoAccessHelperError");
-        return result_obj;
-    }
-    ani_method errCtor;
-    if (ANI_OK != env->Class_FindMethod(errCls, "<ctor>", nullptr, &errCtor)) {
-        DEBUG_LOG_T("get errCtor Failed Lphoto_access_helper/PhotoAccessHelperError");
-        return result_obj;
-    }
-    ani_object errObj;
-    std::string name = "no ok";
-    ani_string errStr{};
-    env->String_NewUTF8(name.c_str(), name.size(), &errStr);
-
-    if (ANI_OK != env->Object_New(errCls, errCtor, &errObj, reinterpret_cast<ani_int>(asyncContext->error), errStr)) {
-        DEBUG_LOG_T("Create Object Failed, Lphoto_access_helper/PhotoAccessHelperError");
-        return result_obj;
-    }
-    ani_class photoAssetCls;
-    if (ANI_OK != env->FindClass("Lphoto_access_helper/PhotoAsset;", &photoAssetCls)) {
-        DEBUG_LOG_T("Not found Lphoto_access_helper/PhotoAsset");
-        return result_obj;
-    }
-    ani_method photoAssetCtor;
-    if (ANI_OK != env->Class_FindMethod(photoAssetCls, "<ctor>", nullptr, &photoAssetCtor)) {
-        DEBUG_LOG_T("get photoAssetCtor Failed Lphoto_access_helper/PhotoAsset");
-        return result_obj;
-    }
-    ani_object photoAssetObj;
-    if (ANI_OK != env->Object_New(photoAssetCls, photoAssetCtor,
-        &photoAssetObj, reinterpret_cast<ani_long>(asyncContext->fileAsset.release()))) {
-        DEBUG_LOG_T("Create Object Failed, Lphoto_access_helper/PhotoAsset");
-        return result_obj;
-    }
-    if (ANI_OK != env->Object_New(cls, ctor, &result_obj, photoAssetObj, errObj)) {
-        DEBUG_LOG_T("Create Object Failed, Lphoto_access_helper/Result");
-        return result_obj;
-    }
-    DEBUG_LOG_T("Create Object Success, Lphoto_access_helper/Result");
+    MediaLibraryAsyncContext *context = nullptr;
+    PhotoAccessCreateAssetExecute(context);
     return result_obj;
 }
 } // namespace Media

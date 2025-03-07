@@ -20,7 +20,10 @@ config("ani_config") {
 }
 
 group("media_library_ani") {
-  deps = [ ":photo_access_helper_ani" ]
+  deps = [
+    ":photo_access_helper_ani",
+    ":photo_access_helper_etc",
+  ]
 }
 
 ohos_shared_library("photo_access_helper_ani") {
@@ -82,6 +85,7 @@ ohos_shared_library("photo_access_helper_ani") {
     "relational_store:rdb_data_share_adapter",
     "resource_management:librawfile",
     "runtime_core:ani",
+    "runtime_core:libarkruntime",
     "samgr:samgr_proxy",
   ]
 
@@ -102,19 +106,17 @@ ohos_shared_library("photo_access_helper_ani") {
   output_extension = "so"
 }
 
-generate_static_abc("photo_access_helper_abc") {
-  arktsconfig = "$MEDIALIB_ROOT_PATH/frameworks/ani/arktsconfig.json"
-  dst_file = "$target_out_dir/photo_access_helper.abc"
-  out_puts = [ "$target_out_dir/photo_access_helper.abc" ]
+generate_static_abc("photo_access_helper") {
+  base_url = "./ets"
+  files = [ "./ets/@ohos.file.photoAccessHelper.ets" ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/photo_access_helper.abc"
-  cache_path = "$target_out_dir/cache"
 }
 
-ohos_prebuilt_etc("photo_access_helper_abc_etc") {
+ohos_prebuilt_etc("photo_access_helper_etc") {
   source = "$target_out_dir/photo_access_helper.abc"
   module_install_dir = "framework"
   subsystem_name = "multimedia"
   part_name = "media_library"
-  deps = [ ":photo_access_helper_abc" ]
+  deps = [ ":photo_access_helper" ]
 }

@@ -72,8 +72,8 @@ ani_boolean MediaLibraryAniUtils::isArray(ani_env *env, ani_object object)
 
 ani_boolean MediaLibraryAniUtils::isUndefined(ani_env *env, ani_object object)
 {
-    ani_boolean isUndefined = ANI_FALSE;
-    CHECK_COND_RET(ANI_OK == env->Reference_IsUndefined(object, &isUndefined), isUndefined,
+    ani_boolean isUndefined = ANI_TRUE;
+    CHECK_COND_RET(ANI_OK == env->Reference_IsUndefined(object, &isUndefined), ANI_TRUE,
         "Call Reference_IsUndefined failed.");
     return isUndefined;
 }
@@ -734,7 +734,7 @@ ani_status MediaLibraryAniUtils::GetPredicate(ani_env *env, const ani_object fet
     CHECK_STATUS_RET(GetProperty(env, fetchOptions, propName, property), "GetProperty predicates failed");
 
     ani_class cls {};
-    static const std::string className = "Ldata_share_predicates/dataSharePredicates/DataSharePredicates;";
+    static const std::string className = "L@ohos/data/dataSharePredicates/dataSharePredicates/DataSharePredicates;";
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find class DataSharePredicates");
 
     ani_method getMethod {};

@@ -15,47 +15,48 @@
 
 #include "media_library_enum_ani.h"
 
+#include "ani_class_name.h"
 #include "medialibrary_ani_utils.h"
 
 namespace OHOS {
 namespace Media {
 
 static const std::map<EnumTypeInt32, std::string> ENUM_TYPE_MAP_INT32 = {
-    {EnumTypeInt32::PhotoTypeAni, "Lmedia_library_enum/#PhotoType;"},
-    {EnumTypeInt32::PhotoSubtypeAni, "Lmedia_library_enum/#PhotoSubtype;"},
-    {EnumTypeInt32::DynamicRangeTypeAni, "Lmedia_library_enum/#DynamicRangeType;"},
-    {EnumTypeInt32::PositionTypeAni, "Lmedia_library_enum/#PositionType;"},
-    {EnumTypeInt32::AnalysisTypeAni, "Lmedia_library_enum/#AnalysisType;"},
-    {EnumTypeInt32::RecommendationTypeAni, "Lmedia_library_enum/#RecommendationType;"},
-    {EnumTypeInt32::DeliveryModeAni, "Lmedia_library_enum/#DeliveryMode;"},
-    {EnumTypeInt32::CompatibleModeAni, "Lmedia_library_enum/#CompatibleMode;"},
-    {EnumTypeInt32::SourceModeAni, "Lmedia_library_enum/#SourceMode;"},
-    {EnumTypeInt32::PhotoPermissionTypeAni, "Lmedia_library_enum/#PhotoPermissionType;"},
-    {EnumTypeInt32::HideSensitiveTypeAni, "Lmedia_library_enum/#HideSensitiveType;"},
-    {EnumTypeInt32::AuthorizationModeAni, "Lmedia_library_enum/#AuthorizationMode;"},
-    {EnumTypeInt32::CompleteButtonTextAni, "Lmedia_library_enum/#CompleteButtonText;"},
-    {EnumTypeInt32::WatermarkTypeAni, "Lmedia_library_enum/#WatermarkType;"},
-    {EnumTypeInt32::HiddenPhotosDisplayModeAni, "Lmedia_library_enum/#HiddenPhotosDisplayMode;"},
-    {EnumTypeInt32::AlbumTypeAni, "Lmedia_library_enum/#AlbumType;"},
-    {EnumTypeInt32::AlbumSubtypeAni, "Lmedia_library_enum/#AlbumSubtype;"},
-    {EnumTypeInt32::RequestPhotoTypeAni, "Lmedia_library_enum/#RequestPhotoType;"},
-    {EnumTypeInt32::NotifyTypeAni, "Lmedia_library_enum/#NotifyType;"},
-    {EnumTypeInt32::ResourceTypeAni, "Lmedia_library_enum/#ResourceType;"},
-    {EnumTypeInt32::ImageFileTypeAni, "Lmedia_library_enum/#ImageFileType;"},
-    {EnumTypeInt32::MovingPhotoEffectModeAni, "Lmedia_library_enum/#MovingPhotoEffectMode;"},
-    {EnumTypeInt32::VideoEnhancementTypeAni, "Lmedia_library_enum/#VideoEnhancementType;"},
-    {EnumTypeInt32::HighlightAlbumInfoTypeAni, "Lmedia_library_enum/#HighlightAlbumInfoType;"},
-    {EnumTypeInt32::HighlightUserActionTypeAni, "Lmedia_library_enum/#HighlightUserActionType;"},
-    {EnumTypeInt32::ThumbnailTypeAni, "Lmedia_library_enum/#ThumbnailType;"},
-    {EnumTypeInt32::CloudEnhancementTaskStageAni, "Lmedia_library_enum/#CloudEnhancementTaskStage;"},
-    {EnumTypeInt32::CloudEnhancementStateAni, "Lmedia_library_enum/#CloudEnhancementState;"},
+    {EnumTypeInt32::PhotoTypeAni, ANI_CLASS_ENUM_PHOTO_TYPE},
+    {EnumTypeInt32::PhotoSubtypeAni, ANI_CLASS_ENUM_PHOTO_SUBTYPE},
+    {EnumTypeInt32::DynamicRangeTypeAni, ANI_CLASS_ENUM_DYNAMIC_RANGE_TYPE},
+    {EnumTypeInt32::PositionTypeAni, ANI_CLASS_ENUM_POSITION_TYPE},
+    {EnumTypeInt32::AnalysisTypeAni, ANI_CLASS_ENUM_ANALYSIS_TYPE},
+    {EnumTypeInt32::RecommendationTypeAni, ANI_CLASS_ENUM_RECOMMENDATION_TYPE},
+    {EnumTypeInt32::DeliveryModeAni, ANI_CLASS_ENUM_DELIVERY_MODE},
+    {EnumTypeInt32::CompatibleModeAni, ANI_CLASS_ENUM_COMPATIBLE_MODE},
+    {EnumTypeInt32::SourceModeAni, ANI_CLASS_ENUM_SOURCE_MODE},
+    {EnumTypeInt32::PhotoPermissionTypeAni, ANI_CLASS_ENUM_PHOTO_PERMISSION_TYPE},
+    {EnumTypeInt32::HideSensitiveTypeAni, ANI_CLASS_ENUM_HIDE_SENSITIVE_TYPE},
+    {EnumTypeInt32::AuthorizationModeAni, ANI_CLASS_ENUM_AUTHORIZATION_MODE},
+    {EnumTypeInt32::CompleteButtonTextAni, ANI_CLASS_ENUM_COMPLETE_BUTTON_TEXT},
+    {EnumTypeInt32::WatermarkTypeAni, ANI_CLASS_ENUM_WATERMARK_TYPE},
+    {EnumTypeInt32::HiddenPhotosDisplayModeAni, ANI_CLASS_ENUM_HIDDEN_PHOTOS_DISPLAY_MODE},
+    {EnumTypeInt32::AlbumTypeAni, ANI_CLASS_ENUM_ALBUM_TYPE},
+    {EnumTypeInt32::AlbumSubtypeAni, ANI_CLASS_ENUM_ALBUM_SUBTYPE},
+    {EnumTypeInt32::RequestPhotoTypeAni, ANI_CLASS_ENUM_REQUEST_PHOTO_TYPE},
+    {EnumTypeInt32::NotifyTypeAni, ANI_CLASS_ENUM_NOTIFY_TYPE},
+    {EnumTypeInt32::ResourceTypeAni, ANI_CLASS_ENUM_RESOURCE_TYPE},
+    {EnumTypeInt32::ImageFileTypeAni, ANI_CLASS_ENUM_IMAGE_FILE_TYPE},
+    {EnumTypeInt32::MovingPhotoEffectModeAni, ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE},
+    {EnumTypeInt32::VideoEnhancementTypeAni, ANI_CLASS_ENUM_VIDEO_ENHANCEMENT_TYPE},
+    {EnumTypeInt32::HighlightAlbumInfoTypeAni, ANI_CLASS_ENUM_HIGHLIGHT_ALBUM_INFO_TYPE},
+    {EnumTypeInt32::HighlightUserActionTypeAni, ANI_CLASS_ENUM_HIGHLIGHT_USER_ACTION_TYPE},
+    {EnumTypeInt32::ThumbnailTypeAni, ANI_CLASS_ENUM_THUMBNAIL_TYPE},
+    {EnumTypeInt32::CloudEnhancementTaskStageAni, ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_TASK_STAGE},
+    {EnumTypeInt32::CloudEnhancementStateAni, ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_STATE},
 };
 
 static const std::map<EnumTypeString, std::string> ENUM_TYPE_MAP_STRING = {
-    {EnumTypeString::PhotoKeysAni, "Lmedia_library_enum/#PhotoKeys;"},
-    {EnumTypeString::AlbumKeysAni, "Lmedia_library_enum/#AlbumKeys;"},
-    {EnumTypeString::DefaultChangeUriAni, "Lmedia_library_enum/#DefaultChangeUri;"},
-    {EnumTypeString::PhotoViewMIMETypesAni, "Lmedia_library_enum/#PhotoViewMIMETypes;"},
+    {EnumTypeString::PhotoKeysAni, ANI_CLASS_ENUM_PHOTO_KEYS},
+    {EnumTypeString::AlbumKeysAni, ANI_CLASS_ENUM_ALBUM_KEYS},
+    {EnumTypeString::DefaultChangeUriAni, ANI_CLASS_ENUM_DEFAULT_CHANGE_URI},
+    {EnumTypeString::PhotoViewMIMETypesAni, ANI_CLASS_ENUM_PHOTO_VIEW_MIME_TYPES},
 };
 
 static const std::map<MediaType, int32_t> ANI_MEDIATYPE_INDEX_MAP = {
