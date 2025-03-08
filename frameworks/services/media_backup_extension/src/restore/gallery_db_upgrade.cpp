@@ -48,6 +48,7 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     this->GarbageAlbumUpgrade(store);
     this->AddIndexOfGalleryAlbum(store);
     this->AddIndexOfAlbumPlugin(store);
+    this->AddStoryChosenOfGalleryMedia(store);
     return NativeRdb::E_OK;
 }
 
@@ -150,6 +151,22 @@ int32_t GalleryDbUpgrade::AddIndexOfAlbumPlugin(NativeRdb::RdbStore &store)
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GalleryDbUpgrade::AddIndexOfAlbumPlugin failed,"
         " ret=%{public}d, sql=%{public}s", ret, sql.c_str());
     MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddIndexOfAlbumPlugin success");
+    return ret;
+}
+
+/**
+ * @brief Add story_chosen of gallery_media table in gallery.db.
+ */
+ int32_t GalleryDbUpgrade::AddStoryChosenOfGalleryMedia(NativeRdb::RdbStore &store)
+{
+    if (this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "story_chosen")) {
+        return NativeRdb::E_OK;
+    }
+    std::string sql = this->SQL_GALLERY_MEDIA_TABLE_ADD_STORY_CHOSEN;
+    int32_t ret = store.ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GalleryDbUpgrade::AddStoryChosenOfGalleryMedia failed,"
+         "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+    MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddStoryChosenOfGalleryMedia success");
     return ret;
 }
 }  // namespace DataTransfer
