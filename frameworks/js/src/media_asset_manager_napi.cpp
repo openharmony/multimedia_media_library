@@ -1243,8 +1243,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         string uri = dataHandler->GetRequestUri();
         SavePicture(uri);
     }
-    napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler, isPicture);
-    napiValueOfMedia = assetHandler->isError ? nullptr : napiValueOfMedia;
+    napi_value napiValueOfMedia = assetHandler->isError ? nullptr : GetNapiValueOfMedia(env, dataHandler, isPicture);
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         if (isPicture) {
             dataHandler->JsOnDataPrepared(env, napiValueOfMedia, nullptr, napiValueOfInfoMap);
