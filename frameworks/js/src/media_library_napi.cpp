@@ -237,7 +237,7 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getPublicDirectory", JSGetPublicDirectory),
         DECLARE_NAPI_FUNCTION("getFileAssets", JSGetFileAssets),
         DECLARE_NAPI_FUNCTION("getAlbums", JSGetAlbums),
-        DECLARE_WRITABLE_NAPI_FUNCTION("createAsset", JSCreateAsset),
+        DECLARE_NAPI_FUNCTION("createAsset", JSCreateAsset),
         DECLARE_NAPI_FUNCTION("deleteAsset", JSDeleteAsset),
         DECLARE_NAPI_FUNCTION("on", JSOnCallback),
         DECLARE_NAPI_FUNCTION("off", JSOffCallback),
