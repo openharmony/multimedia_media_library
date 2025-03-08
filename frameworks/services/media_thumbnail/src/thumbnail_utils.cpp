@@ -1660,9 +1660,7 @@ void PostProcPixelMapSource(ThumbnailData &data)
     pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (data.orientation != 0) {
         if (data.isLocalFile) {
-            Media::InitializationOptions opts;
-            auto copySourcePtr = PixelMap::Create(*pixelMap, opts);
-            std::shared_ptr<PixelMap> copySource = std::move(copySourcePtr);
+            std::shared_ptr<PixelMap> copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
             data.source.SetPixelMapEx(copySource);
         }
         PostProc::RotateInRectangularSteps(*(pixelMap.get()), static_cast<float>(data.orientation), true);

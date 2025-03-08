@@ -455,21 +455,40 @@ bool SourceLoader::CreateSourcePixelMap()
 
 bool SourceLoader::CreateSourceFromOriginalPhotoPicture()
 {
+    CHECK_AND_RETURN_RET_LOG(data_.originalPhotoPicture != nullptr, false, "OriginalPhotoPicture is nullptr");
     if (data_.loaderOpts.decodeInThumbSize) {
         data_.originalPhotoPicture = nullptr;
         return false;
     }
-    MediaLibraryTracer tracer;
-    tracer.Start("CreateSourceFromOriginalPhotoPicture");
-    if (data_.orientation == 0) {
-        int32_t err = ThumbnailImageFrameWorkUtils::GetPictureOrientation(
-            data_.originalPhotoPicture, data_.orientation);
-        CHECK_AND_WARN_LOG(err == E_OK, "SourceLoader Failed to get picture orientation, path: %{public}s",
-            DfxUtils::GetSafePath(data_.path).c_str());
+
+    int32_t orientation = 0;
+    int32_t err = ThumbnailImageFrameWorkUtils::GetPictureOrientation(
+        data_.originalPhotoPicture, orientation);
+    CHECK_AND_WARN_LOG(err == E_OK, "SourceLoader Failed to get picture orientation, path: %{public}s",
+        DfxUtils::GetSafePath(data_.path).c_str());
+
+    bool isCreateSource = false;
+    if (data_.originalPhotoPicture->GetGainmapPixelMap() == nullptr) {
+        isCreateSource = CreateSourceWithOriginalPictureMainPixel();
+    } else {
+        isCreateSource = CreateSourceWithWholeOriginalPicture();
+    }
+    CHECK_AND_RETURN_RET_LOG(isCreateSource, false, "Create source failed");
+    if (data_.orientation == 0 && orientation > 0) {
+        data_.orientation = orientation;
     }
     if (data_.mediaType == MEDIA_TYPE_VIDEO) {
         data_.orientation = 0;
     }
+    return true;
+}
+
+bool SourceLoader::CreateSourceWithWholeOriginalPicture()
+{
+    CHECK_AND_RETURN_RET_LOG(data_.originalPhotoPicture != nullptr, false, "OriginalPhotoPicture is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateSourceWithWholeOriginalPicture");
+
     std::shared_ptr<Picture> picture = ThumbnailImageFrameWorkUtils::CopyPictureSource(data_.originalPhotoPicture);
     data_.originalPhotoPicture = nullptr;
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, false, "CopyPictureSource failed");
@@ -489,6 +508,38 @@ bool SourceLoader::CreateSourceFromOriginalPhotoPicture()
     pixelMap->resize(widthScale, heightScale);
     gainMap->resize(widthScale, heightScale);
     data_.source.SetPicture(picture);
+
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, data_.mediaType, originSize.width,
+        originSize.height);
+    return true;
+}
+
+bool SourceLoader::CreateSourceWithOriginalPictureMainPixel()
+{
+    CHECK_AND_RETURN_RET_LOG(data_.originalPhotoPicture != nullptr, false, "OriginalPhotoPicture is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateSourceWithOriginalPictureMainPixel");
+    auto mainPixel = data_.originalPhotoPicture->GetMainPixel();
+    CHECK_AND_RETURN_RET_LOG(mainPixel != nullptr, false, "Main pixel is nullptr");
+    MEDIA_INFO_LOG("Main pixelMap format:%{public}d isHdr:%{public}d allocatorType:%{public}d, "
+        "size: %{public}d * %{public}d", mainPixel->GetPixelFormat(), mainPixel->IsHdr(),
+        mainPixel->GetAllocatorType(), mainPixel->GetWidth(), mainPixel->GetHeight());
+
+    std::shared_ptr<PixelMap> pixelMap = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(mainPixel);
+    mainPixel = nullptr;
+    data_.originalPhotoPicture = nullptr;
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "Copy main pixel failed");
+    CHECK_AND_RETURN_RET_LOG(pixelMap->GetWidth() * pixelMap->GetHeight() != 0, false,
+        "PixelMap is invalid");
+
+    Size originSize = { .width = pixelMap->GetWidth(),
+                        .height = pixelMap->GetHeight() };
+    Size targetSize = ConvertDecodeSize(data_, originSize, desiredSize_);
+
+    float widthScale = (1.0f * targetSize.width) / pixelMap->GetWidth();
+    float heightScale = (1.0f * targetSize.height) / pixelMap->GetHeight();
+    pixelMap->resize(widthScale, heightScale);
+    data_.source.SetPixelMap(pixelMap);
 
     DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, data_.mediaType, originSize.width,
         originSize.height);
