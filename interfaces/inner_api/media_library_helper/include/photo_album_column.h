@@ -89,6 +89,7 @@ public:
     static const std::string ALBUM_CLOUD_URI_PREFIX EXPORT;
     static const std::string ALBUM_GALLERY_CLOUD_URI_PREFIX EXPORT;
     static const std::string PHOTO_GALLERY_CLOUD_SYNC_INFO_URI_PREFIX EXPORT;
+    static const std::string PHOTO_GALLERY_DOWNLOAD_URI_PREFIX EXPORT;
 
     EXPORT static bool IsPhotoAlbumColumn(const std::string &columnName);
 
