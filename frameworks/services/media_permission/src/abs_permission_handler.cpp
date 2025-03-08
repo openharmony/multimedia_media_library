@@ -38,6 +38,13 @@ int32_t AbsPermissionHandler::CheckPermission(MediaLibraryCommand &cmd, PermPara
 {
     MEDIA_DEBUG_LOG("CheckPermission:isDoDfx_=%{public}d", isDoDfx_);
     int32_t err = ExecuteCheckPermissionWithDfx(cmd, permParam);
+    if (checkStopOnFail_) {
+        if (err != E_SUCCESS || nextHandler_ == nullptr) {
+            MEDIA_DEBUG_LOG("permission chain is end");
+            return err;
+        }
+        return nextHandler_->CheckPermission(cmd, permParam);
+    }
     if (err == E_SUCCESS || nextHandler_ == nullptr) {
         MEDIA_DEBUG_LOG("permission chain is end");
         return err;
