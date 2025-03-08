@@ -2426,6 +2426,8 @@ static void TaskDataFileProccess(DeleteFilesTask *taskData)
 {
     for (size_t i = 0; i < taskData->paths_.size(); i++) {
         string filePath = taskData->paths_[i];
+        string fileId = i < taskData->ids_.size() ? taskData->ids_[i] : "";
+        MEDIA_INFO_LOG("Delete file id: %{public}s, path: %{public}s", fileId.c_str(), filePath.c_str());
         if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
             MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
         }
@@ -2790,6 +2792,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
 {
     MediaLibraryTracer tracer;
     tracer.Start("DeleteFromDisk");
+    MEDIA_INFO_LOG("DeleteFromDisk start");
     vector<string> whereArgs = predicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     vector<string> agingNotifyUris;
