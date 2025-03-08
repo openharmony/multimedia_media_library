@@ -118,6 +118,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_METADATA_FLAGS, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_IS_AUTO, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_MEDIA_SUFFIX, MEMBER_TYPE_STRING },
 };
 
 typedef struct {
@@ -205,16 +206,14 @@ protected:
     static bool CheckUriBySetDisplayName(MediaLibraryCommand &cmd);
     static int32_t ChangeDisplayName(
         MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset, bool &isNameChanged);
-    static bool GetUpdateValuesBucket(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &values,
-        bool isContainPath = false);
-    static int32_t UpdateBySetDisplayName(MediaLibraryCommand &cmd, const int32_t &id);
-    static std::string FindRelativePath(const std::string &filePath);
-    static std::string FindPrefixOfEditDataFolder(const std::string &filePath);
-    static bool UpdateFileAssetBySetDisplayName(MediaLibraryCommand &cmd, const int32_t id);
-    static bool DeleteThumbByFileId(MediaLibraryCommand &cmd, const int32_t id, const std::string &oldPath = "");
-    static void RevertSetDisplayName(MediaLibraryCommand &cmd, const int32_t id, const std::string &revertIndex);
-    static void RevertSetDisplayNameByDelete(MediaLibraryCommand &cmd, const int32_t id);
-    static void RevertSetDisplayNameByUpdate(MediaLibraryCommand &cmd, const int32_t id);
+    static int32_t GetUpdateValuesBucket(
+        MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset, NativeRdb::ValuesBucket &values);
+    static int32_t UpdateDbBySetDisplayName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static bool UpdateFileAssetBySetDisplayName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static bool DeleteThumbByFileId(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static void RevertSetDisplayName(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
+    static void RevertSetDisplayNameByDelete(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
+    static void RevertSetDisplayNameByUpdate(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);

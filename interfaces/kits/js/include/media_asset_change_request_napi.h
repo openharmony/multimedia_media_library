@@ -107,7 +107,8 @@ public:
     std::string GetCacheFileName();
     void SetCacheMovingPhotoVideoName(std::string& fileName);
     int32_t SubmitCache(bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced, const int32_t userId = -1);
-    int32_t SubmitCacheWithCreation(std::string &uri, std::string &assetUri, const int32_t userId);
+    int32_t SubmitCacheWithCreation(
+        std::string &uri, std::string &assetUri, bool isSetEffectMode, const int32_t userId);
     int32_t SubmitCacheWithoutCreation(std::string &uri, bool isSetEffectMode, bool isWriteGpsAdvanced,
         const int32_t userId);
     int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
