@@ -40,6 +40,10 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+#define DECLARE_WRITABLE_NAPI_FUNCTION(name, func)
+    {
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_writable, nullptr
+    }
 static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
 static const std::string USERFILE_MGR_NAPI_CLASS_NAME = "UserFileManager";
 static const std::string PHOTOACCESSHELPER_NAPI_CLASS_NAME = "PhotoAccessHelper";
