@@ -1605,9 +1605,12 @@ static void GetCreateUri(SendablePhotoAccessHelperAsyncContext *context, string 
         context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         switch (context->assetType) {
             case TYPE_PHOTO:
-                uri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-                    ((context->isCreateByComponent) ? UFM_CREATE_PHOTO_COMPONENT : UFM_CREATE_PHOTO) :
-                    ((context->isCreateByComponent) ? PAH_CREATE_PHOTO_COMPONENT : PAH_CREATE_PHOTO);
+                if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+                    uri = (context->isCreateByComponent) ? UFM_CREATE_PHOTO_COMPONENT : UFM_CREATE_PHOTO;
+                } else {
+                    uri = (context->isCreateByComponent) ? PAH_CREATE_PHOTO_COMPONENT :
+                        (context->needSystemApp ? PAH_SYS_CREATE_PHOTO : PAH_CREATE_PHOTO);
+                }
                 break;
             case TYPE_AUDIO:
                 uri = (context->isCreateByComponent) ? UFM_CREATE_AUDIO_COMPONENT : UFM_CREATE_AUDIO;
@@ -1688,6 +1691,7 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     NAPI_ASSERT(env, napi_typeof(env, context->argv[ARGS_ZERO], &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) {
         context->isCreateByComponent = false;
+        context->needSystemApp = true;
         if (!SendableMediaLibraryNapiUtils::IsSystemApp()) {
             NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
             return nullptr;
