@@ -222,6 +222,12 @@ public:
     EXPORT int32_t GetIsAuto() const;
     EXPORT void SetIsAuto(int32_t isAuto);
 
+    EXPORT int32_t GetDirty() const;
+    EXPORT void SetDirty(int32_t dirty);
+
+    EXPORT std::string GetMediaSuffix() const;
+    EXPORT void SetMediaSuffix(const std::string &mediaSuffix);
+
     EXPORT const std::string &GetStrMember(const std::string &name) const;
     EXPORT int32_t GetInt32Member(const std::string &name) const;
     EXPORT int64_t GetInt64Member(const std::string &name) const;
