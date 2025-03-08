@@ -509,6 +509,28 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
     return errRet;
 }
 
+static bool CheckPhotoPath(const string& photoPath)
+{
+    return photoPath.length() >= ROOT_MEDIA_DIR.length() && MediaFileUtils::StartsWith(photoPath, ROOT_MEDIA_DIR);
+}
+
+string MediaFileUtils::GetThumbDir(const string &photoPath, int32_t userId)
+{
+    if (!CheckPhotoPath(photoPath)) {
+        return "";
+    }
+    return AppendUserId(ROOT_MEDIA_DIR, userId) + ".thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length());
+}
+
+string MediaFileUtils::AppendUserId(const string& path, int32_t userId)
+{
+    if (userId < 0 || !StartsWith(path, ROOT_MEDIA_DIR)) {
+        return path;
+    }
+
+    return "/storage/cloud/" + to_string(userId) + "/files/" + path.substr(ROOT_MEDIA_DIR.length());
+}
+
 bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile)
 {
     bool fileExist = IsFileExists(destFile);
