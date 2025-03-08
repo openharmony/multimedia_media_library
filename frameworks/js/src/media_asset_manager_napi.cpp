@@ -667,13 +667,20 @@ void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env, MediaAssetManager
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(asyncContext->photoUri);
-    NAPI_INFO_LOG("MultistagesCapture, uri: %{public}s, %{public}s", asyncContext->photoUri.c_str(), uriLocal.c_str());
+    auto uriHightemp = uriLocal + "high_temperature/";
+    NAPI_INFO_LOG("MultistagesCapture, uri: %{public}s, %{public}s, uriHightTemp: %{public}s.",
+        asyncContext->photoUri.c_str(), uriLocal.c_str(), uriHightemp.c_str());
     Uri uri(asyncContext->photoUri);
     std::unique_lock<std::mutex> registerLock(registerTaskLock);
     if (multiStagesObserverMap.find(uriLocal) == multiStagesObserverMap.end()) {
         UserFileClient::RegisterObserverExt(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
         multiStagesObserverMap.insert(std::make_pair(uriLocal, dataObserver));
+    }
+    if (multiStagesObserverMap.find(uriHightemp) == multiStagesObserverMap.end()) {
+        UserFileClient::RegisterObserverExt(Uri(uriHightemp),
+            static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
+        multiStagesObserverMap.insert(std::make_pair(uriHightemp, dataObserver));
     }
     registerLock.unlock();
 
@@ -1237,6 +1244,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         SavePicture(uri);
     }
     napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler, isPicture);
+    napiValueOfMedia = assetHandler->isError ? nullptr : napiValueOfMedia;
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         if (isPicture) {
             dataHandler->JsOnDataPrepared(env, napiValueOfMedia, nullptr, napiValueOfInfoMap);
@@ -1382,11 +1390,15 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         string uriString = uri.ToString();
         NAPI_INFO_LOG("Onchange, before onDataPrepared, uri: %{public}s", uriString.c_str());
         std::string photoId = "";
-        if (MediaAssetManagerNapi::QueryPhotoStatus(fileId_, uriString, photoId, true, -1) !=
+        if (uriString.find("high_temperature") == std::string::npos &&
+            MediaAssetManagerNapi::QueryPhotoStatus(fileId_, uriString, photoId, true, -1) !=
             MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
             NAPI_ERR_LOG("requested data not prepared");
             continue;
         }
+        std::string uriHigh = uriString;
+        auto index = uriString.find("high_temperature/");
+        uriString = uriString.substr(0, index);
 
         std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
         if (inProcessUriMap.find(uriString) == inProcessUriMap.end()) {
@@ -1399,6 +1411,10 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         }
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
+            if (uriHigh.find("high_temperature") != std::string::npos) {
+                NAPI_INFO_LOG("OnChange receive high_temperature");
+                assetHandler->isError = true;
+            }
             assetHandler->photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
             MediaAssetManagerNapi::NotifyMediaDataPrepared(assetHandler);
         }
