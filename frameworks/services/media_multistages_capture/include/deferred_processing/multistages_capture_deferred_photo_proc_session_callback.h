@@ -48,7 +48,7 @@ private:
     EXPORT void GetCommandByImageId(const std::string &imageId, MediaLibraryCommand &cmd);
     EXPORT void UpdateHighQualityPictureInfo(const std::string &imageId, uint32_t cloudImageEnhanceFlag,
         int32_t modifyType = 0);
-    EXPORT void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    EXPORT void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet, bool isError = false);
     EXPORT void ProcessAndSaveHighQualityImage(const std::string& imageId, std::shared_ptr<Media::Picture> picture,
         std::shared_ptr<NativeRdb::ResultSet> resultSet, uint32_t cloudImageEnhanceFlag, int32_t modifyType = 0);
 };
