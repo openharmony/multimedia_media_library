@@ -59,6 +59,8 @@ static const std::unordered_map<int, int> ORIENTATION_MAP = {
     {270, ORIENTATION_270}
 };
 
+const std::string HIGH_TEMPERATURE = "high_temperature";
+
 namespace OHOS {
 namespace Media {
 MultiStagesCaptureDeferredPhotoProcSessionCallback::MultiStagesCaptureDeferredPhotoProcSessionCallback()
@@ -85,7 +87,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(
         static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
     notifyUri = MediaFileUtils::GetUriWithoutDisplayname(notifyUri);
     if (isError) {
-        notifyUri += "high_temperature/";
+        notifyUri += HIGH_TEMPERATURE;
     }
     MEDIA_DEBUG_LOG("MultistagesCapture notify: %{public}s", notifyUri.c_str());
     watch->Notify(notifyUri, NOTIFY_UPDATE);
