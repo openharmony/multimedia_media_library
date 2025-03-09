@@ -59,6 +59,8 @@ static const std::unordered_map<int, int> ORIENTATION_MAP = {
     {270, ORIENTATION_270}
 };
 
+const std::string HIGH_TEMPERATURE = "high_temperature";
+
 namespace OHOS {
 namespace Media {
 MultiStagesCaptureDeferredPhotoProcSessionCallback::MultiStagesCaptureDeferredPhotoProcSessionCallback()
@@ -67,7 +69,8 @@ MultiStagesCaptureDeferredPhotoProcSessionCallback::MultiStagesCaptureDeferredPh
 MultiStagesCaptureDeferredPhotoProcSessionCallback::~MultiStagesCaptureDeferredPhotoProcSessionCallback()
 {}
 
-void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(shared_ptr<NativeRdb::ResultSet> resultSet)
+void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(
+    shared_ptr<NativeRdb::ResultSet> resultSet, bool isError)
 {
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
     string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
@@ -82,9 +85,12 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::NotifyIfTempFile(shared
     string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
     auto notifyUri = MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(
         static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/", to_string(fileId), extrUri);
-    MEDIA_DEBUG_LOG("MultistagesCapture notify %{public}s",
-        MediaFileUtils::GetUriWithoutDisplayname(notifyUri).c_str());
-    watch->Notify(MediaFileUtils::GetUriWithoutDisplayname(notifyUri), NOTIFY_UPDATE);
+    notifyUri = MediaFileUtils::GetUriWithoutDisplayname(notifyUri);
+    if (isError) {
+        notifyUri += HIGH_TEMPERATURE;
+    }
+    MEDIA_DEBUG_LOG("MultistagesCapture notify: %{public}s", notifyUri.c_str());
+    watch->Notify(notifyUri, NOTIFY_UPDATE);
 }
 
 int32_t MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdatePhotoQuality(const string &photoId)
@@ -141,6 +147,19 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::UpdateCEAvailable(const
     CHECK_AND_RETURN_LOG(ceAvailableResult >= 0, "update CE available fail, photoId: %{public}s", photoId.c_str());
 }
 
+std::shared_ptr<NativeRdb::ResultSet> QueryPhotoData(const std::string &imageId)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
+    string where = PhotoColumn::PHOTO_ID + " = ? ";
+    vector<string> whereArgs { imageId };
+    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
+        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
+        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
+    return DatabaseAdapter::Query(cmd, columns);
+}
+
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &imageId, const DpsErrorCode error)
 {
     switch (error) {
@@ -154,6 +173,15 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
             MEDIA_ERR_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
             break;
         }
+        case ERROR_IMAGE_PROC_ABNORMAL: {
+            auto resultSet = QueryPhotoData(imageId);
+            if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+                MEDIA_INFO_LOG("result set is empty.");
+                return;
+            }
+            NotifyIfTempFile(resultSet, true);
+            break;
+        }
         default:
             break;
     }
@@ -165,19 +193,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnError(const string &i
             static_cast<int32_t>(MultiStagesCaptureMediaType::IMAGE);
         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(error), mediaType);
     }
-}
-
-std::shared_ptr<NativeRdb::ResultSet> QueryPhotoData(const std::string &imageId)
-{
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = PhotoColumn::PHOTO_ID + " = ? ";
-    vector<string> whereArgs { imageId };
-    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::MEDIA_NAME, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP,
-        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_TYPE, MediaColumn::MEDIA_DATE_TRASHED };
-    return DatabaseAdapter::Query(cmd, columns);
 }
 
 void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQualityImage(
