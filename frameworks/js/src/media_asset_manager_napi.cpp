@@ -1418,7 +1418,7 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         }
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
-            if (uriHighTemp.find(HIGH_TEMPERATURE) != std::string::npos) {
+            if (uriHightemp.find(HIGH_TEMPERATURE) != std::string::npos) {
                 NAPI_INFO_LOG("OnChange receive high_temperature");
                 assetHandler->isError = true;
             }
