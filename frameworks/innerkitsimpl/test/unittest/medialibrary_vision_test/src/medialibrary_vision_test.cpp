@@ -89,7 +89,7 @@ void CleanVisionData()
     Uri aesUri(URI_AESTHETICS);
     MediaLibraryCommand aesCmd(aesUri);
     Uri videoAesUri(URI_VIDEO_AESTHETICS);
-    MediaLibraryCommand aesCmd(videoAesUri);
+    MediaLibraryCommand videoAesCmd(videoAesUri);
     Uri objectUri(URI_OBJECT);
     MediaLibraryCommand objectCmd(objectUri);
     Uri recommendationUri(URI_RECOMMENDATION);
