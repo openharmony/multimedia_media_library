@@ -1607,6 +1607,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_LABEL,
     CREATE_TAB_ANALYSIS_VIDEO_LABEL,
     CREATE_TAB_ANALYSIS_AESTHETICS,
+    CREATE_TAB_VIDEO_ANALYSIS_AESTHETICS,
     CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
     CREATE_TAB_ANALYSIS_OBJECT,
     CREATE_TAB_ANALYSIS_RECOMMENDATION,
@@ -2848,6 +2849,15 @@ static void AddCoverPlayVersionColumns(RdbStore& store)
             " ADD COLUMN " + PLAY_SERVICE_VERSION + " INT DEFAULT 0",
     };
     MEDIA_INFO_LOG("start add cover play version columns");
+    ExecSqls(sqls, store);
+}
+
+static void AddMovingPhotoRelatedData(RdbStore &store)
+{
+    const vector<string> sqls = {
+        CREATE_TAB_VIDEO_ANALYSIS_AESTHETICS,
+    };
+    MEDIA_INFO_LOG("start create video aesthetics score table");
     ExecSqls(sqls, store);
 }
 
@@ -4295,6 +4305,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_FOREGROUND_ANALYSIS) {
         AddFrontAnalysisColumn(store);
+    }
+
+    if (oldVersion < VERSION_HIGHLIGHT_MOVING_PHOTO) {
+        AddMovingPhotoRelatedData(store);
     }
 }
 
