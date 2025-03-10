@@ -247,6 +247,7 @@ const std::string PAH_ANA_ALBUM = "phaccess_ana_album_operation";
 const std::string PAH_ANA_MAP = "phaccess_ana_map_operation";
 const std::string PAH_ANA_OCR = "phaccess_ana_ocr_operation";
 const std::string PAH_ANA_ATTS = "phaccess_ana_atts_operation";
+const std::string PAH_ANA_VIDEO_ATTS = "phaccess_ana_video_atts_operation";
 const std::string PAH_ANA_LABEL = "phaccess_ana_label_operation";
 const std::string PAH_ANA_VIDEO_LABEL = "phaccess_ana_video_label_operation";
 const std::string PAH_ANA_FACE = "phaccess_ana_face_operation";
@@ -398,6 +399,7 @@ const std::string PAH_UPDATE_ORDER_ANA_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH
 
 const std::string PAH_QUERY_ANA_OCR = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_OCR + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_ATTS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ATTS + "/" + OPRN_QUERY;
+const std::string PAH_QUERY_ANA_VIDEO_ATTS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_VIDEO_ATTS + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_LABEL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_LABEL + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_VIDEO_LABEL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_VIDEO_LABEL + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FACE + "/" + OPRN_QUERY;
