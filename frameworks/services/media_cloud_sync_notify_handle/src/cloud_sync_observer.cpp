@@ -125,6 +125,32 @@ void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
     }
 }
 
+void CloudSyncObserver::DealGalleryDownload(CloudSyncNotifyInfo &notifyInfo)
+{
+    if (notifyInfo.type == ChangeType::OTHER) {
+        if (notifyInfo.uris.empty()) {
+            MEDIA_ERR_LOG("gallery download notify uri empty");
+            return;
+        }
+        string uriString = notifyInfo.uris.front().ToString();
+        string downloadString = "gallery/download";
+        string::size_type pos = uriString.find(downloadString);
+        if (pos == string::npos) {
+            MEDIA_ERR_LOG("gallery download notify uri err");
+            return;
+        }
+        auto it = notifyInfo.uris.begin();
+        *it = Uri(uriString.replace(pos, downloadString.length(), "Photo"));
+        notifyInfo.type = ChangeType::UPDATE;
+        CloudSyncHandleData handleData;
+        handleData.orgInfo = notifyInfo;
+        shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(TRANSPARENT);
+        if (chain != nullptr) {
+            chain->Handle(handleData);
+        }
+    }
+}
+
 void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
 {
     CloudSyncNotifyInfo notifyInfo = {changeInfo.uris_, changeInfo.changeType_, changeInfo.data_};
@@ -160,6 +186,11 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
     
     if (uriString.find(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX) != string::npos) {
         DealPhotoGallery(notifyInfo);
+        return;
+    }
+    
+    if (uriString.find(PhotoAlbumColumns::PHOTO_GALLERY_DOWNLOAD_URI_PREFIX) != string::npos) {
+        DealGalleryDownload(notifyInfo);
         return;
     }
 

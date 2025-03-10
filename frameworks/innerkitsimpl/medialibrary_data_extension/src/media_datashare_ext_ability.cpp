@@ -183,6 +183,8 @@ void MediaDataShareExtAbility::InitPermissionHandler()
 
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
+    MultiStagesPhotoCaptureManager::GetInstance().Init();
+    MultiStagesVideoCaptureManager::GetInstance().Init();
 #ifdef MEDIALIBRARY_MTP_ENABLE
     MtpManager::GetInstance().Init();
 #endif

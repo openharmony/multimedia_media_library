@@ -83,7 +83,7 @@ MediaFuseManager &MediaFuseManager::GetInstance()
     return instance;
 }
 
-bool CheckDeviceInLinux()
+bool MediaFuseManager::CheckDeviceInLinux()
 {
     struct utsname uts;
     if (uname(&uts) == -1) {

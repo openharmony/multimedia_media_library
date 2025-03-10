@@ -65,7 +65,7 @@ MultiStagesPhotoCaptureManager& MultiStagesPhotoCaptureManager::GetInstance()
 
 bool MultiStagesPhotoCaptureManager::Init()
 {
-    SyncWithDeferredProcSessionInternal();
+    SyncWithDeferredProcSession();
     return true;
 }
 

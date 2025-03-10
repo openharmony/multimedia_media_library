@@ -32,6 +32,11 @@ const std::string CAPTURE_AESTHETICS_COUNT = "capture_aesthetics_count";
 const std::string CALCULATE_TIME_START = "calculate_time_start";
 const std::string CALCULATE_TIME_END = "calculate_time_end";
 const std::string HIGHLIGHT_ANALYSIS_PROGRESS = "highlight_analysis_progress";
+const std::string FRONT_INDEX_LIMIT = "front_index_limit";
+const std::string FRONT_INDEX_MODIFIED = "front_index_modified";
+const std::string FRONT_INDEX_COUNT = "front_index_count";
+const std::string FRONT_CV_MODIFIED = "front_cv_modified";
+const std::string FRONT_CV_COUNT = "front_cv_count";
 
 const std::string URI_USER_PHOTOGRAPHY_INFO = MEDIALIBRARY_DATA_URI + "/" + USER_PHOTOGRAPHY_INFO_TABLE;
 } // namespace Media
