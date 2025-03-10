@@ -91,7 +91,7 @@ public:
     EXPORT static bool LoadSourceImage(ThumbnailData &data);
     EXPORT static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
 
-    EXPORT static bool SaveAfterPacking(const std::string &path, const std::string &tempOutputPath);
+    EXPORT static bool SaveAfterPacking(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
     EXPORT static void CancelAfterPacking(const std::string &tempOutputPath);
     EXPORT static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
