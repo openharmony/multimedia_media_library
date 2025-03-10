@@ -451,7 +451,7 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
         data.thumbnailQuality);
 
     MEDIA_INFO_LOG("CompressPicture %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-    auto outputPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+    auto outputPath = GetThumbnailPath(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
     auto picture = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
     if (picture == nullptr) {
         MEDIA_ERR_LOG("CompressPicture failed, source is nullptr, path: %{public}s",
@@ -492,7 +492,7 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
     return true;
 }
 
-bool ThumbnailUtils::SaveAfterPacking(const string &path, const string &tempOutputPath)
+bool ThumbnailUtils::SaveAfterPacking(ThumbnailData &data, bool isSourceEx, const string &tempOutputPath)
 {
     size_t size = -1;
     MediaFileUtils::GetFileSize(tempOutputPath, size);
@@ -501,7 +501,7 @@ bool ThumbnailUtils::SaveAfterPacking(const string &path, const string &tempOutp
             DfxUtils::GetSafePath(tempOutputPath).c_str());
         return false;
     }
-    auto outputPath = GetThumbnailPath(path, THUMBNAIL_LCD_SUFFIX);
+    auto outputPath = GetThumbnailPath(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
     int ret = rename(tempOutputPath.c_str(), outputPath.c_str());
     if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("SaveAfterPacking failed, failed to rename temp filters file: %{public}s",
