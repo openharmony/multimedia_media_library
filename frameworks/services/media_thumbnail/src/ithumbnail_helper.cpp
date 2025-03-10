@@ -725,9 +725,9 @@ bool IThumbnailHelper::SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &d
     if (lcdDesiredWidth != lcdSource->GetWidth()) {
         MEDIA_INFO_LOG("Copy and resize data source for lcd desiredSize: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
-        Media::InitializationOptions initOpts;
-        auto copySource = PixelMap::Create(*lcdSource, initOpts);
+        auto copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(lcdSource);
         lcdSource = std::move(copySource);
+        CHECK_AND_RETURN_RET_LOG(lcdSource != nullptr, false, "LcdSource is nullptr");
         if (lcdSource->GetWidth() * lcdSource->GetHeight() == 0) {
             MEDIA_ERR_LOG("CompressImage failed, invalid lcdSource");
             return false;
