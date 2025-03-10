@@ -2857,7 +2857,7 @@ static void AddMovingPhotoRelatedData(RdbStore &store)
     const vector<string> sqls = {
         CREATE_TAB_VIDEO_ANALYSIS_AESTHETICS,
     };
-    MEDIA_INFO_LOG("start add video_label and video_face columns");
+    MEDIA_INFO_LOG("start create video aesthetics score table");
     ExecSqls(sqls, store);
 }
 
