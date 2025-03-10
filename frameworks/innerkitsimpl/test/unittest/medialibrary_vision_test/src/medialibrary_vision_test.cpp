@@ -88,8 +88,6 @@ void CleanVisionData()
     MediaLibraryCommand videoLabelCmd(videoLabelUri);
     Uri aesUri(URI_AESTHETICS);
     MediaLibraryCommand aesCmd(aesUri);
-    Uri videoAesUri(URI_VIDEO_AESTHETICS);
-    MediaLibraryCommand videoAesCmd(videoAesUri);
     Uri objectUri(URI_OBJECT);
     MediaLibraryCommand objectCmd(objectUri);
     Uri recommendationUri(URI_RECOMMENDATION);
@@ -117,7 +115,6 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(ocrCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(labelCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(aesCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(videoAesCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(objectCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(recommendationCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(segmentationCmd, predicates);
@@ -130,6 +127,14 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(faceTagCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
+}
+
+void ClearVideoAestheticsData()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand videoAesCmd(videoAesUri);
+    MediaLibraryDataManager::GetInstance()->Delete(videoAesCmd, predicates);
 }
 
 void ClearVideoFaceData()
@@ -191,6 +196,7 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     ClearPhotos();
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
+    ClearVideoAestheticsData();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
@@ -198,6 +204,7 @@ void MediaLibraryVisionTest::TearDownTestCase(void)
     CleanVisionData();
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
+    ClearVideoAestheticsData();
     MEDIA_INFO_LOG("Vision_Test::End");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
@@ -208,6 +215,7 @@ void MediaLibraryVisionTest::SetUp(void)
     CleanVisionData();
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
+    ClearVideoAestheticsData();
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
