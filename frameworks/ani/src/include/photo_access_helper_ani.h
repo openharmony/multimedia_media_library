@@ -34,6 +34,18 @@ private:
     [[maybe_unused]] ani_env *env_ = nullptr;
 };
 
+class ThumbnailBatchGenerateObserver : public DataShare::DataShareObserver {
+    public:
+        ThumbnailBatchGenerateObserver() = default;
+        ~ThumbnailBatchGenerateObserver() = default;
+};
+    
+class ThumbnailGenerateHandler {
+public:
+    ThumbnailGenerateHandler() = default;
+    ~ThumbnailGenerateHandler() = default;
+};
+
 class PhotoAccessHelperAni {
 public:
     static ani_status PhotoAccessHelperInit(ani_env *env);
@@ -52,6 +64,8 @@ public:
     static ani_object GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_object options);
     static std::mutex sUserFileClientMutex_;
+    static void PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+        ani_int taskId);
 
 private:
     ani_env *env_;

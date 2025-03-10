@@ -36,7 +36,10 @@
 #include "media_file_uri.h"
 #include "media_ani_native_impl.h"
 #include "datashare_predicates.h"
-#include "media_library_ani.h"
+#include "userfilemgr_uri.h"
+#include "datashare_helper.h"
+#include "safe_map.h"
+#include "ani_error.h"
 
 #define MEDIALIBRARY_COMPATIBILITY
 
@@ -46,6 +49,9 @@ namespace OHOS {
 namespace Media {
 std::mutex PhotoAccessHelperAni::sUserFileClientMutex_;
 thread_local std::unique_ptr<ChangeListenerAni> g_listObj = nullptr;
+
+static SafeMap<int32_t, std::shared_ptr<ThumbnailBatchGenerateObserver>> thumbnailGenerateObserverMap;
+static SafeMap<int32_t, std::shared_ptr<ThumbnailGenerateHandler>> thumbnailGenerateHandlerMap;
 
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
@@ -69,7 +75,7 @@ ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
         ani_native_function {"getAssetsSync", nullptr, reinterpret_cast<void *>(GetAssetsSync)},
         ani_native_function {"getAssetsInner", nullptr, reinterpret_cast<void *>(GetAssetsInner)},
         ani_native_function {"stopCreateThumbnailTask", "I:V",
-            reinterpret_cast<void *>(OHOS::Media::MediaLibraryAni::PhotoAccessStopCreateThumbnailTask)},
+            reinterpret_cast<void *>(PhotoAccessStopCreateThumbnailTask)},
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
@@ -78,6 +84,63 @@ ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
         return status;
     }
     return ANI_OK;
+}
+
+static void UnregisterThumbnailGenerateObserver(int32_t requestId)
+{
+    std::shared_ptr<ThumbnailBatchGenerateObserver> dataObserver;
+    if (!thumbnailGenerateObserverMap.Find(requestId, dataObserver)) {
+        ANI_DEBUG_LOG("UnregisterThumbnailGenerateObserver with RequestId: %{public}d not exist in observer map",
+            requestId);
+        return;
+    }
+
+    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    UserFileClient::UnregisterObserverExt(Uri(observerUri), dataObserver);
+    thumbnailGenerateObserverMap.Erase(requestId);
+}
+
+static void DeleteThumbnailHandler(int32_t requestId)
+{
+    std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
+    if (!thumbnailGenerateHandlerMap.Find(requestId, dataHandler)) {
+        ANI_DEBUG_LOG("DeleteThumbnailHandler with RequestId: %{public}d not exist in handler map", requestId);
+        return;
+    }
+    thumbnailGenerateHandlerMap.Erase(requestId);
+}
+
+static void ReleaseThumbnailTask(int32_t requestId)
+{
+    UnregisterThumbnailGenerateObserver(requestId);
+    DeleteThumbnailHandler(requestId);
+}
+
+void PhotoAccessHelperAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env,
+    [[maybe_unused]] ani_object object, ani_int taskId)
+{
+    ANI_DEBUG_LOG("PhotoAccessStopCreateThumbnailTask with taskId: %{public}d", taskId);
+    std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
+
+    int32_t requestId = taskId;
+    if (requestId <= 0) {
+        ANI_ERR_LOG("PhotoAccessStopCreateThumbnailTask with Invalid requestId: %{public}d", requestId);
+        return;
+    }
+
+    ReleaseThumbnailTask(requestId);
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, requestId);
+    string updateUri = PAH_STOP_GENERATE_THUMBNAILS;
+    MediaLibraryAniUtils::UriAppendKeyValue(updateUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(updateUri);
+    int changedRows = UserFileClient::Update(uri, asyncContext->predicates, valuesBucket);
+    if (changedRows < 0) {
+        asyncContext->SaveError(changedRows);
+        ANI_ERR_LOG("Stop create thumbnail task, update failed, err: %{public}d", changedRows);
+    }
+    ANI_DEBUG_LOG("MediaLibraryAni::PhotoAccessStopCreateThumbnailTask Finished");
 }
 
 ani_object PhotoAccessHelperAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
