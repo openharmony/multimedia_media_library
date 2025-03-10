@@ -621,6 +621,30 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, session_callback_on_error_001,
     MEDIA_INFO_LOG("session_callback_on_error_001 End");
 }
 
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, session_callback_on_error_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("session_callback_on_error_002 Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+    callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_IMAGE_PROC_ABNORMAL);
+
+    vector<string> columns = { PhotoColumn::PHOTO_QUALITY };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    ASSERT_NE(g_rdbStore, nullptr);
+
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+
+    callback->NotifyIfTempFile(resultSet, true);
+    delete callback;
+    MEDIA_INFO_LOG("session_callback_on_error_002 End");
+}
+
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, deferred_proc_adapter_null_session_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 Start");

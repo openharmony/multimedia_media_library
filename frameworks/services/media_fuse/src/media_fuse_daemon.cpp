@@ -44,7 +44,10 @@ static int Open(const char *path, struct fuse_file_info *fi)
 {
     int fd = -1;
     fuse_context *ctx = fuse_get_context();
-
+    if (ctx == nullptr) {
+        MEDIA_ERR_LOG("get file context failed");
+        return -ENOENT;
+    }
     DfxTimer dfxTimer(
         DfxType::FUSE_OPEN, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), OPEN_FILE_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
@@ -60,6 +63,10 @@ static int Read(const char *path, char *buf, size_t size, off_t offset, struct f
 {
     fuse_context *ctx = fuse_get_context();
 
+    if (ctx == nullptr) {
+        MEDIA_ERR_LOG("get file context failed");
+        return -ENOENT;
+    }
     DfxTimer dfxTimer(
         DfxType::FUSE_READ, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
@@ -74,6 +81,10 @@ static int Write(const char *path, const char *buf, size_t size, off_t offset, s
 {
     fuse_context *ctx = fuse_get_context();
 
+    if (ctx == nullptr) {
+        MEDIA_ERR_LOG("get file context failed");
+        return -ENOENT;
+    }
     DfxTimer dfxTimer(
         DfxType::FUSE_WRITE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
@@ -88,6 +99,10 @@ static int Release(const char *path, struct fuse_file_info *fi)
 {
     fuse_context *ctx = fuse_get_context();
 
+    if (ctx == nullptr) {
+        MEDIA_ERR_LOG("get file context failed");
+        return -ENOENT;
+    }
     DfxTimer dfxTimer(
         DfxType::FUSE_RELEASE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
