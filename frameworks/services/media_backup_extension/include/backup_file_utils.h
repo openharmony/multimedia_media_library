@@ -77,6 +77,7 @@ public:
     static std::string GetExtraPrefixForRealPath(int32_t sceneCode, const std::string &path);
     static bool IsAppTwinData(const std::string &path);
     static int32_t GetUserId(const std::string &path);
+    static bool DeleteFileOrFolder(const std::string &path, bool isFile);
 
     static bool HandleRotateImage(const std::string &sourceFile, const std::string &targetPath,
         int32_t degrees, bool isLcd);

@@ -82,6 +82,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_dao.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_data_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/tab_old_photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/upgrade_restore.cpp",

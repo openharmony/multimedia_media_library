@@ -50,6 +50,8 @@ public:
      */
     PhotosRowData FindSameFile(const FileInfo &fileInfo, int32_t maxFileId);
     PhotosBasicInfo GetBasicInfo();
+    int32_t GetDirtyFilesCount();
+    std::vector<PhotosRowData> GetDirtyFiles(int32_t offset);
 
 private:
     PhotosRowData FindSameFileWithoutAlbum(const FileInfo &fileInfo, int32_t maxFileId);
@@ -160,6 +162,10 @@ private:
             ( 1 <> INPUT.picture_flag OR MISS.orientation = INPUT.orientation ) AND \
             LOWER(MISS.source_path) = LOWER(INPUT.source_path) \
         LIMIT 1;";
+    const std::string SQL_PHOTOS_GET_DIRTY_FILES_COUNT =
+        "SELECT count(1) as count FROM Photos WHERE sync_status = ?";
+    const std::string SQL_PHOTOS_GET_DIRTY_FILES =
+        "SELECT file_id, data FROM Photos WHERE sync_status = ? LIMIT ?, ?";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTOS_DAO

@@ -847,7 +847,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, this->photosRestore_.FindStrongAssociation(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, this->photosRestore_.FindCeAvailable(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, PHOTO_SYNC_STATUS_NOT_VISIBLE); // set invisible for local & cloud
+    // set invisible for local & cloud
+    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     // for cloud clone
     if (fileInfo.localMediaId == -1) {
         values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.uniqueId);
