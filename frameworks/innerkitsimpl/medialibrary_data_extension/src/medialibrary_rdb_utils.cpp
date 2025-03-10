@@ -331,23 +331,6 @@ static shared_ptr<ResultSet> QueryGoToFirst(const shared_ptr<MediaLibraryRdbStor
     return resultSet;
 }
 
-static shared_ptr<ResultSet> QueryGoToFirstByTrans(const std::shared_ptr<TransactionOperations> trans,
-    const RdbPredicates &predicates, const vector<string> &columns)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("QueryGoToFirstByTrans");
-    auto resultSet = trans->QueryByStep(predicates, columns, false);
-    if (resultSet == nullptr) {
-        return nullptr;
-    }
-
-    MediaLibraryTracer goToFirst;
-    goToFirst.Start("GoToFirstRowByTrans");
-    int32_t err = resultSet->GoToFirstRow();
-    MediaLibraryRestore::GetInstance().CheckRestore(err);
-    return resultSet;
-}
-
 static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, std::vector<UpdateAlbumData> &datas,
     const bool hiddenState, const UpdateHandler &func)
 {
@@ -1083,7 +1066,7 @@ static void RefreshHighlightAlbum(int32_t albumId)
         static_cast<int32_t>(Media::MediaAnalysisProxy::ActivateServiceType::HIGHLIGHT_COVER_GENERATE), albumIds);
 }
 
-static int32_t SetUpdateValues(const std::shared_ptr<TransactionOperations> trans,
+static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     UpdateAlbumData &data, ValuesBucket &values, PhotoAlbumSubType subtype, const bool hiddenState)
 {
     const vector<string> columns = {
@@ -1101,7 +1084,7 @@ static int32_t SetUpdateValues(const std::shared_ptr<TransactionOperations> tran
     } else {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     }
-    auto fileResult = QueryGoToFirstByTrans(trans, predicates, columns);
+    auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
     if (fileResult == nullptr) {
         MEDIA_ERR_LOG("Failed to query fileResult");
         return E_HAS_DB_ERROR;
@@ -1125,7 +1108,7 @@ static int32_t SetUpdateValues(const std::shared_ptr<TransactionOperations> tran
             predicates.SetWhereClause(
                 "(" + queryCondition + ") AND " + MediaColumn::MEDIA_TYPE + " = " + to_string(MEDIA_TYPE_VIDEO));
         }
-        auto fileResultVideo = QueryGoToFirstByTrans(trans, predicates, columns);
+        auto fileResultVideo = QueryGoToFirst(rdbStore, predicates, columns);
         if (fileResultVideo == nullptr) {
             MEDIA_ERR_LOG("Failed to query fileResultVideo");
             return E_HAS_DB_ERROR;
@@ -1162,7 +1145,7 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rd
     }
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
-    int err = SetUpdateValues(trans, data, values, subtype, hiddenState);
+    int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     if (err < 0) {
         MEDIA_ERR_LOG(
             "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
@@ -1232,7 +1215,7 @@ static int32_t UpdateAnalysisAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore
     tracer.Start("UpdateAnalysisAlbumIfNeeded");
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
-    int err = SetUpdateValues(trans, data, values, subtype, hiddenState);
+    int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     if (err < 0) {
         MEDIA_ERR_LOG(
             "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
@@ -1272,7 +1255,7 @@ static int32_t UpdateSourceAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbSt
     tracer.Start("UpdateSourceAlbumIfNeeded");
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
-    int err = SetUpdateValues(trans, data, values, subtype, hiddenState);
+    int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     if (err < 0) {
         MEDIA_ERR_LOG(
             "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
@@ -1308,7 +1291,7 @@ static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSysAlbum: " + to_string(subtype));
     ValuesBucket values;
-    int err = SetUpdateValues(trans, data, values, subtype, hiddenState);
+    int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     if (err < 0) {
         MEDIA_ERR_LOG(
             "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
