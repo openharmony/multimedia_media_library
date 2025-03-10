@@ -17,7 +17,6 @@
 #include "thumbnail_image_framework_utils.h"
 
 #include <securec.h>
-#include <string_ex.h>
 
 #include "exif_metadata.h"
 #include "hdr_type.h"
@@ -149,7 +148,6 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyYuvPixelmapWithSurfa
     opts.size.height = pixelMap->GetHeight();
     opts.srcPixelFormat = pixelMap->GetPixelFormat();
     opts.pixelFormat = pixelMap->GetPixelFormat();
-    opts.editable = true;
     opts.useDMA = true;
     std::shared_ptr<PixelMap> copyPixelMap = PixelMap::Create(opts);
     CHECK_AND_RETURN_RET_LOG(copyPixelMap != nullptr, nullptr, "Create pixelMap failed");
@@ -175,7 +173,6 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyNoSurfaceBufferYuvPi
     opts.size.width = pixelMap->GetWidth();
     opts.size.height = pixelMap->GetHeight();
     opts.pixelFormat = pixelMap->GetPixelFormat();
-    opts.editable = true;
     std::shared_ptr<PixelMap> copyPixelMap = PixelMap::Create(opts);
     int32_t copyRes = memcpy_s(copyPixelMap->GetWritablePixels(), pixelMap->GetByteCount(),
         startPtr, pixelMap->GetByteCount());
