@@ -266,10 +266,10 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateVideoAes_Test_001, TestSize.Level0
     valuesBucket.Put(VIDEO_AESTHETICS_VERSION, "1.01");
     valuesBucket.Put(PROB, 2.344);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    DataShare::DataShareBucket updateValues;
+    DataShare::DataShareValuesBucket updateValues;
     updateValues.Put(VIDEO_AESTHETICS_SCORE, 8);
     updateValues.Put(VIDEO_AESTHETICS_VERSION, "2.01");
-    DataShare::DataShareValuesPredicates predicates;
+    DataShare::DataSharePredicates predicates;
     vector<string> inValues;
     inValues.push_back("3");
     predicates.In(FILE_ID, inValues);
