@@ -921,7 +921,8 @@ int32_t EnhancementManager::HandlePauseAllOperation()
 {
     MEDIA_INFO_LOG("EnhancementManager::HandlePauseAllOperation");
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    CHECK_AND_RETURN_RET_LOG(enhancementService_->IsConnected(), E_ERR, "enhancementService not connected");
+    bool isServiceExist = ((enhancementService_ != nullptr) && enhancementService_->IsConnected());
+    CHECK_AND_RETURN_RET_LOG(isServiceExist, E_ERR, "enhancementService not connected");
     MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
     int32_t ret = enhancementService_->PauseAllTasks(mediaEnhanceBundle);
     enhancementService_->DestroyBundle(mediaEnhanceBundle);
@@ -937,7 +938,8 @@ int32_t EnhancementManager::HandleResumeAllOperation()
 {
     MEDIA_INFO_LOG("EnhancementManager::HandleResumeAllOperation");
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    CHECK_AND_RETURN_RET_LOG(enhancementService_->IsConnected(), E_ERR, "enhancementService not connected");
+    bool isServiceExist = ((enhancementService_ != nullptr) && enhancementService_->IsConnected());
+    CHECK_AND_RETURN_RET_LOG(isServiceExist, E_ERR, "enhancementService not connected");
     MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
     int32_t ret = enhancementService_->ResumeAllTasks(mediaEnhanceBundle);
     enhancementService_->DestroyBundle(mediaEnhanceBundle);
