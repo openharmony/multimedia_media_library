@@ -24,6 +24,7 @@
 #include "media_file_utils.h"
 #include "nlohmann/json.hpp"
 #include "photos_dao.h"
+#include "photos_data_handler.h"
 #include "rdb_helper.h"
 #include "result_set.h"
 #include "tab_old_photos_restore.h"
@@ -217,6 +218,7 @@ protected:
     bool isAccountValid_ = false;
     GeoKnowledgeRestore geoKnowledgeRestore_;
     HighlightRestore highlightRestore_;
+    PhotosDataHandler photosDataHandler_;
     int32_t restoreMode_;
 };
 } // namespace Media
