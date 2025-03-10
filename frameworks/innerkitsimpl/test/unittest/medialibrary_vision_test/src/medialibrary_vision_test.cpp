@@ -290,7 +290,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoAes_Test_001, TestSize.Level0
     valuesBucket.Put(PROB, 2.344);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(FILE_ID,4);
+    predicates.EqualTo(FILE_ID, 4);
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ((retVal == 1), true);
     MEDIA_INFO_LOG("Vision_DeleteVideoAes_Test_001::retVal = %{public}d. End", retVal);
