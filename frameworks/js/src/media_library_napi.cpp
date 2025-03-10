@@ -4307,8 +4307,12 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         return;
     }
     SetFileAssetByIdV9(index, "", context);
+    if (context->fileAsset == nullptr) {
+        close(srcFd);
+        NAPI_ERR_LOG("JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
+        return;
+    }
     LogMedialibraryAPI(context->fileAsset->GetUri());
-    CHECK_NULL_PTR_RETURN_VOID(context->fileAsset, "JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
     Uri openFileUri(context->fileAsset->GetUri());
     int32_t destFd = UserFileClient::OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
     if (destFd < 0) {
