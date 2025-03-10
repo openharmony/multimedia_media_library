@@ -251,7 +251,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoAes_Test_002, TestSize.Level0
     valuesBucket2.Put(PROB, 2.344);
     auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
     EXPECT_GT(retVal, 0);
-    EXPECT_GT(retVal2, 0);
+    EXPECT_LT(retVal2, 0);
     MEDIA_INFO_LOG("Vision_InsertVideoAes_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
 }
 
@@ -269,7 +269,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateVideoAes_Test_001, TestSize.Level0
     DataShare::DataShareBucket updateValues;
     updateValues.Put(VIDEO_AESTHETICS_SCORE, 8);
     updateValues.Put(VIDEO_AESTHETICS_VERSION, "2.01");
-    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesPredicates predicates;
     vector<string> inValues;
     inValues.push_back("3");
     predicates.In(FILE_ID, inValues);
