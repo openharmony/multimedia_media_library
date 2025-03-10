@@ -786,6 +786,7 @@ export namespace photoAccessHelper {
   export interface PhotoAccessHelper {
     getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset>>): void;
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
+    stopCreateThumbnailTask(taskId: int): void;
   }
 
   class PhotoAccessHelperHandle implements PhotoAccessHelper {
@@ -821,6 +822,7 @@ export namespace photoAccessHelper {
     native createAsset1(displayName: string): PhotoAsset;
     native getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     native getAssetsInner(options: FetchOptions): FetchResult<PhotoAsset>;
+    native stopCreateThumbnailTask(taskId: int): void;
   }
 
   export interface FormInfo {
