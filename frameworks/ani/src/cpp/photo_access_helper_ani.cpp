@@ -36,6 +36,7 @@
 #include "media_file_uri.h"
 #include "media_ani_native_impl.h"
 #include "datashare_predicates.h"
+#include "media_library_ani.h"
 
 #define MEDIALIBRARY_COMPATIBILITY
 
@@ -67,6 +68,8 @@ ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
         ani_native_function {"createAsset1", nullptr, reinterpret_cast<void *>(createAsset1)},
         ani_native_function {"getAssetsSync", nullptr, reinterpret_cast<void *>(GetAssetsSync)},
         ani_native_function {"getAssetsInner", nullptr, reinterpret_cast<void *>(GetAssetsInner)},
+        ani_native_function {"stopCreateThumbnailTask", "I:V",
+            reinterpret_cast<void *>(OHOS::Media::MediaLibraryAni::PhotoAccessStopCreateThumbnailTask)},
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
