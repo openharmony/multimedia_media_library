@@ -154,7 +154,7 @@ static void LogDelete(DfxData *data)
             if (pathPos == string::npos) {
                 continue;
             }
-            AuditLog auditLog = { true, "USER BEHAVIOR", "ADD", "io", 1, "running", "ok",
+            AuditLog auditLog = { true, "USER BEHAVIOR", "DELETE", "io", 1, "running", "ok",
                 id, type, size, (halfUri.substr(pathPos + 1)).c_str()};
             HiAudit::GetInstance().Write(auditLog);
             dfxReporter->ReportDeleteBehavior(id, type, halfUri.substr(pathPos + 1));
