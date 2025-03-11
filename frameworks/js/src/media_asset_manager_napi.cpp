@@ -149,6 +149,10 @@ static void DeleteAssetHandlerSafe(AssetHandler *handler, napi_env env)
         if (handler->dataHandler != nullptr) {
             handler->dataHandler->DeleteNapiReference(env);
         }
+        if (handler->threadSafeFunc != nullptr) {
+            napi_release_threadsafe_function(handler->threadSafeFunc, napi_tsfn_release);
+            handler->threadSafeFunc = nullptr;
+        }
         delete handler;
         handler = nullptr;
     }
