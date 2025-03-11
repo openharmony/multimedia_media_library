@@ -138,6 +138,11 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
+    if (photoProxy->GetCloudImageEnhanceFlag() != static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT) &&
+        photoProxy->GetPhotoId().size() > 0) {
+        values.Put(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(photoProxy->GetCloudImageEnhanceFlag()));
+        values.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());
+    }
 
     if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW ||
         (photoProxy->GetFormat() == PhotoFormat::YUV && subType_ != PhotoSubType::BURST)) {
@@ -168,8 +173,9 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
     fileId_ = dataShareHelper_->InsertExt(createUri, values, uri_);
     CHECK_AND_RETURN_LOG(fileId_ >= 0, "Failed to create Asset, insert database error!");
     MEDIA_INFO_LOG(
-        "MultistagesCapture Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s",
-        photoProxy->GetPhotoId().c_str(), fileId_, uri_.c_str(), photoProxy->GetBurstKey().c_str());
+        "MultistagesCapture Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s "
+        "ceAvailable: %{public}u", photoProxy->GetPhotoId().c_str(), fileId_, uri_.c_str(),
+        photoProxy->GetBurstKey().c_str(), photoProxy->GetCloudImageEnhanceFlag());
 }
 
 static bool isHighQualityPhotoExist(string uri)

@@ -945,6 +945,13 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
     if (!photoId.empty()) {
         outValues.PutString(PhotoColumn::PHOTO_ID, photoId);
     }
+
+    int32_t ceAvailable = static_cast<int32_t>(CloudEnhancementAvailable::NOT_SUPPORT);
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_CE_AVAILABLE, value)) {
+        value.GetInt(ceAvailable);
+        MEDIA_INFO_LOG("set ce_available: %{public}d", ceAvailable);
+    }
+    outValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
 }
 
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
