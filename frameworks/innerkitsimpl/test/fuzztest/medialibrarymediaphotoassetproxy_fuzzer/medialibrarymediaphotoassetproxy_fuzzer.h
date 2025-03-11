@@ -174,7 +174,7 @@ public:
         return this->isCoverPhoto_;
     }
 
-    int32_t GetCloudImageEnhanceFlag() override
+    uint32_t GetCloudImageEnhanceFlag() override
     {
         return 0;
     }
