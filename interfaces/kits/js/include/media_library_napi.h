@@ -447,6 +447,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool isDelete;
     bool isCreateByComponent;
     bool isCreateByAgent;
+    bool needSystemApp = false;
     NapiAssetType assetType;
     AlbumType albumType;
     MediaLibraryNapi *objectInfo;
