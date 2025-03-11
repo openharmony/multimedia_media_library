@@ -1928,7 +1928,7 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(bool isCreation, AddReso
     }
 
     Uri uri(assetUri);
-    UniqueFd destFd(UserFileClient::OpenFile(uri, MEDIA_FILEMODE_WRITEONLY));
+    UniqueFd destFd(UserFileClient::OpenFile(uri, MEDIA_FILEMODE_WRITETRUNCATE));
     if (destFd.Get() < 0) {
         NAPI_ERR_LOG("Failed to open %{private}s with error: %{public}d", assetUri.c_str(), destFd.Get());
         return destFd.Get();
