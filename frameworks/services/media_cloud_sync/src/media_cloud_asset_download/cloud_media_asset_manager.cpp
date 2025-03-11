@@ -97,7 +97,7 @@ int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownload
     if (CheckDownloadTypeOfTask(type) != E_OK) {
         return E_ERR;
     }
-
+    operation_->ResetDownloadTryTime();
     switch (operation_->GetTaskStatus()) {
         case CloudMediaAssetTaskStatus::IDLE: {
             return operation_->StartDownloadTask(static_cast<int32_t>(type));
@@ -130,6 +130,7 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
     bool cond = (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE);
     CHECK_AND_RETURN_RET(!cond, E_ERR);
 
+    operation_->ResetDownloadTryTime();
     MEDIA_INFO_LOG("enter RecoverDownloadCloudAsset, RecoverCause: %{public}d", static_cast<int32_t>(cause));
     CHECK_AND_RETURN_RET_LOG(operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::DOWNLOADING, E_OK,
         "The task status is download, no need to recover.");
