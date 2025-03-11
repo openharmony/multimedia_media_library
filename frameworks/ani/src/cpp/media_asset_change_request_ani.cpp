@@ -660,14 +660,14 @@ static bool ParseArgsCreateAssetSystem(ani_env *env, ani_string displayName,
     return true;
 }
 
-static bool ParseArgsCreateAssetCommon(ani_env *env, ani_int photoTypeIndex, ani_string extension,
+static bool ParseArgsCreateAssetCommon(ani_env *env, ani_enum_item photoType, ani_string extension,
     ani_object createOptions, std::unique_ptr<MediaAssetChangeRequestAniContext>& context)
 {
     // Parse photoType.
     MediaType mediaType;
     int32_t mediaTypeInt;
     ANI_CHECK_RETURN_RET_LOG(MediaLibraryEnumAni::EnumGetValueInt32(
-        env, EnumTypeInt32::PhotoTypeAni, photoTypeIndex, mediaTypeInt) == ANI_OK, false, "Failed to get photoType");
+        env, EnumTypeInt32::PhotoTypeAni, photoType, mediaTypeInt) == ANI_OK, false, "Failed to get photoType");
     mediaType = static_cast<MediaType>(mediaTypeInt);
     ANI_CHECK_RETURN_RET_LOG(mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO,
         false, "Invalid photoType");
@@ -740,13 +740,13 @@ ani_object MediaAssetChangeRequestAni::createAssetRequestSystem(ani_env *env, an
 }
 
 ani_object MediaAssetChangeRequestAni::createAssetRequest(ani_env *env, ani_object context,
-    ani_int photoTypeIndex, ani_string extension, ani_object createOptions)
+    ani_enum_item photoType, ani_string extension, ani_object createOptions)
 {
     CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryAniUtils::IsSystemApp(), nullptr,
         "This interface can be called only by system apps");
     auto aniContext = std::make_unique<MediaAssetChangeRequestAniContext>();
     CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsCreateAssetCommon(
-        env, photoTypeIndex, extension, createOptions, aniContext), nullptr, "Failed to parse create options");
+        env, photoType, extension, createOptions, aniContext), nullptr, "Failed to parse create options");
     return CreateAssetRequestCommon(env, aniContext);
 }
 
@@ -1027,7 +1027,7 @@ ani_object MediaAssetChangeRequestAni::AddMovingPhotoVideoResourceByArrayBuffer(
 }
 
 ani_object MediaAssetChangeRequestAni::addResourceByFileUri(ani_env *env, ani_object aniObject,
-    ani_int resourceTypeIndex, ani_string fileUri)
+    ani_enum_item resourceTypeItem, ani_string fileUri)
 {
     auto aniContext = make_unique<MediaAssetChangeRequestAniContext>();
     aniContext->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
@@ -1037,7 +1037,7 @@ ani_object MediaAssetChangeRequestAni::addResourceByFileUri(ani_env *env, ani_ob
 
     int32_t resourceType = static_cast<int32_t>(ResourceType::INVALID_RESOURCE);
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(
-        env, EnumTypeInt32::ResourceTypeAni, resourceTypeIndex, resourceType) == ANI_OK, "Failed to get resourceType");
+        env, EnumTypeInt32::ResourceTypeAni, resourceTypeItem, resourceType) == ANI_OK, "Failed to get resourceType");
     CHECK_COND(env,
         CheckWriteOperation(env, changeRequest, GetResourceType(resourceType)), JS_E_OPERATION_NOT_SUPPORT);
     if (changeRequest->IsMovingPhoto() && resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE)) {
@@ -1056,7 +1056,7 @@ ani_object MediaAssetChangeRequestAni::addResourceByFileUri(ani_env *env, ani_ob
 }
 
 ani_object MediaAssetChangeRequestAni::addResourceByArrayBuffer(ani_env *env, ani_object aniObject,
-    ani_int resourceTypeIndex, ani_object arrayBuffer)
+    ani_enum_item resourceTypeItem, ani_object arrayBuffer)
 {
     auto aniContext = make_unique<MediaAssetChangeRequestAniContext>();
     aniContext->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
@@ -1066,7 +1066,7 @@ ani_object MediaAssetChangeRequestAni::addResourceByArrayBuffer(ani_env *env, an
 
     int32_t resourceType = static_cast<int32_t>(ResourceType::INVALID_RESOURCE);
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(
-        env, EnumTypeInt32::ResourceTypeAni, resourceTypeIndex, resourceType) == ANI_OK, "Failed to get resourceType");
+        env, EnumTypeInt32::ResourceTypeAni, resourceTypeItem, resourceType) == ANI_OK, "Failed to get resourceType");
     CHECK_COND(env,
         CheckWriteOperation(env, changeRequest, GetResourceType(resourceType)), JS_E_OPERATION_NOT_SUPPORT);
     if (changeRequest->IsMovingPhoto() && resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE)) {
@@ -1088,7 +1088,7 @@ ani_object MediaAssetChangeRequestAni::addResourceByArrayBuffer(ani_env *env, an
 }
 
 ani_object MediaAssetChangeRequestAni::addResourceByPhotoProxy(ani_env *env, ani_object aniObject,
-    ani_int resourceTypeIndex, ani_object proxy)
+    ani_enum_item resourceTypeItem, ani_object proxy)
 {
     auto aniContext = make_unique<MediaAssetChangeRequestAniContext>();
     aniContext->objectInfo = MediaAssetChangeRequestAni::Unwrap(env, aniObject);
@@ -1098,7 +1098,7 @@ ani_object MediaAssetChangeRequestAni::addResourceByPhotoProxy(ani_env *env, ani
 
     int32_t resourceType = static_cast<int32_t>(ResourceType::INVALID_RESOURCE);
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(
-        env, EnumTypeInt32::ResourceTypeAni, resourceTypeIndex, resourceType) == ANI_OK, "Failed to get resourceType");
+        env, EnumTypeInt32::ResourceTypeAni, resourceTypeItem, resourceType) == ANI_OK, "Failed to get resourceType");
     CHECK_COND(env,
         CheckWriteOperation(env, changeRequest, GetResourceType(resourceType)), JS_E_OPERATION_NOT_SUPPORT);
     CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int32_t>(ResourceType::PHOTO_PROXY),

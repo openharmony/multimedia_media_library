@@ -764,7 +764,7 @@ void FileAssetAni::SetUserComment([[maybe_unused]] ani_env *env, ani_object obje
     }
 }
 
-ani_string FileAssetAni::GetAnalysisData([[maybe_unused]] ani_env *env, ani_object object, ani_int analysisType)
+ani_string FileAssetAni::GetAnalysisData([[maybe_unused]] ani_env *env, ani_object object, ani_enum_item analysisType)
 {
     ani_string aniString {};
     auto fileAssetAni = Unwrap(env, object);

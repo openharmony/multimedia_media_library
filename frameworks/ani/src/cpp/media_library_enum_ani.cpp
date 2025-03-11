@@ -137,7 +137,7 @@ static const std::map<CloudEnhancementTaskStage, int32_t> ANI_CLOUDENHANCEMENTTA
     {CloudEnhancementTaskStage::TASK_STAGE_COMPLETED, 6},
 };
 
-ani_status MediaLibraryEnumAni::EnumGetValueInt32(ani_env *env, EnumTypeInt32 enumType, ani_int enumIndex,
+ani_status MediaLibraryEnumAni::EnumGetValueInt32(ani_env *env, EnumTypeInt32 enumType, ani_enum_item enumItem,
     int32_t &value)
 {
     CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "Invalid env");
@@ -148,17 +148,13 @@ ani_status MediaLibraryEnumAni::EnumGetValueInt32(ani_env *env, EnumTypeInt32 en
     ani_enum aniEnum {};
     CHECK_STATUS_RET(env->FindEnum(it->second.c_str(), &aniEnum), "FindEnum failed");
 
-    ani_enum_item enumItem {};
-    CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, static_cast<ani_size>(enumIndex), &enumItem),
-        "Enum_GetEnumItemByIndex failed");
-
     ani_int aniInt {};
     CHECK_STATUS_RET(env->EnumItem_GetValue_Int(enumItem, &aniInt), "EnumItem_GetValue_Int failed");
     CHECK_STATUS_RET(MediaLibraryAniUtils::GetInt32(env, aniInt, value), "GetInt32 failed");
     return ANI_OK;
 }
 
-ani_status MediaLibraryEnumAni::EnumGetValueString(ani_env *env, EnumTypeString enumType, ani_int enumIndex,
+ani_status MediaLibraryEnumAni::EnumGetValueString(ani_env *env, EnumTypeString enumType, ani_enum_item enumItem,
     std::string &value)
 {
     CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "Invalid env");
@@ -168,10 +164,6 @@ ani_status MediaLibraryEnumAni::EnumGetValueString(ani_env *env, EnumTypeString 
 
     ani_enum aniEnum {};
     CHECK_STATUS_RET(env->FindEnum(it->second.c_str(), &aniEnum), "FindEnum failed");
-
-    ani_enum_item enumItem {};
-    CHECK_STATUS_RET(env->Enum_GetEnumItemByIndex(aniEnum, static_cast<ani_size>(enumIndex), &enumItem),
-        "Enum_GetEnumItemByIndex failed");
 
     ani_string aniString {};
     CHECK_STATUS_RET(env->EnumItem_GetValue_String(enumItem, &aniString), "EnumItem_GetValue_String failed");
