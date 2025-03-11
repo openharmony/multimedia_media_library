@@ -1794,10 +1794,14 @@ static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
  
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
-    if (context->error == ERR_DEFAULT) {
+    if (context->error == ERR_DEFAULT && context->napiArrayBufferRef != nullptr) {
         jsContext->data = GetReference(env, context->napiArrayBufferRef);
         jsContext->status = true;
     } else {
+        if (context->napiArrayBufferRef == nullptr) {
+                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_ERR_NO_SUCH_FILE,
+                    "File is not exist");
+        }
         context->HandleError(env, jsContext->error);
     }
  
