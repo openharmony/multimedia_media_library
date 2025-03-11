@@ -23,6 +23,7 @@
 #include "medialibrary_command.h"
 #include "medialibrary_async_worker.h"
 #include "datashare_predicates.h"
+#include "foreground_analysis_meta.h"
 
 namespace OHOS {
 namespace Media {
@@ -41,6 +42,12 @@ public:
     EXPORT static int32_t EditCommitOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
+    static int32_t HandleForegroundAnalysisOperation(MediaLibraryCommand &cmd);
+    static int32_t GenerateAndSubmitForegroundAnalysis();
+
+private:
+    static int32_t InitForegroundAnalysisMeta(MediaLibraryCommand &cmd,
+        std::shared_ptr<ForegroundAnalysisMeta> &infoPtr);
 };
 } // namespace Media
 } // namespace OHOS

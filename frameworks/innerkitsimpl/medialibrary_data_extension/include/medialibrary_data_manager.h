@@ -176,6 +176,7 @@ private:
     std::shared_ptr<CloudSyncObserver> cloudPhotoAlbumObserver_;
     std::shared_ptr<CloudSyncObserver> galleryRebuildObserver_;
     std::shared_ptr<CloudSyncObserver> cloudGalleryPhotoObserver_;
+    std::shared_ptr<CloudSyncObserver> cloudGalleryDownloadObserver_;
 };
 
 // Scanner callback objects

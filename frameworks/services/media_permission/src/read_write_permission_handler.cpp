@@ -44,6 +44,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_PHOTO_MAP,
     OperationObject::VISION_OCR,
     OperationObject::VISION_AESTHETICS,
+    OperationObject::VISION_VIDEO_AESTHETICS,
     OperationObject::VISION_LABEL,
     OperationObject::VISION_VIDEO_LABEL,
     OperationObject::VISION_IMAGE_FACE,

@@ -21,7 +21,6 @@
 #include "media_log.h"
 #include "medialibrary_type_const.h"
 #include "photo_map_column.h"
-#include "photo_query_filter.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
 
@@ -109,6 +108,7 @@ const string PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX = "file://media/Analys
 const string PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX = "file://cloudsync/PhotoAlbum/";
 const string PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX = "file://cloudsync/gallery/PhotoAlbum/";
 const string PhotoAlbumColumns::PHOTO_GALLERY_CLOUD_SYNC_INFO_URI_PREFIX = "file://cloudsync/gallery/cloudSyncInfo/";
+const string PhotoAlbumColumns::PHOTO_GALLERY_DOWNLOAD_URI_PREFIX = "file://cloudsync/gallery/download/";
 
 // Create tables
 const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
@@ -224,11 +224,9 @@ void PhotoAlbumColumns::GetPortraitAlbumPredicates(const int32_t albumId, RdbPre
     onClause = "ag." + GROUP_TAG + " = " + ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG;
     clauses = { onClause };
     predicates.InnerJoin(tempTable)->On(clauses);
-    if (hiddenState) {
-        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_HIDDEN, predicates);
-    } else {
-        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_VISIBLE, predicates);
-    }
+    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.Distinct();
     return;
 }
@@ -238,11 +236,9 @@ void PhotoAlbumColumns::GetAnalysisAlbumPredicates(const int32_t albumId,
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
-    if (hiddenState) {
-        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_HIDDEN, predicates);
-    } else {
-        PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_VISIBLE, predicates);
-    }
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
 }
 

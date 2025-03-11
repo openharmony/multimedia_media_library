@@ -31,6 +31,8 @@ public:
         HIGHLIGHT_COVER_GENERATE = 35,
         PARSE_GEO_INFO = 36,
         PARSE_GEO_INFO_LIST = 37,
+        START_FOREGROUND_OCR = 38,
+        START_FOREGROUND_INDEX = 39,
     };
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");

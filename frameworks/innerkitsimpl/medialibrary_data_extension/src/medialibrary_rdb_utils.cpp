@@ -345,21 +345,6 @@ static shared_ptr<ResultSet> QueryGoToFirst(const shared_ptr<MediaLibraryRdbStor
     return resultSet;
 }
 
-static shared_ptr<ResultSet> QueryGoToFirstByTrans(const std::shared_ptr<TransactionOperations> trans,
-    const RdbPredicates &predicates, const vector<string> &columns)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("QueryGoToFirstByTrans");
-    auto resultSet = trans->QueryByStep(predicates, columns, false);
-    CHECK_AND_RETURN_RET(resultSet != nullptr, nullptr);
-
-    MediaLibraryTracer goToFirst;
-    goToFirst.Start("GoToFirstRowByTrans");
-    int32_t err = resultSet->GoToFirstRow();
-    MediaLibraryRestore::GetInstance().CheckRestore(err);
-    return resultSet;
-}
-
 static int32_t ForEachRow(const shared_ptr<MediaLibraryRdbStore> rdbStore, std::vector<UpdateAlbumData> &datas,
     const bool hiddenState, const UpdateHandler &func)
 {
@@ -436,35 +421,10 @@ static string GetTitleFromDisplayName(const string &displayName)
     return displayName.substr(0, pos);
 }
 
-static string Encode(const string &uri)
-{
-    const unordered_set<char> uriCompentsSet = {
-        ';', ',', '/', '?', ':', '@', '&',
-        '=', '+', '$', '-', '_', '.', '!',
-        '~', '*', '(', ')', '#', '\''
-    };
-    constexpr int32_t encodeLen = 2;
-    ostringstream outPutStream;
-    outPutStream.fill('0');
-    outPutStream << std::hex;
-
-    for (unsigned char tmpChar : uri) {
-        if (std::isalnum(tmpChar) || uriCompentsSet.find(tmpChar) != uriCompentsSet.end()) {
-            outPutStream << tmpChar;
-        } else {
-            outPutStream << std::uppercase;
-            outPutStream << '%' << std::setw(encodeLen) << static_cast<unsigned int>(tmpChar);
-            outPutStream << std::nouppercase;
-        }
-    }
-
-    return outPutStream.str();
-}
-
 static string GetExtraUri(const string &displayName, const string &path)
 {
     string extraUri = "/" + GetTitleFromDisplayName(GetFileName(path)) + "/" + displayName;
-    return Encode(extraUri);
+    return MediaFileUtils::Encode(extraUri);
 }
 
 static string GetUriByExtrConditions(const string &prefix, const string &fileId, const string &suffix)
@@ -1084,7 +1044,7 @@ static void RefreshHighlightAlbum(int32_t albumId)
         static_cast<int32_t>(Media::MediaAnalysisProxy::ActivateServiceType::HIGHLIGHT_COVER_GENERATE), albumIds);
 }
 
-static int32_t SetUpdateValues(const std::shared_ptr<TransactionOperations> trans,
+static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     UpdateAlbumData &data, ValuesBucket &values, PhotoAlbumSubType subtype, const bool hiddenState)
 {
     const vector<string> columns = {
@@ -1106,7 +1066,7 @@ static int32_t SetUpdateValues(const std::shared_ptr<TransactionOperations> tran
     } else {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     }
-    auto fileResult = QueryGoToFirstByTrans(trans, predicates, columns);
+    auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
     CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
     int32_t newCount = SetCount(fileResult, data, values, hiddenState, subtype);
     data.newTotalCount = newCount;
@@ -1125,7 +1085,7 @@ static int32_t SetUpdateValues(const std::shared_ptr<TransactionOperations> tran
             predicates.SetWhereClause(
                 "(" + queryCondition + ") AND " + MediaColumn::MEDIA_TYPE + " = " + to_string(MEDIA_TYPE_VIDEO));
         }
-        auto fileResultVideo = QueryGoToFirstByTrans(trans, predicates, columns);
+        auto fileResultVideo = QueryGoToFirst(rdbStore, predicates, columns);
         CHECK_AND_RETURN_RET_LOG(fileResultVideo != nullptr, E_HAS_DB_ERROR, "Failed to query fileResultVideo");
         SetImageVideoCount(newCount, fileResultVideo, data, values);
     }
@@ -1216,7 +1176,7 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore> rd
     CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
-    int err = SetUpdateValues(trans, data, values, subtype, hiddenState);
+    int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     CHECK_AND_RETURN_RET_LOG(err >= 0, err,
         "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
@@ -1273,7 +1233,7 @@ static int32_t UpdateAnalysisAlbumIfNeeded(const shared_ptr<MediaLibraryRdbStore
     tracer.Start("UpdateAnalysisAlbumIfNeeded");
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
-    int err = SetUpdateValues(trans, data, values, subtype, hiddenState);
+    int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     CHECK_AND_RETURN_RET_LOG(err >= 0, err,
         "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
@@ -1305,7 +1265,7 @@ static int32_t UpdateCommonAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbSt
     tracer.Start("UpdateCommonAlbumIfNeeded");
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
-    int err = SetUpdateValues(trans, data, values, subtype, hiddenState);
+    int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     CHECK_AND_RETURN_RET_LOG(err >= 0, err,
         "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
@@ -1337,7 +1297,7 @@ static int32_t UpdateSourceAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbSt
     tracer.Start("UpdateSourceAlbumIfNeeded");
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
-    int err = SetUpdateValues(trans, data, values, subtype, hiddenState);
+    int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     CHECK_AND_RETURN_RET_LOG(err >= 0, err,
         "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
@@ -1365,7 +1325,7 @@ static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSysAlbum: " + to_string(subtype));
     ValuesBucket values;
-    int err = SetUpdateValues(trans, data, values, subtype, hiddenState);
+    int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
     CHECK_AND_RETURN_RET_LOG(err >= 0, err,
         "Failed to set update values when updating albums, album id: %{public}d, hidden state: %{public}d",
         data.albumId, hiddenState ? 1 : 0);
@@ -2059,7 +2019,7 @@ static void AddSystemAlbum(set<string> &systemAlbum, shared_ptr<NativeRdb::Resul
     int minMediaType = GetIntValFromColumn(resultSet, "Min(" + MediaColumn::MEDIA_TYPE + ")");
     int maxMediaType = GetIntValFromColumn(resultSet, "Max(" + MediaColumn::MEDIA_TYPE + ")");
     int favorite = GetIntValFromColumn(resultSet, "Max(" + MediaColumn::MEDIA_IS_FAV + ")");
-    int cloud = GetIntValFromColumn(resultSet, "Max(" + PhotoColumn::PHOTO_ASSOCIATE_FILE_ID + ")");
+    int cloudAssociate = GetIntValFromColumn(resultSet, "Max(" + PhotoColumn::PHOTO_STRONG_ASSOCIATION + ")");
     if (minMediaType == MEDIA_TYPE_IMAGE) {
         systemAlbum.insert(to_string(PhotoAlbumSubType::IMAGE));
     }
@@ -2069,11 +2029,11 @@ static void AddSystemAlbum(set<string> &systemAlbum, shared_ptr<NativeRdb::Resul
     if (favorite > 0) {
         systemAlbum.insert(to_string(PhotoAlbumSubType::FAVORITE));
     }
-    if (cloud > 0) {
+    if (cloudAssociate > 0) {
         systemAlbum.insert(to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT));
     }
     MEDIA_INFO_LOG("AddSystemAlbum minMediaType:%{public}d, maxMediaType:%{public}d, favorite:%{public}d,"
-        " cloud:%{public}d,", minMediaType, maxMediaType, favorite, cloud);
+        " cloudAssociate:%{public}d,", minMediaType, maxMediaType, favorite, cloudAssociate);
 }
 
 static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &uris,
@@ -2100,7 +2060,7 @@ static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore
             "Min(" + MediaColumn::MEDIA_TYPE + ")",
             "Max(" + MediaColumn::MEDIA_TYPE + ")",
             "Max(" + MediaColumn::MEDIA_IS_FAV + ")",
-            "Max(" + PhotoColumn::PHOTO_ASSOCIATE_FILE_ID + ")",
+            "Max(" + PhotoColumn::PHOTO_STRONG_ASSOCIATION + ")",
         };
         auto resultSet = rdbStore->Query(predicates, columns);
         if (resultSet == nullptr) {

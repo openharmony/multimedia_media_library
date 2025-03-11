@@ -40,6 +40,10 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+#define DECLARE_WRITABLE_NAPI_FUNCTION(name, func)                                 \
+    {                                                                              \
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_writable, nullptr \
+    }
 static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
 static const std::string USERFILE_MGR_NAPI_CLASS_NAME = "UserFileManager";
 static const std::string PHOTOACCESSHELPER_NAPI_CLASS_NAME = "PhotoAccessHelper";
@@ -332,6 +336,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetForceHideSensitiveType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessStartAssetAnalysis(napi_env env, napi_callback_info info);
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -499,6 +504,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> albumIds;
     std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
     bool isContainsAlbumUri = false;
+    int32_t taskId = -1;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

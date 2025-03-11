@@ -110,10 +110,7 @@ static int32_t CheckResultSet(shared_ptr<NativeRdb::ResultSet> &resultSet)
     }
     int32_t count = 0;
     auto ret = resultSet->GetRowCount(count);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to get resultset row count, ret: %{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to get resultset row count, ret: %{public}d", ret);
     if (count <= 0) {
         MEDIA_INFO_LOG("Failed to get count, count: %{public}d", count);
         return E_FAIL;
@@ -141,10 +138,8 @@ static void FillBundleWithWaterMarkInfo(MediaEnhanceBundleHandle* mediaEnhanceBu
 {
     string filePath = CLOUD_ENHANCEMENT_WATER_MARK_DIR + "/" + "cloud_watermark_param.json";
     string metaDataStr;
-    if (!MediaFileUtils::ReadStrFromFile(filePath, metaDataStr)) {
-        MEDIA_ERR_LOG("Failed to read meta data from: %{public}s", filePath.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(MediaFileUtils::ReadStrFromFile(filePath, metaDataStr),
+        "Failed to read meta data from: %{public}s", filePath.c_str());
     if (!json::accept(metaDataStr)) {
         MEDIA_WARN_LOG("Failed to verify the meataData format, metaData is: %{private}s",
             metaDataStr.c_str());
@@ -152,11 +147,8 @@ static void FillBundleWithWaterMarkInfo(MediaEnhanceBundleHandle* mediaEnhanceBu
     }
     json metaData;
     json jsonObject = json::parse(metaDataStr);
-    if (CLOUD_ENHANCEMENT_MIME_TYPE_MAP.count(mimeType) == 0) {
-        MEDIA_WARN_LOG("Failed to verify the mimeType, mimeType is: %{public}s",
-            mimeType.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_WARN_LOG(CLOUD_ENHANCEMENT_MIME_TYPE_MAP.count(mimeType) != 0,
+        "Failed to verify the mimeType, mimeType is: %{public}s",  mimeType.c_str());
     metaData[FILE_TPYE] = CLOUD_ENHANCEMENT_MIME_TYPE_MAP.at(mimeType);
     metaData[IS_HDR_VIVID] = to_string(dynamicRangeType);
     metaData[HAS_WATER_MARK_INFO] = hasCloudWaterMark ? to_string(YES) : to_string(NO);
@@ -213,10 +205,7 @@ bool EnhancementManager::Init()
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     // restart
-    if (!LoadService()) {
-        MEDIA_ERR_LOG("load enhancement service error");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(LoadService(), false, "load enhancement service error");
     ResetProcessingAutoToSupport();
     InitPhotosSettingsMonitor();
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
@@ -250,7 +239,7 @@ bool EnhancementManager::Init()
             continue;
         }
         enhancementService_->DestroyBundle(mediaEnhanceBundle);
-        EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+        EnhancementTaskManager::AddEnhancementTask(fileId, photoId, TYPE_MANUAL_ENHANCEMENT);
     }
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
@@ -271,7 +260,7 @@ void EnhancementManager::InitPhotosSettingsMonitor()
     isCellularNetConnected_ = MedialibrarySubscriber::IsCellularNetConnected();
     shouldAddWaterMark_ = SettingsMonitor::QueryPhotosWaterMark();
     photosAutoOption_ = SettingsMonitor::QueryPhotosAutoOption();
-    HandleAutoAddOperation();
+    HandleAutoAddOperation(true);
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
 #endif
@@ -291,6 +280,12 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
         if (!LoadService() || enhancementService_->CancelTask(photoId) != E_OK) {
             MEDIA_ERR_LOG("enhancment service error, photo_id: %{public}s", photoId.c_str());
             continue;
+        }
+        int32_t taskType = EnhancementTaskManager::QueryTaskTypeByPhotoId(photoId);
+        if (type == CloudEnhancementAvailableType::EDIT) {
+            CloudEnhancementGetCount::GetInstance().Report("EditCancellationType", photoId, taskType);
+        } else if (type == CloudEnhancementAvailableType::TRASH) {
+            CloudEnhancementGetCount::GetInstance().Report("DeleteCancellationType", photoId, taskType);
         }
         EnhancementTaskManager::RemoveEnhancementTask(photoId);
         photoIds.emplace_back(photoId);
@@ -315,13 +310,9 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
     ValuesBucket rdbValues;
     rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(type));
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, updatePredicates);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("update ce_available failed, type: %{public}d, failed count: %{public}zu",
-            static_cast<int32_t>(type), photoIds.size());
-        return;
-    }
-    MEDIA_INFO_LOG("cancel tasks successful, type: %{public}d, success count: %{public}zu",
+    CHECK_AND_RETURN_LOG(ret == E_OK, "update ce_available failed, type: %{public}d, failed count: %{public}zu",
         static_cast<int32_t>(type), photoIds.size());
+    MEDIA_INFO_LOG("type: %{public}d, success count: %{public}zu", static_cast<int32_t>(type), photoIds.size());
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
 #endif
@@ -452,7 +443,8 @@ shared_ptr<NativeRdb::ResultSet> EnhancementManager::HandleEnhancementQueryOpera
 int32_t EnhancementManager::AddServiceTask(MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
     const string &photoId, const bool hasCloudWatermark, const bool isAuto)
 {
-    EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+    EnhancementTaskManager::AddEnhancementTask(fileId, photoId,
+        (isAuto ? TYPE_AUTO_ENHANCEMENT_FOREGROUND : TYPE_MANUAL_ENHANCEMENT));
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     servicePredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     GenerateAddServicePredicates(isAuto, servicePredicates);
@@ -604,7 +596,7 @@ bool EnhancementManager::IsAddOperationEnabled(int32_t triggerMode)
     return false;
 }
 
-int32_t EnhancementManager::HandleAutoAddOperation()
+int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
 {
     MEDIA_INFO_LOG("HandleAutoAddOperation");
     if (!IsAutoTaskEnabled()) {
@@ -628,7 +620,7 @@ int32_t EnhancementManager::HandleAutoAddOperation()
         int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
         MEDIA_INFO_LOG("fileId: %{public}d, photoId: %{public}s, ceAvailable: %{public}d",
             fileId, photoId.c_str(), ceAvailable);
-        if (EnhancementTaskManager::InProcessingTask(photoId)) {
+        if (!isReboot && EnhancementTaskManager::InProcessingTask(photoId)) {
             MEDIA_INFO_LOG("cloud enhancement task in cache is processing, photoId: %{public}s", photoId.c_str());
             errCode = E_ERR;
             continue;
@@ -652,7 +644,7 @@ int32_t EnhancementManager::AddAutoServiceTask(MediaEnhanceBundleHandle* mediaEn
     const string &photoId)
 {
     MEDIA_INFO_LOG("adding auto enhancement service task");
-    EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+    EnhancementTaskManager::AddEnhancementTask(fileId, photoId, TYPE_AUTO_ENHANCEMENT_BACKGROUND);
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     servicePredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     servicePredicates.And();
@@ -808,10 +800,7 @@ int32_t EnhancementManager::HandlePrioritizeOperation(MediaLibraryCommand &cmd)
             photoId.c_str());
         return E_ERR;
     }
-    if (!LoadService()) {
-        MEDIA_ERR_LOG("load enhancement service error");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(LoadService(), E_ERR, "load enhancement service error");
     MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
     if (mediaEnhanceBundle == nullptr) {
         return E_ERR;
@@ -932,7 +921,8 @@ int32_t EnhancementManager::HandlePauseAllOperation()
 {
     MEDIA_INFO_LOG("EnhancementManager::HandlePauseAllOperation");
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    CHECK_AND_RETURN_RET_LOG(enhancementService_->IsConnected(), E_ERR, "enhancementService not connected");
+    bool isServiceExist = ((enhancementService_ != nullptr) && enhancementService_->IsConnected());
+    CHECK_AND_RETURN_RET_LOG(isServiceExist, E_ERR, "enhancementService not connected");
     MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
     int32_t ret = enhancementService_->PauseAllTasks(mediaEnhanceBundle);
     enhancementService_->DestroyBundle(mediaEnhanceBundle);
@@ -948,7 +938,8 @@ int32_t EnhancementManager::HandleResumeAllOperation()
 {
     MEDIA_INFO_LOG("EnhancementManager::HandleResumeAllOperation");
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    CHECK_AND_RETURN_RET_LOG(enhancementService_->IsConnected(), E_ERR, "enhancementService not connected");
+    bool isServiceExist = ((enhancementService_ != nullptr) && enhancementService_->IsConnected());
+    CHECK_AND_RETURN_RET_LOG(isServiceExist, E_ERR, "enhancementService not connected");
     MediaEnhanceBundleHandle* mediaEnhanceBundle = enhancementService_->CreateBundle();
     int32_t ret = enhancementService_->ResumeAllTasks(mediaEnhanceBundle);
     enhancementService_->DestroyBundle(mediaEnhanceBundle);
@@ -1022,14 +1013,9 @@ shared_ptr<NativeRdb::ResultSet> EnhancementManager::HandleGetPairOperation(Medi
 
 int32_t EnhancementManager::HandleStateChangedOperation(const bool isCameraIdle)
 {
-    if (isCameraIdle_ == isCameraIdle) {
-        return E_OK;
-    }
-    isCameraIdle_ = isCameraIdle;
-    bool cond = ((!isWifiConnected_ && !isCellularNetConnected_) || (photosAutoOption_ == PHOTO_OPTION_CLOSE));
-    CHECK_AND_RETURN_RET_LOG(!cond, E_OK, "HandleStateChangedOperation option is not allowed");
-
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    CHECK_AND_RETURN_RET(isCameraIdle_ != isCameraIdle, E_OK);
+    isCameraIdle_ = isCameraIdle;
     if (isCameraIdle_) {
         HandleResumeAllOperation();
         HandleAutoAddOperation();

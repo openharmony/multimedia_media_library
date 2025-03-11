@@ -100,6 +100,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_LABEL, OperationObject::VISION_LABEL },
         { PAH_ANA_VIDEO_LABEL, OperationObject::VISION_VIDEO_LABEL },
         { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
+        { PAH_ANA_VIDEO_ATTS, OperationObject::VISION_VIDEO_AESTHETICS },
         { PAH_ANA_TOTAL, OperationObject::VISION_TOTAL },
         { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
         { VISION_VIDEO_FACE_TABLE, OperationObject::VISION_VIDEO_FACE },
@@ -115,6 +116,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_FACE_TAG, OperationObject::VISION_FACE_TAG },
         { PAH_ANA_HEAD, OperationObject::VISION_HEAD },
         { PAH_ANA_POSE, OperationObject::VISION_POSE },
+        { PAH_ANA_FOREGROUND, OperationObject::ANALYSIS_FOREGROUND},
 
         // use in Location Analyse
         { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
@@ -185,6 +187,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
         { OperationObject::VISION_VIDEO_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_LABEL_TABLE } } },
         { OperationObject::VISION_AESTHETICS, { { OperationType::UNKNOWN_TYPE, VISION_AESTHETICS_TABLE } } },
+        { OperationObject::VISION_VIDEO_AESTHETICS,
+        { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_AESTHETICS_TABLE } } },
         { OperationObject::VISION_SALIENCY, { { OperationType::UNKNOWN_TYPE, VISION_SALIENCY_TABLE } } },
         { OperationObject::VISION_OBJECT, { { OperationType::UNKNOWN_TYPE, VISION_OBJECT_TABLE } } },
         { OperationObject::VISION_RECOMMENDATION, { { OperationType::UNKNOWN_TYPE, VISION_RECOMMENDATION_TABLE } } },

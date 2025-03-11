@@ -55,7 +55,7 @@ public:
     EXPORT int32_t HandleAddOperation(MediaLibraryCommand &cmd, const bool hasCloudWatermark, int triggerMode = 0);
     EXPORT int32_t AddServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
         const std::string &photoId, const bool hasCloudWatermark, const bool isAuto = false);
-    EXPORT int32_t HandleAutoAddOperation();
+    EXPORT int32_t HandleAutoAddOperation(bool isReboot = false);
     EXPORT int32_t AddAutoServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
         const std::string &photoId);
 #endif

@@ -1762,6 +1762,17 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_008
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_008");
 }
 
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_009");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    shared_ptr<FileAsset> fileAsset;
+    auto ret = MediaLibraryAssetOperations::SetUserComment(cmd, fileAsset);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_009");
+}
+
 HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_010, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_010");

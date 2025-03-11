@@ -1899,6 +1899,17 @@ static bool GetNapiObjectFromNapiObject(napi_env env, napi_value configObj, std:
     return true;
 }
 
+static napi_status CheckType(int32_t &type)
+{
+    const int lcdType = 1;
+    const int thmType = 2;
+
+    if (type == lcdType || type == thmType) {
+        return napi_ok;
+    }
+    return napi_invalid_arg;
+}
+
 napi_value GetJSArgsForGetThumbnailData(napi_env env, size_t argc, const napi_value argv[],
                                         unique_ptr<FileAssetAsyncContext> &asyncContext)
 {
@@ -1908,11 +1919,13 @@ napi_value GetJSArgsForGetThumbnailData(napi_env env, size_t argc, const napi_va
         if (i == PARAM0 && valueType == napi_number) {
             napi_get_value_int32(env, argv[PARAM0], &asyncContext->type);
         } else {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid parameter type");
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter type");
             return nullptr;
         }
     }
- 
+
+    CHECK_COND_WITH_MESSAGE(env, CheckType(asyncContext->type) == napi_ok, "Invalid parameter type");
+
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;

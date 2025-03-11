@@ -286,6 +286,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/event_handler/album_plugin_table_event_handler.cpp",
     "src/event_handler/tab_facard_photos_table_event_handler.cpp",
     "src/event_handler/tab_old_photos_table_event_handler.cpp",
+    "src/foreground_analysis_meta.cpp",
     "src/hi_audit.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
