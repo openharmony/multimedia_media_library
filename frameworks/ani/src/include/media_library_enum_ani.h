@@ -64,8 +64,9 @@ enum EnumTypeString {
 
 class MediaLibraryEnumAni {
 public:
-    static ani_status EnumGetValueInt32(ani_env *env, EnumTypeInt32 enumType, ani_int enumIndex, int32_t &value);
-    static ani_status EnumGetValueString(ani_env *env, EnumTypeString enumType, ani_int enumIndex, std::string &value);
+    static ani_status EnumGetValueInt32(ani_env *env, EnumTypeInt32 enumType, ani_enum_item enumItem, int32_t &value);
+    static ani_status EnumGetValueString(ani_env *env, EnumTypeString enumType, ani_enum_item enumItem,
+        std::string &value);
 
     static bool EnumGetIndex(MediaType value, ani_int &enumIndex);
     static bool EnumGetIndex(PhotoSubType value, ani_int &enumIndex);

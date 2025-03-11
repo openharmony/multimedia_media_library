@@ -513,14 +513,10 @@ ani_status MediaLibraryAniUtils::GetOptionalEnumInt32Field(ani_env *env, ani_obj
         return ANI_NOT_FOUND;
     }
 
-    ani_int fieldIndex;
-    if (ANI_OK != env->Object_CallMethodByName_Int(static_cast<ani_object>(field_ref), "intValue",
-        nullptr, &fieldIndex)) {
-        ANI_ERR_LOG("Object_CallMethodByName_Int %{public}s Failed", fieldName.c_str());
-        return ANI_INVALID_TYPE;
-    }
+    ani_enum_item enumItem;
+    enumItem = static_cast<ani_enum_item>(field_ref);
 
-    MediaLibraryEnumAni::EnumGetValueInt32(env, enumType, fieldIndex, value);
+    MediaLibraryEnumAni::EnumGetValueInt32(env, enumType, enumItem, value);
     ANI_INFO_LOG("%{public}s Get %{public}s: %{public}d", __func__, fieldName.c_str(), value);
     return ANI_OK;
 }
@@ -541,14 +537,10 @@ ani_status MediaLibraryAniUtils::GetOptionalEnumStringField(ani_env *env, ani_ob
         return ANI_NOT_FOUND;
     }
 
-    ani_int fieldIndex;
-    if (ANI_OK != env->Object_CallMethodByName_Int(static_cast<ani_object>(field_ref), "intValue",
-        nullptr, &fieldIndex)) {
-        ANI_ERR_LOG("Object_CallMethodByName_Int %{public}s Failed", fieldName.c_str());
-        return ANI_INVALID_TYPE;
-    }
+    ani_enum_item enumItem;
+    enumItem = static_cast<ani_enum_item>(field_ref);
 
-    MediaLibraryEnumAni::EnumGetValueString(env, enumType, fieldIndex, value);
+    MediaLibraryEnumAni::EnumGetValueString(env, enumType, enumItem, value);
     ANI_INFO_LOG("%{public}s Get %{public}s: %{public}s", __func__, fieldName.c_str(), value.c_str());
     return ANI_OK;
 }
