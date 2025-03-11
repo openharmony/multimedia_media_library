@@ -21,6 +21,7 @@
 #include <cstring>
 
 #include "album_plugin_config.h"
+#include "dfx_utils.h"
 #include "directory_ex.h"
 #include "media_analysis_helper.h"
 #include "media_file_utils.h"
@@ -620,6 +621,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
         MEDIA_ERR_LOG("DeletePhotoAlbum failed. rdbStore is null");
         return E_HAS_DB_ERROR;
     }
+    MEDIA_INFO_LOG("Delete user generic albums start");
     if (MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(rdbStore, predicates) <= 0) {
         MEDIA_ERR_LOG("Update trashed asset failed");
         return E_HAS_DB_ERROR;
@@ -2012,6 +2014,7 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
 
     auto resultSet = uniStore->QuerySql(queryAlbumInfo);
     if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Database query failed");
         return E_HAS_DB_ERROR;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -2028,7 +2031,7 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
             GetIntValueFromResultSet(resultSet, RENAME_OPERATION, albumInfo.renameOperation) != E_OK ||
             GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumInfo.albumName) != E_OK ||
             GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, isCoverSatisfied) != E_OK) {
-                MEDIA_ERR_LOG("GetMergeAlbumsInfo db fail");
+                MEDIA_ERR_LOG("Failed to get values from result set");
                 return E_HAS_DB_ERROR;
             }
         albumInfo.isCoverSatisfied = static_cast<uint8_t>(isCoverSatisfied);
@@ -2131,7 +2134,20 @@ int32_t GetMergeAlbumCoverUriAndSatisfied(MergeAlbumInfo &updateAlbumInfo, const
     return E_OK;
 }
 
-int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int32_t currentAlbumId)
+static string MergeAlbumInfoToString(const MergeAlbumInfo& mergeAlbumInfo)
+{
+    string info = "album " + to_string(mergeAlbumInfo.albumId) + ", groupTag " + mergeAlbumInfo.groupTag + ", count " +
+        to_string(mergeAlbumInfo.count) + ", isMe " + to_string(mergeAlbumInfo.isMe) + ", coverUri " +
+        DfxUtils::GetSafeUri(mergeAlbumInfo.coverUri) + ", userDisplayLevel " +
+        to_string(mergeAlbumInfo.userDisplayLevel) + ", rank " +
+        to_string(mergeAlbumInfo.rank) + ", userOperation " + to_string(mergeAlbumInfo.userOperation) +
+        ", renameOperation " + to_string(mergeAlbumInfo.renameOperation) + ", albumName " +
+        DfxUtils::GetSafeAlbumName(mergeAlbumInfo.albumName) +
+        ", isCoverSatisfied " + to_string(mergeAlbumInfo.isCoverSatisfied);
+    return info;
+}
+
+static int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int32_t currentAlbumId)
 {
     MergeAlbumInfo updateAlbumInfo;
     if (GetMergeAlbumCoverUriAndSatisfied(updateAlbumInfo, mergeAlbumInfo[0], mergeAlbumInfo[1]) != E_OK) {
@@ -2171,6 +2187,7 @@ int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int3
         updateAlbumInfo.userDisplayLevel = SECOND_PAGE;
         updateAlbumInfo.rank = 0;
     }
+    MEDIA_INFO_LOG("After merge: %{public}s", MergeAlbumInfoToString(updateAlbumInfo).c_str());
     return UpdateForMergeAlbums(updateAlbumInfo, mergeAlbumInfo[0].albumId, mergeAlbumInfo[1].albumId);
 }
 
@@ -2178,7 +2195,7 @@ int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int3
  * Merge album
  * @param values contains current and target album_id
  */
-int32_t MergeAlbum(const ValuesBucket &values)
+static int32_t MergePortraitAlbums(const ValuesBucket &values)
 {
     int32_t currentAlbumId;
     int32_t targetAlbumId;
@@ -2193,12 +2210,19 @@ int32_t MergeAlbum(const ValuesBucket &values)
         return E_INVALID_VALUES;
     }
     if (currentAlbumId == targetAlbumId) { // same album, no need to merge
+        MEDIA_WARN_LOG("Ignore invalid portrait album merge request, "
+            "current album id and target album id are the same");
         return E_OK;
     }
+    MEDIA_INFO_LOG("Start merge portrait albums, current album id: %{public}d, target album id: %{public}d",
+        currentAlbumId, targetAlbumId);
     vector<MergeAlbumInfo> mergeAlbumInfo;
     if (GetMergeAlbumsInfo(mergeAlbumInfo, currentAlbumId, targetAlbumId)) {
+        MEDIA_ERR_LOG("Get merge albums info fail");
         return E_HAS_DB_ERROR;
     }
+    MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[0]).c_str());
+    MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[1]).c_str());
     if (mergeAlbumInfo.size() != MERGE_ALBUM_COUNT) { // merge album count
         MEDIA_ERR_LOG("invalid mergeAlbumInfo size");
         return E_INVALID_VALUES;
@@ -2654,7 +2678,7 @@ int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationTyp
         case OperationType::PORTRAIT_DISPLAY_LEVEL:
             return SetDisplayLevel(values, predicates);
         case OperationType::PORTRAIT_MERGE_ALBUM:
-            return MergeAlbum(values);
+            return MergePortraitAlbums(values);
         case OperationType::PORTRAIT_IS_ME:
             return SetIsMe(values, predicates);
         case OperationType::PORTRAIT_ALBUM_NAME:

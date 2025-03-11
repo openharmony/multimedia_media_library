@@ -183,8 +183,6 @@ void MediaDataShareExtAbility::InitPermissionHandler()
 
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
-    MultiStagesPhotoCaptureManager::GetInstance().Init();
-    MultiStagesVideoCaptureManager::GetInstance().Init();
 #ifdef MEDIALIBRARY_MTP_ENABLE
     MtpManager::GetInstance().Init();
 #endif
@@ -250,7 +248,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     }
     auto extensionContext = GetContext();
     int32_t sceneCode = DfxType::START_SUCCESS;
-    int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext, sceneCode);
+    int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext, sceneCode, true, true);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to init MediaLibraryMgr");
         if (sceneCode == DfxType::START_RDB_STORE_FAIL) {
