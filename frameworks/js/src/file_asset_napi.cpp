@@ -1801,6 +1801,7 @@ static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
         if (context->napiArrayBufferRef == nullptr) {
                 MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_ERR_NO_SUCH_FILE,
                     "File is not exist");
+                NAPI_ERR_LOG("File is not exist");
         }
         context->HandleError(env, jsContext->error);
     }
