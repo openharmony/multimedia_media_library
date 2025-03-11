@@ -86,6 +86,7 @@ static const int32_t INDEX_ONE = 1;
 static const int32_t INDEX_TWO = 2;
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.1;
 static const std::string STORAGE_PATH = "/data/storage/el2/database/";
+static const uint32_t MAX_DOWNLOAD_TRY_TIMES = 3 * BATCH_DOWNLOAD_CLOUD_FILE;
 
 static const std::map<Status, std::vector<int32_t>> STATUS_MAP = {
     { Status::FORCE_DOWNLOADING, {0, 0, 0} },
@@ -168,7 +169,7 @@ bool CloudMediaAssetDownloadOperation::IsDataEmpty(const CloudMediaAssetDownload
     return data.fileDownloadMap.empty();
 }
 
-bool CloudMediaAssetDownloadOperation::IsNetworkUnavailable()
+bool CloudMediaAssetDownloadOperation::IsNetworkAvailable()
 {
     return (MedialibrarySubscriber::IsWifiConnected() ||
         (MedialibrarySubscriber::IsCellularNetConnected() && isUnlimitedTrafficStatusOn_));
@@ -323,6 +324,7 @@ void CloudMediaAssetDownloadOperation::StartBatchDownload(const int64_t batchNum
                 ret, to_string(downloadId_).c_str());
             downloadId_ = DOWNLOAD_ID_DEFAULT;
             cacheForDownload_ = dataForDownload_;
+            ClearData(dataForDownload_);
             SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
             return;
         }
@@ -381,7 +383,7 @@ void CloudMediaAssetDownloadOperation::InitStartDownloadTaskStatus(const bool &i
         MEDIA_ERR_LOG("Temperature is not suitable for foreground downloads.");
         return;
     }
-    if (!CommonEventUtils::IsWifiConnected() && !isUnlimitedTrafficStatusOn_) {
+    if (!IsNetworkAvailable()) {
         Status status = MedialibrarySubscriber::IsCellularNetConnected() ?
             Status::PAUSE_FOR_WIFI_UNAVAILABLE : Status::PAUSE_FOR_NETWORK_FLOW_LIMIT;
         SetTaskStatus(status);
@@ -615,6 +617,7 @@ void CloudMediaAssetDownloadOperation::ResetParameter()
     totalSize_ = 0;
     remainCount_ = 0;
     remainSize_ = 0;
+    downloadTryTime_ = 0;
 }
 
 int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
@@ -734,9 +737,10 @@ void CloudMediaAssetDownloadOperation::HandleFailedCallback(const DownloadProgre
             break;
         }
         case static_cast<int32_t>(DownloadProgressObj::DownloadErrorType::NETWORK_UNAVAILABLE): {
-            if (!IsNetworkUnavailable()) {
+            if (!IsNetworkAvailable() || downloadTryTime_ >= MAX_DOWNLOAD_TRY_TIMES) {
                 PauseDownloadTask(CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT);
             }
+            downloadTryTime_++;
             MoveDownloadFileToCache(progress);
             break;
         }
@@ -788,6 +792,11 @@ std::string CloudMediaAssetDownloadOperation::GetTaskInfo()
 {
     return to_string(totalCount_) + "," + to_string(totalSize_) + "," +
         to_string(remainCount_) + "," + to_string(remainSize_);
+}
+
+void CloudMediaAssetDownloadOperation::ResetDownloadTryTime()
+{
+    downloadTryTime_ = 0;
 }
 } // namespace Media
 } // namespace OHOS
