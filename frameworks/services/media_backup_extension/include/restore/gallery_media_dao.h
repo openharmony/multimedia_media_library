@@ -146,7 +146,8 @@ private:
             latitude, \
             longitude, \
             story_id, \
-            portrait_id \
+            portrait_id, \
+            story_chosen \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
@@ -215,7 +216,8 @@ private:
                 ELSE album_v2.lPath \
             END AS lPath, \
             story_id, \
-            portrait_id \
+            portrait_id, \
+            story_chosen \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \

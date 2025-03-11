@@ -441,7 +441,7 @@ void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket
         MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.", it->albumName.c_str(), it->coverUri.c_str());
     }
 
-    bool cond = (fileInfo.storyIds.empty() && fileInfo.portraitIds.empty());
+    bool cond = ((fileInfo.storyIds.empty() && fileInfo.portraitIds.empty()) || fileInfo.storyChosen == 0);
     CHECK_AND_RETURN(!cond);
     std::stringstream storyIdss(fileInfo.storyIds);
     std::string storyId;
