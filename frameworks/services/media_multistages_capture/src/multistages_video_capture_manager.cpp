@@ -130,7 +130,7 @@ void MultiStagesVideoCaptureManager::AddVideo(const std::string &videoId,
 
 bool MultiStagesVideoCaptureManager::Init()
 {
-    SyncWithDeferredVideoProcSession();
+    SyncWithDeferredVideoProcSessionInternal();
     return true;
 }
 

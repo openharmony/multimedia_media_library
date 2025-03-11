@@ -101,7 +101,7 @@ public:
 
     EXPORT int32_t InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext,
-        int32_t &sceneCode, bool isNeedCreateDir = true);
+        int32_t &sceneCode, bool isNeedCreateDir = true, bool isInMediaLibraryOnStart = false);
     EXPORT void ClearMediaLibraryMgr();
     EXPORT int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
     EXPORT void CreateThumbnailAsync(const std::string &uri, const std::string &path,
@@ -120,7 +120,7 @@ public:
 private:
     int32_t InitMediaLibraryRdbStore();
     void InitResourceInfo();
-    void HandleUpgradeRdbAsync();
+    void HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart);
 
 #ifdef DISTRIBUTED
     bool QuerySync(const std::string &networkId, const std::string &tableName);
