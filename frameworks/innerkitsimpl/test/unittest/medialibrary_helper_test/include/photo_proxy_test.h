@@ -148,7 +148,7 @@ public:
         return 0;
     }
 
-    int32_t GetCloudImageEnhanceFlag() override
+    uint32_t GetCloudImageEnhanceFlag() override
     {
         return 0;
     }
