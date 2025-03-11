@@ -34,6 +34,7 @@ namespace OHOS {
 namespace Media {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 MediaEnhanceClientHandle* clientWrapper = nullptr;
+mutex EnhancementServiceAdapter::mtx_;
 
 using CreateMCEClient = MediaEnhanceClientHandle* (*)(MediaEnhance_TASK_TYPE taskType);
 using DestroyMCEClient = void (*)(MediaEnhanceClientHandle* client);
@@ -262,7 +263,6 @@ EnhancementServiceAdapter::EnhancementServiceAdapter()
     ClientFuncInit();
     TaskFuncInit();
     BundleFuncInit();
-    InitEnhancementClient(MediaEnhance_TASK_TYPE::TYPE_CAMERA);
     LoadEnhancementService();
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
@@ -365,8 +365,9 @@ bool EnhancementServiceAdapter::IsConnected(MediaEnhanceClientHandle* clientWrap
 
 int32_t EnhancementServiceAdapter::LoadEnhancementService()
 {
+    unique_lock<mutex> lock(mtx_);
     if (clientWrapper == nullptr) {
-        MEDIA_WARN_LOG("EnhancementServiceAdapter get mediaEnhanceClient error, make client pointer again");
+        MEDIA_WARN_LOG("EnhancementServiceAdapter clientWrapper is nullptr, make client pointer");
         InitEnhancementClient(MediaEnhance_TASK_TYPE::TYPE_CAMERA);
     }
     if (!IsConnected(clientWrapper)) {
