@@ -34,6 +34,7 @@ private:
     int32_t GarbageAlbumCheckOrAddType(NativeRdb::RdbStore &store);
     int32_t AddIndexOfGalleryAlbum(NativeRdb::RdbStore &store);
     int32_t AddIndexOfAlbumPlugin(NativeRdb::RdbStore &store);
+    int32_t AddStoryChosenOfGalleryMedia(NativeRdb::RdbStore &store);
 
 private:
     // Note: The column photo_quality's default value is 0.
@@ -58,6 +59,8 @@ private:
         ( \
             album_name \
         );";
+    const std::string SQL_GALLERY_MEDIA_TABLE_ADD_STORY_CHOSEN = "\
+        ALTER TABLE gallery_media ADD COLUMN story_chosen INTEGER DEFAULT 1;";
 
 private:
     DbUpgradeUtils dbUpgradeUtils_;

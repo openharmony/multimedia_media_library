@@ -426,6 +426,7 @@ struct FileInfo {
     std::string storyIds;
     std::string portraitIds;
     bool needUpdate {false};
+    int32_t storyChosen {0};
 };
 
 struct AlbumInfo {
