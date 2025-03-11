@@ -59,6 +59,7 @@ static const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
     { JPEG_STR, JPEG_TYPE },
     { HEIF_STR, HEIF_TYPE },
 };
+static const int32_t GROUP_QUERY_SIZE = 1000;
 mutex EnhancementManager::mutex_;
 
 EnhancementManager::EnhancementManager()
@@ -321,21 +322,34 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
 void EnhancementManager::RemoveTasksInternal(const vector<string> &fileIds, vector<string> &photoIds)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
-    vector<string> columns = { PhotoColumn::PHOTO_ID };
-    queryPredicates.In(MediaColumn::MEDIA_ID, fileIds);
-    queryPredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::TRASH));
-    shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
-    CHECK_AND_RETURN_LOG(CheckResultSet(resultSet) == E_OK, "result set is invalid");
-    while (resultSet->GoToNextRow() == E_OK) {
-        string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
-        if (!LoadService() || enhancementService_->RemoveTask(photoId) != E_OK) {
-            MEDIA_ERR_LOG("enhancment service error, photo_id: %{public}s", photoId.c_str());
+    int32_t totalFiles = fileIds.size();
+    int32_t groupNum = (totalFiles + GROUP_QUERY_SIZE - 1) / GROUP_QUERY_SIZE;
+    for (int32_t i = 0; i < groupNum; i++) {
+        int32_t startIndex = i * GROUP_QUERY_SIZE;
+        int32_t endIndex = min(startIndex + GROUP_QUERY_SIZE, totalFiles);
+        vector<string> currentFileIds(fileIds.begin() + startIndex, fileIds.begin() + endIndex);
+        MEDIA_INFO_LOG("current startIndex: %{public}d, endIndex: %{public}d, size: %{public}zu",
+            startIndex, endIndex, currentFileIds.size());
+        if (currentFileIds.empty()) {
             continue;
         }
-        photoIds.emplace_back(photoId);
-        MEDIA_INFO_LOG("remove task successful, photo_id: %{public}s", photoId.c_str());
+        RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
+        vector<string> columns = { PhotoColumn::PHOTO_ID };
+        queryPredicates.In(MediaColumn::MEDIA_ID, currentFileIds);
+        queryPredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+            static_cast<int32_t>(CloudEnhancementAvailableType::TRASH));
+        shared_ptr<NativeRdb::ResultSet> resultSet = MediaLibraryRdbStore::QueryWithFilter(queryPredicates, columns);
+        CHECK_AND_RETURN_LOG(CheckResultSet(resultSet) == E_OK, "result set is invalid");
+        while (resultSet->GoToNextRow() == E_OK) {
+            string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+            if (!LoadService() || enhancementService_->RemoveTask(photoId) != E_OK) {
+                MEDIA_ERR_LOG("enhancment service error, photo_id: %{public}s", photoId.c_str());
+                continue;
+            }
+            photoIds.emplace_back(photoId);
+            MEDIA_INFO_LOG("remove task successful, photo_id: %{public}s", photoId.c_str());
+        }
+        resultSet->Close();
     }
 #else
     MEDIA_ERR_LOG("not supply cloud enhancement service");
