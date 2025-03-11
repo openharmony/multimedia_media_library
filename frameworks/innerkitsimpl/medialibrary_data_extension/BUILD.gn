@@ -251,6 +251,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/media_tool_permission_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/pemission_common.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_permission/src/read_write_permission_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_permission/src/system_api_check_handler.cpp",
   ]
 
   media_power_efficiency_source = [

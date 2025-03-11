@@ -2165,9 +2165,12 @@ static void GetCreateUri(MediaLibraryAsyncContext *context, string &uri)
         context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         switch (context->assetType) {
             case TYPE_PHOTO:
-                uri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-                    ((context->isCreateByComponent) ? UFM_CREATE_PHOTO_COMPONENT : UFM_CREATE_PHOTO) :
-                    ((context->isCreateByComponent) ? PAH_CREATE_PHOTO_COMPONENT : PAH_CREATE_PHOTO);
+                if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+                    uri = (context->isCreateByComponent) ? UFM_CREATE_PHOTO_COMPONENT : UFM_CREATE_PHOTO;
+                } else {
+                    uri = (context->isCreateByComponent) ? PAH_CREATE_PHOTO_COMPONENT :
+                        (context->needSystemApp ? PAH_SYS_CREATE_PHOTO : PAH_CREATE_PHOTO);
+                }
                 break;
             case TYPE_AUDIO:
                 uri = (context->isCreateByComponent) ? UFM_CREATE_AUDIO_COMPONENT : UFM_CREATE_AUDIO;
@@ -5083,6 +5086,7 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     NAPI_ASSERT(env, napi_typeof(env, context->argv[ARGS_ZERO], &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) {
         context->isCreateByComponent = false;
+        context->needSystemApp = true;
         if (!MediaLibraryNapiUtils::IsSystemApp()) {
             NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
             return nullptr;
@@ -5193,6 +5197,7 @@ static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_i
         napi_ok, "Failed to get object info");
     
     context->isCreateByComponent = false;
+    context->needSystemApp = true;
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -5233,6 +5238,7 @@ static napi_value ParseArgsGrantPhotoUrisForForceSensitive(napi_env env, napi_ca
         napi_ok, "Failed to get object info");
     
     context->isCreateByComponent = false;
+    context->needSystemApp = true;
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -5267,6 +5273,7 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
         napi_ok, "Failed to get object info");
     
     context->isCreateByComponent = false;
+    context->needSystemApp = true;
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -5314,6 +5321,7 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
         napi_ok, "Failed to get object info");
     
     context->isCreateByComponent = false;
+    context->needSystemApp = true;
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -8619,7 +8627,7 @@ static void PhotoAccessGrantPhotoUriPermissionExecute(napi_env env, void *data)
         return;
     }
 
-    string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_APP_URI_PERMISSIONOPRN + "/" + OPRN_CREATE;
+    string uri = PAH_CREATE_APP_URI_PERMISSION;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createUri(uri);
     
@@ -8643,7 +8651,7 @@ static void PhotoAccessGrantPhotoUrisPermissionExecute(napi_env env, void *data)
         return;
     }
 
-    string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_APP_URI_PERMISSIONOPRN + "/" + OPRN_CREATE;
+    string uri = PAH_CREATE_APP_URI_PERMISSION;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createUri(uri);
     
@@ -8915,6 +8923,7 @@ static napi_value ParseArgsAgentCreateAssetsWithMode(napi_env env, napi_callback
 
     context->isCreateByComponent = false;
     context->isCreateByAgent = true;
+    context->needSystemApp = true;
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -8975,6 +8984,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssets(napi_env env, na
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
+    asyncContext->needSystemApp = true;
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -8994,6 +9004,7 @@ napi_value MediaLibraryNapi::CreateAssetsForAppWithAlbum(napi_env env, napi_call
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
+    asyncContext->needSystemApp = true;
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -9154,7 +9165,7 @@ static void PhotoAccessHelperTrashExecute(napi_env env, void *data)
     tracer.Start("PhotoAccessHelperTrashExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    string trashUri = PAH_TRASH_PHOTO;
+    string trashUri = PAH_SYS_TRASH_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(trashUri);
     DataSharePredicates predicates;
