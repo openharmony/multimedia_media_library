@@ -489,12 +489,12 @@ function getPhotoAccessHelper(context, userId = -1) {
   }
   gContext = context;
   let helper = photoAccessHelper.getPhotoAccessHelper(gContext, userId);
-  if (helper !== undefined) {
+  if (helper !== undefined && helper.constructor.prototype.createDeleteRequest === undefined) {
     console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest and showAssetsCreationDialog');
-    helper.createDeleteRequest = createDeleteRequest;
-    helper.showAssetsCreationDialog = showAssetsCreationDialog;
-    helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
-    helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
+    helper.constructor.prototype.createDeleteRequest = createDeleteRequest;
+    helper.constructor.prototype.showAssetsCreationDialog = showAssetsCreationDialog;
+    helper.constructor.prototype.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+    helper.constructor.prototype.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
   }
   return helper;
 }

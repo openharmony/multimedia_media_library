@@ -118,12 +118,14 @@ private:
     static int32_t SaveEditDataCamera(MediaLibraryCommand &cmd, const std::string &assetPath,
         std::string &editData);
     static int32_t SaveSourceAndEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &editData);
-    static int32_t AddFiltersExecute(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
+    static int32_t AddFiltersExecute(MediaLibraryCommand& cmd, std::shared_ptr<FileAsset>& fileAsset,
         const std::string &cachePath);
     static int32_t SubmitEditCacheExecute(MediaLibraryCommand &cmd,
-        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath, bool isWriteGpsAdvanced);
+        std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath, bool isWriteGpsAdvanced);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
-        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+        std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+    static int32_t ReNameVedioFilePath(
+        const std::string &assetPath, const std::string &sourceImagePath, const std::string &assetVideoPath);
     static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
     static int32_t SubmitEditMovingPhotoExecute(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t GetMovingPhotoCachePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
@@ -133,9 +135,10 @@ private:
         const std::string &cachePath, const std::string &destPath);
     static int32_t UpdateMovingPhotoSubtype(int32_t fileId, int32_t currentPhotoSubType);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
-    static int32_t HandleNeedSetDisplayName(MediaLibraryCommand &cmd, bool isNameChanged,
+    static int32_t HandleNeedSetDisplayName(MediaLibraryCommand &cmd,
         std::shared_ptr<FileAsset> &fileAsset, bool &isNeedScan);
-    static int32_t HandleNeedSetDisplayName(MediaLibraryCommand &cmd, int32_t id);
+    static int32_t HandleNeedSetDisplayName(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t RenameEditDataDirBySetDisplayName(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
     static int32_t HandleCacheFile(MediaLibraryCommand& cmd, std::string cachePath);
     static int32_t HandleCacheFile(MediaLibraryCommand &cmd, int32_t id);
     static int32_t UpdateOrientationAllExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,

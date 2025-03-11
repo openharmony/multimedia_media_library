@@ -24,22 +24,29 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+constexpr int32_t TYPE_MANUAL_ENHANCEMENT = 0;
+constexpr int32_t TYPE_AUTO_ENHANCEMENT_FOREGROUND = 1;
+constexpr int32_t TYPE_AUTO_ENHANCEMENT_BACKGROUND = 2;
+
 struct EnhancementTaskInfo {
     std::string taskId;
     int32_t fileId;
     int32_t requestCount;
-    EnhancementTaskInfo() : taskId(""), fileId(0), requestCount(0) {}
-    EnhancementTaskInfo(std::string taskId, int32_t fileId, int32_t count)
-        : taskId(taskId), fileId(fileId), requestCount(count) {}
+    int32_t taskType;
+    EnhancementTaskInfo() : taskId(""), fileId(0), requestCount(0), taskType(0) {}
+    EnhancementTaskInfo(std::string taskId, int32_t fileId, int32_t count, int32_t taskType)
+        : taskId(taskId), fileId(fileId), requestCount(count), taskType(taskType) {}
 };
 
 class EnhancementTaskManager {
 public:
-    EXPORT static void AddEnhancementTask(int32_t fileId, const std::string &photoId);
+    EXPORT static void AddEnhancementTask(int32_t fileId, const std::string &photoId,
+        int32_t taskType);
     EXPORT static void RemoveEnhancementTask(const std::string &photoId);
     EXPORT static void RemoveAllEnhancementTask(std::vector<std::string> &taskIds);
     EXPORT static bool InProcessingTask(const std::string &photoId);
     EXPORT static std::string QueryPhotoIdByFileId(int32_t fileId);
+    EXPORT static int32_t QueryTaskTypeByPhotoId(const std::string &photoId);
     EXPORT static void SetTaskRequestCount(const std::string &photoId, int32_t count);
     EXPORT static int32_t GetTaskRequestCount(const std::string &photoId);
 

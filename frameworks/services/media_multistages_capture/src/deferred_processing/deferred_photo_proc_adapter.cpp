@@ -80,10 +80,7 @@ void DeferredPhotoProcessingAdapter::EndSynchronize()
 void DeferredPhotoProcessingAdapter::AddImage(const std::string &imageId, DpsMetadata &metadata, const bool isTrashed)
 {
     MEDIA_INFO_LOG("enter photoid: %{public}s, isTrashed: %{public}d", imageId.c_str(), isTrashed);
-    if (deferredPhotoProcSession_ == nullptr) {
-        MEDIA_ERR_LOG("AddImage deferredPhotoProcSession_ is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(deferredPhotoProcSession_ != nullptr, "AddImage deferredPhotoProcSession_ is nullptr");
     deferredPhotoProcSession_->AddImage(imageId, metadata, isTrashed);
 }
 #endif
@@ -92,10 +89,7 @@ void DeferredPhotoProcessingAdapter::RemoveImage(const std::string &imageId, boo
 {
     MEDIA_INFO_LOG("enter photoid: %{public}s, isRestorable: %{public}d", imageId.c_str(), isRestorable);
 #ifdef ABILITY_CAMERA_SUPPORT
-    if (deferredPhotoProcSession_ == nullptr) {
-        MEDIA_ERR_LOG("RemoveImage deferredPhotoProcSession_ is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(deferredPhotoProcSession_ != nullptr, "RemoveImage deferredPhotoProcSession_ is nullptr");
     deferredPhotoProcSession_->RemoveImage(imageId, isRestorable);
 #endif
 }

@@ -1607,6 +1607,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_LABEL,
     CREATE_TAB_ANALYSIS_VIDEO_LABEL,
     CREATE_TAB_ANALYSIS_AESTHETICS,
+    CREATE_TAB_VIDEO_ANALYSIS_AESTHETICS,
     CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
     CREATE_TAB_ANALYSIS_OBJECT,
     CREATE_TAB_ANALYSIS_RECOMMENDATION,
@@ -1684,6 +1685,7 @@ static const vector<string> onCreateSqlStrs = {
     AddStatusColumnForRefreshAlbumTable(),
     PhotoColumn::INDEX_LATITUDE,
     PhotoColumn::INDEX_LONGITUDE,
+    CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2848,6 +2850,15 @@ static void AddCoverPlayVersionColumns(RdbStore& store)
             " ADD COLUMN " + PLAY_SERVICE_VERSION + " INT DEFAULT 0",
     };
     MEDIA_INFO_LOG("start add cover play version columns");
+    ExecSqls(sqls, store);
+}
+
+static void AddMovingPhotoRelatedData(RdbStore &store)
+{
+    const vector<string> sqls = {
+        CREATE_TAB_VIDEO_ANALYSIS_AESTHETICS,
+    };
+    MEDIA_INFO_LOG("start create video aesthetics score table");
     ExecSqls(sqls, store);
 }
 
@@ -4230,6 +4241,20 @@ static void AddIsRecentShow(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddFrontAnalysisColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_INDEX_LIMIT + " INT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_INDEX_MODIFIED + " BIGINT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_INDEX_COUNT + " INT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_CV_MODIFIED + " BIGINT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + FRONT_CV_COUNT + " INT DEFAULT 0",
+        CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
+    };
+    MEDIA_INFO_LOG("Add front analysis column start");
+    ExecSqls(sqls, store);
+}
+
 static void FixSourceAlbumCreateTriggersToUseLPath(RdbStore& store)
 {
     const vector<string> sqls = {
@@ -4287,6 +4312,15 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME) {
         AddAlbumPluginBundleName(store);
     }
+
+    if (oldVersion < VERSION_ADD_FOREGROUND_ANALYSIS) {
+        AddFrontAnalysisColumn(store);
+    }
+
+    if (oldVersion < VERSION_HIGHLIGHT_MOVING_PHOTO) {
+        AddMovingPhotoRelatedData(store);
+    }
+
     if (oldVersion < VERSION_IMAGE_FACE_TAG_ID_INDEX) {
         AddImageFaceTagIdIndex(store);
     }
