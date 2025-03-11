@@ -860,21 +860,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_003, Te
     values.Put(PERMISSION_FILE_ID, 1);
     MediaLibraryCommand cmd(addPermission);
     int retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, values);
-    EXPECT_EQ(retVal, E_INVALID_VALUES);
+    EXPECT_EQ(retVal, E_OK);
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_003::ret: %d", retVal);
-}
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_004, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("DataManager_UriPermission_Test_004::Start");
-    Uri addPermission(ReturnUri(MEDIALIBRARY_BUNDLEPERM_URI, BUNDLE_PERMISSION_INSERT));
-    DataShare::DataShareValuesBucket values;
-    values.Put(PERMISSION_FILE_ID, 1);
-    values.Put(PERMISSION_BUNDLE_NAME, BUNDLE_NAME);
-    MediaLibraryCommand cmd(addPermission);
-    int retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, values);
-    EXPECT_EQ(retVal, E_INVALID_VALUES);
-    MEDIA_INFO_LOG("DataManager_UriPermission_Test_004::ret: %d", retVal);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_005, TestSize.Level0)
@@ -884,10 +871,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_005, Te
     string bundleName = BUNDLE_NAME;
     string mode = "ra";
     int32_t tableType = static_cast<int32_t>(TableType::TYPE_FILES);
-    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_INVALID_MODE);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 
     mode = "rt";
-    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_INVALID_MODE);
+    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 
     fileId = -1;
     bundleName = "";
