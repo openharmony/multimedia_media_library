@@ -6747,7 +6747,8 @@ static std::string GetTotalCount()
         ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0);
 
     vector<string> column = {
-        "COUNT(*) AS totalCount"
+        "SUM(CASE WHEN (media_type = 1 OR (media_type = 2 AND (position =1 OR position =3))) THEN 1 ELSE 0 END) AS" 
+            "totalCount";
     };
 
     int errCode = 0;
