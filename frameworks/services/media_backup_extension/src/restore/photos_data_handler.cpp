@@ -96,11 +96,11 @@ int32_t PhotosDataHandler::CleanDirtyFiles(const std::vector<PhotosDao::PhotosRo
     CHECK_AND_RETURN_RET(!dirtyFiles.empty(), count);
     for (const auto &dirtyFile : dirtyFiles) {
         // clean cloud path
-        bool deleteFileRet = BackupFileUtils::DeleteFileOrFolder(dirtyFile.data, true);
+        bool deleteFileRet = MediaFileUtils::DeleteFileOrFolder(dirtyFile.data, true);
         // clean thumbs folder
         std::string thumbsFolder =
             BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::CLOUD_THUMB, dirtyFile.data);
-        bool deleteThumbsRet = BackupFileUtils::DeleteFileOrFolder(thumbsFolder, false);
+        bool deleteThumbsRet = MediaFileUtils::DeleteFileOrFolder(thumbsFolder, false);
         if (!deleteFileRet || !deleteThumbsRet) {
             std::lock_guard<mutex> lock(cleanFailedFilesMutex_);
             MEDIA_ERR_LOG("Clean file failed, path: %{public}s, ret: %{public}d, errno: %{public}d",
