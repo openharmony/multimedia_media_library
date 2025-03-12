@@ -100,7 +100,7 @@ int32_t PhotosDataHandler::CleanDirtyFiles(const std::vector<PhotosDao::PhotosRo
         // clean thumbs folder
         std::string thumbsFolder =
             BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::CLOUD_THUMB, dirtyFile.data);
-        bool deleteThumbsRet = BackupFileUtils::DeleteFileOrFolder(dirtyFile.data, false);
+        bool deleteThumbsRet = BackupFileUtils::DeleteFileOrFolder(thumbsFolder, false);
         if (!deleteFileRet || !deleteThumbsRet) {
             std::lock_guard<mutex> lock(cleanFailedFilesMutex_);
             MEDIA_ERR_LOG("Clean file failed, path: %{public}s, ret: %{public}d, errno: %{public}d",
