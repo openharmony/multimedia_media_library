@@ -122,6 +122,7 @@ private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();
     void InitResourceInfo();
+    void DeleteDirtyFileAndDir(const vector<std::string>& deleteFilePaths);
     void HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart);
 
 #ifdef DISTRIBUTED

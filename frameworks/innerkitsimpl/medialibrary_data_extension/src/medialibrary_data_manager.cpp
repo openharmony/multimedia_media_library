@@ -2585,6 +2585,20 @@ int32_t MediaLibraryDataManager::UpdateDirtyHdcDataStatus()
     return E_OK;
 }
 
+void MediaLibraryDataManager::DeleteDirtyFileAndDir(const vector<std::string>& deleteFilePaths)
+{
+    for (auto path : deleteFilePaths) {
+        bool deleteFileRet = BackupFileUtils::DeleteFileOrFolder(path, true);
+        std::string thumbsFolder =
+            BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::CLOUD_THUMB, path);
+        bool deleteThumbsRet = BackupFileUtils::DeleteFileOrFolder(thumbsFolder, false);
+        if (!deleteFileRet || !deleteThumbsRet) {
+            MEDIA_ERR_LOG("Clean file failed, path: %{public}s, ret: %{public}d, errno: %{public}d",
+                path.c_str(), static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);
+        }
+    }
+}
+
 int32_t MediaLibraryDataManager::ClearDirtyHdcData()
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore is nullptr");
@@ -2604,9 +2618,10 @@ int32_t MediaLibraryDataManager::ClearDirtyHdcData()
         if (count < DELETE_BATCH_SIZE) {
             nextDelete = false;
         }
-        // get file id need to delete
+
         vector<std::string> dirtyFileIds;
         vector<std::string> deleteUris;
+        vector<std::string> deleteFilePaths;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             std::string dataPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
             dataPath.replace(0, PhotoColumn::FILES_CLOUD_DIR.length(), PhotoColumn::FILES_LOCAL_DIR);
@@ -2614,17 +2629,17 @@ int32_t MediaLibraryDataManager::ClearDirtyHdcData()
                 MEDIA_INFO_LOG("The data path is empty, data path: %{public}s", dataPath.c_str());
                 continue;
             }
-            if (!MediaFileUtils::IsFileExists(dataPath)) {
-                int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-                dirtyFileIds.push_back(to_string(fileId));
-                string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-                string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-                string uri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
-                    MediaFileUtils::GetExtraUri(displayName, filePath));
-                deleteUris.push_back(uri);
-            }
+            int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+            dirtyFileIds.push_back(to_string(fileId));
+            string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+            string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+            string uri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
+            MediaFileUtils::GetExtraUri(displayName, filePath));
+            deleteUris.push_back(uri);
+            deleteFilePaths.push_back(filePath);
         }
         resultSet->Close();
+        DeleteDirtyFileAndDir(deleteFilePaths);
         CHECK_AND_RETURN_RET_LOG(DoDeleteHdcDataOperation(rdbStore_, dirtyFileIds) == E_OK,
             E_FAIL, "Failed to DoDeleteHdcDataOperation for dirtyFileIds");
         MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore_, deleteUris);
