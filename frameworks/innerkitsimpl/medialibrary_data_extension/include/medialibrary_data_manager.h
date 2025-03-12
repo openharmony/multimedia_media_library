@@ -116,9 +116,11 @@ public:
     EXPORT void UploadDBFileInner(int64_t totalFileSize);
     EXPORT int32_t UpdateDateTakenWhenZero();
     EXPORT int32_t UpdateDirtyForCloudClone();
+    EXPORT int32_t ClearDirtyHdcData();
 
 private:
     int32_t InitMediaLibraryRdbStore();
+    int32_t UpdateDirtyHdcDataStatus();
     void InitResourceInfo();
     void HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart);
 

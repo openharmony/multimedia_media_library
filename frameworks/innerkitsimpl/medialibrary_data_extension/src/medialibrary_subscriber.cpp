@@ -111,6 +111,7 @@ const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
+static const std::string NO_DELETE_DIRTY_HDC_DATA = "no_delete_dirty_hdc_data";
 
 // The network should be available in this state
 const int32_t NET_CONN_STATE_CONNECTED = 3;
@@ -554,6 +555,16 @@ static void UpdateDirtyForCloudClone(AsyncTaskData *data)
     CHECK_AND_PRINT_LOG(result == E_OK, "UpdateDirtyForCloudClone faild, result = %{public}d", result);
 }
 
+static void ClearDirtyHdcData(AsyncTaskData *data)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
+
+    int32_t result = dataManager->ClearDirtyHdcData();
+    CHECK_AND_PRINT_LOG(result == E_OK, "ClearDirtyHdcData faild, result = %{public}d", result);
+}
+
+
 static int32_t DoUpdateDirtyForCloudClone()
 {
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
@@ -564,6 +575,19 @@ static int32_t DoUpdateDirtyForCloudClone()
     CHECK_AND_RETURN_RET_LOG(updateDirtyForCloudTask != nullptr, E_FAIL,
         "Failed to create async task for updateDirtyForCloudTask !");
     asyncWorker->AddTask(updateDirtyForCloudTask, false);
+    return E_SUCCESS;
+}
+
+static int32_t DoClearDirtyHdcData()
+{
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
+        "Failed to get async worker instance!");
+    shared_ptr<MediaLibraryAsyncTask> clearDirtyHdcDataTask =
+        make_shared<MediaLibraryAsyncTask>(ClearDirtyHdcData, nullptr);
+    CHECK_AND_RETURN_RET_LOG(clearDirtyHdcDataTask != nullptr, E_FAIL,
+        "Failed to create async task for clearDirtyHdcDataTask !");
+    asyncWorker->AddTask(clearDirtyHdcDataTask, false);
     return E_SUCCESS;
 }
 
@@ -625,16 +649,32 @@ static int32_t DoUpdateBurstCoverLevelFromGallery()
     return E_SUCCESS;
 }
 
-static void UpdateDirtyForBeta()
+static void UpdateDirtyForBeta(const shared_ptr<NativePreferences::Preferences>& prefs)
+{
+    if (IsBetaVersion() && prefs != nullptr && (prefs->GetInt(NO_UPDATE_DIRTY, 0) != 1)) {
+        int32_t ret = DoUpdateDirtyForCloudClone();
+        CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
+    }
+    return;
+}
+
+static void ClearDirtyHdcData(const shared_ptr<NativePreferences::Preferences>& prefs)
+{
+    if (prefs != nullptr && (prefs->GetInt(NO_DELETE_DIRTY_HDC_DATA, 0) != 1)) {
+        int32_t ret = DoClearDirtyHdcData();
+        CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
+    }
+    return;
+}
+
+static void ClearDirtyData()
 {
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
     CHECK_AND_RETURN_LOG(prefs, "Get preferences error: %{public}d", errCode);
-    if (IsBetaVersion() && prefs != nullptr && (prefs->GetInt(NO_UPDATE_DIRTY, 0) != 1)) {
-        int32_t ret = DoUpdateDirtyForCloudClone();
-        CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
-    }
+    UpdateDirtyForBeta(prefs);
+    ClearDirtyHdcData(prefs);
     return;
 }
 
@@ -649,7 +689,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // delete temporary photos
     DeleteTemporaryPhotos();
     // clear dirty data
-    UpdateDirtyForBeta();
+    ClearDirtyData();
     BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
         BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
