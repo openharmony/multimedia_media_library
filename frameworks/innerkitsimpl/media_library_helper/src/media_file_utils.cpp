@@ -2388,7 +2388,7 @@ bool MediaFileUtils::DeleteFileOrFolder(const std::string &path, bool isFile)
     return isFile ? MediaFileUtils::DeleteFile(path) : MediaFileUtils::DeleteDir(path);
 }
 
-std::string MediaFileUtils::GetReplacedPathByPrefix(const std::string srcPrefix, PrefixType dstPrefix,
+std::string MediaFileUtils::GetReplacedPathByPrefix(const std::string srcPrefix, const std::string dstPrefix,
     const std::string &path)
 {
     std::string replacedPath;
