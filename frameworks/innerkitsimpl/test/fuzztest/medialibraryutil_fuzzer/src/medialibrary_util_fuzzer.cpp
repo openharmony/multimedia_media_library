@@ -290,8 +290,8 @@ static void ActiveAnalysisTest()
         static_cast<int32_t>(Media::MediaAnalysisProxy::ActivateServiceType::START_SERVICE_OCR), fileIds);
     Media::MediaAnalysisHelper::AsyncStartMediaAnalysisService(
         static_cast<int32_t>(Media::MediaAnalysisProxy::ActivateServiceType::START_SERVICE_OCR), fileIds);
-    Media::MediaAnalysisHelper::StartPortraitCoverSelectionAsync(fileds.at(0));
-    (void)Media::MediaAnalysisHelper::ParseGeoInfo(filelds,true);
+    Media::MediaAnalysisHelper::StartPortraitCoverSelectionAsync(fileIds.at(0));
+    (void)Media::MediaAnalysisHelper::ParseGeoInfo(fileIds,true);
 }
 
 static void CloudDownloadTest()
