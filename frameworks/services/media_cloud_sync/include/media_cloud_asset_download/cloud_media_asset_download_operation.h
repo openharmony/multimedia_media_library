@@ -98,6 +98,7 @@ public:
     EXPORT CloudMediaTaskPauseCause GetTaskPauseCause();
     EXPORT std::string GetTaskInfo();
     EXPORT int32_t InitDownloadTaskInfo();
+    void ResetDownloadTryTime();
 
 private:
     void ClearData(DownloadFileData &data);
@@ -107,7 +108,7 @@ private:
     bool IsProperFgTemperature();
     void InitStartDownloadTaskStatus(const bool &isForeground);
     void ResetParameter();
-    bool IsNetworkUnavailable();
+    bool IsNetworkAvailable();
 
     void SetTaskStatus(Status status);
     std::shared_ptr<NativeRdb::ResultSet> QueryDownloadFilesNeeded(const bool &isQueryInfo);
@@ -158,6 +159,8 @@ private:
     int64_t totalSize_ = 0;
     int64_t remainCount_ = 0;
     int64_t remainSize_ = 0;
+
+    uint32_t downloadTryTime_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

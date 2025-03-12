@@ -396,7 +396,7 @@ bool ThumbnailWait::TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, 
             return false;
         }
 
-        if (!ThumbnailUtils::SaveAfterPacking(data.path, tempOutputPath)) {
+        if (!ThumbnailUtils::SaveAfterPacking(data, isSourceEx, tempOutputPath)) {
             MEDIA_ERR_LOG("TrySaveCurrentPicture failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
             return false;
         }
@@ -594,7 +594,7 @@ bool IThumbnailHelper::TrySavePixelMap(ThumbnailData &data, ThumbnailType type)
 bool IThumbnailHelper::TrySavePicture(ThumbnailData &data, bool isSourceEx, const string &tempOutputPath)
 {
     if (!data.needCheckWaitStatus) {
-        if (!ThumbnailUtils::SaveAfterPacking(data.path, tempOutputPath)) {
+        if (!ThumbnailUtils::SaveAfterPacking(data, isSourceEx, tempOutputPath)) {
             MEDIA_ERR_LOG("No wait TrySavePicture failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
             return false;
         }
@@ -725,9 +725,9 @@ bool IThumbnailHelper::SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &d
     if (lcdDesiredWidth != lcdSource->GetWidth()) {
         MEDIA_INFO_LOG("Copy and resize data source for lcd desiredSize: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
-        Media::InitializationOptions initOpts;
-        auto copySource = PixelMap::Create(*lcdSource, initOpts);
+        auto copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(lcdSource);
         lcdSource = std::move(copySource);
+        CHECK_AND_RETURN_RET_LOG(lcdSource != nullptr, false, "LcdSource is nullptr");
         if (lcdSource->GetWidth() * lcdSource->GetHeight() == 0) {
             MEDIA_ERR_LOG("CompressImage failed, invalid lcdSource");
             return false;

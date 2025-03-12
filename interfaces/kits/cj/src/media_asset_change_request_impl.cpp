@@ -261,7 +261,7 @@ static bool InitDeleteRequest(std::string& appName, std::vector<std::string>& ur
 static int32_t DeleteAssetsExecute(OHOS::DataShare::DataSharePredicates& predicates,
     OHOS::DataShare::DataShareValuesBucket& valuesBucket)
 {
-    std::string trashUri = PAH_TRASH_PHOTO;
+    std::string trashUri = PAH_SYS_TRASH_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, std::to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(trashUri);
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);

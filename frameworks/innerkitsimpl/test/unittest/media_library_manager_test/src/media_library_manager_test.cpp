@@ -2526,5 +2526,14 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadPrivateMovingPhoto_tes
     uri = CreatePhotoAsset("test.mp4");
     EXPECT_EQ(mediaLibraryExtendManager->ReadPrivateMovingPhoto(uri, HideSensitiveType::ALL_DESENSITIZE), E_ERR);
 }
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test, TestSize.Level0)
+{
+    EXPECT_NE(mediaLibraryExtendManager, nullptr);
+    string columnName = "file_id";
+    string value = "1";
+    vector<string> columns;
+    EXPECT_NE(mediaLibraryExtendManager->GetResultSetFromDb(columnName, value, columns), nullptr);
+}
 } // namespace Media
 } // namespace OHOS

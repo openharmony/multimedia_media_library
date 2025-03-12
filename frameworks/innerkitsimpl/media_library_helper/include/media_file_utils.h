@@ -88,6 +88,8 @@ public:
     EXPORT static bool IsDirEmpty(const std::string &path);
     EXPORT static bool CreateFile(const std::string &filePath);
     EXPORT static bool DeleteFile(const std::string &fileName);
+    EXPORT static std::string GetThumbDir(const std::string &photoPath, int32_t userId = -1);
+    EXPORT static std::string AppendUserId(const std::string& path, int32_t userId = -1);
     EXPORT static bool DeleteDir(const std::string &dirName);
     EXPORT static std::string GetFileName(const std::string &filePath);
     EXPORT static std::string GetParentPath(const std::string &path);

@@ -64,6 +64,8 @@ const int32_t UUID_STR_LENGTH = 37;
 const int32_t MAX_URI_SIZE = 384; // 256 for display name and 128 for relative path
 const int32_t REQUEST_ID_MAX_LEN = 64;
 
+const std::string HIGH_TEMPERATURE = "high_temperature";
+
 thread_local unique_ptr<ChangeListenerNapi> g_multiStagesRequestListObj = nullptr;
 thread_local napi_ref constructor_ = nullptr;
 
@@ -147,6 +149,10 @@ static void DeleteAssetHandlerSafe(AssetHandler *handler, napi_env env)
         if (handler->dataHandler != nullptr) {
             handler->dataHandler->DeleteNapiReference(env);
         }
+        if (handler->threadSafeFunc != nullptr) {
+            napi_release_threadsafe_function(handler->threadSafeFunc, napi_tsfn_release);
+            handler->threadSafeFunc = nullptr;
+        }
         delete handler;
         handler = nullptr;
     }
@@ -186,6 +192,7 @@ static void InsertInProcessMapRecord(const std::string &requestUri, const std::s
 static void DeleteRecordNoLock(const std::string &requestUri, const std::string &requestId)
 {
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
+    auto uriHightemp = uriLocal + HIGH_TEMPERATURE;
     if (inProcessUriMap.find(uriLocal) == inProcessUriMap.end()) {
         return;
     }
@@ -207,7 +214,12 @@ static void DeleteRecordNoLock(const std::string &requestUri, const std::string 
         UserFileClient::UnregisterObserverExt(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[uriLocal]));
     }
+    if (multiStagesObserverMap.find(uriHightemp) != multiStagesObserverMap.end()) {
+        UserFileClient::UnregisterObserverExt(Uri(uriHightemp),
+            static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[uriHightemp]));
+    }
     multiStagesObserverMap.erase(uriLocal);
+    multiStagesObserverMap.erase(uriHightemp);
 }
 
 static void DeleteInProcessMapRecord(const std::string &requestUri, const std::string &requestId)
@@ -667,13 +679,20 @@ void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env, MediaAssetManager
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(asyncContext->photoUri);
-    NAPI_INFO_LOG("MultistagesCapture, uri: %{public}s, %{public}s", asyncContext->photoUri.c_str(), uriLocal.c_str());
+    auto uriHightemp = uriLocal + HIGH_TEMPERATURE;
+    NAPI_INFO_LOG("MultistagesCapture, uri: %{public}s, %{public}s, uriHighTemp: %{public}s.",
+        asyncContext->photoUri.c_str(), uriLocal.c_str(), uriHightemp.c_str());
     Uri uri(asyncContext->photoUri);
     std::unique_lock<std::mutex> registerLock(registerTaskLock);
     if (multiStagesObserverMap.find(uriLocal) == multiStagesObserverMap.end()) {
         UserFileClient::RegisterObserverExt(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
         multiStagesObserverMap.insert(std::make_pair(uriLocal, dataObserver));
+    }
+    if (multiStagesObserverMap.find(uriHightemp) == multiStagesObserverMap.end()) {
+        UserFileClient::RegisterObserverExt(Uri(uriHightemp),
+            static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
+        multiStagesObserverMap.insert(std::make_pair(uriHightemp, dataObserver));
     }
     registerLock.unlock();
 
@@ -1236,7 +1255,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         string uri = dataHandler->GetRequestUri();
         SavePicture(uri);
     }
-    napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler, isPicture);
+    napi_value napiValueOfMedia = assetHandler->isError ? nullptr : GetNapiValueOfMedia(env, dataHandler, isPicture);
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         if (isPicture) {
             dataHandler->JsOnDataPrepared(env, napiValueOfMedia, nullptr, napiValueOfInfoMap);
@@ -1382,11 +1401,15 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         string uriString = uri.ToString();
         NAPI_INFO_LOG("Onchange, before onDataPrepared, uri: %{public}s", uriString.c_str());
         std::string photoId = "";
-        if (MediaAssetManagerNapi::QueryPhotoStatus(fileId_, uriString, photoId, true, -1) !=
+        if (uriString.find(HIGH_TEMPERATURE) == std::string::npos &&
+            MediaAssetManagerNapi::QueryPhotoStatus(fileId_, uriString, photoId, true, -1) !=
             MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
             NAPI_ERR_LOG("requested data not prepared");
             continue;
         }
+        std::string uriHightemp = uriString;
+        auto index = uriString.find(HIGH_TEMPERATURE);
+        uriString = uriString.substr(0, index);
 
         std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
         if (inProcessUriMap.find(uriString) == inProcessUriMap.end()) {
@@ -1399,6 +1422,10 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         }
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
+            if (uriHightemp.find(HIGH_TEMPERATURE) != std::string::npos) {
+                NAPI_INFO_LOG("OnChange receive high_temperature");
+                assetHandler->isError = true;
+            }
             assetHandler->photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
             MediaAssetManagerNapi::NotifyMediaDataPrepared(assetHandler);
         }

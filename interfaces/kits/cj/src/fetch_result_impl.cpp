@@ -243,7 +243,7 @@ static void GetArryFileAssetObj(vector<unique_ptr<FileAsset>> &fileAssetArray,
         file = fetchResult->GetNextObject();
     }
     size_t fileAssetArraySize = fileAssetArray.size();
-    if (fileAssetArraySize < 0) {
+    if (fileAssetArraySize <= 0) {
         LOGE("fileAssetArray size error");
         errCode = JS_INNER_FAIL;
         return;

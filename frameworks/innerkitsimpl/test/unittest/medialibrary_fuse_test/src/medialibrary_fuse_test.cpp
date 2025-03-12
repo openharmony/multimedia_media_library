@@ -58,6 +58,7 @@
 #include "permission_utils.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_object_utils.h"
+#include "parameter.h"
 #define FUSE_USE_VERSION 34
 #include <fuse.h>
 
@@ -74,6 +75,8 @@ namespace OHOS {
 namespace Media {
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static const char* PARAM_PRODUCT_MODEL = "const.product.model";
+static constexpr int32_t PARAM_PRODUCT_MODEL_LENGTH = 512;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unordered_map<string, bool> fuseTestPermsMap = {
@@ -184,6 +187,15 @@ void ClearAndRestart()
     }
     CleanTestTables();
     SetTables();
+}
+
+std::string GetSystemProductModel()
+{
+    char param[PARAM_PRODUCT_MODEL_LENGTH] = {0};
+    if (GetParameter(PARAM_PRODUCT_MODEL, "", param, PARAM_PRODUCT_MODEL_LENGTH) > 0) {
+        return param;
+    }
+    return "";
 }
 
 void MediaLibraryFuseTest::SetUpTestCase()
@@ -474,7 +486,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level0)
     ret = TestInsert(dataShareValue);
     EXPECT_EQ(ret, 0);
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
-    EXPECT_EQ(err, E_ERR);
+    EXPECT_EQ(err, E_OK);
 }
 
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level0)
@@ -586,6 +598,18 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_InvalidPath_test_001, TestSize.Level
     // Test with invalid path format
     err = MediaFuseManager::GetInstance().DoOpen("/invalid/path/format", O_RDONLY, fd);
     EXPECT_EQ(err, E_ERR);
+}
+
+// Test system device model
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CheckDevice_test_001, TestSize.Level0)
+{
+    bool isLinux = MediaFuseManager::GetInstance().CheckDeviceInLinux();
+
+    string deviceModel = GetSystemProductModel();
+    MEDIA_INFO_LOG("media library check device model:%{public}s", deviceModel.c_str());
+    // klv(HYM-W5821) and rk(HH-SCDAYU200) are linux kernel
+    bool isLinuxSys = (deviceModel == "HYM-W5821") || (deviceModel == "HH-SCDAYU200");
+    EXPECT_EQ(isLinux, isLinuxSys);
 }
 } // namespace Media
 } // namespace OHOS

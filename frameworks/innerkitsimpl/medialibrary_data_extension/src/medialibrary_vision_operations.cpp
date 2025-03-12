@@ -14,8 +14,11 @@
  */
 #define MLOG_TAG "VisionOperation"
 
+#include <ctime>
+#include <cmath>
 #include <thread>
 #include "media_analysis_helper.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
@@ -30,6 +33,7 @@
 #include "vision_column.h"
 #include "vision_total_column.h"
 #include "vision_recommendation_column.h"
+#include "user_photography_info_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -221,6 +225,52 @@ int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &c
         MEDIA_ERR_LOG("UpdateAnalysisDataForEdit fail");
     }
     return E_SUCCESS;
+}
+
+int32_t MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(MediaLibraryCommand &cmd)
+{
+    std::shared_ptr<ForegroundAnalysisMeta> cvInfo = nullptr;
+    int32_t errCode = InitForegroundAnalysisMeta(cmd, cvInfo);
+    if (errCode != NativeRdb::E_OK) {
+        return errCode;
+    }
+    errCode = cvInfo->GenerateOpType(cmd);
+    if (errCode != NativeRdb::E_OK) {
+        return errCode;
+    }
+    cvInfo->StartAnalysisService();
+    return NativeRdb::E_OK;
+}
+
+int32_t MediaLibraryVisionOperations::InitForegroundAnalysisMeta(MediaLibraryCommand &cmd,
+    std::shared_ptr<ForegroundAnalysisMeta> &infoPtr)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        return E_ERR;
+    }
+    RdbPredicates predicates(USER_PHOTOGRAPHY_INFO_TABLE);
+    vector<string> column = {
+        FRONT_INDEX_LIMIT, FRONT_INDEX_MODIFIED, FRONT_INDEX_COUNT, FRONT_CV_MODIFIED, FRONT_CV_COUNT
+    };
+    auto result = rdbStore->Query(predicates, column);
+    if (result == nullptr) {
+        return E_ERR;
+    }
+    infoPtr = make_shared<ForegroundAnalysisMeta>(result);
+    result->Close();
+    return E_OK;
+}
+
+int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis()
+{
+    Uri uri(PAH_UPDATE_ANA_FOREGROUND);
+    MediaLibraryCommand cmd(uri);
+    DataShare::DataSharePredicates predicates;
+    DataShareValuesBucket value;
+    value.Put(FOREGROUND_ANALYSIS_TYPE, AnalysisType::ANALYSIS_SEARCH_INDEX);
+    value.Put(FOREGROUND_ANALYSIS_TASK_ID, ForegroundAnalysisMeta::GetIncTaskId());
+    return MediaLibraryDataManager::GetInstance()->Update(cmd, value, predicates);
 }
 }
 }

@@ -121,6 +121,7 @@ struct SendablePhotoAccessHelperAsyncContext : public NapiError {
     bool status;
     bool isDelete;
     bool isCreateByComponent;
+    bool needSystemApp = false;
     NapiAssetType assetType;
     AlbumType albumType;
     SendablePhotoAccessHelper *objectInfo;

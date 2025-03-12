@@ -142,19 +142,6 @@ static void LogDelete(DfxData *data)
     std::shared_ptr<DfxReporter> dfxReporter = taskData->dfxReporter_;
     MEDIA_INFO_LOG("id: %{public}s, type: %{public}d, size: %{public}d", id.c_str(), type, size);
 
-    OHOS::Media::AuditLog auditLog;
-    auditLog.isUserBehavior = true;
-    auditLog.cause = "USER BEHAVIOR";
-    auditLog.operationType = "DELETE";
-    auditLog.operationScenario = "io";
-    auditLog.operationCount = 1,
-    auditLog.operationStatus = "running";
-    auditLog.extend = "OK",
-    auditLog.id = id;
-    auditLog.type = type;
-    auditLog.size = size;
-    OHOS::Media::HiAudit::GetInstance().Write(auditLog);
-
     std::vector<std::string> uris = taskData->uris_;
     if (!uris.empty()) {
         for (auto& uri: uris) {
@@ -167,6 +154,9 @@ static void LogDelete(DfxData *data)
             if (pathPos == string::npos) {
                 continue;
             }
+            AuditLog auditLog = { true, "USER BEHAVIOR", "DELETE", "io", 1, "running", "ok",
+                id, type, size, (halfUri.substr(pathPos + 1)).c_str()};
+            HiAudit::GetInstance().Write(auditLog);
             dfxReporter->ReportDeleteBehavior(id, type, halfUri.substr(pathPos + 1));
         }
     }

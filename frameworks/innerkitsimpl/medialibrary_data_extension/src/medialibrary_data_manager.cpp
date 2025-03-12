@@ -293,7 +293,8 @@ static int32_t ExcuteAsyncWork()
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
-    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode, bool isNeedCreateDir)
+    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode, bool isNeedCreateDir,
+    bool isInMediaLibraryOnStart)
 {
     lock_guard<shared_mutex> lock(mgrSharedMutex_);
 
@@ -341,6 +342,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
     galleryRebuildObserver_= std::make_shared<CloudSyncObserver>();
     cloudGalleryPhotoObserver_ = std::make_shared<CloudSyncObserver>();
+    cloudGalleryDownloadObserver_ = std::make_shared<CloudSyncObserver>();
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
     shareHelper->RegisterObserverExt(
         Uri(PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX),
@@ -351,8 +353,10 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
         cloudPhotoAlbumObserver_, true);
     shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX),
         cloudGalleryPhotoObserver_, true);
+    shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::PHOTO_GALLERY_DOWNLOAD_URI_PREFIX),
+        cloudGalleryDownloadObserver_, true);
 
-    HandleUpgradeRdbAsync();
+    HandleUpgradeRdbAsync(isInMediaLibraryOnStart);
     CloudSyncSwitchManager cloudSyncSwitchManager;
     cloudSyncSwitchManager.RegisterObserver();
     SubscriberPowerConsumptionDetection();
@@ -472,16 +476,19 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
     // !! Do not add upgrade code here !!
 }
 
-static void OtherLongRunningInitDBOperation()
+static void MultiStagesInitOperation()
 {
     MultiStagesPhotoCaptureManager::GetInstance().Init();
     MultiStagesVideoCaptureManager::GetInstance().Init();
 }
 
-void MediaLibraryDataManager::HandleUpgradeRdbAsync()
+void MediaLibraryDataManager::HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart)
 {
-    std::thread([&] {
-        OtherLongRunningInitDBOperation();
+    std::thread([isInMediaLibraryOnStart] {
+        if (isInMediaLibraryOnStart) {
+            MultiStagesInitOperation();
+        }
+
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr!");
         int32_t oldVersion = rdbStore->GetOldVersion();
@@ -577,6 +584,8 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         Uri(PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
     shareHelper->UnregisterObserverExt(
         Uri(PhotoAlbumColumns::PHOTO_GALLERY_CLOUD_SYNC_INFO_URI_PREFIX), cloudPhotoAlbumObserver_);
+    shareHelper->UnregisterObserverExt(
+        Uri(PhotoAlbumColumns::PHOTO_GALLERY_DOWNLOAD_URI_PREFIX), cloudGalleryDownloadObserver_);
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
     MEDIA_INFO_LOG("CloseKvStore success");
@@ -1258,6 +1267,9 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             if (cmd.GetOprnType() == OperationType::UPDATE_ORDER) {
                 return MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
             }
+            break;
+        case OperationObject::ANALYSIS_FOREGROUND:
+            return MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(cmd);
         default:
             break;
     }

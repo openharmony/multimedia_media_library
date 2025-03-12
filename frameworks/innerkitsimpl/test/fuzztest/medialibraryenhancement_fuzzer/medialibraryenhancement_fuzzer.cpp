@@ -291,7 +291,7 @@ static void EnhancementTaskManagerTest(const uint8_t *data, size_t size)
     int32_t offset = 0;
     int32_t fileId = FuzzInt32(data + offset, size);
     string photoId = FuzzString(data, size);
-    Media::EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+    Media::EnhancementTaskManager::AddEnhancementTask(fileId, photoId, 0);
     Media::EnhancementTaskManager::RemoveEnhancementTask(photoId);
     Media::EnhancementTaskManager::RemoveEnhancementTask(photoId);
 
@@ -300,7 +300,7 @@ static void EnhancementTaskManagerTest(const uint8_t *data, size_t size)
     offset += sizeof(int32_t);
     fileId = FuzzInt32(data + offset, size);
     photoId = FuzzString(data, size);
-    Media::EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+    Media::EnhancementTaskManager::AddEnhancementTask(fileId, photoId, 0);
     Media::EnhancementTaskManager::InProcessingTask(photoId);
     Media::EnhancementTaskManager::QueryPhotoIdByFileId(fileId);
 
@@ -316,7 +316,7 @@ static void CloudEnhancementGetCountTest(const uint8_t *data, size_t size)
     cloudEnhancementGetCount.GetStartTimes();
     string photoId = FuzzString(data, size);
     cloudEnhancementGetCount.AddStartTime(photoId);
-    cloudEnhancementGetCount.Report(FuzzString(data, size), photoId);
+    cloudEnhancementGetCount.Report(FuzzString(data, size), photoId, 0);
     cloudEnhancementGetCount.RemoveStartTime(photoId);
     cloudEnhancementGetCount.RemoveStartTime(photoId);
 }
