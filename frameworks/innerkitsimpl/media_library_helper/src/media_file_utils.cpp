@@ -622,6 +622,30 @@ void MediaFileUtils::BackupPhotoDir()
     }
 }
 
+std::vector<std::string> MediaFileUtils::GetFileNameFromDir(const std::string &dirName)
+{
+    std::vector<std::string> fileNames;
+    if (!IsDirEmpty(dirName)) {
+        DIR *dir = opendir((dirName).c_str());
+        if (dir == nullptr) {
+            MEDIA_ERR_LOG("Error opening temp directory, errno: %{public}d", errno);
+            return {};
+        }
+
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            // filter . && .. dir
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+            std::string fileName = entry->d_name;
+            fileNames.push_back(fileName);
+        }
+        closedir(dir);
+    }
+    return fileNames;
+}
+
 void MediaFileUtils::RecoverMediaTempDir()
 {
     string recoverPath = ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + PHOTO_BUCKET;

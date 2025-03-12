@@ -188,6 +188,7 @@ public:
     EXPORT static void SetDeletionRecord(int fd, const std::string &fileName);
     EXPORT static void BackupPhotoDir();
     EXPORT static void RecoverMediaTempDir();
+    EXPORT static std::vector<std::string> GetFileNameFromDir(const std::string &dirName);
     EXPORT static std::string DesensitizePath(const std::string &path);
     EXPORT static void CheckDirStatus(const std::unordered_set<std::string> &dirCheckSet, const std::string &dir);
     EXPORT static int32_t CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir);
