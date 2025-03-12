@@ -1481,5 +1481,402 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_069, Te
     bool res = mtpOperationUtils->SetPropertyInner(property, defValue);
     EXPECT_TRUE(res);
 }
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: CheckErrorCode
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_070, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    int errcode = MTP_ERROR_TRANSFER_FAILED;
+    uint16_t res = mtpOperationUtils->CheckErrorCode(errcode);
+    EXPECT_EQ(res, MTP_STORE_FULL_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetPathByHandle
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_071, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    uint32_t handle = 1;
+    string path = "";
+    string realPath = "";
+    uint16_t res = mtpOperationUtils->GetPathByHandle(handle, path, realPath);
+    EXPECT_EQ(res, MTP_OK_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetHandleByPaths
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_072, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    uint32_t handle = 1;
+    string path = "/storage/media/local/files/Docs/Desktop/";
+    int32_t res = mtpOperationUtils->GetHandleByPaths(path, handle);
+    EXPECT_EQ(res, E_NO_SUCH_FILE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: TryAddExternalStorage
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_073, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    uint32_t storageId = 1;
+    string fsUuid = "";
+    bool res = mtpOperationUtils->TryAddExternalStorage(fsUuid, storageId);
+    EXPECT_EQ(res, false);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: TryAddExternalStorage
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_074, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    uint32_t storageId = 1;
+    string fsUuid = "";
+    bool res = mtpOperationUtils->TryAddExternalStorage(fsUuid, storageId);
+    EXPECT_EQ(res, false);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: TryRemoveExternalStorage
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_075, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    uint32_t storageId = 1;
+    string fsUuid = "";
+    bool res = mtpOperationUtils->TryRemoveExternalStorage(fsUuid, storageId);
+    EXPECT_EQ(res, false);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: TryRemoveExternalStorage
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_076, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    uint32_t storageId = 1;
+    string fsUuid = "";
+    bool res = mtpOperationUtils->TryRemoveExternalStorage(fsUuid, storageId);
+    EXPECT_EQ(res, false);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetStorageIDs
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_077, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->sessionOpen = true;
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    std::shared_ptr<PayloadData> data = nullptr;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    int errcode = 0;
+    uint16_t res = mtpOperationUtils->GetStorageIDs(data, containerType, errcode);
+    EXPECT_EQ(res, MTP_OK_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: CopyObject
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_078, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = nullptr;
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    std::shared_ptr<PayloadData> data = nullptr;
+    int errcode = 0;
+    uint16_t res = mtpOperationUtils->CopyObject(data, errcode);
+    EXPECT_EQ(res, MTP_OK_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: MoveObject
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_079, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = nullptr;
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    std::shared_ptr<PayloadData> data = nullptr;
+    int errcode = 0;
+    uint16_t res = mtpOperationUtils->MoveObject(data, errcode);
+    EXPECT_EQ(res, MTP_OK_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: DeleteObject
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_080, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = nullptr;
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    std::shared_ptr<PayloadData> data = nullptr;
+    int errcode = 0;
+    uint16_t res = mtpOperationUtils->DeleteObject(data, errcode);
+    EXPECT_EQ(res, MTP_OK_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetThumb
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_081, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = nullptr;
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    std::shared_ptr<PayloadData> data = nullptr;
+    int errcode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    mtpOperationUtils->GetThumb(data, containerType, errcode);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: PreDealFd
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_082, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->mtpDriver = std::make_shared<MtpDriver>();
+    ASSERT_NE(context->mtpDriver, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    int fd = 1;
+    bool deal = false;
+    mtpOperationUtils->PreDealFd(deal, fd);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: PreDealFd
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_083, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->mtpDriver = std::make_shared<MtpDriver>();
+    ASSERT_NE(context->mtpDriver, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    int fd = 1;
+    bool deal = false;
+    mtpOperationUtils->PreDealFd(deal, fd);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: RecevieSendObject
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_084, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    MtpFileRange object;
+    int fd = 1;
+    int32_t errcode = mtpOperationUtils->RecevieSendObject(object, fd);
+    EXPECT_EQ(errcode, MTP_INVALID_PARAMETER_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: RecevieSendObject
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_085, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    MtpFileRange object;
+    int fd = 1;
+    int32_t errcode = mtpOperationUtils->RecevieSendObject(object, fd);
+    EXPECT_EQ(errcode, MTP_INVALID_PARAMETER_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetObjectPropList
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_086, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = nullptr;
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    std::shared_ptr<PayloadData> data = nullptr;
+    int errcode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    uint16_t res = mtpOperationUtils->GetObjectPropList(data, containerType, errcode);
+    EXPECT_EQ(res, MTP_OK_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: DoSetObjectPropValue
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_087, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    int errcode = 0;
+    mtpOperationUtils->DoSetObjectPropValue(errcode);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetObjectPropValue
+ */
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_088, TestSize.Level0)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
+    std::shared_ptr<MtpOperationContext> context = nullptr;
+    std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
+    ASSERT_NE(mtpOperationUtils, nullptr);
+    std::shared_ptr<PayloadData> data = nullptr;
+    int errcode = 0;
+    uint16_t containerType = DATA_CONTAINER_TYPE;
+    uint16_t res = mtpOperationUtils->GetObjectPropValue(data, containerType, errcode);
+    EXPECT_EQ(res, MTP_OK_CODE);
+}
 } // namespace Media
 } // namespace OHOS
