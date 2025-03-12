@@ -2541,10 +2541,10 @@ int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone()
             DealUpdateForDirty(resultSet, fileExist, dirtyToZeroFileIds, dirtyToThreeFileIds);
         }
         resultSet->Close();
-        CHECK_AND_RETURN_RET_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToZeroFileIds, true) == E_OK,
-            E_FAIL, "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToZeroFileIds");
-        CHECK_AND_RETURN_RET_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToThreeFileIds, true) == E_OK,
-            E_FAIL, "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToThreeFileIds");
+        CHECK_AND_PRINT_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToZeroFileIds, true) == E_OK,
+            "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToZeroFileIds");
+        CHECK_AND_PRINT_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToThreeFileIds, false) == E_OK,
+            "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToThreeFileIds");
     }
     if (!nextUpdate) {
         int32_t errCode;

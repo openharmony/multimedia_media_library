@@ -512,6 +512,7 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
         int32_t errCode = MoveAsset(fileInfos[i]);
         if (errCode != E_OK) {
             fileInfos[i].needUpdate = false;
+            fileInfos[i].needVisible = false;
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, error:%{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
                 strerror(errno));
@@ -526,6 +527,7 @@ void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fi
         videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
     }
     DeleteMoveFailedData(moveFailedData);
+    SetVisiblePhoto(fileInfos);
     migrateFileNumber_ += fileMoveCount;
     migrateVideoFileNumber_ += videoFileMoveCount;
 }
@@ -1140,7 +1142,7 @@ void CloneRestore::GetCloudThumbnailInsertValue(const FileInfo &fileInfo, Native
     values.PutInt(PhotoColumn::PHOTO_DIRTY, 0);
     values.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, 0);
     values.PutInt(PhotoColumn::PHOTO_THUMB_STATUS, RESTORE_THUMBNAIL_STATUS_NOT_ALL);
-    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, PHOTO_SYNC_STATUS_NOT_VISIBLE);
+    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, 0);
     values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, RESTORE_THUMBNAIL_VISIBLE_FALSE);
     values.PutInt(PhotoColumn::PHOTO_LCD_VISIT_TIME, 0);
@@ -1173,6 +1175,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
+    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     GetThumbnailInsertValue(fileInfo, values);
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
@@ -1222,6 +1225,7 @@ NativeRdb::ValuesBucket CloneRestore::GetCloudInsertValue(const FileInfo &fileIn
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, fileInfo.sourcePath);
+    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     GetCloudThumbnailInsertValue(fileInfo, values);
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
