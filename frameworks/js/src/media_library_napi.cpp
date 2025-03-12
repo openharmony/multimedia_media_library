@@ -7038,7 +7038,7 @@ static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *con
             SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION, LOCATION_TYPE,
             AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY};
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
-        //当前只支持中英文场景，其他小语种默认查询英文
+        //Chinese and English supported. Other languages English default.
         if (LANGUAGE_ZH != language) {
             language = LANGUAGE_ZH;
         }
