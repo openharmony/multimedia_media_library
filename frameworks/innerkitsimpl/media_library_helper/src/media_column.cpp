@@ -130,6 +130,7 @@ const std::string PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX = "idx_s
 const std::string PhotoColumn::PHOTO_SCHPT_DATE_YEAR_COUNT_READY_INDEX = "idx_schpt_date_year_ready";
 const std::string PhotoColumn::PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX = "idx_schpt_date_month_ready";
 const std::string PhotoColumn::SUPPORTED_WATERMARK_TYPE = "supported_watermark_type";
+const std::string PhotoColumn::PHOTO_IS_AUTO = "is_auto";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -236,7 +237,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_THUMBNAIL_VISIBLE + " INT DEFAULT 0, " +
     PHOTO_SOURCE_PATH + " TEXT, " +
     SUPPORTED_WATERMARK_TYPE + " INT, "+
-    PHOTO_CHECK_FLAG + " INT DEFAULT 0)";
+    PHOTO_CHECK_FLAG + " INT DEFAULT 0, " +
+    PHOTO_IS_AUTO + " INT NOT NULL DEFAULT 0)";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -414,7 +416,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_FRONT_CAMERA, PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY,
     PhotoColumn::PHOTO_THUMBNAIL_READY, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, PhotoColumn::PHOTO_CE_AVAILABLE,
     PhotoColumn::PHOTO_DETAIL_TIME, PhotoColumn::PHOTO_OWNER_ALBUM_ID, PhotoColumn::PHOTO_THUMBNAIL_VISIBLE,
-    PhotoColumn::SUPPORTED_WATERMARK_TYPE,
+    PhotoColumn::SUPPORTED_WATERMARK_TYPE, PhotoColumn::PHOTO_IS_AUTO,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

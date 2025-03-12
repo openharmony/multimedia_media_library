@@ -587,6 +587,16 @@ void FileAsset::SetSupportedWatermarkType(int32_t watermarkType)
     member_[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = watermarkType;
 }
 
+int32_t FileAsset::GetIsAuto() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_IS_AUTO);
+}
+
+void FileAsset::SetIsAuto(int32_t isAuto)
+{
+    member_[PhotoColumn::PHOTO_IS_AUTO] = isAuto;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
