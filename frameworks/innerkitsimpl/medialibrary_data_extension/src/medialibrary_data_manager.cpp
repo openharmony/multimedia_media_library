@@ -153,10 +153,12 @@ const int32_t LARGE_FILE_SIZE_MB = 200;
 const int32_t WRONG_VALUE = 0;
 const int32_t BATCH_QUERY_NUMBER = 200;
 const int32_t UPDATE_BATCH_SIZE = 200;
+const int32_t DELETE_BATCH_SIZE = 1000;
 const int32_t PHOTO_CLOUD_POSITION = 2;
 const int32_t PHOTO_LOCAL_CLOUD_POSITION = 3;
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
+static const std::string NO_DELETE_DIRTY_HDC_DATA = "no_delete_dirty_hdc_data";
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -2506,6 +2508,23 @@ static int32_t DoUpdateDirtyForCloudCloneOperation(const shared_ptr<MediaLibrary
     return ret;
 }
 
+static int32_t DoDeleteHdcDataOperation(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const std::vector<std::string> &fileIds)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_FAIL, "rdbStore is nullptr");
+    if (fileIds.empty()) {
+        MEDIA_INFO_LOG("Not need to delete dirty data.");
+        return E_OK;
+    }
+    AbsRdbPredicates deletePredicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    deletePredicates.In(MediaColumn::MEDIA_ID, fileIds);
+    int32_t deletedRows = -1;
+    int32_t ret = rdbStore->Delete(deletedRows, deletePredicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && deletedRows > 0), E_FAIL,
+        "Failed to DoDeleteHdcDataOperation, ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+    return ret;
+}
+
 int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone()
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore is nullptr");
@@ -2552,6 +2571,67 @@ int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone()
             NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
         CHECK_AND_RETURN_RET_LOG(prefs, E_FAIL, "Get preferences error: %{public}d", errCode);
         prefs->PutInt(NO_UPDATE_DIRTY, 1);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::UpdateDirtyHdcDataStatus()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
+    CHECK_AND_RETURN_RET_LOG(prefs, E_FAIL, "Get preferences error: %{public}d", errCode);
+    prefs->PutInt(NO_DELETE_DIRTY_HDC_DATA, 1);
+    return E_OK;
+}
+
+int32_t MediaLibraryDataManager::ClearDirtyHdcData()
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore is nullptr");
+    MEDIA_INFO_LOG("MediaLibraryDataManager::ClearDirtyHdcData");
+    const std::string QUERY_DIRTY_HDC_INFO =
+        "SELECT p.file_id, p.data, p.position, p.cloud_id, p.display_name FROM Photos p "
+        "JOIN tab_old_photos t ON p.file_id = t.file_id "
+        "WHERE p.position = 2  AND COALESCE(cloud_id,'') = '' "
+        "LIMIT " + std::to_string(DELETE_BATCH_SIZE);
+    bool nextDelete = true;
+    while (nextDelete && MedialibrarySubscriber::IsCurrentStatusOn()) {
+        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore_->QuerySql(QUERY_DIRTY_HDC_INFO);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
+        int32_t count = -1;
+        int32_t err = resultSet->GetRowCount(count);
+        MEDIA_INFO_LOG("the resultSet size is %{public}d", count);
+        if (count < DELETE_BATCH_SIZE) {
+            nextDelete = false;
+        }
+        // get file id need to delete
+        vector<std::string> dirtyFileIds;
+        vector<std::string> deleteUris;
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            std::string dataPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+            dataPath.replace(0, PhotoColumn::FILES_CLOUD_DIR.length(), PhotoColumn::FILES_LOCAL_DIR);
+            if (dataPath == "") {
+                MEDIA_INFO_LOG("The data path is empty, data path: %{public}s", dataPath.c_str());
+                continue;
+            }
+            if (!MediaFileUtils::IsFileExists(dataPath)) {
+                int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+                dirtyFileIds.push_back(to_string(fileId));
+                string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+                string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+                string uri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
+                    MediaFileUtils::GetExtraUri(displayName, filePath));
+                deleteUris.push_back(uri);
+            }
+        }
+        resultSet->Close();
+        CHECK_AND_RETURN_RET_LOG(DoDeleteHdcDataOperation(rdbStore_, dirtyFileIds) == E_OK,
+            E_FAIL, "Failed to DoDeleteHdcDataOperation for dirtyFileIds");
+        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore_, deleteUris);
+    }
+
+    if (!nextDelete) {
+        return UpdateDirtyHdcDataStatus();
     }
     return E_OK;
 }
