@@ -127,13 +127,13 @@ static int32_t ExecSqlWithRetry(std::function<int32_t()> execSql)
 }
 
 int32_t BackupDatabaseUtils::QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
-    const std::string &column)
+    const std::string &column, const std::vector<NativeRdb::ValueObject> &args)
 {
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdb_ is nullptr, Maybe init failed.");
         return 0;
     }
-    auto resultSet = rdbStore->QuerySql(sql);
+    auto resultSet = rdbStore->QuerySql(sql, args);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return 0;
     }
@@ -840,7 +840,7 @@ void BackupDatabaseUtils::UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbSt
 }
 
 void BackupDatabaseUtils::BatchUpdatePhotosToLocal(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-    const std::vector<std::string> inColumn)
+    const std::vector<std::string> &inColumn)
 {
     int32_t changeRows = 0;
     std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =

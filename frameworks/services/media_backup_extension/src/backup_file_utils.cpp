@@ -864,5 +864,11 @@ bool BackupFileUtils::EncodePixelMap(PixelMap &pixelMap, const std::string &outF
     CHECK_AND_RETURN_RET_LOG(err == 0, false, "Failed to FinalizePacking %{public}d", err);
     return true;
 }
+
+bool BackupFileUtils::DeleteFileOrFolder(const std::string &path, bool isFile)
+{
+    CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(path), true);
+    return isFile ? MediaFileUtils::DeleteFile(path) : MediaFileUtils::DeleteDir(path);
+}
 } // namespace Media
 } // namespace OHOS

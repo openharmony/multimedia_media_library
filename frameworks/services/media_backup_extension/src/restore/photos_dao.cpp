@@ -18,6 +18,7 @@
 #include <vector>
 #include <sstream>
 
+#include "backup_database_utils.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
@@ -176,5 +177,28 @@ std::string PhotosDao::ToLower(const std::string &str)
     std::transform(
         str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
     return lowerStr;
+}
+
+int32_t PhotosDao::GetDirtyFilesCount()
+{
+    std::vector<NativeRdb::ValueObject> params = { static_cast<int32_t>(SyncStatusType::TYPE_BACKUP) };
+    return BackupDatabaseUtils::QueryInt(mediaLibraryRdb_, SQL_PHOTOS_GET_DIRTY_FILES_COUNT, "count", params);
+}
+
+std::vector<PhotosDao::PhotosRowData> PhotosDao::GetDirtyFiles(int32_t offset)
+{
+    std::vector<PhotosDao::PhotosRowData> rowDataList;
+    std::vector<NativeRdb::ValueObject> params = { static_cast<int32_t>(SyncStatusType::TYPE_BACKUP),
+        offset, QUERY_COUNT };
+    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, SQL_PHOTOS_GET_DIRTY_FILES, params);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, rowDataList);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        PhotosDao::PhotosRowData rowData;
+        rowData.data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        rowData.fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        rowDataList.emplace_back(rowData);
+    }
+    resultSet->Close();
+    return rowDataList;
 }
 }  // namespace OHOS::Media
