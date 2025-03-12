@@ -469,13 +469,13 @@ void MediaLibraryRdbStore::AddAlbumIndex(const shared_ptr<MediaLibraryRdbStore> 
 
 void MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(const shared_ptr<MediaLibraryRdbStore> store)
 {
-    MEDIA_INFO_LOG("start update location knowledg index");
+    MEDIA_INFO_LOG("start update location knowledge index");
     const vector<string> sqls = {
         DROP_KNOWLEDGE_INDEX,
         CREATE_NEW_KNOWLEDGE_INDEX
     };
     ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end update location knowledg index");
+    MEDIA_INFO_LOG("end update location knowledge index");
 }
 
 void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
