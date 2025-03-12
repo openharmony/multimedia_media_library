@@ -2381,4 +2381,10 @@ std::string MediaFileUtils::DesensitizeUri(const std::string &fileUri)
     CHECK_AND_RETURN_RET(slashIndex != std::string::npos, result);
     return result.replace(slashIndex + 1, result.length() - slashIndex - 1, "*");
 }
+
+bool MediaFileUtils::DeleteFileOrFolder(const std::string &path, bool isFile)
+{
+    CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(path), true);
+    return isFile ? MediaFileUtils::DeleteFile(path) : MediaFileUtils::DeleteDir(path);
+}
 } // namespace OHOS::Media
