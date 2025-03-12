@@ -156,6 +156,11 @@ public:
         return 0;
     }
 
+    uint32_t GetCloudImageEnhanceFlag() override
+    {
+        return 0;
+    }
+
     /**
      * @brief Get the Burst Key object
      * @return std::string 36 characters like xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
