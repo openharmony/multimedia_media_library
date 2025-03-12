@@ -168,6 +168,9 @@ const std::string CONFIRM_BOX_APP_ID = "appId";
 const std::string TARGET_PAGE = "targetPage";
 const std::string TOKEN_ID = "tokenId";
 
+const std::string LANGUAGE_ZH = "zh-Hans";
+const std::string LANGUAGE_EN = "en-Latn-US";
+
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sKeyFrameThumbnailTypeRef_ = nullptr;
@@ -7035,6 +7038,10 @@ static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *con
             SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION, LOCATION_TYPE,
             AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY};
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        //当前只支持中英文场景，其他小语种默认查询英文
+        if (LANGUAGE_ZH != language) {
+            language = LANGUAGE_ZH;
+        }
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
             GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
             GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
