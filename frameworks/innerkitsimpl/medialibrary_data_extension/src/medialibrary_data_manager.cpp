@@ -159,6 +159,8 @@ const int32_t PHOTO_LOCAL_CLOUD_POSITION = 3;
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
 static const std::string NO_DELETE_DIRTY_HDC_DATA = "no_delete_dirty_hdc_data";
+static const std::string CLOUD_PREFIX_PATH = "/storage/cloud/files";
+static const std::string THUMB_PREFIX_PATH = "/storage/cloud/files/.thumbs";
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -2588,10 +2590,10 @@ int32_t MediaLibraryDataManager::UpdateDirtyHdcDataStatus()
 void MediaLibraryDataManager::DeleteDirtyFileAndDir(const vector<std::string>& deleteFilePaths)
 {
     for (auto path : deleteFilePaths) {
-        bool deleteFileRet = BackupFileUtils::DeleteFileOrFolder(path, true);
+        bool deleteFileRet = MediaFileUtils::DeleteFileOrFolder(path, true);
         std::string thumbsFolder =
-            BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::CLOUD_THUMB, path);
-        bool deleteThumbsRet = BackupFileUtils::DeleteFileOrFolder(thumbsFolder, false);
+            MediaFileUtils::GetReplacedPathByPrefix(CLOUD_PREFIX_PATH, THUMB_PREFIX_PATH, path);
+        bool deleteThumbsRet = MediaFileUtils::DeleteFileOrFolder(thumbsFolder, false);
         if (!deleteFileRet || !deleteThumbsRet) {
             MEDIA_ERR_LOG("Clean file failed, path: %{public}s, ret: %{public}d, errno: %{public}d",
                 path.c_str(), static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);

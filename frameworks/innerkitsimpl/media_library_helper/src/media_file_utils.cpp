@@ -2387,4 +2387,13 @@ bool MediaFileUtils::DeleteFileOrFolder(const std::string &path, bool isFile)
     CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(path), true);
     return isFile ? MediaFileUtils::DeleteFile(path) : MediaFileUtils::DeleteDir(path);
 }
+
+std::string MediaFileUtils::GetReplacedPathByPrefix(const std::string srcPrefix, PrefixType dstPrefix,
+    const std::string &path)
+{
+    std::string replacedPath;
+    replacedPath = path;
+    replacedPath.replace(0, srcPrefix.length(), dstPrefix);
+    return replacedPath;
+}
 } // namespace OHOS::Media
