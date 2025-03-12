@@ -253,6 +253,8 @@ static void GetSingleDbOperation(const vector<DataShareValuesBucket> &values, ve
         if ((querySingleResultSet.at(PERMISSION_TYPE_INDEX) == AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE) ||
             (permissionType <= querySingleResultSet.at(PERMISSION_TYPE_INDEX))) {
             dbOperation[index] = NO_DB_OPERATION;
+        } else if (querySingleResultSet.at(PERMISSION_TYPE_INDEX) == AppUriPermissionColumn::PERMISSION_PERSIST_READ) {
+            dbOperation[index] = INSERT_DB_OPERATION;
         } else {
             dbOperation[index] = UPDATE_DB_OPERATION;
         }

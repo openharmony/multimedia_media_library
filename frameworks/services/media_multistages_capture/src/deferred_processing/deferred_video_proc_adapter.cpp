@@ -40,17 +40,11 @@ DeferredVideoProcessingAdapter::DeferredVideoProcessingAdapter()
     const static int32_t BASE_USER_RANGE = 200000;
 
     int uid = IPCSkeleton::GetCallingUid();
-    if (uid <= INVALID_UID) {
-        MEDIA_ERR_LOG("CreateDeferredVideoProcessingSession invalid uid: %{public}d", uid);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(uid > INVALID_UID, "CreateDeferredVideoProcessingSession invalid uid: %{public}d", uid);
     int32_t userId = uid / BASE_USER_RANGE;
     deferredVideoProcSession_ = CameraManager::CreateDeferredVideoProcessingSession(userId,
         make_shared<MultiStagesCaptureDeferredVideoProcSessionCallback>());
-    if (deferredVideoProcSession_ == nullptr) {
-        MEDIA_ERR_LOG("CreateDeferredVideoProcessingSession err");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(deferredVideoProcSession_ != nullptr, "CreateDeferredVideoProcessingSession err");
 #endif
     MEDIA_INFO_LOG("CreateDeferredVideoProcessingSession succ");
 }

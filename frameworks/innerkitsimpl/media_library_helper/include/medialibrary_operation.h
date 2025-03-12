@@ -56,6 +56,7 @@ enum class EXPORT OperationObject : uint32_t {
     VISION_LABEL,
     VISION_VIDEO_LABEL,
     VISION_AESTHETICS,
+    VISION_VIDEO_AESTHETICS,
     VISION_OBJECT,
     VISION_RECOMMENDATION,
     VISION_SEGMENTATION,
@@ -108,6 +109,7 @@ enum class EXPORT OperationObject : uint32_t {
     PTP_OPERATION,
     EDIT_DATA_EXISTS,
     MTH_AND_YEAR_ASTC,
+    ANALYSIS_FOREGROUND,
 };
 
 enum class EXPORT OperationType : uint32_t {

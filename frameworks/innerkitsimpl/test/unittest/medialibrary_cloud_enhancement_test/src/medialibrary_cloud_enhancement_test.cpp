@@ -477,7 +477,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_add_operation_004, Tes
     UpdateCEAvailable(fileId3, 3, true);
     string photoUri4 = "file://media/Photo/" + to_string(fileId4) +
         "/IMG_1722329102_003/" + TESTING_DISPLAYNAME;
-    EnhancementTaskManager::AddEnhancementTask(fileId4, photoId4);
+    EnhancementTaskManager::AddEnhancementTask(fileId4, photoId4, 0);
     
     uris.emplace_back(photoUri2);
     uris.emplace_back(photoUri3);
@@ -537,7 +537,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_prioritize_operation_0
     auto result = instance.HandlePrioritizeOperation(cmd);
     EXPECT_EQ(result, -1);
 
-    EnhancementTaskManager::AddEnhancementTask(fileId, TESTING_PHOTO_ID);
+    EnhancementTaskManager::AddEnhancementTask(fileId, TESTING_PHOTO_ID, 0);
     UpdateCEAvailable(fileId, 2);
     result = instance.HandlePrioritizeOperation(cmd);
     EXPECT_EQ(result, -1);
@@ -565,7 +565,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_cancel_operation_007, 
     auto result = instance.HandleCancelOperation(cmd);
     EXPECT_EQ(result, 0);
 
-    EnhancementTaskManager::AddEnhancementTask(fileId, TESTING_PHOTO_ID);
+    EnhancementTaskManager::AddEnhancementTask(fileId, TESTING_PHOTO_ID, 0);
     UpdateCEAvailable(fileId, 2);
     result = instance.HandleCancelOperation(cmd);
     EnhancementTaskManager::RemoveEnhancementTask(TESTING_PHOTO_ID);
@@ -622,7 +622,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, manager_handle_query_operation_010, T
     auto ret = resultSet->GetRowCount(count);
     EXPECT_GT(count, 0);
 
-    EnhancementTaskManager::AddEnhancementTask(fileId, TESTING_PHOTO_ID);
+    EnhancementTaskManager::AddEnhancementTask(fileId, TESTING_PHOTO_ID, 0);
     resultSet = instance.HandleQueryOperation(cmd, columns);
     EnhancementTaskManager::RemoveEnhancementTask(TESTING_PHOTO_ID);
     EXPECT_NE(resultSet, nullptr);
@@ -745,7 +745,7 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, task_manager_test_001, TestSize.Level
     MEDIA_INFO_LOG("task_manager_test_001 Start");
     string photoId = "202408302001001";
     int32_t fileId = PrepareHighQualityPhoto(photoId, TESTING_DISPLAYNAME);
-    EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
+    EnhancementTaskManager::AddEnhancementTask(fileId, photoId, 0);
     EXPECT_EQ(EnhancementTaskManager::InProcessingTask(photoId), true);
     EnhancementTaskManager::RemoveEnhancementTask(photoId);
     EXPECT_EQ(EnhancementTaskManager::InProcessingTask(photoId), false);
@@ -753,8 +753,8 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, task_manager_test_001, TestSize.Level
     
     string photoId2 = "202408302001002";
     int32_t fileId2 = PrepareHighQualityPhoto(photoId2, TESTING_DISPLAYNAME);
-    EnhancementTaskManager::AddEnhancementTask(fileId, photoId);
-    EnhancementTaskManager::AddEnhancementTask(fileId2, photoId2);
+    EnhancementTaskManager::AddEnhancementTask(fileId, photoId, 0);
+    EnhancementTaskManager::AddEnhancementTask(fileId2, photoId2, 0);
     EXPECT_EQ(EnhancementTaskManager::QueryPhotoIdByFileId(fileId), photoId);
     EXPECT_EQ(EnhancementTaskManager::QueryPhotoIdByFileId(fileId2), photoId2);
 
@@ -1135,6 +1135,51 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_database_operations_inser
     EXPECT_GT(ret, 0);
 
     MEDIA_INFO_LOG("enhancement_database_operations_insert_004 End");
+}
+
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_is_add_operation_enabled_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_001 Start");
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    string uriStr = PAH_CLOUD_ENHANCEMENT_ADD;
+    MediaFileUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, "true");
+    Uri addTaskUri(uriStr);
+    MediaLibraryCommand cmd(addTaskUri);
+    int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
+    UpdateCEAvailable(fileId, 1);
+    DataSharePredicates predicates;
+    string photoUri = "file://media/Photo/" + to_string(fileId) + "/IMG_1722329102_000/" + TESTING_DISPLAYNAME;
+    vector<string> uris;
+    uris.emplace_back(photoUri);
+    predicates.In(MediaColumn::MEDIA_ID, uris);
+    cmd.SetDataSharePred(predicates);
+    instance.HandlePhotosAutoOptionChange("close");
+    int32_t result = instance.HandleAddOperation(cmd, true, 1);
+    EXPECT_EQ(result, -1);
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_001 End");
+}
+
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_is_add_operation_enabled_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_002 Start");
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    string uriStr = PAH_CLOUD_ENHANCEMENT_ADD;
+    MediaFileUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, "true");
+    Uri addTaskUri(uriStr);
+    MediaLibraryCommand cmd(addTaskUri);
+    int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
+    UpdateCEAvailable(fileId, 1);
+    DataSharePredicates predicates;
+    string photoUri = "file://media/Photo/" + to_string(fileId) + "/IMG_1722329102_000/" + TESTING_DISPLAYNAME;
+    vector<string> uris;
+    uris.emplace_back(photoUri);
+    predicates.In(MediaColumn::MEDIA_ID, uris);
+    cmd.SetDataSharePred(predicates);
+    instance.HandlePhotosAutoOptionChange("WLAN only");
+    instance.HandleNetChange(false, true);
+    int32_t result = instance.HandleAddOperation(cmd, true, 1);
+    EXPECT_EQ(result, -1);
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_002 End");
 }
 #endif
 } // namespace Media

@@ -40,18 +40,6 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::Security::AccessToken;
 
-bool GetDataUris(const vector<string> &uris, vector<string> &dataUris)
-{
-    auto handler = OHOS::Media::MediaLibraryHandler::GetMediaLibraryHandler();
-    handler->InitMediaLibraryHandler();
-    int32_t ret = handler->GetDataUris(uris, dataUris);
-    if (ret != OHOS::Media::E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to GetDataPath: %{public}d", ret);
-        return false;
-    }
-    return true;
-}
-
 extern "C" {
 void ConvertFileUriToMntPath(const vector<string> &uris, vector<string> &results)
 {
@@ -64,8 +52,12 @@ void ConvertFileUriToMntPath(const vector<string> &uris, vector<string> &results
     }
 
     vector<string> dataUris;
-    if (!GetDataUris(uris, dataUris)) {
+    auto handler = OHOS::Media::MediaLibraryHandler::GetMediaLibraryHandler();
+    handler->InitMediaLibraryHandler();
+    int32_t ret = handler->GetDataUris(uris, dataUris);
+    if (ret != OHOS::Media::E_SUCCESS) {
         results.clear();
+        MEDIA_ERR_LOG("Failed to GetDataPath: %{public}d", ret);
         return;
     }
     results.clear();
@@ -204,7 +196,7 @@ int32_t MediaLibraryHandler::ProcessResultSet(shared_ptr<DataShareResultSet> &re
 
     dataUris = vector<string>(fileIds.size());
 
-    int32_t count = 0;
+    size_t count = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         string fileId;
         string path;

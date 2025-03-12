@@ -47,6 +47,7 @@
 #include "vision_segmentation_column.h"
 #include "vision_total_column.h"
 #include "vision_video_label_column.h"
+#include "vision_video_aesthetics_score_column.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -128,6 +129,14 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
 }
 
+void ClearVideoAestheticsData()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand videoAesCmd(videoAesUri);
+    MediaLibraryDataManager::GetInstance()->Delete(videoAesCmd, predicates);
+}
+
 void ClearVideoFaceData()
 {
     DataShare::DataSharePredicates predicates;
@@ -187,6 +196,7 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     ClearPhotos();
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
+    ClearVideoAestheticsData();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
@@ -194,6 +204,7 @@ void MediaLibraryVisionTest::TearDownTestCase(void)
     CleanVisionData();
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
+    ClearVideoAestheticsData();
     MEDIA_INFO_LOG("Vision_Test::End");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
@@ -204,6 +215,7 @@ void MediaLibraryVisionTest::SetUp(void)
     CleanVisionData();
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
+    ClearVideoAestheticsData();
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
@@ -213,6 +225,84 @@ void MediaLibraryVisionTest::SetUp(void)
 }
 
 void MediaLibraryVisionTest::TearDown(void) {}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoAes_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_InsertVideoAes_Test_001::Start");
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand cmd(videoAesUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(VIDEO_AESTHETICS_SCORE, 1);
+    valuesBucket.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket.Put(PROB, 2.344);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("Vision_InsertVideoAes_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoAes_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_InsertVideoAes_Test_002::Start");
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand cmd(videoAesUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 2);
+    valuesBucket.Put(VIDEO_AESTHETICS_SCORE, 6);
+    valuesBucket.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket.Put(PROB, 2.344);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 2);
+    valuesBucket2.Put(VIDEO_AESTHETICS_SCORE, 6);
+    valuesBucket2.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket2.Put(PROB, 2.344);
+    auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    EXPECT_GT(retVal, 0);
+    EXPECT_LT(retVal2, 0);
+    MEDIA_INFO_LOG("Vision_InsertVideoAes_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateVideoAes_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_UpdateVideoAes_Test_001::Start");
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand cmd(videoAesUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 3);
+    valuesBucket.Put(VIDEO_AESTHETICS_SCORE, 6);
+    valuesBucket.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket.Put(PROB, 2.344);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(VIDEO_AESTHETICS_SCORE, 8);
+    updateValues.Put(VIDEO_AESTHETICS_VERSION, "2.01");
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("3");
+    predicates.In(FILE_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ((retVal == 1), true);
+    MEDIA_INFO_LOG("Vision_UpdateVideoAes_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoAes_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_DeleteVideoAes_Test_001::Start");
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand cmd(videoAesUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 4);
+    valuesBucket.Put(VIDEO_AESTHETICS_SCORE, 6);
+    valuesBucket.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket.Put(PROB, 2.344);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 4);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ((retVal == 1), true);
+    MEDIA_INFO_LOG("Vision_DeleteVideoAes_Test_001::retVal = %{public}d. End", retVal);
+}
 
 HWTEST_F(MediaLibraryVisionTest, Vision_InsertOcr_Test_001, TestSize.Level0)
 {

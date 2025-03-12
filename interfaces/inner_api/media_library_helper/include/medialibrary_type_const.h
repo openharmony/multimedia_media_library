@@ -194,6 +194,12 @@ enum class StageVideoTaskStatus : int32_t {
     STAGE_TASK_SUCCESS,
 };
 
+enum class FirstStageModifyType : int32_t {
+    NOT_MODIFIED = 0,
+    EDITED,
+    TRASHED,
+};
+
 constexpr int32_t DEFAULT_INT32 = 0;
 constexpr int64_t DEFAULT_INT64 = 0;
 constexpr int64_t DEFAULT_DOUBLE = 0;

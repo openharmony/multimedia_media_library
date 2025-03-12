@@ -325,6 +325,7 @@ int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
         "WHERE COALESCE(t1.name, '') <> '' AND t1.displayable = 1 "
         "AND EXISTS "
         "(SELECT t2._id FROM gallery_media t2 WHERE t2.local_media_id = -1 "
+        "AND t2.story_chosen = 1 "
         "AND (t2.story_id LIKE '%,'||t1.story_id||',%' OR t2.portrait_id LIKE '%,'||t1.story_id||',%'))";
     std::shared_ptr<NativeRdb::ResultSet> resultSet =
         BackupDatabaseUtils::QuerySql(this->galleryRdb_, QUERY_SQL, {});
@@ -779,6 +780,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.longitude = GetDoubleVal("longitude", resultSet);
     info.storyIds = GetStringVal("story_id", resultSet);
     info.portraitIds = GetStringVal("portrait_id", resultSet);
+    info.storyChosen = GetInt32Val("story_chosen", resultSet);
     return isSuccess;
 }
 
@@ -1175,7 +1177,6 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
     const std::unordered_map<std::string, FileInfo> &fileInfoMap, int32_t offset,
     std::unordered_set<std::string> &excludedFiles)
 {
-    bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
     vector<FaceInfo> result;
     result.reserve(QUERY_COUNT);
 
@@ -1184,8 +1185,7 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
         GALLERY_PROB + ", " + GALLERY_TOTAL_FACE + ", " + GALLERY_MERGE_FACE_HASH + ", " + GALLERY_MERGE_FACE_FACE_ID +
         ", " + GALLERY_MERGE_FACE_TAG_ID + " FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
         GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ") ";
-    querySql += ((isAccountValid_ && isSyncSwitchOpen) ?
-        " AND " + GALLERY_MERGE_FACE_TAG_ID + " != \'-1\'" : "");
+    querySql += " AND " + GALLERY_MERGE_FACE_TAG_ID + " != \'-1\'";
     querySql += " ORDER BY " + GALLERY_MERGE_FACE_HASH + ", " + GALLERY_MERGE_FACE_FACE_ID +
         " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 

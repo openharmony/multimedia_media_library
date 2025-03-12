@@ -67,6 +67,7 @@
 #include "grant_permission_handler.h"
 #include "read_write_permission_handler.h"
 #include "db_permission_handler.h"
+#include "system_api_check_handler.h"
 #include "userfilemgr_uri.h"
 #ifdef MEDIALIBRARY_MTP_ENABLE
 #include "mtp_manager.h"
@@ -96,6 +97,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_PHOTO_MAP,
     OperationObject::VISION_OCR,
     OperationObject::VISION_AESTHETICS,
+    OperationObject::VISION_VIDEO_AESTHETICS,
     OperationObject::VISION_LABEL,
     OperationObject::VISION_VIDEO_LABEL,
     OperationObject::VISION_IMAGE_FACE,
@@ -155,17 +157,13 @@ static bool IsStartBeforeUserUnlock()
 {
     int32_t activeUserId = 0;
     ErrCode ret = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(activeUserId);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("GetForegroundOsAccountLocalId fail, ret code %{public}d, result is not credible", ret);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == ERR_OK, false,
+        "GetForegroundOsAccountLocalId fail, ret code %{public}d, result is not credible", ret);
     MEDIA_INFO_LOG("Current active account is %{public}d ", activeUserId);
     bool isAccountVerified = true; // Assume verified to avoid unknown killing
     ErrCode err = AccountSA::OsAccountManager::IsOsAccountVerified(activeUserId, isAccountVerified);
-    if (err != ERR_OK) {
-        MEDIA_ERR_LOG("Check activeUserId fail caused by %{public}d, check result is not credible", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == ERR_OK, false,
+        "Check activeUserId fail caused by %{public}d, check result is not credible", err);
     MEDIA_INFO_LOG("Current user verification result: %{public}d", isAccountVerified);
     return !isAccountVerified;
 }
@@ -179,8 +177,10 @@ void MediaDataShareExtAbility::InitPermissionHandler()
     grantPermissionHandler->SetNextHandler(mediaToolPermissionHandler);
     auto dbPermissionHandler = std::make_shared<DbPermissionHandler>();
     dbPermissionHandler->SetNextHandler(grantPermissionHandler);
-    permissionHandler_ = std::make_shared<ReadWritePermissionHandler>();
-    permissionHandler_->SetNextHandler(dbPermissionHandler);
+    auto rwPermissionHandler = std::make_shared<ReadWritePermissionHandler>();
+    rwPermissionHandler->SetNextHandler(dbPermissionHandler);
+    permissionHandler_ = std::make_shared<SystemApiCheckHandler>();
+    permissionHandler_->SetNextHandler(rwPermissionHandler);
     MEDIA_DEBUG_LOG("InitPermissionHandler end:permissionHandler_=%{public}d", permissionHandler_ != nullptr);
 }
 
@@ -218,10 +218,7 @@ static void RestartCloudMediaAssetDownload()
 {
     std::thread([&] {
         MEDIA_INFO_LOG("enter RestartCloudMediaAssetDownload.");
-        if (!CloudSyncUtils::IsCloudSyncSwitchOn()) {
-            MEDIA_INFO_LOG("Cloud sync switch off");
-            return;
-        }
+        CHECK_AND_RETURN_INFO_LOG(CloudSyncUtils::IsCloudSyncSwitchOn(), "Cloud sync switch off");
         if (!CloudSyncUtils::IsCloudDataAgingPolicyOn()) {
             CloudMediaAssetManager::GetInstance().CancelDownloadCloudAsset();
             return;
@@ -254,7 +251,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     }
     auto extensionContext = GetContext();
     int32_t sceneCode = DfxType::START_SUCCESS;
-    int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext, sceneCode);
+    int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext, sceneCode, true, true);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to init MediaLibraryMgr");
         if (sceneCode == DfxType::START_RDB_STORE_FAIL) {
@@ -394,9 +391,7 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
         (PermissionUtils::CheckHasPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED) :
         (PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED);
-    if (err == E_SUCCESS) {
-        return E_SUCCESS;
-    }
+    CHECK_AND_RETURN_RET(err != E_SUCCESS, E_SUCCESS);
     // Try to check deprecated permissions
     perms.clear();
     FillDeprecatedPerms(containsRead, containsWrite, perms);
@@ -453,9 +448,7 @@ static inline int32_t HandleMediaVolumePerm()
 static inline int32_t HandleBundlePermCheck()
 {
     bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA);
-    if (ret) {
-        return E_SUCCESS;
-    }
+    CHECK_AND_RETURN_RET(!ret, E_SUCCESS);
 
     return PermissionUtils::CheckHasPermission(WRITE_PERMS_V10) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
@@ -501,16 +494,17 @@ static int32_t HandleSecurityComponentPermission(MediaLibraryCommand &cmd)
     return E_NEED_FURTHER_CHECK;
 }
 
-static int32_t HandleShortPermission(bool &need)
+static int32_t HandleShortPermission(const MediaLibraryCommand &cmd, bool &need)
 {
-    int32_t err = PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO) ? E_SUCCESS :
-        E_PERMISSION_DENIED;
-    if (err == E_SUCCESS) {
-        need = true;
-    } else {
-        need = false;
+    need = false;
+    if (cmd.GetUriStringWithoutSegment() == PAH_CREATE_PHOTO ||
+        cmd.GetUriStringWithoutSegment() == PAH_SYS_CREATE_PHOTO) {
+        if (PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO)) {
+            need = true;
+            return E_SUCCESS;
+        }
     }
-    return err;
+    return E_PERMISSION_DENIED;
 }
 
 static int32_t HandleRestorePermission(MediaLibraryCommand &cmd)
@@ -623,9 +617,7 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
         cmd.GetUri().ToString().c_str(), cmd.GetOprnObject(), cmd.GetOprnType(), isWrite);
 
     int err = SystemApiCheck(cmd);
-    if (err != E_SUCCESS) {
-        return err;
-    }
+    CHECK_AND_RETURN_RET(err == E_SUCCESS, err);
     err = MediatoolPermCheck(cmd);
     if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
@@ -650,9 +642,7 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     // Finally, we should check the permission of medialibrary interfaces.
     string perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
     err = PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
-    if (err < 0) {
-        return err;
-    }
+    CHECK_AND_RETURN_RET(err >= 0, err);
     UnifyOprnObject(cmd);
     return E_SUCCESS;
 }
@@ -675,6 +665,7 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string 
         predicates.And()->EqualTo("file_id", fileId);
         predicates.And()->EqualTo("owner_appid", clientAppId);
         auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+        CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, ret, "queryResultSet is nullptr");
         auto count = 0;
         queryResultSet->GetRowCount(count);
         if (count != 0) {
@@ -770,10 +761,7 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     string unifyMode = mode;
     transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
     int err = CheckPermissionForOpenFile(uri, command, unifyMode);
-    if (err < 0) {
-        MEDIA_ERR_LOG("permission deny: %{public}d", err);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err >= 0, err, "permission deny: %{public}d", err);
     int32_t object = static_cast<int32_t>(command.GetOprnObject());
     int32_t type = static_cast<int32_t>(command.GetOprnType());
     DfxTimer dfxTimer(type, object, OPEN_FILE_TIME_OUT, true);
@@ -817,9 +805,7 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
-    if (err != E_SUCCESS) {
-        return err;
-    }
+    CHECK_AND_RETURN_RET(err == E_SUCCESS, err);
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
@@ -836,8 +822,9 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
-    if ((err != E_SUCCESS) && cmd.GetUriStringWithoutSegment() == PAH_CREATE_PHOTO)
-        err = HandleShortPermission(needToResetTime);
+    if (err != E_SUCCESS) {
+        err = HandleShortPermission(cmd, needToResetTime);
+    }
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err < 0) {
@@ -861,10 +848,8 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
 
 static bool CheckCloudSyncPermission()
 {
-    if (!PermissionUtils::CheckCallerPermission(PERM_CLOUD_SYNC_MANAGER)) {
-        MEDIA_ERR_LOG("permission denied");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(PermissionUtils::CheckCallerPermission(PERM_CLOUD_SYNC_MANAGER),
+        false, "permission denied");
     return true;
 }
 
@@ -906,10 +891,8 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     auto updateRet = MediaLibraryDataManager::GetInstance()->Update(cmd, value, appidPredicates);
-    if (err < 0 && updateRet <= 0) {
-        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
-        return err;
-    }
+    bool cond = (err < 0 && updateRet <= 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, err, "permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
     return updateRet;
 }
 
@@ -1027,10 +1010,8 @@ bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk
     }
 
     ErrCode ret = obsMgrClient->RegisterObserver(uri, dataObserver);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("%{public}s obsMgrClient->RegisterObserver error return %{public}d", __func__, ret);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == ERR_OK, false,
+        "%{public}s obsMgrClient->RegisterObserver error return %{public}d", __func__, ret);
     MEDIA_INFO_LOG("%{public}s end.", __func__);
     return true;
 }
@@ -1039,16 +1020,11 @@ bool MediaDataShareExtAbility::UnregisterObserver(const Uri &uri, const sptr<AAF
 {
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     auto obsMgrClient = DataObsMgrClient::GetInstance();
-    if (obsMgrClient == nullptr) {
-        MEDIA_ERR_LOG("%{public}s obsMgrClient is nullptr", __func__);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(obsMgrClient != nullptr, false, "%{public}s obsMgrClient is nullptr", __func__);
 
     ErrCode ret = obsMgrClient->UnregisterObserver(uri, dataObserver);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("%{public}s obsMgrClient->UnregisterObserver error return %{public}d", __func__, ret);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == ERR_OK, false,
+        "%{public}s obsMgrClient->UnregisterObserver error return %{public}d", __func__, ret);
     MEDIA_INFO_LOG("%{public}s end.", __func__);
     return true;
 }
@@ -1056,16 +1032,11 @@ bool MediaDataShareExtAbility::UnregisterObserver(const Uri &uri, const sptr<AAF
 bool MediaDataShareExtAbility::NotifyChange(const Uri &uri)
 {
     auto obsMgrClient = DataObsMgrClient::GetInstance();
-    if (obsMgrClient == nullptr) {
-        MEDIA_ERR_LOG("%{public}s obsMgrClient is nullptr", __func__);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(obsMgrClient != nullptr, false, "%{public}s obsMgrClient is nullptr", __func__);
 
     ErrCode ret = obsMgrClient->NotifyChange(uri);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("%{public}s obsMgrClient->NotifyChange error return %{public}d", __func__, ret);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == ERR_OK, false,
+        "%{public}s obsMgrClient->NotifyChange error return %{public}d", __func__, ret);
     return true;
 }
 

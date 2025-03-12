@@ -26,6 +26,7 @@ const std::string MEDIA_TRIGGER_MODE_KEYWORD = "trigger_mode";
 const std::string MEDIA_MOVING_PHOTO_OPRN_KEYWORD = "moving_photo_operation";
 const std::string MEDIA_QUERYOPRN = "query_operation";
 const std::string OPRN_CREATE = "create";
+const std::string OPRN_SYS_CREATE = "sys_create";
 const std::string OPRN_CUSTOM_RESTORE = "custom_restore";
 const std::string OPRN_CUSTOM_RESTORE_CANCEL = "custom_restore_cancel";
 const std::string OPRN_CREATE_COMPONENT = "create_component";
@@ -37,6 +38,7 @@ const std::string OPRN_UPDATE = "update";
 const std::string OPRN_UPDATE_ORDER = "update_order";
 const std::string OPRN_SAVE_CAMERA_PHOTO_COMPONENT = "save_camera_photo_component";
 const std::string OPRN_TRASH = "trash";
+const std::string OPRN_SYS_TRASH = "sys_trash";
 const std::string OPRN_PENDING = "update_pending";
 const std::string OPRN_SCAN = "scan";
 const std::string OPRN_INDEX = "index";
@@ -247,6 +249,7 @@ const std::string PAH_ANA_ALBUM = "phaccess_ana_album_operation";
 const std::string PAH_ANA_MAP = "phaccess_ana_map_operation";
 const std::string PAH_ANA_OCR = "phaccess_ana_ocr_operation";
 const std::string PAH_ANA_ATTS = "phaccess_ana_atts_operation";
+const std::string PAH_ANA_VIDEO_ATTS = "phaccess_ana_video_atts_operation";
 const std::string PAH_ANA_LABEL = "phaccess_ana_label_operation";
 const std::string PAH_ANA_VIDEO_LABEL = "phaccess_ana_video_label_operation";
 const std::string PAH_ANA_FACE = "phaccess_ana_face_operation";
@@ -276,14 +279,17 @@ const std::string SEARCH_INDEX_CONSTRUCTION_STATUS = "phaccess_search_index_cons
 const std::string PAH_ANA_MULTI_CROP = "phaccess_ana_multi_crop_operation";
 const std::string PAH_ANA_ASSET_SD = "tab_analysis_asset_sd_map";
 const std::string PAH_ANA_ALBUM_ASSET = "tab_analysis_album_asset_map";
+const std::string PAH_ANA_FOREGROUND = "phaccess_ana_foreground_operation";
 // PhotoAccessHelper photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
+const std::string PAH_SYS_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SYS_CREATE;
 const std::string PAH_CREATE_PHOTO_COMPONENT = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE_COMPONENT;
 const std::string PAH_CLOSE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CLOSE;
 const std::string PAH_UPDATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_UPDATE;
 const std::string PAH_UPDATE_PHOTO_COMPONENT = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" +
     OPRN_SAVE_CAMERA_PHOTO_COMPONENT;
 const std::string PAH_TRASH_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_TRASH;
+const std::string PAH_SYS_TRASH_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SYS_TRASH;
 const std::string PAH_QUERY_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_QUERY;
 const std::string PAH_EDIT_USER_COMMENT_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SET_USER_COMMENT;
 const std::string PAH_HIDE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_HIDE;
@@ -397,6 +403,7 @@ const std::string PAH_UPDATE_ORDER_ANA_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH
 
 const std::string PAH_QUERY_ANA_OCR = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_OCR + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_ATTS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ATTS + "/" + OPRN_QUERY;
+const std::string PAH_QUERY_ANA_VIDEO_ATTS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_VIDEO_ATTS + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_LABEL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_LABEL + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_VIDEO_LABEL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_VIDEO_LABEL + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FACE + "/" + OPRN_QUERY;
@@ -425,6 +432,7 @@ const std::string PAH_QUERY_MULTI_CROP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_M
 const std::string PAH_UPDATE_ANA_FACE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FACE + "/" + OPRN_UPDATE;
 const std::string PAH_DELETE_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_DELETE + "/" + OPRN_DELETE;
 const std::string PAH_INSERT_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_ADD_ASSETS;
+const std::string PAH_UPDATE_ANA_FOREGROUND = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_FOREGROUND + "/" + OPRN_UPDATE;
 
 // PhotoAccessHelper moving photo
 const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +
@@ -487,6 +495,8 @@ const std::string MEDIALIBRARY_BUNDLEPERM_URI = MEDIALIBRARY_DATA_URI + "/" + BU
 
 const std::string MEDIALIBRARY_CHECK_URIPERM_URI = MEDIALIBRARY_DATA_URI + "/" + CHECK_URI_PERMISSION;
 const std::string MEDIALIBRARY_GRANT_URIPERM_URI = MEDIALIBRARY_DATA_URI + "/" + GRANT_URI_PERMISSION;
+const std::string PAH_CREATE_APP_URI_PERMISSION =
+    MEDIALIBRARY_DATA_URI + "/" + MEDIA_APP_URI_PERMISSIONOPRN + "/" + OPRN_CREATE;
 
 const std::string MEDIALIBRARY_AUDIO_URI = MEDIALIBRARY_DATA_URI + '/' + "audio";
 const std::string MEDIALIBRARY_VIDEO_URI = MEDIALIBRARY_DATA_URI + '/' + "video";

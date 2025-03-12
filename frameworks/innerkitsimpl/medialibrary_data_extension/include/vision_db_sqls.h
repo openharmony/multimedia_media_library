@@ -18,6 +18,7 @@
 
 #include "search_column.h"
 #include "vision_aesthetics_score_column.h"
+#include "vision_video_aesthetics_score_column.h"
 #include "vision_album_column.h"
 #include "vision_column_comm.h"
 #include "vision_column.h"
@@ -88,6 +89,14 @@ const std::string CREATE_TAB_ANALYSIS_AESTHETICS = "CREATE TABLE IF NOT EXISTS "
     AESTHETICS_VERSION + " TEXT, " +
     PROB + " REAL, " +
     ANALYSIS_VERSION + " TEXT)";
+
+const std::string CREATE_TAB_VIDEO_ANALYSIS_AESTHETICS = "CREATE TABLE IF NOT EXISTS " +
+    VISION_VIDEO_AESTHETICS_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT UNIQUE, " +
+    VIDEO_AESTHETICS_SCORE + " INT, " +
+    VIDEO_AESTHETICS_VERSION + " TEXT, " +
+    PROB + " REAL)";
 
 const std::string CREATE_TAB_ANALYSIS_SALIENCY_DETECT = "CREATE TABLE IF NOT EXISTS " + VISION_SALIENCY_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
