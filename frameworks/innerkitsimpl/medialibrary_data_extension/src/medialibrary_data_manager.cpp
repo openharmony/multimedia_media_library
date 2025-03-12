@@ -409,9 +409,9 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         rdbStore->SetOldVersion(VERSION_ADD_MEDIA_SUFFIX_COLUMN);
     }
 
-    if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX) {
+    if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX) {
         MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(rdbStore);
-        rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDG_INDEX);
+        rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX);
     }
 }
 
