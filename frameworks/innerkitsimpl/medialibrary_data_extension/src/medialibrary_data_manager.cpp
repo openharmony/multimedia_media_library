@@ -408,6 +408,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         FillMediaSuffixForHistoryData(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_MEDIA_SUFFIX_COLUMN);
     }
+
+    if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX) {
+        MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX);
+    }
 }
 
 void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
