@@ -2587,7 +2587,7 @@ int32_t MediaLibraryDataManager::UpdateDirtyHdcDataStatus()
     return E_OK;
 }
 
-void MediaLibraryDataManager::DeleteDirtyFileAndDir(const vector<std::string>& deleteFilePaths)
+void MediaLibraryDataManager::DeleteDirtyFileAndDir(const std::vector<std::string>& deleteFilePaths)
 {
     for (auto path : deleteFilePaths) {
         bool deleteFileRet = MediaFileUtils::DeleteFileOrFolder(path, true);
