@@ -1134,6 +1134,51 @@ HWTEST_F(MediaLibraryCloudEnhancementTest, enhancement_database_operations_inser
 
     MEDIA_INFO_LOG("enhancement_database_operations_insert_004 End");
 }
+
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_is_add_operation_enabled_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_001 Start");
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    string uriStr = PAH_CLOUD_ENHANCEMENT_ADD;
+    MediaFileUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, "true");
+    Uri addTaskUri(uriStr);
+    MediaLibraryCommand cmd(addTaskUri);
+    int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
+    UpdateCEAvailable(fileId, 1);
+    DataSharePredicates predicates;
+    string photoUri = "file://media/Photo/" + to_string(fileId) + "/IMG_1722329102_000/" + TESTING_DISPLAYNAME;
+    vector<string> uris;
+    uris.emplace_back(photoUri);
+    predicates.In(MediaColumn::MEDIA_ID, uris);
+    cmd.SetDataSharePred(predicates);
+    instance.HandlePhotosAutoOptionChange("close");
+    int32_t result = instance.HandleAddOperation(cmd, true, 1);
+    EXPECT_EQ(result, -1);
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_001 End");
+}
+
+HWTEST_F(MediaLibraryCloudEnhancementTest, manager_is_add_operation_enabled_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_002 Start");
+    EnhancementManager &instance = EnhancementManager::GetInstance();
+    string uriStr = PAH_CLOUD_ENHANCEMENT_ADD;
+    MediaFileUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, "true");
+    Uri addTaskUri(uriStr);
+    MediaLibraryCommand cmd(addTaskUri);
+    int32_t fileId = PrepareHighQualityPhoto(TESTING_PHOTO_ID, TESTING_DISPLAYNAME);
+    UpdateCEAvailable(fileId, 1);
+    DataSharePredicates predicates;
+    string photoUri = "file://media/Photo/" + to_string(fileId) + "/IMG_1722329102_000/" + TESTING_DISPLAYNAME;
+    vector<string> uris;
+    uris.emplace_back(photoUri);
+    predicates.In(MediaColumn::MEDIA_ID, uris);
+    cmd.SetDataSharePred(predicates);
+    instance.HandlePhotosAutoOptionChange("WLAN only");
+    instance.HandleNetChange(false, true);
+    int32_t result = instance.HandleAddOperation(cmd, true, 1);
+    EXPECT_EQ(result, -1);
+    MEDIA_INFO_LOG("manager_is_add_operation_enabled_002 End");
+}
 #endif
 } // namespace Media
 } // namespace OHOS

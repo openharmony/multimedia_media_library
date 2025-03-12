@@ -44,6 +44,7 @@ public:
     int32_t SetResultCallback();
     int32_t LoadSA();
     bool IsConnected(MediaEnhance::MediaEnhanceClientHandle* clientWrapper);
+    bool IsConnected();
     EXPORT MediaEnhance::MediaEnhanceBundleHandle* CreateBundle();
     void DestroyBundle(MediaEnhance::MediaEnhanceBundleHandle* bundle);
     int32_t GetInt(MediaEnhance::MediaEnhanceBundleHandle* bundle, const char* key);
@@ -54,13 +55,15 @@ public:
     void PutString(MediaEnhance::MediaEnhanceBundleHandle* bundle, const char* key,
         const char* value);
     void DeleteRawData(MediaEnhance::Raw_Data* rawData, uint32_t size);
-    void DeletePendingTasks(MediaEnhance::Pendding_Task* taskIdList, uint32_t size);
+    void DeletePendingTasks(MediaEnhance::Pending_Task* taskIdList, uint32_t size);
     EXPORT int32_t AddTask(const std::string& taskId, MediaEnhance::MediaEnhanceBundleHandle* bundle);
     EXPORT int32_t RemoveTask(const std::string &taskId);
     EXPORT int32_t CancelTask(const std::string &taskId);
     EXPORT int32_t CancelAllTasks();
     EXPORT int32_t LoadEnhancementService();
     EXPORT int32_t GetPendingTasks(std::vector<std::string> &taskIdList);
+    EXPORT int32_t PauseAllTasks(MediaEnhance::MediaEnhanceBundleHandle* bundle);
+    EXPORT int32_t ResumeAllTasks(MediaEnhance::MediaEnhanceBundleHandle* bundle);
 #endif
     
 private:

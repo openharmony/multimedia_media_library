@@ -22,6 +22,7 @@ namespace OHOS {
 namespace Media {
 const std::string MEDIALIBRARY_DATA_URI = "datashare:///media";
 const std::string MEDIA_OPERN_KEYWORD = "operation";
+const std::string MEDIA_TRIGGER_MODE_KEYWORD = "trigger_mode";
 const std::string MEDIA_MOVING_PHOTO_OPRN_KEYWORD = "moving_photo_operation";
 const std::string MEDIA_QUERYOPRN = "query_operation";
 const std::string OPRN_CREATE = "create";

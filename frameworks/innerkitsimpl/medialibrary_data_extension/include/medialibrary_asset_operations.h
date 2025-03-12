@@ -81,6 +81,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_BURST_COVER_LEVEL, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_THUMBNAIL_READY, MEMBER_TYPE_INT64 },
     { PhotoColumn::SUPPORTED_WATERMARK_TYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_IS_AUTO, MEMBER_TYPE_INT32 },
 };
 
 class MediaLibraryAssetOperations {
