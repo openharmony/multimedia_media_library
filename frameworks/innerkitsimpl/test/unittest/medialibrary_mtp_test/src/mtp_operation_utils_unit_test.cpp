@@ -95,8 +95,8 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_003, Te
     std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
     ASSERT_NE(mtpOperationUtils, nullptr);
     int errcode = 0;
-    mtpOperationUtils->HasStorage(errcode);
-    EXPECT_EQ(errcode, MTP_ERROR_CONTEXT_IS_NULL);
+    uint16_t res = mtpOperationUtils->HasStorage(errcode);
+    EXPECT_EQ(res, static_cast<uint16_t>(MTP_ERROR_CONTEXT_IS_NULL));
 }
 
 /*
@@ -116,8 +116,8 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_004, Te
     std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
     ASSERT_NE(mtpOperationUtils, nullptr);
     int errcode = 0;
-    mtpOperationUtils->HasStorage(errcode);
-    EXPECT_EQ(errcode, MTP_ERROR_SESSION_NOT_OPEN);
+    uint16_t res = mtpOperationUtils->HasStorage(errcode);
+    EXPECT_EQ(res, static_cast<uint16_t>(MTP_ERROR_SESSION_NOT_OPEN));
 }
 
 /*
@@ -138,8 +138,8 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_005, Te
     std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
     ASSERT_NE(mtpOperationUtils, nullptr);
     int errcode = 0;
-    mtpOperationUtils->HasStorage(errcode);
-    EXPECT_EQ(errcode, MTP_ERROR_INVALID_STORAGE_ID);
+    uint16_t res = mtpOperationUtils->HasStorage(errcode);
+    EXPECT_EQ(res, static_cast<uint16_t>(MTP_ERROR_INVALID_STORAGE_ID));
 }
 
 /*
