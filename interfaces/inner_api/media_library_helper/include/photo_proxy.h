@@ -61,6 +61,7 @@ public:
     virtual double GetLatitude() = 0;
     virtual double GetLongitude() = 0;
     virtual int32_t GetShootingMode() = 0;
+    virtual uint32_t GetCloudImageEnhanceFlag() = 0;
 };
 } // Media
 } // OHOS
