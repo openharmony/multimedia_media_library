@@ -456,7 +456,8 @@ bool SourceLoader::CreateSourcePixelMap()
 bool SourceLoader::CreateSourceFromOriginalPhotoPicture()
 {
     CHECK_AND_RETURN_RET_LOG(data_.originalPhotoPicture != nullptr, false, "OriginalPhotoPicture is nullptr");
-    if (data_.loaderOpts.decodeInThumbSize) {
+    if (data_.loaderOpts.decodeInThumbSize ||
+        !ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(data_.originalPhotoPicture->GetMainPixel())) {
         data_.originalPhotoPicture = nullptr;
         return false;
     }

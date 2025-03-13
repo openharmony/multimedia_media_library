@@ -36,6 +36,7 @@ namespace Media {
 
 static constexpr int32_t PLANE_Y = 0;
 static constexpr int32_t PLANE_U = 1;
+static constexpr int32_t PLANE_V = 2;
 static constexpr uint8_t HDR_PIXEL_SIZE = 2;
 static constexpr uint8_t SDR_PIXEL_SIZE = 1;
 static const std::map<std::string, int32_t> ORIENTATION_INT_MAP = {
@@ -51,6 +52,18 @@ bool ThumbnailImageFrameWorkUtils::IsYuvPixelMap(std::shared_ptr<PixelMap> pixel
     PixelFormat format = pixelMap->GetPixelFormat();
     return format == PixelFormat::NV21 || format == PixelFormat::NV12 ||
         format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010;
+}
+
+bool ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(std::shared_ptr<PixelMap> pixelMap)
+{
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is nullptr");
+    if (!IsYuvPixelMap(pixelMap)) {
+        return true;
+    }
+    PixelFormat format = pixelMap->GetPixelFormat();
+    CHECK_AND_RETURN_RET_LOG(format == PixelFormat::NV21 || format == PixelFormat::NV12, false,
+        "Not support copy pixelMap, format:%{public}d", format);
+    return true;
 }
 
 std::shared_ptr<Picture> ThumbnailImageFrameWorkUtils::CopyPictureSource(std::shared_ptr<Picture> picture)
@@ -86,7 +99,7 @@ std::shared_ptr<Picture> ThumbnailImageFrameWorkUtils::CopyPictureSource(std::sh
 
 std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyPixelMapSource(std::shared_ptr<PixelMap> pixelMap)
 {
-    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, nullptr, "PixelMap is nullptr");
+    CHECK_AND_RETURN_RET_LOG(IsSupportCopyPixelMap(pixelMap), nullptr, "Not support copy pixelMap");
     if (IsYuvPixelMap(pixelMap)) {
         return CopyYuvPixelmap(pixelMap);
     }
@@ -159,7 +172,8 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyYuvPixelmapWithSurfa
     copyPixelMap->InnerSetColorSpace(pixelMap->InnerGetGrColorSpace());
     copyPixelMap->SetPixelsAddr(dstSurfaceBuffer->GetVirAddr(), dstSurfaceBuffer.GetRefPtr(),
         dstSurfaceBuffer->GetSize(), AllocatorType::DMA_ALLOC, nullptr);
-    SetPixelMapYuvInfo(dstSurfaceBuffer, copyPixelMap, pixelMap->IsHdr());
+    CHECK_AND_RETURN_RET_LOG(SetPixelMapYuvInfo(dstSurfaceBuffer, copyPixelMap, pixelMap->IsHdr()), nullptr,
+        "SetPixelMapYuvInfo failed");
     return copyPixelMap;
 }
 
@@ -179,14 +193,15 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyNoSurfaceBufferYuvPi
     CHECK_AND_RETURN_RET_LOG(copyRes == E_OK, nullptr,
         "CopyNoSurfaceBufferYuvPixelmap failed, copyRes:%{public}d", copyRes);
     sptr<SurfaceBuffer> surfaceBuffer = nullptr;
-    SetPixelMapYuvInfo(surfaceBuffer, copyPixelMap, false);
+    CHECK_AND_RETURN_RET_LOG(SetPixelMapYuvInfo(surfaceBuffer, copyPixelMap, false), nullptr,
+        "SetPixelMapYuvInfo failed");
     return copyPixelMap;
 }
 
-void ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(sptr<SurfaceBuffer> &surfaceBuffer,
+bool ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(sptr<SurfaceBuffer> &surfaceBuffer,
     std::shared_ptr<PixelMap> pixelMap, bool isHdr)
 {
-    CHECK_AND_RETURN_LOG(pixelMap != nullptr, "PixelMap is nullptr");
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is nullptr");
     uint8_t ratio = isHdr ? HDR_PIXEL_SIZE : SDR_PIXEL_SIZE;
     int32_t srcWidth = pixelMap->GetWidth();
     int32_t srcHeight = pixelMap->GetHeight();
@@ -200,20 +215,33 @@ void ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(sptr<SurfaceBuffer> &surfa
 
     if (surfaceBuffer == nullptr) {
         pixelMap->SetImageYUVInfo(yuvDataInfo);
-        return;
+        return true;
     }
     OH_NativeBuffer_Planes *planes = nullptr;
     GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
     if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
         pixelMap->SetImageYUVInfo(yuvDataInfo);
-        return;
+        return true;
     }
-    yuvDataInfo.yStride = planes->planes[PLANE_Y].columnStride / ratio;
-    yuvDataInfo.uvStride = planes->planes[PLANE_U].columnStride / ratio;
-    yuvDataInfo.yOffset = planes->planes[PLANE_Y].offset / ratio;
-    yuvDataInfo.uvOffset = planes->planes[PLANE_U].offset / ratio;
+
+    auto format = pixelMap->GetPixelFormat();
+    if (format == PixelFormat::NV12) {
+        yuvDataInfo.yStride = planes->planes[PLANE_Y].columnStride / ratio;
+        yuvDataInfo.uvStride = planes->planes[PLANE_U].columnStride / ratio;
+        yuvDataInfo.yOffset = planes->planes[PLANE_Y].offset / ratio;
+        yuvDataInfo.uvOffset = planes->planes[PLANE_U].offset / ratio;
+    } else if (format == PixelFormat::NV21) {
+        yuvDataInfo.yStride = planes->planes[PLANE_Y].columnStride / ratio;
+        yuvDataInfo.uvStride = planes->planes[PLANE_V].columnStride / ratio;
+        yuvDataInfo.yOffset = planes->planes[PLANE_Y].offset / ratio;
+        yuvDataInfo.uvOffset = planes->planes[PLANE_V].offset / ratio;
+    } else {
+        MEDIA_ERR_LOG("Not support SetImageYUVInfo, format:%{public}d", format);
+        return false;
+    }
 
     pixelMap->SetImageYUVInfo(yuvDataInfo);
+    return true;
 }
 
 int32_t ThumbnailImageFrameWorkUtils::GetPictureOrientation(std::shared_ptr<Picture> picture, int32_t &orientation)
