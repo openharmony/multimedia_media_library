@@ -23,6 +23,7 @@
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
 #include "cloud_sync_helper.h"
+#include "cloud_sync_utils.h"
 #include "database_report.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
@@ -232,6 +233,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     MEDIA_INFO_LOG("Start clone restore");
     SetParameterForClone();
     GetAccountValid();
+    isSyncSwitchOn_ = CloudSyncUtils::IsCloudSyncSwitchOn();
 #ifdef CLOUD_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
@@ -466,7 +468,7 @@ void CloneRestore::RestoreAlbum()
     RestorePortraitClusteringInfo();
     cloneRestoreGeo_.RestoreGeoKnowledgeInfos();
     cloneRestoreGeoDictionary_.RestoreAlbums();
-    RestoreHighlightAlbums(CloudSyncHelper::GetInstance()->IsSyncSwitchOpen());
+    RestoreHighlightAlbums();
 }
 
 int32_t CloneRestore::GetHighlightCloudMediaCnt()
@@ -486,7 +488,7 @@ int32_t CloneRestore::GetHighlightCloudMediaCnt()
     return cnt;
 }
 
-void CloneRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
+void CloneRestore::RestoreHighlightAlbums()
 {
     int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
     UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_)
@@ -494,8 +496,8 @@ void CloneRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
             "sceneCode_: " + std::to_string(this->sceneCode_) +
             ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
             ", isAccountValid_: " + std::to_string(isAccountValid_) +
-            ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
-    if (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen)) {
+            ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOn_));
+    if (highlightCloudMediaCnt == 0 || IsCloudRestoreSatisfied()) {
         cloneRestoreHighlight_.RestoreAlbums();
     }
 }
@@ -1360,7 +1362,7 @@ void CloneRestore::GetQueryWhereClause(const string &tableName, const unordered_
 {
     bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
     unordered_map<string, string> queryWhereClauseMap;
-    if (isAccountValid_ && isSyncSwitchOpen) {
+    if (IsCloudRestoreSatisfied()) {
         queryWhereClauseMap = GetValueFromMap(TABLE_QUERY_WHERE_CLAUSE_MAP_WITH_CLOUD, tableName);
     } else {
         queryWhereClauseMap = GetValueFromMap(TABLE_QUERY_WHERE_CLAUSE_MAP, tableName);
@@ -1659,10 +1661,9 @@ void CloneRestore::RestoreGallery()
     // Restore the backup db info.
     RestoreAlbum();
     RestorePhoto();
-    bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
     MEDIA_INFO_LOG("the isAccountValid_ is %{public}d, sync switch open is %{public}d", isAccountValid_,
-        isSyncSwitchOpen);
-    if (isAccountValid_ && isSyncSwitchOpen) {
+        isSyncSwitchOn_);
+    if (IsCloudRestoreSatisfied()) {
         MEDIA_INFO_LOG("singlCloud cloud clone");
         RestorePhotoForCloud();
     }
@@ -2555,7 +2556,6 @@ void CloneRestore::RestorePortraitClusteringInfo()
 std::vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std::string &inClause)
 {
     std::vector<FaceTagTbl> result;
-    bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
 
     std::string querySql = "SELECT DISTINCT " + inClause +
         " FROM " + VISION_FACE_TAG_TABLE + " vft" +
@@ -2563,7 +2563,7 @@ std::vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std:
         " LEFT JOIN AnalysisPhotoMap apm ON aa.album_id = apm.map_album" +
         " LEFT JOIN Photos ph ON ph.file_id = apm.map_asset" +
         " WHERE " +
-        ((isAccountValid_ && isSyncSwitchOpen) ? "ph.position IN (1, 2, 3)" : "ph.position IN (1, 3)");
+        (IsCloudRestoreSatisfied() ? "ph.position IN (1, 2, 3)" : "ph.position IN (1, 3)");
 
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 

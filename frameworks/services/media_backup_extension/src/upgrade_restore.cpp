@@ -339,7 +339,7 @@ int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
     return cnt;
 }
 
-void UpgradeRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
+void UpgradeRestore::RestoreHighlightAlbums()
 {
     int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
     UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
@@ -348,10 +348,10 @@ void UpgradeRestore::RestoreHighlightAlbums(bool isSyncSwitchOpen)
         ", dualDeviceSoftName_: " + dualDeviceSoftName_ +
         ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
         ", isAccountValid_: " + std::to_string(isAccountValid_) +
-        ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOpen));
+        ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOn_));
     if ((sceneCode_ == UPGRADE_RESTORE_ID || dualDeviceSoftName_.empty()
         || dualDeviceSoftName_.find("4", dualDeviceSoftName_.find(" ")) == dualDeviceSoftName_.find(" ") + 1)
-        && (highlightCloudMediaCnt == 0 || (isAccountValid_ && isSyncSwitchOpen))) {
+        && (highlightCloudMediaCnt == 0 || IsCloudRestoreSatisfied())) {
         MEDIA_INFO_LOG("start to restore highlight albums");
         highlightRestore_.RestoreAlbums(albumOdid_);
     }
@@ -361,9 +361,8 @@ void UpgradeRestore::RestorePhotoInner()
 {
     std::string dbIntegrityCheck = CheckGalleryDbIntegrity();
     if (dbIntegrityCheck == DB_INTEGRITY_CHECK) {
-        bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
         MEDIA_INFO_LOG("the isAccountValid is %{public}d, sync switch open is %{public}d", isAccountValid_,
-            isSyncSwitchOpen);
+            isSyncSwitchOn_);
         // upgrade gallery.db
         DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
         AnalyzeGallerySource();
@@ -372,10 +371,10 @@ void UpgradeRestore::RestorePhotoInner()
         this->photoAlbumRestore_.Restore();
         RestoreFromGalleryPortraitAlbum();
         geoKnowledgeRestore_.RestoreGeoKnowledgeInfos();
-        RestoreHighlightAlbums(isSyncSwitchOpen);
+        RestoreHighlightAlbums(isSyncSwitchOn_);
         // restore Photos
         RestoreFromGallery();
-        if (isAccountValid_ && isSyncSwitchOpen) {
+        if (IsCloudRestoreSatisfied()) {
             MEDIA_INFO_LOG("here cloud clone");
             RestoreCloudFromGallery();
             MEDIA_INFO_LOG("Migrate LCD:%{public}" PRIu64 ",THM:%{public}" PRIu64
@@ -931,9 +930,8 @@ void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
 
 int32_t UpgradeRestore::QueryPortraitAlbumTotalNumber()
 {
-    bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
     return BackupDatabaseUtils::QueryInt(galleryRdb_,
-        ((isAccountValid_ && isSyncSwitchOpen) ?
+        (IsCloudRestoreSatisfied() ?
         QUERY_GALLERY_PORTRAIT_ALBUM_WITH_CLOUD_COUNT : QUERY_GALLERY_PORTRAIT_ALBUM_COUNT), CUSTOM_COUNT);
 }
 
@@ -942,11 +940,10 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
 {
     vector<PortraitAlbumInfo> result;
     result.reserve(QUERY_COUNT);
-    bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
 
     std::string querySql = "SELECT " + GALLERY_MERGE_TAG_TAG_ID + ", " + GALLERY_GROUP_TAG + ", " +
         GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION +
-        " FROM " + ((isAccountValid_ && isSyncSwitchOpen) ?
+        " FROM " + (IsCloudRestoreSatisfied() ?
         GALLERY_PORTRAIT_ALBUM_TABLE_WITH_CLOUD : GALLERY_PORTRAIT_ALBUM_TABLE);
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
 

@@ -155,6 +155,7 @@ protected:
     int32_t RemoveDentryFileWithConflict(const FileInfo &fileInfo);
     int32_t GetRestoreMode();
     uint64_t GetNotFoundNumber();
+    bool IsCloudRestoreSatisfied();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
@@ -216,6 +217,7 @@ protected:
     TabOldPhotosRestore tabOldPhotosRestore_;
     bool needReportFailed_ = false;
     bool isAccountValid_ = false;
+    bool isSyncSwitchOn_ = false;
     GeoKnowledgeRestore geoKnowledgeRestore_;
     HighlightRestore highlightRestore_;
     PhotosDataHandler photosDataHandler_;

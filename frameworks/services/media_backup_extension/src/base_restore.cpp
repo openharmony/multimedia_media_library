@@ -26,6 +26,7 @@
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
 #include "cloud_sync_manager.h"
+#include "cloud_sync_utils.h"
 #include "directory_ex.h"
 #include "extension_context.h"
 #include "media_column.h"
@@ -178,6 +179,7 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
     upgradeRestoreDir_ = upgradePath;
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     GetAccountValid();
+    isSyncSwitchOn_ = CloudSyncUtils::IsCloudSyncSwitchOn();
     GetSourceDeviceInfo();
     if (errorCode == E_OK) {
         RestorePhoto();
@@ -1855,6 +1857,11 @@ std::string BaseRestore::GetUpgradeEnhance()
     upgradeEnhance << "," << rotateLcdMigrateFileNumber_;
     upgradeEnhance << "," << rotateThmMigrateFileNumber_;
     return upgradeEnhance.str();
+}
+
+bool BaseRestore::IsCloudRestoreSatisfied()
+{
+    return isAccountValid_ && isSyncSwitchOn_;
 }
 } // namespace Media
 } // namespace OHOS
