@@ -249,6 +249,10 @@ private:
     void ReportCloneRestoreHighlightTask();
     bool IsMapColumnOrderExist();
     void HighlightDeduplicate(const HighlightAlbumInfo &info);
+    std::vector<NativeRdb::ValueObject> GetHighlightDuplicateIds(const HighlightAlbumInfo &info,
+        std::string &duplicateAlbumName);
+    void UpdateHighlightDuplicateRows(const std::vector<NativeRdb::ValueObject> &changeIds,
+        const std::string &duplicateAlbumName);
 
 private:
     int32_t sceneCode_{-1};
