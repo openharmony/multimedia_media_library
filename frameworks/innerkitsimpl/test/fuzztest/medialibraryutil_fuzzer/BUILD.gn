@@ -26,6 +26,7 @@ ohos_fuzztest("MediaLibraryUtilFuzzTest") {
   ]
 
   sources = [
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "src/medialibrary_util_fuzzer.cpp",
