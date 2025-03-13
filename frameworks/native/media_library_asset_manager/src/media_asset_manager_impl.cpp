@@ -119,15 +119,14 @@ static AssetHandler* CreateAssetHandler(const std::string &photoId, const std::s
     const std::string &uri, const std::string &destUri, const MediaAssetDataHandlerPtr &handler)
 {
     AssetHandler *assetHandler = new AssetHandler(photoId, requestId, uri, destUri, handler);
-    MEDIA_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s, %{public}p.",
-        photoId.c_str(), requestId.c_str(), uri.c_str(), assetHandler);
+    MEDIA_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s",
+        photoId.c_str(), requestId.c_str(), uri.c_str());
     return assetHandler;
 }
 
 static void DeleteAssetHandlerSafe(AssetHandler *handler)
 {
     if (handler != nullptr) {
-        MEDIA_DEBUG_LOG("[AssetHandler delete] %{public}p.", handler);
         delete handler;
         handler = nullptr;
     }
