@@ -229,6 +229,8 @@ int32_t BaseRestore::Init(void)
     MEDIA_INFO_LOG("imageNumber: %{public}d", (int)imageNumber_);
     MEDIA_INFO_LOG("videoNumber: %{public}d", (int)videoNumber_);
     MEDIA_INFO_LOG("audioNumber: %{public}d", (int)audioNumber_);
+    photosDataHandler_.OnStart(sceneCode_, taskId_, mediaLibraryRdb_);
+    photosDataHandler_.HandleDirtyFiles();
     return E_OK;
 }
 
@@ -1008,7 +1010,7 @@ int32_t BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
     }
 
     NativeRdb::ValuesBucket updatePostBucket;
-    updatePostBucket.Put(PhotoColumn::PHOTO_SYNC_STATUS, PHOTO_SYNC_STATUS_VISIBLE);
+    updatePostBucket.Put(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
     std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
         make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
     predicates->In(MediaColumn::MEDIA_FILE_PATH, visibleIds);

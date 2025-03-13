@@ -467,6 +467,17 @@ void MediaLibraryRdbStore::AddAlbumIndex(const shared_ptr<MediaLibraryRdbStore> 
     MEDIA_INFO_LOG("end add album index");
 }
 
+void MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start update location knowledge index");
+    const vector<string> sqls = {
+        DROP_KNOWLEDGE_INDEX,
+        CREATE_NEW_KNOWLEDGE_INDEX
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end update location knowledge index");
+}
+
 void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
@@ -3021,15 +3032,6 @@ void AddHighlightChangeFunction(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-static void AddImageFaceTagIdIndex(RdbStore& store)
-{
-    static const vector<string> executeSqlStrs = {
-        CREATE_IMAGE_FACE_TAG_ID_INDEX
-    };
-    MEDIA_INFO_LOG("Adding TAG_ID index for VISION_IMAGE_FACE_TABLE");
-    ExecSqls(executeSqlStrs, store);
-}
-
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -4319,10 +4321,6 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_HIGHLIGHT_MOVING_PHOTO) {
         AddMovingPhotoRelatedData(store);
-    }
-
-    if (oldVersion < VERSION_IMAGE_FACE_TAG_ID_INDEX) {
-        AddImageFaceTagIdIndex(store);
     }
 }
 

@@ -33,6 +33,8 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "others_clone_restore.h"
+#include "photos_dao.h"
+#include "photos_data_handler.h"
 #include "burst_key_generator.h"
 #include "backup_const.h"
 #undef protected
@@ -2180,6 +2182,52 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     EXPECT_FALSE(cloneRestoreClassify->CheckTableColumns(VISION_VIDEO_LABEL_TABLE, columns));
 
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_dirty_count_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_dirty_count_test");
+    PhotosDao photosDao_;
+    photosDao_.SetMediaLibraryRdb(g_rdbStore->GetRaw());
+    int32_t count = photosDao_.GetDirtyFilesCount();
+    EXPECT_EQ(count, EXPECTED_COUNT_0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_dirty_files_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_dirty_files_test");
+    PhotosDao photosDao_;
+    photosDao_.SetMediaLibraryRdb(g_rdbStore->GetRaw());
+    auto result = photosDao_.GetDirtyFiles(EXPECTED_COUNT_0);
+    EXPECT_EQ(result.size(), EXPECTED_COUNT_0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_handle_dirty_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_handle_dirty_test");
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(EXPECTED_COUNT_0, "", g_rdbStore->GetRaw());
+    photosDataHandler_.HandleDirtyFiles();
+    EXPECT_EQ(photosDataHandler_.dirtyFileCleanNumber_, EXPECTED_COUNT_0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_clean_dirty_files_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_clean_dirty_files_test");
+    std::vector<PhotosDao::PhotosRowData> dirtyFiles;
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(EXPECTED_COUNT_0, "", g_rdbStore->GetRaw());
+    int32_t count = photosDataHandler_.CleanDirtyFiles(dirtyFiles);
+    EXPECT_EQ(count, EXPECTED_COUNT_0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_delete_db_dirty_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_delete_db_dirty_test");
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(EXPECTED_COUNT_0, "", g_rdbStore->GetRaw());
+    int32_t count = photosDataHandler_.DeleteDirtyFilesInDb();
+    EXPECT_EQ(count, EXPECTED_COUNT_0);
 }
 } // namespace Media
 } // namespace OHOS

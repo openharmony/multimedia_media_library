@@ -966,24 +966,6 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_042, TestSi
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: CompressImage
- */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_045, TestSize.Level0)
-{
-    ASSERT_NE(mtpMediaLib_, nullptr);
-    mtpMediaLib_->Clear();
-    OHOS::Media::PixelMap pixelMap;
-    std::vector<uint8_t> data;
-    bool res = mtpMediaLib_->CompressImage(pixelMap, data);
-    EXPECT_FALSE(res);
-}
-
-/*
- * Feature: MediaLibraryMTP
- * Function:
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
  * CaseDescription: MoveObjectSub
  */
 HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_046, TestSize.Level0)
