@@ -193,6 +193,7 @@ private:
     static void JSCancelRequestExecute(napi_env env, void *data);
     static void JSCancelRequestComplete(napi_env env, napi_status, void *data);
     static bool CreateOnProgressHandlerInfo(napi_env env, unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
+    static void ReleaseSafeFunc(napi_threadsafe_function &progressFunc);
 public:
     std::mutex sMediaAssetMutex_;
     static inline SafeMap<std::string, ProgressHandler*> progressHandlerMap_;
