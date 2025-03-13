@@ -2596,7 +2596,8 @@ void MediaLibraryDataManager::DeleteDirtyFileAndDir(const std::vector<std::strin
         bool deleteThumbsRet = MediaFileUtils::DeleteFileOrFolder(thumbsFolder, false);
         if (!deleteFileRet || !deleteThumbsRet) {
             MEDIA_ERR_LOG("Clean file failed, path: %{public}s, ret: %{public}d, errno: %{public}d",
-                path.c_str(), static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);
+                MediaFileUtils::DesensitizePath(path).c_str(),
+                static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);
         }
     }
 }

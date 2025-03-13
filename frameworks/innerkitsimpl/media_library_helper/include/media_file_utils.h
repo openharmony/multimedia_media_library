@@ -208,7 +208,7 @@ public:
     EXPORT static std::string DesensitizeUri(const std::string &fileUri);
     EXPORT static bool DeleteFileOrFolder(const std::string &path, bool isFile);
     EXPORT static std::string GetReplacedPathByPrefix(const std::string srcPrefix, const std::string dstPrefix,
-    const std::string &path);
+        const std::string &path);
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);
