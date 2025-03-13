@@ -210,10 +210,8 @@ static int32_t RefreshAlbumInfoAndUris(
         string deleteRefreshAlbumSql = "DELETE FROM " + ALBUM_REFRESH_TABLE + " WHERE " + REFRESHED_ALBUM_ID + " = " +
                                        std::to_string(albumId) + " AND " + ALBUM_REFRESH_STATUS + " = 1";
         ret = rdbStore->ExecuteSql(deleteRefreshAlbumSql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to execute delete refresh album sql:%{private}s", deleteRefreshAlbumSql.c_str());
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Failed to execute delete refresh album sql:%{private}s",
+            deleteRefreshAlbumSql.c_str());
         MEDIA_DEBUG_LOG("#test delete refresh album sql:%{public}s, albumId:%{public}d, albumSubtype:%{public}d",
             deleteRefreshAlbumSql.c_str(),
             albumId,
@@ -419,9 +417,7 @@ static void ConstructAssetsNotifyUris(const shared_ptr<MediaLibraryRdbStore> rdb
             cloudIds.emplace_back(cloudId);
         }
         auto resultSet = AlbumsRefreshManager::GetInstance().CovertCloudId2FileId(rdbStore, cloudIds);
-        if (resultSet == nullptr) {
-            return;
-        }
+        CHECK_AND_RETURN(resultSet != nullptr);
         do {
             int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
             string uri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(fileId);

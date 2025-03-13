@@ -36,10 +36,7 @@ std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetGalleryMedia(
     int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
     int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag, offset, pageSize};
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, nullptr, "Media_Restore: galleryRdb_ is null.");
     return this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE, params);
 }
 
@@ -49,10 +46,7 @@ std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetGalleryMedia(
 std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetCloudGalleryMedia(
     int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, nullptr, "Media_Restore: galleryRdb_ is null.");
     int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
     int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag, offset, pageSize};
@@ -67,14 +61,11 @@ int32_t GalleryMediaDao::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQ
     int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
     int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag};
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
+
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -83,17 +74,13 @@ int32_t GalleryMediaDao::GetGalleryMediaCount(bool shouldIncludeSd, bool hasLowQ
  */
 int32_t GalleryMediaDao::GetCloudMetaCount(bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Cloud_meta_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Cloud_meta_Restore: galleryRdb_ is null.");
     int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
     int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_CLOUD_META_QUERY_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -104,14 +91,10 @@ int32_t GalleryMediaDao::GetNoNeedMigrateCount(bool shouldIncludeSd)
 {
     int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
     std::vector<NativeRdb::ValueObject> params = {shouldIncludeSdFlag};
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_NO_NEED_MIGRATE_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
     return GetInt32Val("count", resultSet);
 }
 }  // namespace OHOS::Media
