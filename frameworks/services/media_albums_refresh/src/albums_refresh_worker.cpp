@@ -201,14 +201,13 @@ void AlbumsRefreshWorker::TaskExecute(SyncNotifyInfo &info)
         VariantMap map = {{KEY_END_DOWNLOAD_TIME, MediaFileUtils::UTCTimeMilliSeconds()}};
         PostEventUtils::GetInstance().UpdateCloudDownloadSyncStat(map);
         PostEventUtils::GetInstance().PostCloudDownloadSyncStat(info.syncId);
-    } else {
-        AlbumsRefreshManager::GetInstance().RefreshPhotoAlbums(info);
     }
+    AlbumsRefreshManager::GetInstance().RefreshPhotoAlbums(info);
 }
 
 void AlbumsRefreshWorker::TaskNotify(SyncNotifyInfo &info)
 {
-    CHECK_AND_RETURN(info.refershResult == E_SUCCESS);
+    CHECK_AND_RETURN(info.refreshResult == E_SUCCESS);
     if (info.notifyAssets) {
         AlbumsRefreshNotify::SendBatchUris(info.notifyType, info.uris, info.extraUris);
     }
