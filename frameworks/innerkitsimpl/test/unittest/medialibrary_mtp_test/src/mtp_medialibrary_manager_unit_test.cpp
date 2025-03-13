@@ -1277,5 +1277,203 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_05
     mtpMedialibraryManager_->Clear();
     EXPECT_NE(res, "");
 }
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetAssetById
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_052, TestSize.Level0)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    ASSERT_NE(saManager, nullptr);
+    auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID_TEST);
+
+    mtpMedialibraryManager_->dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    ASSERT_NE(mtpMedialibraryManager_->dataShareHelper_, nullptr);
+
+    int32_t id = 100000000;
+    shared_ptr<FileAsset> outFileAsset;
+    int32_t res = mtpMedialibraryManager_->GetAssetById(id, outFileAsset);
+
+    mtpMedialibraryManager_->Clear();
+    EXPECT_EQ(res, E_NO_SUCH_FILE);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetAssetById
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_053, TestSize.Level0)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    ASSERT_NE(saManager, nullptr);
+    auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID_TEST);
+
+    mtpMedialibraryManager_->dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    ASSERT_NE(mtpMedialibraryManager_->dataShareHelper_, nullptr);
+
+    int32_t id = 100000001;
+    shared_ptr<FileAsset> outFileAsset;
+    int32_t res = mtpMedialibraryManager_->GetAssetById(id, outFileAsset);
+
+    mtpMedialibraryManager_->Clear();
+    EXPECT_EQ(res, E_NO_SUCH_FILE);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetObjectPropList
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_056, TestSize.Level0)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->property = 0;
+
+    std::shared_ptr<std::vector<Property>> outProps = nullptr;
+    int32_t res = mtpMedialibraryManager_->GetObjectPropList(context, outProps);
+
+    mtpMedialibraryManager_->Clear();
+    EXPECT_EQ(res, MTP_ERROR_PARAMETER_NOT_SUPPORTED);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetObjectPropList
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_057, TestSize.Level0)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->property = 1;
+
+    std::shared_ptr<std::vector<Property>> outProps = nullptr;
+    int32_t res = mtpMedialibraryManager_->GetObjectPropList(context, outProps);
+
+    mtpMedialibraryManager_->Clear();
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetObjectPropList
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_058, TestSize.Level0)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->property = 1;
+    context->handle = 100000000;
+
+    std::shared_ptr<std::vector<Property>> outProps = nullptr;
+    int32_t res = mtpMedialibraryManager_->GetObjectPropList(context, outProps);
+
+    mtpMedialibraryManager_->Clear();
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetObjectPropList
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_059, TestSize.Level0)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->property = 1;
+    context->handle = 100000000;
+    context->parent = 1;
+
+    std::shared_ptr<std::vector<Property>> outProps = nullptr;
+    int32_t res = mtpMedialibraryManager_->GetObjectPropList(context, outProps);
+
+    mtpMedialibraryManager_->Clear();
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetObjectPropValue
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_060, TestSize.Level0)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+
+    uint64_t outIntVal = 0;
+    uint128_t outLongVal = { 0 };
+    string outStrVal = "";
+    int32_t res = mtpMedialibraryManager_->GetObjectPropValue(context, outIntVal, outLongVal, outStrVal);
+
+    mtpMedialibraryManager_->Clear();
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetObjectPropValue
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_061, TestSize.Level0)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->parent = 1;
+
+    uint64_t outIntVal = 0;
+    uint128_t outLongVal = { 0 };
+    string outStrVal = "";
+    int32_t res = mtpMedialibraryManager_->GetObjectPropValue(context, outIntVal, outLongVal, outStrVal);
+
+    mtpMedialibraryManager_->Clear();
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
 } // namespace Media
 } // namespace OHOS
