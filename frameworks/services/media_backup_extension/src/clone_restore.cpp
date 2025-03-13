@@ -1359,7 +1359,6 @@ void CloneRestore::PrepareCommonColumnVal(NativeRdb::ValuesBucket &values, const
 
 void CloneRestore::GetQueryWhereClause(const string &tableName, const unordered_map<string, string> &columnInfoMap)
 {
-    bool isSyncSwitchOpen = CloudSyncHelper::GetInstance()->IsSyncSwitchOpen();
     unordered_map<string, string> queryWhereClauseMap;
     if (IsCloudRestoreSatisfied()) {
         queryWhereClauseMap = GetValueFromMap(TABLE_QUERY_WHERE_CLAUSE_MAP_WITH_CLOUD, tableName);
