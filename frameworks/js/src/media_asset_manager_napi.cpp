@@ -953,6 +953,15 @@ napi_value MediaAssetManagerNapi::JSRequestEfficientIImage(napi_env env, napi_ca
         JSRequestComplete);
 }
 
+void MediaAssetManagerNapi::ReleaseSafeFunc(napi_threadsafe_function &threadSafeFunc)
+{
+    if (threadSafeFunc == nullptr) {
+        return;
+    }
+    napi_release_threadsafe_function(threadSafeFunc, napi_tsfn_release);
+    threadSafeFunc = nullptr;
+}
+
 bool MediaAssetManagerNapi::CreateOnProgressHandlerInfo(napi_env env,
     unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
 {
@@ -1036,6 +1045,7 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
                     asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
             }
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
+            ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
             break;
         case DeliveryMode::HIGH_QUALITY:
             status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
@@ -1043,8 +1053,10 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
             asyncContext->photoQuality = status;
             if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
                 MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
+                ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
             } else {
                 RegisterTaskObserver(env, asyncContext);
+                ReleaseSafeFunc(asyncContext->onDataPreparedPtr);
             }
             break;
         case DeliveryMode::BALANCED_MODE:
@@ -1054,6 +1066,8 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
                 RegisterTaskObserver(env, asyncContext);
+            } else {
+                ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
             }
             break;
         default: {
