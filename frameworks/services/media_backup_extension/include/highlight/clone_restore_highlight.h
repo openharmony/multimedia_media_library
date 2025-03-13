@@ -254,7 +254,6 @@ private:
     void UpdateHighlightDuplicateRows(const std::vector<NativeRdb::ValueObject> &changeIds,
         const std::string &duplicateAlbumName);
 
-
 private:
     int32_t sceneCode_{-1};
     std::string taskId_;
