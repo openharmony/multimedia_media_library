@@ -171,7 +171,7 @@ static void AppUriPermissionOperationsFuzzer(const uint8_t* data, size_t size)
     HandleInsertOperationFuzzer(appId, fileId, permissionType, uriType);
     permissionType = FuzzPermissionType(data, size);
     HandleInsertOperationFuzzer(appId, fileId, permissionType, uriType);    // if exit, run UpdatePermissionType();
-    DeleteOperationFuzzer(appId, photoId, permissionType);
+    DeleteOperationFuzzer(appId, fileId, permissionType);
 
     BatchInsertFuzzer(data, size);
 }
