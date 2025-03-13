@@ -206,6 +206,9 @@ public:
     EXPORT static void StatDirSize(const std::string& rootPath, size_t& totalSize);
     EXPORT static std::string GetMimeTypeFromDisplayName(const std::string &displayName);
     EXPORT static std::string DesensitizeUri(const std::string &fileUri);
+    EXPORT static bool DeleteFileOrFolder(const std::string &path, bool isFile);
+    EXPORT static std::string GetReplacedPathByPrefix(const std::string srcPrefix, const std::string dstPrefix,
+        const std::string &path);
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);
