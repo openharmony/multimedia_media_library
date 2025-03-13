@@ -178,5 +178,31 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, GetPictureOrientation_test_002
     int32_t err = ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
     EXPECT_NE(err, E_OK);
 }
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopyPixelMapSource_test_004, TestSize.Level0)
+{
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::YCRCB_P010, true);
+    ASSERT_NE(pixelMap, nullptr);
+    std::shared_ptr<PixelMap> copyPixelMap = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
+    EXPECT_EQ(copyPixelMap, nullptr);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsSupportCopyPixelMap_test_001, TestSize.Level0)
+{
+    std::shared_ptr<PixelMap> pixelMap = nullptr;
+    EXPECT_EQ(ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap), false);
+
+    pixelMap = CreateTestPixelMap(PixelFormat::YCRCB_P010, true);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap), false);
+
+    pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, true);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap), true);
+
+    pixelMap = CreateTestPixelMap(PixelFormat::NV21, true);
+    ASSERT_NE(pixelMap, nullptr);
+    EXPECT_EQ(ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap), true);
+}
 } // namespace Media
 } // namespace OHOS
