@@ -28,6 +28,7 @@ const std::vector<std::string> HIGHLIGHT_RATIO_WORD_ART = { "1_1", "3_2", "3_4",
 const std::vector<std::string> HIGHLIGHT_COVER_NAME = { "foreground", "background"};
 const std::string MUSIC_DIR_DST_PATH = "/storage/media/local/files/highlight/music";
 const std::string GARBLE_DST_PATH = "/storage/media/local/files";
+const int32_t HIGHLIGHT_STATUS_DELETE = -2;
 
 const std::unordered_map<std::string, std::unordered_set<std::string>> ALBUM_COLUMNS_MAP = {
     { "AnalysisAlbum",
@@ -1073,43 +1074,61 @@ void CloneRestoreHighlight::ReportCloneRestoreHighlightTask()
 
 void CloneRestoreHighlight::HighlightDeduplicate(const HighlightAlbumInfo &info)
 {
-    bool cond = (!info.clusterType.has_value() || !info.clusterSubType.has_value() ||
-        !info.clusterCondition.has_value() || !info.highlightVersion.has_value() || !info.albumIdOld.has_value());
-    CHECK_AND_RETURN(!cond);
+    std::string duplicateAlbumName = "";
+    std::vector<NativeRdb::ValueObject> changeIds = GetHighlightDuplicateIds(info, duplicateAlbumName);
+    UpdateHighlightDuplicateRows(changeIds, duplicateAlbumName);
+}
 
-    cond = (info.highlightStatus.has_value() && info.highlightStatus.value() != 1);
-    CHECK_AND_RETURN(!cond);
+std::vector<NativeRdb::ValueObject> CloneRestoreHighlight::GetHighlightDuplicateIds(const HighlightAlbumInfo &info,
+    std::string &duplicateAlbumName)
+{
+    std::vector<NativeRdb::ValueObject> changeIds = {};
+    CHECK_AND_RETURN_RET((info.clusterType.has_value() && info.clusterSubType.has_value() &&
+        info.clusterCondition.has_value() && info.highlightVersion.has_value() && info.albumIdOld.has_value()),
+        changeIds);
+    CHECK_AND_RETURN_RET((!info.highlightStatus.has_value() || info.highlightStatus.value() == 1), changeIds);
 
     auto it = std::find_if(analysisInfos_.begin(), analysisInfos_.end(),
         [info](const AnalysisAlbumInfo &analysisInfo) {
             return analysisInfo.albumIdOld.has_value() &&
                 analysisInfo.albumIdOld.value() == info.albumIdOld.value();
         });
-    cond = (it == analysisInfos_.end() || !it->albumName.has_value());
-    CHECK_AND_RETURN(!cond);
+    CHECK_AND_RETURN_RET((it != analysisInfos_.end() && it->albumName.has_value()), changeIds);
+    duplicateAlbumName = it->albumName.value();
 
-    const std::string QUERY_SQL = "SELECT count(1), t.id FROM tab_highlight_album AS t INNER JOIN AnalysisAlbum AS a "
-        "ON t.album_id = a.album_id WHERE t.cluster_type = '" + info.clusterType.value() +
-        "' AND t.cluster_sub_type = '" + info.clusterSubType.value() +
-        "' AND t.cluster_condition = '" + info.clusterCondition.value() +
-        "' AND a.album_name = '" + it->albumName.value() + "'";
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, QUERY_SQL);
-    cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
-    CHECK_AND_RETURN(!cond);
+    const std::string QUERY_SQL = "SELECT t.id FROM tab_highlight_album AS t INNER JOIN AnalysisAlbum AS a "
+        "ON t.album_id = a.album_id WHERE t.cluster_type = ? AND t.cluster_sub_type = ? AND t.cluster_condition = ? "
+        "AND a.album_name = ? AND t.highlight_status <> ?";
+    std::vector<NativeRdb::ValueObject> params = {
+        info.clusterType.value(), info.clusterSubType.value(), info.clusterCondition.value(), duplicateAlbumName,
+        HIGHLIGHT_STATUS_DELETE
+    };
+    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, QUERY_SQL, params);
+    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), changeIds);
 
-    int32_t totalNum = GetInt32Val("count(1)", resultSet);
-    if (totalNum < 1) {
-        return;
-    }
+    do {
+        std::optional<int32_t> highlightId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "id");
+        if (!highlightId.has_value()) {
+            continue;
+        }
+        changeIds.emplace_back(highlightId.value());
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
+    return changeIds;
+}
 
-    std::optional<int32_t> highlightId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "id");
-    if (!highlightId.has_value()) {
-        return;
-    }
-
-    const std::string UPDATE_SQL = "UPDATE tab_highlight_album SET highlight_status = -2 WHERE id = ?";
-    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, UPDATE_SQL, { highlightId.value() });
-    MEDIA_INFO_LOG("deduplicate highlight album, highlight id: %{public}d, album name: %{public}s",
-        highlightId.value(), it->albumName.value().c_str());
+void CloneRestoreHighlight::UpdateHighlightDuplicateRows(const std::vector<NativeRdb::ValueObject> &changeIds,
+    const std::string &duplicateAlbumName)
+{
+    CHECK_AND_RETURN(!changeIds.empty());
+    int32_t changedRows = -1;
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
+        make_unique<NativeRdb::AbsRdbPredicates>("tab_highlight_album");
+    updatePredicates->In("id", changeIds);
+    NativeRdb::ValuesBucket rdbValues;
+    rdbValues.PutInt("highlight_status", HIGHLIGHT_STATUS_DELETE);
+    BackupDatabaseUtils::Update(mediaLibraryRdb_, changedRows, rdbValues, updatePredicates);
+    MEDIA_INFO_LOG("deduplicate highlight album, duplicate album name: %{public}s, duplicate nums: %{public}zu, "
+        "update nums: %{public}d", duplicateAlbumName.c_str(), changeIds.size(), changedRows);
 }
 } // namespace OHOS::Media
