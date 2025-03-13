@@ -965,7 +965,7 @@ static void DeleteAssetsExecute(napi_env env, void* data)
     tracer.Start("DeleteAssetsExecute");
 
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
-    string trashUri = PAH_TRASH_PHOTO;
+    string trashUri = PAH_SYS_TRASH_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(trashUri);
     int32_t changedRows = UserFileClient::Update(updateAssetUri, context->predicates, context->valuesBucket,
@@ -1928,7 +1928,7 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(bool isCreation, AddReso
     }
 
     Uri uri(assetUri);
-    UniqueFd destFd(UserFileClient::OpenFile(uri, MEDIA_FILEMODE_WRITEONLY));
+    UniqueFd destFd(UserFileClient::OpenFile(uri, MEDIA_FILEMODE_WRITETRUNCATE));
     if (destFd.Get() < 0) {
         NAPI_ERR_LOG("Failed to open %{private}s with error: %{public}d", assetUri.c_str(), destFd.Get());
         return destFd.Get();

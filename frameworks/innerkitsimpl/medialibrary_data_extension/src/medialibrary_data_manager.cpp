@@ -128,6 +128,7 @@
 #endif
 #include "zip_util.h"
 #include "photo_custom_restore_operation.h"
+#include "vision_db_sqls.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -293,7 +294,8 @@ static int32_t ExcuteAsyncWork()
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
-    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode, bool isNeedCreateDir)
+    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode, bool isNeedCreateDir,
+    bool isInMediaLibraryOnStart)
 {
     lock_guard<shared_mutex> lock(mgrSharedMutex_);
 
@@ -355,7 +357,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::PHOTO_GALLERY_DOWNLOAD_URI_PREFIX),
         cloudGalleryDownloadObserver_, true);
 
-    HandleUpgradeRdbAsync();
+    HandleUpgradeRdbAsync(isInMediaLibraryOnStart);
     CloudSyncSwitchManager cloudSyncSwitchManager;
     cloudSyncSwitchManager.RegisterObserver();
     SubscriberPowerConsumptionDetection();
@@ -396,6 +398,14 @@ static void FillMediaSuffixForHistoryData(const shared_ptr<MediaLibraryRdbStore>
     MEDIA_INFO_LOG("end fill media suffix for history data");
 }
 
+static void AddImageFaceTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("Adding TAG_ID index for VISION_IMAGE_FACE_TABLE");
+    int ret = store->ExecuteSql(CREATE_IMAGE_FACE_TAG_ID_INDEX);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddImageFaceTagIdIndex failed: execute sql failed");
+    MEDIA_INFO_LOG("end TAG_ID index for VISION_IMAGE_FACE_TABLE");
+}
+
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
@@ -406,6 +416,16 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_ADD_MEDIA_SUFFIX_COLUMN) {
         FillMediaSuffixForHistoryData(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_MEDIA_SUFFIX_COLUMN);
+    }
+
+    if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX) {
+        MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX);
+    }
+
+    if (oldVersion < VERSION_IMAGE_FACE_TAG_ID_INDEX) {
+        AddImageFaceTagIdIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_IMAGE_FACE_TAG_ID_INDEX);
     }
 }
 
@@ -470,9 +490,19 @@ void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbSt
     // !! Do not add upgrade code here !!
 }
 
-void MediaLibraryDataManager::HandleUpgradeRdbAsync()
+static void MultiStagesInitOperation()
 {
-    std::thread([&] {
+    MultiStagesPhotoCaptureManager::GetInstance().Init();
+    MultiStagesVideoCaptureManager::GetInstance().Init();
+}
+
+void MediaLibraryDataManager::HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart)
+{
+    std::thread([isInMediaLibraryOnStart] {
+        if (isInMediaLibraryOnStart) {
+            MultiStagesInitOperation();
+        }
+
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr!");
         int32_t oldVersion = rdbStore->GetOldVersion();
@@ -2530,10 +2560,10 @@ int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone()
             DealUpdateForDirty(resultSet, fileExist, dirtyToZeroFileIds, dirtyToThreeFileIds);
         }
         resultSet->Close();
-        CHECK_AND_RETURN_RET_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToZeroFileIds, true) == E_OK,
-            E_FAIL, "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToZeroFileIds");
-        CHECK_AND_RETURN_RET_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToThreeFileIds, true) == E_OK,
-            E_FAIL, "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToThreeFileIds");
+        CHECK_AND_PRINT_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToZeroFileIds, true) == E_OK,
+            "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToZeroFileIds");
+        CHECK_AND_PRINT_LOG(DoUpdateDirtyForCloudCloneOperation(rdbStore_, dirtyToThreeFileIds, false) == E_OK,
+            "Failed to DoUpdateDirtyForCloudCloneOperation for dirtyToThreeFileIds");
     }
     if (!nextUpdate) {
         int32_t errCode;

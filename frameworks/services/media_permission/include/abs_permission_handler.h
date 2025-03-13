@@ -32,6 +32,7 @@ public:
         nextHandler_ = nextHandler;
     }
 protected:
+    bool checkStopOnFail_ = false; // 失败时不进行后面的校验
     std::shared_ptr<AbsPermissionHandler> nextHandler_ = nullptr;
     bool isDoDfx_ = false; // 是否进行dfx打点
     int32_t ExecuteCheckPermissionWithDfx(MediaLibraryCommand &cmd, PermParam &permParam); // 鉴权+打点逻辑

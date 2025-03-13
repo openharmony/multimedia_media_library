@@ -486,7 +486,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level0)
     ret = TestInsert(dataShareValue);
     EXPECT_EQ(ret, 0);
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
-    EXPECT_EQ(err, E_ERR);
+    EXPECT_EQ(err, E_OK);
 }
 
 HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level0)

@@ -325,6 +325,7 @@ int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
         "WHERE COALESCE(t1.name, '') <> '' AND t1.displayable = 1 "
         "AND EXISTS "
         "(SELECT t2._id FROM gallery_media t2 WHERE t2.local_media_id = -1 "
+        "AND t2.story_chosen = 1 "
         "AND (t2.story_id LIKE '%,'||t1.story_id||',%' OR t2.portrait_id LIKE '%,'||t1.story_id||',%'))";
     std::shared_ptr<NativeRdb::ResultSet> resultSet =
         BackupDatabaseUtils::QuerySql(this->galleryRdb_, QUERY_SQL, {});
@@ -779,6 +780,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.longitude = GetDoubleVal("longitude", resultSet);
     info.storyIds = GetStringVal("story_id", resultSet);
     info.portraitIds = GetStringVal("portrait_id", resultSet);
+    info.storyChosen = GetInt32Val("story_chosen", resultSet);
     return isSuccess;
 }
 
@@ -847,7 +849,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, this->photosRestore_.FindStrongAssociation(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, this->photosRestore_.FindCeAvailable(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, PHOTO_SYNC_STATUS_NOT_VISIBLE); // set invisible for local & cloud
+    // set invisible for local & cloud
+    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     // for cloud clone
     if (fileInfo.localMediaId == -1) {
         values.PutString(PhotoColumn::PHOTO_CLOUD_ID, fileInfo.uniqueId);

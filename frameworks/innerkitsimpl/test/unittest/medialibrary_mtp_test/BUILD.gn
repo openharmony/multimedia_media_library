@@ -45,11 +45,19 @@ if (media_library_feature_mtp) {
       "src/medialibrary_ptp_unit_test.cpp",
       "src/mock_mtp_driver.cpp",
       "src/mtp_data_utils_unit_test.cpp",
+      "src/mtp_error_utils_test.cpp",
+      "src/mtp_event_test.cpp",
       "src/mtp_media_library_unit_test.cpp",
+      "src/mtp_medialibrary_manager_unit_test.cpp",
       "src/mtp_operation_utils_unit_test.cpp",
       "src/mtp_payload_data_test.cpp",
+      "src/mtp_property_test.cpp",
       "src/mtp_set_object_prop_test.cpp",
+      "src/mtp_storage_manager_unit_test.cpp",
+      "src/mtp_subscriber_unit_test.cpp",
       "src/mtp_test.cpp",
+      "src/ptp_album_handles_unit_test.cpp",
+      "src/ptp_media_sync_observer_test.cpp",
     ]
 
     deps = [

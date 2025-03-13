@@ -249,6 +249,7 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
     }
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.dateTrashed);
+    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     return values;
 }
 
@@ -365,6 +366,7 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
         tmpInfo.displayName = ExtractFileName(tmpFile);
     }
     tmpInfo.filePath = tmpFile;
+    tmpInfo.oldPath = tmpFile; // for failed files statistics
     tmpInfo.title = BackupFileUtils::GetFileTitle(tmpInfo.displayName);
     tmpInfo.fileType = MediaFileUtils::GetMediaType(tmpInfo.displayName);
     tmpInfo.fileSize = statInfo.st_size;

@@ -98,6 +98,10 @@ static const std::string MEDIA_FILEMODE = "mode";
 static const std::string ANALYSIS_NO_RESULTS = "[]";
 static const std::string ANALYSIS_INIT_VALUE = "0";
 static const std::string ANALYSIS_STATUS_ANALYZED = "Analyzed, no results";
+
+const std::string LANGUAGE_ZH = "zh-Hans";
+const std::string LANGUAGE_EN = "en-Latn-US";
+
 std::mutex FileAssetNapi::mutex_;
 
 thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
@@ -1806,10 +1810,15 @@ static void JSGetThumbnailDataCompleteCallback(napi_env env, napi_status status,
  
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
-    if (context->error == ERR_DEFAULT) {
+    if (context->error == ERR_DEFAULT && context->napiArrayBufferRef != nullptr) {
         jsContext->data = GetReference(env, context->napiArrayBufferRef);
         jsContext->status = true;
     } else {
+        if (context->napiArrayBufferRef == nullptr) {
+                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_ERR_NO_SUCH_FILE,
+                    "File is not exist");
+                NAPI_ERR_LOG("File is not exist");
+        }
         context->HandleError(env, jsContext->error);
     }
  
@@ -2155,6 +2164,10 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
     string fileId = to_string(context->objectInfo->GetFileId());
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        //Chinese and English supported. Other languages English default.
+        if (LANGUAGE_ZH != language) {
+            language = LANGUAGE_ZH;
+        }
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
             GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
             GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };

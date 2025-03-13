@@ -151,6 +151,7 @@ enum class StrongAssociationType : int32_t {
 };
 
 enum class SyncStatusType : int32_t {
+    TYPE_BACKUP = -1, // Only for clone! Set backup data invisible before moving
     TYPE_VISIBLE = 0,
     TYPE_DOWNLOAD,
     TYPE_UPLOAD,

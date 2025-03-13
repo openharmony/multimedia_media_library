@@ -67,6 +67,7 @@
 #include "grant_permission_handler.h"
 #include "read_write_permission_handler.h"
 #include "db_permission_handler.h"
+#include "system_api_check_handler.h"
 #include "userfilemgr_uri.h"
 #ifdef MEDIALIBRARY_MTP_ENABLE
 #include "mtp_manager.h"
@@ -176,15 +177,15 @@ void MediaDataShareExtAbility::InitPermissionHandler()
     grantPermissionHandler->SetNextHandler(mediaToolPermissionHandler);
     auto dbPermissionHandler = std::make_shared<DbPermissionHandler>();
     dbPermissionHandler->SetNextHandler(grantPermissionHandler);
-    permissionHandler_ = std::make_shared<ReadWritePermissionHandler>();
-    permissionHandler_->SetNextHandler(dbPermissionHandler);
+    auto rwPermissionHandler = std::make_shared<ReadWritePermissionHandler>();
+    rwPermissionHandler->SetNextHandler(dbPermissionHandler);
+    permissionHandler_ = std::make_shared<SystemApiCheckHandler>();
+    permissionHandler_->SetNextHandler(rwPermissionHandler);
     MEDIA_DEBUG_LOG("InitPermissionHandler end:permissionHandler_=%{public}d", permissionHandler_ != nullptr);
 }
 
 void MediaDataShareExtAbility::OnStartSub(const AAFwk::Want &want)
 {
-    MultiStagesPhotoCaptureManager::GetInstance().Init();
-    MultiStagesVideoCaptureManager::GetInstance().Init();
 #ifdef MEDIALIBRARY_MTP_ENABLE
     MtpManager::GetInstance().Init();
 #endif
@@ -250,7 +251,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     }
     auto extensionContext = GetContext();
     int32_t sceneCode = DfxType::START_SUCCESS;
-    int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext, sceneCode);
+    int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext, sceneCode, true, true);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to init MediaLibraryMgr");
         if (sceneCode == DfxType::START_RDB_STORE_FAIL) {
@@ -493,16 +494,17 @@ static int32_t HandleSecurityComponentPermission(MediaLibraryCommand &cmd)
     return E_NEED_FURTHER_CHECK;
 }
 
-static int32_t HandleShortPermission(bool &need)
+static int32_t HandleShortPermission(const MediaLibraryCommand &cmd, bool &need)
 {
-    int32_t err = PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO) ? E_SUCCESS :
-        E_PERMISSION_DENIED;
-    if (err == E_SUCCESS) {
-        need = true;
-    } else {
-        need = false;
+    need = false;
+    if (cmd.GetUriStringWithoutSegment() == PAH_CREATE_PHOTO ||
+        cmd.GetUriStringWithoutSegment() == PAH_SYS_CREATE_PHOTO) {
+        if (PermissionUtils::CheckPhotoCallerPermission(PERM_SHORT_TERM_WRITE_IMAGEVIDEO)) {
+            need = true;
+            return E_SUCCESS;
+        }
     }
-    return err;
+    return E_PERMISSION_DENIED;
 }
 
 static int32_t HandleRestorePermission(MediaLibraryCommand &cmd)
@@ -820,8 +822,9 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
-    if ((err != E_SUCCESS) && cmd.GetUriStringWithoutSegment() == PAH_CREATE_PHOTO)
-        err = HandleShortPermission(needToResetTime);
+    if (err != E_SUCCESS) {
+        err = HandleShortPermission(cmd, needToResetTime);
+    }
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err < 0) {

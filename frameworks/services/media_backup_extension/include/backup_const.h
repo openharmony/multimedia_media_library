@@ -68,7 +68,7 @@ const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
 const std::string RESTORE_MUSIC_LOCAL_DIR = "/storage/media/local/files/Docs/UpdateBackup/";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
-const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
+const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/.backup/restore/storage/emulated";
 const std::string OTHER_CLONE_PATH = "/storage/media/local/files/.backup/restore/";
 const std::string GARBLE = "***";
 const std::string GALLERT_IMPORT = "/Pictures/cloud/Imports";
@@ -209,8 +209,6 @@ const int32_t RESTORE_THUMBNAIL_READY_ALL_SUCCESS = 1;
 
 const int PHOTO_IS_DIRTY = 1;
 const int PHOTO_CLOUD_POSITION = 2;
-const int PHOTO_SYNC_STATUS_VISIBLE = 0;
-const int PHOTO_SYNC_STATUS_NOT_VISIBLE = -1;
 
 const std::string MEDIA_KVSTORE_MONTH_STOREID = "medialibrary_month_astc_data";
 const std::string MEDIA_KVSTORE_YEAR_STOREID = "medialibrary_year_astc_data";
@@ -249,6 +247,7 @@ enum class PrefixType {
     LOCAL,
     CLOUD_EDIT_DATA,
     LOCAL_EDIT_DATA,
+    CLOUD_THUMB,
 };
 
 enum DUAL_MEDIA_TYPE {
@@ -313,6 +312,7 @@ const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
     { PrefixType::LOCAL, "/storage/media/local/files" },
     { PrefixType::CLOUD_EDIT_DATA, "/storage/cloud/files/.editData" },
     { PrefixType::LOCAL_EDIT_DATA, "/storage/media/local/files/.editData" },
+    { PrefixType::CLOUD_THUMB, "/storage/cloud/files/.thumbs" },
 };
 
 const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_AUDIO = {
@@ -426,6 +426,7 @@ struct FileInfo {
     std::string storyIds;
     std::string portraitIds;
     bool needUpdate {false};
+    int32_t storyChosen {0};
 };
 
 struct AlbumInfo {
