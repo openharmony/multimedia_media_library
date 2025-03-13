@@ -22,7 +22,6 @@
 #include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
 #include "backup_log_utils.h"
-#include "cloud_sync_helper.h"
 #include "cloud_sync_utils.h"
 #include "database_report.h"
 #include "ffrt.h"
