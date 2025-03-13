@@ -28,6 +28,7 @@ public:
     EXPORT virtual ~ThumbnailImageFrameWorkUtils() = delete;
 
     EXPORT static bool IsYuvPixelMap(std::shared_ptr<PixelMap> pixelMap);
+    EXPORT static bool IsSupportCopyPixelMap(std::shared_ptr<PixelMap> pixelMap);
     EXPORT static std::shared_ptr<Picture> CopyPictureSource(std::shared_ptr<Picture> picture);
     EXPORT static std::shared_ptr<PixelMap> CopyPixelMapSource(std::shared_ptr<PixelMap> pixelMap);
     EXPORT static int32_t GetPictureOrientation(std::shared_ptr<Picture> picture, int32_t &orientation);
@@ -37,7 +38,7 @@ private:
     EXPORT static std::shared_ptr<PixelMap> CopyYuvPixelmap(std::shared_ptr<PixelMap> pixelMap);
     EXPORT static std::shared_ptr<PixelMap> CopyYuvPixelmapWithSurfaceBuffer(std::shared_ptr<PixelMap> pixelMap);
     EXPORT static std::shared_ptr<PixelMap> CopyNoSurfaceBufferYuvPixelmap(std::shared_ptr<PixelMap> pixelMap);
-    EXPORT static void SetPixelMapYuvInfo(sptr<SurfaceBuffer> &surfaceBuffer,
+    EXPORT static bool SetPixelMapYuvInfo(sptr<SurfaceBuffer> &surfaceBuffer,
         std::shared_ptr<PixelMap> pixelMap, bool isHdr);
     EXPORT static void CopySurfaceBufferInfo(sptr<SurfaceBuffer> &source, sptr<SurfaceBuffer> &dst);
     EXPORT static bool GetSbStaticMetadata(const sptr<SurfaceBuffer> &buffer, std::vector<uint8_t> &staticMetadata);
