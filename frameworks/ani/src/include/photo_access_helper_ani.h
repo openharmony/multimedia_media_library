@@ -53,8 +53,8 @@ public:
         [[maybe_unused]] ani_object context);
     static PhotoAccessHelperAni* Unwrap(ani_env *env, ani_object object);
 
-    static ani_object GetPhotoAlbums(ani_env *env, ani_object object, ani_int albumTypeIndex,
-        ani_int albumSubtypeIndex, ani_object fetchOptions);
+    static ani_object GetPhotoAlbums(ani_env *env, ani_object object, ani_enum_item albumTypeItem,
+        ani_enum_item albumSubtypeItem, ani_object fetchOptions);
     static ani_status Release(ani_env *env, ani_object object);
     static ani_status ApplyChanges(ani_env *env, ani_object object);
     static ani_object createAsset1([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object obj,
