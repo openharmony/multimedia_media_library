@@ -70,28 +70,20 @@ void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const std::st
     vector<string> columns { MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_QUALITY,
         PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_SUBTYPE };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("result set is empty");
-        return;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_LOG(!cond, "result set is empty");
 
     int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        MEDIA_ERR_LOG("task must be moving photo.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO),
+        "task must be moving photo.");
 
     int32_t photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
-    if (photoQuality != static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
-        MEDIA_INFO_LOG("photo multi stage task not yet.");
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL),
+        "photo multi stage task not yet.");
 
     int32_t stageVideoTaskStatus = GetInt32Val(PhotoColumn::STAGE_VIDEO_TASK_STATUS, resultSet);
-    if (stageVideoTaskStatus != static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_TO_DELIVER)) {
-        MEDIA_INFO_LOG("moving photo video saving not yet.");
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(stageVideoTaskStatus ==
+        static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_TO_DELIVER), "moving photo video saving not yet.");
 
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(data);

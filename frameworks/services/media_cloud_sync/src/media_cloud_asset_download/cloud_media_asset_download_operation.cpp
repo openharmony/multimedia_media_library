@@ -142,10 +142,8 @@ bool CloudMediaAssetDownloadOperation::IsProperFgTemperature()
 void CloudMediaAssetDownloadOperation::SetTaskStatus(Status status)
 {
     std::vector<int32_t> statusChangeVec = STATUS_MAP.at(status);
-    if (static_cast<int32_t>(statusChangeVec.size()) != STATUS_CHANGE_ARG_SIZE) {
-        MEDIA_ERR_LOG("change status failed.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(static_cast<int32_t>(statusChangeVec.size()) == STATUS_CHANGE_ARG_SIZE,
+        "change status failed.");
     if (statusChangeVec[INDEX_ZERO] >= 0) {
         downloadType_ = static_cast<CloudMediaDownloadType>(statusChangeVec[INDEX_ZERO]);
     }
@@ -224,15 +222,10 @@ int32_t CloudMediaAssetDownloadOperation::InitDownloadTaskInfo()
         return E_OK;
     }
     std::shared_ptr<NativeRdb::ResultSet> resultSetForInfo = QueryDownloadFilesNeeded(true);
-    if (resultSetForInfo == nullptr || resultSetForInfo->GoToNextRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("queryResult is invalid!");
-        return E_ERR;
-    }
+    bool cond = (resultSetForInfo == nullptr || resultSetForInfo->GoToNextRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "queryResult is invalid!");
     int32_t count = GetInt32Val(TOTAL_COUNT, resultSetForInfo);
-    if (count == 0) {
-        MEDIA_ERR_LOG("no cloud media asset need to download");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(count != 0, E_ERR, "no cloud media asset need to download");
     int64_t size = GetInt64Val(TOTAL_SIZE, resultSetForInfo);
 
     int64_t hasDownloadNum_ = totalCount_ - remainCount_;
@@ -254,10 +247,7 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
 
     CloudMediaAssetDownloadOperation::DownloadFileData data;
     std::shared_ptr<NativeRdb::ResultSet> resultSetForDownload = QueryDownloadFilesNeeded(false);
-    if (resultSetForDownload == nullptr) {
-        MEDIA_ERR_LOG("resultSetForDownload is nullptr.");
-        return data;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSetForDownload != nullptr, data, "resultSetForDownload is nullptr.");
 
     while (resultSetForDownload->GoToNextRow() == NativeRdb::E_OK) {
         std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSetForDownload);
@@ -405,10 +395,8 @@ int32_t CloudMediaAssetDownloadOperation::SetDeathRecipient()
         CHECK_AND_RETURN_RET_LOG(cloudRemoteObject_ != nullptr, E_ERR, "cloudRemoteObject_ is null.");
     }
     
-    if (!cloudRemoteObject_->AddDeathRecipient(sptr(new CloudDeathRecipient(instance_)))) {
-        MEDIA_ERR_LOG("Failed to add death recipient.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(cloudRemoteObject_->AddDeathRecipient(sptr(new CloudDeathRecipient(instance_))),
+        E_ERR, "Failed to add death recipient.");
     return E_OK;
 }
 
@@ -438,10 +426,8 @@ int32_t CloudMediaAssetDownloadOperation::DoRelativedRegister()
 
 int32_t CloudMediaAssetDownloadOperation::DoForceTaskExecute()
 {
-    if (taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
-        MEDIA_ERR_LOG("DoForceTaskExecute permission denied");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskStatus_ != CloudMediaAssetTaskStatus::IDLE, E_ERR,
+        "DoForceTaskExecute permission denied");
     if (taskStatus_ == CloudMediaAssetTaskStatus::PAUSED) {
         MEDIA_INFO_LOG("pause cause is %{public}d", static_cast<int32_t>(pauseCause_));
         readyForDownload_ = ReadyDataForBatchDownload();
@@ -458,10 +444,8 @@ int32_t CloudMediaAssetDownloadOperation::StartDownloadTask(int32_t cloudMediaDo
 {
     MediaLibraryTracer tracer;
     tracer.Start("StartDownloadTask");
-    if (taskStatus_ != CloudMediaAssetTaskStatus::IDLE) {
-        MEDIA_ERR_LOG("permission denied");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskStatus_ == CloudMediaAssetTaskStatus::IDLE, E_ERR,
+        "StartDownloadTask permission denied");
     MEDIA_INFO_LOG("enter, download type: %{public}d", cloudMediaDownloadType);
     int32_t ret = DoRelativedRegister();
     CHECK_AND_RETURN_RET(ret == E_OK, ret);
@@ -483,23 +467,16 @@ int32_t CloudMediaAssetDownloadOperation::StartDownloadTask(int32_t cloudMediaDo
 
 int32_t CloudMediaAssetDownloadOperation::DoRecoverExecute()
 {
-    if (!IsDataEmpty(dataForDownload_)) {
-        MEDIA_ERR_LOG("callback for cache is still alive.");
-        return E_ERR;
-    }
-    if (IsDataEmpty(cacheForDownload_)) {
-        return SubmitBatchDownload(readyForDownload_, false);
-    }
+    CHECK_AND_RETURN_RET_LOG(IsDataEmpty(dataForDownload_), E_ERR, "callback for cache is still alive.");
+    CHECK_AND_RETURN_RET(!IsDataEmpty(cacheForDownload_), SubmitBatchDownload(readyForDownload_, false));
     return SubmitBatchDownload(cacheForDownload_, true);
 }
 
 int32_t CloudMediaAssetDownloadOperation::ManualActiveRecoverTask(int32_t cloudMediaDownloadType)
 {
     MEDIA_INFO_LOG("enter ManualActiveRecoverTask.");
-    if (taskStatus_ != CloudMediaAssetTaskStatus::PAUSED) {
-        MEDIA_ERR_LOG("ManualActiveRecoverTask permission denied");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskStatus_ == CloudMediaAssetTaskStatus::PAUSED, E_ERR,
+        "ManualActiveRecoverTask permission denied");
 
     if (cloudMediaDownloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE)) {
         SetTaskStatus(Status::RECOVER_FOR_MANAUL_ACTIVE);
@@ -527,11 +504,11 @@ int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecover()
 
 int32_t CloudMediaAssetDownloadOperation::PassiveStatusRecoverTask(const CloudMediaTaskRecoverCause &recoverCause)
 {
-    if (taskStatus_ != CloudMediaAssetTaskStatus::PAUSED || pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSED) {
-        MEDIA_ERR_LOG("PassiveStatusRecoverTask permission denied, taskStatus: %{public}d, pauseCause: %{public}d,",
+    bool cond = (taskStatus_ != CloudMediaAssetTaskStatus::PAUSED ||
+                pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSED);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR,
+        "PassiveStatusRecoverTask permission denied, taskStatus: %{public}d, pauseCause: %{public}d,",
             static_cast<int32_t>(taskStatus_), static_cast<int32_t>(pauseCause_));
-        return E_ERR;
-    }
 
     if (recoverCause == CloudMediaTaskRecoverCause::NETWORK_NORMAL &&
         (pauseCause_ == CloudMediaTaskPauseCause::WIFI_UNAVAILABLE ||
@@ -578,15 +555,15 @@ int32_t CloudMediaAssetDownloadOperation::PauseDownloadTask(const CloudMediaTask
 {
     MediaLibraryTracer tracer;
     tracer.Start("PauseDownloadTask");
-    if (taskStatus_ == CloudMediaAssetTaskStatus::IDLE || pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSED) {
-        MEDIA_ERR_LOG("PauseDownloadTask permission denied");
-        return E_ERR;
-    }
-    if (pauseCause_ == CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE &&
-        pauseCause != CloudMediaTaskPauseCause::USER_PAUSED) {
-        MEDIA_ERR_LOG("PauseDownloadTask permission denied, pauseCause_ is BACKGROUND_TASK_UNAVAILABLE");
-        return E_ERR;
-    }
+
+    bool cond = (taskStatus_ == CloudMediaAssetTaskStatus::IDLE ||
+                pauseCause_ == CloudMediaTaskPauseCause::USER_PAUSED);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "PauseDownloadTask permission denied");
+
+    cond = (pauseCause_ == CloudMediaTaskPauseCause::BACKGROUND_TASK_UNAVAILABLE &&
+            pauseCause != CloudMediaTaskPauseCause::USER_PAUSED);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR,
+        "PauseDownloadTask permission denied, pauseCause_ is BACKGROUND_TASK_UNAVAILABLE");
     MEDIA_INFO_LOG("enter PauseDownloadTask, taskStatus_: %{public}d, pauseCause_: %{public}d, pauseCause: %{public}d",
         static_cast<int32_t>(taskStatus_), static_cast<int32_t>(pauseCause_), static_cast<int32_t>(pauseCause));
 
@@ -622,10 +599,8 @@ void CloudMediaAssetDownloadOperation::ResetParameter()
 
 int32_t CloudMediaAssetDownloadOperation::CancelDownloadTask()
 {
-    if (taskStatus_ == CloudMediaAssetTaskStatus::IDLE) {
-        MEDIA_ERR_LOG("CancelDownloadTask permission denied");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskStatus_ != CloudMediaAssetTaskStatus::IDLE, E_ERR,
+        "CancelDownloadTask permission denied");
     MEDIA_INFO_LOG("the number of not found assets: %{public}d",
         static_cast<int32_t>(notFoundForDownload_.fileDownloadMap.size()));
     SetTaskStatus(Status::IDLE);

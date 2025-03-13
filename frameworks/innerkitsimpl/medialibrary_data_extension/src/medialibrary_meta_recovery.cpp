@@ -115,17 +115,11 @@ static int32_t RefreshThumbnail()
 static int32_t RefreshAlbumCount()
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("RefreshAlbumCount: failed to get rdb store handler");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "RefreshAlbumCount: failed to get rdb store handler");
 
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
 
     watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
     watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
@@ -305,10 +299,8 @@ void MediaLibraryMetaRecovery::LoadAlbumMaps(const string &path)
     int32_t ret = E_OK;
     std::vector<shared_ptr<PhotoAlbum>> vecPhotoAlbum;
     ret = ReadPhotoAlbumFromFile(path, vecPhotoAlbum);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("read album file failed, path=%{public}s", DfxUtils::GetSafePath(path).c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret == E_OK, "read album file failed, path=%{public}s", DfxUtils::GetSafePath(path).c_str());
+
     for (auto it : vecPhotoAlbum) {
         oldAlbumIdToLpath[it->GetAlbumId()] = it->GetLPath();
         MEDIA_INFO_LOG("oldAlbumIdToLpath, json id %{public}d, path=%{public}s", it->GetAlbumId(),
@@ -319,10 +311,8 @@ void MediaLibraryMetaRecovery::LoadAlbumMaps(const string &path)
     vector<string> columns = {PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_LPATH};
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet == nullptr)");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet == nullptr)");
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         string lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
@@ -455,10 +445,7 @@ int32_t MediaLibraryMetaRecovery::WriteSingleMetaDataById(int32_t rowId)
 
     MEDIA_DEBUG_LOG("WriteSingleMetaDataById : rowId %{public}d", rowId);
     auto asset = MediaLibraryAssetOperations::QuerySinglePhoto(rowId);
-    if (asset == nullptr) {
-        MEDIA_ERR_LOG("QuerySinglePhoto : rowId %{public}d failed", rowId);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(asset != nullptr, E_HAS_DB_ERROR, "QuerySinglePhoto : rowId %{public}d failed", rowId);
 
     ret = WriteSingleMetaData(*asset);
     if (ret == E_OK) {

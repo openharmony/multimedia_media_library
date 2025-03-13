@@ -99,9 +99,7 @@ template<typename Key, typename Value>
 Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, const Value &defaultValue = Value())
 {
     auto it = map.find(key);
-    if (it == map.end()) {
-        return defaultValue;
-    }
+    CHECK_AND_RETURN_RET(it != map.end(), defaultValue);
     return it->second;
 }
 
@@ -245,14 +243,9 @@ void CloneRestoreGeo::GetGeoKnowledgeInfo(GeoCloneInfo &info, std::shared_ptr<Na
 void CloneRestoreGeo::RestoreMaps(std::vector<FileInfo> &fileInfos)
 {
     MEDIA_INFO_LOG("CloneRestoreGeo RestoreMaps");
-    if (mediaRdb_ == nullptr || mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
-    }
-    if (geoInfos_.empty()) {
-        MEDIA_INFO_LOG("geoInfos_ is empty");
-        return;
-    }
+    bool cond = (mediaRdb_ == nullptr || mediaLibraryRdb_ == nullptr);
+    CHECK_AND_RETURN_LOG(!cond, "rdbStore is nullptr");
+    CHECK_AND_RETURN_INFO_LOG(!geoInfos_.empty(), "geoInfos_ is empty");
     int32_t batchCnt = 0;
     int32_t batchAnaCnt = 0;
     std::vector<std::string> fileIds;
@@ -424,9 +417,7 @@ void CloneRestoreGeo::GetMapInsertValue(NativeRdb::ValuesBucket &value, std::vec
 int32_t CloneRestoreGeo::BatchInsertWithRetry(const std::string &tableName,
     std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum)
 {
-    if (values.empty()) {
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET(!values.empty(), E_OK);
     int32_t errCode = E_ERR;
     TransactionOperations trans{ __func__ };
     trans.SetBackupRdbStore(mediaLibraryRdb_);
