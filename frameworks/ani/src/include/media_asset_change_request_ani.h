@@ -88,18 +88,18 @@ public:
 
     static ani_object createAssetRequestSystem(ani_env *env, ani_object context, ani_string displayName,
         ani_object photoCreateOptions);
-    static ani_object createAssetRequest(ani_env *env, ani_object context, ani_int photoTypeIndex,
+    static ani_object createAssetRequest(ani_env *env, ani_object context, ani_enum_item photoTypeItem,
         ani_string extension, ani_object createOptions);
 
     static ani_object createImageAssetRequest(ani_env *env, ani_object context, ani_string fileUri);
     static ani_object createVideoAssetRequest(ani_env *env, ani_object context, ani_string fileUri);
     static ani_object CreateAssetRequestFromRealPath(ani_env *env, const std::string &realPath);
 
-    static ani_object addResourceByFileUri(ani_env *env, ani_object aniObject, ani_int resourceTypeIndex,
+    static ani_object addResourceByFileUri(ani_env *env, ani_object aniObject, ani_enum_item resourceTypeItem,
         ani_string fileUri);
     static ani_object addResourceByArrayBuffer(ani_env *env, ani_object aniObject,
-        ani_int resourceTypeIndex, ani_object arrayBuffer);
-    static ani_object addResourceByPhotoProxy(ani_env *env, ani_object aniObject, ani_int resourceTypeIndex,
+        ani_enum_item resourceType, ani_object arrayBuffer);
+    static ani_object addResourceByPhotoProxy(ani_env *env, ani_object aniObject, ani_enum_item resourceTypeItem,
         ani_object proxy);
     static ani_object AddMovingPhotoVideoResourceByFileUri(ani_env *env, ani_object aniObject, ani_string fileUri);
     static ani_object AddMovingPhotoVideoResourceByArrayBuffer(ani_env *env, ani_object aniObject,

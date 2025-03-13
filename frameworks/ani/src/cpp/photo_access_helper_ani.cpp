@@ -314,14 +314,14 @@ static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &contex
     return true;
 }
 
-static ani_status ParseAlbumTypes(ani_env *env, ani_int albumTypeIndex, ani_int albumSubtypeIndex,
+static ani_status ParseAlbumTypes(ani_env *env, ani_enum_item albumTypeItem, ani_enum_item albumSubtype,
     std::unique_ptr<MediaLibraryAsyncContext>& context)
 {
     /* Parse the first argument to photo album type */
     AlbumType albumType;
     int32_t albumTypeInt;
     CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, EnumTypeInt32::AlbumTypeAni,
-        albumTypeIndex, albumTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumType");
+        albumTypeItem, albumTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumType");
     albumType = static_cast<AlbumType>(albumTypeInt);
     if (!PhotoAlbum::CheckPhotoAlbumType(static_cast<PhotoAlbumType>(albumTypeInt))) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -333,7 +333,7 @@ static ani_status ParseAlbumTypes(ani_env *env, ani_int albumTypeIndex, ani_int 
     PhotoAlbumSubType photoAlbumSubType;
     int32_t albumSubTypeInt;
     CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, EnumTypeInt32::AlbumSubtypeAni,
-        albumSubtypeIndex, albumSubTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumSubtype");
+        albumSubtype, albumSubTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumSubtype");
     photoAlbumSubType = static_cast<PhotoAlbumSubType>(albumSubTypeInt);
     if (!PhotoAlbum::CheckPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(albumSubTypeInt))) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -421,7 +421,7 @@ static ani_status GetAlbumFetchOption(ani_env *env, unique_ptr<MediaLibraryAsync
 }
 
 
-static ani_status ParseArgsGetPhotoAlbum(ani_env *env, ani_int albumTypeIndex, ani_int albumSubtypeIndex,
+static ani_status ParseArgsGetPhotoAlbum(ani_env *env, ani_enum_item albumTypeItem, ani_enum_item albumSubtypeItem,
     ani_object fetchOptions, std::unique_ptr<MediaLibraryAsyncContext>& context)
 {
     // Parse fetchOptions if exists.
@@ -434,7 +434,7 @@ static ani_status ParseArgsGetPhotoAlbum(ani_env *env, ani_int albumTypeIndex, a
         ANI_INFO_LOG("fetchOptions is undefined. There is no need to parse fetchOptions.");
     }
     // Parse albumType and albumSubtype
-    CHECK_COND_WITH_RET_MESSAGE(env, ParseAlbumTypes(env, albumTypeIndex, albumSubtypeIndex,
+    CHECK_COND_WITH_RET_MESSAGE(env, ParseAlbumTypes(env, albumTypeItem, albumSubtypeItem,
         context) == ANI_OK, ANI_INVALID_ARGS, "ParseAlbumTypes error");
     RestrictAlbumSubtypeOptions(context);
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
@@ -510,12 +510,12 @@ static ani_object GetPhotoAlbumsComplete(ani_env *env, unique_ptr<MediaLibraryAs
     return fetchRes;
 }
 
-ani_object PhotoAccessHelperAni::GetPhotoAlbums(ani_env *env, ani_object object, ani_int albumTypeIndex,
-    ani_int albumSubtypeIndex, ani_object fetchOptions)
+ani_object PhotoAccessHelperAni::GetPhotoAlbums(ani_env *env, ani_object object, ani_enum_item albumTypeItem,
+    ani_enum_item albumSubtypeItem, ani_object fetchOptions)
 {
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
-    CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetPhotoAlbum(env, albumTypeIndex, albumSubtypeIndex,
+    CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetPhotoAlbum(env, albumTypeItem, albumSubtypeItem,
         fetchOptions, asyncContext) == ANI_OK, nullptr, "Failed to parse get albums options");
     GetPhotoAlbumsExecute(env, asyncContext);
     return(GetPhotoAlbumsComplete(env, asyncContext));

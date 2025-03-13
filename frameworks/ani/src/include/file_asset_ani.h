@@ -69,7 +69,7 @@ public:
     static void Close(ani_env *env, ani_object object, ani_double fd);
     static ani_object GetThumbnail(ani_env *env, ani_object object, ani_object size);
     static void SetUserComment([[maybe_unused]] ani_env *env, ani_object object, ani_string userComment);
-    static ani_string GetAnalysisData([[maybe_unused]] ani_env *env, ani_object object, ani_int analysisType);
+    static ani_string GetAnalysisData([[maybe_unused]] ani_env *env, ani_object object, ani_enum_item analysisType);
     static void SetHidden([[maybe_unused]] ani_env *env, ani_object object, ani_boolean hiddenState);
     static void SetFavorite([[maybe_unused]] ani_env *env, ani_object object, ani_boolean favoriteState);
 private:
