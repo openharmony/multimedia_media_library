@@ -62,10 +62,7 @@ int32_t UriSensitiveOperations::UpdateOperation(MediaLibraryCommand &cmd,
     NativeRdb::RdbPredicates &rdbPredicate, std::shared_ptr<TransactionOperations> trans)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriSensitive update operation, rdbStore is null.");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "UriSensitive update operation, rdbStore is null.");
     cmd.SetTableName(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     int32_t updateRows;
     if (trans == nullptr) {
@@ -73,54 +70,35 @@ int32_t UriSensitiveOperations::UpdateOperation(MediaLibraryCommand &cmd,
     } else {
         updateRows = trans->Update(cmd.GetValueBucket(), rdbPredicate);
     }
-    if (updateRows < 0) {
-        MEDIA_ERR_LOG("UriSensitive Update db failed, errCode = %{public}d", updateRows);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(updateRows >= 0, E_HAS_DB_ERROR,
+        "UriSensitive Update db failed, errCode = %{public}d", updateRows);
     return static_cast<int32_t>(updateRows);
 }
 
 static void DeleteAllSensitiveOperation(AsyncTaskData *data)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriSensitive delete operation fail, rdbStore is null.");
-        return;
-    }
-    
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "UriSensitive delete operation fail, rdbStore is null.");
+
     int32_t ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::DROP_APP_URI_SENSITIVE_TABLE);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("UriSensitive table delete all temporary Sensitive failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret >= 0, "UriSensitive table delete all temporary Sensitive failed");
 
     ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("UriSensitive table delete all temporary Sensitive failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret >= 0, "UriSensitive table delete all temporary Sensitive failed");
 
     ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::CREATE_URI_URITYPE_APPID_INDEX);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("UriSensitive table delete all temporary Sensitive failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret >= 0, "UriSensitive table delete all temporary Sensitive failed");
 
     ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::DELETE_APP_URI_SENSITIVE_TABLE);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("UriSensitive table delete all temporary Sensitive failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret >= 0, "UriSensitive table delete all temporary Sensitive failed");
+
     MEDIA_INFO_LOG("UriSensitive table delete all %{public}d rows temporary Sensitive success", ret);
 }
 
 void UriSensitiveOperations::DeleteAllSensitiveAsync()
 {
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "Can not get asyncWorker");
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask =
         make_shared<MediaLibraryAsyncTask>(DeleteAllSensitiveOperation, nullptr);
     asyncWorker->AddTask(notifyAsyncTask, true);
@@ -129,34 +107,24 @@ void UriSensitiveOperations::DeleteAllSensitiveAsync()
 int32_t UriSensitiveOperations::DeleteOperation(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriSensitive update operation, rdbStore is null.");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "UriSensitive update operation, rdbStore is null.");
     cmd.SetTableName(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     int32_t deleteRows = -1;
     int32_t errCode = rdbStore->Delete(cmd, deleteRows);
-    if (errCode != NativeRdb::E_OK || deleteRows < 0) {
-        MEDIA_ERR_LOG("UriSensitive delete db failed, errCode = %{public}d", errCode);
-        return E_HAS_DB_ERROR;
-    }
+    bool cond = (errCode != NativeRdb::E_OK || deleteRows < 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_HAS_DB_ERROR, "UriSensitive delete db failed, errCode = %{public}d", errCode);
     return static_cast<int32_t>(deleteRows);
 }
 
 int32_t UriSensitiveOperations::InsertOperation(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriSensitive insert operation, rdbStore is null.");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "UriSensitive insert operation, rdbStore is null.");
     cmd.SetTableName(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     int64_t rowId = -1;
     int32_t errCode = rdbStore->Insert(cmd, rowId);
-    if (errCode != NativeRdb::E_OK || rowId < 0) {
-        MEDIA_ERR_LOG("UriSensitive insert db failed, errCode = %{public}d", errCode);
-        return E_HAS_DB_ERROR;
-    }
+    bool cond = (errCode != NativeRdb::E_OK || rowId < 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_HAS_DB_ERROR, "UriSensitive insert db failed, errCode = %{public}d", errCode);
     return static_cast<int32_t>(rowId);
 }
 
@@ -164,10 +132,8 @@ int32_t UriSensitiveOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
     std::vector<ValuesBucket> &values, std::shared_ptr<TransactionOperations> trans)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriSensitive insert operation, rdbStore is null.");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "UriSensitive insert operation, rdbStore is null.");
+
     cmd.SetTableName(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     int64_t outInsertNum = -1;
     int32_t errCode;
@@ -176,10 +142,9 @@ int32_t UriSensitiveOperations::BatchInsertOperation(MediaLibraryCommand &cmd,
     } else {
         errCode = trans->BatchInsert(cmd, outInsertNum, values);
     }
-    if (errCode != NativeRdb::E_OK || outInsertNum < 0) {
-        MEDIA_ERR_LOG("UriSensitive Insert into db failed, errCode = %{public}d", errCode);
-        return E_HAS_DB_ERROR;
-    }
+    bool cond = (errCode != NativeRdb::E_OK || outInsertNum < 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_HAS_DB_ERROR,
+        "UriSensitive Insert into db failed, errCode = %{public}d", errCode);
     return static_cast<int32_t>(outInsertNum);
 }
 
@@ -192,10 +157,8 @@ static void QueryUriSensitive(MediaLibraryCommand &cmd, const std::vector<DataSh
     bool isValid;
     int64_t targetTokenId = values.at(0).Get(AppUriSensitiveColumn::TARGET_TOKENID, isValid);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("UriSensitive query operation, rdbStore is null.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "UriSensitive query operation, rdbStore is null.");
+
     cmd.SetTableName(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     for (const auto &val : values) {
         predicateInColumns.push_back(static_cast<string>(val.Get(AppUriSensitiveColumn::FILE_ID, isValid)));
@@ -230,10 +193,8 @@ static void GetSingleDbOperation(const vector<DataShareValuesBucket> &values, ve
 {
     bool isValid;
     int32_t fileId = GetFileId(values.at(index), isValid);
-    if (fileId == E_ERR) {
-        MEDIA_ERR_LOG("Failed GetFileId");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(fileId != E_ERR, "Failed GetFileId");
+
     int32_t uriType = values.at(index).Get(AppUriSensitiveColumn::URI_TYPE, isValid);
     int32_t sensitiveType = values.at(index).Get(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, isValid);
     if ((fileId == querySingleResultSet.at(FILE_ID_INDEX)) && (uriType == querySingleResultSet.at(URI_TYPE_INDEX))) {
@@ -251,10 +212,9 @@ static void GetAllUriDbOperation(const vector<DataShareValuesBucket> &values, ve
     for (const auto &val : values) {
         dbOperation.push_back(INSERT_DB_OPERATION);
     }
-    if ((queryResult == nullptr) || (queryResult->GoToFirstRow() != NativeRdb::E_OK)) {
-        MEDIA_INFO_LOG("UriSensitive query result is null.");
-        return;
-    }
+    bool cond = ((queryResult == nullptr) || (queryResult->GoToFirstRow() != NativeRdb::E_OK));
+    CHECK_AND_RETURN_INFO_LOG(!cond, "UriSensitive query result is null.");
+
     do {
         vector<int32_t> querySingleResultSet;
         querySingleResultSet.push_back(GetInt32Val(AppUriSensitiveColumn::FILE_ID, queryResult));
@@ -397,9 +357,7 @@ static bool IsOwnerPriviledge(const uint32_t &tokenId, const std::string &fileId
         AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
     vector<string> columns;
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, false);
     int32_t numRows = 0;
     resultSet->GetRowCount(numRows);
     return numRows > 0;
@@ -423,9 +381,7 @@ int32_t UriSensitiveOperations::QuerySensitiveType(const uint32_t &tokenId, cons
     columns.push_back(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
 
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
 
     int32_t numRows = 0;
     resultSet->GetRowCount(numRows);
@@ -450,9 +406,7 @@ bool UriSensitiveOperations::QueryForceSensitive(const uint32_t &tokenId,
     columns.push_back(AppUriSensitiveColumn::IS_FORCE_SENSITIVE);
 
     auto resultSet = MediaLibraryRdbStore::Query(rdbPredicate, columns);
-    if (resultSet == nullptr) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, false);
 
     int32_t numRows = 0;
     resultSet->GetRowCount(numRows);

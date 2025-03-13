@@ -48,9 +48,7 @@ template<typename Key, typename Value>
 Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, const Value &defaultValue = Value())
 {
     auto it = map.find(key);
-    if (it != map.end()) {
-        return it->second;
-    }
+    CHECK_AND_RETURN_RET(it == map.end(), it->second);
     return defaultValue;
 }
 
@@ -68,11 +66,8 @@ void CloneRestoreGeoDictionary::Init(int32_t sceneCode, const std::string &taskI
 
 void CloneRestoreGeoDictionary::RestoreAlbums()
 {
-    if (mediaRdb_ == nullptr || mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return;
-    }
-
+    bool cond = (mediaRdb_ == nullptr || mediaLibraryRdb_ == nullptr);
+    CHECK_AND_RETURN_LOG(!cond, "rdbStore is nullptr");
     MEDIA_INFO_LOG("restore geo dictionary albums start.");
     GetGeoDictionaryInfos();
     InsertIntoGeoDictionaryAlbums();
@@ -231,23 +226,18 @@ void CloneRestoreGeoDictionary::GetGeoDictionaryInsertValue(NativeRdb::ValuesBuc
 int32_t CloneRestoreGeoDictionary::BatchInsertWithRetry(const std::string &tableName,
     std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum)
 {
-    if (values.empty()) {
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET(!values.empty(), E_OK);
     int32_t errCode = E_ERR;
     TransactionOperations trans{ __func__ };
     trans.SetBackupRdbStore(mediaLibraryRdb_);
     std::function<int(void)> func = [&]()->int {
         errCode = trans.BatchInsert(rowNum, tableName, values);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
-        }
+        CHECK_AND_PRINT_LOG(errCode == E_OK, "InsertSql failed, errCode: %{public}d,"
+            " rowNum: %{public}ld.", errCode, (long)rowNum);
         return errCode;
     };
     errCode = trans.RetryTrans(func, true);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "BatchInsertWithRetry: tans finish fail!, ret:%{public}d", errCode);
     return errCode;
 }
 

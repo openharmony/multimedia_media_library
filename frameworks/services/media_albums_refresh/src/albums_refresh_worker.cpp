@@ -179,13 +179,9 @@ void AlbumsRefreshWorker::GetSystemAlbumIds(SyncNotifyInfo &info, std::vector<st
         }
         cloudIds.emplace_back(cloudId);
     }
-    if (cloudIds.empty()) {
-        return;
-    }
+    CHECK_AND_RETURN(!cloudIds.empty());
     auto resultSet = AlbumsRefreshManager::GetInstance().CovertCloudId2AlbumId(rdbStore, cloudIds);
-    if (resultSet == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN(resultSet != nullptr);
     do {
         int32_t ablumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         albumIds.push_back(std::to_string(ablumId));
@@ -194,9 +190,8 @@ void AlbumsRefreshWorker::GetSystemAlbumIds(SyncNotifyInfo &info, std::vector<st
 
 void AlbumsRefreshWorker::TryDeleteAlbum(SyncNotifyInfo &info, std::vector<std::string> &albumIds)
 {
-    if (info.notifyType != NOTIFY_REMOVE || CheckCloudIdIsEmpty(info.uris.front().ToString())) {
-        return;
-    }
+    bool cond = (info.notifyType != NOTIFY_REMOVE || CheckCloudIdIsEmpty(info.uris.front().ToString()));
+    CHECK_AND_RETURN(!cond);
     CloudAlbumHandler::DeleteOrUpdateCloudAlbums(albumIds);
 }
 
@@ -213,9 +208,7 @@ void AlbumsRefreshWorker::TaskExecute(SyncNotifyInfo &info)
 
 void AlbumsRefreshWorker::TaskNotify(SyncNotifyInfo &info)
 {
-    if (info.refershResult != E_SUCCESS) {
-        return;
-    }
+    CHECK_AND_RETURN(info.refershResult == E_SUCCESS);
     if (info.notifyAssets) {
         AlbumsRefreshNotify::SendBatchUris(info.notifyType, info.uris, info.extraUris);
     }

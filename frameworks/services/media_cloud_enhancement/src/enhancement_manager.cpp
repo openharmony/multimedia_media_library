@@ -595,17 +595,10 @@ bool EnhancementManager::IsAddOperationEnabled(int32_t triggerMode)
         triggerMode, photosAutoOption_.c_str(), isWifiConnected_ ? "true" : "false",
         isCellularNetConnected_ ? "true" : "false");
     if (triggerMode == static_cast<int>(CloudEnhancementTriggerModeType::TRIGGER_AUTO)) {
-        if ((photosAutoOption_ == PHOTO_OPTION_CLOSE) || (!isWifiConnected_ && !isCellularNetConnected_)) {
-            return false;
-        }
-
-        if (photosAutoOption_ == PHOTO_OPTION_WLAN_AND_NETWORK) {
-            return true;
-        }
-
-        if (photosAutoOption_ == PHOTO_OPTION_WLAN_ONLY) {
-            return isWifiConnected_;
-        }
+        bool cond = ((photosAutoOption_ == PHOTO_OPTION_CLOSE) || (!isWifiConnected_ && !isCellularNetConnected_));
+        CHECK_AND_RETURN_RET(!cond, false);
+        CHECK_AND_RETURN_RET(photosAutoOption_ != PHOTO_OPTION_WLAN_AND_NETWORK, true);
+        CHECK_AND_RETURN_RET(photosAutoOption_ != PHOTO_OPTION_WLAN_ONLY, isWifiConnected_);
     }
     return false;
 }

@@ -684,9 +684,9 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
 static std::string GetThumbnailLocalPath(const string &path)
 {
     size_t cloudDirLength = RESTORE_FILES_CLOUD_DIR.length();
-    if (path.length() <= cloudDirLength || path.substr(0, cloudDirLength).compare(RESTORE_FILES_CLOUD_DIR) != 0) {
-        return "";
-    }
+    bool cond = (path.length() <= cloudDirLength ||
+        path.substr(0, cloudDirLength).compare(RESTORE_FILES_CLOUD_DIR) != 0);
+    CHECK_AND_RETURN_RET(!cond, "");
 
     std::string suffixStr = path.substr(cloudDirLength);
     return RESTORE_FILES_LOCAL_DIR + ".thumbs/" + suffixStr;
@@ -696,10 +696,8 @@ int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std
                                            std::string fileType)
 {
     MEDIA_INFO_LOG("START STEP 4 CREATE DENTRY");
-    if ((fileType != DENTRY_INFO_THM) && (fileType != DENTRY_INFO_LCD) && (fileType != DENTRY_INFO_ORIGIN)) {
-        MEDIA_ERR_LOG("Invalid fileType: %{public}s", fileType.c_str());
-        return E_ERR;
-    }
+    bool cond = ((fileType != DENTRY_INFO_THM) && (fileType != DENTRY_INFO_LCD) && (fileType != DENTRY_INFO_ORIGIN));
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid fileType: %{public}s", fileType.c_str());
     std::vector<FileManagement::CloudSync::DentryFileInfo> dentryInfos;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!fileInfos[i].needMove) {
@@ -731,14 +729,9 @@ int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std
     }
     int32_t ret = FileManagement::CloudSync::CloudSyncManager::GetInstance().BatchDentryFileInsert(
         dentryInfos, failCloudIds);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("BatchDentryFileInsert failed, ret: %{public}d.", ret);
-        return ret;
-    }
-    if (!failCloudIds.empty()) {
-        MEDIA_ERR_LOG("failCloudIds size: %{public}zu, first one: %{public}s", failCloudIds.size(),
-            failCloudIds[0].c_str());
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "BatchDentryFileInsert failed, ret: %{public}d.", ret);
+    CHECK_AND_PRINT_LOG(failCloudIds.empty(), "failCloudIds size: %{public}zu, first one: %{public}s",
+        failCloudIds.size(), failCloudIds[0].c_str());
     MEDIA_DEBUG_LOG("END STEP 4 CREATE DENTRY");
     return ret;
 }
@@ -746,9 +739,7 @@ int32_t BaseRestore::BatchCreateDentryFile(std::vector<FileInfo> &fileInfos, std
 bool BaseRestore::RestoreLcdAndThumbFromCloud(const FileInfo &fileInfo, int32_t type, int32_t sceneCode)
 {
     std::string srcPath = GetThumbFile(fileInfo, type, sceneCode);
-    if (srcPath == "") {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(srcPath != "", false);
     std::string saveNoRotatePath = fileInfo.orientation == ORIETATION_ZERO ? "" : THM_SAVE_WITHOUT_ROTATE_PATH;
     std::string dstDirPath = GetThumbnailLocalPath(fileInfo.cloudPath) + saveNoRotatePath;
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dstDirPath), false, "Prepare thumbnail dir path failed");
@@ -904,9 +895,8 @@ void BaseRestore::UpdateLcdVisibleColumn(const FileInfo &fileInfo)
     predicates->EqualTo(MediaColumn::MEDIA_NAME, fileInfo.displayName);
     int changeRows = 0;
     int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb_, changeRows, updatePostBucket, predicates);
-    if (changeRows < 0 || ret < 0) {
-        MEDIA_ERR_LOG("Failed to update LCD visible column, ret: %{public}d", ret);
-    }
+    bool cond = (changeRows < 0 || ret < 0);
+    CHECK_AND_PRINT_LOG(!cond, "Failed to update LCD visible column, ret: %{public}d", ret);
 }
 
 void BaseRestore::HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<std::string> &failCloudIds,
@@ -918,10 +908,9 @@ void BaseRestore::HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<s
         return;
     }
     vector<std::string> dentryFailedData;
-    if ((fileType != DENTRY_INFO_ORIGIN) && (fileType != DENTRY_INFO_LCD) && (fileType != DENTRY_INFO_THM)) {
-        MEDIA_ERR_LOG("Invalid fileType: %{public}s", fileType.c_str());
-        return;
-    }
+    bool cond = ((fileType != DENTRY_INFO_ORIGIN) && (fileType != DENTRY_INFO_LCD) && (fileType != DENTRY_INFO_THM));
+    CHECK_AND_RETURN_LOG(!cond, "Invalid fileType: %{public}s", fileType.c_str());
+
     auto iteration = fileInfos.begin();
     while (iteration != fileInfos.end()) {
         if (find(failCloudIds.begin(), failCloudIds.end(), iteration->uniqueId) != failCloudIds.end()) {
@@ -951,14 +940,9 @@ void BaseRestore::HandleFailData(std::vector<FileInfo> &fileInfos, std::vector<s
 int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     MEDIA_INFO_LOG("Start insert %{public}zu photos", fileInfos.size());
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
-        return E_OK;
-    }
-    if (fileInfos.empty()) {
-        MEDIA_ERR_LOG("fileInfos are empty");
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ is null");
+    CHECK_AND_RETURN_RET_LOG(!fileInfos.empty(), E_OK, "fileInfos are empty");
+
     int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(sceneCode, fileInfos, sourceType);
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
