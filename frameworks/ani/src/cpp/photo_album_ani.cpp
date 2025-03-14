@@ -40,8 +40,6 @@ struct PhotoAlbumAttributes {
     std::string albumUri;
     int32_t count;
     std::string coverUri;
-    int32_t imageCount;
-    int32_t videoCount;
 };
 
 thread_local PhotoAlbum *PhotoAlbumAni::pAlbumData_ = nullptr;
@@ -59,7 +57,7 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
     }
 
     std::array methods = {
-        ani_native_function {"create", nullptr, reinterpret_cast<void *>(PhotoAlbumAniConstructor)},
+        ani_native_function {"create", nullptr, reinterpret_cast<void *>(CreateEmptyPhotoAlbumAni)},
         ani_native_function {"getAssetsInner", nullptr, reinterpret_cast<void *>(PhotoAccessGetPhotoAssets)},
         ani_native_function {"getAssetsSync", nullptr, reinterpret_cast<void *>(PhotoAccessGetPhotoAssetsSync)},
         ani_native_function {"commitModifyInner", nullptr, reinterpret_cast<void *>(PhotoAccessHelperCommitModify)},
@@ -69,6 +67,8 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
         ani_native_function {"deleteAssetsInner", nullptr, reinterpret_cast<void *>(PhotoAccessHelperDeletePhotos)},
         ani_native_function {"setCoverUriInner", nullptr, reinterpret_cast<void *>(PhotoAccessHelperSetCoverUri)},
         ani_native_function {"getFaceIdInner", nullptr, reinterpret_cast<void *>(PhotoAccessHelperGetFaceId)},
+        ani_native_function {"getImageCount", nullptr, reinterpret_cast<void *>(GetImageCount)},
+        ani_native_function {"getVideoCount", nullptr, reinterpret_cast<void *>(GetVideoCount)},
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
@@ -77,6 +77,14 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
     }
 
     return ANI_OK;
+}
+
+ani_object PhotoAlbumAni::CreateEmptyPhotoAlbumAni(ani_env *env, ani_class clazz)
+{
+    pAlbumData_ = new PhotoAlbum();
+    ani_object result = PhotoAlbumAniConstructor(env, clazz);
+    pAlbumData_ = nullptr;
+    return result;
 }
 
 ani_object PhotoAlbumAni::CreatePhotoAlbumAni(ani_env *env, std::unique_ptr<PhotoAlbum> &albumData)
@@ -138,8 +146,6 @@ static ani_status GetPhotoAlbumAttributes(ani_env *env, ani_object object, Photo
     attrs.albumUri = photoAlbum->GetAlbumUri();
     attrs.count = photoAlbum->GetCount();
     attrs.coverUri = photoAlbum->GetCoverUri();
-    attrs.imageCount = photoAlbum->GetImageCount();
-    attrs.videoCount = photoAlbum->GetVideoCount();
     return ANI_OK;
 }
 
@@ -171,7 +177,7 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
     ani_method albumUriSetter {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>albumUri", nullptr, &albumUriSetter), "No <set>albumUri");
     ani_string albumUri {};
-    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.albumUri, albumName), "ToAniString albumUri fail");
+    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.albumUri, albumUri), "ToAniString albumUri fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, albumUriSetter, albumUri), "<set>albumUri fail");
 
     ani_method countSetter {};
@@ -905,4 +911,25 @@ ani_string PhotoAlbumAni::PhotoAccessHelperGetFaceId(ani_env *env, ani_object ob
     return GetFaceIdComplete(env, context);
 }
 
+ani_double PhotoAlbumAni::GetImageCount(ani_env *env, ani_object object)
+{
+    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
+        ANI_ERR_LOG("photoAlbumAni or photoAlbum is nullptr");
+        return 0;
+    }
+    int32_t imageCount = photoAlbumAni->GetPhotoAlbumInstance()->GetImageCount();
+    return static_cast<ani_double>(imageCount);
+}
+
+ani_double PhotoAlbumAni::GetVideoCount(ani_env *env, ani_object object)
+{
+    PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
+    if (photoAlbumAni == nullptr || photoAlbumAni->GetPhotoAlbumInstance() == nullptr) {
+        ANI_ERR_LOG("photoAlbumAni or photoAlbum is nullptr");
+        return 0;
+    }
+    int32_t videoCount = photoAlbumAni->GetPhotoAlbumInstance()->GetVideoCount();
+    return static_cast<ani_double>(videoCount);
+}
 } // namespace OHOS::Media

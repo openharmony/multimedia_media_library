@@ -70,6 +70,8 @@ constexpr int32_t NOT_HIDDEN = 0;
 constexpr int32_t IS_FAV = 1;
 constexpr int32_t NOT_FAV = 0;
 
+constexpr int32_t USER_COMMENT_MAX_LEN = 420;
+
 thread_local std::shared_ptr<FileAsset> FileAssetAni::sFileAsset_ = nullptr;
 
 struct AnalysisSourceInfo {
@@ -739,14 +741,18 @@ void FileAssetAni::SetUserComment([[maybe_unused]] ani_env *env, ani_object obje
 
     string userCommentStr;
     MediaLibraryAniUtils::GetString(env, userComment, userCommentStr);
-    cout << "userCommentStr is " << userCommentStr << endl;
 
     auto fileAssetPtr = fileAssetAni->GetFileAssetInstance();
     unique_ptr<FileAssetContext> context = make_unique<FileAssetContext>();
     context->objectPtr = fileAssetPtr;
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     
-    string uri = UFM_SET_USER_COMMENT;
+    if (context->userComment.length() > USER_COMMENT_MAX_LEN) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "user comment too long");
+        return;
+    }
+
+    string uri = PAH_EDIT_USER_COMMENT_PHOTO;
     MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri editUserCommentUri(uri);
     DataSharePredicates predicates;
