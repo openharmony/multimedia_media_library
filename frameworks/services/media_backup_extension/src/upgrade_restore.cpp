@@ -371,7 +371,7 @@ void UpgradeRestore::RestorePhotoInner()
         this->photoAlbumRestore_.Restore();
         RestoreFromGalleryPortraitAlbum();
         geoKnowledgeRestore_.RestoreGeoKnowledgeInfos();
-        RestoreHighlightAlbums(isSyncSwitchOn_);
+        RestoreHighlightAlbums();
         // restore Photos
         RestoreFromGallery();
         if (IsCloudRestoreSatisfied()) {
