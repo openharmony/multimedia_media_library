@@ -541,6 +541,10 @@ const std::string IMAGE_FACE_INDEX = "image_face_index";
 const std::string CREATE_IMAGE_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + IMAGE_FACE_INDEX + " ON " +
     VISION_IMAGE_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
 
+const std::string IMAGE_FACE_TAG_ID_INDEX = "tag_id_index";
+const std::string CREATE_IMAGE_FACE_TAG_ID_INDEX = "CREATE INDEX IF NOT EXISTS " + IMAGE_FACE_TAG_ID_INDEX +
+    " ON " + VISION_IMAGE_FACE_TABLE + " (" + TAG_ID + ")" + " WHERE " + TAG_ID + " LIKE " + "'ser%'";
+
 const std::string VIDEO_FACE_INDEX = "video_face_index";
 const std::string CREATE_VIDEO_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + VIDEO_FACE_INDEX + " ON " +
     VISION_VIDEO_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
