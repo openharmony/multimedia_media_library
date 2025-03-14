@@ -209,7 +209,7 @@ private:
     int32_t GetNoNeedMigrateCount() override;
     void GetAccountValid() override;
     int32_t GetHighlightCloudMediaCnt();
-    void RestoreHighlightAlbums(bool isSyncSwitchOpen);
+    void RestoreHighlightAlbums();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
