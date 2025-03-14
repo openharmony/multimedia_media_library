@@ -3021,6 +3021,9 @@ static inline int64_t GetCompatDate(const string inputKey, const int64_t date)
 
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrGet");
+
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
@@ -3200,6 +3203,9 @@ static void UserFileMgrFavoriteExecute(napi_env env, void *data)
 
 napi_value FileAssetNapi::UserFileMgrFavorite(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrFavorite");
+
     auto asyncContext = make_unique<FileAssetAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isFavorite),
@@ -3368,6 +3374,9 @@ static void JSGetAnalysisDataCompleteCallback(napi_env env, napi_status status, 
 
 napi_value FileAssetNapi::UserFileMgrOpen(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrOpen");
+
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsUserFileMgrOpen(env, info, asyncContext, false));
     if (asyncContext->objectInfo->fileAssetPtr == nullptr) {
@@ -3481,6 +3490,9 @@ static void UserFileMgrCloseCallbackComplete(napi_env env, napi_status status, v
 
 napi_value FileAssetNapi::UserFileMgrClose(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrClose");
+
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsUserFileMgrClose(env, info, asyncContext));
     if (asyncContext->objectInfo->fileAssetPtr == nullptr) {
