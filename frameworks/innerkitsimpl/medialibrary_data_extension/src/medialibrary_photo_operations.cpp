@@ -405,7 +405,7 @@ bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string
 
 static void RefreshLivePhotoCache(const string &movingPhotoImagePath, int64_t movingPhotoSize)
 {
-    string livePhotoCachePath = MovingPhotoFileUtils : GetLivePhotoCachePath(movingPhotoImagePath);
+    string livePhotoCachePath = MovingPhotoFileUtils::GetLivePhotoCachePath(movingPhotoImagePath);
     if (!MediaFileUtils::IsFileExists(livePhotoCachePath)) {
         return;
     }
@@ -447,7 +447,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMovingPhotoOprnKey(MediaLibraryComma
             E_INVALID_VALUES,
             "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
-        int64_t movingPhotoSize = static_cast<size_t>(MovingPhotoFileUtils::GetMovingPhotoSize(fileAsset->GetPath()));
+        int64_t movingPhotoSize = static_cast<int64_t>(MovingPhotoFileUtils::GetMovingPhotoSize(fileAsset->GetPath()));
         if (fileAsset->GetSize() != movingPhotoSize) {
             MEDIA_WARN_LOG("size of moving photo need scan from %{public}" PRId64 "to %{public}" PRId64,
                 fileAsset->GetSize(), movingPhotoSize);
