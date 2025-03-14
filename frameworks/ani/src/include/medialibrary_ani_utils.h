@@ -161,8 +161,9 @@
 #define RETURN_ANI_UNDEFINED(env)                                         \
     do {                                                                  \
         ani_ref result = nullptr;                                         \
-        CHECK_ARGS(env, GetUndefiend(env, &result), JS_INNER_FAIL);       \
-        return result;                                                    \
+        ani_status __ret = ((env)->GetUndefined(&result));                  \
+        CHECK_ARGS((env), __ret, JS_INNER_FAIL);                          \
+        return static_cast<ani_object>(result);                           \
     } while (0)
 
 namespace OHOS {

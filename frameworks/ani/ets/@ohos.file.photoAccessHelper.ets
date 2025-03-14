@@ -13,17 +13,10 @@
  * limitations under the License.
  */
 
-export class BusinessError<T = void> {
-  code: number = 0;
-  data?: T;
-}
-export type AsyncCallback<T, E = void> = (err: BusinessError<E>, data?: T) => void;
-export type Callback<T> = (data?: T) => void;
-interface Context {}
+import { AsyncCallback, Callback, BusinessError } from '@ohos.base';
+import dataSharePredicates from '@ohos.data.dataSharePredicates';
 
-export namespace dataSharePredicates {
-  export class DataSharePredicates {}
-}
+interface Context {}
 
 export namespace image {
   export interface ImageSource {}
@@ -33,8 +26,8 @@ export namespace image {
 }
 
 class SizeImpl implements image.Size {
-  height: number = 1;
-  width: number = 1;
+  height: number = 0;
+  width: number = 0;
 }
 
 enum CustomColors {
@@ -45,9 +38,8 @@ type ResolveVoid = (v: PromiseLike<void>) => void;
 type RejectString = (e: BusinessError<string>) => void;
 type ThenType = Object | null | undefined;
 
-loadLibrary("photo_access_helper_ani");
-
 export namespace photoAccessHelper {
+  loadLibrary("photo_access_helper_ani");
   export native function getPhotoAccessHelper(context: Context): PhotoAccessHelper;
 
   export enum PhotoType {
@@ -173,19 +165,19 @@ export namespace photoAccessHelper {
   export class MediaAssetManager {
   }
 
-  type MemberType = number | string | boolean;
+  export type MemberType = number | string | boolean;
 
   export interface PhotoAsset {
     get(member: string): MemberType;
     set(member: string, value: string): void;
     commitModify(callback: AsyncCallback<void>): void;
     commitModify(): Promise<void>;
-    open(mode: string, callback: AsyncCallback<number>): void;
+    open(mode: string, callback: AsyncCallback<number | undefined>): void;
     open(mode: string): Promise<number>;
     close(fd: number, callback: AsyncCallback<void>): void;
     close(fd: number): Promise<void>;
-    getThumbnail(callback: AsyncCallback<image.PixelMap>): void;
-    getThumbnail(size: image.Size, callback: AsyncCallback<image.PixelMap>): void;
+    getThumbnail(callback: AsyncCallback<image.PixelMap | undefined>): void;
+    getThumbnail(size: image.Size, callback: AsyncCallback<image.PixelMap | undefined>): void;
     getThumbnail(size?: image.Size): Promise<image.PixelMap>;
     setFavorite(favoriteState: boolean, callback: AsyncCallback<void>): void;
     setFavorite(favoriteState: boolean): Promise<void>;
@@ -213,18 +205,21 @@ export namespace photoAccessHelper {
     native getThumbnailSync(size?: image.Size): image.PixelMap;
     native setFavoriteSync(favoriteState: boolean): void;
     native setHiddenSync(hiddenState: boolean): void;
-    native setUserCommentSync(userComment: String): void;
-    native getAnalysisDataSync(analysisType: AnalysisType): String;
+    native setUserCommentSync(userComment: string): void;
+    native getAnalysisDataSync(analysisType: AnalysisType): string;
 
     commitModify(): Promise<void> {
-      return new Promise<void>((resolve : (v: PromiseLike<void>) => void, reject : (e : BusinessError<String>) => void) => {
+      return new Promise<void>((resolve : (v: PromiseLike<void>) => void, reject : (e : BusinessError<string>) => void) => {
         let task = new taskpool.Task(() =>this.commitModifySync());
         let p1 = taskpool.execute(task);
         p1.then((ret: NullishType) => {
           if (ret === null || ret === undefined) {
-            let ret1 = new BusinessError<String>();
-            ret1.code = -1;
-            ret1.data = "Operation failed";
+            let ret1: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(ret1);
           } else {
             resolve(ret as PromiseLike<void>);
@@ -236,7 +231,11 @@ export namespace photoAccessHelper {
       let task = new taskpool.Task(() =>this.commitModifySync());
       let p1 = taskpool.execute(task);
       p1.then((ret: NullishType) => {
-        let eNull = new BusinessError<void>();
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
         if (ret === null || ret === undefined) {
           eNull.code = -1;
           callback(eNull, undefined);
@@ -248,14 +247,17 @@ export namespace photoAccessHelper {
     }
 
     open(mode: string): Promise<number> {
-      return new Promise<number>((resolve : (v: number) => void, reject : (e : BusinessError<String>) => void) => {
+      return new Promise<number>((resolve : (v: number) => void, reject : (e : BusinessError<string>) => void) => {
         let task = new taskpool.Task(() =>this.openSync(mode));
         let p1 = taskpool.execute(task);
         p1.then((ret: NullishType) => {
           if (ret === null || ret === undefined) {
-            let ret1 = new BusinessError<String>();
-            ret1.code = -1;
-            ret1.data = "Operation failed";
+            let ret1: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(ret1);
           } else {
             resolve(ret as number);
@@ -263,11 +265,15 @@ export namespace photoAccessHelper {
         });
       });
     }
-    open(mode: string, callback: AsyncCallback<number, void>): void {
+    open(mode: string, callback: AsyncCallback<number | undefined, void>): void {
       let task = new taskpool.Task(() =>this.openSync(mode));
       let p1 = taskpool.execute(task);
       p1.then((ret: NullishType) => {
-        let eNull = new BusinessError<void>();
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
         if (ret === null || ret === undefined) {
           eNull.code = -1;
           callback(eNull, undefined);
@@ -280,7 +286,7 @@ export namespace photoAccessHelper {
     }
 
     close(fd: number): Promise<void> {
-      return new Promise<void>((resolve : (v: PromiseLike<void>) => void, reject : (e : BusinessError<String>) => void) => {
+      return new Promise<void>((resolve : (v: PromiseLike<void>) => void, reject : (e : BusinessError<string>) => void) => {
         let task = new taskpool.Task(() =>this.closeSync(fd));
         let p1 = taskpool.execute(task);
         p1.then((ret: NullishType) => {
@@ -292,7 +298,11 @@ export namespace photoAccessHelper {
       let task = new taskpool.Task(() =>this.closeSync(fd));
       let p1 = taskpool.execute(task);
       p1.then((ret: NullishType) => {
-        let eNull = new BusinessError<void>();
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
         if (ret === null || ret === undefined) {
           eNull.code = -1;
           callback(eNull, undefined);
@@ -304,14 +314,17 @@ export namespace photoAccessHelper {
     }
 
     getThumbnail(size?: image.Size): Promise<image.PixelMap> {
-      return new Promise<image.PixelMap>((resolve : (v: image.PixelMap) => void, reject : (e : BusinessError<String>) => void) => {
+      return new Promise<image.PixelMap>((resolve : (v: image.PixelMap) => void, reject : (e : BusinessError<string>) => void) => {
         let task = new taskpool.Task(() => this.getThumbnailSync(size));
         let p1 = taskpool.execute(task);
         p1.then((ret: NullishType) => {
           if (ret === null || ret === undefined) {
-            let ret1 = new BusinessError<String>();
-            ret1.code = -1;
-            ret1.data = "Operation failed";
+            let ret1: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(ret1);
           } else {
             let pixelMap = ret as image.PixelMap;
@@ -321,11 +334,15 @@ export namespace photoAccessHelper {
       });
     }
 
-    getThumbnail(callback: AsyncCallback<image.PixelMap, void>): void {
+    getThumbnail(callback: AsyncCallback<image.PixelMap | undefined, void>): void {
       let task = new taskpool.Task(() =>this.getThumbnailSync());
       let p1 = taskpool.execute(task);
       p1.then((ret: NullishType) => {
-        let eNull = new BusinessError<void>();
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
         if (ret === null || ret === undefined) {
           eNull.code = -1;
           callback(eNull, undefined);
@@ -337,11 +354,15 @@ export namespace photoAccessHelper {
       });
     }
 
-    getThumbnail(size: image.Size, callback: AsyncCallback<image.PixelMap, void>): void {
+    getThumbnail(size: image.Size, callback: AsyncCallback<image.PixelMap | undefined, void>): void {
       let task = new taskpool.Task(() =>this.getThumbnailSync(size));
       let p1 = taskpool.execute(task);
       p1.then((ret: NullishType) => {
-        let eNull = new BusinessError<void>();
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
         if (ret === null || ret === undefined) {
           eNull.code = -1;
           callback(eNull, undefined);
@@ -354,14 +375,17 @@ export namespace photoAccessHelper {
     }
 
     setFavorite(favoriteState: boolean): Promise<void> {
-    return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: (e : BusinessError<String>) => void) => {
+    return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: (e : BusinessError<string>) => void) => {
       let task = new taskpool.Task(() =>this.setFavoriteSync(favoriteState));
       let p1 = taskpool.execute(task);
       p1.then((ret: NullishType) => {
         if (ret === null || ret === undefined) {
-          let ret1 = new BusinessError<String>();
-          ret1.code = -1;
-          ret1.data = "Operation failed";
+          let ret1: BusinessError<string> = {
+            code: -1,
+            data: "Operation failed",
+            name: "",
+            message: ""
+          };
           reject(ret1);
         } else {
           resolve(ret as PromiseLike<void>);
@@ -374,7 +398,11 @@ export namespace photoAccessHelper {
       let task = new taskpool.Task(() =>this.setFavoriteSync(favoriteState));
       let p1 = taskpool.execute(task);
       p1.then((ret: NullishType) => {
-        let eNull = new BusinessError<void>();
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
         if (ret === null || ret === undefined) {
           eNull.code = -1;
           callback(eNull, undefined);
@@ -386,14 +414,17 @@ export namespace photoAccessHelper {
     }
 
     setHidden(hiddenState: boolean): Promise<void> {
-      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: (e : BusinessError<String>) => void) => {
+      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: (e : BusinessError<string>) => void) => {
         let task = new taskpool.Task(() =>this.setHiddenSync(hiddenState));
         let p1 = taskpool.execute(task);
         p1.then((ret: NullishType) => {
           if (ret === null || ret === undefined) {
-            let ret1 = new BusinessError<String>();
-            ret1.code = -1;
-            ret1.data = "Operation failed";
+            let ret1: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(ret1);
           } else {
             resolve(ret as PromiseLike<void>);
@@ -406,7 +437,11 @@ export namespace photoAccessHelper {
       let task = new taskpool.Task(() =>this.setHiddenSync(hiddenState));
       let p1 = taskpool.execute(task);
       p1.then((ret: NullishType) => {
-        let eNull = new BusinessError<void>();
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
         if (ret === null || ret === undefined) {
           eNull.code = -1;
           callback(eNull, undefined);
@@ -417,15 +452,18 @@ export namespace photoAccessHelper {
       });
     }
 
-    setUserComment(userComment: String): Promise<void> {
-      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: (e : BusinessError<String>) => void) => {
+    setUserComment(userComment: string): Promise<void> {
+      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: (e : BusinessError<string>) => void) => {
         let task = new taskpool.Task(() =>this.setUserCommentSync(userComment));
         let p1 = taskpool.execute(task);
         p1.then((ret: NullishType) => {
           if (ret === null || ret === undefined) {
-            let ret1 = new BusinessError<String>();
-            ret1.code = -1;
-            ret1.data = "Operation failed";
+            let ret1: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(ret1);
           } else {
             resolve(ret as PromiseLike<void>);
@@ -434,11 +472,15 @@ export namespace photoAccessHelper {
       });
     }
 
-    setUserComment(userComment: String, callback: AsyncCallback<void, void>): void {
+    setUserComment(userComment: string, callback: AsyncCallback<void, void>): void {
       let task = new taskpool.Task(() =>this.setUserCommentSync(userComment));
       let p1 = taskpool.execute(task);
       p1.then((ret: NullishType) => {
-        let eNull = new BusinessError<void>();
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
         if (ret === null || ret === undefined) {
           eNull.code = -1;
           callback(eNull, undefined);
@@ -449,23 +491,46 @@ export namespace photoAccessHelper {
       });
     }
 
-    getAnalysisData(analysisType: AnalysisType): Promise<String> {
-      return new Promise<String>((resolve : (v: String) => void, reject : (e : BusinessError<String>) => void) => {
+    getAnalysisData(analysisType: AnalysisType): Promise<string> {
+      return new Promise<string>((resolve : (v: string) => void, reject : (e : BusinessError<string>) => void) => {
         let task = new taskpool.Task(() =>this.getAnalysisDataSync(analysisType));
         let p1 = taskpool.execute(task);
         p1.then((ret: NullishType) => {
           if (ret === null || ret === undefined) {
-            let ret1 = new BusinessError<String>();
-            ret1.code = -1;
-            ret1.data = "Operation failed";
+            let ret1: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(ret1);
           } else {
-            resolve(ret as String);
+            resolve(ret as string);
           }
         });
       });
     }
-}
+
+    getAnalysisData(analysisType: AnalysisType, callback: AsyncCallback<string | undefined, void>): void {
+      let task = new taskpool.Task(() =>this.getAnalysisDataSync(analysisType));
+      let p1 = taskpool.execute(task);
+      p1.then((ret: NullishType) => {
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
+        if (ret === null || ret === undefined) {
+          eNull.code = -1;
+          callback(eNull, undefined);
+        } else {
+          let result = ret as string;
+          eNull.code = 0;
+          callback(eNull, result);
+        }
+      });
+    }
+  }
 
 
   export enum PhotoKeys {
@@ -547,7 +612,7 @@ export namespace photoAccessHelper {
 
   export interface FetchResult<T> {
     getCount(): number;
-    getAllObjects(callback: AsyncCallback<Array<T>>): void;
+    getAllObjects(callback: AsyncCallback<Array<T> | undefined>): void;
     getAllObjects(): Promise<Array<T>>;
     close(): void;
   }
@@ -564,20 +629,24 @@ export namespace photoAccessHelper {
     native getAllObjectsSync(): Array<T>;
     native close(): void;
 
-    getAllObjects(callback: AsyncCallback<Array<T>, void>): void {
+    getAllObjects(callback: AsyncCallback<Array<T> | undefined, void>): void {
       let task = new taskpool.Task(() => this.getAllObjectsSync());
-        let p1 = taskpool.execute(task);
-        p1.then((ret: NullishType) => {
-          let eNull = new BusinessError<void>();
-          if (ret === null || ret === undefined) {
-            eNull.code = -1;
-            callback(eNull, undefined);
-          } else {
-            let result = ret as Array<T>;
-            eNull.code = 0;
-            callback(eNull, result);
-          }
-        });
+      let p1 = taskpool.execute(task);
+      p1.then((ret: NullishType) => {
+        let eNull: BusinessError<void> = {
+          code: -1,
+          name: "",
+          message: ""
+        };
+        if (ret === null || ret === undefined) {
+          eNull.code = -1;
+          callback(eNull, undefined);
+        } else {
+          let result = ret as Array<T>;
+          eNull.code = 0;
+          callback(eNull, result);
+        }
+      });
     }
     getAllObjects(): Promise<Array<T>> {
       return new Promise<Array<T>>((resolve : (v: Array<T>) => void, reject : (e : BusinessError<string>) => void) => {
@@ -585,9 +654,12 @@ export namespace photoAccessHelper {
         let p1 = taskpool.execute(task);
         p1.then((ret: NullishType) => {
           if (ret === null || ret === undefined) {
-            let ret1 = new BusinessError<string>();
-            ret1.code = -1;
-            ret1.data = "Operation failed";
+            let ret1: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(ret1);
           } else {
             let result = ret as Array<T>;
@@ -679,6 +751,8 @@ export namespace photoAccessHelper {
     constructor(nativePtr: long) {
       if (this.nativePhotoAlbum == 0) {
         this.nativePhotoAlbum = nativePtr;
+        this.imageCount = this.getImageCount();
+        this.videoCount = this.getVideoCount();
       }
     }
 
@@ -688,9 +762,12 @@ export namespace photoAccessHelper {
         let task = new taskpool.Task((() => this.getAssetsInner(options)));
         taskpool.execute(task).then((buffer: ThenType) => {
           if (buffer === null || buffer === undefined) {
-            let error = new BusinessError<string>();
-            error.code = -1;
-            error.data = "Operation failed";
+            let error: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(error);
           } else {
             resolve(buffer as FetchResult<PhotoAsset>);
@@ -760,9 +837,12 @@ export namespace photoAccessHelper {
         let task = new taskpool.Task((() => this.getFaceIdInner()));
         taskpool.execute(task).then((buffer: ThenType) => {
           if (buffer === null || buffer === undefined) {
-            let error = new BusinessError<string>();
-            error.code = -1;
-            error.data = "Operation failed";
+            let error: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(error);
           } else {
             resolve(buffer as string);
@@ -781,6 +861,8 @@ export namespace photoAccessHelper {
     native deleteAssetsInner(assets: Array<PhotoAsset>): void;
     native setCoverUriInner(uri: string): void;
     native getFaceIdInner(): string;
+    native getImageCount(): number;
+    native getVideoCount(): number;
   }
 
   export interface PhotoAccessHelper {
@@ -790,11 +872,11 @@ export namespace photoAccessHelper {
   }
 
   class PhotoAccessHelperHandle implements PhotoAccessHelper {
-    private nativePhotoAlbum: long = 0;
+    private nativePhotoAccessHelper: long = 0;
 
     constructor(nativePtr: long) {
-      if (this.nativePhotoAlbum == 0) {
-        this.nativePhotoAlbum = nativePtr;
+      if (this.nativePhotoAccessHelper == 0) {
+        this.nativePhotoAccessHelper = nativePtr;
       }
     }
 
@@ -805,9 +887,12 @@ export namespace photoAccessHelper {
         let task = new taskpool.Task((() => this.getAssetsInner(options)));
         taskpool.execute(task).then((buffer: ThenType) => {
           if (buffer === null || buffer === undefined) {
-            let error = new BusinessError<string>();
-            error.code = -1;
-            error.data = "Operation failed";
+            let error: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(error);
           } else {
             resolve(buffer as FetchResult<PhotoAsset>);
@@ -1034,9 +1119,12 @@ export namespace photoAccessHelper {
         let task = new taskpool.Task((() => this.requestContent3(resourceType)));
         taskpool.execute(task).then((buffer: ThenType) => {
           if (buffer === null || buffer === undefined) {
-            let error = new BusinessError<string>();
-            error.code = -1;
-            error.data = "Operation failed";
+            let error: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
             reject(error);
           } else {
             resolve(buffer as ArrayBuffer);

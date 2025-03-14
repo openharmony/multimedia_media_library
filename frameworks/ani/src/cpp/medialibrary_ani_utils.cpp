@@ -463,15 +463,15 @@ ani_status MediaLibraryAniUtils::GetArrayBuffer(ani_env *env, ani_object arg, st
 {
     CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     ani_int length;
-    CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
-        "Object_GetPropertyByName_Int failed.");
+    CHECK_STATUS_RET(env->Object_CallMethodByName_Int(arg, "getByteLength", nullptr, &length),
+        "GetArrayBuffer Object_CallMethodByName_Int failed.");
     size = static_cast<size_t>(length);
     buffer = std::make_unique<uint8_t[]>(size);
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < static_cast<int>(size); ++i) {
         ani_byte value {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Byte(arg, "at", "I:Lescompat/ArrayBuffer;",
-            &value, static_cast<ani_int>(i)), "Call method at failed.");
-        CHECK_STATUS_RET(GetByte(env, value, buffer[i]), "GetByte failed.");
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Byte(arg, "at", nullptr, &value, static_cast<ani_int>(i)),
+            "GetArrayBuffer Call method at failed.");
+        CHECK_STATUS_RET(GetByte(env, value, buffer[i]), "GetArrayBuffer GetByte failed.");
     }
     return ANI_OK;
 }

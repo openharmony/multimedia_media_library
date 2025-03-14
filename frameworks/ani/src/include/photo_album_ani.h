@@ -42,6 +42,7 @@ public:
 private:
     EXPORT void SetPhotoAlbumAniProperties();
     EXPORT static ani_object PhotoAlbumAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz);
+    EXPORT static ani_object CreateEmptyPhotoAlbumAni(ani_env *env, ani_class clazz);
     EXPORT static void PhotoAlbumAniDestructor(ani_env *env, ani_object object);
 
     EXPORT static ani_object PhotoAccessGetPhotoAssets(ani_env *env, ani_object object, ani_object fetchOptions);
@@ -53,6 +54,8 @@ private:
     EXPORT static void PhotoAccessHelperDeletePhotos(ani_env *env, ani_object object, ani_object photoAssets);
     EXPORT static void PhotoAccessHelperSetCoverUri(ani_env *env, ani_object object, ani_string uri);
     EXPORT static ani_string PhotoAccessHelperGetFaceId(ani_env *env, ani_object object);
+    EXPORT static ani_double GetImageCount(ani_env *env, ani_object object);
+    EXPORT static ani_double GetVideoCount(ani_env *env, ani_object object);
 
     ani_env *env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;

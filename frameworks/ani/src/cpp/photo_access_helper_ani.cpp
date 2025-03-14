@@ -260,7 +260,6 @@ ani_object PhotoAccessHelperAni::Constructor(ani_env *env, [[maybe_unused]] ani_
         g_listObj = std::make_unique<ChangeListenerAni>(env);
     }
 
-    // Only !Async Need to init UserFileClient and be locked. How to solve Async?
     bool isAsync = false;
     if (!InitUserFileClient(env, context, isAsync)) {
         DEBUG_LOG_T("Constructor InitUserFileClient failed");
