@@ -2647,8 +2647,8 @@ int32_t MediaLibraryDataManager::ClearDirtyHdcData()
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             std::string dataPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
             dataPath.replace(0, PhotoColumn::FILES_CLOUD_DIR.length(), PhotoColumn::FILES_LOCAL_DIR);
-            if (dataPath == "") {
-                MEDIA_INFO_LOG("The data path is empty, data path: %{public}s", dataPath.c_str());
+            if (dataPath == "" || MediaFileUtils::IsFileExists(dataPath)) {
+                MEDIA_INFO_LOG("The data path is empty or file exist, data path: %{public}s", dataPath.c_str());
                 continue;
             }
             int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
