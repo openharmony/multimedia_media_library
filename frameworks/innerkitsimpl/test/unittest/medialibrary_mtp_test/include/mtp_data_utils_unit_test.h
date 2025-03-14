@@ -17,7 +17,8 @@
 #define FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIALIBRARY_TEST_INCLUDE_MTP_DATA_UTILS_UNIT_TEST_H_
 
 #include "gtest/gtest.h"
-
+#include "datashare_business_error.h"
+#include "datashare_helper.h"
 namespace OHOS {
 namespace Media {
 class MtpDataUtilsUnitTest : public testing::Test {
@@ -33,6 +34,8 @@ public:
 
     /* TearDown:Execute after each test case */
     void TearDown();
+private:
+    static std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
 };
 } // namespace Media
 } // namespace OHOS
