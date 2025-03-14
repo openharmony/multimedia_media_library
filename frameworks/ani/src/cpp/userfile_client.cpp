@@ -14,6 +14,8 @@
  */
 
 #include "userfile_client.h"
+
+#include "ani_base_context.h"
 #include "media_asset_rdbstore.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_ani_log.h"
@@ -27,10 +29,26 @@ using namespace OHOS::AppExecFwk;
 
 namespace OHOS {
 namespace Media {
+static void DataShareCreator(const sptr<IRemoteObject> &token, shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
+{
+    dataShareHelper = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
+        ANI_ERR_LOG("dataShareHelper Creator failed");
+        dataShareHelper = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    }
+}
 
 shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(ani_env *env, ani_object object)
 {
-    return nullptr;
+    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, object);
+    if (context == nullptr) {
+        ANI_ERR_LOG("Failed to get native stage context instance");
+        return nullptr;
+    }
+    DataShareCreator(context->GetToken(), dataShareHelper);
+    MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(dataShareHelper);
+    return dataShareHelper;
 }
 
 ani_status UserFileClient::CheckIsStage(ani_env *env, ani_object object, bool &result)
