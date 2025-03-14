@@ -60,6 +60,7 @@ public:
     EXPORT static int32_t GetExtraDataLen(const std::string &imagePath, const std::string &videoPath,
         uint32_t frameIndex, int64_t coverPosition, off_t &fileSize, bool isCameraShotMovingPhoto = false);
     EXPORT static uint32_t GetFrameIndex(int64_t time, const int32_t fd);
+    EXPORT static size_t GetMovingPhotoSize(const std::string &imagePath, int32_t userId = -1);
 };
 } // namespace OHOS::Media
 
