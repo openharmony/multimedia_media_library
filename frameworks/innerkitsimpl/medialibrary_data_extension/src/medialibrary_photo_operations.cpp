@@ -394,7 +394,6 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     MediaColumn::MEDIA_HIDDEN,
     MediaColumn::MEDIA_DATE_TRASHED,
     MediaColumn::MEDIA_SIZE,
-    MediaColumn::MEDIA_ID,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -406,21 +405,23 @@ bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string
 
 static void RefreshLivePhotoCache(const string &movingPhotoImagePath, int64_t movingPhotoSize)
 {
-    string livePhotoCachePath = GetLivePhotoCachePath(movingPhotoImagePath);
+    string livePhotoCachePath = MovingPhotoFileUtils : GetLivePhotoCachePath(movingPhotoImagePath);
     if (!MediaFileUtils::IsFileExists(livePhotoCachePath)) {
         return;
     }
     size_t livePhotoSize = 0;
-    if (!MediaFileUtils::GetFileSize(movingPhotoImagepath, livePhotoSize) ||
+    if (!MediaFileUtils::GetFileSize(livePhotoCachePath, livePhotoSize) ||
         static_cast<int64_t>(livePhotoSize) != movingPhotoSize) {
-        if (!MediaFileUtils::DeleteFile(MovingPhotoFileUtils::GetLivePhotoCachePath(path))) {
+        MEDIA_INFO_LOG(
+            "Live photo need update from %{public}" PRId64 "to %{public}" PRId64, livePhotoSize, movingPhotoSize);
+        if (!MediaFileUtils::DeleteFile(livePhotoCachePath)) {
             MEDIA_ERR_LOG("Failed to delete live photo cache, errno: %{public}d", errno);
         }
     }
 }
 
-static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<FileAsset>& fileAsset, const string& id,
-    bool& isMovingPhotoVideo)
+int32_t MediaLibraryPhotoOperations::ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd,
+    shared_ptr<FileAsset>& fileAsset, const string& id, bool& isMovingPhotoVideo)
 {
     string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
     if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO ||
@@ -448,6 +449,8 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
             id.c_str(), fileAsset->GetPhotoSubType());
         int64_t movingPhotoSize = static_cast<size_t>(MovingPhotoFileUtils::GetMovingPhotoSize(fileAsset->GetPath()));
         if (fileAsset->GetSize() != movingPhotoSize) {
+            MEDIA_WARN_LOG("size of moving photo need scan from %{public}" PRId64 "to %{public}" PRId64,
+                fileAsset->GetSize(), movingPhotoSize);
             MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(fileAsset->GetPath(), false, false, true);
         }
         RefreshLivePhotoCache(fileAsset->GetPath(), movingPhotoSize);
