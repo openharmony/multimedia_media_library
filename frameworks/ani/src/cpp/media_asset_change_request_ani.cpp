@@ -199,7 +199,6 @@ ani_object MediaAssetChangeRequestAni::Wrap(ani_env *env, MediaAssetChangeReques
 
 MediaAssetChangeRequestAni* MediaAssetChangeRequestAni::Unwrap(ani_env *env, ani_object aniObject)
 {
-    // 改成get object type
     ani_long context;
     if (ANI_OK != env->Object_GetFieldByName_Long(aniObject, "nativeHandle", &context)) {
         return nullptr;
