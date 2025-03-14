@@ -2171,12 +2171,12 @@ static int32_t MergePortraitAlbums(const ValuesBucket &values)
         MEDIA_ERR_LOG("Get merge albums info fail");
         return E_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[0]).c_str());
-    MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[1]).c_str());
     if (mergeAlbumInfo.size() != MERGE_ALBUM_COUNT) { // merge album count
         MEDIA_ERR_LOG("invalid mergeAlbumInfo size");
         return E_INVALID_VALUES;
     }
+    MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[0]).c_str());
+    MEDIA_INFO_LOG("Before merge: %{public}s", MergeAlbumInfoToString(mergeAlbumInfo[1]).c_str());
     err = UpdateMergeAlbumsInfo(mergeAlbumInfo, currentAlbumId);
     if (err != E_OK) {
         MEDIA_ERR_LOG("MergeAlbum failed");
