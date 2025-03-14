@@ -24,7 +24,7 @@ public:
     CloudSyncUtils();
     ~CloudSyncUtils();
     static bool IsUnlimitedTrafficStatusOn();
-    static bool IsCloudSyncSwitchOn();
+    EXPORT static bool IsCloudSyncSwitchOn();
     static bool IsCloudDataAgingPolicyOn();
 };
 } // namespace Media
