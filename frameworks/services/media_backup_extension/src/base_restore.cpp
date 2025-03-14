@@ -346,13 +346,13 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     for (size_t i = 0; i < fileInfos.size(); i++) {
         int32_t errCode = IsFileValid(fileInfos[i], sceneCode);
         if (errCode != E_OK) {
+            fileInfos[i].needMove = false;
             if (!NeedReportError(restoreMode_, fileInfos[i].userId)) {
                 MEDIA_WARN_LOG("file not found but no need report, file name:%{public}s",
                     BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
                 notFoundNumber_++;
                 continue;
             }
-            fileInfos[i].needMove = false;
             std::string fileDbCheckInfo = CheckInvalidFile(fileInfos[i], errCode);
             ErrorInfo errorInfo(RestoreError::FILE_INVALID, 1, std::to_string(errCode),
                 BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i], { fileDbCheckInfo }));
