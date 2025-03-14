@@ -164,13 +164,6 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
     }
 
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos && notifyInfo.type == ChangeType::OTHER) {
-        SyncNotifyInfo info = AlbumsRefreshManager::GetInstance().GetSyncNotifyInfo(notifyInfo, PHOTO_URI_TYPE);
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
-        AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
-        list<Uri> uriList = { Uri(PhotoColumn::PHOTO_URI_PREFIX) };
-        AlbumsRefreshNotify::SendDeleteUris(uriList);
-        AlbumsRefreshNotify::SendDeleteUris(info.extraUris);
         lock_guard<mutex> lock(syncMutex_);
         if (!isPending_) {
             MEDIA_INFO_LOG("set timer handle index");
