@@ -393,6 +393,8 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_POSITION,
     MediaColumn::MEDIA_HIDDEN,
     MediaColumn::MEDIA_DATE_TRASHED,
+    MediaColumn::MEDIA_SIZE,
+    MediaColumn::MEDIA_ID,
 };
 
 bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
@@ -400,6 +402,21 @@ bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string
     return photoSubType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
         (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY) &&
         request == SOURCE_REQUEST);
+}
+
+static void RefreshLivePhotoCache(const string &movingPhotoImagePath, int64_t movingPhotoSize)
+{
+    string livePhotoCachePath = GetLivePhotoCachePath(movingPhotoImagePath);
+    if (!MediaFileUtils::IsFileExists(livePhotoCachePath)) {
+        return;
+    }
+    size_t livePhotoSize = 0;
+    if (!MediaFileUtils::GetFileSize(movingPhotoImagepath, livePhotoSize) ||
+        static_cast<int64_t>(livePhotoSize) != movingPhotoSize) {
+        if (!MediaFileUtils::DeleteFile(MovingPhotoFileUtils::GetLivePhotoCachePath(path))) {
+            MEDIA_ERR_LOG("Failed to delete live photo cache, errno: %{public}d", errno);
+        }
+    }
 }
 
 static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<FileAsset>& fileAsset, const string& id,
@@ -429,6 +446,11 @@ static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<Fi
             E_INVALID_VALUES,
             "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
+        int64_t movingPhotoSize = static_cast<size_t>(MovingPhotoFileUtils::GetMovingPhotoSize(fileAsset->GetPath()));
+        if (fileAsset->GetSize() != movingPhotoSize) {
+            MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(fileAsset->GetPath(), false, false, true);
+        }
+        RefreshLivePhotoCache(fileAsset->GetPath(), movingPhotoSize);
         string livePhotoPath;
         CHECK_AND_RETURN_RET_LOG(MovingPhotoFileUtils::ConvertToLivePhoto(fileAsset->GetPath(),
             fileAsset->GetCoverPosition(), livePhotoPath) == E_OK,
@@ -524,7 +546,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         userId = cmdUri.substr(pos + MULTI_USER_URI_FLAG.length());
         uriString = uriString + "?" + MULTI_USER_URI_FLAG + userId;
     }
-    shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, true,  PHOTO_COLUMN_VECTOR, pendingStatus);
+    shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, true, PHOTO_COLUMN_VECTOR, pendingStatus);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI,
         "Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
     CHECK_AND_RETURN_RET_LOG(CheckPermissionToOpenFileAsset(fileAsset),
