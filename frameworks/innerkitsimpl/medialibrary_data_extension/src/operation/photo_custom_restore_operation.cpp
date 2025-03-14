@@ -787,8 +787,7 @@ vector<FileInfo> PhotoCustomRestoreOperation::GetFileInfos(vector<string> &fileP
             fileInfo.mediaType = MediaFileUtils::GetMediaTypeNotSupported(fileInfo.fileName);
             if (fileInfo.mediaType == MediaType::MEDIA_TYPE_IMAGE ||
                 fileInfo.mediaType == MediaType::MEDIA_TYPE_VIDEO) {
-                MEDIA_WARN_LOG(
-                    "single frame is not support This media type. fileName:%{public}s", fileInfo.fileName.c_str());
+                MEDIA_WARN_LOG("media type not support, fileName is %{private}s", fileInfo.fileName.c_str());
             }
         }
         if (fileInfo.mediaType == MediaType::MEDIA_TYPE_IMAGE) {
