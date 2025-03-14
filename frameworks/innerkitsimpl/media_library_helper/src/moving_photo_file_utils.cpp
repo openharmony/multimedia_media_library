@@ -853,7 +853,7 @@ bool MovingPhotoFileUtils::IsGraffiti(int32_t subtype, int32_t originalSubtype)
 
 size_t MovingPhotoFileUtils::GetMovingPhotoSize(const std::string &imagePath, int32_t userId)
 {
-    string movingPhotoImagePath = AppendUserId(imagepath, userId);
+    string movingPhotoImagePath = AppendUserId(imagePath, userId);
     string movingPhotoVideoPath = GetMovingPhotoVideoPath(imagePath, userId);
     string movingPhotoExtraDataPath = GetMovingPhotoExtraDataPath(imagePath, userId);
     size_t imageSize = 0;
