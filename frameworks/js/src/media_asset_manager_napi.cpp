@@ -137,15 +137,14 @@ static AssetHandler* CreateAssetHandler(const std::string &photoId, const std::s
     const std::string &uri, const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
 {
     AssetHandler *assetHandler = new AssetHandler(photoId, requestId, uri, handler, func);
-    NAPI_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s, %{public}p.",
-        photoId.c_str(), requestId.c_str(), uri.c_str(), assetHandler);
+    NAPI_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s",
+        photoId.c_str(), requestId.c_str(), uri.c_str());
     return assetHandler;
 }
 
 static void DeleteAssetHandlerSafe(AssetHandler *handler, napi_env env)
 {
     if (handler != nullptr) {
-        NAPI_DEBUG_LOG("[AssetHandler delete] %{public}p.", handler);
         if (handler->dataHandler != nullptr) {
             handler->dataHandler->DeleteNapiReference(env);
         }
@@ -163,7 +162,6 @@ static void DeleteProcessHandlerSafe(ProgressHandler *handler, napi_env env)
     if (handler == nullptr) {
         return;
     }
-    NAPI_DEBUG_LOG("[ProgressHandler delete] %{public}p.", handler);
     if (handler->progressRef != nullptr && env != nullptr) {
         napi_delete_reference(env, handler->progressRef);
         handler->progressRef = nullptr;
