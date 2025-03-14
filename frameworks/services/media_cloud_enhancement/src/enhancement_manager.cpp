@@ -272,6 +272,7 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     for (const string& id : fileIds) {
+        CHECK_AND_CONTINUE(MediaFileUtils::IsValidInteger(id));
         int32_t fileId = stoi(id);
         string photoId = EnhancementTaskManager::QueryPhotoIdByFileId(fileId);
         if (photoId.empty()) {
