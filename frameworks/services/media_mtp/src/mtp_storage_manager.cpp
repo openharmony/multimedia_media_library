@@ -51,7 +51,7 @@ std::shared_ptr<MtpStorageManager> MtpStorageManager::GetInstance()
     if (instance_ == nullptr) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (instance_ == nullptr) {
-            instance_ = std::shared_ptr<MtpStorageManager>(new MtpStorageManager());
+            instance_ = std::make_shared<MtpStorageManager>();
         }
     }
     return instance_;
