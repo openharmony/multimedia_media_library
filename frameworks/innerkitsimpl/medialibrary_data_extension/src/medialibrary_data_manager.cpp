@@ -128,6 +128,7 @@
 #endif
 #include "zip_util.h"
 #include "photo_custom_restore_operation.h"
+#include "vision_db_sqls.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -401,6 +402,14 @@ static void FillMediaSuffixForHistoryData(const shared_ptr<MediaLibraryRdbStore>
     MEDIA_INFO_LOG("end fill media suffix for history data");
 }
 
+static void AddImageFaceTagIdIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("Adding TAG_ID index for VISION_IMAGE_FACE_TABLE");
+    int ret = store->ExecuteSql(CREATE_IMAGE_FACE_TAG_ID_INDEX);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddImageFaceTagIdIndex failed: execute sql failed");
+    MEDIA_INFO_LOG("end TAG_ID index for VISION_IMAGE_FACE_TABLE");
+}
+
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
@@ -416,6 +425,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX) {
         MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX);
+    }
+
+    if (oldVersion < VERSION_IMAGE_FACE_TAG_ID_INDEX) {
+        AddImageFaceTagIdIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_IMAGE_FACE_TAG_ID_INDEX);
     }
 }
 
