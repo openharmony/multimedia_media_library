@@ -123,9 +123,6 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     if (isUpgrade && BaseRestore::Init() != E_OK) {
         return E_FAIL;
     }
-    if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        MediaLibraryDataManager::GetInstance()->ReCreateMediaDir();
-    }
     if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
         MEDIA_ERR_LOG("Gallery media db is not exist.");
     } else {
