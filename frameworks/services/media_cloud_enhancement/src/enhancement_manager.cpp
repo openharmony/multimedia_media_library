@@ -267,7 +267,7 @@ void EnhancementManager::InitPhotosSettingsMonitor()
 #endif
 }
 
-static void GenerateCancelUpdatePredicates(RdbPredicates &updatePredicates, ValuesBucket &rdbValues, 
+static void GenerateCancelUpdatePredicates(RdbPredicates &updatePredicates, ValuesBucket &rdbValues,
     const vector<string> &fileIds)
 {
     updatePredicates.In(MediaColumn::MEDIA_ID, fileIds);
