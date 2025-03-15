@@ -601,7 +601,28 @@ const PhotoViewMIMETypes = {
   VIDEO_TYPE: 'video/*',
   IMAGE_VIDEO_TYPE: '*/*',
   MOVING_PHOTO_IMAGE_TYPE: 'image/movingPhoto',
+  JPEG_IMAGE_TYPE: 'image/jpeg',
+  GIF_IMAGE_TYPE: 'image/gif',
+  PNG_IMAGE_TYPE: 'image/png',
+  HEIC_IMAGE_TYPE: 'image/heic',
+  HEIF_IMAGE_TYPE: 'image/heif',
+  BMP_IMAGE_TYPE: 'image/bmp',
+  WEBP_IMAGE_TYPE: 'image/webp',
+  AVIF_IMAGE_TYPE: 'image/avif',
+  MP4_VIDEO_TYPE: 'video/mp4',
+  MOV_VIDEO_TYPE: 'video/quicktime',
   INVALID_TYPE: ''
+};
+
+const FilterOperator = {
+  INVALID_OPERATOR: -1,
+  EQUAL_TO:  0,
+  NOT_EQUAL_TO: 1,
+  MORE_THAN: 2,
+  LESS_THAN: 3,
+  MORE_THAN_OR_EQUAL_TO:  4,
+  LESS_THAN_OR_EQUAL_TO: 5,
+  BETWEEN: 6,
 };
 
 const SingleSelectionMode = {
@@ -633,6 +654,16 @@ const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
   [PhotoViewMIMETypes.VIDEO_TYPE, 'FILTER_MEDIA_TYPE_VIDEO'],
   [PhotoViewMIMETypes.IMAGE_VIDEO_TYPE, 'FILTER_MEDIA_TYPE_ALL'],
   [PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE, 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO'],
+  [PhotoViewMIMETypes.JPEG_IMAGE_TYPE, 'JPEG_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.GIF_IMAGE_TYPE, 'GIF_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.PNG_IMAGE_TYPE, 'PNG_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.HEIC_IMAGE_TYPE, 'HEIC_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.HEIF_IMAGE_TYPE, 'HEIF_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.BMP_IMAGE_TYPE, 'BMP_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.WEBP_IMAGE_TYPE, 'WEBP_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.AVIF_IMAGE_TYPE, 'AVIF_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.MP4_VIDEO_TYPE, 'MP4_VIDEO_TYPE'],
+  [PhotoViewMIMETypes.MOV_VIDEO_TYPE, 'MOV_VIDEO_TYPE'],
 ]);
 
 function checkArguments(args) {
@@ -690,10 +721,27 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
     config.parameters.userId = option.userId;
+    config.parameters.MIMETypeFilter = parseMIMETypeFilter(option.MIMETypeFilter);
+    config.parameters.fileSizeFilter = option.fileSizeFilter;
+    config.parameters.videoDurationFilter = option.videoDurationFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
   }
 
   return config;
+}
+
+function parseMIMETypeFilter(filter) {
+  if (!filter) {
+      return undefined;
+  }
+  let o = {};
+  o.MIMETypeArray = [];
+  if (filter.MIMETypeArray) {
+    for (let mimeType of filter.MIMETypeArray) {
+      o.MIMETypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+    }
+  }
+  return o;
 }
 
 function getPhotoPickerSelectResult(args) {
@@ -779,6 +827,20 @@ async function checkInteractAcrossLocalAccounts() {
   } else {
     return true;
   }
+}
+
+function MIMETypeFilter() {
+  this.MIMETypeArray = [];
+}
+
+function FileSizeFilter() {
+  this.filterOperator = -1;
+  this.fileSize = -1;
+}
+
+function VideoDurationFilter() {
+  this.filterOperator = -1;
+  this.videoDuration = -1;
 }
 
 function BaseSelectOptions() {
@@ -880,6 +942,10 @@ export default {
   HighlightUserActionType: photoAccessHelper.HighlightUserActionType,
   RequestPhotoType: photoAccessHelper.RequestPhotoType,
   PhotoViewMIMETypes: PhotoViewMIMETypes,
+  MIMETypeFilter: MIMETypeFilter,
+  FileSizeFilter: FileSizeFilter,
+  VideoDurationFilter: VideoDurationFilter,
+  FilterOperator: FilterOperator,
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
   AuthorizationMode: photoAccessHelper.AuthorizationMode,
