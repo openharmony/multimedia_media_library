@@ -107,7 +107,7 @@ constexpr int32_t ZERO_ASCII = '0';
 const std::string SET_LOCATION_KEY = "set_location";
 const std::string SET_LOCATION_VALUE = "1";
 const std::string SET_DISPLAY_NAME_KEY = "set_displayName";
-const std::string IS_CAN_FALLBACK = "is_can_fallback";
+const std::string CAN_FALLBACK = "can_fallback";
 const std::string OLD_DISPLAY_NAME = "old_displayName";
 
 enum ImageFileType : int32_t {
@@ -1633,8 +1633,8 @@ void HandleUpdateIndex(MediaLibraryCommand &cmd, string id)
 int32_t MediaLibraryPhotoOperations::HandleNeedSetDisplayName(
     MediaLibraryCommand &cmd, shared_ptr<FileAsset> &fileAsset, bool &isNeedScan)
 {
-    if (IsNeedSetDisplayName(cmd)) {
-        bool ret = UpdateFileAssetBySetDisplayName(cmd, fileAsset);
+    if (IsSetDisplayName(cmd)) {
+        bool ret = UpdateFileBySetDisplayName(cmd, fileAsset);
         if (!ret) {
             MEDIA_ERR_LOG("Failed to setDisplayName due to update file, displayName: %{public}s",
                 fileAsset->GetDisplayName().c_str());
@@ -1656,10 +1656,10 @@ int32_t MediaLibraryPhotoOperations::HandleNeedSetDisplayName(
 int32_t MediaLibraryPhotoOperations::HandleNeedSetDisplayName(
     MediaLibraryCommand &cmd, shared_ptr<FileAsset> &fileAsset)
 {
-    if (IsNeedSetDisplayName(cmd)) {
+    if (IsSetDisplayName(cmd)) {
         CHECK_AND_RETURN_RET_LOG(UpdateDbBySetDisplayName(cmd, fileAsset) == NativeRdb::E_OK, E_FAIL,
             "Failed to setDisplayName, fileId: %{public}d.", fileAsset->GetId());
-        bool ret = UpdateFileAssetBySetDisplayName(cmd, fileAsset);
+        bool ret = UpdateFileBySetDisplayName(cmd, fileAsset);
         int32_t id = fileAsset->GetId();
         if (!ret) {
             MEDIA_ERR_LOG("Failed to setDisplayName due to updateFile fail, fileId: %{public}d.", id);
@@ -1680,7 +1680,7 @@ int32_t MediaLibraryPhotoOperations::HandleNeedSetDisplayName(
 int32_t MediaLibraryPhotoOperations::RenameEditDataDirBySetDisplayName(
     MediaLibraryCommand &cmd, shared_ptr<FileAsset> &fileAsset)
 {
-    if (!IsNeedSetDisplayName(cmd)) {
+    if (!IsSetDisplayName(cmd)) {
         return E_OK;
     }
     CHECK_AND_RETURN_RET_LOG(CheckUriBySetDisplayName(cmd), false, "Failed to check uri.");
@@ -1909,6 +1909,7 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
     PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
+    MediaColumn::MEDIA_DATE_TAKEN,
 };
 
 static int32_t CheckFileAssetStatus(const shared_ptr<FileAsset>& fileAsset, bool checkMovingPhoto = false)
@@ -2395,7 +2396,90 @@ void ResetOcrInfo(const int32_t &fileId)
         "Update ocr info failed, ret = %{public}d, file id is %{public}d", ret, fileId);
 }
 
-int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset)
+std::string MediaLibraryPhotoOperations::GetSourceFileFromEditPath(const std::string &path, const int32_t &subtype)
+{
+    std::string sourcePath;
+    string parentPath = GetEditDataDirPath(path);
+    std::vector<string> fileNames = MediaFileUtils::GetFileNameFromDir(parentPath);
+    if (fileNames.empty()) {
+        return "";
+    }
+    // 这里处理动态照片，动态照片editdata下存在两个source文件，source.jpg\source.mp4，此处要取出jpg，跳过mp4
+    for (auto &filename : fileNames) {
+        if (MediaFileUtils::UnSplitByChar(filename, '.') == "source") {
+            if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+                MediaFileUtils::SplitByChar(filename, '.') == "mp4") {
+                continue;
+            }
+            return parentPath + "/" + filename;
+        }
+    }
+    return "";
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateDbByRevertToOrigin(
+    std::shared_ptr<FileAsset> &fileAsset, std::string &path, const std::string &sourcePath)
+{
+    if (MediaFileUtils::GetExtensionFromPath(path) == MediaFileUtils::GetExtensionFromPath(sourcePath)) {
+        return E_OK;
+    }
+    MEDIA_INFO_LOG("UpdateDbByRevertToOrigin enter, fileId: %{public}d.", fileAsset->GetId());
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_INVALID_VALUES, "UpdateDbByRevertToOrigin rdbStore is nullptr!");
+    int32_t id = fileAsset->GetId();
+    NativeRdb::ValuesBucket values;
+    path = MediaFileUtils::UnSplitByChar(path, '.') + "." + MediaFileUtils::GetExtensionFromPath(sourcePath);
+    std::string displayName = MediaFileUtils::UnSplitByChar(fileAsset->GetDisplayName(), '.') + "." +
+                              MediaFileUtils::GetExtensionFromPath(sourcePath);
+    std::string mimeType = MediaFileUtils::GetMimeTypeFromDisplayName(displayName);
+    std::string extension = MediaFileUtils::GetExtensionFromPath(displayName);
+    values.PutString(MediaColumn::MEDIA_NAME, displayName);
+    values.PutString(MediaColumn::MEDIA_FILE_PATH, path);
+    values.PutString(MediaColumn::MEDIA_MIME_TYPE, mimeType);
+    values.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, extension);
+    if (fileAsset->GetDirty() == static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) {
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_FDIRTY));
+    }
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutLong(PhotoColumn::MEDIA_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    std::string whereClauses = MediaColumn::MEDIA_ID + " = ?";
+    std::vector<std::string> whereArgs = {std::to_string(id)};
+
+    int32_t updateRows = 0;
+    int32_t ret = rdbStore->Update(updateRows, PhotoColumn::PHOTOS_TABLE, values, whereClauses, whereArgs);
+    CHECK_AND_RETURN_RET_LOG((ret == NativeRdb::E_OK && updateRows >= 0),
+        E_ERR, "failed to update, ret: %{public}d, updateRows: %{public}d.", ret, updateRows);
+    int64_t dataTaken = fileAsset->GetDateTaken();
+    std::string oldPath = fileAsset->GetPath();
+    bool isThumbnailInvalidate =  ThumbnailService::GetInstance()->HasInvalidateThumbnail(
+        to_string(id), PhotoColumn::PHOTOS_TABLE, oldPath, to_string(dataTaken));
+    if (isThumbnailInvalidate) {
+        int32_t userId = -1;
+        string thumbPath = MediaFileUtils::GetThumbDir(oldPath, userId);
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteDir(thumbPath), E_ERR, "failed to update.");
+    }
+    fileAsset->SetPath(path);
+    MEDIA_INFO_LOG("UpdateDbByRevertToOrigin end.");
+    return ret;
+}
+
+int32_t MediaLibraryPhotoOperations::RenameEditDataDirByRevert(
+    const std::string &editDataDir, const std::string &path)
+{
+    if (MediaFileUtils::GetExtensionFromPath(path) == MediaFileUtils::GetExtensionFromPath(editDataDir)) {
+        return E_OK;
+    }
+    string newEditDataDir =
+        MediaFileUtils::UnSplitByChar(editDataDir, '.') + "." + MediaFileUtils::GetExtensionFromPath(path);
+    if (!MediaFileUtils::RenameDir(editDataDir, newEditDataDir)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteDir(editDataDir), E_FAIL, "Can not delete old editdata dir");
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::DoRevertEdit(std::shared_ptr<FileAsset> &fileAsset)
 {
     int32_t errCode = CheckFileAssetStatus(fileAsset);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
@@ -2407,9 +2491,6 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
 
     string path = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_URI, "Can not get file path, fileId=%{public}d", fileId);
-    string sourcePath = GetEditDataSourcePath(path);
-    CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Cannot get source path, id=%{public}d", fileId);
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourcePath), E_NO_SUCH_FILE, "Can not get source file");
 
     int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
     int32_t movingPhotoSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
@@ -2417,6 +2498,12 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         errCode = UpdateMovingPhotoSubtype(fileAsset->GetId(), subtype);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update movingPhoto subtype");
     }
+
+    // 由于displayname可能被修改过，source文件cmd后缀与其上级目录后缀可能不相同，所以要检索EditDataDir目录下source文件
+    string sourcePath = GetSourceFileFromEditPath(path, subtype);
+    string editDataDir = GetEditDataDirPath(path);
+    CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Cannot get source path, id=%{public}d", fileId);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourcePath), E_NO_SUCH_FILE, "Can not get source file");
 
     string editDataPath = GetEditDataPath(path);
     CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_URI, "Cannot get editdata path, id=%{public}d", fileId);
@@ -2434,10 +2521,15 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(path), E_HAS_FS_ERROR,
             "Failed to delete asset, path:%{private}s", path.c_str());
     }
-
+    // 处理文件之前，需先更新数据库，并修改资产中的path信息，同步更新path变量
+    CHECK_AND_RETURN_RET_LOG(UpdateDbByRevertToOrigin(fileAsset, path, sourcePath) == E_OK, E_FAIL,
+        "Failed to UpdateDbByRevertToOrigin to photo");
     CHECK_AND_RETURN_RET_LOG(DoRevertFilters(fileAsset, path, sourcePath) == E_OK, E_FAIL,
         "Failed to DoRevertFilters to photo");
-
+    // 此时如果有修改过后缀，则老的editdata dir依然存在，扫描会生成新的editdata dir，需删除老的editdata dir，某则再次修改后缀会失败,且此时path已经修改回回退之后的路径
+    // 此处简洁概述就是：editdata目录要始终和photo下资产的后缀保持一致
+    CHECK_AND_RETURN_RET_LOG(RenameEditDataDirByRevert(editDataDir, path) == E_OK, E_FAIL,
+        "Failed to delete old editdatadir");
     ScanFile(path, true, true, true);
     // revert cloud enhancement ce_available
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -3196,11 +3288,13 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
         MultiStagesPhotoCaptureManager::UpdateLocation(cmd.GetValueBucket(), true, assetPath, id);
     }
     if (!IsCameraEditData(cmd) && HandleNeedSetDisplayName(cmd, fileAsset) != E_OK) {
-        CHECK_AND_RETURN_RET_LOG(DoRevertEdit(fileAsset) == E_OK, E_FAIL, "Failed to revert when setdisplayname file");
+        CHECK_AND_RETURN_RET_LOG(DoRevertEdit(fileAsset) == E_OK,
+            E_FAIL, "HandleNeedSetDisplayName Failed to revert when setdisplayname file");
         return E_FAIL;
     }
     if (RenameEditDataDirBySetDisplayName(cmd, fileAsset) != E_OK) {
-        CHECK_AND_RETURN_RET_LOG(DoRevertEdit(fileAsset) == E_OK, E_FAIL, "Failed to revert when setdisplayname file");
+        CHECK_AND_RETURN_RET_LOG(DoRevertEdit(fileAsset) == E_OK,
+            E_FAIL, "RenameEditDataDirBySetDisplayName Failed to revert when setdisplayname file");
         return E_FAIL;
     }
     ScanFile(fileAsset->GetFilePath(), false, true, true);
