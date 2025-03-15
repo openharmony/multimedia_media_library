@@ -145,14 +145,16 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
 {
     const std::string ASSET_URI_PREFIX = "file://media/";
     const std::string CLOUD_SYNC_SWITCH_URI_PREFIX = "datashareproxy://";
+    MEDIA_DEBUG_LOG("registerUri = %{public}s", registerUri.c_str());
  
     std::shared_ptr<DataShare::DataShareObserver> observer;
     if (registerUri.find(ASSET_URI_PREFIX) == 0 || registerUri.find(CLOUD_SYNC_SWITCH_URI_PREFIX) == 0) {
         auto cardAssetUriObserver = std::make_shared<CardAssetUriObserver>(registerUri);
+        MEDIA_DEBUG_LOG("cardAssetUriObserver->uri = %{public}s", cardAssetUriObserver->assetChangeUri.c_str());
         formAssetObserversMap[formId].push_back(cardAssetUriObserver);
         observer = std::static_pointer_cast<DataShare::DataShareObserver>(cardAssetUriObserver);
     } else {
-        MEDIA_ERR_LOG("registerUri is inValid");
+        MEDIA_DEBUG_LOG("registerUri is inValid");
         return;
     }
     Uri notifyUri(registerUri);
@@ -161,9 +163,10 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
     DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
     if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is nullptr");
+        MEDIA_DEBUG_LOG("dataShareHelper is nullptr");
         return;
     }
+    MEDIA_DEBUG_LOG("notifyUri = %{public}s", notifyUri.ToString().c_str());
     dataShareHelper->RegisterObserverExt(notifyUri, observer, true);
 }
  
@@ -205,7 +208,9 @@ int32_t MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(MediaLibra
         return E_HAS_DB_ERROR;
     }
     string formId = GetStringObject(cmd, TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID);
+    MEDIA_DEBUG_LOG("formId = %{public}s", formId.c_str());
     string assetRegisterUri = GetStringObject(cmd, TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI);
+    MEDIA_DEBUG_LOG("assetRegisterUri = %{public}s", assetRegisterUri.c_str());
     MediaLibraryFaCardOperations::RegisterObserver(formId, assetRegisterUri);
     return static_cast<int32_t>(outRowId);
 }
