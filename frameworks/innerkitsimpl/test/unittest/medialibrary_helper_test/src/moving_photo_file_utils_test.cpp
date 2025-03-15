@@ -432,5 +432,13 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsGraffiti_001, TestSi
     EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(3, 3), false);
     EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(0, 3), true);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoSize_001, TestSize.Level0)
+{
+    size_t result = MovingPhotoFileUtils::GetMovingPhotoSize("");
+    EXPECT_EQ(result, 0);
+    result = MovingPhotoFileUtils::GetMovingPhotoSize("/storage/cloud/files/Photo/1/IMG_123435123_123.jpg");
+    EXPECT_EQ(result, 0);
+}
 } // namespace Media
 } // namespace OHOS
