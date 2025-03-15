@@ -52,6 +52,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "medialibrary_uripermission_operations.h"
 #include "media_file_ext_ability.h"
 #include "media_file_extention_utils.h"
 #include "result_set_utils.h"
@@ -639,5 +640,22 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_011");
 }
 
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, medialibrary_grant_permission_test_001, TestSize.Level0)
+{
+    std::vector<DataShare::DataShareValuesBucket> dataShareValues;
+    for (int i = 0; i < 2; ++i) {
+        OHOS::DataShare::DataShareValuesBucket dataShareValue;
+        dataShareValue.Put(AppUriPermissionColumn::SOURCE_TOKENID, 1);
+        dataShareValue.Put(AppUriPermissionColumn::TARGET_TOKENID, 2);
+        dataShareValue.Put(AppUriPermissionColumn::FILE_ID, to_string(i));
+        dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE);
+        dataShareValue.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
+        dataShareValues.push_back(dataShareValue);
+    }
+    MediaLibraryCommand cmd(OperationObject::APP_URI_PERMISSION_INNER, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    int32_t ret = UriPermissionOperations::GrantUriPermission(cmd, dataShareValues);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
 } // namespace Media
 } // namespace OHOS
