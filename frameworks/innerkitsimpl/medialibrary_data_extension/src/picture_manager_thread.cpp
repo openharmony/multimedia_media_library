@@ -66,10 +66,10 @@ void PictureManagerThread::Start()
         Stop();
     }
     if (thread_ == nullptr) {
-        thread_ = std::make_unique<std::thread>(&PictureManagerThread::Run, this);
         pauseFlag_ = false;
         stopFlag_ = false;
         state_ = State::RUNNING;
+        thread_ = std::make_unique<std::thread>(&PictureManagerThread::Run, this);
     }
 }
 
