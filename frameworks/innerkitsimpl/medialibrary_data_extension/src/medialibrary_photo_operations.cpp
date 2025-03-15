@@ -412,8 +412,8 @@ static void RefreshLivePhotoCache(const string &movingPhotoImagePath, int64_t mo
     size_t livePhotoSize = 0;
     if (!MediaFileUtils::GetFileSize(livePhotoCachePath, livePhotoSize) ||
         static_cast<int64_t>(livePhotoSize) != movingPhotoSize) {
-        MEDIA_INFO_LOG(
-            "Live photo need update from %{public}" PRId64 "to %{public}" PRId64, livePhotoSize, movingPhotoSize);
+        MEDIA_INFO_LOG("Live photo need update from %{public}ld to %{public}ld",
+            static_cast<long>(livePhotoSize), static_cast<long>(movingPhotoSize));
         if (!MediaFileUtils::DeleteFile(livePhotoCachePath)) {
             MEDIA_ERR_LOG("Failed to delete live photo cache, errno: %{public}d", errno);
         }
@@ -449,8 +449,8 @@ int32_t MediaLibraryPhotoOperations::ProcessMovingPhotoOprnKey(MediaLibraryComma
             id.c_str(), fileAsset->GetPhotoSubType());
         int64_t movingPhotoSize = static_cast<int64_t>(MovingPhotoFileUtils::GetMovingPhotoSize(fileAsset->GetPath()));
         if (fileAsset->GetSize() != movingPhotoSize) {
-            MEDIA_WARN_LOG("size of moving photo need scan from %{public}" PRId64 "to %{public}" PRId64,
-                fileAsset->GetSize(), movingPhotoSize);
+            MEDIA_WARN_LOG("size of moving photo need scan from %{public}ld to %{public}ld",
+                static_cast<long>(fileAsset->GetSize()), static_cast<long>(movingPhotoSize));
             MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(fileAsset->GetPath(), false, false, true);
         }
         RefreshLivePhotoCache(fileAsset->GetPath(), movingPhotoSize);
