@@ -378,6 +378,12 @@ static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, 
     predicates.And()->EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
     predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(tableType));
     predicates.In(AppUriPermissionColumn::FILE_ID, inColumn);
+    vector<string> tempPermissions = {
+        to_string(AppUriPermissionColumn::PERMISSION_TEMPORARY_READ),
+        to_string(AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE),
+        to_string(AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE)
+    };
+    predicates.In(AppUriPermissionColumn::PERMISSION_TYPE, tempPermissions);
     cmd.SetTableName(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
     cmd.SetValueBucket(valueBucket);
     cmd.SetDataSharePred(predicates);
