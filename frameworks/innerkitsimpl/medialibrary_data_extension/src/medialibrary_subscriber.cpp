@@ -678,6 +678,17 @@ static void ClearDirtyData()
     return;
 }
 
+static void PeriodicAnalyzePhotosData()
+{
+    constexpr int64_t analyzeIntervalMillisecond = 24 * 60 * 60 * 1000;
+    static int64_t lastAnalyzeTime {0};
+    if (MediaFileUtils::UTCTimeMilliSeconds() - lastAnalyzeTime >= analyzeIntervalMillisecond) {
+        MediaLibraryRdbUtils::AnalyzePhotosData();
+        lastAnalyzeTime = MediaFileUtils::UTCTimeMilliSeconds();
+        return;
+    }
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     bool cond = (!backgroundDelayTask_.IsDelayTaskTimeOut() || !currentStatus_);
@@ -695,7 +706,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     Init();
     DoAgingOperation();
-    MediaLibraryRdbUtils::AnalyzePhotosData();
+    PeriodicAnalyzePhotosData();
     // update burst from gallery
     int32_t ret = DoUpdateBurstFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
