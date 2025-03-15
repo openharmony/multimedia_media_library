@@ -268,7 +268,7 @@ void EnhancementManager::InitPhotosSettingsMonitor()
 }
 
 static void GenerateCancelUpdatePredicates(RdbPredicates &updatePredicates, ValuesBucket &rdbValues,
-    const vector<string> &fileIds)
+    const vector<string> &fileIds, CloudEnhancementAvailableType type)
 {
     updatePredicates.In(MediaColumn::MEDIA_ID, fileIds);
     updatePredicates.And();
@@ -319,7 +319,7 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
     }
     RdbPredicates updatePredicates(PhotoColumn::PHOTOS_TABLE);
     ValuesBucket rdbValues;
-    GenerateCancelUpdatePredicates(updatePredicates, rdbValues, fileIds);
+    GenerateCancelUpdatePredicates(updatePredicates, rdbValues, fileIds, type);
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, updatePredicates);
     CHECK_AND_RETURN_LOG(ret == E_OK, "update ce_available failed, type: %{public}d, failed count: %{public}zu",
         static_cast<int32_t>(type), photoIds.size());
