@@ -267,11 +267,36 @@ void EnhancementManager::InitPhotosSettingsMonitor()
 #endif
 }
 
+static void GenerateCancelUpdatePredicates(RdbPredicates &updatePredicates, ValuesBucket &rdbValues,
+    const vector<string> &fileIds, CloudEnhancementAvailableType type)
+{
+    updatePredicates.In(MediaColumn::MEDIA_ID, fileIds);
+    updatePredicates.And();
+    updatePredicates.BeginWrap();
+    updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL));
+    updatePredicates.Or();
+    updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO));
+    updatePredicates.Or();
+    updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
+    updatePredicates.Or();
+    updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(CloudEnhancementAvailableType::FAILED_RETRY));
+    updatePredicates.EndWrap();
+    rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(type));
+}
+
 void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vector<string> &photoIds,
     CloudEnhancementAvailableType type)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     for (const string& id : fileIds) {
+        if (!MediaFileUtils::IsValidInteger(id)) {
+            MEDIA_WARN_LOG("file_id is invalid: %{public}s", id.c_str());
+            continue;
+        }
         int32_t fileId = stoi(id);
         string photoId = EnhancementTaskManager::QueryPhotoIdByFileId(fileId);
         if (photoId.empty()) {
@@ -293,23 +318,8 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
         MEDIA_INFO_LOG("cancel task successful, photo_id: %{public}s", photoId.c_str());
     }
     RdbPredicates updatePredicates(PhotoColumn::PHOTOS_TABLE);
-    updatePredicates.In(MediaColumn::MEDIA_ID, fileIds);
-    updatePredicates.And();
-    updatePredicates.BeginWrap();
-    updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL));
-    updatePredicates.Or();
-    updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO));
-    updatePredicates.Or();
-    updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
-    updatePredicates.Or();
-    updatePredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::FAILED_RETRY));
-    updatePredicates.EndWrap();
     ValuesBucket rdbValues;
-    rdbValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(type));
+    GenerateCancelUpdatePredicates(updatePredicates, rdbValues, fileIds, type);
     int32_t ret = EnhancementDatabaseOperations::Update(rdbValues, updatePredicates);
     CHECK_AND_RETURN_LOG(ret == E_OK, "update ce_available failed, type: %{public}d, failed count: %{public}zu",
         static_cast<int32_t>(type), photoIds.size());
