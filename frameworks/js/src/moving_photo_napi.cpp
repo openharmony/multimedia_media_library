@@ -805,24 +805,32 @@ void MovingPhotoNapi::OnProgress(napi_env env, napi_value cb, void *context, voi
         if (type == INFO_TYPE_ERROR) {
             context->error = JS_INNER_FAIL;
         }
+        MediaCallTranscode::CallTranscodeRelease(progressHandler->requestId);
+        CallRequestContentCallBack(env, context);
         NAPI_INFO_LOG("OnProgress INFO_TYPE_TRANSCODER_COMPLETED type:%{public}d, process:%{public}d", type, process);
-        napi_status status = napi_ok;
-        switch (context->requestContentMode) {
-            case MovingPhotoAsyncContext::WRITE_TO_SANDBOX:
-                RequestContentComplete(env, status, context);
-                return;
-            case MovingPhotoAsyncContext::WRITE_TO_ARRAY_BUFFER:
-                CallArrayBufferRequestContentComplete(env, context);
-                RequestContentComplete(env, status, context);
-                return;
-            default:
-                NAPI_ERR_LOG("Request content mode: %{public}d", static_cast<int32_t>(context->requestContentMode));
-                context->error = OHOS_INVALID_PARAM_CODE;
-                return;
-        }
+        DeleteProcessHandlerSafe(progressHandler, env);
     }
     CHECK_NULL_PTR_RETURN_VOID(progressHandler->progressRef, "Onprogress callback is null");
     CallMovingProgressCallback(env, *progressHandler, process);
+}
+
+void MovingPhotoNapi::CallRequestContentCallBack(napi_env env, MovingPhotoAsyncContext* context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    napi_status status = napi_ok;
+    switch (context->requestContentMode) {
+        case MovingPhotoAsyncContext::WRITE_TO_SANDBOX:
+            RequestContentComplete(env, status, context);
+            return;
+        case MovingPhotoAsyncContext::WRITE_TO_ARRAY_BUFFER:
+            CallArrayBufferRequestContentComplete(env, context);
+            RequestContentComplete(env, status, context);
+            return;
+        default:
+            NAPI_ERR_LOG("Request content mode: %{public}d", static_cast<int32_t>(context->requestContentMode));
+            context->error = OHOS_INVALID_PARAM_CODE;
+            return;
+    }
 }
 } // namespace Media
 } // namespace OHOS
