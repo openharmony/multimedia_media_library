@@ -639,29 +639,11 @@ int32_t EnhancementManager::HandleSyncOperation()
         MEDIA_INFO_LOG("no pending tasks from cloud enhancement service");
         return E_OK;
     }
-    MEDIA_INFO_LOG("enhancement pending tasks count from cloud enhancement: %{public}zu",
-        taskIdList.size());
-    vector<string> columns = {
-        MediaColumn::MEDIA_ID
-    };
+    MEDIA_INFO_LOG("enhancement pending tasks count from cloud enhancement: %{public}zu", taskIdList.size());
 
-    RdbPredicates updateNotSupportPredicates(PhotoColumn::PHOTOS_TABLE);
-    updateNotSupportPredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT));
-    updateNotSupportPredicates.In(PhotoColumn::PHOTO_ID, taskIdList);
-    ValuesBucket updateNotSupportBucket;
-    updateNotSupportBucket.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
-    EnhancementDatabaseOperations::Update(updateNotSupportBucket, updateNotSupportPredicates);
+    auto ret = EnhancementDatabaseOperations::QueryAndUpdatePhotos(taskIdList);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "sync tasks failed, query and update photos error");
 
-    RdbPredicates updateSupportPredicates(PhotoColumn::PHOTOS_TABLE);
-    updateSupportPredicates.EqualTo(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::SUPPORT));
-    updateSupportPredicates.NotIn(PhotoColumn::PHOTO_ID, taskIdList);
-    ValuesBucket updateSupportBucket;
-    updateSupportBucket.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
-        static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT));
-    EnhancementDatabaseOperations::Update(updateSupportBucket, updateSupportPredicates);
     MEDIA_INFO_LOG("sync photos cloud enhancement available done");
     return E_OK;
 #else
