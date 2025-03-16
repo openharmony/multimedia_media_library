@@ -342,6 +342,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/operation/photo_other_album_trans_operation.cpp",
     "src/operation/photo_owner_album_id_operation.cpp",
     "src/operation/photo_source_path_operation.cpp",
+    "src/operation/photo_storage_operation.cpp",
     "src/photo_album_operation/photo_album_lpath_operation.cpp",
     "src/photo_album_operation/photo_album_merge_operation.cpp",
     "src/photo_album_operation/photo_album_update_date_modified_operation.cpp",
