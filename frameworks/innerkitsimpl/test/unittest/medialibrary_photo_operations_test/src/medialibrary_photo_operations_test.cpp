@@ -84,11 +84,6 @@ using ExceptLongFunction = void (*) (int64_t);
 using ExceptBoolFunction = void (*) (bool);
 using ExceptStringFunction = void (*) (const string&);
 
-const std::string API_VERSION = "api_version";
-const std::string SET_DISPLAY_NAME_KEY = "set_displayName";
-const std::string IS_CAN_FALLBACK = "is_can_fallback";
-const std::string OLD_DISPLAY_NAME = "old_displayName";
-
 namespace {
 void CleanTestTables()
 {
@@ -4088,22 +4083,5 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestS
     EXPECT_NE(resultSet, nullptr);
 }
 
-void UriAppendKeyValue(string &uri, const string &key, std::string value)
-{
-    string uriKey = key + '=';
-    if (uri.find(uriKey) != string::npos) {
-        return;
-    }
-
-    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
-    string append = queryMark + key + '=' + value;
-
-    size_t pos = uri.find('#');
-    if (pos == string::npos) {
-        uri += append;
-    } else {
-        uri.insert(pos, append);
-    }
-}
 } // namespace Media
 } // namespace OHOS
