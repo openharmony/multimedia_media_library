@@ -58,6 +58,7 @@
 #include "vision_photo_map_column.h"
 #include "vision_total_column.h"
 #include "photo_owner_album_id_operation.h"
+#include "photo_storage_operation.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -253,23 +254,6 @@ static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs
 }
 #endif
 
-static size_t QueryPhotoThumbnailVolumn(shared_ptr<MediaLibraryRdbStore> uniStore)
-{
-    const string sql = "SELECT SUM(" + PhotoExtColumn::THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE +
-        " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
-    auto resultSet = uniStore->QuerySql(sql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "resultSet is null!");
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, 0, "go to first row failed");
-
-    int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE,
-        resultSet, TYPE_INT64));
-    if (size < 0) {
-        MEDIA_ERR_LOG("Invalid size retrieved from database: %{public}" PRId64, size);
-        return 0;
-    }
-    return static_cast<size_t>(size);
-}
-
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
@@ -277,13 +261,7 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, nullptr, "uniStore is nullptr!");
 
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
-        size_t photoThumbnailVolumn = QueryPhotoThumbnailVolumn(uniStore);
-        string queryThumbnailSql = "SELECT cast(" + to_string(photoThumbnailVolumn) +
-            " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
-        string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME
-            + " UNION " + queryThumbnailSql;
-        MEDIA_INFO_LOG("Thumbnail size is %{public}zu", photoThumbnailVolumn);
-        return uniStore->QuerySql(mediaVolumeQuery);
+        return PhotoStorageOperation().FindStorage(uniStore);
     }
 
     string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
