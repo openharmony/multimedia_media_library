@@ -217,14 +217,13 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
         NAPI_ERR_LOG("Query fail, helper null, userId is %{public}d", userId);
         return nullptr;
     }
-    uri = MultiUserUriRecognition(uri, userId);
 
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) &&
-        !uri.ToString().find(MULTI_USER_URI_FLAG)) {
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == -1) {
         resultSet = MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode);
     } else {
+        uri = MultiUserUriRecognition(uri, userId);
         DatashareBusinessError businessError;
         resultSet = GetDataShareHelperByUser(userId)->Query(uri, predicates, columns, &businessError);
         errCode = businessError.GetCode();
