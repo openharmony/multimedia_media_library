@@ -185,9 +185,6 @@ static inline int32_t GetIntValFromColumn(const shared_ptr<ResultSet> &resultSet
 
 static NotifyType GetTypeFromCountVariation(UpdateAlbumData &data)
 {
-    if (data.newTotalCount == 0) {
-        return NOTIFY_ALBUM_ADD_ASSET;
-    }
     int oldCount = data.albumVideoCount + data.albumImageCount;
     int newCount = data.newTotalCount;
     if (oldCount < newCount) {
