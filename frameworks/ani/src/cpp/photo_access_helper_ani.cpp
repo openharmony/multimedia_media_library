@@ -68,7 +68,7 @@ ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
     }
 
     std::array methods = {
-        ani_native_function {"getAlbums", nullptr, reinterpret_cast<void *>(GetPhotoAlbums)},
+        ani_native_function {"getAlbumsInner", nullptr, reinterpret_cast<void *>(GetPhotoAlbums)},
         ani_native_function {"release", nullptr, reinterpret_cast<void *>(Release)},
         ani_native_function {"applyChanges", nullptr, reinterpret_cast<void *>(ApplyChanges)},
         ani_native_function {"createAsset1", nullptr, reinterpret_cast<void *>(createAsset1)},
@@ -260,7 +260,7 @@ ani_object PhotoAccessHelperAni::Constructor(ani_env *env, [[maybe_unused]] ani_
         g_listObj = std::make_unique<ChangeListenerAni>(env);
     }
 
-    bool isAsync = false;
+    bool isAsync = true;
     if (!InitUserFileClient(env, context, isAsync)) {
         DEBUG_LOG_T("Constructor InitUserFileClient failed");
         return result;
@@ -514,6 +514,7 @@ ani_object PhotoAccessHelperAni::GetPhotoAlbums(ani_env *env, ani_object object,
 {
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->objectInfo = Unwrap(env, object);
     CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsGetPhotoAlbum(env, albumTypeItem, albumSubtypeItem,
         fetchOptions, asyncContext) == ANI_OK, nullptr, "Failed to parse get albums options");
     GetPhotoAlbumsExecute(env, asyncContext);
