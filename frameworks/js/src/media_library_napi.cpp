@@ -8540,9 +8540,6 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
 
 napi_value MediaLibraryNapi::GetPhotoAlbums(napi_env env, napi_callback_info info)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("GetPhotoAlbums");
-
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_NULLPTR_RET(ParseArgsGetPhotoAlbum(env, info, asyncContext));
@@ -8553,6 +8550,9 @@ napi_value MediaLibraryNapi::GetPhotoAlbums(napi_env env, napi_callback_info inf
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetPhotoAlbums");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CHECK_NULLPTR_RET(ParseArgsGetPhotoAlbum(env, info, asyncContext));
