@@ -92,11 +92,7 @@
 #include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
-<<<<<<< HEAD
 #include "medialibrary_tab_asset_and_album_operations.h"
-=======
-#include "medialibrary_tab_asset_and_album_operation.h"
->>>>>>> 35c0492af39c204017dd693984a8299f369b2201
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
