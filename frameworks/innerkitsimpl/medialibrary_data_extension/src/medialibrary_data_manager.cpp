@@ -1083,11 +1083,10 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::TAB_FACARD_PHOTO: {
             return MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(rdbPredicate);
         }
-
         default:
             break;
-
     }
+
     return DeleteInRdbPredicatesAnalysis(cmd, rdbPredicate);
 }
 

@@ -39,7 +39,6 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryTabAssetAlbumOperations::Query
 int32_t MediaLibraryTabAssetAlbumOperations::Delete(NativeRdb::RdbPredicates &rdbPredicate)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "rdbStore is nullptr");
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbstore is nullptr");
         return nullptr;
