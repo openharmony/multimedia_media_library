@@ -25,26 +25,53 @@
 
 namespace OHOS::Media {
 int32_t TabOldPhotosRestore::Restore(
-    std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const std::vector<FileInfo> fileInfos)
+    std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const std::vector<FileInfo> &fileInfos)
 {
-    if (rdbStorePtr ==  nullptr) {
-        MEDIA_ERR_LOG("rdbStorePtr is nullptr, Maybe init failed");
-        return NativeRdb::E_OK;
-    }
-    for (const auto &fileInfo : fileInfos) {
-        std::string executeSql = this->SQL_TAB_OLD_PHOTOS_INSERT;
-        std::vector<NativeRdb::ValueObject> bindArgs = { fileInfo.localMediaId, fileInfo.oldPath, fileInfo.cloudPath };
-        int32_t ret = rdbStorePtr->ExecuteSql(executeSql, bindArgs);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, "
-                          "executeSql=%{public}s, bindArgs: %{public}s, Object: %{public}s",
-                ret,
-                executeSql.c_str(),
-                this->ToString(bindArgs).c_str(),
-                this->ToString(fileInfo).c_str());
-        }
+    CHECK_AND_RETURN_RET_LOG(rdbStorePtr != nullptr, NativeRdb::E_DB_NOT_EXIST,
+        "rdbStorePtr is nullptr, Maybe init failed");
+
+    TabOldPhotosTempTable tempTable;
+    tempTable.SetPlaceHoldersAndBindArgs(fileInfos);
+    CHECK_AND_RETURN_RET_LOG(!tempTable.IsEmpty(), E_FAIL, "tempTable is empty");
+
+    std::string insertSql = GetInsertSql(tempTable);
+    std::vector<NativeRdb::ValueObject> bindArgs = tempTable.GetBindArgs();
+    int32_t ret = rdbStorePtr->ExecuteSql(insertSql, bindArgs);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, "
+                        "executeSql=%{public}s, bindArgs: %{public}s, Object: %{public}s",
+            ret,
+            insertSql.c_str(),
+            this->ToString(bindArgs).c_str(),
+            this->ToString(fileInfo).c_str());
+        return ret;
     }
     return NativeRdb::E_OK;
+}
+
+std::string TabOldPhotosRestore::GetInsertSql(const TabOldPhotosTempTable &tempTable)
+{
+    std::string inputTableClause = tempTable.GetInputTableClause();
+    return inputTableClause + SQL_TAB_OLD_PHOTOS_INSERT;
+}
+
+int32_t TabOldPhotosRestore::Insert(std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const std::string &insertSql)
+{
+    TabOldPhotosTempTable tempTable;
+    tempTable.SetPlaceHoldersAndBindArgs(fileInfos);
+    CHECK_AND_RETURN_RET_LOG(!tempTable.IsEmpty(), E_FAIL, "tempTable is empty");
+    std::string insertSql = GetInsertSql(tempTable);
+    std::vector<NativeRdb::ValueObject> bindArgs = tempTable.GetBindArgs();
+    int32_t ret = rdbStorePtr->ExecuteSql(insertSql, bindArgs);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, "
+                      "executeSql=%{public}s, bindArgs: %{public}s, Object: %{public}s",
+            ret,
+            insertSql.c_str(),
+            this->ToString(bindArgs).c_str(),
+            this->ToString(fileInfo).c_str());
+    }
+    CHECK_AND_RETURN_RET_LOG(!insertSql.empty(), NativeRdb::E_ERROR, "insertSql is empty");
 }
 
 std::string TabOldPhotosRestore::ToString(const std::vector<NativeRdb::ValueObject> &values)
@@ -63,5 +90,45 @@ std::string TabOldPhotosRestore::ToString(const FileInfo &fileInfo)
     return "FileInfo[ fileId: " + std::to_string(fileInfo.localMediaId) + ", displayName: " + fileInfo.displayName +
         ", bundleName: " + std::to_string(fileInfo.fileSize) + ", fileType: " +
         std::to_string(fileInfo.fileType) + " ]";
+}
+
+void TabOldPhotosTempTable::SetPlaceHoldersAndBindArgs(const std::vector<FileInfo> &fileInfos)
+{
+    for (const auto &fileInfo : fileInfos) {
+        AddPlaceHolder();
+        AddBindArg(fileInfo);
+    }
+}
+
+bool TabOldPhotosTempTable::IsEmpty()
+{
+    return placeHolders_.empty() || bindArgs_.empty();
+}
+
+std::string TabOldPhotosTempTable::GetInputTableClause()
+{
+    return "WITH INPUT (old_file_id, old_data, data) AS (VALUES " + Join(placeHolders_, ",") + " ) ";
+}
+
+std::vector<NativeRdb::ValueObject> TabOldPhotosTempTable::GetBindArgs()
+{
+    return bindArgs_;
+}
+
+void TabOldPhotosTempTable::AddPlaceHolders()
+{
+    placeHolders_.emplace_back(SQL_PLACEHOLDERS);
+}
+
+void TabOldPhotosTempTable::AddBindArgs(const FileInfo &fileInfo)
+{
+    bindArgs_.emplace_back(fileInfo.localMediaId);
+    bindArgs_.emplace_back(fileInfo.oldPath);
+    bindArgs_.emplace_back(fileInfo.cloudPath);
+}
+
+std::string TabOldPhotosTempTable::Join(const std::vector<std::string> &values, const std::string &delimiter)
+{
+    return std::accumulate(values.begin(), values.end(), delimiter);
 }
 } // namespace OHOS::Media

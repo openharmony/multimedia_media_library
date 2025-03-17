@@ -25,7 +25,7 @@
 namespace OHOS::Media {
 class TabOldPhotosRestore {
 public:
-    int32_t Restore(std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const std::vector<FileInfo> fileInfos);
+    int32_t Restore(std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const std::vector<FileInfo> &fileInfos);
 
 private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
@@ -44,12 +44,7 @@ private:
             INPUT.old_file_id, \
             INPUT.old_data \
         FROM Photos \
-            INNER JOIN \
-            ( \
-                SELECT ? AS old_file_id, \
-                    ? AS old_data, \
-                    ? AS data \
-            ) AS INPUT \
+            INNER JOIN INPUT \
                 ON Photos.data=INPUT.data \
             LEFT JOIN tab_old_photos \
                 ON INPUT.old_data=tab_old_photos.old_data \
@@ -57,5 +52,23 @@ private:
             COALESCE(hidden, 0) = 0 AND \
             COALESCE(date_trashed, 0) = 0;";
 };
+
+class TabOldPhotosTempTable {
+public:
+    void SetPlaceHoldersAndBindArgs(const std::vector<FileInfo> &fileInfos);
+    bool IsEmpty();
+    std::string GetInputTableClause();
+    std::vector<NativeRdb::ValueObject> GetBindArgs();
+
+private:
+    void AddPlaceHolders();
+    void AddBindArgs(const FileInfo &fileInfo);
+    void Join(const std::vector<std::string> &values, const std::string &delimiter);
+
+    std::vector<string> placeHolders_;
+    std::vector<NativeRdb::ValueObject> bindArgs_;
+
+    const std::string SQL_PLACEHOLDERS = "(?, ?, ?)";
+}
 } // namespace OHOS::Media
 #endif // OHOS_BACKUP_MEDIA_TAB_OLD_PHOTOS_RESTORE
