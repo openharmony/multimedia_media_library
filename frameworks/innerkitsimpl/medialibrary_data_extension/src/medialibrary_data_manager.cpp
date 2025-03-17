@@ -1083,11 +1083,10 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::TAB_FACARD_PHOTO: {
             return MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(rdbPredicate);
         }
-        case OperationObject::ASSET_ALBUM_OPERATION: {
-            return MediaLibraryTabAssetAlbumOperations::Delete(rdbPredicate);
-        }
+
         default:
             break;
+
     }
     return DeleteInRdbPredicatesAnalysis(cmd, rdbPredicate);
 }
@@ -1117,6 +1116,9 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
         }
         case OperationObject::SEARCH_TOTAL: {
             return MediaLibrarySearchOperations::DeleteOperation(cmd);
+        }
+        case OperationObject::ASSET_ALBUM_OPERATION: {
+            return MediaLibraryTabAssetAlbumOperations::Delete(rdbPredicate);
         }
         default:
             break;

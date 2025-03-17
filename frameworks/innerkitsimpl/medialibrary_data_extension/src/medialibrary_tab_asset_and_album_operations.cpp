@@ -28,7 +28,10 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryTabAssetAlbumOperations::Query
     const NativeRdb::RdbPredicates &rdbPredicate, const std::vector<std::string> &columns)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "rdbStore is nullptr");
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbstore is nullptr");
+        return nullptr;
+    }
 
     return rdbStore->QueryWithFilter(rdbPredicate, columns);
 }
@@ -37,6 +40,10 @@ int32_t MediaLibraryTabAssetAlbumOperations::Delete(NativeRdb::RdbPredicates &rd
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "rdbStore is nullptr");
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbstore is nullptr");
+        return nullptr;
+    }
 
     return rdbStore->Delete(rdbPredicate);
 }
