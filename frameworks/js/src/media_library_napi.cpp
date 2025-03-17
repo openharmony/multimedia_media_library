@@ -8434,6 +8434,12 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
             ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
             HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
         };
+        if (albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+            onClause = {
+                ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+                HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID,
+            };
+        }
         context->predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
         context->predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
     }
