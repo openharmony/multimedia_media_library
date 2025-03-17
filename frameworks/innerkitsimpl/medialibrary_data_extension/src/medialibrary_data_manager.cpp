@@ -1089,7 +1089,6 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         default:
             break;
     }
-
     return DeleteInRdbPredicatesAnalysis(cmd, rdbPredicate);
 }
 
