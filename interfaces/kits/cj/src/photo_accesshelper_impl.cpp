@@ -502,8 +502,8 @@ shared_ptr<FetchResult<PhotoAlbum>> PhotoAccessHelperImpl::GetAlbums(int32_t typ
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
     if (resultSet == nullptr) {
         LOGE("resultSet == nullptr, errCode is %{public}d", errCode);
-        if (errCode == E_PERMISSION_DENIED) {
-            errCode = MediaLibraryNapiUtils::TransErrorCode("GetAlbums", E_PERMISSION_DENIED);
+        if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
+            errCode = MediaLibraryNapiUtils::TransErrorCode("GetAlbums", errCode);
         } else {
             errCode = MediaLibraryNapiUtils::TransErrorCode("GetAlbums", E_HAS_DB_ERROR);
         }

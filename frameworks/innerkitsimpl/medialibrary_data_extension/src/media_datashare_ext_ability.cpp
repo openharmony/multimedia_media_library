@@ -434,7 +434,7 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
         (SYSTEM_API_URIS.find(uri) != SYSTEM_API_URIS.end())) {
         if (!PermissionUtils::IsSystemApp()) {
             MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-            return E_CHECK_SYSTEMAPP_FAIL;
+            return -E_CHECK_SYSTEMAPP_FAIL;
         }
     }
     return E_SUCCESS;
@@ -822,6 +822,7 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    CHECK_AND_RETURN_RET(err != -E_CHECK_SYSTEMAPP_FAIL, err);
     if (err != E_SUCCESS) {
         err = HandleShortPermission(cmd, needToResetTime);
     }
@@ -870,6 +871,7 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     cmd.SetDataSharePred(predicates);
     int err = permissionHandler_->CheckPermission(cmd, permParam);
     MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    CHECK_AND_RETURN_RET(err != -E_CHECK_SYSTEMAPP_FAIL, err);
     if (err != E_SUCCESS) {
         err = HandleRestorePermission(cmd);
     }
