@@ -190,6 +190,7 @@ public:
     static const std::string PHOTOS_TABLE EXPORT;
     static const std::string HIGHLIGHT_TABLE EXPORT;
     static const std::string TAB_OLD_PHOTOS_TABLE EXPORT;
+    static const std::string TAB_ASSET_AND_ALBUM_OPERATION_TABLE EXPORT;
 
     // path
     static const std::string FILES_CLOUD_DIR EXPORT;
@@ -277,6 +278,9 @@ public:
 
     static const std::string HIGHTLIGHT_COVER_URI EXPORT;
     static const std::string HIGHTLIGHT_URI EXPORT;
+
+    static const std::string OPERATION_OPT_TYPE EXPORT;
+    static const std::string OPERATION_TYPE EXPORT;
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();
