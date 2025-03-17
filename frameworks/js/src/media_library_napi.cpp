@@ -2782,27 +2782,14 @@ void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbac
 
 void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref cbRef)
 {
-    uv_loop_s *loop = nullptr;
-    napi_get_uv_event_loop(env_, &loop);
-    if (loop == nullptr) {
-        return;
-    }
-
-    uv_work_t *work = new (nothrow) uv_work_t;
-    if (work == nullptr) {
-        return;
-    }
-
     UvChangeMsg *msg = new (std::nothrow) UvChangeMsg(env_, cbRef, listener.changeInfo, listener.strUri);
     if (msg == nullptr) {
-        delete work;
         return;
     }
     if (!listener.changeInfo.uris_.empty()) {
         if (listener.changeInfo.changeType_ == DataShare::DataShareObserver::ChangeType::OTHER) {
             NAPI_ERR_LOG("changeInfo.changeType_ is other");
             delete msg;
-            delete work;
             return;
         }
         if (msg->changeInfo_.size_ > 0) {
@@ -2810,7 +2797,6 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
             if (msg->data_ == nullptr) {
                 NAPI_ERR_LOG("new msg->data failed");
                 delete msg;
-                delete work;
                 return;
             }
             int copyRet = memcpy_s(msg->data_, msg->changeInfo_.size_, msg->changeInfo_.data_, msg->changeInfo_.size_);
@@ -2819,16 +2805,15 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
             }
         }
     }
-    QueryRdbAndNotifyChange(loop, msg, work);
+    QueryRdbAndNotifyChange(msg);
 }
 
-void ChangeListenerNapi::QueryRdbAndNotifyChange(uv_loop_s *loop, UvChangeMsg *msg, uv_work_t *work)
+void ChangeListenerNapi::QueryRdbAndNotifyChange(UvChangeMsg *msg)
 {
     JsOnChangeCallbackWrapper* wrapper = new (std::nothrow) JsOnChangeCallbackWrapper();
     if (wrapper == nullptr) {
         NAPI_ERR_LOG("JsOnChangeCallbackWrapper allocation failed");
         delete msg;
-        delete work;
         return;
     }
     wrapper->msg_ = msg;
@@ -2848,60 +2833,55 @@ void ChangeListenerNapi::QueryRdbAndNotifyChange(uv_loop_s *loop, UvChangeMsg *m
         wrapper->sharedAssetsRowObjVector_.clear();
         NAPI_WARN_LOG("Failed to ParseSharedPhotoAssets, ret: %{public}d", ret);
     }
-    work->data = reinterpret_cast<void *>(wrapper);
-    ret = UvQueueWork(loop, work);
+    std::function<void()> task = [wrapper, this]() {
+        UvQueueWork(wrapper);
+    };
+    ret = napi_send_event(env_, task, napi_eprio_immediate);
     if (ret != 0) {
-        NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
+        NAPI_ERR_LOG("Failed to execute napi_send_event, ret: %{public}d", ret);
         free(msg->data_);
         delete msg;
         delete wrapper;
-        delete work;
     }
 }
 
-int ChangeListenerNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
+void ChangeListenerNapi::UvQueueWork(JsOnChangeCallbackWrapper* wrapper)
 {
-    return uv_queue_work(loop, work, [](uv_work_t *w) {}, [](uv_work_t *w, int s) {
-        // js thread
-        if (w == nullptr) {
-            return;
+    if (wrapper == nullptr) {
+        return;
+    }
+    UvChangeMsg* msg = reinterpret_cast<UvChangeMsg *>(wrapper->msg_);
+    do {
+        if (msg == nullptr) {
+            NAPI_ERR_LOG("UvChangeMsg is null");
+            break;
+        }
+        napi_env env = msg->env_;
+        NapiScopeHandler scopeHandler(env);
+        if (!scopeHandler.IsValid()) {
+            break;
         }
 
-        JsOnChangeCallbackWrapper* wrapper = reinterpret_cast<JsOnChangeCallbackWrapper *>(w->data);
-        UvChangeMsg* msg = reinterpret_cast<UvChangeMsg *>(wrapper->msg_);
-        do {
-            if (msg == nullptr) {
-                NAPI_ERR_LOG("UvChangeMsg is null");
-                break;
-            }
-            napi_env env = msg->env_;
-            NapiScopeHandler scopeHandler(env);
-            if (!scopeHandler.IsValid()) {
-                break;
-            }
-
-            napi_value jsCallback = nullptr;
-            napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);
-            if (status != napi_ok) {
-                NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-                break;
-            }
-            napi_value retVal = nullptr;
-            napi_value result[ARGS_ONE];
-            result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, wrapper);
-            if (result[PARAM0] == nullptr) {
-                break;
-            }
-            napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
-            if (status != napi_ok) {
-                NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
-                break;
-            }
-        } while (0);
-        delete msg;
-        delete wrapper;
-        delete w;
-    });
+        napi_value jsCallback = nullptr;
+        napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+            break;
+        }
+        napi_value retVal = nullptr;
+        napi_value result[ARGS_ONE];
+        result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, wrapper);
+        if (result[PARAM0] == nullptr) {
+            break;
+        }
+        napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
+            break;
+        }
+    } while (0);
+    delete msg;
+    delete wrapper;
 }
 
 int ChangeListenerNapi::ParseSharedPhotoAssets(ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto)
@@ -3424,10 +3404,8 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
     }
 
     tracer.Finish();
-    if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
-                                                   context->work, *jsContext);
-    }
+    MediaLibraryNapiUtils::InvokeJSAsyncMethodWithoutWork(env, context->deferred, context->callbackRef,
+        *jsContext);
 
     delete context;
 }
@@ -3439,7 +3417,6 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
-    napi_value resource = nullptr;
     int32_t refCount = 1;
 
     MediaLibraryTracer tracer;
@@ -3464,12 +3441,12 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
 
     NAPI_CALL(env, napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-    NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRelease", asyncContext);
+    MediaLibraryAsyncContext *context = asyncContext.get();
+    std::function<void()> task = [env, status, context]() {
+        JSReleaseCompleteCallback(env, status, context);
+    };
 
-    status = napi_create_async_work(
-        env, nullptr, resource, [](napi_env env, void *data) {},
-        reinterpret_cast<CompleteCallback>(JSReleaseCompleteCallback),
-        static_cast<void *>(asyncContext.get()), &asyncContext->work);
+    status = napi_send_event(env, task, napi_eprio_immediate);
     if (status != napi_ok) {
         napi_get_undefined(env, &result);
     } else {
@@ -4427,7 +4404,6 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
-    napi_value resource = nullptr;
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
@@ -4447,11 +4423,15 @@ napi_value MediaLibraryNapi::JSGetActivePeers(napi_env env, napi_callback_info i
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetActivePeers", asyncContext);
-        status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void *data) {},
-            reinterpret_cast<CompleteCallback>(JSGetActivePeersCompleteCallback),
-            static_cast<void *>(asyncContext.get()), &asyncContext->work);
+
+        NAPI_CALL(env, napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
+        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+        MediaLibraryAsyncContext *context = asyncContext.get();
+        std::function<void()> task = [env, status, context]() {
+            JSGetActivePeersCompleteCallback(env, status, context);
+        };
+    
+        status = napi_send_event(env, task, napi_eprio_immediate);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
@@ -4468,7 +4448,6 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
     napi_status status;
     napi_value result = nullptr;
     const int32_t refCount = 1;
-    napi_value resource = nullptr;
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
@@ -4488,11 +4467,11 @@ napi_value MediaLibraryNapi::JSGetAllPeers(napi_env env, napi_callback_info info
         }
 
         NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSGetAllPeers", asyncContext);
-        status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void *data) {},
-            reinterpret_cast<CompleteCallback>(JSGetAllPeersCompleteCallback),
-            static_cast<void *>(asyncContext.get()), &asyncContext->work);
+        MediaLibraryAsyncContext *context = asyncContext.get();
+        std::function<void()> task = [env, status, context]() {
+            JSGetAllPeersCompleteCallback(env, status, context);
+        };
+        status = napi_send_event(env, task, napi_eprio_immediate);
         if (status != napi_ok) {
             napi_get_undefined(env, &result);
         } else {
