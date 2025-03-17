@@ -219,7 +219,11 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::TAB_FACARD_PHOTO,
         { { OperationType::UNKNOWN_TYPE, TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE } }},
         { OperationObject::ASSET_ALBUM_OPERATION,
+<<<<<<< HEAD
             { { OperationType::UNKNOWN_TYPE, ASSET_AND_ALBUM_OPERATION_TABLE } } },
+=======
+            { { OperationType::UNKNOWN_TYPE, TAB_ASSET_AND_ALBUM_OPERATION_TABLE } } },
+>>>>>>> 35c0492af39c204017dd693984a8299f369b2201
 
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
