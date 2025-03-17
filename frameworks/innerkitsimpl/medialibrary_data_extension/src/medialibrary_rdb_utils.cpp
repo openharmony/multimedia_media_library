@@ -2846,16 +2846,4 @@ bool MediaLibraryRdbUtils::AnalyzePhotosData()
     MEDIA_INFO_LOG("end analyze photos data");
     return true;
 }
-
-bool MediaLibraryRdbUtils::AnalyzePhotosDataAsync()
-{
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, false, "can not get async worker, failed to analyze photos data");
-    shared_ptr<MediaLibraryAsyncTask> asyncTask = make_shared<MediaLibraryAsyncTask>(
-        [](AsyncTaskData *data) { MediaLibraryRdbUtils::AnalyzePhotosData(); }, nullptr);
-    CHECK_AND_RETURN_RET_LOG(asyncTask != nullptr, false, "Analyze Photos Data create task fail");
-    asyncWorker->AddTask(asyncTask, false);
-    MEDIA_INFO_LOG("Analyze Photos Data create task success");
-    return true;
-}
 } // namespace OHOS::Media

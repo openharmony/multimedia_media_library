@@ -448,6 +448,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         AddGroupTagIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_GROUP_TAG_INDEX);
     }
+
+    if (oldVersion < VERSION_ANALYZE_PHOTOS) {
+        MediaLibraryRdbUtils::AnalyzePhotosData();
+        rdbStore->SetOldVersion(VERSION_ANALYZE_PHOTOS);
+    }
 }
 
 void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
@@ -660,7 +665,6 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
     rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_ERR, "rdbStore is nullptr");
 
-    CHECK_AND_WARN_LOG(MediaLibraryRdbUtils::AnalyzePhotosDataAsync(), "Analyze photos data failed");
     return E_OK;
 }
 
