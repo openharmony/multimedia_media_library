@@ -184,7 +184,7 @@ const std::string PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER =
         " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
         MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
         PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-        " VALUES (" + " old.album_id, old.lpath, 3, 2);" +
+        " VALUES (" + " old.album_id, old.lpath, 2, 2);" +
         " END";
 
 const std::string PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER =
