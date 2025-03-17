@@ -41,7 +41,7 @@ int32_t MediaLibraryTabAssetAlbumOperations::Delete(NativeRdb::RdbPredicates &rd
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbstore is nullptr");
-        return nullptr;
+        return -1;
     }
 
     return rdbStore->Delete(rdbPredicate);
