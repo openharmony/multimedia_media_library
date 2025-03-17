@@ -221,7 +221,6 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::ASSET_ALBUM_OPERATION,
             { { OperationType::UNKNOWN_TYPE, ASSET_AND_ALBUM_OPERATION_TABLE } } },
 
-
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
         { OperationObject::INDEX_CONSTRUCTION_STATUS,
