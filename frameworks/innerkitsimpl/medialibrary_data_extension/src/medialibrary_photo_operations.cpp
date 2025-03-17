@@ -2481,6 +2481,7 @@ int32_t MediaLibraryPhotoOperations::RenameEditDataDirByRevert(
 
 int32_t MediaLibraryPhotoOperations::DoRevertEdit(std::shared_ptr<FileAsset> &fileAsset)
 {
+    MEDIA_INFO_LOG("begin to do revertEdit");
     int32_t errCode = CheckFileAssetStatus(fileAsset);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     int32_t fileId = fileAsset->GetId();
@@ -2536,6 +2537,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(std::shared_ptr<FileAsset> &fi
     EnhancementManager::GetInstance().RevertEditUpdateInternal(fileId);
 #endif
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
+    MEDIA_INFO_LOG("end to do revertEdit");
     return E_OK;
 }
 
