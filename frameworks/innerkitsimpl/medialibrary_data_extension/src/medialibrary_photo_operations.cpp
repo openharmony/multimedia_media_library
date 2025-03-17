@@ -778,6 +778,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand &cmd)
         CHECK_AND_RETURN_RET(ret == E_OK, ret);
     }
     cmd.SetResult(fileUri);
+    MediaLibraryObjectUtils::TryUpdateAnalysisProp(ANALYSIS_HAS_DATA);
     return outRow;
 }
 
