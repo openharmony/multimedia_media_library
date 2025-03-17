@@ -36,7 +36,6 @@ enum CustomColors {
 
 type ResolveVoid = (v: PromiseLike<void>) => void;
 type RejectString = (e: BusinessError<string>) => void;
-type ThenType = Object | null | undefined;
 
 export namespace photoAccessHelper {
   loadLibrary("photo_access_helper_ani");
@@ -209,18 +208,17 @@ export namespace photoAccessHelper {
     native getAnalysisDataSync(analysisType: AnalysisType): string;
 
     commitModify(): Promise<void> {
-      return new Promise<void>((resolve : (v: PromiseLike<void>) => void, reject : (e : BusinessError<string>) => void) => {
-        let task = new taskpool.Task(() =>this.commitModifySync());
-        let p1 = taskpool.execute(task);
-        p1.then((ret: NullishType) => {
+      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
+        let cb = (): PromiseLike<void> => { this.commitModifySync() };
+        taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret === null || ret === undefined) {
-            let ret1: BusinessError<string> = {
+            let err: BusinessError<string> = {
               code: -1,
               data: "Operation failed",
               name: "",
               message: ""
             };
-            reject(ret1);
+            reject(err);
           } else {
             resolve(ret as PromiseLike<void>);
           }
@@ -247,18 +245,17 @@ export namespace photoAccessHelper {
     }
 
     open(mode: string): Promise<number> {
-      return new Promise<number>((resolve : (v: number) => void, reject : (e : BusinessError<string>) => void) => {
-        let task = new taskpool.Task(() =>this.openSync(mode));
-        let p1 = taskpool.execute(task);
-        p1.then((ret: NullishType) => {
+      return new Promise<number>((resolve : (v: number) => void, reject : RejectString) => {
+        let cb = (): number => { return this.openSync(mode) };
+        taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret === null || ret === undefined) {
-            let ret1: BusinessError<string> = {
+            let err: BusinessError<string> = {
               code: -1,
               data: "Operation failed",
               name: "",
               message: ""
             };
-            reject(ret1);
+            reject(err);
           } else {
             resolve(ret as number);
           }
@@ -286,10 +283,9 @@ export namespace photoAccessHelper {
     }
 
     close(fd: number): Promise<void> {
-      return new Promise<void>((resolve : (v: PromiseLike<void>) => void, reject : (e : BusinessError<string>) => void) => {
-        let task = new taskpool.Task(() =>this.closeSync(fd));
-        let p1 = taskpool.execute(task);
-        p1.then((ret: NullishType) => {
+      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
+        let cb = (): PromiseLike<void> => { this.closeSync(fd) };
+        taskpool.execute(cb).then((ret: NullishType): void => {
           resolve(ret as PromiseLike<void>);
         });
       });
@@ -314,10 +310,9 @@ export namespace photoAccessHelper {
     }
 
     getThumbnail(size?: image.Size): Promise<image.PixelMap> {
-      return new Promise<image.PixelMap>((resolve : (v: image.PixelMap) => void, reject : (e : BusinessError<string>) => void) => {
-        let task = new taskpool.Task(() => this.getThumbnailSync(size));
-        let p1 = taskpool.execute(task);
-        p1.then((ret: NullishType) => {
+      return new Promise<image.PixelMap>((resolve : (v: image.PixelMap) => void, reject: RejectString) => {
+        let cb = (): image.PixelMap => { return this.getThumbnailSync(size) };
+        taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret === null || ret === undefined) {
             let ret1: BusinessError<string> = {
               code: -1,
@@ -375,18 +370,17 @@ export namespace photoAccessHelper {
     }
 
     setFavorite(favoriteState: boolean): Promise<void> {
-    return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: (e : BusinessError<string>) => void) => {
-      let task = new taskpool.Task(() =>this.setFavoriteSync(favoriteState));
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
+    return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
+      let cb = (): PromiseLike<void> => { this.setFavoriteSync(favoriteState) };
+      taskpool.execute(cb).then((ret: NullishType): void => {
         if (ret === null || ret === undefined) {
-          let ret1: BusinessError<string> = {
+          let err: BusinessError<string> = {
             code: -1,
             data: "Operation failed",
             name: "",
             message: ""
           };
-          reject(ret1);
+          reject(err);
         } else {
           resolve(ret as PromiseLike<void>);
         }
@@ -414,18 +408,17 @@ export namespace photoAccessHelper {
     }
 
     setHidden(hiddenState: boolean): Promise<void> {
-      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: (e : BusinessError<string>) => void) => {
-        let task = new taskpool.Task(() =>this.setHiddenSync(hiddenState));
-        let p1 = taskpool.execute(task);
-        p1.then((ret: NullishType) => {
+      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
+        let cb = (): PromiseLike<void> => { this.setHiddenSync(hiddenState) };
+        taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret === null || ret === undefined) {
-            let ret1: BusinessError<string> = {
+            let err: BusinessError<string> = {
               code: -1,
               data: "Operation failed",
               name: "",
               message: ""
             };
-            reject(ret1);
+            reject(err);
           } else {
             resolve(ret as PromiseLike<void>);
           }
@@ -453,18 +446,17 @@ export namespace photoAccessHelper {
     }
 
     setUserComment(userComment: string): Promise<void> {
-      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: (e : BusinessError<string>) => void) => {
-        let task = new taskpool.Task(() =>this.setUserCommentSync(userComment));
-        let p1 = taskpool.execute(task);
-        p1.then((ret: NullishType) => {
+      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
+        let cb = (): PromiseLike<void> => { this.setUserCommentSync(userComment) };
+        taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret === null || ret === undefined) {
-            let ret1: BusinessError<string> = {
+            let err: BusinessError<string> = {
               code: -1,
               data: "Operation failed",
               name: "",
               message: ""
             };
-            reject(ret1);
+            reject(err);
           } else {
             resolve(ret as PromiseLike<void>);
           }
@@ -492,18 +484,17 @@ export namespace photoAccessHelper {
     }
 
     getAnalysisData(analysisType: AnalysisType): Promise<string> {
-      return new Promise<string>((resolve : (v: string) => void, reject : (e : BusinessError<string>) => void) => {
-        let task = new taskpool.Task(() =>this.getAnalysisDataSync(analysisType));
-        let p1 = taskpool.execute(task);
-        p1.then((ret: NullishType) => {
+      return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
+        let cb = (): string => { return this.getAnalysisDataSync(analysisType) };
+        taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret === null || ret === undefined) {
-            let ret1: BusinessError<string> = {
+            let err: BusinessError<string> = {
               code: -1,
               data: "Operation failed",
               name: "",
               message: ""
             };
-            reject(ret1);
+            reject(err);
           } else {
             resolve(ret as string);
           }
@@ -649,18 +640,17 @@ export namespace photoAccessHelper {
       });
     }
     getAllObjects(): Promise<Array<T>> {
-      return new Promise<Array<T>>((resolve : (v: Array<T>) => void, reject : (e : BusinessError<string>) => void) => {
-        let task = new taskpool.Task(() => this.getAllObjectsSync());
-        let p1 = taskpool.execute(task);
-        p1.then((ret: NullishType) => {
+      return new Promise<Array<T>>((resolve: (v: Array<T>) => void, reject: RejectString) => {
+        let cb = (): Array<T> => { return this.getAllObjectsSync() };
+        taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret === null || ret === undefined) {
-            let ret1: BusinessError<string> = {
+            let err: BusinessError<string> = {
               code: -1,
               data: "Operation failed",
               name: "",
               message: ""
             };
-            reject(ret1);
+            reject(err);
           } else {
             let result = ret as Array<T>;
             resolve(result);
@@ -759,8 +749,8 @@ export namespace photoAccessHelper {
     getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset>>): void {}
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.getAssetsInner(options)));
-        taskpool.execute(task).then((buffer: ThenType) => {
+        let cb = (): FetchResult<PhotoAsset> => { return this.getAssetsInner(options) };
+        taskpool.execute(cb).then((buffer: NullishType): void => {
           if (buffer === null || buffer === undefined) {
             let error: BusinessError<string> = {
               code: -1,
@@ -781,8 +771,8 @@ export namespace photoAccessHelper {
     commitModify(callback: AsyncCallback<void>): void {}
     commitModify(): Promise<void> {
       return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.commitModifyInner()));
-        taskpool.execute(task).then((v: ThenType) => {
+        let cb = (): PromiseLike<void> => { this.commitModifyInner() };
+        taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
@@ -790,8 +780,8 @@ export namespace photoAccessHelper {
     addAssets(assets: Array<PhotoAsset>, callback: AsyncCallback<void>): void {}
     addAssets(assets: Array<PhotoAsset>): Promise<void> {
       return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.addAssetsInner(assets)));
-        taskpool.execute(task).then((v: ThenType) => {
+        let cb = (): PromiseLike<void> => { this.addAssetsInner(assets) };
+        taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
@@ -799,8 +789,8 @@ export namespace photoAccessHelper {
     removeAssets(assets: Array<PhotoAsset>, callback: AsyncCallback<void>): void {}
     removeAssets(assets: Array<PhotoAsset>): Promise<void> {
       return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.removeAssetsInner(assets)));
-        taskpool.execute(task).then((v: ThenType) => {
+        let cb = (): PromiseLike<void> => { this.removeAssetsInner(assets) };
+        taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
@@ -808,8 +798,8 @@ export namespace photoAccessHelper {
     recoverAssets(assets: Array<PhotoAsset>, callback: AsyncCallback<void>): void {}
     recoverAssets(assets: Array<PhotoAsset>): Promise<void> {
       return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.recoverAssetsInner(assets)));
-        taskpool.execute(task).then((v: ThenType) => {
+        let cb = (): PromiseLike<void> => { this.recoverAssetsInner(assets) };
+        taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
@@ -817,8 +807,8 @@ export namespace photoAccessHelper {
     deleteAssets(assets: Array<PhotoAsset>, callback: AsyncCallback<void>): void {}
     deleteAssets(assets: Array<PhotoAsset>): Promise<void> {
       return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.deleteAssetsInner(assets)));
-        taskpool.execute(task).then((v: ThenType) => {
+        let cb = (): PromiseLike<void> => { this.deleteAssetsInner(assets) };
+        taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
@@ -826,16 +816,16 @@ export namespace photoAccessHelper {
     setCoverUri(uri: string, callback: AsyncCallback<void>): void {}
     setCoverUri(uri: string): Promise<void> {
       return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.setCoverUriInner(uri)));
-        taskpool.execute(task).then((v: ThenType) => {
+        let cb = (): PromiseLike<void> => { this.setCoverUriInner(uri) };
+        taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
     }
     getFaceId(): Promise<string> {
       return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.getFaceIdInner()));
-        taskpool.execute(task).then((buffer: ThenType) => {
+        let cb = (): string => { return this.getFaceIdInner() };
+        taskpool.execute(cb).then((buffer: NullishType): void => {
           if (buffer === null || buffer === undefined) {
             let error: BusinessError<string> = {
               code: -1,
@@ -868,6 +858,7 @@ export namespace photoAccessHelper {
   export interface PhotoAccessHelper {
     getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset>>): void;
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
+    getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): Promise<FetchResult<Album>>;
     stopCreateThumbnailTask(taskId: int): void;
   }
 
@@ -884,8 +875,8 @@ export namespace photoAccessHelper {
 
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.getAssetsInner(options)));
-        taskpool.execute(task).then((buffer: ThenType) => {
+        let cb = (): FetchResult<PhotoAsset> => { return this.getAssetsInner(options) };
+        taskpool.execute(cb).then((buffer: NullishType): void => {
           if (buffer === null || buffer === undefined) {
             let error: BusinessError<string> = {
               code: -1,
@@ -901,7 +892,26 @@ export namespace photoAccessHelper {
       });
     }
 
-    native getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): void;
+    getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): Promise<FetchResult<Album>> {
+      return new Promise<FetchResult<Album>>((resolve: (v: FetchResult<Album>) => void, reject: RejectString) => {
+        let cb = (): FetchResult<Album> => { return this.getAlbumsInner(type, subtype, options) };
+        taskpool.execute(cb).then((buffer: NullishType): void => {
+          if (buffer === null || buffer === undefined) {
+            let error: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
+            reject(error);
+          } else {
+            resolve(buffer as FetchResult<Album>);
+          }
+        });
+      });
+    }
+
+    native getAlbumsInner(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): FetchResult<Album>;
     native release(): void;
     native applyChanges(mediaChangeRequest: MediaChangeRequest): void;
     native createAsset1(displayName: string): PhotoAsset;
@@ -1100,24 +1110,24 @@ export namespace photoAccessHelper {
 
     requestContent(imageFileUri: string, videoFileUri: string): Promise<void> {
       return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.requestContent1(imageFileUri, videoFileUri)));
-        taskpool.execute(task).then((v: ThenType) => {
+        let cb = (): PromiseLike<void> => { this.requestContent1(imageFileUri, videoFileUri) };
+        taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
     }
     requestContent(resourceType: ResourceType, fileUri: string): Promise<void> {
       return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.requestContent2(resourceType, fileUri)));
-        taskpool.execute(task).then((v: ThenType) => {
+        let cb = (): PromiseLike<void> => { this.requestContent2(resourceType, fileUri) }
+        taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
     }
     requestContent(resourceType: ResourceType): Promise<ArrayBuffer> {
       return new Promise<ArrayBuffer>((resolve: (v: ArrayBuffer) => void, reject: RejectString) => {
-        let task = new taskpool.Task((() => this.requestContent3(resourceType)));
-        taskpool.execute(task).then((buffer: ThenType) => {
+        let cb = (): ArrayBuffer => { return this.requestContent3(resourceType) };
+        taskpool.execute(cb).then((buffer: NullishType): void => {
           if (buffer === null || buffer === undefined) {
             let error: BusinessError<string> = {
               code: -1,
