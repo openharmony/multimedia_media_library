@@ -1117,7 +1117,7 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
             return MediaLibrarySearchOperations::DeleteOperation(cmd);
         }
         case OperationObject::ASSET_ALBUM_OPERATION: {
-            return MediaLibraryTabAssetAlbumOperations::Delete(rdbPredicate);
+            return MediaLibraryTableAssetAlbumOperations::Delete(rdbPredicate);
         }
         default:
             break;
@@ -2056,7 +2056,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MediaLibraryTabOldPhotosOperations().Query(
                 RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);
         case OperationObject::ASSET_ALBUM_OPERATION:
-            return MediaLibraryTabAssetAlbumOperations().Query(
+            return MediaLibraryTableAssetAlbumOperations().Query(
                 RdbUtils::ToPredicates(predicates, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE), columns);
         default:
             tracer.Start("QueryFile");
