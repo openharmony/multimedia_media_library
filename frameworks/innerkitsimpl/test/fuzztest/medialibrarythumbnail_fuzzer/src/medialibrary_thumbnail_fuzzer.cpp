@@ -29,7 +29,6 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "rdb_predicates.h"
-#include "thumbnail_uri_utils.h"
 #include "userfile_manager_types.h"
 
 #define private public
@@ -39,6 +38,7 @@
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_service.h"
 #include "thumbnail_source_loading.h"
+#include "thumbnail_uri_utils.h"
 #undef private
 
 namespace OHOS {
@@ -192,6 +192,27 @@ static Media::ThumbnailTaskPriority FuzzThumbnailTaskPriority(const uint8_t* dat
     return Media::ThumbnailTaskPriority::LOW;
 }
 
+static string FuzzThumbnailUri(const uint8_t* data, size_t size, bool isNeedPath)
+{
+    if (!FuzzBool(data, size)) {
+        return FuzzString(data, size);
+    }
+
+    string thumUri = "file://media/Photo/1?operation=thumbnail";
+    Media::Size value = FuzzSize(data, size);
+    thumUri += "&width=" + to_string(value.width) + "&height=" + to_string(value.height);
+    thumUri += "&date_modified=" + to_string(FuzzInt64(data, size));
+    int32_t thumbType = abs(FuzzInt32(data, size)) % 4;
+    thumUri += "&type=" + to_string(thumbType);
+    thumUri += "&begin_stamp=" + to_string(FuzzInt32(data, size));
+    if (isNeedPath) {
+        thumUri += "&path=" + FuzzString(data, size);
+    }
+    thumUri += "&date_taken=" + to_string(FuzzInt64(data, size));
+
+    return thumUri;
+}
+
 static void ThumbnailAgingHelperTest(const uint8_t* data, size_t size)
 {
     const int64_t int64Count = 2;
@@ -221,8 +242,11 @@ static void ThumbnailGenerateHelperTest(const uint8_t* data, size_t size)
     Media::ThumbnailGenerateHelper::CreateThumbnailBackground(opts);
     Media::ThumbnailGenerateHelper::CreateAstcBackground(opts);
     Media::ThumbnailGenerateHelper::CreateAstcCloudDownload(opts, FuzzBool(data, size));
+    Media::ThumbnailGenerateHelper::CreateAstcMthAndYear(opts);
     RdbPredicates predicates(PHOTOS_TABLE);
     Media::ThumbnailGenerateHelper::CreateLcdBackground(opts);
+    Media::ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, predicates, FuzzInt32(data, size));
+    Media::ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(opts);
     int32_t outLcdCount;
     Media::ThumbnailGenerateHelper::GetLcdCount(opts, outLcdCount);
     vector<Media::ThumbnailData> outDatas;
@@ -231,18 +255,33 @@ static void ThumbnailGenerateHelperTest(const uint8_t* data, size_t size)
     Media::ThumbnailGenerateHelper::GetNoThumbnailData(opts, outDatas);
     outDatas.clear();
     Media::ThumbnailGenerateHelper::GetNoAstcData(opts, outDatas);
+    outDatas.clear();
+    Media::ThumbnailGenerateHelper::GetLocalNoLcdData(opts, outDatas);
+    outDatas.clear();
     int64_t time = FuzzInt64(data, size);
     int32_t count;
     Media::ThumbnailGenerateHelper::GetNewThumbnailCount(opts, time, count);
     Media::ThumbnailData thumbData = FuzzThumbnailData(data, size);
     string fileName;
+    int32_t thumbType = abs(FuzzInt32(data, size)) % 4;
+    int32_t timeStamp = FuzzInt32(data, size);
     Media::ThumbnailGenerateHelper::GetAvailableFile(opts, thumbData, FuzzThumbnailType(data, size), fileName);
+    Media::ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, thumbData, thumbType, fileName);
     Media::ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, FuzzThumbnailType(data, size));
     Media::ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, FuzzBool(data, size));
     Media::ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
     outDatas.clear();
     Media::ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(opts, outDatas, FuzzBool(data, size));
     Media::ThumbnailGenerateHelper::CheckMonthAndYearKvStoreValid(opts);
+    Media::ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
+    Media::ThumbRdbOpt optsWithRdb = FuzzThumbRdbOpt(data, size, false);
+    if (optsWithRdb.store == nullptr) {
+        return;
+    }
+    outDatas.clear();
+    Media::ThumbnailGenerateHelper::GetNoHighlightData(optsWithRdb, outDatas);
+    outDatas.clear();
+    Media::ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(optsWithRdb, timeStamp, thumbType);
 }
 
 static void ThumbnailGenerateWorkerTest(const uint8_t* data, size_t size)
@@ -378,10 +417,21 @@ static void ParseFileUriTest(const uint8_t* data, size_t size)
     string outFileId;
     string outNetworkId;
     string outTableName;
-    string uri = "file://media/Photo/2";
+    Media::Size outSize;
+    string outPath;
+    int32_t outType = 0;
+    int32_t outBeginStamp = 0;
+    string uri = FuzzThumbnailUri(data, size, true);
     Media::ThumbnailUriUtils::ParseFileUri(uri, outFileId, outNetworkId, outTableName);
-    Media::ThumbnailUriUtils::GetDateTakenFromUri(FuzzString(data, size));
-    Media::ThumbnailUriUtils::GetFileUriFromUri(FuzzString(data, size));
+    Media::ThumbnailUriUtils::ParseThumbnailInfo(uri, outFileId, outSize, outPath, outTableName);
+    Media::ThumbnailUriUtils::ParseKeyFrameThumbnailInfo(uri, outFileId, outBeginStamp, outType, outPath);
+    Media::ThumbnailUriUtils::GetDateTakenFromUri(uri);
+    Media::ThumbnailUriUtils::GetDateModifiedFromUri(uri);
+    Media::ThumbnailUriUtils::GetFileUriFromUri(uri);
+    Media::Size checkSize = FuzzSize(data, size);
+    Media::ThumbnailUriUtils::IsOriginalImg(checkSize, outPath);
+    Media::ThumbnailUriUtils::CheckSize(checkSize, outPath);
+    Media::ThumbnailUriUtils::GetTableFromUri(uri);
 }
 } // namespace OHOS
 
