@@ -19,7 +19,7 @@
 #include <memory>
 
 #include "medialibrary_ani_enum_comm.h"
-#include "media_log.h"
+#include "medialibrary_ani_log.h"
 #include "media_device_column.h"
 #include "photo_album_column.h"
 #include "media_file_uri.h"
@@ -33,56 +33,60 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
-std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetAssetsSync(std::vector<std::string> fetchColumns,
+std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetAssetsSync(
+    const std::vector<std::string> &fetchColumns,
     std::shared_ptr<OHOS::DataShare::DataShareAbsPredicates> predicate)
 {
     std::vector<std::unique_ptr<FileAsset>> result;
 
     std::shared_ptr<MediaLibraryAsyncContext> context = GetAssetsContext(fetchColumns, predicate);
     if (context == nullptr) {
-        MEDIA_ERR_LOG("GetAssetsContext failed");
+        ANI_ERR_LOG("GetAssetsContext failed");
         return result;
     }
 
     if (!PhotoAccessGetAssetsExecuteSync(context, result)) {
-        MEDIA_ERR_LOG("PhotoAccessGetAssetsExecuteSync failed");
+        ANI_ERR_LOG("PhotoAccessGetAssetsExecuteSync failed");
     }
 
     return result;
 }
 
-std::unique_ptr<FetchResult<FileAsset>> MediaAniNativeImpl::GetAssets(std::vector<std::string> fetchColumns,
+std::unique_ptr<FetchResult<FileAsset>> MediaAniNativeImpl::GetAssets(
+    const std::vector<std::string> &fetchColumns,
     std::shared_ptr<DataShare::DataShareAbsPredicates> predicate)
 {
     std::shared_ptr<MediaLibraryAsyncContext> context = GetAssetsContext(fetchColumns, predicate);
     if (context == nullptr) {
-        MEDIA_ERR_LOG("GetAssetsContext failed");
+        ANI_ERR_LOG("GetAssetsContext failed");
         return nullptr;
     }
 
     if (!PhotoAccessGetAssetsExecute(context)) {
-        MEDIA_ERR_LOG("PhotoAccessGetAssetsExecute failed");
+        ANI_ERR_LOG("PhotoAccessGetAssetsExecute failed");
         return nullptr;
     }
 
     return std::move(context->fetchFileResult);
 }
 
-std::shared_ptr<MediaLibraryAsyncContext> MediaAniNativeImpl::GetAssetsContext(std::vector<std::string> fetchColumns,
+std::shared_ptr<MediaLibraryAsyncContext> MediaAniNativeImpl::GetAssetsContext(
+    const std::vector<std::string> &fetchColumns,
     std::shared_ptr<DataShare::DataShareAbsPredicates> predicate)
 {
     std::shared_ptr<MediaLibraryAsyncContext> context = std::make_shared<MediaLibraryAsyncContext>();
     if (!HandleSpecialPredicate(context, predicate, ASSET_FETCH_OPT)) {
-        MEDIA_ERR_LOG("HandleSpecialPredicate failed");
+        ANI_ERR_LOG("HandleSpecialPredicate failed");
         return nullptr;
     }
     if (!GetLocationPredicate(context, predicate)) {
-        MEDIA_ERR_LOG("GetLocationPredicate failed");
+        ANI_ERR_LOG("GetLocationPredicate failed");
         return nullptr;
     }
 
+    context->fetchColumn = fetchColumns;
     if (!AddDefaultAssetColumns(context->fetchColumn, PhotoColumn::IsPhotoColumn)) {
-        MEDIA_ERR_LOG("AddDefaultAssetColumns failed");
+        ANI_ERR_LOG("AddDefaultAssetColumns failed");
         return nullptr;
     }
 
@@ -140,7 +144,7 @@ bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyn
         // replace networkid with file id
         if (static_cast<string>(item.GetSingle(fieldIdx)) == DEVICE_DB_NETWORK_ID) {
             if (item.operation != DataShare::EQUAL_TO || static_cast<string>(item.GetSingle(valueIdx)).empty()) {
-                MEDIA_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
+                ANI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
                 return false;
             }
             context->networkId = static_cast<string>(item.GetSingle(valueIdx));
@@ -148,7 +152,7 @@ bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyn
         }
         if (static_cast<string>(item.GetSingle(fieldIdx)) == MEDIA_DATA_DB_URI) {
             if (item.operation != DataShare::EQUAL_TO) {
-                MEDIA_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
+                ANI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
                 return false;
             }
             string uri = static_cast<string>(item.GetSingle(valueIdx));
@@ -189,7 +193,7 @@ bool MediaAniNativeImpl::GetLocationPredicate(std::shared_ptr<MediaLibraryAsyncC
         }
         if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(fieldIdx))) != LOCATION_PARAM_MAP.end()) {
             if (item.operation != DataShare::EQUAL_TO) {
-                MEDIA_ERR_LOG("location predicates not support %{public}d", item.operation);
+                ANI_ERR_LOG("location predicates not support %{public}d", item.operation);
                 return false;
             }
             string param = static_cast<string>(item.GetSingle(fieldIdx));
@@ -265,7 +269,7 @@ bool MediaAniNativeImpl::AddDefaultAssetColumns(vector<string> &fetchColumn,
         } else if (DATE_TRANSITION_MAP.count(column) != 0) {
             validFetchColumns.insert(DATE_TRANSITION_MAP.at(column));
         } else {
-            MEDIA_ERR_LOG("error");
+            ANI_ERR_LOG("error");
             return false;
         }
     }
@@ -307,14 +311,16 @@ bool MediaAniNativeImpl::PhotoAccessGetAssetsExecuteSync(std::shared_ptr<MediaLi
         resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode);
     }
     if (resultSet == nullptr) {
+        ANI_ERR_LOG("resultSet is nullptr");
         return false;
     }
 
     auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
-    fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     if (fetchResult == nullptr) {
+        ANI_ERR_LOG("fetchResult is nullptr");
         return false;
     }
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
 
     auto file = fetchResult->GetFirstObject();
     while (file != nullptr) {
@@ -345,6 +351,7 @@ bool MediaAniNativeImpl::PhotoAccessGetAssetsExecute(std::shared_ptr<MediaLibrar
         resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode);
     }
     if (resultSet == nullptr) {
+        ANI_ERR_LOG("resultSet is nullptr");
         return false;
     }
 
