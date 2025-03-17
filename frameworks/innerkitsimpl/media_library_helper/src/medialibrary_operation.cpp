@@ -94,6 +94,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { TAB_OLD_PHOTO, OperationObject::TAB_OLD_PHOTO },
         { TAB_FACARD_PHOTO, OperationObject::TAB_FACARD_PHOTO },
         { CLOUD_MEDIA_ASSET_OPERATE, OperationObject::CLOUD_MEDIA_ASSET_OPERATE},
+        { ASSET_ALBUM_OPERATION, OperationObject::ASSET_ALBUM_OPERATION},
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -217,6 +218,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::TAB_OLD_PHOTO, { { OperationType::UNKNOWN_TYPE, TabOldPhotosColumn::OLD_PHOTOS_TABLE } }},
         { OperationObject::TAB_FACARD_PHOTO,
         { { OperationType::UNKNOWN_TYPE, TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE } }},
+        { OperationObject::ASSET_ALBUM_OPERATION,
+            { { OperationType::UNKNOWN_TYPE, ASSET_AND_ALBUM_OPERATION_TABLE } } },
 
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },

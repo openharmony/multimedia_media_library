@@ -25,6 +25,9 @@ const std::string FILE_ID = "file_id";
 const std::string PROB = "prob";
 const std::string ANALYSIS_VERSION = "analysis_version";
 const std::string PHOTO_FILE_ID = "photos.file_id";
+const std::string OPT_TYPE = "opt_type";
+const std::string DATA = "data";
+const std::string TYPE = "type";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_COLUMN_COMM_H
