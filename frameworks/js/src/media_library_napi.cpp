@@ -7581,8 +7581,8 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
         GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
-        if (errCode == E_PERMISSION_DENIED) {
-            context->SaveError(E_PERMISSION_DENIED);
+        if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
+            context->SaveError(errCode);
         } else {
             context->SaveError(E_HAS_DB_ERROR);
         }
@@ -8868,8 +8868,8 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
         string outUri;
         int index = UserFileClient::InsertExt(createFileUri, valuesBucket, outUri, GetUserIdFromContext(context));
         if (index < 0) {
-            if (index == E_PERMISSION_DENIED) {
-                context->error = OHOS_PERMISSION_DENIED_CODE;
+            if (index == E_PERMISSION_DENIED || index == -E_CHECK_SYSTEMAPP_FAIL) {
+                context->SaveError(index);
                 NAPI_ERR_LOG("PERMISSION_DENIED, index: %{public}d.", index);
                 return;
             }
