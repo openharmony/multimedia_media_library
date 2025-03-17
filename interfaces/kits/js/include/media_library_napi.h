@@ -124,8 +124,8 @@ public:
     ~ChangeListenerNapi() {};
 
     void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
-    void QueryRdbAndNotifyChange(uv_loop_s *loop, UvChangeMsg *msg, uv_work_t *work);
-    int UvQueueWork(uv_loop_s *loop, uv_work_t *work);
+    void QueryRdbAndNotifyChange(UvChangeMsg *msg);
+    void UvQueueWork(JsOnChangeCallbackWrapper* wrapper);
     static napi_value SolveOnChange(napi_env env, JsOnChangeCallbackWrapper* wrapper);
     void GetResultSetFromMsg(UvChangeMsg* msg, JsOnChangeCallbackWrapper* wrapper);
     std::shared_ptr<NativeRdb::ResultSet> GetSharedResultSetFromIds(std::vector<string>& Ids, bool isPhoto);
