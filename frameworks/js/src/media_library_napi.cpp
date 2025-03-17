@@ -5861,6 +5861,9 @@ napi_value MediaLibraryNapi::JSGetPhotoIndex(napi_env env, napi_callback_info in
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoIndex(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetPhotoIndex");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsIndexof(env, info, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoIndex",
@@ -7238,6 +7241,9 @@ napi_value MediaLibraryNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi
 
 napi_value MediaLibraryNapi::JSGetPhotoAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetPhotoAssets");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->assetType = TYPE_PHOTO;
     CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, asyncContext));
@@ -7372,6 +7378,9 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetPhotoAssets");
+
     NAPI_DEBUG_LOG("MediaLibraryNapi::PhotoAccessGetPhotoAssets start");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->assetType = TYPE_PHOTO;
@@ -7439,6 +7448,9 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssetsSync(napi_env env, napi_ca
 
 napi_value MediaLibraryNapi::JSGetAudioAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAudioAssets");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->assetType = TYPE_AUDIO;
     CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, asyncContext));
@@ -7674,6 +7686,9 @@ napi_value MediaLibraryNapi::JSGetPhotoAlbums(napi_env env, napi_callback_info i
 
 napi_value MediaLibraryNapi::UserFileMgrCreatePhotoAsset(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrCreatePhotoAsset");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->assetType = TYPE_PHOTO;
@@ -7685,6 +7700,9 @@ napi_value MediaLibraryNapi::UserFileMgrCreatePhotoAsset(napi_env env, napi_call
 
 napi_value MediaLibraryNapi::UserFileMgrCreateAudioAsset(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrCreateAudioAsset");
+
     napi_value ret = nullptr;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
@@ -7719,6 +7737,9 @@ napi_value ParseArgsTrashAsset(napi_env env, napi_callback_info info, unique_ptr
 
 napi_value MediaLibraryNapi::UserFileMgrTrashAsset(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrTrashAsset");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_NULLPTR_RET(ParseArgsTrashAsset(env, info, asyncContext));
@@ -8192,6 +8213,9 @@ napi_value MediaLibraryNapi::CreatePhotoAlbum(napi_env env, napi_callback_info i
 
 napi_value MediaLibraryNapi::PhotoAccessCreatePhotoAlbum(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessCreatePhotoAlbum");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CHECK_NULLPTR_RET(ParseArgsCreatePhotoAlbum(env, info, asyncContext));
@@ -8510,6 +8534,9 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
 
 napi_value MediaLibraryNapi::GetPhotoAlbums(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPhotoAlbums");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_NULLPTR_RET(ParseArgsGetPhotoAlbum(env, info, asyncContext));
