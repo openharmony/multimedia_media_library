@@ -92,6 +92,7 @@
 #include "medialibrary_urisensitive_operations.h"
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
+#include "medialibrary_tab_asset_and_album_operation.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -1082,6 +1083,9 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::TAB_FACARD_PHOTO: {
             return MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(rdbPredicate);
         }
+        case OperationObject::ASSET_ALBUM_OPERATION: {
+            return MediaLibraryTabAssetAlbumOperations::Delete(rdbPredicate);
+        }
         default:
             break;
     }
@@ -2051,6 +2055,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::TAB_OLD_PHOTO:
             return MediaLibraryTabOldPhotosOperations().Query(
                 RdbUtils::ToPredicates(predicates, TabOldPhotosColumn::OLD_PHOTOS_TABLE), columns);
+        case OperationObject::ASSET_ALBUM_OPERATION:
+            return MediaLibraryTabAssetAlbumOperations().Query(
+                RdbUtils::ToPredicates(predicates, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE), columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
