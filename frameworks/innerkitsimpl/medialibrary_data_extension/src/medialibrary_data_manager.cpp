@@ -93,7 +93,6 @@
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
 #include "medialibrary_tab_asset_and_album_operations.h"
-
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -1090,7 +1089,6 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         default:
             break;
     }
-
     return DeleteInRdbPredicatesAnalysis(cmd, rdbPredicate);
 }
 
