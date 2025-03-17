@@ -20,7 +20,6 @@
 #include <numeric>
 #include <algorithm>
 
-#include "backup_const.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
@@ -30,48 +29,19 @@ int32_t TabOldPhotosRestore::Restore(
     CHECK_AND_RETURN_RET_LOG(rdbStorePtr != nullptr, NativeRdb::E_DB_NOT_EXIST,
         "rdbStorePtr is nullptr, Maybe init failed");
 
-    TabOldPhotosTempTable tempTable;
-    tempTable.SetPlaceHoldersAndBindArgs(fileInfos);
-    CHECK_AND_RETURN_RET_LOG(!tempTable.IsEmpty(), E_FAIL, "tempTable is empty");
+    TabOldPhotosRestoreHelper restoreHelper;
+    restoreHelper.SetPlaceHoldersAndBindArgs(fileInfos);
+    CHECK_AND_RETURN_RET_LOG(!restoreHelper.IsEmpty(), E_FAIL, "restoreHelper is empty");
 
-    std::string insertSql = GetInsertSql(tempTable);
-    std::vector<NativeRdb::ValueObject> bindArgs = tempTable.GetBindArgs();
+    std::string insertSql = restoreHelper.GetInsertSql();
+    std::vector<NativeRdb::ValueObject> bindArgs = restoreHelper.GetBindArgs();
     int32_t ret = rdbStorePtr->ExecuteSql(insertSql, bindArgs);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, "
-                        "executeSql=%{public}s, bindArgs: %{public}s, Object: %{public}s",
-            ret,
-            insertSql.c_str(),
-            this->ToString(bindArgs).c_str(),
-            this->ToString(fileInfo).c_str());
+            "executeSql=%{public}s, bindArgs: %{public}s,", ret, insertSql.c_str(), ToString(bindArgs).c_str());
         return ret;
     }
     return NativeRdb::E_OK;
-}
-
-std::string TabOldPhotosRestore::GetInsertSql(const TabOldPhotosTempTable &tempTable)
-{
-    std::string inputTableClause = tempTable.GetInputTableClause();
-    return inputTableClause + SQL_TAB_OLD_PHOTOS_INSERT;
-}
-
-int32_t TabOldPhotosRestore::Insert(std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const std::string &insertSql)
-{
-    TabOldPhotosTempTable tempTable;
-    tempTable.SetPlaceHoldersAndBindArgs(fileInfos);
-    CHECK_AND_RETURN_RET_LOG(!tempTable.IsEmpty(), E_FAIL, "tempTable is empty");
-    std::string insertSql = GetInsertSql(tempTable);
-    std::vector<NativeRdb::ValueObject> bindArgs = tempTable.GetBindArgs();
-    int32_t ret = rdbStorePtr->ExecuteSql(insertSql, bindArgs);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, "
-                      "executeSql=%{public}s, bindArgs: %{public}s, Object: %{public}s",
-            ret,
-            insertSql.c_str(),
-            this->ToString(bindArgs).c_str(),
-            this->ToString(fileInfo).c_str());
-    }
-    CHECK_AND_RETURN_RET_LOG(!insertSql.empty(), NativeRdb::E_ERROR, "insertSql is empty");
 }
 
 std::string TabOldPhotosRestore::ToString(const std::vector<NativeRdb::ValueObject> &values)
@@ -92,7 +62,7 @@ std::string TabOldPhotosRestore::ToString(const FileInfo &fileInfo)
         std::to_string(fileInfo.fileType) + " ]";
 }
 
-void TabOldPhotosTempTable::SetPlaceHoldersAndBindArgs(const std::vector<FileInfo> &fileInfos)
+void TabOldPhotosRestoreHelper::SetPlaceHoldersAndBindArgs(const std::vector<FileInfo> &fileInfos)
 {
     for (const auto &fileInfo : fileInfos) {
         AddPlaceHolder();
@@ -100,35 +70,40 @@ void TabOldPhotosTempTable::SetPlaceHoldersAndBindArgs(const std::vector<FileInf
     }
 }
 
-bool TabOldPhotosTempTable::IsEmpty()
+bool TabOldPhotosRestoreHelper::IsEmpty()
 {
     return placeHolders_.empty() || bindArgs_.empty();
 }
 
-std::string TabOldPhotosTempTable::GetInputTableClause()
+std::string TabOldPhotosRestoreHelper::GetInsertSql()
 {
-    return "WITH INPUT (old_file_id, old_data, data) AS (VALUES " + Join(placeHolders_, ",") + " ) ";
+    return GetInputTableClause() + SQL_TAB_OLD_PHOTOS_INSERT;
 }
 
-std::vector<NativeRdb::ValueObject> TabOldPhotosTempTable::GetBindArgs()
+std::vector<NativeRdb::ValueObject> TabOldPhotosRestoreHelper::GetBindArgs()
 {
     return bindArgs_;
 }
 
-void TabOldPhotosTempTable::AddPlaceHolders()
+void TabOldPhotosRestoreHelper::AddPlaceHolders()
 {
     placeHolders_.emplace_back(SQL_PLACEHOLDERS);
 }
 
-void TabOldPhotosTempTable::AddBindArgs(const FileInfo &fileInfo)
+void TabOldPhotosRestoreHelper::AddBindArgs(const FileInfo &fileInfo)
 {
     bindArgs_.emplace_back(fileInfo.localMediaId);
     bindArgs_.emplace_back(fileInfo.oldPath);
     bindArgs_.emplace_back(fileInfo.cloudPath);
 }
 
-std::string TabOldPhotosTempTable::Join(const std::vector<std::string> &values, const std::string &delimiter)
+std::string TabOldPhotosRestoreHelper::Join(const std::vector<std::string> &values, const std::string &delimiter)
 {
     return std::accumulate(values.begin(), values.end(), delimiter);
+}
+
+std::string TabOldPhotosRestoreHelper::GetInputTableClause()
+{
+    return "WITH INPUT (old_file_id, old_data, data) AS (VALUES " + Join(placeHolders_, ",") + " ) ";
 }
 } // namespace OHOS::Media
