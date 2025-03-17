@@ -368,7 +368,7 @@ const std::string CREATE_VISION_DELETE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS d
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " old.file_id, old.data, 2, 1);" +
+    " VALUES (" + " OLD.file_id, OLD.data, 2, 1);" +
     " END;";
 
 const std::string CREATE_TOTAL_INSERT_TRIGGER_FOR_ADD_ANALYSIS_ALBUM_TOTAL =
@@ -394,7 +394,7 @@ const std::string CREATE_VISION_UPDATE_TRIGGER_FOR_UPDATE_ANALYSIS_ALBUM_TOTAL_S
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " new.file_id, new.data, 3, 1);" +
+    " VALUES (" + " NEW.file_id, NEW.data, 3, 1);" +
     " END;";
 
 const std::string CREATE_VISION_UPDATE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS update_vision_trigger AFTER UPDATE ON " +
@@ -410,7 +410,7 @@ const std::string CREATE_VISION_UPDATE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS u
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " new.file_id, new.data, 3, 1);" +
+    " VALUES (" + " NEW.file_id, NEW.data, 3, 1);" +
     " END;";
 
 const std::string CREATE_VISION_UPDATE_TRIGGER_FOR_ADD_VIDEO_LABEL =
@@ -441,7 +441,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER = "CREATE TRIGGER IF NOT EXISTS i
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " new.file_id, new.data, 1, 1);" +
+    " VALUES (" + " NEW.file_id, NEW.data, 1, 1);" +
     " END;";
 
 const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
@@ -456,7 +456,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " new.file_id, new.data, 1, 1);" +
+    " VALUES (" + " NEW.file_id, NEW.data, 1, 1);" +
     " END;";
 
 const std::string DROP_INSERT_VISION_TRIGGER = "DROP TRIGGER IF EXISTS insert_vision_trigger";
@@ -515,7 +515,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_AC =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " new.file_id, new.data, 1, 1);" +
+    " VALUES (" + " NEW.file_id, NEW.data, 1, 1);" +
     " END;";
 
 const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_SALIENCY =
@@ -546,7 +546,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_SALIENCY =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " new.file_id, new.data, 1, 1);" +
+    " VALUES (" + " NEW.file_id, NEW.data, 1, 1);" +
     " END;";
 
 const std::string CREATE_VISION_INSERT_TRIGGER_FOR_UPDATE_SPEC =
@@ -561,7 +561,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_UPDATE_SPEC =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " new.file_id, new.data, 1, 1);" +
+    " VALUES (" + " NEW.file_id, NEW.data, 1, 1);" +
     " END;";
 
 const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_HEAD_AND_POSE =
@@ -576,7 +576,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_HEAD_AND_POSE =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " new.file_id, new.data, 1, 1);" +
+    " VALUES (" + " NEW.file_id, NEW.data, 1, 1);" +
     " END;";
 
 const std::string ADD_FACE_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + FACE + " INT";
