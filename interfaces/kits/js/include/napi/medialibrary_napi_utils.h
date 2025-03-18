@@ -440,6 +440,9 @@ public:
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj, const int32_t errCode,
         const std::string errMsg);
 
+    static void InvokeJSAsyncMethodWithoutWork(napi_env env, napi_deferred deferred, napi_ref callbackRef,
+        const JSAsyncContextOutput &asyncContext);
+
     static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred, napi_ref callbackRef, napi_async_work work,
         const JSAsyncContextOutput &asyncContext);
 

@@ -680,10 +680,8 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
     }
 
     tracer.Finish();
-    if (context->work != nullptr) {
-        SendableMediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
-            context->work, *jsContext);
-    }
+    SendableMediaLibraryNapiUtils::InvokeJSAsyncMethodWithoutWork(env, context->deferred, context->callbackRef,
+        *jsContext);
 
     delete context;
 }
@@ -695,7 +693,6 @@ napi_value SendablePhotoAccessHelper::JSRelease(napi_env env, napi_callback_info
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
-    napi_value resource = nullptr;
     int32_t refCount = 1;
 
     MediaLibraryTracer tracer;
@@ -721,12 +718,11 @@ napi_value SendablePhotoAccessHelper::JSRelease(napi_env env, napi_callback_info
 
     NAPI_CALL(env, napi_remove_wrap_sendable(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-    NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRelease", asyncContext);
-
-    status = napi_create_async_work(
-        env, nullptr, resource, [](napi_env env, void *data) {},
-        reinterpret_cast<CompleteCallback>(JSReleaseCompleteCallback),
-        static_cast<void *>(asyncContext.get()), &asyncContext->work);
+    SendablePhotoAccessHelperAsyncContext *context = asyncContext.get();
+    std::function<void()> task = [env, status, context]() {
+        JSReleaseCompleteCallback(env, status, context);
+    };
+    status = napi_send_event(env, task, napi_eprio_immediate);
     if (status != napi_ok) {
         napi_get_undefined(env, &result);
     } else {
