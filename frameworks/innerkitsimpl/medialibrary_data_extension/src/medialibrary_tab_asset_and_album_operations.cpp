@@ -24,7 +24,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-std::shared_ptr<NativeRdb::ResultSet> MediaLibraryTabAssetAlbumOperations::Query(
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryTableAssetAlbumOperations::Query(
     const NativeRdb::RdbPredicates &rdbPredicate, const std::vector<std::string> &columns)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -36,7 +36,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryTabAssetAlbumOperations::Query
     return rdbStore->QueryWithFilter(rdbPredicate, columns);
 }
 
-int32_t MediaLibraryTabAssetAlbumOperations::Delete(NativeRdb::RdbPredicates &rdbPredicate)
+int32_t MediaLibraryTableAssetAlbumOperations::Delete(NativeRdb::RdbPredicates &rdbPredicate)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {

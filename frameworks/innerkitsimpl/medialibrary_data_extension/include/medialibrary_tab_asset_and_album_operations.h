@@ -25,7 +25,7 @@
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryTabAssetAlbumOperations {
+class MediaLibraryTableAssetAlbumOperations {
 public:
     std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::RdbPredicates &rdbPredicate,
         const std::vector<std::string> &columns);
