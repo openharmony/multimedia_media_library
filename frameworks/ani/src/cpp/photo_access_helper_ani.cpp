@@ -58,7 +58,6 @@ const int32_t THIRD_ENUM = 3;
 
 ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
 {
-    DEBUG_LOG_T("PhotoAccessHelperInit begin");
     static const char *className = ANI_CLASS_PHOTO_ACCESS_HELPER.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
@@ -236,7 +235,6 @@ bool InitUserFileClient(ani_env *env, [[maybe_unused]] ani_object context, bool 
             UserFileClient::Init(env, context);
             if (!UserFileClient::IsValid()) {
                 ANI_ERR_LOG("UserFileClient creation failed");
-                DEBUG_LOG_T("Constructor UserFileClient creation failed");
                 helperLock.unlock();
                 return false;
             }
@@ -262,7 +260,7 @@ ani_object PhotoAccessHelperAni::Constructor(ani_env *env, [[maybe_unused]] ani_
 
     bool isAsync = true;
     if (!InitUserFileClient(env, context, isAsync)) {
-        DEBUG_LOG_T("Constructor InitUserFileClient failed");
+        ANI_ERR_LOG("Constructor InitUserFileClient failed");
         return result;
     }
 
@@ -537,14 +535,14 @@ ani_status PhotoAccessHelperAni::ApplyChanges(ani_env *env, ani_object object)
 static bool CheckDisplayNameParams(MediaLibraryAsyncContext* context)
 {
     if (context == nullptr) {
-        DEBUG_LOG_T("Async context is null");
+        ANI_ERR_LOG("Async context is null");
         return false;
     }
     if (!context->isCreateByComponent) {
         bool isValid = false;
         string displayName = context->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
         if (!isValid) {
-            DEBUG_LOG_T("getting displayName is invalid");
+            ANI_ERR_LOG("getting displayName is invalid");
             return false;
         }
         if (displayName.empty()) {
@@ -720,7 +718,6 @@ static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, 
     string displayName = context->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
     if (!isValid) {
         ANI_ERR_LOG("getting title is invalid");
-        DEBUG_LOG_T("getting title is invalid");
         return;
     }
     auto fileAsset = make_unique<FileAsset>();
@@ -743,13 +740,11 @@ static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibrary
     string displayName = context->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
     if (!isValid) {
         ANI_ERR_LOG("get title is invalid");
-        DEBUG_LOG_T("get title is invalid");
         return;
     }
     string relativePath = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
     if (!isValid) {
         ANI_ERR_LOG("get relativePath is invalid");
-        DEBUG_LOG_T("get relativePath is invalid");
         return;
     }
     unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
@@ -777,7 +772,6 @@ static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibrary
 
 static void PhotoAccessCreateAssetExecute(MediaLibraryAsyncContext* context)
 {
-    DEBUG_LOG_T("PhotoAccessCreateAssetExecute Begin");
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessCreateAssetExecute");
 
@@ -797,7 +791,6 @@ static void PhotoAccessCreateAssetExecute(MediaLibraryAsyncContext* context)
     int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri);
     if (index < 0) {
         context->SaveError(index);
-        DEBUG_LOG_T("PInsertExt fail, index: %d", index);
         ANI_ERR_LOG("InsertExt fail, index: %{public}d.", index);
     } else {
         if (context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
@@ -814,7 +807,6 @@ static void PhotoAccessCreateAssetExecute(MediaLibraryAsyncContext* context)
 #endif
         }
     }
-    DEBUG_LOG_T("PhotoAccessCreateAssetExecute End");
 }
 
 ani_object PhotoAccessHelperAni::createAsset1([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object thisObject,
@@ -822,7 +814,6 @@ ani_object PhotoAccessHelperAni::createAsset1([[maybe_unused]] ani_env *env, [[m
 {
     MediaLibraryTracer tracer;
     tracer.Start("createAsset1");
-    DEBUG_LOG_T("PhotoAccessHelperAni::createAsset1 Begin in thread");
     ani_object result_obj = {};
     MediaLibraryAsyncContext *context = nullptr;
     PhotoAccessCreateAssetExecute(context);

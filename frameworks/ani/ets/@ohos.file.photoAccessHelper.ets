@@ -167,6 +167,10 @@ export namespace photoAccessHelper {
   export type MemberType = number | string | boolean;
 
   export interface PhotoAsset {
+    readonly uri: string;
+    readonly photoType: PhotoType;
+    readonly displayName: string;
+
     get(member: string): MemberType;
     set(member: string, value: string): void;
     commitModify(callback: AsyncCallback<void>): void;
@@ -188,6 +192,10 @@ export namespace photoAccessHelper {
   }
 
   class PhotoAssetHandle implements PhotoAsset {
+    readonly uri: string = "";
+    readonly photoType: PhotoType;
+    readonly displayName: string = "";
+
     private nativePhotoAsset: long = 0;
     constructor(context: long) {
       if (this.nativePhotoAsset == 0) {
@@ -603,6 +611,11 @@ export namespace photoAccessHelper {
 
   export interface FetchResult<T> {
     getCount(): number;
+    isAfterLast(): boolean;
+    getFirstObject(callback: AsyncCallback<T | undefined>): void;
+    getFirstObject(): Promise<T>;
+    getNextObject(callback: AsyncCallback<T | undefined>): void;
+    getNextObject(): Promise<T>;
     getAllObjects(callback: AsyncCallback<Array<T> | undefined>): void;
     getAllObjects(): Promise<Array<T>>;
     close(): void;
@@ -619,6 +632,51 @@ export namespace photoAccessHelper {
     native getNextObjectSync(): T;
     native getAllObjectsSync(): Array<T>;
     native close(): void;
+
+    isAfterLast(): boolean {
+      return false;
+    }
+    getFirstObject(callback: AsyncCallback<T | undefined>): void {}
+    getFirstObject(): Promise<T> {
+      return new Promise<T>((resolve: (v: T) => void, reject: RejectString) => {
+        let cb = (): T => { return this.getFirstObjectSync() };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret === null || ret === undefined) {
+            let err: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
+            reject(err);
+          } else {
+            let result = ret as T;
+            resolve(result);
+          }
+        });
+      });
+    }
+
+    getNextObject(callback: AsyncCallback<T | undefined>): void {}
+    getNextObject(): Promise<T> {
+      return new Promise<T>((resolve: (v: T) => void, reject: RejectString) => {
+        let cb = (): T => { return this.getNextObjectSync() };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret === null || ret === undefined) {
+            let err: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
+            reject(err);
+          } else {
+            let result = ret as T;
+            resolve(result);
+          }
+        });
+      });
+    }
 
     getAllObjects(callback: AsyncCallback<Array<T> | undefined, void>): void {
       let task = new taskpool.Task(() => this.getAllObjectsSync());
