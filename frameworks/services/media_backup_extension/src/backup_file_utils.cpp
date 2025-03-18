@@ -152,9 +152,7 @@ string BackupFileUtils::ConvertLowQualityPath(int32_t sceneCode, const std::stri
         displayName.replace(dotPos, displayName.length() - dotPos, ".camera");
     }
     size_t pos = result.find(relativePath);
-    if (pos == string::npos) {
-        return result;
-    }
+    CHECK_AND_RETURN_RET(pos != string::npos, result);
     string publicPath = result.substr(0, pos + 1);
     result = publicPath + LOW_QUALITY_PATH + displayName;
     return result;
@@ -165,13 +163,9 @@ void BackupFileUtils::ParseResolution(const std::string &resolution, int32_t &wi
 {
     //default 0
     width = 0, height = 0;
-    if (resolution.empty()) {
-        return;
-    }
+    CHECK_AND_RETURN(!resolution.empty());
     size_t delimiter_pos = resolution.find('x');
-    if (delimiter_pos == std::string::npos) {
-        return;
-    }
+    CHECK_AND_RETURN(delimiter_pos != std::string::npos);
     std::string width_str = resolution.substr(0, delimiter_pos);
     std::string height_str = resolution.substr(delimiter_pos + 1);
     width = std::atoi(width_str.c_str());
@@ -278,11 +272,8 @@ int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, 
         bool ret = MediaFileUtils::CreateDirectory(localDirPath);
         errCode = ret? E_OK: E_CHECK_DIR_FAIL;
     }
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Create Dir Failed! localDirPath=%{private}s", localDirPath.c_str());
-        return errCode;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Create Dir Failed! localDirPath=%{private}s",
+        localDirPath.c_str());
     filePath = dirPath + "/" + realName;
     return E_OK;
 }
@@ -442,11 +433,8 @@ int32_t BackupFileUtils::IsLowQualityImage(std::string &filePath, int32_t sceneC
         MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
         return E_FAIL;
     }
-    if (statInfo.st_size <= 0) {
-        MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
-            (long long)statInfo.st_size);
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(statInfo.st_size > 0, E_FAIL, "Invalid file (%{public}s), get size (%{public}lld) <= 0",
+        garbledFilePath.c_str(), (long long)statInfo.st_size);
     return E_OK;
 }
 
@@ -469,11 +457,8 @@ int32_t BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
         MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
         return E_FAIL;
     }
-    if (statInfo.st_size <= 0) {
-        MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
-            (long long)statInfo.st_size);
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(statInfo.st_size > 0, E_FAIL, "Invalid file (%{public}s), get size (%{public}lld) <= 0",
+        garbledFilePath.c_str(), (long long)statInfo.st_size);
     return E_OK;
 }
 

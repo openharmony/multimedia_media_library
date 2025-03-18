@@ -25,10 +25,7 @@ static const int32_t IMAGE_MEDIA_TYPE = 1;
 static const int32_t VIDEO_MEDIA_TYPE = 3;
 std::vector<AlbumMediaStatisticInfo> ExternalFilesCountStatistic::Load()
 {
-    if (this->externalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("externalRdb_ is nullptr, Maybe init failed.");
-        return {};
-    }
+    CHECK_AND_RETURN_RET_LOG(this->externalRdb_ != nullptr, {}, "externalRdb_ is nullptr, Maybe init failed.");
     return {this->GetMediaStatInfo(), this->GetAudioStatInfo(), this->GetGalleryNotSyncMediaStatInfo()};
 }
 

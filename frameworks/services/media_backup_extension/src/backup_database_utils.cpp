@@ -161,22 +161,13 @@ int32_t BackupDatabaseUtils::Delete(NativeRdb::AbsRdbPredicates &predicates, int
 int32_t BackupDatabaseUtils::InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
     std::set<std::string> &cacheSet, std::unordered_map<std::string, std::string> &nickMap)
 {
-    if (galleryRdb == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdb_ is nullptr, Maybe init failed.");
-        return E_FAIL;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(galleryRdb != nullptr, E_FAIL, "Pointer rdb_ is nullptr, Maybe init failed.");
     const string querySql = "SELECT nick_dir, nick_name FROM garbage_album where type = 0";
     auto resultSet = galleryRdb->QuerySql(QUERY_GARBAGE_ALBUM);
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_HAS_DB_ERROR);
     int32_t count = -1;
     int32_t err = resultSet->GetRowCount(count);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_FAIL, "Failed to get count, err: %{public}d", err);
     MEDIA_INFO_LOG("garbageCount: %{public}d", count);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t type;
@@ -224,10 +215,7 @@ std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::GetQueryResultSet(
     const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &querySql,
     const std::vector<std::string> &sqlArgs)
 {
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "rdbStore is nullptr");
     return rdbStore->QuerySql(querySql, sqlArgs);
 }
 
@@ -237,10 +225,7 @@ std::unordered_map<std::string, std::string> BackupDatabaseUtils::GetColumnInfoM
     std::unordered_map<std::string, std::string> columnInfoMap;
     std::string querySql = "SELECT name, type FROM pragma_table_info('" + tableName + "')";
     auto resultSet = GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return columnInfoMap;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, columnInfoMap, "resultSet is nullptr");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string columnName = GetStringVal(PRAGMA_TABLE_NAME, resultSet);
         std::string columnType = GetStringVal(PRAGMA_TABLE_TYPE, resultSet);
@@ -485,10 +470,7 @@ std::vector<std::pair<std::string, std::string>> BackupDatabaseUtils::GetColumnI
     std::vector<std::pair<std::string, std::string>> columnInfoPairs;
     std::string querySql = "SELECT name, type FROM pragma_table_info('" + tableName + "')";
     auto resultSet = GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr");
-        return columnInfoPairs;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, columnInfoPairs, "resultSet is nullptr");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string columnName = GetStringVal(PRAGMA_TABLE_NAME, resultSet);
         std::string columnType = GetStringVal(PRAGMA_TABLE_TYPE, resultSet);
