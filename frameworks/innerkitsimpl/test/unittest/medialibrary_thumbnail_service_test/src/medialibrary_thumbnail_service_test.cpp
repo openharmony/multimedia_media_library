@@ -1343,7 +1343,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAs
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_014, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    auto res = ThumbnailGenerateHelper::CreateAstcMthAndYear(opts, thumbType);
+    auto res = ThumbnailGenerateHelper::CreateAstcMthAndYear(opts);
     EXPECT_NE(res, E_OK);
 }
 
@@ -1352,7 +1352,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcMthAndYear_Test_00
     ThumbnailService serverTest;
     string id = "invalid";
     auto res = serverTest.CreateAstcMthAndYear(id);
-    EXPECT_NE(res, E_OK);
+    EXPECT_EQ(res, false);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_015, TestSize.Level0)
