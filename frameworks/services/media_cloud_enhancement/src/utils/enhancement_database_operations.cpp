@@ -35,6 +35,7 @@ using namespace OHOS::RdbDataShareAdapter;
 namespace OHOS {
 namespace Media {
 static const int32_t MAX_UPDATE_RETRY_TIMES = 5;
+const size_t UPDATE_BATCH_SIZE = 200;
 
 std::shared_ptr<ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryCommand &cmd,
     RdbPredicates &servicePredicates, const vector<string> &columns)
@@ -245,6 +246,58 @@ std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::GetPair(Med
     }
     MEDIA_INFO_LOG("PhotoAsset is edited or trashed or hidden");
     return nullptr;
+}
+
+int32_t EnhancementDatabaseOperations::QueryAndUpdatePhotos(const std::vector<std::string> &photoIds)
+{
+    CHECK_AND_RETURN_RET_LOG(photoIds.size() > 0, NativeRdb::E_OK, "photoIds is emtpy");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is nullptr");
+
+    std::string photoIdList =
+        accumulate(photoIds.begin() + 1, photoIds.end(), photoIds[0], [](const string &a, const string &b) {
+            return a + ", " + b;
+        });
+    std::string querySql = "SELECT file_id FROM Photos WHERE (ce_available = 0 AND photo_id IN (" + photoIdList +
+                           ")) OR (ce_available = 1 AND photo_id NOT IN (" + photoIdList + "));";
+
+    auto resultSet = rdbStore->QueryByStep(querySql);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, NativeRdb::E_ERROR, "query by step failed");
+
+    std::vector<std::string> needUpdateFileIds;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        needUpdateFileIds.push_back(GetStringVal(PhotoColumn::MEDIA_ID, resultSet));
+    }
+    resultSet->Close();
+    auto needChange = needUpdateFileIds.size();
+    CHECK_AND_RETURN_RET_LOG(needChange > 0, NativeRdb::E_OK, "needUpdateFileIds is emtpy");
+
+    int32_t ret = NativeRdb::E_OK;
+    int64_t totalChanged = 0;
+    for (size_t start = 0; start < needChange; start += UPDATE_BATCH_SIZE) {
+        size_t end = std::min(start + UPDATE_BATCH_SIZE, needChange);
+        std::stringstream updateSql;
+        updateSql << "UPDATE Photos SET ce_available = NOT ( ce_available ) WHERE file_id IN ( ";
+        for (size_t i = start; i < end; ++i) {
+            if (i != start) {
+                updateSql << ", ";
+            }
+            updateSql << needUpdateFileIds[i];
+        }
+        updateSql << " );";
+        int64_t changedRowCount = 0;
+        auto errCode = rdbStore->ExecuteForChangedRowCount(changedRowCount, updateSql.str());
+        if (errCode != NativeRdb::E_OK) {
+            ret = errCode;
+            MEDIA_ERR_LOG("execute for changed row count failed, errCode: %{public}d", errCode);
+        } else {
+            totalChanged += changedRowCount;
+            MEDIA_INFO_LOG("changed row count: %{public}" PRId64, changedRowCount);
+        }
+    }
+
+    MEDIA_INFO_LOG("need change: %{public}zu, total changed: %{public}" PRId64, needChange, totalChanged);
+    return ret;
 }
 } // namespace Media
 } // namespace OHOS
