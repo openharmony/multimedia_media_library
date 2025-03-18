@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_datamanager_unittest") {
-  module_out_path = "media_library/media_library_datamanager"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",

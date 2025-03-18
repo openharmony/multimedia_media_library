@@ -24,7 +24,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_meta_recovery_unittest") {
-  module_out_path = "media_library/medialibrary_meta_recovery"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
