@@ -44,6 +44,8 @@
 #include "want_params.h"
 #include "want_params_wrapper.h"
 #include "window.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

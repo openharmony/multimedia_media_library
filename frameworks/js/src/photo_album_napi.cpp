@@ -27,6 +27,7 @@
 #include "photo_map_column.h"
 #include "result_set_utils.h"
 #include "userfile_client.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;

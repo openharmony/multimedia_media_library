@@ -86,6 +86,9 @@
 #include "userfilemgr_uri.h"
 #include "user_photography_info_column.h"
 #include "foreground_analysis_meta.h"
+#include "smart_album_column.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

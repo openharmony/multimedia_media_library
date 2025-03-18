@@ -40,6 +40,7 @@
 #define private public
 #include "medialibrary_rdbstore.h"
 #undef private
+#include "album_operation_uri.h"
 
 namespace OHOS::Media {
 using namespace std;

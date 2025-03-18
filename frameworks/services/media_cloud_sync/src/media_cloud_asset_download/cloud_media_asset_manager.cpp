@@ -44,6 +44,7 @@
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
+#include "cloud_media_asset_uri.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

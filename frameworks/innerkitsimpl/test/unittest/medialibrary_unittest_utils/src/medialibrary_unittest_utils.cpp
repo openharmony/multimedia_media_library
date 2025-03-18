@@ -30,6 +30,7 @@
 #include "result_set_utils.h"
 #include "scanner_utils.h"
 #include "userfilemgr_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;

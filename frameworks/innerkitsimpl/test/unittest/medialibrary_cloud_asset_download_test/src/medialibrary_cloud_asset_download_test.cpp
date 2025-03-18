@@ -49,6 +49,8 @@
 #include "cloud_media_asset_types.h"
 #undef private
 #undef protected
+#include "cloud_media_asset_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace testing::ext;

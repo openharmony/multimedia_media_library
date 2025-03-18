@@ -37,6 +37,7 @@
 #include "system_ability_definition.h"
 #include "unique_fd.h"
 #include "userfilemgr_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
