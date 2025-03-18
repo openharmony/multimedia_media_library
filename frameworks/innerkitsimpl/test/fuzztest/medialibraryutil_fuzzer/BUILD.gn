@@ -26,9 +26,12 @@ ohos_fuzztest("MediaLibraryUtilFuzzTest") {
   ]
 
   sources = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/photo_file_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync_utils/cloud_sync_utils.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
     "src/medialibrary_util_fuzzer.cpp",
   ]
 
@@ -51,6 +54,7 @@ ohos_fuzztest("MediaLibraryUtilFuzzTest") {
     "ability_runtime:runtime",
     "ability_runtime:uri_permission_mgr",
     "access_token:libaccesstoken_sdk",
+    "access_token:libprivacy_sdk",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
