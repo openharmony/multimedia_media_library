@@ -33,6 +33,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_label_column.h"
+#include "vision_photo_map_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_total_column.h"
 #include "highlight_column.h"
@@ -187,6 +188,9 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     MEDIA_DATA_DB_SHOOTING_MODE_TAG,
     MEDIA_DATA_DB_PHOTOS_LATITUDE,
     MEDIA_DATA_DB_PHOTOS_LONGITUDE,
+
+    // AnalysisPhotoMap table columns
+    MAP_ALBUM,
 
     // Photos table columns
     COMPAT_HIDDEN,
