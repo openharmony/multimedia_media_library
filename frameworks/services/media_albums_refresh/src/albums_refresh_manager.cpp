@@ -55,6 +55,7 @@ static const int32_t SCREEN_OFF = 0;
 static const int32_t SCREEN_ON = 1;
 static const int32_t E_EMPTY_ALBUM_ID = 1;
 static const int32_t IS_PENDING = 1;
+static const size_t PAGE_THRESHOLD = 1000;
 
 AlbumsRefreshManager::AlbumsRefreshManager()
 {
@@ -111,7 +112,7 @@ bool AlbumsRefreshManager::HasRefreshingSystemAlbums()
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Can not get rdb");
     RdbPredicates predicates(ALBUM_REFRESH_TABLE);
-    vector<string> columns = {REFRESHED_ALBUM_ID};
+    vector<string> columns = {REFRESH_ALBUM_ID};
     predicates.SetWhereClause(ALBUM_REFRESH_STATUS + " = 1");
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Can not query ALBUM_REFRESH_TABLE");
@@ -123,39 +124,31 @@ bool AlbumsRefreshManager::HasRefreshingSystemAlbums()
     return count != 0;
 }
 
-static void SetWhereClauseByRefreshType(RdbPredicates &predicates, ForceRefreshType forceRefreshType)
+static void SetPhotoAlbumWhereClauseByRefreshType(RdbPredicates &predicates, ForceRefreshType forceRefreshType)
 {
-    switch (forceRefreshType) {
-        case ForceRefreshType::NONE:
-            predicates.LessThan(REFRESHED_ALBUM_ID, to_string(ANALYSIS_ALBUM_OFFSET));
-            break;
-        case ForceRefreshType::EXCEPTION:
-            predicates.SetWhereClause(REFRESHED_ALBUM_ID + " IN (SELECT " + REFRESHED_ALBUM_ID + " FROM " +
-                ALBUM_REFRESH_TABLE + " WHERE " + ALBUM_REFRESH_STATUS + " = 1)");
-            break;
-        default:
-            MEDIA_ERR_LOG("SetWhereClause error, forceRefreshType is: %{public}d", forceRefreshType);
-            break;
+    predicates.LessThan(REFRESH_ALBUM_ID, to_string(ANALYSIS_ALBUM_OFFSET));
+    if (forceRefreshType == ForceRefreshType::EXCEPTION) {
+        predicates.EqualTo(ALBUM_REFRESH_STATUS, IS_PENDING);
     }
 }
 
 static int32_t GetAllPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     std::vector<RefreshAlbumData> &photoAlbums, ForceRefreshType forceRefreshType)
 {
-    vector<string> columns = {REFRESHED_ALBUM_ID, PhotoAlbumColumns::ALBUM_SUBTYPE};
+    vector<string> columns = {REFRESH_ALBUM_ID, PhotoAlbumColumns::ALBUM_SUBTYPE};
     RdbPredicates predicates(ALBUM_REFRESH_TABLE);
     vector<string> clauses;
-    clauses.push_back(ALBUM_REFRESH_TABLE + "." + REFRESHED_ALBUM_ID + " = " +
+    clauses.push_back(ALBUM_REFRESH_TABLE + "." + REFRESH_ALBUM_ID + " = " +
         PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_ID);
     predicates.LeftOuterJoin(PhotoAlbumColumns::TABLE)->On(clauses);
-    SetWhereClauseByRefreshType(predicates, forceRefreshType);
+    SetPhotoAlbumWhereClauseByRefreshType(predicates, forceRefreshType);
     MEDIA_DEBUG_LOG("Query PhotoAlbum from RefreshAlbum Table, predicates statement is %{public}s",
         predicates.GetStatement().c_str());
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Can not query ALBUM_REFRESH_TABLE");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         RefreshAlbumData data;
-        data.albumId = GetInt32Val(REFRESHED_ALBUM_ID, resultSet);
+        data.albumId = GetInt32Val(REFRESH_ALBUM_ID, resultSet);
         auto albumSubtype = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
         if (albumSubtype > 0) {
             data.albumSubtype = static_cast<PhotoAlbumSubType>(albumSubtype);
@@ -166,19 +159,41 @@ static int32_t GetAllPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore
     return E_SUCCESS;
 }
 
+static int32_t QueryAlbumIdBySubtype(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const PhotoAlbumSubType albumSubtype)
+{
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    int32_t albumId = -1;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubtype));
+
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Can not query image or video albumId");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    }
+    return albumId;
+}
+
 static int32_t GetImageAndVideoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     std::vector<RefreshAlbumData> &photoAlbums, ForceRefreshType forceRefreshType)
 {
-    vector<string> columns = {REFRESHED_ALBUM_ID, PhotoAlbumColumns::ALBUM_SUBTYPE};
+    static int32_t imageAlbumId{-1};
+    static int32_t videoAlbumId{-1};
+    if (imageAlbumId <= 0) {
+        imageAlbumId = QueryAlbumIdBySubtype(rdbStore, PhotoAlbumSubType::IMAGE);
+    }
+    if (videoAlbumId <= 0) {
+        videoAlbumId = QueryAlbumIdBySubtype(rdbStore, PhotoAlbumSubType::VIDEO);
+    }
+    CHECK_AND_RETURN_RET_LOG(imageAlbumId > 0 && videoAlbumId > 0, E_HAS_DB_ERROR,
+        "image or video album id not exist");
+    vector<string> columns = {REFRESH_ALBUM_ID};
     RdbPredicates predicates(ALBUM_REFRESH_TABLE);
-    vector<string> clauses;
-    clauses.push_back(ALBUM_REFRESH_TABLE + "." + REFRESHED_ALBUM_ID + " = " +
-        PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_ID);
-    predicates.LeftOuterJoin(PhotoAlbumColumns::TABLE)->On(clauses);
     predicates.BeginWrap();
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::IMAGE));
+    predicates.EqualTo(REFRESH_ALBUM_ID, to_string(imageAlbumId));
     predicates.Or();
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::VIDEO));
+    predicates.EqualTo(REFRESH_ALBUM_ID, to_string(videoAlbumId));
     predicates.EndWrap();
     MEDIA_DEBUG_LOG("Query PhotoAlbum from RefreshAlbum Table, predicates statement is %{public}s",
         predicates.GetStatement().c_str());
@@ -186,12 +201,14 @@ static int32_t GetImageAndVideoAlbums(const shared_ptr<MediaLibraryRdbStore> rdb
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Can not query ALBUM_REFRESH_TABLE");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         RefreshAlbumData data;
-        data.albumId = GetInt32Val(REFRESHED_ALBUM_ID, resultSet);
-        auto albumSubtype = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
-        if (albumSubtype > 0) {
-            data.albumSubtype = static_cast<PhotoAlbumSubType>(albumSubtype);
+        data.albumId = GetInt32Val(REFRESH_ALBUM_ID, resultSet);
+        if (data.albumId == imageAlbumId) {
+            data.albumSubtype = PhotoAlbumSubType::IMAGE;
+            photoAlbums.push_back(data);
+        } else if (data.albumId == videoAlbumId) {
+            data.albumSubtype = PhotoAlbumSubType::VIDEO;
+            photoAlbums.push_back(data);
         }
-        photoAlbums.push_back(data);
     }
     resultSet->Close();
     return E_SUCCESS;
@@ -202,10 +219,9 @@ static int32_t GetAnalysisRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> r
 {
     vector<string> columns = {PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_SUBTYPE};
     RdbPredicates analysisPredicates(ANALYSIS_ALBUM_TABLE);
-    if (forceRefreshType == ForceRefreshType::NONE || forceRefreshType == ForceRefreshType::EXCEPTION) {
-        analysisPredicates.SetWhereClause(PhotoAlbumColumns::ALBUM_ID + " IN (SELECT " + REFRESHED_ALBUM_ID +
-                                  " - 100000000 FROM " + ALBUM_REFRESH_TABLE + " WHERE refresh_album_id > 100000000)");
-    }
+    analysisPredicates.SetWhereClause(PhotoAlbumColumns::ALBUM_ID + " IN (SELECT " + REFRESH_ALBUM_ID +
+        " - 100000000 FROM " + ALBUM_REFRESH_TABLE + " WHERE refresh_album_id > 100000000)");
+
     auto resultSet = rdbStore->Query(analysisPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Can not query ALBUM_REFRESH_TABLE");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -274,7 +290,6 @@ static void RefreshEachPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbSto
     const std::vector<RefreshAlbumData> &photoAlbums, SyncNotifyInfo &info,
     std::vector<string> &updateFailedAlbumIds)
 {
-    MEDIA_INFO_LOG("RefreshEachPhotoAlbums start");
     bool notifyAlbums = false;
     bool notifyAssets = false;
     int32_t ret = E_SUCCESS;
@@ -286,7 +301,7 @@ static void RefreshEachPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbSto
         ret = RefreshAlbumInfoAndUris(rdbStore, photoAlbum.albumId, subtype, info);
         if (ret != E_SUCCESS) {
             updateFailedAlbumIds.push_back(to_string(photoAlbum.albumId));
-            MEDIA_INFO_LOG("ForceRefreshPhotoAlbums fail, failed album id is: %{public}d", photoAlbum.albumId);
+            MEDIA_ERR_LOG("refresh album failed, album id is: %{public}d", photoAlbum.albumId);
             continue;
         }
         notifyAlbums = true;
@@ -297,15 +312,11 @@ static void RefreshEachPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbSto
     if (info.forceRefreshType != ForceRefreshType::NONE) {
         info.notifyAssets = false;
     }
-    MEDIA_INFO_LOG("notifyType: %{public}d, notifyAssets: %{public}d, notifyAlbums: %{public}d",
-        info.notifyType, info.notifyAlbums, info.notifyAssets);
 }
 
 static void RefreshAnalysisAlbum(
     const shared_ptr<MediaLibraryRdbStore> rdbStore, vector<RefreshAlbumData> &albums)
 {
-    CHECK_AND_RETURN_LOG(!albums.empty(), "no analysis album");
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t count = static_cast<int32_t>(albums.size());
     std::vector<std::string> albumIds(count);
     for (int32_t i = 0; i < count; i++) {
@@ -313,45 +324,60 @@ static void RefreshAnalysisAlbum(
         MEDIA_DEBUG_LOG("analysis: %{public}s", albumIds[i].c_str());
     }
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIds);
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("%{public}d analysis albums update cost %{public}ld", count, static_cast<long>(end - start));
 }
 
 static int32_t BatchSetRefreshAlbumStatusInPending(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     std::vector<string> &updateAlbumIds, const int32_t status)
 {
-    RdbPredicates predicates(ALBUM_REFRESH_TABLE);
-    predicates.In(REFRESHED_ALBUM_ID, updateAlbumIds);
-    ValuesBucket values;
-    values.Put(ALBUM_REFRESH_STATUS, status);
-    
-    int32_t changedRows = 0;
-    auto ret = rdbStore->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
-        "update status in refreshAlbum table failed");
+    // 1000 ids per update
+    size_t updateTime = (updateAlbumIds.size() + PAGE_THRESHOLD - 1) / PAGE_THRESHOLD;
+    for (size_t i = 0; i < updateTime; i++) {
+        size_t start = i * PAGE_THRESHOLD;
+        size_t end = std::min(start + PAGE_THRESHOLD, updateAlbumIds.size());
+        std::vector<string> childVector(updateAlbumIds.begin() + start, updateAlbumIds.begin() + end);
+
+        RdbPredicates predicates(ALBUM_REFRESH_TABLE);
+        predicates.In(REFRESH_ALBUM_ID, childVector);
+        ValuesBucket values;
+        values.Put(ALBUM_REFRESH_STATUS, status);
+        
+        int32_t changedRows = 0;
+        auto ret = rdbStore->Update(changedRows, values, predicates);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+            "update status in refreshAlbum table failed");
+    }
     return E_SUCCESS;
 }
 
 static int32_t DeleteUpdatedPhotoAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     std::vector<string> &updateAlbumIds, std::vector<string> &updateFailedAlbumIds)
 {
-    RdbPredicates predicates(ALBUM_REFRESH_TABLE);
-    predicates.In(REFRESHED_ALBUM_ID, updateAlbumIds);
-    
-    if (!updateFailedAlbumIds.empty()) {
-        predicates.NotIn(REFRESHED_ALBUM_ID, updateFailedAlbumIds);
+    // 1000 ids per delete
+    size_t deleteTime = (updateAlbumIds.size() + PAGE_THRESHOLD - 1) / PAGE_THRESHOLD;
+    for (size_t i = 0; i < deleteTime; i++) {
+        size_t start = i * PAGE_THRESHOLD;
+        size_t end = std::min(start + PAGE_THRESHOLD, updateAlbumIds.size());
+        std::vector<string> childVector(updateAlbumIds.begin() + start, updateAlbumIds.begin() + end);
+
+        RdbPredicates predicates(ALBUM_REFRESH_TABLE);
+        predicates.In(REFRESH_ALBUM_ID, childVector);
+        
+        if (!updateFailedAlbumIds.empty()) {
+            predicates.NotIn(REFRESH_ALBUM_ID, updateFailedAlbumIds);
+        }
+        predicates.EqualTo(ALBUM_REFRESH_STATUS, IS_PENDING);
+        int32_t deleteRows = -1;
+        auto ret = rdbStore->Delete(deleteRows, predicates);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
+            "delete photo album from refreshAlbum table failed");
     }
-    predicates.EqualTo(ALBUM_REFRESH_STATUS, IS_PENDING);
-    auto ret = rdbStore->Delete(predicates);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
-        "delete photo album from refreshAlbum table failed");
     return E_SUCCESS;
 }
 
 static void DeleteAnalysisAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     string deleteRefreshAlbumSql = "DELETE FROM " + ALBUM_REFRESH_TABLE + " WHERE " +
-        REFRESHED_ALBUM_ID + " > 100000000 ";
+        REFRESH_ALBUM_ID + " > 100000000 ";
     int32_t ret = rdbStore->ExecuteSql(deleteRefreshAlbumSql);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "delete analysis album from refreshAlbum failed");
     MEDIA_DEBUG_LOG("delete analysis album from refreshAlbum");
@@ -363,7 +389,10 @@ static void HandleAllPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore
 
     int32_t ret = GetAllPhotoAlbums(rdbStore, photoAlbums, info.forceRefreshType);
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get photo albums from refreshalbum table");
-    CHECK_AND_RETURN_LOG(!photoAlbums.empty(), "photoAlbums is empty");
+    if (photoAlbums.empty()) {
+        MEDIA_INFO_LOG("photoAlbums is empty");
+        return;
+    }
 
     std::vector<string> updateAlbumIds;
     std::vector<string> updateFailedAlbumIds;
@@ -371,7 +400,7 @@ static void HandleAllPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore
         updateAlbumIds.push_back(to_string(photoAlbum.albumId));
     }
     ret = BatchSetRefreshAlbumStatusInPending(rdbStore, updateAlbumIds, IS_PENDING);
-    CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "Batch set all photo albums status from refreshalbum table");
+    CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "Batch set all photo albums status from refreshalbum table failed");
     RefreshEachPhotoAlbums(rdbStore, photoAlbums, info, updateFailedAlbumIds);
 
     lastRefreshTimestamp_ = MediaFileUtils::UTCTimeSeconds();
@@ -388,7 +417,10 @@ static void HandleImageAndVideoAlbums(const shared_ptr<MediaLibraryRdbStore> rdb
 
     int32_t ret = GetImageAndVideoAlbums(rdbStore, photoAlbums, info.forceRefreshType);
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get IMG and VID albums from refreshalbum table");
-    CHECK_AND_RETURN_LOG(!photoAlbums.empty(), "photoAlbums is empty");
+    if (photoAlbums.empty()) {
+        MEDIA_INFO_LOG("photoAlbums is empty");
+        return;
+    }
 
     std::vector<string> updateAlbumIds;
     std::vector<string> updateFailedAlbumIds;
@@ -396,7 +428,7 @@ static void HandleImageAndVideoAlbums(const shared_ptr<MediaLibraryRdbStore> rdb
         updateAlbumIds.push_back(to_string(photoAlbum.albumId));
     }
     ret = BatchSetRefreshAlbumStatusInPending(rdbStore, updateAlbumIds, IS_PENDING);
-    CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "Batch set IMG and VID albums status from refreshalbum table");
+    CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "Batch set IMG and VID albums status from refreshalbum table failed");
     RefreshEachPhotoAlbums(rdbStore, photoAlbums, info, updateFailedAlbumIds);
     ret = DeleteUpdatedPhotoAlbumIds(rdbStore, updateAlbumIds, updateFailedAlbumIds);
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "Batch delete IMG and VID albums from RefreshAlbums Table failed");
@@ -411,7 +443,9 @@ static void HandleAnalysisAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore
     int32_t ret =
         GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, info.forceRefreshType);
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get analysis albums from refreshalbum table");
-    CHECK_AND_RETURN_LOG(!analysisAlbums.empty(), "analysisAlbums is empty");
+    if (analysisAlbums.empty()) {
+        return;
+    }
 
     // Clean all analysis albums from RefreshAlbums Table
     DeleteAnalysisAlbumIds(rdbStore);
@@ -422,21 +456,16 @@ static void HandleAnalysisAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore
 
 static void HandleAllRefreshAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore, SyncNotifyInfo &info)
 {
-    MEDIA_INFO_LOG("refresh all albums from RefreshAlbums Table start");
-    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     info.forceRefreshType = ForceRefreshType::NONE;
 
     HandleAllPhotoAlbums(rdbStore, info);
 
     HandleAnalysisAlbums(rdbStore, info);
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("refresh all albums from RefreshAlbums Table end, cost: %{public}ld", (long)(end - start));
 }
 
 void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     SyncNotifyInfo &info)
 {
-    MEDIA_INFO_LOG("RefreshPhotoAlbums4AssetsChange beigin");
     uint32_t countThreshold = GetRefreshCountThreshold(info.notifyType);
     int32_t timeThreshold = GetRefreshTimeThreshold();
 
@@ -445,29 +474,30 @@ void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<M
 
     if (info.taskType == TIME_END_SYNC) {
         HandleAllRefreshAlbums(rdbStore, info);
+        MEDIA_INFO_LOG("refresh all albums from RefreshAlbums Table end, cost: %{public}ld",
+            (long)(MediaFileUtils::UTCTimeMilliSeconds() - start));
         return;
     }
 
     if (info.urisSize < countThreshold || delayTime > timeThreshold ||
         info.forceRefreshType != ForceRefreshType::NONE) {
         HandleAllPhotoAlbums(rdbStore, info);
+        MEDIA_INFO_LOG("refresh all photo albums update cost: %{public}ld",
+            (long)(MediaFileUtils::UTCTimeMilliSeconds() - start));
     } else {
         HandleImageAndVideoAlbums(rdbStore, info);
+        MEDIA_INFO_LOG("refresh image and video albums update cost: %{public}ld",
+            (long)(MediaFileUtils::UTCTimeMilliSeconds() - start));
     }
-
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("RefreshPhotoAlbums4AssetsChange photo albums update cost %{public}ld",
-        (long)(end - start));
 
     timeThreshold = GetRefreshTimeThreshold();
     int32_t analysisAlbumDelayTime =
         static_cast<int32_t>(MediaFileUtils::UTCTimeSeconds() - lastAnalysisRefreshTimestamp_);
-    if (delayTime > timeThreshold) {
+    if (analysisAlbumDelayTime > timeThreshold) {
         start = MediaFileUtils::UTCTimeMilliSeconds();
         HandleAnalysisAlbums(rdbStore, info);
-        end = MediaFileUtils::UTCTimeMilliSeconds();
-        MEDIA_INFO_LOG("RefreshPhotoAlbums4AssetsChange analysis albums update cost %{public}ld",
-            (long)(end - start));
+        MEDIA_INFO_LOG("refresh analysis albums update cost %{public}ld",
+            (long)(MediaFileUtils::UTCTimeMilliSeconds() - start));
     }
 }
 
