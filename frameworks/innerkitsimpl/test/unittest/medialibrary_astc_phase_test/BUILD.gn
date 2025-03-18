@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_astc_phase_test") {
-  module_out_path = "media_library/medialibrary_astc_phase"
+  module_out_path = "media_library/medialibrary-album"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",

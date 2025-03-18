@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_device_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [ "./include" ]
   sources = [ "./src/medialibrary_device_test.cpp" ]
   deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
