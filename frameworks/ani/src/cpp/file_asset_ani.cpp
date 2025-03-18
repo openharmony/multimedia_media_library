@@ -56,10 +56,16 @@
 #include "userfile_manager_types.h"
 #include "medialibrary_ani_log.h"
 
-using namespace OHOS::Media;
 using namespace std;
 using namespace OHOS::DataShare;
 
+namespace OHOS::Media {
+
+struct FileAssetAttributes {
+    std::string uri;
+    MediaType photoType;
+    std::string displayName;
+};
 static const std::string ANALYSIS_NO_RESULTS = "[]";
 static const std::string ANALYSIS_INIT_VALUE = "0";
 static const std::string ANALYSIS_STATUS_ANALYZED = "Analyzed, no results";
@@ -166,6 +172,47 @@ ani_status FileAssetAni::FileAssetAniInit(ani_env *env)
     return ANI_OK;
 }
 
+static ani_status GetFileAssetAttributes(ani_env *env, ani_object object, FileAssetAttributes &attrs)
+{
+    FileAssetAni *fileAssetAni = FileAssetAni::Unwrap(env, object);
+    CHECK_COND_RET(fileAssetAni != nullptr, ANI_ERROR, "FileAssetAni is nullptr");
+    auto fileAsset = fileAssetAni->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, ANI_ERROR, "FileAsset is nullptr");
+
+    attrs.uri = fileAsset->GetUri();
+    attrs.photoType = fileAsset->GetMediaType();
+    attrs.displayName = fileAsset->GetDisplayName();
+    return ANI_OK;
+}
+
+static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object object)
+{
+    FileAssetAttributes attrs;
+    CHECK_STATUS_RET(GetFileAssetAttributes(env, object, attrs), "GetFileAssetAttributes fail");
+
+    ani_method photoTypeSetter {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>photoType", nullptr, &photoTypeSetter), "No <set>photoType");
+    ani_int photoType = 0;
+    CHECK_COND_RET(MediaLibraryEnumAni::EnumGetIndex(attrs.photoType, photoType), ANI_ERROR,
+        "Get photoType index fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, photoTypeSetter, photoType), "<set>photoType fail");
+
+    ani_method uriSetter {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>uri", nullptr, &uriSetter), "No <set>uri");
+    ani_string uri {};
+    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.uri, uri), "ToAniString uri fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, uriSetter, uri), "<set>uri fail");
+
+    ani_method displayNameSetter {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>displayName", nullptr, &displayNameSetter),
+        "No <set>displayName");
+    ani_string displayName {};
+    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.displayName, displayName),
+        "ToAniString displayName fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, displayNameSetter, displayName), "<set>displayName fail");
+    return ANI_OK;
+}
+
 ani_object FileAssetAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz)
 {
     std::shared_ptr<FileAsset> fileAssetPtr = std::make_shared<FileAsset>();
@@ -191,6 +238,8 @@ ani_object FileAssetAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_unus
         reinterpret_cast<ani_long>(nativeFileAssetAni.release()))) {
         ANI_ERR_LOG("New FileAsset Fail");
     }
+    CHECK_COND_RET(BindAniAttributes(env, cls, fileAsset_object) == ANI_OK, nullptr,
+        "fileAsset BindAniAttributes Fail");
     return fileAsset_object;
 }
 
@@ -243,6 +292,8 @@ ani_object FileAssetAni::Wrap(ani_env *env, FileAssetAni* fileAssetAni)
     if (ANI_OK != env->Object_New(cls, ctor, &fileAsset_object, reinterpret_cast<ani_long>(fileAssetAni))) {
         ANI_ERR_LOG("New FileAsset Fail");
     }
+    CHECK_COND_RET(BindAniAttributes(env, cls, fileAsset_object) == ANI_OK, nullptr,
+        "fileAsset BindAniAttributes Fail");
     return fileAsset_object;
 }
 
@@ -922,3 +973,4 @@ void FileAssetAni::SetFavorite([[maybe_unused]] ani_env *env, ani_object object,
         context->changedRows = changedRows;
     }
 }
+} // namespace OHOS::Media
