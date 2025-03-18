@@ -116,7 +116,7 @@
         if (!(cond)) {                                 \
             continue;                                  \
         }                                              \
-    } esle void (0)
+    } else void (0)
 
 #define CHECK_AND_CONTINUE_ERR_LOG(cond, fmt, ...)     \
     if (1) {                                           \
