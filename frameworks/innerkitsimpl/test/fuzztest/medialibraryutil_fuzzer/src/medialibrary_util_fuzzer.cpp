@@ -39,7 +39,6 @@
 #include "media_analysis_helper.h"
 #include "background_cloud_file_processor.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_album_refresh.h"
 #include "scanner_utils.h"
 
 #define private public

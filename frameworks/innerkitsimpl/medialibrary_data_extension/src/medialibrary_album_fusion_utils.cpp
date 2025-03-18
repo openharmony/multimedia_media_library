@@ -30,7 +30,6 @@
 #include "metadata.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
-#include "medialibrary_album_refresh.h"
 #include "parameters.h"
 #include "photo_file_operation.h"
 #include "photo_asset_copy_operation.h"
