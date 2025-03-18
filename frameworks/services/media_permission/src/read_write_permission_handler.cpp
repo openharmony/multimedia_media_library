@@ -31,6 +31,9 @@
 #include "sec_comp_kit.h"
 #endif
 #include "userfilemgr_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
+#include "mediatool_uri.h"
 
 using namespace std;
 

@@ -81,6 +81,7 @@
 #include "vision_total_column.h"
 #include "vision_video_label_column.h"
 #include "vision_multi_crop_column.h"
+#include "album_operation_uri.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;

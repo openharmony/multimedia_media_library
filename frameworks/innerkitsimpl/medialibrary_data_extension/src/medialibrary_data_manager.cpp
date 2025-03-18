@@ -130,6 +130,8 @@
 #include "zip_util.h"
 #include "photo_custom_restore_operation.h"
 #include "vision_db_sqls.h"
+#include "cloud_media_asset_uri.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -171,6 +173,24 @@ static const std::string MODULE_NAME = "com.ohos.medialibrary.medialibrarydata";
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
 #endif
+
+const std::vector<std::string> PRESET_ROOT_DIRS = {
+    CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
+    PHOTO_BUCKET + "/", AUDIO_BUCKET + "/", BACKUP_DATA_DIR_VALUE, EDIT_DATA_DIR_VALUE + "/",
+    BACKUP_SINGLE_DATA_DIR_VALUE, CACHE_DIR_VALUE, CUSTOM_RESTORE_VALUES
+};
+
+const std::vector<std::string> E_POLICY_DIRS = {
+    ROOT_MEDIA_DIR + CAMERA_DIR_VALUES,
+    ROOT_MEDIA_DIR + VIDEO_DIR_VALUES,
+    ROOT_MEDIA_DIR + PIC_DIR_VALUES,
+    ROOT_MEDIA_DIR + PHOTO_BUCKET,
+    ROOT_MEDIA_DIR + BACKUP_SINGLE_DATA_DIR_VALUE,
+    ROOT_MEDIA_DIR + THUMB_DIR_VALUE,
+    ROOT_MEDIA_DIR + CACHE_DIR_VALUE,
+    ROOT_MEDIA_DIR + EDIT_DATA_DIR_VALUE,
+};
+
 MediaLibraryDataManager::MediaLibraryDataManager(void)
 {
 }

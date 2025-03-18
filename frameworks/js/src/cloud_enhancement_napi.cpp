@@ -37,6 +37,7 @@
 #include "media_enhance_client_c_api.h"
 #include "media_enhance_bundle_c_api.h"
 #endif
+#include "cloud_enhancement_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;

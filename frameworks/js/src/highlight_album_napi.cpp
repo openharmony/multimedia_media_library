@@ -36,6 +36,8 @@
 #include "story_play_info_column.h"
 #include "user_photography_info_column.h"
 #include "vision_photo_map_column.h"
+#include "highlight_column.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 

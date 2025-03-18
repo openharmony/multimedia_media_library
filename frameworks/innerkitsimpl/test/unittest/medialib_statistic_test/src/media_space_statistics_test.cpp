@@ -29,6 +29,8 @@
 #include "scanner_utils.h"
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
+#include "media_file_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS;
