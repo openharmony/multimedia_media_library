@@ -84,6 +84,7 @@
 #include "userfilemgr_uri.h"
 #include "medialibrary_album_fusion_utils.h"
 #include "unique_fd.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

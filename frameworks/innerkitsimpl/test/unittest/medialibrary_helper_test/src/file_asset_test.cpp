@@ -24,6 +24,7 @@
 #include "scanner_utils.h"
 #include "userfile_manager_types.h"
 #include "userfilemgr_uri.h"
+#include "media_file_uri.h"
 
 using namespace std;
 using namespace testing::ext;

@@ -61,6 +61,8 @@ static const unordered_map<string, string> CLOUD_ENHANCEMENT_MIME_TYPE_MAP = {
 };
 static const int32_t GROUP_QUERY_SIZE = 1000;
 mutex EnhancementManager::mutex_;
+const std::string PHOTO_OPTION_WLAN_ONLY = "WLAN only";
+const std::string PHOTO_OPTION_WLAN_AND_NETWORK = "WLAN and networks";
 
 EnhancementManager::EnhancementManager()
 {
