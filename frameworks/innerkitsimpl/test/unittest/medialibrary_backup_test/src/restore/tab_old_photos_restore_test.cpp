@@ -67,6 +67,7 @@ void TabOldPhotosRestoreTest::SetUpTestCase()
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
+    TabOldPhotosRestoreTestUtils::ClearData();
     MEDIA_INFO_LOG("Start InsertPhoto");
     TabOldPhotosRestoreTestUtils::InsertPhoto();
 }
