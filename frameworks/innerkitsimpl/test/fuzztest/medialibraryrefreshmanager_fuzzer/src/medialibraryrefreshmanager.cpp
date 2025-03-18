@@ -136,6 +136,7 @@ static void RefreshNotifyInfoTest(const uint8_t* data, size_t size)
     RefreshPhotoAlbums(fuzzinfo);
     AddAlbumRefreshTask(fuzzinfo);
     NotifyPhotoAlbums(fuzzinfo);
+    HasRefreshingSystemAlbums();
 }
 
 } // namespace OHOS
