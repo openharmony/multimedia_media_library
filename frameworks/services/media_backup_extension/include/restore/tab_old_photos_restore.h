@@ -25,7 +25,7 @@
 namespace OHOS::Media {
 class TabOldPhotosRestore {
 public:
-    int32_t Restore(std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const std::vector<FileInfo> &fileInfos);
+    int32_t Restore(std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr, const std::vector<FileInfo> &fileInfos);
 
 private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);

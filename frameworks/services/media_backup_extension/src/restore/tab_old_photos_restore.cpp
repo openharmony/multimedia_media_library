@@ -15,7 +15,6 @@
 
 #include "tab_old_photos_restore.h"
 
-#include <algorithm>
 #include <numeric>
 
 #include "backup_database_utils.h"
@@ -23,7 +22,7 @@
 
 namespace OHOS::Media {
 int32_t TabOldPhotosRestore::Restore(
-    std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr, const std::vector<FileInfo> &fileInfos)
+    std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr, const std::vector<FileInfo> &fileInfos)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStorePtr != nullptr, NativeRdb::E_DB_NOT_EXIST,
         "rdbStorePtr is nullptr, Maybe init failed");
@@ -39,7 +38,7 @@ int32_t TabOldPhotosRestore::Restore(
         MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, "
                       "executeSql=%{public}s, bindArgs: %{public}s",
             ret,
-            executeSql.c_str(),
+            insertSql.c_str(),
             this->ToString(bindArgs).c_str());
         return ret;
     }
