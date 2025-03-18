@@ -30,6 +30,7 @@
 #include "result_set_utils.h"
 #include "cloud_media_asset_types.h"
 #include "cloud_media_asset_status_napi.h"
+#include "cloud_media_asset_uri.h"
 
 using namespace std;
 namespace OHOS::Media {

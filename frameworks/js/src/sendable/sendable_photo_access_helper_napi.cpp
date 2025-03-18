@@ -59,6 +59,7 @@
 #include "string_wrapper.h"
 #include "userfile_client.h"
 #include "form_map.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

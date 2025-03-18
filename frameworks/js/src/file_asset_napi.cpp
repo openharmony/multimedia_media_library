@@ -81,6 +81,7 @@
 #include "vision_total_column.h"
 #include "vision_video_label_column.h"
 #include "vision_multi_crop_column.h"
+#include "album_operation_uri.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -2857,7 +2858,6 @@ shared_ptr<FileAsset> FileAssetNapi::GetFileAssetInstance() const
 static int32_t CheckSystemApiKeys(napi_env env, const string &key)
 {
     static const set<string> SYSTEM_API_KEYS = {
-        PhotoColumn::PHOTO_POSITION,
         MediaColumn::MEDIA_DATE_TRASHED,
         MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::PHOTO_USER_COMMENT,

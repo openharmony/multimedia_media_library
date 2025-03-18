@@ -20,6 +20,7 @@
 #include "medialibrary_errno.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;

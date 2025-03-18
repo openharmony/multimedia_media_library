@@ -26,6 +26,7 @@
 #include "datashare_abs_result_set.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 

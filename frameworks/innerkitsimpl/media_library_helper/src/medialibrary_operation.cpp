@@ -37,6 +37,11 @@
 #include "uri.h"
 #include "values_bucket.h"
 #include "vision_column.h"
+#include "cloud_media_asset_uri.h"
+#include "album_operation_uri.h"
+#include "mediatool_uri.h"
+#include "cloud_enhancement_uri.h"
+#include "smart_album_column.h"
 
 namespace OHOS {
 namespace Media {

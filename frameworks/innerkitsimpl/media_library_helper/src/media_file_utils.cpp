@@ -48,6 +48,7 @@
 #include "ptp_medialibrary_manager_uri.h"
 #include "string_ex.h"
 #include "userfilemgr_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 
@@ -87,6 +88,7 @@ const int64_t THRESHOLD = 512;
 const std::string DATA_PATH = "/data/storage/el2/base";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
+const std::string MEDIA_DATA_DEVICE_PATH = "local";
 
 static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIME_TYPE_MAP = {
     { "application/epub+zip", { "epub" } },
