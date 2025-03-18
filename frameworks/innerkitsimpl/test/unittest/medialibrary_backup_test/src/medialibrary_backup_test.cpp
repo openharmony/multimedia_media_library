@@ -2145,5 +2145,20 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, Tes
     EXPECT_EQ(result, "/test/Documents/cameradata/GYH.camera");
     MEDIA_INFO_LOG("medialib_backup_test_ConvertLowQualityPath end");
 }
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_from_cloud_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_restore_from_cloud_test start");
+    int32_t countBefore = restoreService -> totalNumber_;
+    restoreService -> RestoreCloudFromGallery();
+    EXPECT_EQ((restoreService -> totalNumber_ - countBefore), 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_cloud_infos_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_query_cloud_infos_test start");
+    auto result = restoreService -> QueryCloudFileInfos(0);
+    EXPECT_EQ(result.empty(), true);
+}
 } // namespace Media
 } // namespace OHOS
