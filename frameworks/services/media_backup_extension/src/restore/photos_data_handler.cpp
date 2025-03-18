@@ -103,8 +103,8 @@ int32_t PhotosDataHandler::CleanDirtyFiles(const std::vector<PhotosDao::PhotosRo
         bool deleteThumbsRet = MediaFileUtils::DeleteFileOrFolder(thumbsFolder, false);
         if (!deleteFileRet || !deleteThumbsRet) {
             std::lock_guard<mutex> lock(cleanFailedFilesMutex_);
-            MEDIA_ERR_LOG("Clean file failed, path: %{public}s, ret: %{public}d, errno: %{public}d",
-                BackupFileUtils::GarbleFilePath(dirtyFile.data, sceneCode_).c_str(),
+            MEDIA_ERR_LOG("Clean file failed, path: %{public}s, deleteFileRet: %{public}d, deleteThumbsRet: %{public}d,"
+                " errno: %{public}d", BackupFileUtils::GarbleFilePath(dirtyFile.data, sceneCode_).c_str(),
                 static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);
             cleanFailedFiles_.push_back(to_string(dirtyFile.fileId));
             failedDirtyFileCleanNumber_++;
