@@ -20,8 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_app_uri_permission_operations_test") {
-  module_out_path =
-      "media_library/medialibrary_app_uri_permission_operations_test"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",

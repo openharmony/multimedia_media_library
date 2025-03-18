@@ -23,7 +23,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_cloud_enhancement_test") {
-  module_out_path = "media_library/medialibrary_cloud_enhancement_test"
+  module_out_path = "media_library/medialibrary-data"
 
   include_scanner = [
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",

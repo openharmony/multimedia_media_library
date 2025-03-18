@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_smartalbum_operations_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/medialibrary-album"
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",
