@@ -73,6 +73,11 @@
 #include "mtp_manager.h"
 #endif
 #include "media_fuse_manager.h"
+#include "highlight_column.h"
+#include "mediatool_uri.h"
+#include "cloud_enhancement_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

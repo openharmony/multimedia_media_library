@@ -21,6 +21,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_tracer.h"
+#include "data_secondary_directory_uri.h"
 
 namespace OHOS {
 namespace Media {

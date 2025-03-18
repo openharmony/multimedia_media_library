@@ -51,6 +51,8 @@
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
 #include "userfilemgr_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;

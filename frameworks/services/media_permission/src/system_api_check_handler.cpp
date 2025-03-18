@@ -21,6 +21,8 @@
 #include "medialibrary_operation.h"
 #include "permission_utils.h"
 #include "userfilemgr_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 namespace OHOS::Media {
 

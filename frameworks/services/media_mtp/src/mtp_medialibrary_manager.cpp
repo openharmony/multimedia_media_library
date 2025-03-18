@@ -43,6 +43,8 @@
 #include "ptp_medialibrary_manager_uri.h"
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
+#include "mediatool_uri.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 

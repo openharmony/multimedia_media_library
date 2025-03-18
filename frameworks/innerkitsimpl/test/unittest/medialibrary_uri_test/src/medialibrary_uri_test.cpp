@@ -22,6 +22,7 @@
 #define private public
 #include "thumbnail_uri_utils.h"
 #undef private
+#include "media_file_uri.h"
 
 using namespace std;
 using namespace OHOS;

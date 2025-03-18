@@ -139,6 +139,11 @@ mutex PhotoEditingRecord::mutex_;
 std::mutex MediaLibraryPhotoOperations::saveCameraPhotoMutex_;
 std::condition_variable MediaLibraryPhotoOperations::condition_;
 std::string MediaLibraryPhotoOperations::lastPhotoId_ = "default";
+
+const std::vector<std::string> CAMERA_BUNDLE_NAMES = {
+    "com.huawei.hmos.camera"
+};
+
 int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetApi()) {
