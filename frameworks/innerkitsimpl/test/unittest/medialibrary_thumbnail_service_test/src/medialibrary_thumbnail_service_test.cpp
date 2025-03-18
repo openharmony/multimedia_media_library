@@ -1376,7 +1376,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_016, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_017, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    vector<ThumbnaiData> infos;
+    vector<ThumbnailData> infos;
     auto res = ThumbnailGenerateHelper::GetLocalNoLcdData(opts, infos);
     EXPECT_NE(res, E_OK);
 }
@@ -1384,8 +1384,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_017, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_018, TestSize.Level0)
 {
     ThumbRdbOpt opts;
-    const int64 time = 0;
-    int count;
+    const int64_t time = 0;
+    int count = 0;
     auto res = ThumbnailGenerateHelper::GetNewThumbnailCount(opts, time, count);
     EXPECT_NE(res, E_OK);
 }
