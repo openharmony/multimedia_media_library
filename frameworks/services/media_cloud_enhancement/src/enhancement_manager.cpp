@@ -334,7 +334,7 @@ void EnhancementManager::CancelTasksInternal(const vector<string> &fileIds, vect
 void EnhancementManager::RemoveTasksInternal(const vector<string> &fileIds, vector<string> &photoIds)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
-    int32_t totalFiles = fileIds.size();
+    int32_t totalFiles = static_cast<int32_t>(fileIds.size());
     int32_t groupNum = (totalFiles + GROUP_QUERY_SIZE - 1) / GROUP_QUERY_SIZE;
     for (int32_t i = 0; i < groupNum; i++) {
         int32_t startIndex = i * GROUP_QUERY_SIZE;
