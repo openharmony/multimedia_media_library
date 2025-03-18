@@ -62,9 +62,7 @@ CallbackResultData UpgradeRestoreGalleryMediaTask::ParseFromJsonStr(const std::s
         }
         // Parse the backupInfo
         bool isBackupInfo = jsonUtils.IsExists(info, "infos");
-        if (!isBackupInfo) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(isBackupInfo);
         for (const auto &backup : jsonUtils.GetArray(info, "infos")) {
             CallbackBackupInfo backupInfo;
             backupInfo.backupInfo = jsonUtils.GetString(backup, "backupInfo");
