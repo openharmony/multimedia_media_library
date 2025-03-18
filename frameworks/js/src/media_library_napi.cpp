@@ -7135,6 +7135,9 @@ static napi_value ParseArgsStartAssetAnalysis(napi_env env, napi_callback_info i
         context->analysisType) == napi_ok, "analysisType invalid");
     CHECK_COND_WITH_MESSAGE(env, context->analysisType > AnalysisType::ANALYSIS_INVALID,
         "analysisType invalid:" + std::to_string(context->analysisType));
+    CHECK_COND_WITH_MESSAGE(env,
+        FOREGROUND_ANALYSIS_ASSETS_MAP.find(context->analysisType) != FOREGROUND_ANALYSIS_ASSETS_MAP.end(),
+        "analysisType is not supported:" + std::to_string(context->analysisType));
 
     // Parse asset uris
     if (context->argc == ARGS_TWO) {
@@ -7150,6 +7153,8 @@ static napi_value ParseArgsStartAssetAnalysis(napi_env env, napi_callback_info i
         if (!uris.empty()) {
             context->uris = uris;
         }
+    } else if (context->argc == ARGS_ONE) {
+        context->isFullAnalysis = true;
     }
 
     napi_value result = nullptr;
@@ -8897,8 +8902,9 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    if (FOREGROUND_ANALYSIS_ASSETS_MAP.find(context->analysisType) == FOREGROUND_ANALYSIS_ASSETS_MAP.end()) {
-        NAPI_ERR_LOG("analysisType is not supported");
+    // 1. Start full analysis if need. 2. If uris are non-empty, start analysis for corresponding uris.
+    if (!context->isFullAnalysis && context->uris.empty()) {
+        NAPI_INFO_LOG("asset uris are empty");
         return;
     }
 
