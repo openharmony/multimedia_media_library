@@ -29,6 +29,7 @@
 #include "result_set_utils.h"
 #include "uri.h"
 #include "vision_db_sqls_more.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace testing::ext;

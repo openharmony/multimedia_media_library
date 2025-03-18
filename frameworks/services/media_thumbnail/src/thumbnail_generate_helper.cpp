@@ -38,6 +38,7 @@
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_source_loading.h"
 #include "thumbnail_utils.h"
+#include "highlight_column.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;

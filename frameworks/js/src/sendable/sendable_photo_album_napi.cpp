@@ -32,6 +32,7 @@
 #include "sendable_fetch_file_result_napi.h"
 #include "sendable_file_asset_napi.h"
 #include "userfile_client.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
