@@ -20,16 +20,13 @@
 #include <queue>
 #include <functional>
 #include "base_handler.h"
-#include "medialibrary_album_refresh.h"
 #include "medialibrary_period_worker.h"
 
 namespace OHOS {
 namespace Media {
 class AnalysisHandler : public BaseHandler {
 public:
-    AnalysisHandler(std::function<void(bool)> refreshAlbums = nullptr)
-        : refreshAlbumsFunc_(refreshAlbums ? refreshAlbums : [](bool) { RefreshAlbums(true); })
-    {}
+    AnalysisHandler(std::function<void(bool)> refreshAlbums = nullptr){}
     virtual ~AnalysisHandler();
     void Handle(const CloudSyncHandleData &handleData) override;
     void init() override;
@@ -40,8 +37,6 @@ public:
     static void ProcessHandleData(PeriodTaskData *data);
 private:
     void MergeTask(const CloudSyncHandleData &handleData);
-
-    std::function<void(bool)> refreshAlbumsFunc_;
 };
 } //namespace Media
 } //namespace OHOS

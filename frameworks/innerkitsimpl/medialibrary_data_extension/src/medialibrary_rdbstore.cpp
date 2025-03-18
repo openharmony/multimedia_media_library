@@ -39,7 +39,6 @@
 #endif
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
-#include "medialibrary_album_refresh.h"
 #include "medialibrary_business_record_column.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
