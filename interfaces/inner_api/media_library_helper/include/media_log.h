@@ -105,50 +105,50 @@
     } while (0)
 
 #define CHECK_AND_BREAK(cond)                          \
-    do {                                               \
+    if (1) {                                           \
         if (!(cond)) {                                 \
             break;                                     \
         }                                              \
-    } while (0)
+    } else void (0)
 
 #define CHECK_AND_CONTINUE(cond)                       \
-    do {                                               \
+    if (1) {                                           \
         if (!(cond)) {                                 \
             continue;                                  \
         }                                              \
-    } while (0)
+    } esle void (0)
 
 #define CHECK_AND_CONTINUE_ERR_LOG(cond, fmt, ...)     \
-    do {                                               \
+    if (1) {                                           \
         if (!(cond)) {                                 \
             MEDIA_ERR_LOG(fmt, ##__VA_ARGS__);         \
             continue;                                  \
         }                                              \
-    } while (0)
+    } else void 0
 
 #define CHECK_AND_BREAK_ERR_LOG(cond, fmt, ...)        \
-    do {                                               \
+    if (1) {                                           \
         if (!(cond)) {                                 \
             MEDIA_ERR_LOG(fmt, ##__VA_ARGS__);         \
             break;                                     \
         }                                              \
-    } while (0)
+    } else void (0)
 
 #define CHECK_AND_CONTINUE_INFO_LOG(cond, fmt, ...)    \
-    do {                                               \
+    if (1) {                                           \
         if (!(cond)) {                                 \
             MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);        \
             continue;                                  \
         }                                              \
-    } while (0)
+    } else void (0)
 
 #define CHECK_AND_BREAK_INFO_LOG(cond, fmt, ...)       \
-    do {                                               \
+    if (1) {                                           \
         if (!(cond)) {                                 \
             MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);        \
             break;                                     \
         }                                              \
-    } while (0)
+    } else void (0)
 
 #define CHECK_AND_EXECUTE(cond, cmd)                   \
     do {                                               \
