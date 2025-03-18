@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 
-#include "rdb_store.h"
 #include "backup_const.h"
+#include "rdb_store.h"
 
 namespace OHOS::Media {
 class TabOldPhotosRestore {
@@ -29,7 +29,6 @@ public:
 
 private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &values);
-    std::string ToString(const FileInfo &fileInfo);
 };
 
 class TabOldPhotosRestoreHelper {
@@ -42,10 +41,9 @@ public:
 private:
     void AddPlaceHolders();
     void AddBindArgs(const FileInfo &fileInfo);
-    void Join(const std::vector<std::string> &values, const std::string &delimiter);
     std::string GetInputTableClause();
 
-    std::vector<string> placeHolders_;
+    std::vector<std::string> placeHolders_;
     std::vector<NativeRdb::ValueObject> bindArgs_;
 
     const std::string SQL_PLACEHOLDERS = "(?, ?, ?)";

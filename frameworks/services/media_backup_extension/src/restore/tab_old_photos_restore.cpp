@@ -15,11 +15,10 @@
 
 #include "tab_old_photos_restore.h"
 
-#include <string>
-#include <vector>
-#include <numeric>
 #include <algorithm>
+#include <numeric>
 
+#include "backup_database_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
@@ -31,14 +30,17 @@ int32_t TabOldPhotosRestore::Restore(
 
     TabOldPhotosRestoreHelper restoreHelper;
     restoreHelper.SetPlaceHoldersAndBindArgs(fileInfos);
-    CHECK_AND_RETURN_RET_LOG(!restoreHelper.IsEmpty(), E_FAIL, "restoreHelper is empty");
+    CHECK_AND_RETURN_RET_LOG(!restoreHelper.IsEmpty(), NativeRdb::E_ERROR, "restoreHelper is empty");
 
     std::string insertSql = restoreHelper.GetInsertSql();
     std::vector<NativeRdb::ValueObject> bindArgs = restoreHelper.GetBindArgs();
     int32_t ret = rdbStorePtr->ExecuteSql(insertSql, bindArgs);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, "
-            "executeSql=%{public}s, bindArgs: %{public}s,", ret, insertSql.c_str(), ToString(bindArgs).c_str());
+                      "executeSql=%{public}s, bindArgs: %{public}s",
+            ret,
+            executeSql.c_str(),
+            this->ToString(bindArgs).c_str());
         return ret;
     }
     return NativeRdb::E_OK;
@@ -55,18 +57,11 @@ std::string TabOldPhotosRestore::ToString(const std::vector<NativeRdb::ValueObje
     return std::accumulate(result.begin(), result.end(), std::string());
 }
 
-std::string TabOldPhotosRestore::ToString(const FileInfo &fileInfo)
-{
-    return "FileInfo[ fileId: " + std::to_string(fileInfo.localMediaId) + ", displayName: " + fileInfo.displayName +
-        ", bundleName: " + std::to_string(fileInfo.fileSize) + ", fileType: " +
-        std::to_string(fileInfo.fileType) + " ]";
-}
-
 void TabOldPhotosRestoreHelper::SetPlaceHoldersAndBindArgs(const std::vector<FileInfo> &fileInfos)
 {
     for (const auto &fileInfo : fileInfos) {
-        AddPlaceHolder();
-        AddBindArg(fileInfo);
+        AddPlaceHolders();
+        AddBindArgs(fileInfo);
     }
 }
 
@@ -97,13 +92,9 @@ void TabOldPhotosRestoreHelper::AddBindArgs(const FileInfo &fileInfo)
     bindArgs_.emplace_back(fileInfo.cloudPath);
 }
 
-std::string TabOldPhotosRestoreHelper::Join(const std::vector<std::string> &values, const std::string &delimiter)
-{
-    return std::accumulate(values.begin(), values.end(), delimiter);
-}
-
 std::string TabOldPhotosRestoreHelper::GetInputTableClause()
 {
-    return "WITH INPUT (old_file_id, old_data, data) AS (VALUES " + Join(placeHolders_, ",") + " ) ";
+    return "WITH INPUT (old_file_id, old_data, data) AS (VALUES " +
+        BackupDatabaseUtils::JoinValues(placeHolders_, ",") + " ) ";
 }
 } // namespace OHOS::Media
