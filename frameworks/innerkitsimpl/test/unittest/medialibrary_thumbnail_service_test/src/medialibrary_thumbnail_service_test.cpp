@@ -1339,5 +1339,231 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAs
     EXPECT_NE(ret, E_OK);
     serverTest.ReleaseService();
 }
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_014, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    auto res = ThumbnailGenerateHelper::CreateAstcMthAndYear(opts, thumbType);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcMthAndYear_Test_001, TestSize.Level0)
+{
+    ThumbnailService serverTest;
+    string id = "invalid";
+    auto res = serverTest.CreateAstcMthAndYear(id);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_015, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    auto res = ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(opts);
+    EXPECT_NE(res, E_OK);
+    opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
+    res = ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(opts);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_016, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    int outLcdCount;
+    auto res = ThumbnailGenerateHelper::GetLcdCount(opts, outLcdCount);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_017, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    vector<ThumbnaiData> infos;
+    auto res = ThumbnailGenerateHelper::GetLocalNoLcdData(opts, infos);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_018, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    const int64 time = 0;
+    int count;
+    auto res = ThumbnailGenerateHelper::GetNewThumbnailCount(opts, time, count);
+    EXPECT_NE(res, E_OK);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_031, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    int32_t err = E_ERR;
+    auto res = ThumbnailUtils::UpdateLcdReadyStatus(opts, data, err, LcdReady::GENERATE_LCD_COMPLETED);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_036, TestSize.Level0)
+{
+    int64_t time = 0;
+    bool before = false;
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    int outLcdCount = 0;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::QueryLcdCountByTime(time, before, opts, outLcdCount, err);
+    EXPECT_EQ(res, false);
+
+    opts.store = nullptr;
+    res = ThumbnailUtils::QueryLcdCountByTime(time, before, opts, outLcdCount, err);
+    EXPECT_EQ(res, false);
+
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    res = ThumbnailUtils::QueryLcdCountByTime(time, before, opts, outLcdCount, err);
+    EXPECT_EQ(res, false);
+
+    before = true;
+    res = ThumbnailUtils::QueryLcdCountByTime(time, before, opts, outLcdCount, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_037, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    int outLcdCount = 0;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::QueryDistributeLcdCount(opts, outLcdCount, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_038, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    int outLcdCount = 0;
+    int LcdLimit = 0;
+    vector<ThumbnailData> infos;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::QueryAgingLcdInfos(opts, LcdLimit, infos, err);
+    EXPECT_EQ(res, false);
+
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    res = ThumbnailUtils::QueryAgingLcdInfos(opts, LcdLimit, infos, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_039, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    vector<ThumbnailData> infos;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::QueryNoLcdInfos(opts, infos, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_040, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    vector<ThumbnailData> infos;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::QueryNoThumbnailInfos(opts, infos, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_041, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    vector<ThumbnailData> infos;
+    bool isWifiConnected = false;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::QueryUpgradeThumbnailInfos(opts, infos, isWifiConnected, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_042, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    vector<ThumbnailData> infos;
+    int err = E_ERR;
+    const int32_t restoreAstcCount = 0;
+    auto res = ThumbnailUtils::QueryNoAstcInfosRestored(opts, infos, err, restoreAstcCount);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_043, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    vector<ThumbnailData> infos;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::QueryNoAstcInfos(opts, infos, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_044, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    int64_t time = 0;
+    int count = 0;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::QueryNewThumbnailCount(opts, time, count, err);
+    EXPECT_EQ(res, false);
+
+    opts.store = nullptr;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    res = ThumbnailUtils::QueryNewThumbnailCount(opts, time, count, err);
+    EXPECT_EQ(res, false);
+
+    opts.table = MEDIALIBRARY_TABLE;
+    res = ThumbnailUtils::QueryNewThumbnailCount(opts, time, count, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_046, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    ThumbnailData data;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::UpdateVisitTime(opts, data, err);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_047, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    bool withThumb = false;
+    bool withLcd = false;
+    opts.table = MEDIALIBRARY_TABLE;
+    auto res = ThumbnailUtils::CleanThumbnailInfo(opts, withThumb, withLcd);
+    EXPECT_EQ(res, false);
+
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    res = ThumbnailUtils::CleanThumbnailInfo(opts, withThumb, withLcd);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_048, TestSize.Level0)
+{
+    string path = "";
+    auto res = ThumbnailUtils::SetSource(nullptr, path);
+    EXPECT_EQ(res, E_ERR);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_049, TestSize.Level0)
+{
+    uint8_t Value = 1;
+    vector<uint8_t> data;
+    data.push_back(Value);
+    Size size;
+    unique_ptr<PixelMap> pixelMap;
+    auto res = ThumbnailUtils::ResizeImage(data, size, pixelMap);
+    EXPECT_EQ(res, false);
+}
 } // namespace Media
 } // namespace OHOS

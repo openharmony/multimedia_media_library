@@ -215,9 +215,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
         int changedRows;
         int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("RdbStore lcd size failed! %{public}d", err);
-        }
+        CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "RdbStore lcd size failed! %{public}d", err);
     }
 
     data.loaderOpts.loadingStates = data.orientation != 0 ?
@@ -407,10 +405,7 @@ int32_t ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(ThumbRdbOpt &opts)
 
     vector<ThumbnailData> infos;
     int32_t err = GetLocalNoLcdData(opts, infos);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to CheckLcdSizeAndUpdateStatus %{public}d", err);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to CheckLcdSizeAndUpdateStatus %{public}d", err);
     if (infos.empty()) {
         MEDIA_INFO_LOG("No need CheckLcdSizeAndUpdateStatus.");
         return E_THUMBNAIL_LCD_ALL_EXIST;
@@ -664,9 +659,7 @@ void UpdateStreamReadThumbDbStatus(ThumbRdbOpt& opts, ThumbnailData& data, Thumb
     int changedRows = 0;
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("UpdateStreamReadThumbDbStatus failed! %{public}d", err);
-    }
+    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "UpdateStreamReadThumbDbStatus failed! %{public}d", err);
 }
 
 void UpdateThumbStatus(ThumbRdbOpt &opts, ThumbnailType thumbType, ThumbnailData& thumbnailData, int& err,
@@ -916,11 +909,7 @@ void ThumbnailGenerateHelper::CheckMonthAndYearKvStoreValid(ThumbRdbOpt &opts)
     if (isMonthKvStoreValid && isYearKvStoreValid) {
         return;
     }
-
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is not init");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(opts.store != nullptr, "rdbStore is not init");
 
     MEDIA_INFO_LOG("KvStore is invalid, start update rdb");
     if (opts.store->ExecuteSql(SQL_REFRESH_THUMBNAIL_READY) != NativeRdb::E_OK) {
