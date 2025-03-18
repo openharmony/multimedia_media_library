@@ -36,6 +36,7 @@
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_image_framework_utils.h"
 #include "thumbnail_service.h"
 #include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
@@ -55,6 +56,11 @@ const int32_t THUMBNAIL_TASK_TYPE_DEFAULT = -1;
 const string PHOTOS_TABLE = "Photos";
 const int32_t EVEN = 2;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
+const int32_t PIXELMAP_WIDTH_AND_HEIGHT = 1000;
+const int32_t REMAINDER_1 = 1;
+const int32_t REMAINDER_2 = 2;
+const int32_t REMAINDER_3 = 3;
+const int32_t REMAINDER_4 = 4;
 
 static inline string FuzzString(const uint8_t *data, size_t size)
 {
@@ -213,6 +219,97 @@ static string FuzzThumbnailUri(const uint8_t* data, size_t size, bool isNeedPath
     return thumUri;
 }
 
+static std::shared_ptr<Media::PixelMap> CreateTestPixelMap(Media::PixelFormat format, bool useDMA)
+{
+    Media::InitializationOptions opts;
+    opts.size.width = PIXELMAP_WIDTH_AND_HEIGHT;
+    opts.size.height = PIXELMAP_WIDTH_AND_HEIGHT;
+    opts.srcPixelFormat = format;
+    opts.pixelFormat = format;
+    opts.useDMA = useDMA;
+    std::shared_ptr<Media::PixelMap> pixelMap = Media::PixelMap::Create(opts);
+    return pixelMap;
+}
+
+static std::shared_ptr<Media::PixelMap> FuzzNormalPixelMap(const uint8_t* data, size_t size, bool isNeedNullptr = false)
+{
+    int32_t value = abs(FuzzInt32(data, size)) % 3;
+    Media::PixelFormat format = Media::PixelFormat::RGBA_8888;
+    bool useDMA = FuzzBool(data, size);
+    if (value == REMAINDER_1) {
+        format = Media::PixelFormat::RGBA_8888;
+    } else if (value == REMAINDER_2) {
+        format = Media::PixelFormat::RGBA_1010102;
+        useDMA = true;
+    } else if (!isNeedNullptr) {
+        format = Media::PixelFormat::RGBA_8888;
+    } else {
+        return nullptr;
+    }
+    return CreateTestPixelMap(format, useDMA);
+}
+
+static std::shared_ptr<Media::PixelMap> FuzzYuvPixelMap(const uint8_t* data, size_t size, bool isNeedNullptr = false)
+{
+    int32_t value = abs(FuzzInt32(data, size)) % 5;
+    Media::PixelFormat format = Media::PixelFormat::NV12;
+    bool useDMA = FuzzBool(data, size);
+    if (value == REMAINDER_1) {
+        format = Media::PixelFormat::NV12;
+    } else if (value == REMAINDER_2) {
+        format = Media::PixelFormat::NV21;
+    } else if (value == REMAINDER_3) {
+        format = Media::PixelFormat::YCBCR_P010;
+        useDMA = true;
+    } else if (value == REMAINDER_4) {
+        format = Media::PixelFormat::YCRCB_P010;
+        useDMA = true;
+    } else if (!isNeedNullptr) {
+        format = Media::PixelFormat::NV12;
+    } else {
+        return nullptr;
+    }
+    return CreateTestPixelMap(format, useDMA);
+}
+
+static std::shared_ptr<Media::Picture> FuzzPicture(const uint8_t* data, size_t size,
+    bool isNeedGainMap, bool isYuv, bool isNeedNullptr = false)
+{
+    std::shared_ptr<Media::PixelMap> pixelMap;
+    if (isYuv) {
+        pixelMap = FuzzYuvPixelMap(data, size, isNeedNullptr);
+    } else {
+        pixelMap = FuzzNormalPixelMap(data, size, isNeedNullptr);
+    }
+    if (pixelMap == nullptr) {
+        return nullptr;
+    }
+
+    auto sourcePtr = Media::Picture::Create(pixelMap);
+    std::shared_ptr<Media::Picture> picture = std::move(sourcePtr);
+    if (!isNeedGainMap) {
+        return picture;
+    }
+
+    std::shared_ptr<Media::PixelMap> gainMap;
+    if (isYuv) {
+        gainMap = FuzzYuvPixelMap(data, size, isNeedNullptr);
+    } else {
+        gainMap = FuzzNormalPixelMap(data, size, isNeedNullptr);
+    }
+    if (gainMap == nullptr) {
+        return nullptr;
+    }
+
+    Media::Size gainMapSize = {gainMap->GetWidth(), gainMap->GetHeight()};
+    auto auxiliaryPicturePtr = Media::AuxiliaryPicture::Create(gainMap,
+        Media::AuxiliaryPictureType::GAINMAP, gainMapSize);
+    std::shared_ptr<Media::AuxiliaryPicture> auxiliaryPicture = std::move(auxiliaryPicturePtr);
+    CHECK_AND_RETURN_RET_LOG(auxiliaryPicture != nullptr, nullptr, "Create auxiliaryPicture failed");
+    picture->SetAuxiliaryPicture(auxiliaryPicture);
+    return picture;
+}
+
 static void ThumbnailAgingHelperTest(const uint8_t* data, size_t size)
 {
     const int64_t int64Count = 2;
@@ -275,13 +372,14 @@ static void ThumbnailGenerateHelperTest(const uint8_t* data, size_t size)
     Media::ThumbnailGenerateHelper::CheckMonthAndYearKvStoreValid(opts);
     Media::ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
     Media::ThumbRdbOpt optsWithRdb = FuzzThumbRdbOpt(data, size, false);
-    if (optsWithRdb.store == nullptr) {
-        return;
+    if (optsWithRdb.store != nullptr) {
+        outDatas.clear();
+        Media::ThumbnailGenerateHelper::GetNoHighlightData(optsWithRdb, outDatas);
+        outDatas.clear();
+        Media::ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(optsWithRdb, timeStamp, thumbType);
+        Media::ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(
+            optsWithRdb, FuzzPicture(data, size, true, true, true), FuzzBool(data, size));
     }
-    outDatas.clear();
-    Media::ThumbnailGenerateHelper::GetNoHighlightData(optsWithRdb, outDatas);
-    outDatas.clear();
-    Media::ThumbnailGenerateHelper::GetKeyFrameThumbnailPixelMap(optsWithRdb, timeStamp, thumbType);
 }
 
 static void ThumbnailGenerateWorkerTest(const uint8_t* data, size_t size)
@@ -405,11 +503,34 @@ static void ThumbnailSourceTest(const uint8_t* data, size_t size)
     Media::ConvertDecodeSize(thumbnailData, sourceSize, desiredSize);
     uint32_t err = 0;
     Media::LoadImageSource(FuzzString(data, size), err);
-    desiredSize = FuzzSize(data, size);
-    thumbnailData = FuzzThumbnailData(data, size);
+}
+
+static void ThumbnailSourceTest2(const uint8_t* data, size_t size)
+{
+    Media::Size desiredSize = FuzzSize(data, size);
+    Media::ThumbnailData thumbnailData = FuzzThumbnailData(data, size);
     Media::SourceLoader sourceLoader(desiredSize, thumbnailData);
     sourceLoader.CreateVideoFramePixelMap();
     sourceLoader.SetCurrentStateFunction();
+
+    thumbnailData = FuzzThumbnailData(data, size);
+    thumbnailData.originalPhotoPicture = FuzzPicture(data, size, true, true, true);
+    Media::SourceLoader sourceLoader2(desiredSize, thumbnailData);
+    sourceLoader2.RunLoading();
+    thumbnailData = FuzzThumbnailData(data, size);
+    thumbnailData.originalPhotoPicture = FuzzPicture(data, size, false, false, true);
+    Media::SourceLoader sourceLoader3(desiredSize, thumbnailData);
+    sourceLoader3.CreateSourceFromOriginalPhotoPicture();
+
+    thumbnailData = FuzzThumbnailData(data, size);
+    thumbnailData.originalPhotoPicture = FuzzPicture(data, size, true, false, true);
+    Media::SourceLoader sourceLoader4(desiredSize, thumbnailData);
+    sourceLoader4.CreateSourceWithWholeOriginalPicture();
+
+    thumbnailData = FuzzThumbnailData(data, size);
+    thumbnailData.originalPhotoPicture = FuzzPicture(data, size, false, false, true);
+    Media::SourceLoader sourceLoader5(desiredSize, thumbnailData);
+    sourceLoader5.CreateSourceWithOriginalPictureMainPixel();
 }
 
 static void ParseFileUriTest(const uint8_t* data, size_t size)
@@ -433,6 +554,26 @@ static void ParseFileUriTest(const uint8_t* data, size_t size)
     Media::ThumbnailUriUtils::CheckSize(checkSize, outPath);
     Media::ThumbnailUriUtils::GetTableFromUri(uri);
 }
+
+static void ThumhnailImageFrameworkUtilsTest(const uint8_t* data, size_t size)
+{
+    int32_t orientation = 0;
+    std::shared_ptr<Media::PixelMap> pixelMap = FuzzNormalPixelMap(data, size, true);
+    std::shared_ptr<Media::Picture> picture = FuzzPicture(data, size, true, false, true);
+    Media::ThumbnailImageFrameWorkUtils::IsYuvPixelMap(pixelMap);
+    Media::ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap);
+    Media::ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
+    Media::ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
+    Media::ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
+
+    pixelMap = FuzzYuvPixelMap(data, size, false);
+    picture = FuzzPicture(data, size, true, true, false);
+    Media::ThumbnailImageFrameWorkUtils::IsYuvPixelMap(pixelMap);
+    Media::ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap);
+    Media::ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
+    Media::ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
+    Media::ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
+}
 } // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
@@ -451,6 +592,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::ThumbnailGenerateWorkerTest(data, size);
     OHOS::ThumbnailGenerateWorkerManagerTest(data, size);
     OHOS::ThumbnailSourceTest(data, size);
+    OHOS::ThumbnailSourceTest2(data, size);
     OHOS::ParseFileUriTest(data, size);
+    OHOS::ThumhnailImageFrameworkUtilsTest(data, size);
     return 0;
 }

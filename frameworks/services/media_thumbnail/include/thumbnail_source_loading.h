@@ -176,7 +176,7 @@ public:
         IsSizeLargeEnough = nullptr;
     };
     ~SourceLoader() = default;
-    bool RunLoading();
+    EXPORT bool RunLoading();
 
 private:
     EXPORT void SetCurrentStateFunction();
