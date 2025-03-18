@@ -26,5 +26,12 @@ public:
     void SetUp();
     void TearDown();
 };
+
+class TabOldPhotosRestoreTestUtils {
+public:
+    static void InsertPhoto();
+    static void ClearData();
+    static int32_t QueryTabOldPhotosCount();
+};
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_TAB_OLD_PHOTOS_RESTORE_TEST_H
