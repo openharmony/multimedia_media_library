@@ -115,12 +115,14 @@ public:
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
     EXPORT void UploadDBFileInner(int64_t totalFileSize);
     EXPORT int32_t UpdateDateTakenWhenZero();
-    EXPORT int32_t UpdateDirtyForCloudClone();
+    EXPORT int32_t UpdateDirtyForCloudClone(int32_t version);
     EXPORT int32_t ClearDirtyHdcData();
 
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();
+    int32_t UpdateDirtyForCloudClone();
+    int32_t UpdateDirtyForCloudCloneV2();
     void InitResourceInfo();
     void DeleteDirtyFileAndDir(const std::vector<std::string>& deleteFilePaths);
     void HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart);
