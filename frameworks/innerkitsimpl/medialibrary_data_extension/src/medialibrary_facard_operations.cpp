@@ -115,7 +115,9 @@ void CardAssetUriObserver::PostAssetChangeTask()
             std::vector<int> assetChangeTypes;
             for (const auto& change : CardAssetUriObserver::assetChanges) {
                 assetChangeUris.push_back(change.assetChangeUri);
+                MEDIA_DEBUG_LOG("change.assetChangeUri = %{public}s", change.assetChangeUri.c_str());
                 assetChangeTypes.push_back(change.assetChangeType);
+                MEDIA_DEBUG_LOG("change.assetChangeType = %{public}d", change.assetChangeType);
             }
             AAFwk::Want want;
             want.SetElementName("com.huawei.hmos.photos", "FACardServiceAbility");
@@ -134,6 +136,8 @@ void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
 {
     if (changeTypeMap.find(changeInfo.changeType_) != changeTypeMap.end()) {
         std::lock_guard<std::mutex> lock(CardAssetUriObserver::mtx);
+        MEDIA_DEBUG_LOG("OnChange assetChangeUri = %{public}s", assetChangeUri.c_str());
+        MEDIA_DEBUG_LOG("OnChange assetChangeType = %{public}d", static_cast<int>(changeInfo.changeType_));
         CardAssetUriObserver::assetChanges.insert(
             AssetChangeInfo(assetChangeUri, static_cast<int>(changeInfo.changeType_)));
 
@@ -154,7 +158,7 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
         formAssetObserversMap[formId].push_back(cardAssetUriObserver);
         observer = std::static_pointer_cast<DataShare::DataShareObserver>(cardAssetUriObserver);
     } else {
-        MEDIA_DEBUG_LOG("registerUri is inValid");
+        MEDIA_ERR_LOG("registerUri is inValid");
         return;
     }
     Uri notifyUri(registerUri);
@@ -163,7 +167,7 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
     DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
     if (dataShareHelper == nullptr) {
-        MEDIA_DEBUG_LOG("dataShareHelper is nullptr");
+        MEDIA_ERR_LOG("dataShareHelper is nullptr");
         return;
     }
     MEDIA_DEBUG_LOG("notifyUri = %{public}s", notifyUri.ToString().c_str());
