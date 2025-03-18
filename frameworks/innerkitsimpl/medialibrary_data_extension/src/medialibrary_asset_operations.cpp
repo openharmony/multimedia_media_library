@@ -2377,7 +2377,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueIds(int32_t type, int32_t 
     }
     int32_t endUniqueNumber = GetInt32Val(UNIQUE_NUMBER, resultSet);
     resultSet->Close();
-    startUniqueNumber = endUniqueNumber - num + 1;
+    startUniqueNumber = endUniqueNumber - num;
     MEDIA_INFO_LOG("CreateAssetUniqueIds type: %{public}d, num: %{public}d, startUniqueNumber: %{public}d",
         type, num, startUniqueNumber);
     return E_OK;
