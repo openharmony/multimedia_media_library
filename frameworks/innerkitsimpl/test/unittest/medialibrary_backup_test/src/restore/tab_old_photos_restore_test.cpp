@@ -41,9 +41,7 @@ static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
 void TabOldPhotosRestoreTestUtils::InsertPhoto()
 {
-    const std::vector<std::string> INSERT_SQL = {
-        "INSERT INTO Photos (file_id, data) VALUES (?, ?)";
-    };
+    const std::string INSERT_SQL = "INSERT INTO Photos (file_id, data) VALUES (?, ?)";
     const std::vector<NativeRdb::ValueObject> BIND_ARGS = { TEST_NEW_FILE_ID, TEST_NEW_DATA };
     DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), INSERT_SQL, BIND_ARGS);
 }

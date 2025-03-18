@@ -954,16 +954,18 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
     int32_t fileMoveCount = 0;
     int32_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    int64_t startRestore = MediaFileUtils::UTCTimeMilliSeconds();
     this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, fileInfos);
     int64_t startUpdate = MediaFileUtils::UTCTimeMilliSeconds();
     UpdatePhotosByFileInfoMap(mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
-        " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld. update cost"
-        " %{public}ld.",
-        (long)(startInsert - startGenerate), (long)rowNum, (long)(startInsertRelated - startInsert),
-        (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
-        (long)videoFileMoveCount, (long)(startUpdate - startMove), long(end - startUpdate));
+    MEDIA_INFO_LOG("generate values cost %{public}" PRId64 ", insert %{public}" PRId64 " assets cost %{public}" PRId64
+        ", insert photo related cost %{public}" PRId64 ", move %{public}" PRId64 " files (%{public}" PRId64
+        " + %{public}" PRId64 ") cost %{public}" PRId64 ", old photos restore cost %{public}" PRId64
+        ", update cost %{public}" PRId64 ".",
+        startInsert - startGenerate, rowNum, startInsertRelated - startInsert,
+        startMove - startInsertRelated, fileMoveCount, fileMoveCount - videoFileMoveCount,
+        videoFileMoveCount, startRestore - startMove, startUpdate - startRestore, end - startUpdate);
     return E_OK;
 }
 

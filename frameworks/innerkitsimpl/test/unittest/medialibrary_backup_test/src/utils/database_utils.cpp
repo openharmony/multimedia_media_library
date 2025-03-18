@@ -17,7 +17,7 @@
 
 #include "backup_database_utils.h"
 #include "media_log.h"
- 
+
 namespace OHOS::Media {
 void DatabaseUtils::ExecuteSql(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
     const std::vector<NativeRdb::ValueObject> &bindArgs)
@@ -33,7 +33,7 @@ void DatabaseUtils::ExecuteSql(std::shared_ptr<NativeRdb::RdbStore> rdbStore, co
     MEDIA_ERR_LOG("Execute %{public}s failed: %{public}d", sql.c_str(), errCode);
 }
 
-void DatabaseUtils::ExecuteSqls(shared_ptr<NativeRdb::RdbStore> rdbStore, const std::vector<std::string> &sqls)
+void DatabaseUtils::ExecuteSqls(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::vector<std::string> &sqls)
 {
     for (const auto &sql : sqls) {
         ExecuteSql(rdbStore, sql);
