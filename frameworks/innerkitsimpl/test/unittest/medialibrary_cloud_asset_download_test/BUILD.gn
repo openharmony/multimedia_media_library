@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_cloud_asset_download_test") {
-  module_out_path = "media_library/medialibrary_cloud_asset_download_test"
+  module_out_path = "media_library/media_library-asset"
 
   include_dirs = [
     "./include",

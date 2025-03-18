@@ -15,7 +15,7 @@ import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 ohos_unittest("PortraitAlbumUpdateTest") {
-  module_out_path = "media_library/portrait_album_update_test"
+  module_out_path = "media_library/medialibrary-album"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",

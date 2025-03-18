@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_backup_clone_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/medialibrary-album"
   include_dirs = [
     "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",

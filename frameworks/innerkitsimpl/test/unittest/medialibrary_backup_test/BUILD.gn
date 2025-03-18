@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_backup_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/medialibrary-album"
   include_dirs = [
     "./include",
     "./include/database",
