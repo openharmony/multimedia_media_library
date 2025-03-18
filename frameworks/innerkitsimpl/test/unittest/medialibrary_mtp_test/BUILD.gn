@@ -50,6 +50,7 @@ if (media_library_feature_mtp) {
       "src/mtp_file_observer_test.cpp",
       "src/mtp_media_library_unit_test.cpp",
       "src/mtp_medialibrary_manager_unit_test.cpp",
+      "src/mtp_monitor_test.cpp",
       "src/mtp_operation_utils_unit_test.cpp",
       "src/mtp_packet_tools_test.cpp",
       "src/mtp_payload_data_test.cpp",

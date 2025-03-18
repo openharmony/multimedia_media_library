@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include "media_log.h"
 #include "media_mtp_utils.h"
+#include "mtp_constants.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
 #include "mtp_media_library.h"
@@ -258,6 +259,46 @@ HWTEST_F(MtpEventTest, mtp_event_test_0011, TestSize.Level0)
     mtpEvent->SendEvent(testcode);
     context = nullptr;
     mtpEvent = nullptr;
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: EventPayloadData
+ */
+HWTEST_F(MtpEventTest, mtp_event_test_0012, TestSize.Level0)
+{
+    std::shared_ptr<MtpOperationContext> context = nullptr;
+    std::shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
+    ASSERT_NE(mtpEvent, nullptr);
+    uint16_t code = 0;
+    shared_ptr<PayloadData> data = nullptr;
+    uint16_t res = mtpEvent->EventPayloadData(code, data);
+    EXPECT_EQ(res, MTP_UNDEFINED_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: EventPayloadData
+ */
+HWTEST_F(MtpEventTest, mtp_event_test_0013, TestSize.Level0)
+{
+    std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
+    ASSERT_NE(mtpEvent, nullptr);
+    mtpEvent->handleptr_ = make_shared<MtpOperationUtils>(context);
+    uint16_t code = MTP_EVENT_UNDEFINED_CODE;
+    shared_ptr<PayloadData> data = nullptr;
+    uint16_t res = mtpEvent->EventPayloadData(code, data);
+    EXPECT_EQ(res, MTP_UNDEFINED_CODE);
 }
 } // namespace Media
 } // namespace OHOS
