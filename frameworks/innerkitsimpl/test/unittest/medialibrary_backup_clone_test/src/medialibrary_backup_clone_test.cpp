@@ -2229,5 +2229,74 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_delete_db_dirty_
     int32_t count = photosDataHandler_.DeleteDirtyFilesInDb();
     EXPECT_EQ(count, EXPECTED_COUNT_0);
 }
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_001");
+    BackupRestoreService backupRestoreService;
+    RestoreInfo info;
+    info.sceneCode = UPGRADE_RESTORE_ID;
+    backupRestoreService.Init(info);
+    EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, UPGRADE_RESTORE_ID);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_002");
+    BackupRestoreService backupRestoreService;
+    RestoreInfo info;
+    info.sceneCode = DUAL_FRAME_CLONE_RESTORE_ID;
+    backupRestoreService.Init(info);
+    EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, DUAL_FRAME_CLONE_RESTORE_ID);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_003");
+    BackupRestoreService backupRestoreService;
+    RestoreInfo info;
+    info.sceneCode = I_PHONE_CLONE_RESTORE;
+    backupRestoreService.Init(info);
+    EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, I_PHONE_CLONE_RESTORE);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_004");
+    BackupRestoreService backupRestoreService;
+    RestoreInfo info;
+    info.sceneCode = OTHERS_PHONE_CLONE_RESTORE;
+    backupRestoreService.Init(info);
+    EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, OTHERS_PHONE_CLONE_RESTORE);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_005");
+    BackupRestoreService backupRestoreService;
+    RestoreInfo info;
+    info.sceneCode = LITE_PHONE_CLONE_RESTORE;
+    backupRestoreService.Init(info);
+    EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, LITE_PHONE_CLONE_RESTORE);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_006");
+    BackupRestoreService backupRestoreService;
+    RestoreInfo info;
+    info.sceneCode = DEFAULT_RESTORE_ID;
+    backupRestoreService.Init(info);
+    EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, CLONE_RESTORE_ID);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_backup_info_test");
+    BackupRestoreService backupRestoreService;
+    std::string backupInfo;
+    backupRestoreService.GetBackupInfo(CLONE_RESTORE_ID, backupInfo);
+    EXPECT_EQ(backupInfo, "");
+}
 } // namespace Media
 } // namespace OHOS
