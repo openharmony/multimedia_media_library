@@ -41,6 +41,12 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_album_refresh.h"
 #include "scanner_utils.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
+#include "database_adapter.h"
+#include "userfile_manager_types.h"
+#include "medialibrary_operation.h"
+#include "datashare_helper.h"
 
 #define private public
 #include "medialibrary_common_utils.h"
@@ -56,6 +62,9 @@ const std::string ROOT_MEDIA_DIR = "/storage/cloud/files/";
 const std::string PHOTO_PATH = "/Photo/5/IMG_1741264239_005.jpg";
 const std::string DISPLAY_NAME = "IMG_20250306_202859.jpg";
 const std::string FILE_HIDDEN = ".FileHidden/";
+static const int32_t E_ERR = -1;
+static const string PHOTOS_TABLE = "Photos";
+std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 
 static inline string FuzzString(const uint8_t *data, size_t size)
 {
@@ -116,14 +125,54 @@ static inline Security::AccessToken::PermissionUsedType FuzzPermissionUsedType(c
     return Security::AccessToken::PermissionUsedType::INVALID_USED_TYPE;
 }
 
-static int Init()
+static inline Media:MediaLibraryCommand FuzzMediaLibraryCmd(const uint8_t *data, size_t size)
+{
+    return Media::MediaLibraryCommand(FuzzUri(data, size));
+}
+
+static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
+{
+    if (g_rdbStore == nullptr) {
+        return E_ERR;
+    }
+    NativeRdb::ValuesBucket values;
+    values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
+    values.PutString(Media::PhotoColumn::PHOTO_VISIT_TIME, FuzzString(data, size));
+    int64_t fileId = 0;
+    g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
+    return static_cast<int32_t>(fileId);
+}
+
+void SetTables()
+{
+    vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
+    for (auto &createTableSql : createSqlList) {
+        CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "g_rdbStore is null.");
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed.", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success.", createTableSql.c_str());
+    }
+}
+static void Init()
 {
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
     int32_t sceneCode = 0;
-    return Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
+    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
         sceneCode);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibrary Mgr failed, ret: %{public}d.", ret);
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr.");
+        return;
+    }
+    g_rdbStore = rdbStore;
+    SetTables();
 }
 
 static void CommandTest(const uint8_t *data, size_t size)
@@ -326,9 +375,20 @@ static void MediaLibraryManagerTest(const uint8_t *data, size_t size)
     Media::MediaLibraryDataManagerUtils::GetTypeUriByUri(str);
 }
 
+static void MultiStagesAdapterTest(const uint8_t *data, size_t size)
+{
+    Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd(data, size);
+    Media::DatabaseAdapter::Update(cmd);
+    MEDIA_INFO_LOG("MultiStagesAdapterTest");
+}
+
 static void MultistageTest(const uint8_t *data, size_t size)
 {
+    string photoId = FuzzString(data, size);
+    int32_t fileId = InsertAsset(data, size, photoId);
+    MEDIA_INFO_LOG("fileId: %{public}d.", fileId);
     Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(FuzzString(data, size));
+    MEDIA_INFO_LOG("MultistageTest");
 }
 
 static void RefreshAlbumTest()
@@ -474,6 +534,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::AppPermissionTest(data, size);
     OHOS::AppStateTest();
     OHOS::MediaLibraryManagerTest(data, size);
+    OHOS::MultiStageAdapterTest(data, size);
     OHOS::MultistageTest(data, size);
     OHOS::RefreshAlbumTest();
     OHOS::ActiveAnalysisTest();
