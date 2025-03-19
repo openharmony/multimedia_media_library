@@ -25,6 +25,7 @@
 #include "media_log.h"
 #include <fstream>
 
+#define private public
 #include "backup_zip_util.h"
 
 using namespace std;
