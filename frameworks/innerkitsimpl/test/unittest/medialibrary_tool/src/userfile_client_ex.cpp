@@ -38,6 +38,7 @@
 #include "uri.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
+#include "mediatool_uri.h"
 
 using namespace OHOS::DataShare;
 namespace OHOS {
@@ -75,6 +76,9 @@ const std::map<MediaToolOperation, std::string> AUDIOOPRN_URI_MAP = {
     { MediaToolOperation::DELETE, TOOL_DELETE_AUDIO },
     { MediaToolOperation::UPDATE, TOOL_UPDATE_AUDIO }
 };
+
+// delete_tool
+const std::string DELETE_TOOL_ONLY_DATABASE = "only_db";
 
 static std::string GetOperation(const std::string &tableName, MediaToolOperation oprn)
 {

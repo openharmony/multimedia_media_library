@@ -19,6 +19,10 @@
 #define FUZZ_PROJECT_NAME "medialibraryextension_fuzzer"
 
 #include "userfilemgr_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
+#include "cloud_enhancement_uri.h"
+#include "mediatool_uri.h"
 
 #include <string>
 #include <vector>

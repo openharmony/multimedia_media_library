@@ -54,6 +54,14 @@ static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
     return static_cast<int32_t>(*data);
 }
 
+static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
+{
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return 0;
+    }
+    return static_cast<int64_t>(*data);
+}
+
 static inline string FuzzString(const uint8_t *data, size_t size)
 {
     return {reinterpret_cast<const char*>(data), size};
@@ -161,6 +169,32 @@ static void BatchInsertFuzzer(const uint8_t* data, size_t size)
     Media::MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, dataShareValues);
 }
 
+static void BatchInsertInnerFuzzer(const uint8_t* data, size_t size)
+{
+    vector<DataShare::DataShareValuesBucket> dataShareValues;
+    for (int32_t i = 0; i < BatchInsertNumber; i++) {
+        DataShareValuesBucket value;
+        int32_t photoId = FuzzInt32(data, size);
+        int32_t fileId = InsertPhotoAsset(data, size, photoId);
+        string appId = FuzzString(data, size);
+        value.Put(Media::AppUriPermissionColumn::APP_ID, appId);
+        value.Put(Media::AppUriPermissionColumn::FILE_ID, fileId);
+        int32_t permissionType = FuzzPermissionType(data, size);
+        value.Put(Media::AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
+        int32_t uriType = FuzzUriType(data, size);
+        value.Put(Media::AppUriPermissionColumn::URI_TYPE, uriType);
+        value.Put(Media::AppUriPermissionColumn::DATE_MODIFIED, FuzzInt64(data, size));
+        value.Put(Media::AppUriPermissionColumn::SOURCE_TOKENID, FuzzInt64(data, size));
+        value.Put(Media::AppUriPermissionColumn::TARGET_TOKENID, FuzzInt64(data, size));
+        dataShareValues.push_back(value);
+    }
+    Media::MediaLibraryCommand cmd(Media::OperationObject::MEDIA_APP_URI_PERMISSION, Media::OperationType::CREATE,
+        Media::MediaLibraryApi::API_10);
+    std::string funcName = FuzzString(data, size);
+    std::shared_ptr<Media::TransactionOperations> trans = std::make_shared<Media::TransactionOperations>(funcName);
+    Media::MediaLibraryAppUriPermissionOperations::BatchInsertInner(cmd, dataShareValues, trans);
+}
+
 static void AppUriPermissionOperationsFuzzer(const uint8_t* data, size_t size)
 {
     int32_t photoId = FuzzInt32(data, size);
@@ -174,6 +208,7 @@ static void AppUriPermissionOperationsFuzzer(const uint8_t* data, size_t size)
     DeleteOperationFuzzer(appId, fileId, permissionType);
 
     BatchInsertFuzzer(data, size);
+    BatchInsertInnerFuzzer(data, size);
 }
 
 void SetTables()

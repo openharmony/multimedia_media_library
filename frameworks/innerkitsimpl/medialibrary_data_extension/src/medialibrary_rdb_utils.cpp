@@ -144,6 +144,7 @@ atomic<bool> MediaLibraryRdbUtils::isNeedRefreshAlbum = false;
 atomic<bool> MediaLibraryRdbUtils::isInRefreshTask = false;
 
 const string ANALYSIS_REFRESH_BUSINESS_TYPE = "ANALYSIS_ALBUM_REFRESH";
+const std::string MEDIA_COLUMN_COUNT_DISTINCT_FILE_ID = "count(distinct file_id)";
 
 static inline string GetStringValFromColumn(const shared_ptr<ResultSet> &resultSet, const int index)
 {
@@ -185,9 +186,6 @@ static inline int32_t GetIntValFromColumn(const shared_ptr<ResultSet> &resultSet
 
 static NotifyType GetTypeFromCountVariation(UpdateAlbumData &data)
 {
-    if (data.newTotalCount == 0) {
-        return NOTIFY_ALBUM_ADD_ASSET;
-    }
     int oldCount = data.albumVideoCount + data.albumImageCount;
     int newCount = data.newTotalCount;
     if (oldCount < newCount) {

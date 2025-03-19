@@ -76,7 +76,6 @@ static const std::string SQL_REPAIR_DETAIL_TIME =
     "   ELSE strftime( '%Y:%m:%d %H:%M:%S', date_taken / 1000, 'unixepoch', 'localtime' ) <> detail_time "
     " END ;";
 
-static const int32_t NO_ORIGIN_BUT_LCD = 100;
 static const int32_t NO_ORIGIN_NO_LCD = 101;
 
 void CloudUploadChecker::HandleNoOriginPhoto()

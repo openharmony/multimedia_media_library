@@ -26,6 +26,44 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+
+const std::string ML_FILE_SCHEME = "file";
+const std::string ML_FILE_PREFIX = "file://";
+const std::string ML_FILE_URI_PREFIX = "file://media";
+const std::string ML_URI_NETWORKID = "networkid";
+const std::string ML_URI_NETWORKID_EQUAL = "?networkid=";
+const std::string ML_URI_TIME_ID = "&time_id=";
+const std::string ML_URI_OFFSET = "&offset=";
+const std::string ML_URI_DATE_ADDED = "date_added";
+const std::string ML_URI_DATE_TAKEN = "date_taken";
+const std::string ML_URI_DATE_MODIFIED = "date_modified";
+const std::string ML_URI_AUTHORITY = "media";
+const std::string ML_DATA_SHARE_SCHEME = "datashare";
+const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
+const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
+const std::string MEDIALIBRARY_MEDIA_PREFIX = MEDIALIBRARY_DATA_ABILITY_PREFIX +
+                                                     MEDIALIBRARY_DATA_URI_IDENTIFIER;
+const std::string MEDIALIBRARY_TYPE_AUDIO_URI = "/audio";
+const std::string MEDIALIBRARY_TYPE_VIDEO_URI = "/video";
+const std::string MEDIALIBRARY_TYPE_IMAGE_URI = "/image";
+const std::string MEDIALIBRARY_TYPE_FILE_URI  =  "/file";
+const std::string MEDIALIBRARY_TYPE_ALBUM_URI  =  "/album";
+const std::string MEDIALIBRARY_TYPE_SMARTALBUM_CHANGE_URI  =  "/smartalbum";
+const std::string MEDIALIBRARY_TYPE_DEVICE_URI  =  "/device";
+const std::string MEDIALIBRARY_TYPE_SMART_URI = "/smart";
+const std::string MEDIALIBRARY_TYPE_HIGHLIGHT_URI = "/highlight";
+
+const std::string AUDIO_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_AUDIO_URI;
+const std::string VIDEO_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_VIDEO_URI;
+const std::string IMAGE_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_IMAGE_URI;
+const std::string FILE_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_FILE_URI;
+const std::string ALBUM_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_ALBUM_URI;
+const std::string HIGHLIGHT_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_HIGHLIGHT_URI;
+
+const std::string URI_TYPE_PHOTO = "Photo";
+const std::string URI_TYPE_AUDIO_V10 = "Audio";
+const std::string URI_TYPE_PHOTO_ALBUM = "PhotoAlbum";
+
 enum {
     API10_PHOTO_URI,
     API10_PHOTOALBUM_URI,

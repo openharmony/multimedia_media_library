@@ -17,7 +17,7 @@
 
 #include "result_set_utils.h"
 #include "userfile_client.h"
-
+#include "album_operation_uri.h"
 namespace OHOS {
 namespace Media {
 MediaAlbumChangeRequestImpl::MediaAlbumChangeRequestImpl(shared_ptr<PhotoAlbum> photoAlbumPtr)

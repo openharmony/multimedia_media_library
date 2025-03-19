@@ -41,6 +41,7 @@
 #include "userfile_manager_types.h"
 #include "uv.h"
 #include "userfile_client.h"
+#include "highlight_column.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"

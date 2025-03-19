@@ -139,6 +139,9 @@ shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 std::mutex MediaLibraryRdbStore::reconstructLock_;
 
 int32_t oldVersion_ = -1;
+
+const int TRASH_ALBUM_TYPE_VALUES = 2;
+const std::string TRASH_ALBUM_NAME_VALUES = "TrashAlbum";
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
     int32_t startNumber;
@@ -2671,13 +2674,15 @@ void AddAlbumOrderColumn(RdbStore &store)
         " FOR EACH ROW " +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = album_order - 1" +
-        " WHERE album_order > old.album_order; END";
+        " WHERE album_order > old.album_order; +
+        " END";
     const std::string albumInsertTrigger =
         " CREATE TRIGGER IF NOT EXISTS insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = (" +
         " SELECT COALESCE(MAX(album_order), 0) + 1 FROM " + PhotoAlbumColumns::TABLE +
-        ") WHERE rowid = new.rowid; END";
+        ") WHERE rowid = new.rowid;" +
+        " END";
 
     const vector<string> addAlbumOrder = { addAlbumOrderColumn, initOriginOrder,
         albumDeleteTrigger, albumInsertTrigger};

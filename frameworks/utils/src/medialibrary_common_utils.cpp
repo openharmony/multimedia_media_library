@@ -35,6 +35,8 @@
 #include "vision_label_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_total_column.h"
+#include "highlight_column.h"
+#include "smart_album_column.h"
 
 namespace OHOS {
 namespace Media {

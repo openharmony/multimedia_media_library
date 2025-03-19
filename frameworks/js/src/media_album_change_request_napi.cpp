@@ -33,6 +33,7 @@
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 

@@ -37,6 +37,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "values_bucket.h"
+#include "cloud_enhancement_uri.h"
 
 #define private public
 #define protected public

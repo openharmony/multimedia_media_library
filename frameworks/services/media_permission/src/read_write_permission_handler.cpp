@@ -31,6 +31,9 @@
 #include "sec_comp_kit.h"
 #endif
 #include "userfilemgr_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
+#include "mediatool_uri.h"
 
 using namespace std;
 
@@ -124,7 +127,7 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
         (SYSTEM_API_URIS.find(uri) != SYSTEM_API_URIS.end())) {
         if (!PermissionUtils::IsSystemApp()) {
             MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-            return E_CHECK_SYSTEMAPP_FAIL;
+            return -E_CHECK_SYSTEMAPP_FAIL;
         }
     }
     return E_SUCCESS;
