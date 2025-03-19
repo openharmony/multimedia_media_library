@@ -15,6 +15,7 @@
 #include "medialibraryrefreshmanager.h"
 
 #include "albums_refresh_manager.h"
+#include "ability_context_impl.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_tracer.h"
@@ -36,6 +37,9 @@
 #include "vision_column.h"
 #include "medialibrary_restore.h"
 #include "post_event_utils.h"
+#include "medialibrary_data_manager.h"
+#include "medialibrary_unistore.h"
+#include "media_datashare_ext_ability.h"
 #ifdef HAS_POWER_MANAGER_PART
 #include "power_mgr_client.h"
 #endif
@@ -43,7 +47,10 @@
 namespace OHOS {
 using namespace std;
 using namespace DataShare;
+using namespace Media;
+using ChangeType = DataShare::DataShareObserver::ChangeType;
 
+std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 const int32_t EVEN = 2;
 
 static inline string FuzzString(const uint8_t *data, size_t size)
@@ -75,14 +82,6 @@ static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
     return static_cast<int32_t>(*data);
 }
 
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
-
 static inline bool FuzzBool(const uint8_t* data, size_t size)
 {
     if (size == 0) {
@@ -91,53 +90,141 @@ static inline bool FuzzBool(const uint8_t* data, size_t size)
     return (data[0] % EVEN) == 0;
 }
 
-static inline Uri FuzzUri(const uint8_t* data, size_t size)
+static inline Uri FuzzUri(const uint8_t *data, size_t size)
 {
-    return Uri(FuzzString(data, size));
+    uint8_t length = static_cast<uint8_t>(Media::EXTENSION_FUZZER_URI_LISTS.size());
+    if (*data < length) {
+        return Uri(Media::EXTENSION_FUZZER_URI_LISTS[*data]);
+    }
+    return Uri("Undefined");
 }
 
 static inline std::list<Uri> FuzzListUri(const uint8_t* data, size_t size)
 {
-    std::list<Uri> emptySet{};
-    return emptySet{};
+    std::list<Uri> uri = {FuzzUri(data, size)};
+    return uri;
+}
+
+static inline std::vector<std::string> FuzzVector(const uint8_t* data, size_t size)
+{
+    return {FuzzString(data, size)};
 }
 
 static inline std::unordered_set<std::string> FuzzUnorderedSet(const uint8_t* data, size_t size)
 {
-    std::unordered_set emptySet{};
-    return emptySet{};
+    std::unordered_set<std::string> orderset = {FuzzString(data, size)};
+    return orderset;
+}
+
+static inline Media::NotifyType FuzzNotifyTypeCause(const uint8_t* data, size_t size)
+{
+    int32_t value = FuzzInt32(data, size);
+    if (value >= static_cast<int32_t>(Media::NotifyType::NOTIFY_ADD) &&
+        value <= static_cast<int32_t>(Media::NotifyType::NOTIFY_INVALID)) {
+        return static_cast<Media::NotifyType>(value);
+    }
+    return  Media::NotifyType::NOTIFY_ADD;
+}
+
+static inline ChangeType FuzzChangeType(const uint8_t* data, size_t size)
+{
+    int32_t value = FuzzInt32(data, size);
+    if (value >= static_cast<int32_t>(ChangeType::INSERT) &&
+        value <= static_cast<int32_t>(ChangeType::OTHER)) {
+        return static_cast<ChangeType>(value);
+    }
+    return  ChangeType::INSERT;
+}
+
+static inline Media::ForceRefreshType FuzzForceRefreshTypeCause(const uint8_t* data, size_t size)
+{
+    int32_t value = FuzzInt32(data, size);
+    if (value >= static_cast<int32_t>(Media::ForceRefreshType::NONE) &&
+        value <= static_cast<int32_t>(Media::ForceRefreshType::EXCEPTION)) {
+        return static_cast<Media::ForceRefreshType>(value);
+    }
+    return  Media::ForceRefreshType::NONE;
+}
+
+static inline Media::CloudSyncNotifyInfo FuzzCloudSyncNotifyInfo(const uint8_t* data, size_t size)
+{
+    Media::CloudSyncNotifyInfo info;
+    const void* data_ = nullptr;
+    ChangeType type = FuzzChangeType(data, size);
+    info.uris = FuzzListUri(data, size);
+    info.type = type;
+    info.data = data_;
+    return info;
 }
 
 static Media::SyncNotifyInfo FuzzSyncNotifyInfo(const uint8_t* data, size_t size)
 {
-    Media::SyncNotifyInfo info = {
-        .taskType = FuzzInt16(data, size),
-        .syncType = FuzzInt16(data, size),
-        .notifyType = Media::NotifyType::NOTIFY_ADD,
-        .syncId = FuzzString(data, size),
-        .totalAssets = FuzzInt32(data, size),
-        .totalAlbums = FuzzInt32(data, size),
-        .uriType = FuzzInt8(data, size),
-        .reserve = FuzzInt8(data, size),
-        .urisSize  = FuzzInt16(data, size),
-        .uris = FuzzListUri(data, size),
-        .extraUris = FuzzListUri(data, size),
-        .uriIds = FuzzUnorderedSet(data, size),
-        .notifyAssets = FuzzBool(data, size),
-        .notifyAlbums = FuzzBool(data, size),
-        .refreshResult = FuzzInt32(data, size),
-        .forceRefreshType = ForceRefreshType::NONE,
-    };
+    Media::SyncNotifyInfo info;
+    info.taskType = FuzzInt16(data, size);
+    info.syncType = FuzzInt16(data, size);
+    info.notifyType = FuzzNotifyTypeCause(data, size);
+    info.syncId = FuzzString(data, size);
+    info.totalAssets = FuzzInt32(data, size);
+    info.totalAlbums = FuzzInt32(data, size);
+    info.uriType = FuzzInt8(data, size);
+    info.reserve = FuzzInt8(data, size);
+    info.urisSize  = FuzzInt16(data, size);
+    info.uris = FuzzListUri(data, size);
+    info.extraUris = FuzzListUri(data, size);
+    info.uriIds = FuzzUnorderedSet(data, size);
+    info.notifyAssets = FuzzBool(data, size);
+    info.notifyAlbums = FuzzBool(data, size);
+    info.refershResult = FuzzInt32(data, size);
+    info.forceRefreshType = FuzzForceRefreshTypeCause(data, size);
     return info;
 }
 
 static void RefreshNotifyInfoTest(const uint8_t* data, size_t size)
 {
-    Media::SyncNotifyInfo fuzzinfo = FuzzSyncNotifyInfo(const uint8_t* data, size_t size);
-    RefreshPhotoAlbums(fuzzinfo);
-    AddAlbumRefreshTask(fuzzinfo);
-    NotifyPhotoAlbums(fuzzinfo);
-    HasRefreshingSystemAlbums();
+    Media::SyncNotifyInfo fuzznotifyinfo = FuzzSyncNotifyInfo(data, size);
+    Media::CloudSyncNotifyInfo fuzzsyncnotifyinfo = FuzzCloudSyncNotifyInfo(data, size);
+    std::vector<std::string> fuzzvector = FuzzVector(data, size);
+    Media::AlbumsRefreshManager &instance = Media::AlbumsRefreshManager::GetInstance();
+    instance.RefreshPhotoAlbums(fuzznotifyinfo);
+    instance.AddAlbumRefreshTask(fuzznotifyinfo);
+    instance.NotifyPhotoAlbums(fuzznotifyinfo);
+    instance.HasRefreshingSystemAlbums();
+    instance.GetSyncNotifyInfo(fuzzsyncnotifyinfo, FuzzInt8(data, size));
+    instance.CovertCloudId2AlbumId(g_rdbStore, fuzzvector);
+    instance.CovertCloudId2FileId(g_rdbStore, fuzzvector);
+    instance.RefreshPhotoAlbumsBySyncNotifyInfo(g_rdbStore, fuzznotifyinfo);
+}
+
+void SetTables()
+{
+    vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
+    for (auto &createTableSql : createTableSqlList) {
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
+static void Init()
+{
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl->SetStageContext(stageContext);
+    int32_t sceneCode = 0;
+    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
+        abilityContextImpl, sceneCode);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
+
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return;
+    }
+    g_rdbStore = rdbStore;
+    SetTables();
 }
 
 } // namespace OHOS
