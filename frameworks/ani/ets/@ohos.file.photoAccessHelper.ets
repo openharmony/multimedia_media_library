@@ -918,6 +918,16 @@ export namespace photoAccessHelper {
     getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): Promise<FetchResult<Album>>;
     stopCreateThumbnailTask(taskId: int): void;
+    getBurstAssets(burstKey: string, options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
+    createAsset(displayName: string, callback: AsyncCallback<PhotoAsset | undefined>): void;
+    createAsset(displayName: string): Promise<PhotoAsset>;
+    createAsset(displayName: string, options: PhotoCreateOptions): Promise<PhotoAsset>;
+    createAsset(displayName: string, options: PhotoCreateOptions,
+      callback: AsyncCallback<PhotoAsset | undefined>): void;
+    createAsset(photoType: PhotoType, extension: string, options: CreateOptions,
+      callback: AsyncCallback<string | undefined>): void;
+    createAsset(photoType: PhotoType, extension: string, callback: AsyncCallback<string | undefined>): void;
+    createAsset(photoType: PhotoType, extension: string, options?: CreateOptions): Promise<string>;
   }
 
   class PhotoAccessHelperHandle implements PhotoAccessHelper {
@@ -966,6 +976,45 @@ export namespace photoAccessHelper {
             resolve(buffer as FetchResult<Album>);
           }
         });
+      });
+    }
+
+    getBurstAssets(burstKey: string, options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
+      return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void,
+        reject: RejectString) => {
+        let emptyResult: FetchResult<PhotoAsset> = new FetchResultHandle<PhotoAsset>(0);
+        resolve(emptyResult);
+      });
+    }
+
+    createAsset(displayName: string, callback: AsyncCallback<PhotoAsset | undefined>): void {}
+
+    createAsset(displayName: string): Promise<PhotoAsset> {
+      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: (e: BusinessError<string>) => void) => {
+          let emptyResult: PhotoAsset = new PhotoAssetHandle(0);
+          resolve(emptyResult);
+        });
+    }
+
+    createAsset(displayName: string, options: PhotoCreateOptions): Promise<PhotoAsset> {
+      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: (e: BusinessError<string>) => void) => {
+        let emptyResult: PhotoAsset = new PhotoAssetHandle(0);
+        resolve(emptyResult);
+      });
+    }
+
+    createAsset(displayName: string, options: PhotoCreateOptions,
+      callback: AsyncCallback<PhotoAsset | undefined>): void {}
+
+    createAsset(photoType: PhotoType, extension: string, options: CreateOptions,
+      callback: AsyncCallback<string | undefined>): void {}
+
+    createAsset(photoType: PhotoType, extension: string, callback: AsyncCallback<string | undefined>): void {}
+
+    createAsset(photoType: PhotoType, extension: string, options?: CreateOptions): Promise<string> {
+      return new Promise<string>((resolve: (v: string) => void, reject: (e: BusinessError<string>) => void) => {
+        let emptyResult: string = "";
+        resolve(emptyResult);
       });
     }
 
