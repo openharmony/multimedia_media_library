@@ -426,7 +426,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
                         MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
                         PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-                        " SELECT (" + " old.file_id, old.data, 2, 1) FROM" + PhotoColumn::PHOTOS_TABLE +
+                        " SELECT (" + " old.file_id, old.data, 2, 1) FROM " + PhotoColumn::PHOTOS_TABLE +
                         " WHERE old.position <> 2;" +
                         " END;";
 
