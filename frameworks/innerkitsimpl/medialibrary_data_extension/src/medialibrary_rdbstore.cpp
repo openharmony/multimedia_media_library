@@ -2674,7 +2674,7 @@ void AddAlbumOrderColumn(RdbStore &store)
         " FOR EACH ROW " +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = album_order - 1" +
-        " WHERE album_order > old.album_order; +
+        " WHERE album_order > old.album_order;" +
         " END";
     const std::string albumInsertTrigger =
         " CREATE TRIGGER IF NOT EXISTS insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
