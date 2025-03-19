@@ -16,8 +16,6 @@
 #include "log_utils_test.h"
 #include "media_log.h"
 #include "media_backup_report_data_type.h"
-
-#define private public
 #include "backup_log_utils.h"
 
 using namespace std;
