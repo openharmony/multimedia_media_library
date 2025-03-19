@@ -30,7 +30,11 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-void MtpSubcriberUnitTest::SetUpTestCase(void) {}
+void MtpSubcriberUnitTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+}
+
 void MtpSubcriberUnitTest::TearDownTestCase(void) {}
 void MtpSubcriberUnitTest::SetUp() {}
 void MtpSubcriberUnitTest::TearDown(void) {}

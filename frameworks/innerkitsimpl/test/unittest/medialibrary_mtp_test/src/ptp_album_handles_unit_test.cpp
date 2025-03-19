@@ -16,6 +16,7 @@
 #include <thread>
 #include "ptp_album_handles_unit_test.h"
 #include "ptp_album_handles.h"
+#include "mtp_manager.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -25,7 +26,10 @@ namespace Media {
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
-void PtpAlbumHandlesUnitTest::SetUpTestCase(void) {}
+void PtpAlbumHandlesUnitTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+}
 
 void PtpAlbumHandlesUnitTest::TearDownTestCase(void)
 {
