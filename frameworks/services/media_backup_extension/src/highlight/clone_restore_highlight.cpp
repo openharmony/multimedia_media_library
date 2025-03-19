@@ -971,7 +971,8 @@ std::unordered_set<std::string> CloneRestoreHighlight::GetCommonColumns(const st
     std::unordered_set<std::string> result;
     auto comparedColumns = GetValueFromMap(ALBUM_COLUMNS_MAP, tableName);
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
-        bool cond = (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() && comparedColumns.count(it->first) > 0);
+        bool cond = (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() &&
+            comparedColumns.count(it->first) > 0);
         CHECK_AND_EXECUTE(!cond, result.insert(it->first));
     }
     return result;
