@@ -124,7 +124,7 @@
             MEDIA_ERR_LOG(fmt, ##__VA_ARGS__);         \
             continue;                                  \
         }                                              \
-    } else void 0
+    } else void (0)
 
 #define CHECK_AND_BREAK_ERR_LOG(cond, fmt, ...)        \
     if (1) {                                           \
