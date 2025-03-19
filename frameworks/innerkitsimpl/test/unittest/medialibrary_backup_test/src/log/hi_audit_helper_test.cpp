@@ -40,7 +40,6 @@ HWTEST_F(HiAuditHelperTest, Write_Error_Audit_Log_Test_001, testing::ext::TestSi
     ErrorInfo info(0, 1, "failed", "test error");
 
     helper.WriteErrorAuditLog(info);
-    EXPECT_TRUE(true);
     MEDIA_INFO_LOG("Write_Error_Audit_Log_Test_001 end");
 }
 
@@ -52,7 +51,6 @@ HWTEST_F(HiAuditHelperTest, Write_Progress_Audit_Log_Test_001, testing::ext::Tes
     std::string extend = "progress info";
 
     helper.WriteProgressAuditLog(status, extend);
-    EXPECT_TRUE(true);
     MEDIA_INFO_LOG("Write_Progress_Audit_Log_Test_001 end");
 }
 
@@ -63,7 +61,6 @@ HWTEST_F(HiAuditHelperTest, Write_Report_Audit_Log_Test_001, testing::ext::TestS
     std::string extend = "report info";
 
     helper.WriteReportAuditLog(extend);
-    EXPECT_TRUE(true);
     MEDIA_INFO_LOG("Write_Report_Audit_Log_Test_001 end");
 }
 
