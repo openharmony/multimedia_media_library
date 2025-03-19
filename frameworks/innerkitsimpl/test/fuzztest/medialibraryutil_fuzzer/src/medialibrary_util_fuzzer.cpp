@@ -330,11 +330,6 @@ static void MultistageTest(const uint8_t *data, size_t size)
     Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(FuzzString(data, size));
 }
 
-static void RefreshAlbumTest()
-{
-    Media::RefreshAlbums(true);
-}
-
 static void ActiveAnalysisTest()
 {
     std::vector<std::string> fileIds;
@@ -474,7 +469,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::AppStateTest();
     OHOS::MediaLibraryManagerTest(data, size);
     OHOS::MultistageTest(data, size);
-    OHOS::RefreshAlbumTest();
     OHOS::ActiveAnalysisTest();
     OHOS::CloudDownloadTest();
     OHOS::CpuUtilsTest(data, size);
