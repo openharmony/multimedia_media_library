@@ -102,7 +102,7 @@ public:
     static void UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
-    static void UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void UpdateFaceGroupTagOfGallery(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateTagPairs(std::vector<TagPairOpt>& updatedPairs, const std::string& newGroupTag,
         const std::vector<std::string>& tagIds);
     static void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,

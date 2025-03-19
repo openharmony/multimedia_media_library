@@ -28,6 +28,7 @@ ohos_unittest("medialibrary_backup_test") {
     "./include/report",
     "./include/restore",
     "./include/utils",
+    "./include/log",
     "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
@@ -95,6 +96,10 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/restore/photo_album_dao_test.cpp",
     "./src/restore/photos_clone_test.cpp",
     "./src/restore/photos_restore_test.cpp",
+    "./src/log/hi_audit_helper_test.cpp",
+    "./src/log/hi_audit_test.cpp",
+    "./src/log/log_utils_test.cpp",
+    "./src/log/zip_util_test.cpp",
   ]
 
   deps = [
