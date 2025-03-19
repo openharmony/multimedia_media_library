@@ -2578,7 +2578,7 @@ static int32_t DoUpdateDirtyForCloudCloneOperationV2(const shared_ptr<MediaLibra
         updateOldPhotosPredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
         ret = rdbStore->Update(changeRows, updateOldPhotosBucket, updateOldPhotosPredicates);
         CHECK_AND_RETURN_RET_LOG((ret == E_OK && changeRows > 0), E_FAIL,
-        "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
+            "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
     }
     return ret;
 }
@@ -2605,7 +2605,7 @@ int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone(int32_t version)
     switch (version) {
         case UPDATE_DIRTY_CLOUD_CLONE_V1: {
             return UpdateDirtyForCloudClone();
-        }   
+        }
         case UPDATE_DIRTY_CLOUD_CLONE_V2: {
             return UpdateDirtyForCloudCloneV2();
         }
