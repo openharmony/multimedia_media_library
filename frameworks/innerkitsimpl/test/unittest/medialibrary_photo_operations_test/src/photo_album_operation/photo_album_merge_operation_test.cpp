@@ -22,6 +22,7 @@
 
 #include "photo_album_merge_operation.h"
 #include "medialibrary_unittest_utils.h"
+#include "medialibrary_unistore_manager.h"
 #include "media_log.h"
 
 using namespace testing::ext;
@@ -60,7 +61,7 @@ HWTEST_F(PhotoAlbumMergeOperationTest, photo_album_merge_operation_test_001, Tes
     EXPECT_EQ(ret, NativeRdb::E_ERROR);
 }
 
-HWTEST_F(PhotoAlbumLPathOperationTest, photo_album_merge_operation_test_002, TestSize.Level0)
+HWTEST_F(PhotoAlbumMergeOperationTest, photo_album_merge_operation_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start photo_album_merge_operation_test_002");
     auto g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
