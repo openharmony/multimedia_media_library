@@ -76,7 +76,6 @@ HWTEST_F(HiAuditTest, Write_Log_Test_001, testing::ext::TestSize.Level0)
     log.extend = "test log";
 
     BackupHiAudit::GetInstance().Write(log);
-    EXPECT_TRUE(true);
     MEDIA_INFO_LOG("Write_Log_Test_001 end");
 }
 } // namespace Media
