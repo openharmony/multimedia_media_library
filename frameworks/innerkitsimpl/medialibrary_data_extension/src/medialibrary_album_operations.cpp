@@ -2251,7 +2251,8 @@ int32_t SetDisplayLevel(const ValuesBucket &values, const DataSharePredicates &p
         MEDIA_ERR_LOG("invalid album id");
         return E_INVALID_VALUES;
     }
-
+    MEDIA_INFO_LOG("Start set display level, album id: %{public}d, display level: %{public}d",
+        albumId, displayLevelValue);
     vector<int32_t> changedAlbumIds;
     if (displayLevelValue == FIRST_PAGE || displayLevelValue == SECOND_PAGE) {
         err = UpdateDisplayLevel(displayLevelValue, albumId);
@@ -2465,6 +2466,8 @@ int32_t SetIsMe(const ValuesBucket &values, const DataSharePredicates &predicate
     int tartgetUserDisplayLevel;
     GetIntValueFromResultSet(tartGetResultSet, USER_DISPLAY_LEVEL, tartgetUserDisplayLevel);
     int updateTargetDisplayLevel = (tartgetUserDisplayLevel != FAVORITE_PAGE) ? 1 : tartgetUserDisplayLevel;
+    MEDIA_INFO_LOG("Start set is me, album id: %{public}s, target user display level: %{public}d",
+        targetAlbumId.c_str(), updateTargetDisplayLevel);
 
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " + RENAME_OPERATION +
         " = 1, " + USER_DISPLAY_LEVEL + " = " + to_string(updateTargetDisplayLevel) + " WHERE " + GROUP_TAG +
@@ -2494,16 +2497,15 @@ int32_t SetAlbumName(const ValuesBucket &values, const DataSharePredicates &pred
     }
     string targetAlbumId = whereArgs[0];
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set album name");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL, "uniStore is nullptr! failed update for set album name");
     string albumName;
     int err = GetStringVal(values, ALBUM_NAME, albumName);
     if (err < 0 || albumName.empty()) {
         MEDIA_ERR_LOG("invalid album name");
         return E_INVALID_VALUES;
     }
+    MEDIA_INFO_LOG("Set analysis album name, album id: %{public}s, album name: %{public}s",
+        targetAlbumId.c_str(), DfxUtils::GetSafeAlbumName(albumName).c_str());
     std::string updateForSetAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
         "' , " + RENAME_OPERATION + " = 1 WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " +
         ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
@@ -2562,6 +2564,8 @@ int32_t SetCoverUri(const ValuesBucket &values, const DataSharePredicates &predi
         MEDIA_ERR_LOG("invalid album cover uri");
         return E_INVALID_VALUES;
     }
+    MEDIA_INFO_LOG("Set analysis album cover uri, album id: %{public}s, cover uri: %{public}s",
+        targetAlbumId.c_str(), DfxUtils::GetSafeUri(coverUri).c_str());
     std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
         "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<uint8_t>(CoverSatisfiedType::USER_SETTING)) +
         " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
