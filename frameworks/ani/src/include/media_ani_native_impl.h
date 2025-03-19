@@ -42,13 +42,13 @@ private:
     static bool PhotoAccessGetAssetsExecuteSync(std::shared_ptr<MediaLibraryAsyncContext> context,
         std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
     static bool PhotoAccessGetAssetsExecute(std::shared_ptr<MediaLibraryAsyncContext> context);
-    static std::shared_ptr<MediaLibraryAsyncContext> GetAssetsContext(std::vector<std::string> fetchColumns,
+    static std::shared_ptr<MediaLibraryAsyncContext> GetAssetsContext(const std::vector<std::string> &fetchColumns,
         std::shared_ptr<DataShare::DataShareAbsPredicates> predicate);
 
 public:
-    static std::vector<std::unique_ptr<FileAsset>> GetAssetsSync(std::vector<std::string> fetchColumns,
+    static std::vector<std::unique_ptr<FileAsset>> GetAssetsSync(const std::vector<std::string> &fetchColumns,
         std::shared_ptr<DataShare::DataShareAbsPredicates> predicate);
-    static std::unique_ptr<FetchResult<FileAsset>> GetAssets(std::vector<std::string> fetchColumns,
+    static std::unique_ptr<FetchResult<FileAsset>> GetAssets(const std::vector<std::string> &fetchColumns,
         std::shared_ptr<DataShare::DataShareAbsPredicates> predicate);
 };
 } // namespace Media
