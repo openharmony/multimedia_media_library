@@ -46,8 +46,9 @@ void PhotoAlbumLPathOperationTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(PhotoAlbumLPathOperationTest, CleanInvalidPhotoAlbums_Test, TestSize.Level0)
+HWTEST_F(PhotoAlbumLPathOperationTest, CleanInvalidPhotoAlbums_Test01, TestSize.Level0)
 {
+    MEDIA_INFO_LOG("Start CleanInvalidPhotoAlbums_Test01");
     int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
                                 .SetRdbStore(nullptr)
                                 .Start()
@@ -56,8 +57,20 @@ HWTEST_F(PhotoAlbumLPathOperationTest, CleanInvalidPhotoAlbums_Test, TestSize.Le
     EXPECT_EQ(affectedCount, 0);
 }
 
-HWTEST_F(PhotoAlbumLPathOperationTest, CleanDuplicatePhotoAlbums_Test, TestSize.Level0)
+HWTEST_F(PhotoAlbumLPathOperationTest, CleanInvalidPhotoAlbums_Test02, TestSize.Level0)
 {
+    MEDIA_INFO_LOG("Start CleanInvalidPhotoAlbums_Test02");
+    int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
+                                .SetRdbStore(nullptr)
+                                .Stop()
+                                .CleanInvalidPhotoAlbums()
+                                .GetAlbumAffectedCount();
+    EXPECT_EQ(affectedCount, 0);
+}
+
+HWTEST_F(PhotoAlbumLPathOperationTest, CleanDuplicatePhotoAlbums_Test01, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start CleanDuplicatePhotoAlbums_Test01");
     int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
                                 .SetRdbStore(nullptr)
                                 .Start()
@@ -66,11 +79,34 @@ HWTEST_F(PhotoAlbumLPathOperationTest, CleanDuplicatePhotoAlbums_Test, TestSize.
     EXPECT_EQ(affectedCount, 0);
 }
 
-HWTEST_F(PhotoAlbumLPathOperationTest, CleanEmptylPathPhotoAlbums_Test, TestSize.Level0)
+HWTEST_F(PhotoAlbumLPathOperationTest, CleanDuplicatePhotoAlbums_Test02, TestSize.Level0)
 {
+    MEDIA_INFO_LOG("Start CleanDuplicatePhotoAlbums_Test02");
+    int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
+                                .SetRdbStore(nullptr)
+                                .Stop()
+                                .CleanDuplicatePhotoAlbums()
+                                .GetAlbumAffectedCount();
+    EXPECT_EQ(affectedCount, 0);
+}
+
+HWTEST_F(PhotoAlbumLPathOperationTest, CleanEmptylPathPhotoAlbums_Test01, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start CleanEmptylPathPhotoAlbums_Test01");
     int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
                                 .SetRdbStore(nullptr)
                                 .Start()
+                                .CleanEmptylPathPhotoAlbums()
+                                .GetAlbumAffectedCount();
+    EXPECT_EQ(affectedCount, 0);
+}
+
+HWTEST_F(PhotoAlbumLPathOperationTest, CleanEmptylPathPhotoAlbums_Test02, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start CleanEmptylPathPhotoAlbums_Test02");
+    int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
+                                .SetRdbStore(nullptr)
+                                .Stop()
                                 .CleanEmptylPathPhotoAlbums()
                                 .GetAlbumAffectedCount();
     EXPECT_EQ(affectedCount, 0);
