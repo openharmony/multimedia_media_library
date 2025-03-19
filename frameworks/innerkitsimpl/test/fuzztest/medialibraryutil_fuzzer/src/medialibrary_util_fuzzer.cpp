@@ -125,7 +125,7 @@ static inline Security::AccessToken::PermissionUsedType FuzzPermissionUsedType(c
     return Security::AccessToken::PermissionUsedType::INVALID_USED_TYPE;
 }
 
-static inline Media:MediaLibraryCommand FuzzMediaLibraryCmd(const uint8_t *data, size_t size)
+static inline Media::MediaLibraryCommand FuzzMediaLibraryCmd(const uint8_t *data, size_t size)
 {
     return Media::MediaLibraryCommand(FuzzUri(data, size));
 }
@@ -138,7 +138,7 @@ static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
     NativeRdb::ValuesBucket values;
     values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
     values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
-    values.PutString(Media::PhotoColumn::PHOTO_VISIT_TIME, FuzzString(data, size));
+    values.PutString(Media::PhotoColumn::PHOTO_LAST_VISIT_TIME, FuzzString(data, size));
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
@@ -147,7 +147,7 @@ static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
 void SetTables()
 {
     vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
-    for (auto &createTableSql : createSqlList) {
+    for (auto &createTableSql : createTableSqlList) {
         CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "g_rdbStore is null.");
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
         if (ret != NativeRdb::E_OK) {
@@ -163,8 +163,8 @@ static void Init()
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
     int32_t sceneCode = 0;
-    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
-        sceneCode);
+    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
+        abilityContextImpl, sceneCode);
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibrary Mgr failed, ret: %{public}d.", ret);
     auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -375,19 +375,19 @@ static void MediaLibraryManagerTest(const uint8_t *data, size_t size)
     Media::MediaLibraryDataManagerUtils::GetTypeUriByUri(str);
 }
 
-static void MultiStagesAdapterTest(const uint8_t *data, size_t size)
+static void MultistageAdapterTest(const uint8_t *data, size_t size)
 {
     Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd(data, size);
     Media::DatabaseAdapter::Update(cmd);
-    MEDIA_INFO_LOG("MultiStagesAdapterTest");
+    MEDIA_INFO_LOG("MultistageAdapterTest");
 }
 
 static void MultistageTest(const uint8_t *data, size_t size)
 {
-    string photoId = FuzzString(data, size);
+    std::string photoId = FuzzString(data, size);
     int32_t fileId = InsertAsset(data, size, photoId);
     MEDIA_INFO_LOG("fileId: %{public}d.", fileId);
-    Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(FuzzString(data, size));
+    Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId);
     MEDIA_INFO_LOG("MultistageTest");
 }
 
@@ -534,7 +534,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::AppPermissionTest(data, size);
     OHOS::AppStateTest();
     OHOS::MediaLibraryManagerTest(data, size);
-    OHOS::MultiStageAdapterTest(data, size);
+    OHOS::MultistageAdapterTest(data, size);
     OHOS::MultistageTest(data, size);
     OHOS::RefreshAlbumTest();
     OHOS::ActiveAnalysisTest();
