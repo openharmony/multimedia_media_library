@@ -132,13 +132,10 @@ static void PrintNotifyInfo(NotifyType type, const list<Uri> &uris, const string
     for (auto it : uris) {
         temp += DfxUtils::GetSafeUri(it.ToString()) + ",";
     }
-    if (type == NotifyType::NOTIFY_UPDATE || type == NotifyType::NOTIFY_REMOVE
-        || type == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET) {
-        if (!uri.empty()) {
-            MEDIA_INFO_LOG("album uri is %{public}s", uri.c_str());
-        }
-        MEDIA_INFO_LOG("type is %{public}d, info is %{public}s", static_cast<int>(type), temp.c_str());
+    if (!uri.empty()) {
+        MEDIA_INFO_LOG("album uri is %{public}s", uri.c_str());
     }
+    MEDIA_INFO_LOG("type is %{public}d, info is %{public}s", static_cast<int>(type), temp.c_str());
 }
 
 static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)

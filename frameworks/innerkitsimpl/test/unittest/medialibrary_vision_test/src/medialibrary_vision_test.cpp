@@ -48,6 +48,7 @@
 #include "vision_total_column.h"
 #include "vision_video_label_column.h"
 #include "vision_video_aesthetics_score_column.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace testing::ext;

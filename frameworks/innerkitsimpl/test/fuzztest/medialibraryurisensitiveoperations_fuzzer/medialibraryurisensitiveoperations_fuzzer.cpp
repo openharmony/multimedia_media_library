@@ -165,6 +165,22 @@ static void QueryForceSensitiveFuzzer(const uint8_t* data, size_t size)
     Media::UriSensitiveOperations::QueryForceSensitive(tokenId, fileId);
 }
 
+static void UpdateOperationFuzzer(const uint8_t* data, size_t size)
+{
+    DataShare::DataSharePredicates dataSharePredicate;
+    dataSharePredicate.And()->EqualTo(Media::AppUriSensitiveColumn::APP_ID, FuzzString(data, size));
+    dataSharePredicate.And()->EqualTo(Media::AppUriSensitiveColumn::FILE_ID, FuzzInt32(data, size));
+    Media::MediaLibraryCommand cmd(Media::OperationObject::APP_URI_PERMISSION_INNER, Media::OperationType::UPDATE,
+        Media::MediaLibraryApi::API_10);
+    cmd.SetTableName(Media::AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    NativeRdb::RdbPredicates rdbPredicate = RdbDataShareAdapter::RdbUtils::ToPredicates(dataSharePredicate,
+        Media::AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
+    Media::UriSensitiveOperations::UpdateOperation(cmd, rdbPredicate);
+    std::string funcName = FuzzString(data, size);
+    std::shared_ptr<Media::TransactionOperations> trans = std::make_shared<Media::TransactionOperations>(funcName);
+    Media::UriSensitiveOperations::UpdateOperation(cmd, rdbPredicate, trans);
+}
+
 static void UriSensitiveOperationsFuzzer(const uint8_t* data, size_t size)
 {
     int32_t photoId = FuzzInt32(data, size);
@@ -177,6 +193,7 @@ static void UriSensitiveOperationsFuzzer(const uint8_t* data, size_t size)
     BatchInsertFuzzer(data, size);
     QuerySensitiveTypeFuzzer(data, size);
     QueryForceSensitiveFuzzer(data, size);
+    UpdateOperationFuzzer(data, size);
 }
 
 void SetTables()

@@ -139,6 +139,9 @@ shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 std::mutex MediaLibraryRdbStore::reconstructLock_;
 
 int32_t oldVersion_ = -1;
+
+const int TRASH_ALBUM_TYPE_VALUES = 2;
+const std::string TRASH_ALBUM_NAME_VALUES = "TrashAlbum";
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
     int32_t startNumber;

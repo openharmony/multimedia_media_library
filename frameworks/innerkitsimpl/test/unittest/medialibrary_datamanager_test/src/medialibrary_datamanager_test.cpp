@@ -41,6 +41,7 @@
 #include "albums_refresh_manager.h"
 #undef private
 #include "userfilemgr_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace testing::ext;

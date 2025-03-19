@@ -40,6 +40,13 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+const std::string PHOTO_OPTION_CLOSE = "close";
+constexpr const char *SETTINGS_DATASHARE_AUTO_OPTION_URI =
+    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true&key=persist.photos.ce.auto.option";
+const std::string SETTINGS_DATASHARE_URI =
+    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true";
+const std::string SETTINGS_DATASHARE_WATER_MARK_URI = SETTINGS_DATASHARE_URI +
+    "&key=persist.photos.ce.watermark.enable";
 class EnhancementManager {
 public:
     EXPORT static EnhancementManager& GetInstance();

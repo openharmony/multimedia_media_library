@@ -41,6 +41,11 @@
 #include "runtime.h"
 #include "userfilemgr_uri.h"
 #include "medialibrary_data_manager.h"
+#include "cloud_media_asset_uri.h"
+#include "mediatool_uri.h"
+#include "cloud_enhancement_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace testing::ext;
