@@ -19,6 +19,7 @@
 #include "mtp_operation.h"
 #include "media_mtp_utils.h"
 #include "mtp_packet.h"
+#include "mtp_manager.h"
 #include "mtp_constants.h"
 #include "mtp_service.h"
 #include "medialibrary_errno.h"
@@ -32,7 +33,10 @@ namespace Media {
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const uint32_t MAX_SIZE = 200001;
 
-void MtpUnitTest::SetUpTestCase(void) {}
+void MtpUnitTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+}
 
 void MtpUnitTest::TearDownTestCase(void)
 {

@@ -17,6 +17,7 @@
 #include "media_log.h"
 #include "mtp_file_observer.h"
 #include "mtp_medialibrary_manager.h"
+#include "mtp_manager.h"
 #include "mtp_store_observer.h"
 
 using namespace std;
@@ -25,7 +26,11 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
  
-void MtpMonitorTest::SetUpTestCase(void) {}
+void MtpMonitorTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+}
+
 void MtpMonitorTest::TearDownTestCase(void) {}
 void MtpMonitorTest::SetUp() {}
 void MtpMonitorTest::TearDown(void) {}

@@ -21,6 +21,7 @@
 #include "mtp_constants.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
+#include "mtp_manager.h"
 #include "mtp_media_library.h"
 #include "mtp_operation_context.h"
 using namespace std;
@@ -39,7 +40,11 @@ const std::string REAL_STORAGE_FILE = "/storage/media/100/local/files/Docs";
 // document real path
 const std::string REAL_DOCUMENT_FILE = "/storage/media/100/local/files/Docs/Document";
 
-void MtpEventTest::SetUpTestCase(void) {}
+void MtpEventTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+}
+
 void MtpEventTest::TearDownTestCase(void) {}
 void MtpEventTest::SetUp() {}
 void MtpEventTest::TearDown(void) {}
