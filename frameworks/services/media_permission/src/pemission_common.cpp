@@ -23,6 +23,7 @@
 #include "medialibrary_operation.h"
 #include "parameters.h"
 #include "permission_utils.h"
+#include "mediatool_uri.h"
 
 using namespace std;
 

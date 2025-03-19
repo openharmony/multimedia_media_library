@@ -46,6 +46,7 @@
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
 #include "userfilemgr_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -597,7 +598,7 @@ int SendableMediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
     NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to napi error code
     if (error <= E_COMMON_START && error >= E_COMMON_END) {
-        error = JS_INNER_FAIL;
+        error = (error == -E_CHECK_SYSTEMAPP_FAIL) ? E_CHECK_SYSTEMAPP_FAIL : JS_INNER_FAIL;
     } else if (trans2JsError.count(error)) {
         error = trans2JsError.at(error);
     }

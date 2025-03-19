@@ -26,6 +26,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "vision_db_sqls.h"
+#include "highlight_column.h"
 
 using namespace std;
 using namespace OHOS;

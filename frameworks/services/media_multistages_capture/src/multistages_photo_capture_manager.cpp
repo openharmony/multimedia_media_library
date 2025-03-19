@@ -49,6 +49,7 @@ using namespace OHOS::CameraStandard;
 namespace OHOS {
 namespace Media {
 const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
+const std::string MEDIA_DATA_DB_DEFERRED_PROC_TYPE = "deferred_proc_type";
 
 MultiStagesPhotoCaptureManager::MultiStagesPhotoCaptureManager()
 {

@@ -20,6 +20,7 @@
 
 #include "userfilemgr_uri.h"
 #include "medialibrary_type_const.h"
+#include "cloud_enhancement_uri.h"
 
 #include <string>
 #include <vector>
