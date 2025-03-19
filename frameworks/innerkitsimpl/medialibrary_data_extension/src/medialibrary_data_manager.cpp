@@ -2602,16 +2602,16 @@ static int32_t DoDeleteHdcDataOperation(const shared_ptr<MediaLibraryRdbStore> r
 
 int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone(int32_t version)
 {
-    switch (version)
-    {
-    case UPDATE_DIRTY_CLOUD_CLONE_V1:
-        return UpdateDirtyForCloudClone();
-        break;
-    case UPDATE_DIRTY_CLOUD_CLONE_V2:
-        return UpdateDirtyForCloudCloneV2();
-        break;
-    default:
-        break;
+    switch (version) {
+        case UPDATE_DIRTY_CLOUD_CLONE_V1: {
+            return UpdateDirtyForCloudClone();
+        }   
+        case UPDATE_DIRTY_CLOUD_CLONE_V2: {
+            return UpdateDirtyForCloudCloneV2();
+        }
+        default: {
+            break;
+        }
     }
     return E_OK;
 }
