@@ -86,6 +86,9 @@
 #include "userfilemgr_uri.h"
 #include "user_photography_info_column.h"
 #include "foreground_analysis_meta.h"
+#include "smart_album_column.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -7581,8 +7584,8 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
         GetUserIdFromContext(context));
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
-        if (errCode == E_PERMISSION_DENIED) {
-            context->SaveError(E_PERMISSION_DENIED);
+        if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
+            context->SaveError(errCode);
         } else {
             context->SaveError(E_HAS_DB_ERROR);
         }
@@ -8458,6 +8461,12 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
             ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
             HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
         };
+        if (albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+            onClause = {
+                ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+                HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID,
+            };
+        }
         context->predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
         context->predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
     }
@@ -8534,9 +8543,6 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
 
 napi_value MediaLibraryNapi::GetPhotoAlbums(napi_env env, napi_callback_info info)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("GetPhotoAlbums");
-
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_NULLPTR_RET(ParseArgsGetPhotoAlbum(env, info, asyncContext));
@@ -8547,6 +8553,9 @@ napi_value MediaLibraryNapi::GetPhotoAlbums(napi_env env, napi_callback_info inf
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetPhotoAlbums");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CHECK_NULLPTR_RET(ParseArgsGetPhotoAlbum(env, info, asyncContext));
@@ -8862,8 +8871,8 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
         string outUri;
         int index = UserFileClient::InsertExt(createFileUri, valuesBucket, outUri, GetUserIdFromContext(context));
         if (index < 0) {
-            if (index == E_PERMISSION_DENIED) {
-                context->error = OHOS_PERMISSION_DENIED_CODE;
+            if (index == E_PERMISSION_DENIED || index == -E_CHECK_SYSTEMAPP_FAIL) {
+                context->SaveError(index);
                 NAPI_ERR_LOG("PERMISSION_DENIED, index: %{public}d.", index);
                 return;
             }

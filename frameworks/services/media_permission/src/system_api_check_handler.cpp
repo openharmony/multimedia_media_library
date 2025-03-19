@@ -21,6 +21,8 @@
 #include "medialibrary_operation.h"
 #include "permission_utils.h"
 #include "userfilemgr_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 namespace OHOS::Media {
 
@@ -53,7 +55,7 @@ int32_t SystemApiCheckHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, 
     }
     if (!PermissionUtils::IsSystemApp()) {
         MEDIA_ERR_LOG("not system app, uri:%{public}s obj:%{public}d, type:%{public}d", uri.c_str(), obj, type);
-        return E_CHECK_SYSTEMAPP_FAIL;
+        return -E_CHECK_SYSTEMAPP_FAIL;
     }
     return E_SUCCESS;
 }

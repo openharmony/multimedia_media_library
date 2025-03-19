@@ -24,6 +24,8 @@
 #include "medialibrary_tracer.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
+#include "media_file_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;

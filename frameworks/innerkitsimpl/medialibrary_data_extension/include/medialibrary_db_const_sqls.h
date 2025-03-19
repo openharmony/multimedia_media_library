@@ -28,9 +28,12 @@
 #include "media_unique_number_column.h"
 #include "medialibrary_db_const.h"
 #include "vision_db_sqls_more.h"
+#include "smart_album_column.h"
 
 namespace OHOS {
 namespace Media {
+
+const std::string FILE_TABLE = "file";
 
 const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " (" +
                                        MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +

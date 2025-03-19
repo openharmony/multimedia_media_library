@@ -71,6 +71,7 @@ namespace OHOS {
 namespace Media {
 static const string ASSET_RECYCLE_SUFFIX = "-copy";
 static const string NO_MEDIA_TAG = ".nomedia";
+const char* HAS_DATA = "persist.multimedia.media_analysis_service.hasdata";
 constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
@@ -1641,9 +1642,15 @@ static int32_t GetRootDirAssetByRelativePath(const string &relativePath, DirAsse
     return E_SUCCESS;
 }
 
-void MediaLibraryObjectUtils::UpdateAnalysisProp(const std::string value)
+void MediaLibraryObjectUtils::TryUpdateAnalysisProp(const std::string value)
 {
-    int ret = SetParameter("persist.multimedia.media_analysis_service.hasdata", value.c_str());
+    char buffer[16];
+    GetParameter(HAS_DATA, NULL, buffer, sizeof(buffer));
+    if (buffer == value) {
+        return;
+    }
+
+    int ret = SetParameter(HAS_DATA, value.c_str());
     if (ret != 0) {
         MEDIA_ERR_LOG("Failed to UpdateAnalysisProp, result:%{public}d", ret);
     }

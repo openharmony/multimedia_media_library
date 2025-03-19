@@ -32,6 +32,7 @@
 #include "mtp_medialibrary_manager.h"
 #include "userfilemgr_uri.h"
 #include "photo_album_column.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace testing::ext;

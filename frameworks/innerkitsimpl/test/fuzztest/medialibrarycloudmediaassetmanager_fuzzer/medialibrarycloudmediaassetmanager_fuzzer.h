@@ -19,6 +19,7 @@
 #define FUZZ_PROJECT_NAME "medialibrarycloudmediaassetmanager_fuzzer"
 
 #include "userfilemgr_uri.h"
+#include "cloud_media_asset_uri.h"
 
 namespace OHOS {
 namespace Media {

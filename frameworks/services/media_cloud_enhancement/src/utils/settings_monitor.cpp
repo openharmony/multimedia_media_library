@@ -20,6 +20,12 @@
 
 namespace OHOS {
 namespace Media {
+constexpr const char *SETTINGS_DATA_EXT_URI = "datashare:///com.ohos.settingsdata.DataAbility";
+const std::string SETTING_KEY = "KEYWORD";
+const std::string SETTING_VALUE = "VALUE";
+const std::string WATER_MARK_ENABLED = "true";
+constexpr int PHOTOS_STORAGE_MANAGER_ID = 5003;
+
 std::shared_ptr<DataShare::DataShareHelper> SettingsMonitor::CreateNonBlockDataShareHelper()
 {
     sptr<ISystemAbilityManager> saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();

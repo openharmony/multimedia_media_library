@@ -60,6 +60,7 @@
 #include "post_event_utils.h"
 #include "dfx_manager.h"
 #include "image_format_convert.h"
+#include "highlight_column.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
