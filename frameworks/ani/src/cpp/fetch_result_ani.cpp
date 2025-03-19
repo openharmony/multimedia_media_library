@@ -22,13 +22,11 @@
 namespace OHOS::Media {
 ani_status FetchFileResultAni::FetchFileResultInit(ani_env *env)
 {
-    DEBUG_LOG_T("FetchFileResultInit start.");
     static const char *className = ANI_CLASS_FETCH_RESULT.c_str();
     ani_class cls;
     auto status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
-        DEBUG_LOG_T("Failed to find class %s", className);
         return status;
     }
 
@@ -115,7 +113,6 @@ void FetchFileResultAni::GetFetchResult(unique_ptr<FetchFileResultAni> &obj)
 
 ani_object FetchFileResultAni::FetchFileResultAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz)
 {
-    DEBUG_LOG_T("FetchFileResultAni start");
     unique_ptr<FetchFileResultAni> obj = make_unique<FetchFileResultAni>();
     obj->propertyPtr = make_shared<FetchResultProperty>();
     GetFetchResult(obj);
@@ -132,14 +129,12 @@ ani_object FetchFileResultAni::FetchFileResultAniConstructor(ani_env *env, [[may
     ani_method ctor;
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", nullptr, &ctor)) {
         MEDIA_ERR_LOG("Failed to find method: %{public}s", "ctor");
-        DEBUG_LOG_T("Failed to find method: %s", "ctor");
         ani_object nullobj = nullptr;
         return nullobj;
     }
 
     ani_object fetchResult;
     if (ANI_OK !=env->Object_New(cls, ctor, &fetchResult, reinterpret_cast<ani_long>(obj.release()))) {
-        DEBUG_LOG_T("New fetchResult Fail");
         MEDIA_ERR_LOG("New fetchResult Fail");
     }
     return fetchResult;
@@ -151,7 +146,7 @@ FetchFileResultAni* FetchFileResultAni::Unwrap(ani_env *env, ani_object fetchFil
     auto status = env->Object_GetFieldByName_Long(fetchFileResultHandle,
         "nativeValue", &fetchFileResultHandleLong);
     if (ANI_OK != status) {
-        DEBUG_LOG_T("GetAllPhotoAssetHandleObjects nullptr");
+        ANI_ERR_LOG("GetAllPhotoAssetHandleObjects nullptr");
         return nullptr;
     }
     return reinterpret_cast<FetchFileResultAni *>(fetchFileResultHandleLong);
@@ -159,7 +154,6 @@ FetchFileResultAni* FetchFileResultAni::Unwrap(ani_env *env, ani_object fetchFil
 
 static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContext>& aniContest)
 {
-    DEBUG_LOG_T("GetAllObjectFromFetchResult start");
     auto propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
     switch (propertyPtr->fetchResType_) {
         case FetchResType::TYPE_FILE: {
@@ -208,11 +202,9 @@ static bool CheckIfFFRAniNotEmpty(FetchFileResultAni* obj)
 {
     if (obj == nullptr) {
         MEDIA_ERR_LOG("FetchFileResultNapi is nullptr");
-        DEBUG_LOG_T("FetchFileResultAni is nullptr");
         return false;
     }
     if (obj->CheckIfPropertyPtrNull()) {
-        DEBUG_LOG_T("PropertyPtr in FetchFileResultAni is nullptr");
         MEDIA_ERR_LOG("PropertyPtr in FetchFileResultNapi is nullptr");
         return false;
     }
@@ -239,7 +231,6 @@ static ani_object GetAllObjectComplete(ani_env *env, std::unique_ptr<FetchFileRe
 
 ani_object FetchFileResultAni::GetAllObjects(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle)
 {
-    DEBUG_LOG_T("GetAllObjects start");
     ani_object nullobj = nullptr;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
@@ -358,7 +349,6 @@ static ani_object GetPositionObjectComplete(ani_env *env, std::unique_ptr<FetchF
 
 ani_object FetchFileResultAni::GetFirstObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle)
 {
-    DEBUG_LOG_T("aning GetFirstObject start First photo");
     ani_object nullobj = nullptr;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
@@ -401,7 +391,6 @@ static void GetNextAsset(std::unique_ptr<FetchFileResultAniContext>& aniContest)
 
 ani_object FetchFileResultAni::GetNextObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle)
 {
-    DEBUG_LOG_T("aning GetNextObject start next photo");
     ani_object nullobj = nullptr;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
@@ -419,7 +408,6 @@ ani_object FetchFileResultAni::GetNextObject(ani_env *env, [[maybe_unused]] ani_
 ani_double FetchFileResultAni::GetCount([[maybe_unused]] ani_env *env,
     [[maybe_unused]] ani_object fetchFileResultHandle) // number Double
 {
-    DEBUG_LOG_T("aning getCount start");
     ani_double count = 0.0;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);

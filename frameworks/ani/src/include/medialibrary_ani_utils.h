@@ -40,13 +40,6 @@
 #undef ANI_ASSERT
 #endif
 
-// Temporary debugging
-#define DEBUG_LOG_T(fmt, ...) \
-    do {                                  \
-        printf("\033[1;31mTEMPORARY\033[0m [%s:%d] %s" fmt "\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__);  \
-    } while (0)
-// Temporary debugging end
-
 #define CHECK_ARGS_WITH_MESSAGE(env, cond, msg)                                                 \
     do {                                                                                        \
         if (!(cond)) {                                                                          \
@@ -118,7 +111,6 @@
         ani_status __ret = (cond);                                  \
         if (__ret != ANI_OK) {                                      \
             ANI_ERR_LOG(message);                                   \
-            DEBUG_LOG_T("Ani Status [%d], %s", __ret, message);     \
             return __ret;                                           \
         }                                                           \
     } while (0)
