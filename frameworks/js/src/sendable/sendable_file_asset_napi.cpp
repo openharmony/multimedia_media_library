@@ -895,7 +895,6 @@ shared_ptr<FileAsset> SendableFileAssetNapi::GetFileAssetInstance() const
 static int32_t CheckSystemApiKeys(napi_env env, const string &key)
 {
     static const set<string> SYSTEM_API_KEYS = {
-        PhotoColumn::PHOTO_POSITION,
         MediaColumn::MEDIA_DATE_TRASHED,
         MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::PHOTO_USER_COMMENT,
