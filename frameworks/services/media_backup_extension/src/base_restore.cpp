@@ -999,10 +999,10 @@ int32_t BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
 
 int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
-    MEDIA_INFO_LOG("START STEP 2 INSERT CLOUD");
     MEDIA_INFO_LOG("Start insert cloud %{public}zu photos", fileInfos.size());
-    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ iS null in cloud clone");
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ is null in cloud clone");
     CHECK_AND_RETURN_RET_LOG(!fileInfos.empty(), E_OK, "fileInfos are empty in cloud clone");
+
     int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetCloudInsertValues(sceneCode, fileInfos, sourceType);
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
