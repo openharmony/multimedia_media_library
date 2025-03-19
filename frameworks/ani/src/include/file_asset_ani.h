@@ -25,7 +25,6 @@
 #include "pixel_map.h"
 #include "userfile_manager_types.h"
 
-#define ANI_AUTO_LENGTH SIZE_MAX
 namespace OHOS {
 namespace Media {
 
@@ -63,7 +62,7 @@ public:
     static ani_object Wrap(ani_env *env, FileAssetAni* fileAssetAni);
     static FileAssetAni* Unwrap(ani_env *env, ani_object object);
     static void Set(ani_env *env, ani_object object, ani_string member, ani_string value);
-    static ani_ref Get(ani_env *env, ani_object object, ani_string member);
+    static ani_object Get(ani_env *env, ani_object object, ani_string member);
     static void CommitModify(ani_env *env, ani_object object);
     static ani_double Open(ani_env *env, ani_object object, ani_string mode);
     static void Close(ani_env *env, ani_object object, ani_double fd);

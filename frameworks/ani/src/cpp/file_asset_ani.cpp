@@ -319,9 +319,9 @@ static int32_t CheckSystemApiKeys(ani_env *env, const string &key)
     return E_SUCCESS;
 }
 
-static ani_ref HandleDateTransitionKey(ani_env *env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr)
+static ani_object HandleDateTransitionKey(ani_env *env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr)
 {
-    ani_ref aniResult = nullptr;
+    ani_object aniResult = nullptr;
     if (fileAssetPtr->GetMemberMap().count(key) == 0) {
         AniError::ThrowError(env, JS_E_FILE_KEY);
         return aniResult;
@@ -329,9 +329,7 @@ static ani_ref HandleDateTransitionKey(ani_env *env, const string &key, const sh
 
     auto m = fileAssetPtr->GetMemberMap().at(key);
     if (m.index() == MEMBER_TYPE_INT64) {
-        ani_long aniLong;
-        MediaLibraryAniUtils::ToAniLong(env, get<int64_t>(m), aniLong);
-        return reinterpret_cast<ani_ref>(aniLong);
+        MediaLibraryAniUtils::ToAniLongObject(env, get<int64_t>(m), aniResult);
     } else {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return aniResult;
@@ -351,14 +349,13 @@ static bool IsSpecialKey(const string &key)
     return false;
 }
 
-static ani_ref HandleGettingSpecialKey(ani_env *env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr)
+static ani_object HandleGettingSpecialKey(ani_env *env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr)
 {
     if (key == PENDING_STATUS) {
-        if (fileAssetPtr->GetTimePending() == 0) {
-            return reinterpret_cast<ani_ref>(false);
-        } else {
-            return reinterpret_cast<ani_ref>(true);
-        }
+        bool isTimePending = (fileAssetPtr->GetTimePending() != 0);
+        ani_object aniResult = nullptr;
+        MediaLibraryAniUtils::ToAniBooleanObject(env, isTimePending, aniResult);
+        return aniResult;
     }
 
     return nullptr;
@@ -417,14 +414,14 @@ static bool GetDateTakenFromResultSet(const shared_ptr<DataShareResultSet> &resu
     return true;
 }
 
-static ani_ref HandleGettingDetailTimeKey(ani_env *env, const shared_ptr<FileAsset> &fileAssetPtr)
+static ani_object HandleGettingDetailTimeKey(ani_env *env, const shared_ptr<FileAsset> &fileAssetPtr)
 {
-    ani_ref aniResult = nullptr;
+    ani_object aniResult = nullptr;
     auto detailTimeValue = fileAssetPtr->GetMemberMap().at(PhotoColumn::PHOTO_DETAIL_TIME);
     if (detailTimeValue.index() == MEMBER_TYPE_STRING && !get<string>(detailTimeValue).empty()) {
         ani_string aniDetailTime {};
-        env->String_NewUTF8(get<string>(detailTimeValue).c_str(), ANI_AUTO_LENGTH, &aniDetailTime);
-        return reinterpret_cast<ani_ref>(aniDetailTime);
+        MediaLibraryAniUtils::ToAniString(env, get<string>(detailTimeValue), aniDetailTime);
+        return reinterpret_cast<ani_object>(aniDetailTime);
     } else {
         string fileId = MediaFileUtils::GetIdFromUri(fileAssetPtr->GetUri());
         string queryUriStr = PAH_QUERY_PHOTO;
@@ -445,7 +442,7 @@ static ani_ref HandleGettingDetailTimeKey(ani_env *env, const shared_ptr<FileAss
             ani_string aniDetailTime {};
             MediaLibraryAniUtils::ToAniString(env, detailTime, aniDetailTime);
             UpdateDetailTimeByDateTaken(env, fileAssetPtr, detailTime);
-            return reinterpret_cast<ani_ref>(aniDetailTime);
+            return reinterpret_cast<ani_object>(aniDetailTime);
         } else {
             AniError::ThrowError(env, JS_INNER_FAIL);
         }
@@ -453,7 +450,16 @@ static ani_ref HandleGettingDetailTimeKey(ani_env *env, const shared_ptr<FileAss
     return aniResult;
 }
 
-ani_ref FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
+static inline int64_t GetCompatDate(const string inputKey, const int64_t date)
+{
+    if (inputKey == MEDIA_DATA_DB_DATE_ADDED || inputKey == MEDIA_DATA_DB_DATE_MODIFIED ||
+        inputKey == MEDIA_DATA_DB_DATE_TRASHED || inputKey == MEDIA_DATA_DB_DATE_TAKEN) {
+            return date / MSEC_TO_SEC;
+        }
+    return date;
+}
+
+ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
 {
     auto fileAssetAni = Unwrap(env, object);
     if (fileAssetAni == nullptr || fileAssetAni->GetFileAssetInstance() == nullptr) {
@@ -469,9 +475,7 @@ ani_ref FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
         return nullptr;
     }
 
-    ani_ref aniResult = nullptr;
-    env->GetUndefined(&aniResult);
-
+    ani_object aniResult = nullptr;
     if (DATE_TRANSITION_MAP.count(inputKey) != 0) {
         return HandleDateTransitionKey(env, DATE_TRANSITION_MAP.at(inputKey), fileAssetPtr);
     }
@@ -491,15 +495,13 @@ ani_ref FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
     if (m.index() == MEMBER_TYPE_STRING) {
         ani_string aniString {};
         MediaLibraryAniUtils::ToAniString(env, std::get<std::string>(m), aniString);
-        return reinterpret_cast<ani_ref>(aniString);
+        return reinterpret_cast<ani_object>(aniString);
     } else if (m.index() == MEMBER_TYPE_INT32) {
-        ani_int aniInt {};
-        MediaLibraryAniUtils::ToAniInt(env, std::get<int32_t>(m), aniInt);
-        return reinterpret_cast<ani_ref>(aniInt);
+        MediaLibraryAniUtils::ToAniIntObject(env, std::get<int32_t>(m), aniResult);
+        return aniResult;
     } else if (m.index() == MEMBER_TYPE_INT64) {
-        ani_long aniLong {};
-        MediaLibraryAniUtils::ToAniLong(env, std::get<int64_t>(m), aniLong);
-        return reinterpret_cast<ani_ref>(aniLong);
+        MediaLibraryAniUtils::ToAniLongObject(env, GetCompatDate(inputKey, get<int64_t>(m)), aniResult);
+        return aniResult;
     } else {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return aniResult;
