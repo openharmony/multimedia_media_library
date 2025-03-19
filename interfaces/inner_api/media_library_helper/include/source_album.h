@@ -175,7 +175,7 @@ const std::string INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " NEW.file_id, NEW.data, 3, 1); +
+    " VALUES (" + " NEW.file_id, NEW.data, 3, 1);" +
     " END;";
 
 const std::string UPDATE_PHOTO_UPDATE_SOURCE_ALBUM =
@@ -273,7 +273,7 @@ const std::string CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " NEW.file_id, NEW.data, 3, 1); +
+    " VALUES (" + " NEW.file_id, NEW.data, 3, 1);" +
     " END;";
 
 const std::string PHOTO_ALBUM_NOTIFY_FUNC =
@@ -316,7 +316,7 @@ const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " NEW.file_id, NEW.data, 3, 1); +
+    " VALUES (" + " NEW.file_id, NEW.data, 3, 1);" +
     " END;";
 
 } // namespace Media
