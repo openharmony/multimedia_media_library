@@ -42,10 +42,8 @@
 namespace OHOS {
 using namespace std;
 using namespace DataShare;
-using namespace DistributedKv;
-using namespace NativeRdb;
-using namespace AAFwk;
-using ChangeType = DataShare::DataShareObserver::ChangeType;
+
+const int32_t EVEN = 2;
 
 static inline string FuzzString(const uint8_t *data, size_t size)
 {
@@ -99,34 +97,36 @@ static inline Uri FuzzUri(const uint8_t* data, size_t size)
 
 static inline std::list<Uri> FuzzListUri(const uint8_t* data, size_t size)
 {
-    return std::list<FuzzListUri(data, size)>;
+    std::list<Uri> emptySet{};
+    return emptySet{};
 }
 
 static inline std::unordered_set<std::string> FuzzUnorderedSet(const uint8_t* data, size_t size)
 {
-    return std::unordered_set<FuzzString(data, size)>;
+    std::unordered_set emptySet{};
+    return emptySet{};
 }
 
 static Media::SyncNotifyInfo FuzzSyncNotifyInfo(const uint8_t* data, size_t size)
 {
     Media::SyncNotifyInfo info = {
-        .taskType = FuzzInt16(data, size);
-        .syncType = FuzzInt16(data, size);
-        .notifyType = Media::NotifyType::NOTIFY_ADD;
-        .syncId = FuzzString(data, size);
-        .totalAssets = FuzzInt32(data, size);
-        .totalAlbums = FuzzInt32(data, size);
-        .uriType = FuzzInt8(data, size);
-        .reserve = FuzzInt8(data, size);
-        .urisSize  = FuzzInt16(data, size);
-        .uris = FuzzListUri(data, size);
-        .extraUris = FuzzListUri(data, size);
-        .uriIds = FuzzUnorderedSet(data, size);
-        .notifyAssets = FuzzBool(data, size);
-        .notifyAlbums = FuzzBool(data, size);
-        .refreshResult = FuzzInt32(data, size);
-        .forceRefreshType = ForceRefreshType::NONE;
-    }
+        .taskType = FuzzInt16(data, size),
+        .syncType = FuzzInt16(data, size),
+        .notifyType = Media::NotifyType::NOTIFY_ADD,
+        .syncId = FuzzString(data, size),
+        .totalAssets = FuzzInt32(data, size),
+        .totalAlbums = FuzzInt32(data, size),
+        .uriType = FuzzInt8(data, size),
+        .reserve = FuzzInt8(data, size),
+        .urisSize  = FuzzInt16(data, size),
+        .uris = FuzzListUri(data, size),
+        .extraUris = FuzzListUri(data, size),
+        .uriIds = FuzzUnorderedSet(data, size),
+        .notifyAssets = FuzzBool(data, size),
+        .notifyAlbums = FuzzBool(data, size),
+        .refreshResult = FuzzInt32(data, size),
+        .forceRefreshType = ForceRefreshType::NONE,
+    };
     return info;
 }
 
