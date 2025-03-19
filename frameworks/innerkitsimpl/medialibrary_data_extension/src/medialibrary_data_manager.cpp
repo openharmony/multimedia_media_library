@@ -160,12 +160,14 @@ const int32_t PHOTO_CLOUD_POSITION = 2;
 const int32_t PHOTO_LOCAL_CLOUD_POSITION = 3;
 const int32_t UPDATE_DIRTY_CLOUD_CLONE_V1 = 1;
 const int32_t UPDATE_DIRTY_CLOUD_CLONE_V2 = 2;
+const int32_t ERROR_OLD_FILE_ID_OFFSET = 1000000;
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
 static const std::string NO_UPDATE_DIRTY_CLOUD_CLONE_V2 = "no_update_dirty_cloud_clone_v2";
 static const std::string NO_DELETE_DIRTY_HDC_DATA = "no_delete_dirty_hdc_data";
 static const std::string CLOUD_PREFIX_PATH = "/storage/cloud/files";
 static const std::string THUMB_PREFIX_PATH = "/storage/cloud/files/.thumbs";
+static const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 
 #ifdef DEVICE_STANDBY_ENABLE
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
@@ -2568,6 +2570,16 @@ static int32_t DoUpdateDirtyForCloudCloneOperationV2(const shared_ptr<MediaLibra
     int32_t ret = rdbStore->Update(changeRows, updatePostBucket, updatePredicates);
     CHECK_AND_RETURN_RET_LOG((ret == E_OK && changeRows > 0), E_FAIL,
         "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
+    for (auto fileId : fileIds) {
+        ValuesBucket updateOldPhotosBucket;
+        int32_t oldFileId = ERROR_OLD_FILE_ID_OFFSET - static_cast<int32_t>(std::stoi(fileId));
+        updatePostBucket.Put(COLUMN_OLD_FILE_ID, oldFileId);
+        AbsRdbPredicates updateOldPhotosPredicates = AbsRdbPredicates(PhotoColumn::TAB_OLD_PHOTOS_TABLE);
+        updateOldPhotosPredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+        ret = rdbStore->Update(changeRows, updateOldPhotosBucket, updateOldPhotosPredicates);
+        CHECK_AND_RETURN_RET_LOG((ret == E_OK && changeRows > 0), E_FAIL,
+        "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
+    }
     return ret;
 }
 
@@ -2593,14 +2605,15 @@ int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone(int32_t version)
     switch (version)
     {
     case UPDATE_DIRTY_CLOUD_CLONE_V1:
-        UpdateDirtyForCloudClone();
+        return UpdateDirtyForCloudClone();
         break;
     case UPDATE_DIRTY_CLOUD_CLONE_V2:
-        UpdateDirtyForCloudCloneV2();
+        return UpdateDirtyForCloudCloneV2();
         break;
     default:
         break;
     }
+    return E_OK;
 }
 
 int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone()
@@ -2656,9 +2669,9 @@ int32_t MediaLibraryDataManager::UpdateDirtyForCloudClone()
 int32_t MediaLibraryDataManager::UpdateDirtyForCloudCloneV2()
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, E_FAIL, "rdbStore is nullptr");
-    MEDIA_INFO_LOG("MediaLibraryDataManager::UpdateDirtyForCloudClone");
+    MEDIA_INFO_LOG("MediaLibraryDataManager::UpdateDirtyForCloudCloneV2");
     const std::string QUERY_DIRTY_FOR_CLOUD_CLONE_INFO_V2 =
-        "SELECT p.file_id, p.data, p.position, p.cloud_id"
+        "SELECT p.file_id, p.data, p.position, p.cloud_id "
         "FROM Photos p "
         "JOIN tab_old_photos t ON p.file_id = t.file_id "
         "WHERE p.position = 2 AND COALESCE(cloud_id,'') = '' AND t.old_file_id = -1 "
@@ -2683,10 +2696,11 @@ int32_t MediaLibraryDataManager::UpdateDirtyForCloudCloneV2()
                     MediaFileUtils::DesensitizePath(dataPath).c_str());
                 continue;
             }
+            int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
             dirtyFileIds.push_back(to_string(fileId));
         }
         resultSet->Close();
-        CHECK_AND_PRINT_LOG(DoUpdateDirtyForCloudCloneOperationV2(rdbStore_, dirtyToZeroFileIds, true) == E_OK,
+        CHECK_AND_PRINT_LOG(DoUpdateDirtyForCloudCloneOperationV2(rdbStore_, dirtyFileIds) == E_OK,
             "Failed to DoUpdateDirtyForCloudCloneOperationV2 for dirtyFileIds");
     }
     if (!nextUpdate) {
