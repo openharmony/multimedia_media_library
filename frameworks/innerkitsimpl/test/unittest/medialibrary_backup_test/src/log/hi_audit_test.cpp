@@ -17,6 +17,7 @@
 #include <fstream>
 
 #include "media_log.h"
+#define private public
 #include "backup_hi_audit.h"
 
 using namespace std;
