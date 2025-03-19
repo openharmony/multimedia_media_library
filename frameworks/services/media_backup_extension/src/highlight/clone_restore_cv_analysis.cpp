@@ -339,7 +339,8 @@ std::unordered_set<std::string> CloneRestoreCVAnalysis::GetCommonColumns(const s
     std::unordered_set<std::string> result;
     auto comparedColumns = GetValueFromMap(ALBUM_COLUMNS_MAP, tableName);
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
-        bool cond = (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() && comparedColumns.count(it->first) > 0);
+        bool cond = (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() &&
+            comparedColumns.count(it->first) > 0);
         CHECK_AND_EXECUTE(!cond, result.insert(it->first));
     }
     return result;
@@ -570,7 +571,7 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
             newPlayInfo["effectline"]["effectline"][effectlineIndex]["transitionVideoUri"], cloneHighlight);
         newPlayInfo["effectline"]["effectline"][effectlineIndex]["transitionVideoUri"] = transVideoUri;
 
-        bool  cond = (effectlineIndex > 0 &&
+        bool cond = (effectlineIndex > 0 &&
             newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["effect"] == EFFECTLINE_TYPE_MASK1);
         CHECK_AND_EXECUTE(!cond,
             newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["transitionVideoUri"] = transVideoUri);
@@ -702,7 +703,8 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
             std::optional<std::string> oldPlayInfo =
                 BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "play_info");
             std::string newPlayInfo = "null";
-            CHECK_AND_EXECUTE(!oldPlayInfo.has_value(), newPlayInfo = ParsePlayInfo(oldPlayInfo.value(), cloneHighlight));
+            CHECK_AND_EXECUTE(!oldPlayInfo.has_value(),
+                newPlayInfo = ParsePlayInfo(oldPlayInfo.value(), cloneHighlight));
 
             int32_t albumId = cloneHighlight.GetNewHighlightAlbumId(oldAlbumId.value());
             std::string updatePlayInfoSql = "UPDATE tab_highlight_play_info SET play_info = ? "

@@ -200,7 +200,6 @@ bool CloneRestoreGeo::CheckTableColumns(const std::string& tableName,
         BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_, tableName);
     std::unordered_set<std::string> result;
     for (auto it = columns.begin(); it != columns.end(); ++it) {
-
         if (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end()) {
             result.insert(it->first);
             continue;
@@ -368,7 +367,8 @@ std::unordered_set<std::string> CloneRestoreGeo::GetCommonColumns(const string &
     std::unordered_set<std::string> result;
     auto comparedColumns = GetValueFromMap(COMPARED_COLUMNS_MAP, tableName);
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
-        bool cond = (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() && comparedColumns.count(it->first) > 0);
+        bool cond = (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() &&
+            comparedColumns.count(it->first) > 0);
         CHECK_AND_EXECUTE(!cond, result.insert(it->first));
     }
     return result;
