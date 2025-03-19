@@ -157,7 +157,7 @@ ani_object PhotoAccessHelperAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[
         return nullptr;
     }
 
-    const std::string className = "Ldata_share_predicates/dataSharePredicates/DataSharePredicates;";
+    const std::string className = "L@ohos/data/dataSharePredicates/dataSharePredicates/DataSharePredicates;";
     const std::string methodName = "getNativePtr";
     ani_method getMethod = nullptr;
     if (ANI_OK != MediaLibraryAniUtils::FindClassMethod(env, className, methodName, &getMethod)) {
@@ -200,7 +200,7 @@ ani_object PhotoAccessHelperAni::GetAssetsInner([[maybe_unused]] ani_env *env, [
         return nullptr;
     }
 
-    const std::string className = "Ldata_share_predicates/dataSharePredicates/DataSharePredicates;";
+    const std::string className = "L@ohos/data/dataSharePredicates/dataSharePredicates/DataSharePredicates;";
     const std::string methodName = "getNativePtr";
     ani_method getMethod = nullptr;
     if (ANI_OK != MediaLibraryAniUtils::FindClassMethod(env, className, methodName, &getMethod)) {
