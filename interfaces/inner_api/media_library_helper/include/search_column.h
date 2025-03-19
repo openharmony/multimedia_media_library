@@ -104,8 +104,7 @@ const std::string CREATE_SEARCH_UPDATE_TRIGGER =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " SELECT (" + " OLD.file_id, OLD.data, 3, 1) FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE OLD.position <> 2;" +
+    " VALUES (" + " old.file_id, old.data, 3, 1); +
     " END;";
 
 // Listening of Photos: update (title,date_modified,latitude,longitude
@@ -125,8 +124,7 @@ const std::string CREATE_SEARCH_UPDATE_STATUS_TRIGGER =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " SELECT (" + " OLD.file_id, OLD.data, 3, 1) FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE OLD.position <> 2;" +
+    " VALUES (" + " old.file_id, old.data, 3, 1); +
     " END;";
 
 // Listening of Photos: delete
@@ -184,8 +182,7 @@ const std::string CREATE_ALBUM_UPDATE_SEARCH_TRIGGER =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " SELECT (" + " OLD.file_id, OLD.data, 3, 2) FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE OLD.position <> 2;" +
+    " VALUES (" + " old.file_id, old.data, 3, 2); +
     " END;";
 
 // Listening of cv tab_analysis_total: update of(status)  ,update cv_status
