@@ -61,6 +61,8 @@ HWTEST_F(MtpErrorUtilsUnitTest, mtp_packet_001, TestSize.Level0)
     EXPECT_EQ(MtpErrorUtils::SolveDeleteObjectError(E_EXIST_IN_DB), MTP_ERROR_INVALID_OBJECTHANDLE);
     EXPECT_EQ(MtpErrorUtils::SolveObjectPropValueError(E_EXIST_IN_DB), MTP_ERROR_INVALID_OBJECTPROPCODE);
     EXPECT_EQ(MtpErrorUtils::SolveCloseFdError(E_EXIST_IN_DB), MTP_ERROR_INVALID_OBJECTHANDLE);
+    EXPECT_EQ(MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR), MTP_ERROR_INVALID_OBJECTPROP_FORMAT);
+    EXPECT_EQ(MtpErrorUtils::SolveCloseFdError(E_HAS_DB_ERROR), MTP_ERROR_STORE_NOT_AVAILABLE);
 }
 } // namespace Media
 } // namespace OHOS
