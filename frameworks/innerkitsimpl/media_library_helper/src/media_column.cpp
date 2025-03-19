@@ -426,7 +426,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
                         MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
                         PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-                        " VALUES (" + " old.file_id, old.data, 2, 1); +
+                        " VALUES (" + " old.file_id, old.data, 2, 1);" +
                         " END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
