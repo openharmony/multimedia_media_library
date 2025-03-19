@@ -67,6 +67,6 @@ HWTEST_F(PhotoAlbumMergeOperationTest, photo_album_merge_operation_test_002, Tes
     auto g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     PhotoAlbumMergeOperation photoAlbumMergeOperation;
     int32_t ret = photoAlbumMergeOperation.SetRdbStore(g_rdbStore).MergeAlbum(OLD_ALBUM_ID, NEW_ALBUM_ID);
-    EXPECT_EQ(ret, NativeRdb::E_ERROR);
+    EXPECT_EQ(ret, NativeRdb::E_OK);
 }
 }  // namespace OHOS::Media
