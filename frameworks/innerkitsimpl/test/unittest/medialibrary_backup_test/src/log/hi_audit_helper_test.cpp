@@ -17,7 +17,6 @@
 #include "media_backup_report_data_type.h"
 #include "media_log.h"
 
-#define private public
 #include "backup_hi_audit_helper.h"
 
 using namespace std;
