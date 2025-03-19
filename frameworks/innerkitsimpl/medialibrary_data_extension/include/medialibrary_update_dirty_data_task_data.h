@@ -13,11 +13,10 @@
  * limitations under the License.
  */
 
- #ifndef OHOS_MEDIALIBRARY_UPDATE_DIRTY_DATA_TASK_DATA_H
- #define OHOS_MEDIALIBRARY_UPDATE_DIRTY_DATA_TASK_DATA_H
- 
- #include "medialibrary_async_worker.h"
- 
+#ifndef OHOS_MEDIALIBRARY_UPDATE_DIRTY_DATA_TASK_DATA_H
+#define OHOS_MEDIALIBRARY_UPDATE_DIRTY_DATA_TASK_DATA_H
+#include "medialibrary_async_worker.h"
+
 namespace OHOS {
 namespace Media {
 class UpdateDirtyDataAsyncTaskData : public AsyncTaskData {
@@ -29,5 +28,5 @@ public:
 
 } // Media
 } // OHOS
- #endif // OHOS_MEDIALIBRARY_UPDATE_DIRTY_DATA_TASK_DATA_H
+#endif // OHOS_MEDIALIBRARY_UPDATE_DIRTY_DATA_TASK_DATA_H
  
