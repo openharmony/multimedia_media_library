@@ -19,7 +19,7 @@
 #include "gtest/gtest.h"
 
 namespace OHOS::Media {
-class PhotoAlbumMergeOperation : public testing::Test {
+class PhotoAlbumMergeOperationTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
