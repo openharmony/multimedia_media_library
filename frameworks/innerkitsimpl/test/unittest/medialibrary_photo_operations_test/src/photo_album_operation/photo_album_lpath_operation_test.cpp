@@ -60,9 +60,11 @@ HWTEST_F(PhotoAlbumLPathOperationTest, CleanInvalidPhotoAlbums_Test_001, TestSiz
 HWTEST_F(PhotoAlbumLPathOperationTest, CleanInvalidPhotoAlbums_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start CleanInvalidPhotoAlbums_Test_002");
+    PhotoAlbumLPathOperation::GetInstance()
+        .SetRdbStore(nullptr)
+        .Start()
+        .Stop();                                                   
     int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
-                                .SetRdbStore(nullptr)
-                                .Stop()
                                 .CleanInvalidPhotoAlbums()
                                 .GetAlbumAffectedCount();
     EXPECT_EQ(affectedCount, 0);
@@ -82,9 +84,11 @@ HWTEST_F(PhotoAlbumLPathOperationTest, CleanDuplicatePhotoAlbums_Test_001, TestS
 HWTEST_F(PhotoAlbumLPathOperationTest, CleanDuplicatePhotoAlbums_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start CleanDuplicatePhotoAlbums_Test_002");
+    PhotoAlbumLPathOperation::GetInstance()
+        .SetRdbStore(nullptr)
+        .Start()
+        .Stop();                                                   
     int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
-                                .SetRdbStore(nullptr)
-                                .Stop()
                                 .CleanDuplicatePhotoAlbums()
                                 .GetAlbumAffectedCount();
     EXPECT_EQ(affectedCount, 0);
@@ -104,9 +108,11 @@ HWTEST_F(PhotoAlbumLPathOperationTest, CleanEmptylPathPhotoAlbums_Test_001, Test
 HWTEST_F(PhotoAlbumLPathOperationTest, CleanEmptylPathPhotoAlbums_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start CleanEmptylPathPhotoAlbums_Test_002");
+    PhotoAlbumLPathOperation::GetInstance()
+        .SetRdbStore(nullptr)
+        .Start()
+        .Stop();                                                   
     int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
-                                .SetRdbStore(nullptr)
-                                .Stop()
                                 .CleanEmptylPathPhotoAlbums()
                                 .GetAlbumAffectedCount();
     EXPECT_EQ(affectedCount, 0);
