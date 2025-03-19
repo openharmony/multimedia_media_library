@@ -336,6 +336,46 @@ ani_status MediaLibraryAniUtils::GetParamStringPathMax(ani_env *env, ani_object 
     return GetParamStringWithLength(env, static_cast<ani_string>(arg), PATH_MAX, str);
 }
 
+ani_status MediaLibraryAniUtils::ToAniBooleanObject(ani_env *env, bool src, ani_object &aniObj)
+{
+    static const char *className = "Lstd/core/Boolean;";
+    ani_class cls {};
+    CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
+
+    ani_method ctor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "Z:V", &ctor), "Failed to find method: ctor");
+
+    ani_boolean aniBool = src ? ANI_TRUE : ANI_FALSE;
+    CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, aniBool), "New bool Object Fail");
+    return ANI_OK;
+}
+
+ani_status MediaLibraryAniUtils::ToAniIntObject(ani_env *env, int32_t src, ani_object &aniObj)
+{
+    static const char *className = "Lstd/core/Int;";
+    ani_class cls {};
+    CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
+
+    ani_method ctor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &ctor), "Failed to find method: ctor");
+
+    CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, static_cast<ani_int>(src)), "New int32 Object Fail");
+    return ANI_OK;
+}
+
+ani_status MediaLibraryAniUtils::ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj)
+{
+    static const char *className = "Lescompat/BigInt;";
+    ani_class cls {};
+    CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
+
+    ani_method ctor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor), "Failed to find method: ctor");
+
+    CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, static_cast<ani_long>(src)), "New int64_t Object Fail");
+    return ANI_OK;
+}
+
 ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, std::vector<uint32_t> &array)
 {
     CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
