@@ -14,6 +14,7 @@
  */
 #include "medialibraryrefreshmanager.h"
 
+#include "albums_refresh_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_tracer.h"
