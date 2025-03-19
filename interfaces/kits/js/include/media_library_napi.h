@@ -506,6 +506,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
     bool isContainsAlbumUri = false;
     int32_t taskId = -1;
+    bool isFullAnalysis = false;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
