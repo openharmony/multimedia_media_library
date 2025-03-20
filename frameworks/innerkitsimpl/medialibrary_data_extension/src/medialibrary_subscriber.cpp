@@ -713,7 +713,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     CloudUploadChecker::RepairNoOriginButLcd();
     CloudUploadChecker::HandleNoOriginPhoto();
 
-    CloudUploadChecker::RepairNoDetailTime();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     // add permission for cloud enhancement photo
     CloudEnhancementChecker::AddPermissionForCloudEnhancement();
