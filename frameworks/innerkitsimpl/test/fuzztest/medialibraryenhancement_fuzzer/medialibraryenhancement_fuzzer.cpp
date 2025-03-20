@@ -280,10 +280,12 @@ int32_t PrepareHighQualityPhoto(const string &photoId, const string &displayName
 {
     auto fileId = SetDefaultPhotoApi10(Media::MediaType::MEDIA_TYPE_IMAGE, displayName);
     // update multi-stages capture db info
-    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::UPDATE, Media::MediaLibraryApi::API_10);
+    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::UPDATE,
+        Media::MediaLibraryApi::API_10);
     NativeRdb::ValuesBucket values;
     values.Put(Media::PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(Media::MultiStagesPhotoQuality::FULL));
-    values.Put(Media::PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(Media::CloudEnhancementAvailableType::PROCESSING_AUTO));
+    values.Put(Media::PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(Media::CloudEnhancementAvailableType::PROCESSING_AUTO));
     values.Put(Media::PhotoColumn::PHOTO_ID, photoId);
     values.Put(Media::PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, 1);
     cmd.SetValueBucket(values);
@@ -296,7 +298,8 @@ int32_t PrepareHighQualityPhoto(const string &photoId, const string &displayName
 int32_t UpdateCEAvailable(int32_t fileId, int32_t ceAvailable, bool hasCloudWaterMark = false)
 {
     // update cloud enhancement ce_available
-    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::UPDATE, Media::MediaLibraryApi::API_10);
+    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO,
+        Media::OperationType::UPDATE, Media::MediaLibraryApi::API_10);
     NativeRdb::ValuesBucket values;
     values.Put(Media::PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
     if (hasCloudWaterMark) {
@@ -432,7 +435,7 @@ static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
         cloudEnhancementAvailableType = Media::CloudEnhancementAvailableType::EDIT;
     }
     Media::EnhancementManager::GetInstance().CancelTasksInternal(testFileIds, testphotoIds,
-            cloudEnhancementAvailableType);
+        cloudEnhancementAvailableType);
     NativeRdb::RdbPredicates servicePredicates(FuzzString(data, size));
     Media::EnhancementManager::GetInstance().GenerateAddAutoServicePredicates(servicePredicates);
     Media::EnhancementManager::GetInstance().GenerateCancelOperationPredicates(FuzzInt32(data, size),
