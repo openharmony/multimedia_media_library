@@ -63,7 +63,7 @@ HWTEST_F(PhotoAlbumLPathOperationTest, CleanInvalidPhotoAlbums_Test_002, TestSiz
     PhotoAlbumLPathOperation::GetInstance()
         .SetRdbStore(nullptr)
         .Start()
-        .Stop();                                                   
+        .Stop();
     int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
                                 .CleanInvalidPhotoAlbums()
                                 .GetAlbumAffectedCount();
@@ -87,7 +87,7 @@ HWTEST_F(PhotoAlbumLPathOperationTest, CleanDuplicatePhotoAlbums_Test_002, TestS
     PhotoAlbumLPathOperation::GetInstance()
         .SetRdbStore(nullptr)
         .Start()
-        .Stop();                                                   
+        .Stop();
     int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
                                 .CleanDuplicatePhotoAlbums()
                                 .GetAlbumAffectedCount();
@@ -111,7 +111,7 @@ HWTEST_F(PhotoAlbumLPathOperationTest, CleanEmptylPathPhotoAlbums_Test_002, Test
     PhotoAlbumLPathOperation::GetInstance()
         .SetRdbStore(nullptr)
         .Start()
-        .Stop();                                                   
+        .Stop();
     int32_t affectedCount = PhotoAlbumLPathOperation::GetInstance()
                                 .CleanEmptylPathPhotoAlbums()
                                 .GetAlbumAffectedCount();
