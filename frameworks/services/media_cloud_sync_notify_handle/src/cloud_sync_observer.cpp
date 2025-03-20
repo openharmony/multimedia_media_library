@@ -51,26 +51,15 @@ void CloudSyncObserver::DealCloudSync(const ChangeInfo &changeInfo)
     SyncNotifyInfo info;
     info.uris = changeInfo.uris_;
     std::string dataString = (const char *)changeInfo.data_;
-    if (!nlohmann::json::accept(dataString)) {
-        MEDIA_WARN_LOG("Failed to verify the meataData format, metaData is: %{public}s", dataString.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_WARN_LOG(nlohmann::json::accept(dataString),
+        "Failed to verify the meataData format, metaData is: %{public}s", dataString.c_str());
     nlohmann::json jsonData = nlohmann::json::parse(dataString);
-    if (jsonData.contains("taskType")) {
-        info.taskType = jsonData["taskType"];
-    }
-    if (jsonData.contains("syncId")) {
-        info.syncId = jsonData["syncId"];
-    }
-    if (jsonData.contains("syncType")) {
-        info.syncType = jsonData["syncType"];
-    }
-    if (jsonData.contains("totalAssets")) {
-        info.totalAssets = jsonData["totalAssets"];
-    }
-    if (jsonData.contains("totalAlbums")) {
-        info.totalAlbums = jsonData["totalAlbums"];
-    }
+    CHECK_AND_EXECUTE(!jsonData.contains("taskType"), info.taskType = jsonData["taskType"]);
+    CHECK_AND_EXECUTE(!jsonData.contains("syncId"), info.syncId = jsonData["syncId"]);
+    CHECK_AND_EXECUTE(!jsonData.contains("syncType"), info.syncType = jsonData["syncType"]);
+    CHECK_AND_EXECUTE(!jsonData.contains("totalAssets"), info.totalAssets = jsonData["totalAssets"]);
+    CHECK_AND_EXECUTE(!jsonData.contains("totalAlbums"), info.totalAlbums = jsonData["totalAlbums"]);
+
     if (info.taskType == TIME_BEGIN_SYNC) {
         PostEventUtils::GetInstance().CreateCloudDownloadSyncStat(info.syncId);
         VariantMap map = {
@@ -128,26 +117,18 @@ void CloudSyncObserver::DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo)
 void CloudSyncObserver::DealGalleryDownload(CloudSyncNotifyInfo &notifyInfo)
 {
     if (notifyInfo.type == ChangeType::OTHER) {
-        if (notifyInfo.uris.empty()) {
-            MEDIA_ERR_LOG("gallery download notify uri empty");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(!notifyInfo.uris.empty(), "gallery download notify uri empty");
         string uriString = notifyInfo.uris.front().ToString();
         string downloadString = "gallery/download";
         string::size_type pos = uriString.find(downloadString);
-        if (pos == string::npos) {
-            MEDIA_ERR_LOG("gallery download notify uri err");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(pos != string::npos, "gallery download notify uri err");
         auto it = notifyInfo.uris.begin();
         *it = Uri(uriString.replace(pos, downloadString.length(), "Photo"));
         notifyInfo.type = ChangeType::UPDATE;
         CloudSyncHandleData handleData;
         handleData.orgInfo = notifyInfo;
         shared_ptr<BaseHandler> chain = NotifyResponsibilityChainFactory::CreateChain(TRANSPARENT);
-        if (chain != nullptr) {
-            chain->Handle(handleData);
-        }
+        CHECK_AND_EXECUTE(chain == nullptr, chain->Handle(handleData));
     }
 }
 
@@ -197,9 +178,7 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
     }
     shared_ptr<MediaLibraryAsyncTask> notifyHandleAsyncTask = make_shared<MediaLibraryAsyncTask>(
         HandleCloudNotify, taskData);
-    if (notifyHandleAsyncTask != nullptr) {
-        asyncWorker->AddTask(notifyHandleAsyncTask, true);
-    }
+    CHECK_AND_EXECUTE(notifyHandleAsyncTask == nullptr, asyncWorker->AddTask(notifyHandleAsyncTask, true));
 }
 
 void CloudSyncObserver::HandleIndex()
@@ -222,10 +201,8 @@ void CloudSyncObserver::HandleIndex()
     }
 
     MEDIA_INFO_LOG("HandleIndex idToUpdateIndex size: %{public}zu", idToUpdateIndex.size());
-    if (!idToUpdateIndex.empty()) {
-        MediaAnalysisHelper::AsyncStartMediaAnalysisService(
-            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), idToUpdateIndex);
-    }
+    CHECK_AND_EXECUTE(idToUpdateIndex.empty(), MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), idToUpdateIndex));
     isPending_ = false;
 }
 } // namespace Media

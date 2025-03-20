@@ -144,15 +144,13 @@ void CloneRestoreGeo::GetGeoKnowledgeInfos()
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL_GEO, params);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "Query resultSql is null.");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             GeoCloneInfo info;
             GetGeoKnowledgeInfo(info, resultSet);
             geoInfos_.emplace_back(info);
         }
+
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
@@ -180,16 +178,14 @@ void CloneRestoreGeo::GetAnalysisGeoInfos()
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL_ANA, params);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "Query resultSql is null.");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             AnaTotalInfo info;
             info.fileId = GetInt32Val(FILE_ID, resultSet);
             info.geo = GetInt32Val(GEO, resultSet);
             anaTotalfos_.emplace_back(info);
         }
+
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
@@ -254,9 +250,7 @@ void CloneRestoreGeo::RestoreMaps(std::vector<FileInfo> &fileInfos)
     BatchQueryPhoto(fileInfos);
     for (const auto &fileInfo : fileInfos) {
         std::string fileIdString = UpdateMapInsertValues(values, analysisIds, fileInfo, batchCnt, batchAnaCnt);
-        if (fileIdString != NOT_MATCH) {
-            fileIds.emplace_back(fileIdString);
-        }
+        CHECK_AND_EXECUTE(fileIdString == NOT_MATCH, fileIds.emplace_back(fileIdString));
     }
     int64_t rowNum = 0;
     int32_t errCodeGeo = BatchInsertWithRetry(GEO_KNOWLEDGE_TABLE, values, rowNum);
@@ -290,10 +284,9 @@ void CloneRestoreGeo::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
     int32_t count = 0;
     for (const auto &fileInfo : fileInfos) {
         // no need query or alreay queried
-        if ((fabs(fileInfo.latitude) < DOUBLE_EPSILON && fabs(fileInfo.longitude) < DOUBLE_EPSILON)
-            || fileInfo.fileIdNew > 0) {
-            continue;
-        }
+        bool cond = ((fabs(fileInfo.latitude) < DOUBLE_EPSILON && fabs(fileInfo.longitude) < DOUBLE_EPSILON)
+            || fileInfo.fileIdNew > 0);
+        CHECK_AND_CONTINUE(!cond);
         querySql << (count++ > 0 ? "," : "");
         querySql << "?";
         params.emplace_back(fileInfo.cloudPath);
@@ -309,9 +302,7 @@ void CloneRestoreGeo::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
             [data](const FileInfo& info) {
                 return info.cloudPath == data;
             });
-        if (it == fileInfos.end()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(it != fileInfos.end());
         it->fileIdNew = fileId;
     }
     resultSet->Close();
@@ -334,9 +325,7 @@ std::string CloneRestoreGeo::UpdateByGeoLocation(std::vector<NativeRdb::ValuesBu
     double latitude = fileInfo.latitude;
     double longitude = fileInfo.longitude;
     int32_t fileIdOld = fileInfo.fileIdOld;
-    if (language.empty()) {
-        language = SINGLE_CH;
-    }
+    CHECK_AND_EXECUTE(!language.empty(), language = SINGLE_CH);
     auto itGeo = std::find_if(geoInfos_.begin(), geoInfos_.end(),
         [latitude, longitude, language](const GeoCloneInfo& info) {
             bool cond = (!info.latitude.has_value() || !info.longitude.has_value() || !info.language.has_value());
@@ -378,9 +367,9 @@ std::unordered_set<std::string> CloneRestoreGeo::GetCommonColumns(const string &
     std::unordered_set<std::string> result;
     auto comparedColumns = GetValueFromMap(COMPARED_COLUMNS_MAP, tableName);
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
-        if (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() && comparedColumns.count(it->first) > 0) {
-            result.insert(it->first);
-        }
+        bool cond = (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() &&
+            comparedColumns.count(it->first) > 0);
+        CHECK_AND_EXECUTE(!cond, result.insert(it->first));
     }
     return result;
 }

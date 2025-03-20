@@ -143,9 +143,7 @@ template<typename Key, typename Value>
 Value GetValueFromMap(const std::unordered_map<Key, Value> &map, const Key &key, const Value &defaultValue = Value())
 {
     auto it = map.find(key);
-    if (it == map.end()) {
-        return defaultValue;
-    }
+    CHECK_AND_RETURN_RET(it != map.end(), defaultValue);
     return it->second;
 }
 
@@ -216,9 +214,8 @@ void CloneRestoreHighlight::UpdateAlbums()
         "count = (SELECT count(1) FROM AnalysisPhotoMap AS apm WHERE apm.map_album = AnalysisAlbum.album_id) "
         "WHERE album_id = ?";
     for (const auto &info : analysisInfos_) {
-        if (!info.oldCoverUri.has_value() || !info.albumIdNew.has_value()) {
-            continue;
-        }
+        bool cond = (!info.oldCoverUri.has_value() || !info.albumIdNew.has_value());
+        CHECK_AND_CONTINUE(!cond);
         BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, UPDATE_ALBUM_SQL, { info.coverUri,
             info.albumIdNew.value() });
     }
@@ -226,14 +223,12 @@ void CloneRestoreHighlight::UpdateAlbums()
     const std::string UPDATE_COVER_KEY_SQL = "UPDATE tab_highlight_cover_info SET cover_key = ? "
         "WHERE album_id = ? AND ratio = ?";
     for (const auto &coverInfo : coverInfos_) {
-        if (!coverInfo.ratio.has_value() || !coverInfo.highlightIdNew.has_value()) {
-            continue;
-        }
+        bool cond = (!coverInfo.ratio.has_value() || !coverInfo.highlightIdNew.has_value());
+        CHECK_AND_CONTINUE(!cond);
         auto it = std::find_if(analysisInfos_.begin(), analysisInfos_.end(),
             [coverInfo](const AnalysisAlbumInfo& info) { return info.highlightIdNew == coverInfo.highlightIdNew; });
-        if (it == analysisInfos_.end() || !it->albumName.has_value()) {
-            continue;
-        }
+        cond = (it == analysisInfos_.end() || !it->albumName.has_value());
+        CHECK_AND_CONTINUE(!cond);
         std::string coverUri = it->albumName.value() + "_" + coverInfo.ratio.value() + "_" + it->coverUri;
         BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, UPDATE_COVER_KEY_SQL, { coverUri,
             coverInfo.highlightIdNew.value(), coverInfo.ratio.value()});
@@ -246,9 +241,8 @@ int32_t CloneRestoreHighlight::GetNewHighlightAlbumId(int32_t oldId)
     int32_t newId = -1;
     auto it = std::find_if(highlightInfos_.begin(), highlightInfos_.end(),
         [oldId](const HighlightAlbumInfo& info) { return info.highlightIdOld == oldId; });
-    if (it != highlightInfos_.end() && it->highlightIdNew.has_value()) {
-        newId = it->highlightIdNew.value();
-    }
+    bool cond = (it != highlightInfos_.end() && it->highlightIdNew.has_value());
+    CHECK_AND_EXECUTE(!cond, newId = it->highlightIdNew.value());
     return newId;
 }
 
@@ -279,9 +273,7 @@ int32_t CloneRestoreHighlight::GetMaxAlbumId(const std::string &tableName, const
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "query resultSql is null.");
     if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         auto albumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, idName);
-        if (albumId.has_value()) {
-            maxAlbumId = albumId.value() + 1;
-        }
+        CHECK_AND_EXECUTE(!albumId.has_value(), maxAlbumId = albumId.value() + 1);
     }
     resultSet->Close();
     return maxAlbumId;
@@ -291,9 +283,7 @@ bool CloneRestoreHighlight::IsMapColumnOrderExist()
 {
     bool result = false;
     std::unordered_set<std::string> intersection = GetCommonColumns("AnalysisPhotoMap");
-    if (intersection.count("order_position") > 0) {
-        result = true;
-    }
+    CHECK_AND_EXECUTE(intersection.count("order_position") <= 0, result = true);
     return result;
 }
 
@@ -306,17 +296,12 @@ void CloneRestoreHighlight::GetAnalysisAlbumInfos()
         const std::string QUERY_SQL = "SELECT * FROM AnalysisAlbum WHERE album_subtype IN (4104, 4105) "
             "LIMIT " + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
-        if (resultSet == nullptr) {
-            MEDIA_INFO_LOG("query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_INFO_LOG(resultSet != nullptr, "query resultSql is null.");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             AnalysisAlbumInfo info;
             info.albumIdNew = std::make_optional<int32_t>(albumIdNow++);
             GetAnalysisRowInfo(info, resultSet);
-            if (info.albumIdOld.has_value()) {
-                oldAlbumIds_.emplace_back(info.albumIdOld.value());
-            }
+            CHECK_AND_EXECUTE(!info.albumIdOld.has_value(), oldAlbumIds_.emplace_back(info.albumIdOld.value()));
             analysisInfos_.emplace_back(info);
         }
         resultSet->GetRowCount(rowCount);
@@ -402,9 +387,8 @@ void CloneRestoreHighlight::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
     int32_t count = 0;
     for (const auto &fileInfo : fileInfos) {
         // no need query or already queried
-        if (oldAlbumIds_.empty() || fileInfo.fileIdNew > 0) {
-            continue;
-        }
+        bool cond = (oldAlbumIds_.empty() || fileInfo.fileIdNew > 0);
+        CHECK_AND_CONTINUE(!cond);
         querySql << (count++ > 0 ? "," : "");
         querySql << "?";
         params.emplace_back(fileInfo.cloudPath);
@@ -417,9 +401,7 @@ void CloneRestoreHighlight::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
         std::string data = GetStringVal("data", resultSet);
         auto it = std::find_if(fileInfos.begin(), fileInfos.end(),
             [data](const FileInfo& info) { return info.cloudPath == data; });
-        if (it == fileInfos.end()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(it != fileInfos.end());
         it->fileIdNew = fileId;
         MEDIA_INFO_LOG("update fileId: %{public}s -> %{public}d", it->cloudPath.c_str(), it->fileIdNew);
     }
@@ -441,9 +423,7 @@ void CloneRestoreHighlight::UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb
     const FileInfo &fileInfo, const int32_t &oldAlbumId)
 {
     std::string queryParam = "count(1)";
-    if (isMapOrder_) {
-        queryParam += ", order_position";
-    }
+    CHECK_AND_EXECUTE(!isMapOrder_, queryParam += ", order_position");
     const std::string QUERY_SQL = "SELECT " + queryParam + " FROM AnalysisPhotoMap WHERE map_album = " +
         std::to_string(oldAlbumId) + " AND map_asset = " + std::to_string(fileInfo.fileIdOld);
 
@@ -471,18 +451,14 @@ void CloneRestoreHighlight::UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb
     }
 
     std::optional<int32_t> order = std::nullopt;
-    if (isMapOrder_) {
-        order = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "order_position");
-    }
+    CHECK_AND_EXECUTE(!isMapOrder_,
+        order = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "order_position"));
     values.emplace_back(GetMapInsertValue(it->albumIdNew.value(), fileInfo.fileIdNew, order));
     std::lock_guard<mutex> lock(counterMutex_);
     std::string reportAlbumName = std::to_string(it->albumIdNew.value());
-    if (it->albumName.has_value()) {
-        reportAlbumName += "_" + it->albumName.value();
-    }
-    if (albumPhotoCounter_.count(reportAlbumName) == 0) {
-        albumPhotoCounter_[reportAlbumName] = 0;
-    }
+    CHECK_AND_EXECUTE(!it->albumName.has_value(), reportAlbumName += "_" + it->albumName.value());
+    CHECK_AND_EXECUTE(albumPhotoCounter_.count(reportAlbumName) != 0,
+        albumPhotoCounter_[reportAlbumName] = 0);
     albumPhotoCounter_[reportAlbumName]++;
 }
 
@@ -492,9 +468,7 @@ NativeRdb::ValuesBucket CloneRestoreHighlight::GetMapInsertValue(int32_t albumId
     NativeRdb::ValuesBucket value;
     value.PutInt("map_album", albumId);
     value.PutInt("map_asset", fileId);
-    if (order.has_value()) {
-        value.PutInt("order_position", order.value());
-    }
+    CHECK_AND_EXECUTE(!order.has_value(), value.PutInt("order_position", order.value()));
     return value;
 }
 
@@ -525,10 +499,8 @@ void CloneRestoreHighlight::GetHighlightAlbumInfos()
         const std::string QUERY_SQL = "SELECT * FROM tab_highlight_album LIMIT "
             + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
-        if (resultSet == nullptr) {
-            MEDIA_INFO_LOG("query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_INFO_LOG(resultSet != nullptr, "query resultSql is null.");
+
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             HighlightAlbumInfo info;
             info.highlightIdNew = std::make_optional<int32_t>(idNow++);
@@ -619,12 +591,11 @@ void CloneRestoreHighlight::InsertIntoHighlightAlbum()
     do {
         std::vector<NativeRdb::ValuesBucket> values;
         for (size_t index = 0; index < PAGE_SIZE && index + offset < highlightInfos_.size(); index++) {
-            if (!highlightInfos_[index + offset].clusterType.has_value() ||
+            bool cond = (!highlightInfos_[index + offset].clusterType.has_value() ||
                 !highlightInfos_[index + offset].clusterSubType.has_value() ||
                 !highlightInfos_[index + offset].clusterCondition.has_value() ||
-                !highlightInfos_[index + offset].highlightVersion.has_value()) {
-                continue;
-            }
+                !highlightInfos_[index + offset].highlightVersion.has_value());
+            CHECK_AND_CONTINUE(!cond);
 
             NativeRdb::ValuesBucket value;
             GetHighlightInsertValue(value, highlightInfos_[index + offset]);
@@ -681,14 +652,10 @@ void CloneRestoreHighlight::MoveHighlightCovers()
 {
     std::unordered_set<int32_t> hasMovedAlbums;
     for (const auto &info : analysisInfos_) {
-        if (!info.albumIdNew.has_value() || !info.oldCoverUri.has_value() || !info.highlightIdOld.has_value() ||
-            !info.highlightIdNew.has_value()) {
-            continue;
-        }
-
-        if (hasMovedAlbums.count(info.highlightIdOld.value()) > 0) {
-            continue;
-        }
+        bool cond = (!info.albumIdNew.has_value() || !info.oldCoverUri.has_value() ||
+            !info.highlightIdOld.has_value() || !info.highlightIdNew.has_value());
+        CHECK_AND_CONTINUE(!cond);
+        CHECK_AND_CONTINUE(hasMovedAlbums.count(info.highlightIdOld.value()) <= 0);
         hasMovedAlbums.insert(info.highlightIdOld.value());
         std::string srcDir = coverPath_ + std::to_string(info.highlightIdOld.value()) + "/";
         MoveHighlightWordart(info, srcDir);
@@ -700,23 +667,18 @@ void CloneRestoreHighlight::MoveHighlightWordart(const AnalysisAlbumInfo &info, 
 {
     for (const auto &ratio : HIGHLIGHT_RATIO_WORD_ART) {
         std::string srcPath = srcDir + ratio + "/wordart.png";
-        if (!MediaFileUtils::IsFileExists(srcPath)) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(MediaFileUtils::IsFileExists(srcPath));
         std::string dstDir = "/storage/media/local/files/highlight/cover/" +
             std::to_string(info.highlightIdNew.value()) + "/" + ratio;
-        if (!MediaFileUtils::CreateDirectory(dstDir)) {
-            MEDIA_ERR_LOG("create %{public}s failed",
-                BackupFileUtils::GarbleFilePath(dstDir, sceneCode_, GARBLE_DST_PATH).c_str());
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::CreateDirectory(dstDir), "create %{public}s failed",
+            BackupFileUtils::GarbleFilePath(dstDir, sceneCode_, GARBLE_DST_PATH).c_str());
+
         std::string dstPath = dstDir + "/wordart.png";
         int32_t errCode = BackupFileUtils::MoveFile(srcPath.c_str(), dstPath.c_str(), sceneCode_);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("move file failed, srcPath:%{public}s, dstPath:%{public}s, errCode:%{public}d",
-                BackupFileUtils::GarbleFilePath(srcPath, sceneCode_, garblePath_).c_str(),
-                BackupFileUtils::GarbleFilePath(dstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
-        }
+        CHECK_AND_PRINT_LOG(errCode == E_OK, "move file failed, srcPath:%{public}s,"
+            " dstPath:%{public}s, errCode:%{public}d",
+            BackupFileUtils::GarbleFilePath(srcPath, sceneCode_, garblePath_).c_str(),
+            BackupFileUtils::GarbleFilePath(dstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
     }
 }
 
@@ -726,23 +688,16 @@ void CloneRestoreHighlight::MoveHighlightGround(const AnalysisAlbumInfo &info, c
         std::string groundPath = srcDir + "/full/" + fileName + ".png";
         std::string groundDstDir = "/storage/media/local/files/highlight/cover/" +
             std::to_string(info.highlightIdNew.value()) + "/full";
-        if (!MediaFileUtils::IsFileExists(groundPath)) {
-            continue;
-        }
-
-        if (!MediaFileUtils::CreateDirectory(groundDstDir)) {
-            MEDIA_ERR_LOG("create %{public}s failed",
-                BackupFileUtils::GarbleFilePath(groundDstDir, sceneCode_, GARBLE_DST_PATH).c_str());
-            continue;
-        }
+        CHECK_AND_CONTINUE(MediaFileUtils::IsFileExists(groundPath));
+        CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::CreateDirectory(groundDstDir), "create %{public}s failed",
+            BackupFileUtils::GarbleFilePath(groundDstDir, sceneCode_, GARBLE_DST_PATH).c_str());
 
         std::string groundDstPath = groundDstDir + "/" + fileName + ".png";
         int32_t errCode = BackupFileUtils::MoveFile(groundPath.c_str(), groundDstPath.c_str(), sceneCode_);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("move file failed, srcPath:%{public}s, dstPath:%{public}s, errCode:%{public}d",
-                BackupFileUtils::GarbleFilePath(groundPath, sceneCode_, garblePath_).c_str(),
-                BackupFileUtils::GarbleFilePath(groundDstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
-        }
+        CHECK_AND_PRINT_LOG(errCode == E_OK,
+            "move file failed, srcPath:%{public}s, dstPath:%{public}s, errCode:%{public}d",
+            BackupFileUtils::GarbleFilePath(groundPath, sceneCode_, garblePath_).c_str(),
+            BackupFileUtils::GarbleFilePath(groundDstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
     }
 }
 
@@ -756,20 +711,17 @@ int32_t CloneRestoreHighlight::MoveHighlightMusic(const std::string &srcDir, con
         std::string srcFilePath = dirEntry.path();
         if (MediaFileUtils::IsDirectory(srcFilePath)) {
             size_t index = srcFilePath.rfind("/");
-            if (index == std::string::npos) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(index != std::string::npos);
             std::string subDir = srcFilePath.substr(index);
             MoveHighlightMusic(srcFilePath, dstDir + subDir);
         } else {
             std::string tmpFilePath = srcFilePath;
             std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
             int32_t errCode = BackupFileUtils::MoveFile(srcFilePath.c_str(), dstFilePath.c_str(), sceneCode_);
-            if (errCode != E_OK) {
-                MEDIA_ERR_LOG("move file failed, srcPath:%{public}s, dstPath:%{public}s, errCode:%{public}d",
-                    BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_, garblePath_).c_str(),
-                    BackupFileUtils::GarbleFilePath(dstFilePath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
-            }
+            CHECK_AND_PRINT_LOG(errCode == E_OK,
+                "move file failed, srcPath:%{public}s, dstPath:%{public}s, errCode:%{public}d",
+                BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_, garblePath_).c_str(),
+                BackupFileUtils::GarbleFilePath(dstFilePath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
         }
     }
     return E_OK;
@@ -783,24 +735,16 @@ void CloneRestoreHighlight::GetHighlightCoverInfos()
         const std::string QUERY_SQL = "SELECT * FROM tab_highlight_cover_info LIMIT " + std::to_string(offset) + ", " +
             std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
-        if (resultSet == nullptr) {
-            MEDIA_INFO_LOG("query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_INFO_LOG(resultSet != nullptr, "query resultSql is null.");
 
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             auto albumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "album_id");
-            if (!albumId.has_value()) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(albumId.has_value());
             auto itAlbum = std::find_if(highlightInfos_.begin(), highlightInfos_.end(),
                 [albumId](const HighlightAlbumInfo& hiInfo) {
                     return hiInfo.highlightIdOld.has_value() && hiInfo.highlightIdOld == albumId;
                 });
-            if (itAlbum == highlightInfos_.end()) {
-                MEDIA_ERR_LOG("can not find coverinfo in highlight");
-                continue;
-            }
+            CHECK_AND_CONTINUE_ERR_LOG(itAlbum != highlightInfos_.end(), "can not find coverinfo in highlight");
             HighlightCoverInfo info;
             info.highlightIdNew = itAlbum->highlightIdNew;
             GetCoverRowInfo(info, resultSet);
@@ -851,10 +795,9 @@ void CloneRestoreHighlight::GetCoverGroundSourceInfo(HighlightCoverInfo &info,
     CHECK_AND_RETURN(!cond);
     std::string wordartPath = "/storage/media/local/files/highlight/cover/" +
         std::to_string(info.highlightIdNew.value()) + "/" + info.ratio.value() + "/wordart.png";
-    if (MediaFileUtils::IsFileExists(wordartPath)) {
+    CHECK_AND_EXECUTE(!MediaFileUtils::IsFileExists(wordartPath),
         info.wordart = "file://media/highlight/cover/" + std::to_string(info.highlightIdNew.value()) +
-            "/" + info.ratio.value() + "/wordart.png?oper=highlight";
-    }
+        "/" + info.ratio.value() + "/wordart.png?oper=highlight");
 
     for (const auto &fileName : HIGHLIGHT_COVER_NAME) {
         std::string groundPath = "/storage/media/local/files/highlight/cover/" +
@@ -878,14 +821,12 @@ void CloneRestoreHighlight::InsertIntoHighlightCoverInfo()
     do {
         std::vector<NativeRdb::ValuesBucket> values;
         for (size_t index = 0; index < PAGE_SIZE && index + offset < coverInfos_.size(); index++) {
-            if (!coverInfos_[index + offset].highlightIdNew.has_value()) {
-                continue;
-            }
-
+            CHECK_AND_CONTINUE(coverInfos_[index + offset].highlightIdNew.has_value());
             NativeRdb::ValuesBucket value;
             GetCoverInsertValue(value, coverInfos_[index + offset]);
             values.emplace_back(value);
         }
+
         int64_t rowNum = 0;
         int32_t errCode = BatchInsertWithRetry("tab_highlight_cover_info", values, rowNum);
         if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
@@ -937,23 +878,16 @@ void CloneRestoreHighlight::GetHighlightPlayInfos()
         const std::string QUERY_SQL = "SELECT * FROM tab_highlight_play_info LIMIT " + std::to_string(offset) + ", " +
             std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
-        if (resultSet == nullptr) {
-            MEDIA_INFO_LOG("query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_INFO_LOG(resultSet != nullptr, "query resultSql is null.");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             auto albumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "album_id");
-            if (!albumId.has_value()) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(albumId.has_value());
             auto itAlbum = std::find_if(highlightInfos_.begin(), highlightInfos_.end(),
                 [albumId](const HighlightAlbumInfo& hiInfo) {
                     return hiInfo.highlightIdOld.has_value() && hiInfo.highlightIdOld == albumId;
                 });
-            if (itAlbum == highlightInfos_.end()) {
-                MEDIA_ERR_LOG("can not find playinfo in highlight, albumId: %{public}d", albumId.value());
-                continue;
-            }
+            CHECK_AND_CONTINUE_ERR_LOG(itAlbum != highlightInfos_.end(),
+                "can not find playinfo in highlight, albumId: %{public}d", albumId.value());
             HighlightPlayInfo info;
             info.highlightIdNew = itAlbum->highlightIdNew;
             GetPlayRowInfo(info, resultSet);
@@ -992,14 +926,12 @@ void CloneRestoreHighlight::InsertIntoHighlightPlayInfo()
     do {
         std::vector<NativeRdb::ValuesBucket> values;
         for (size_t index = 0; index < PAGE_SIZE && index + offset < playInfos_.size(); index++) {
-            if (!playInfos_[index + offset].highlightIdNew.has_value()) {
-                continue;
-            }
-
+            CHECK_AND_CONTINUE(playInfos_[index + offset].highlightIdNew.has_value());
             NativeRdb::ValuesBucket value;
             GetPlayInsertValue(value, playInfos_[index + offset]);
             values.emplace_back(value);
         }
+
         int64_t rowNum = 0;
         int32_t errCode = BatchInsertWithRetry("tab_highlight_play_info", values, rowNum);
         if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
@@ -1039,9 +971,9 @@ std::unordered_set<std::string> CloneRestoreHighlight::GetCommonColumns(const st
     std::unordered_set<std::string> result;
     auto comparedColumns = GetValueFromMap(ALBUM_COLUMNS_MAP, tableName);
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
-        if (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() && comparedColumns.count(it->first) > 0) {
-            result.insert(it->first);
-        }
+        bool cond = (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() &&
+            comparedColumns.count(it->first) > 0);
+        CHECK_AND_EXECUTE(!cond, result.insert(it->first));
     }
     return result;
 }
@@ -1108,9 +1040,7 @@ std::vector<NativeRdb::ValueObject> CloneRestoreHighlight::GetHighlightDuplicate
 
     do {
         std::optional<int32_t> highlightId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "id");
-        if (!highlightId.has_value()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(highlightId.has_value());
         changeIds.emplace_back(highlightId.value());
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     resultSet->Close();

@@ -86,10 +86,8 @@ void HighlightRestore::GetAlbumInfos(const std::string &albumOdid)
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_, QUERY_SQL, params);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("resultSet is nullptr");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
+
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             HighlightAlbumInfo info;
             info.albumOdid = albumOdid;
@@ -160,9 +158,7 @@ void HighlightRestore::TransferClusterInfo(HighlightAlbumInfo &info)
         CLUSTER_TYPE_MAP.at(info.clusterType) : info.clusterType;
     nlohmann::json jsonObjects;
     if (info.clusterType == "TYPE_DBSCAN") {
-        if (info.clusterSubType.empty()) {
-            info.clusterSubType = info.albumName;
-        }
+        CHECK_AND_EXECUTE(!info.clusterSubType.empty(), info.clusterSubType = info.albumName);
         info.clusterSubType = CLUSTER_SUB_TYPE_MAP.count(info.clusterSubType) > 0 ?
             CLUSTER_SUB_TYPE_MAP.at(info.clusterSubType) : CLUSTER_SUB_TYPE_MAP.at("DEFAULT_DBSCAN");
         jsonObjects.push_back({
@@ -196,9 +192,7 @@ void HighlightRestore::TransferClusterInfo(HighlightAlbumInfo &info)
 void HighlightRestore::InsertIntoAnalysisAlbum()
 {
     for (HighlightAlbumInfo &info : albumInfos_) {
-        if (info.highlightStatus != HIGHLIGHT_STATUS_SUCCESS) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(info.highlightStatus == HIGHLIGHT_STATUS_SUCCESS);
         vector<NativeRdb::ValuesBucket> values;
         const int64_t ROW_NUM = 2;
         values.emplace_back(GetAnalysisAlbumValuesBucket(info, PhotoAlbumSubType::HIGHLIGHT));
@@ -237,10 +231,7 @@ void HighlightRestore::UpdateAlbumIds()
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, QUERY_SQL, params);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("resultSet is nullptr");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t albumId = GetInt32Val("album_id", resultSet);
             int32_t albumSubType = GetInt32Val("album_subtype", resultSet);
@@ -250,9 +241,7 @@ void HighlightRestore::UpdateAlbumIds()
                 [albumName, dateModified](const HighlightAlbumInfo &info) {
                     return info.albumName == albumName && info.generateTime == dateModified;
                 });
-            if (it == albumInfos_.end()) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(it != albumInfos_.end());
             if (albumSubType == PhotoAlbumSubType::HIGHLIGHT) {
                 it->albumIdNew = albumId;
             } else {
@@ -279,9 +268,7 @@ void HighlightRestore::InsertIntoHighlightAlbum()
         "generate_time, cluster_type, cluster_sub_type, cluster_condition, highlight_status, highlight_version) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 2)";
     for (HighlightAlbumInfo &info : albumInfos_) {
-        if (info.highlightStatus != HIGHLIGHT_STATUS_SUCCESS) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(info.highlightStatus == HIGHLIGHT_STATUS_SUCCESS);
         std::vector<NativeRdb::ValueObject> albumBindArgs = {
             info.albumIdNew, info.aiAlbumIdNew, info.subTitle, info.minDateAdded, info.maxDateAdded,
             info.generateTime, info.clusterType, info.clusterSubType, info.clusterCondition, info.highlightStatus
@@ -303,10 +290,7 @@ void HighlightRestore::InsertIntoHighlightCoverAndPlayInfo()
         "INSERT INTO tab_highlight_play_info (album_id, play_service_version, status) "
         "VALUES (?, 0, 1)";
     for (HighlightAlbumInfo &info : albumInfos_) {
-        if (info.highlightStatus != HIGHLIGHT_STATUS_SUCCESS) {
-            continue;
-        }
-
+        CHECK_AND_CONTINUE(info.highlightStatus == HIGHLIGHT_STATUS_SUCCESS);
         vector<NativeRdb::ValuesBucket> coverValues;
         for (const std::string &ratio : HIGHLIGHT_RATIO) {
             NativeRdb::ValuesBucket value;
@@ -315,6 +299,7 @@ void HighlightRestore::InsertIntoHighlightCoverAndPlayInfo()
             value.PutInt("status", 1);
             coverValues.emplace_back(value);
         }
+
         int64_t rowNum = 0;
         int32_t errCode = BatchInsertWithRetry("tab_highlight_cover_info", coverValues, rowNum);
         if (errCode != E_OK || rowNum != (int64_t) HIGHLIGHT_RATIO.size()) {
@@ -325,10 +310,7 @@ void HighlightRestore::InsertIntoHighlightCoverAndPlayInfo()
             UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
         }
 
-        if (info.highlightStatus != HIGHLIGHT_STATUS_SUCCESS) {
-            continue;
-        }
-
+        CHECK_AND_CONTINUE(info.highlightStatus == HIGHLIGHT_STATUS_SUCCESS);
         std::vector<NativeRdb::ValueObject> playInfoBindArgs = { info.id };
         errCode = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, INSERT_PLAY_INFO_SQL, playInfoBindArgs);
         if (errCode != E_OK) {
@@ -350,10 +332,7 @@ void HighlightRestore::UpdateHighlightIds()
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, QUERY_SQL, params);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("resultSet is nullptr");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t albumId = GetInt32Val("album_id", resultSet);
             int32_t id = GetInt32Val("id", resultSet);
@@ -361,9 +340,7 @@ void HighlightRestore::UpdateHighlightIds()
                 [albumId](const HighlightAlbumInfo &info) {
                     return info.albumIdNew == albumId;
                 });
-            if (it == albumInfos_.end()) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(it != albumInfos_.end());
             it->id = id;
         }
         resultSet->GetRowCount(rowCount);
@@ -374,10 +351,7 @@ void HighlightRestore::UpdateHighlightIds()
 
 void HighlightRestore::RestoreMaps(std::vector<FileInfo> &fileInfos)
 {
-    if (albumInfos_.empty()) {
-        MEDIA_INFO_LOG("albumInfos_ is empty, no need to restore maps.");
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(!albumInfos_.empty(), "albumInfos_ is empty, no need to restore maps.");
     std::vector<NativeRdb::ValuesBucket> values;
     BatchQueryPhoto(fileInfos);
     for (const auto &fileInfo : fileInfos) {
@@ -399,17 +373,13 @@ void HighlightRestore::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
     std::vector<NativeRdb::ValueObject> params;
     int32_t count = 0;
     for (const auto &fileInfo : fileInfos) {
-        if (fileInfo.fileIdNew > 0) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(fileInfo.fileIdNew <= 0);
         querySql << (count++ > 0 ? "," : "");
         querySql << "?";
         params.push_back(fileInfo.cloudPath);
     }
     querySql << ")";
-    if (params.empty()) {
-        return;
-    }
+    CHECK_AND_RETURN(!params.empty());
 
     auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql.str(), params);
     CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
@@ -421,9 +391,7 @@ void HighlightRestore::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
             [data](const FileInfo &info) {
                 return info.cloudPath == data;
             });
-        if (it == fileInfos.end()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(it != fileInfos.end());
         it->fileIdNew = fileId;
     }
     resultSet->Close();
@@ -459,23 +427,18 @@ void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket
 void HighlightRestore::UpdateMapInsertValuesByStoryId(std::vector<NativeRdb::ValuesBucket> &values,
     const FileInfo &fileInfo, const std::string &storyId)
 {
-    if (!MediaLibraryDataManagerUtils::IsNumber(storyId)) {
-        return;
-    }
+    CHECK_AND_RETURN(MediaLibraryDataManagerUtils::IsNumber(storyId));
     int32_t albumIdOld = std::atoi(storyId.c_str());
     auto it = std::find_if(albumInfos_.begin(), albumInfos_.end(),
         [albumIdOld](const HighlightAlbumInfo &info) { return info.albumIdOld == albumIdOld; });
     bool cond = (it == albumInfos_.end() || it->albumIdNew <= 0 || it->aiAlbumIdNew <= 0);
     CHECK_AND_RETURN_LOG(!cond, "no such album of albumIdOld: %{public}d", albumIdOld);
+    CHECK_AND_EXECUTE(fileInfo.fileType != MediaType::MEDIA_TYPE_VIDEO,
+        it->effectline.push_back(GetEffectline(fileInfo)));
 
-    if (fileInfo.fileType == MediaType::MEDIA_TYPE_VIDEO) {
-        it->effectline.push_back(GetEffectline(fileInfo));
-    }
     std::lock_guard<mutex> lock(counterMutex_);
     std::string albumName = std::to_string(it->id) + it->albumName;
-    if (albumPhotoCounter_.count(albumName) == 0) {
-        albumPhotoCounter_[albumName] = 0;
-    }
+    CHECK_AND_EXECUTE(albumPhotoCounter_.count(albumName) != 0, albumPhotoCounter_[albumName] = 0);
     albumPhotoCounter_[albumName]++;
     values.push_back(GetMapInsertValue(it->albumIdNew, fileInfo.fileIdNew));
     values.push_back(GetMapInsertValue(it->aiAlbumIdNew, fileInfo.fileIdNew));
