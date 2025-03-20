@@ -20,7 +20,6 @@
 #include "ffrt.h"
 #include "ffrt_inner.h"
 #include "medialibrary_album_fusion_utils.h"
-#include "medialibrary_album_refresh.h"
 
 namespace OHOS {
 namespace Media {

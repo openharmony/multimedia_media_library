@@ -293,7 +293,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/media_datashare_stub_impl.cpp",
     "src/medialibrary_album_fusion_utils.cpp",
     "src/medialibrary_album_operations.cpp",
-    "src/medialibrary_album_refresh.cpp",
     "src/medialibrary_all_album_refresh_processor.cpp",
     "src/medialibrary_analysis_album_operations.cpp",
     "src/medialibrary_app_uri_permission_operations.cpp",

@@ -29,7 +29,6 @@
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
-#include "medialibrary_album_refresh.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"

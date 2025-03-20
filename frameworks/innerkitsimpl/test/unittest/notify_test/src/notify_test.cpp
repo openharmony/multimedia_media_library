@@ -28,7 +28,6 @@
 #include "iservice_registry.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_album_refresh.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
