@@ -66,6 +66,8 @@ public:
 
     EXPORT Uri DenormalizeUri(const Uri &uri) override;
 
+    EXPORT int32_t UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
+
 private:
     EXPORT std::shared_ptr<MediaDataShareExtAbility> GetOwner();
 

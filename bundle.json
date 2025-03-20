@@ -126,7 +126,8 @@
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_tool:mediatool",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_ext_hap",
             "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:media_backup_package",
-            "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp_package"
+            "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp_package",
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_cloud_sync"
           ]
         },
         "inner_kits": [
@@ -209,6 +210,15 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/interfaces/kits/cj:cj_photoaccesshelper_ffi"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/native/cloud_sync",
+                "header_files": [
+                  "cloud_media_data_client.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_manager:media_library_cloud_sync"
             }
         ],
         "test": [
