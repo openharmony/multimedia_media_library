@@ -174,7 +174,7 @@ static Media::SyncNotifyInfo FuzzSyncNotifyInfo(const uint8_t* data, size_t size
     info.uriIds = FuzzUnorderedSet(data, size);
     info.notifyAssets = FuzzBool(data, size);
     info.notifyAlbums = FuzzBool(data, size);
-    info.refershResult = FuzzInt32(data, size);
+    info.refreshResult = FuzzInt32(data, size);
     info.forceRefreshType = FuzzForceRefreshTypeCause(data, size);
     return info;
 }
