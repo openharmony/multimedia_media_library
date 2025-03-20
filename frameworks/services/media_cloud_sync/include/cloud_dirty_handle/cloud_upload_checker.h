@@ -33,7 +33,6 @@ class CloudUploadChecker {
 public:
     static void HandleNoOriginPhoto();
     static void RepairNoOriginButLcd();
-    static void RepairNoDetailTime();
 
 private:
     static int32_t GetPhotoCount(int32_t startFileId);

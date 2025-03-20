@@ -31,7 +31,8 @@ const std::string QUERY_NEED_UPDATE_FILE_IDS = ""
     "WHERE"
     "  date_added = 0"
     "  OR date_taken = 0"
-    "  OR date_day <> strftime( '%Y%m%d', date_taken / 1000, 'unixepoch', 'localtime' );";
+    "  OR date_day <> strftime( '%Y%m%d', date_taken / 1000, 'unixepoch', 'localtime' )"
+    "  OR detail_time <> strftime( '%Y:%m:%d %H:%M:%S', date_taken / 1000, 'unixepoch', 'localtime' )";
 
 const std::string UPDATE_DAY_MONTH_YEAR = ""
     "UPDATE Photos "
@@ -83,16 +84,18 @@ const std::string UPDATE_DAY_MONTH_YEAR = ""
     "  strftime( '%Y', date_modified / 1000, 'unixepoch', 'localtime' ) "
     "  ELSE strftime( '%Y', strftime( '%s', 'now' ) / 1000, 'unixepoch', 'localtime' ) "
     " END, "
-    "dirty ="
+    "detail_time ="
     " CASE"
-    "  WHEN dirty = 0 THEN"
-    "  2 ELSE dirty "
+    "  WHEN date_taken <> 0 THEN"
+    "  strftime( '%Y:%m:%d %H:%M:%S', date_taken / 1000, 'unixepoch', 'localtime' ) "
+    "  WHEN date_added <> 0 THEN"
+    "  strftime( '%Y:%m:%d %H:%M:%S', date_added / 1000, 'unixepoch', 'localtime' ) "
+    "  WHEN date_modified <> 0 THEN"
+    "  strftime( '%Y:%m:%d %H:%M:%S', date_modified / 1000, 'unixepoch', 'localtime' ) "
+    "  ELSE strftime( '%Y:%m:%d %H:%M:%S', strftime( '%s', 'now' ) / 1000, 'unixepoch', 'localtime' ) "
     " END "
     "WHERE"
-    "  ( date_added = 0 "
-    "  OR date_taken = 0 "
-    "  OR date_day <> strftime( '%Y%m%d', date_taken / 1000, 'unixepoch', 'localtime' ) )"
-    "  AND file_id IN ( ";
+    "  file_id IN ( ";
 
 int32_t PhotoDayMonthYearOperation::UpdatePhotosDate(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
@@ -242,17 +245,7 @@ std::pair<int32_t, std::vector<std::string>> PhotoDayMonthYearOperation::QueryNe
         return { NativeRdb::E_ERROR, needUpdateFileIds };
     }
 
-    const std::string sql = ""
-        "SELECT"
-        "  file_id "
-        "FROM"
-        "  Photos "
-        "WHERE"
-        "  date_added = 0 "
-        "  OR date_taken = 0 "
-        "  OR date_day <> strftime( '%Y%m%d', date_taken / 1000, 'unixepoch', 'localtime' ) "
-        "  LIMIT " +
-        std::to_string(batchSize) + ";";
+    const std::string sql = QUERY_NEED_UPDATE_FILE_IDS + " LIMIT " + std::to_string(batchSize);
 
     auto resultSet = rdbStore->QueryByStep(sql);
     if (resultSet == nullptr) {
