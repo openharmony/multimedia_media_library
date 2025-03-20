@@ -660,14 +660,12 @@ static int32_t DoUpdateBurstCoverLevelFromGallery()
 
 static void UpdateDirtyForBeta(const shared_ptr<NativePreferences::Preferences>& prefs)
 {
-    if (!IsBetaVersion()) {
-        return;
-    }
-    if (prefs != nullptr && (prefs->GetInt(NO_UPDATE_DIRTY, 0) != 1)) {
+    CHECK_AND_RETURN_LOG((IsBetaVersion() && prefs != nullptr), "not need UpdateDirtyForBeta");
+    if (prefs->GetInt(NO_UPDATE_DIRTY, 0) != 1) {
         int32_t ret = DoUpdateDirtyForCloudClone(UPDATE_DIRTY_CLOUD_CLONE_V1);
         CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
     }
-    if (prefs != nullptr && (prefs->GetInt(NO_UPDATE_DIRTY_CLOUD_CLONE_V2, 0) != 1)) {
+    if (prefs->GetInt(NO_UPDATE_DIRTY_CLOUD_CLONE_V2, 0) != 1) {
         int32_t ret = DoUpdateDirtyForCloudClone(UPDATE_DIRTY_CLOUD_CLONE_V2);
         CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
     }
