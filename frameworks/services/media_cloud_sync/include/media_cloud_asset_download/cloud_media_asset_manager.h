@@ -52,9 +52,9 @@ public:
     EXPORT int32_t GetDownloadType();
     EXPORT bool SetBgDownloadPermission(const bool &flag);
     EXPORT void CheckStorageAndRecoverDownloadTask();
-    static void DeleteAllCloudMediaAssetsAsync();
-    static void StartDeleteCloudMediaAssets();
-    static void StopDeleteCloudMediaAssets();
+    EXPORT static void DeleteAllCloudMediaAssetsAsync();
+    EXPORT static void StartDeleteCloudMediaAssets();
+    EXPORT static void StopDeleteCloudMediaAssets();
 
 private:
     CloudMediaAssetManager() {}
@@ -67,8 +67,8 @@ private:
     EXPORT static int32_t ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
         std::vector<std::string> &dateTakens);
     static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
-    int32_t UpdateCloudMeidaAssets();
-    int32_t DeleteEmptyCloudAlbums();
+    EXPORT int32_t UpdateCloudMeidaAssets();
+    EXPORT int32_t DeleteEmptyCloudAlbums();
 
 private:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;

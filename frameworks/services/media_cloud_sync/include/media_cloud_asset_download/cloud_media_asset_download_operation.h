@@ -87,7 +87,7 @@ public:
     EXPORT int32_t CancelDownloadTask();
     EXPORT int32_t ManualActiveRecoverTask(int32_t cloudMediaDownloadType);
     EXPORT int32_t PassiveStatusRecoverTask(const CloudMediaTaskRecoverCause &recoverCause);
-    void CheckStorageAndRecoverDownloadTask();
+    EXPORT void CheckStorageAndRecoverDownloadTask();
 
     EXPORT void HandleSuccessCallback(const DownloadProgressObj &progress);
     EXPORT void HandleFailedCallback(const DownloadProgressObj &progress);
@@ -103,23 +103,23 @@ public:
 private:
     void ClearData(DownloadFileData &data);
     bool IsDataEmpty(const DownloadFileData &data);
-    int32_t DoRelativedRegister();
+    EXPORT int32_t DoRelativedRegister();
     int32_t SetDeathRecipient();
     bool IsProperFgTemperature();
-    void InitStartDownloadTaskStatus(const bool &isForeground);
+    EXPORT void InitStartDownloadTaskStatus(const bool &isForeground);
     void ResetParameter();
     bool IsNetworkAvailable();
 
-    void SetTaskStatus(Status status);
-    std::shared_ptr<NativeRdb::ResultSet> QueryDownloadFilesNeeded(const bool &isQueryInfo);
-    DownloadFileData ReadyDataForBatchDownload();
+    EXPORT void SetTaskStatus(Status status);
+    EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryDownloadFilesNeeded(const bool &isQueryInfo);
+    EXPORT DownloadFileData ReadyDataForBatchDownload();
     EXPORT int32_t DoForceTaskExecute();
     EXPORT int32_t SubmitBatchDownload(DownloadFileData &data, const bool &isCache);
-    void StartFileCacheFailed(const int64_t batchNum, const int64_t batchSize);
-    void StartBatchDownload(const int64_t batchNum, const int64_t batchSize);
+    EXPORT void StartFileCacheFailed(const int64_t batchNum, const int64_t batchSize);
+    EXPORT void StartBatchDownload(const int64_t batchNum, const int64_t batchSize);
     EXPORT int32_t DoRecoverExecute();
     EXPORT int32_t PassiveStatusRecover();
-    int32_t SubmitBatchDownloadAgain();
+    EXPORT int32_t SubmitBatchDownloadAgain();
     void MoveDownloadFileToCache(const DownloadProgressObj &progress);
     void MoveDownloadFileToNotFound(const DownloadProgressObj &progress);
 
