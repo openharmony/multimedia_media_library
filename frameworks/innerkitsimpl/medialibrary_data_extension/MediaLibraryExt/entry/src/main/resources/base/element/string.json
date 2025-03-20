@@ -18,7 +18,7 @@
     },
     {
       "name": "permission_distributed_datasync",
-      "value": "Allows data exchange between different devices"
+      "value": "Allows medialibrary obtained distributed_account during cloning"
     },
     {
       "name": "permission_used_stats",
