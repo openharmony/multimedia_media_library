@@ -26,7 +26,7 @@ namespace OHOS {
 namespace Media {
 class AnalysisHandler : public BaseHandler {
 public:
-    AnalysisHandler(std::function<void(bool)> refreshAlbums = nullptr){}
+    AnalysisHandler(std::function<void(bool)> refreshAlbums = nullptr) {}
     virtual ~AnalysisHandler();
     void Handle(const CloudSyncHandleData &handleData) override;
     void init() override;

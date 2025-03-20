@@ -149,11 +149,11 @@ static inline Media::ForceRefreshType FuzzForceRefreshTypeCause(const uint8_t* d
 static inline Media::CloudSyncNotifyInfo FuzzCloudSyncNotifyInfo(const uint8_t* data, size_t size)
 {
     Media::CloudSyncNotifyInfo info;
-    const void* data_ = nullptr;
+    const void* infodata = nullptr;
     ChangeType type = FuzzChangeType(data, size);
     info.uris = FuzzListUri(data, size);
     info.type = type;
-    info.data = data_;
+    info.data = infodata;
     return info;
 }
 
