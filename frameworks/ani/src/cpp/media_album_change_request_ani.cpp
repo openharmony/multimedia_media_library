@@ -436,7 +436,6 @@ ani_status MediaAlbumChangeRequestAni::SetIsMe(ani_env *env, ani_object object)
 
 ani_status MediaAlbumChangeRequestAni::DeleteAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset)
 {
-    DEBUG_LOG_T("DeleteAssets");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return ANI_ERROR;
