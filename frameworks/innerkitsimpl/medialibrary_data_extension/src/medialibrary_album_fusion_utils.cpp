@@ -511,10 +511,11 @@ struct MediaAssetCopyInfo {
     int32_t ownerAlbumId;
     std::string displayName;
     bool isCopyDateAdded;
+    bool isCopyCeAvailable;
     MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId,
-        const std::string& displayName = "", bool isCopyDateAdded = true)
+        const std::string& displayName = "", bool isCopyDateAdded = true, bool isCopyCeAvailable = false)
         : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId),
-        displayName(displayName), isCopyDateAdded(isCopyDateAdded) {}
+        displayName(displayName), isCopyDateAdded(isCopyDateAdded), isCopyCeAvailable(isCopyCeAvailable) {}
 };
 
 static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -533,6 +534,17 @@ static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& 
     if (dirty == -1 && photoQuality != static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
         MEDIA_WARN_LOG("Status error, dirty is -1, cannot upload");
         values.PutInt(PhotoColumn::PHOTO_DIRTY, -1);
+    }
+}
+
+static void HandleCeAvailableValuesBucket(const MediaAssetCopyInfo &copyInfo,
+    shared_ptr<NativeRdb::ResultSet>& resultSet, NativeRdb::ValuesBucket& values)
+{
+    CHECK_AND_RETURN(copyInfo.isCopyCeAvailable);
+    int32_t ceAvailable = -1;
+    GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+    if (ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::FINISH)) {
+        values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
     }
 }
 
@@ -572,6 +584,7 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
         values.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     }
     HandleLowQualityAssetValuesBucket(resultSet, values);
+    HandleCeAvailableValuesBucket(copyInfo, resultSet, values);
     return E_OK;
 }
 
@@ -778,7 +791,7 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
         return E_ERR;
     }
 
-    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false);
+    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false, true);
     err = CopyMateData(upgradeStore, resultSet, newAssetId, targetPath, copyInfo);
     if (err != E_OK) {
         MEDIA_INFO_LOG("Failed to copy local file.");
