@@ -28,7 +28,11 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-void MtpPacketToolsTest::SetUpTestCase(void) {}
+void MtpPacketToolsTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+}
+
 void MtpPacketToolsTest::TearDownTestCase(void) {}
 void MtpPacketToolsTest::SetUp() {}
 void MtpPacketToolsTest::TearDown(void) {}

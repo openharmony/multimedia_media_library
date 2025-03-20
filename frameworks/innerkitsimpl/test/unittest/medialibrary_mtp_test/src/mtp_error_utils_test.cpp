@@ -20,6 +20,7 @@
 #include "mtp_error_utils.h"
 #include "mtp_packet.h"
 #include "medialibrary_errno.h"
+#include "mtp_manager.h"
 #include "iservice_registry.h"
 #include "property.h"
 #include <vector>
@@ -32,7 +33,11 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-void MtpErrorUtilsUnitTest::SetUpTestCase(void) {}
+void MtpErrorUtilsUnitTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+}
+
 void MtpErrorUtilsUnitTest::TearDownTestCase(void) {}
 void MtpErrorUtilsUnitTest::SetUp() {}
 void MtpErrorUtilsUnitTest::TearDown(void) {}
