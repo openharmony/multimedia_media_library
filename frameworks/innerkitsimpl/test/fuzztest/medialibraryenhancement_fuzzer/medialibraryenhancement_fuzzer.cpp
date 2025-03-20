@@ -416,6 +416,7 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
 
 static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
 {
+    int32_t offset = sizeof(int32_t);
     string photoId = FuzzString(data, size);
     int32_t testFileId = PrepareHighQualityPhoto(photoId, FuzzString(data, size));
     UpdateCEAvailable(testFileId, FuzzInt32(data, size));
