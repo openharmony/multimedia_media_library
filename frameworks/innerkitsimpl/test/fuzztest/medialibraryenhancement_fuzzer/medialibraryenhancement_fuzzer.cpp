@@ -412,6 +412,10 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
     offset += sizeof(int32_t);
     Media::EnhancementManager::GetInstance().AddServiceTask(mediaEnhanceBundle, FuzzInt32(data + offset, size),
         FuzzString(data, size), FuzzBool(data, size));
+}
+
+static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
+{
     string photoId = FuzzString(data, size);
     int32_t testFileId = PrepareHighQualityPhoto(photoId, FuzzString(data, size));
     UpdateCEAvailable(testFileId, FuzzInt32(data, size));
@@ -419,19 +423,29 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
     testFileIds.push_back(to_string(testFileId));
     testFileIds.push_back("-1");
     vector<string> testphotoIds;
-    Media::CloudEnhancementAvailableType cloudEnhancementAvailableType
-        = FuzzBool(data, size) ? Media::CloudEnhancementAvailableType::EDIT : Media::CloudEnhancementAvailableType::TRASH;
-    Media::EnhancementManager::GetInstance().CancelTasksInternal(testFileIds, testphotoIds, cloudEnhancementAvailableType);
+
+    Media::CloudEnhancementAvailableType cloudEnhancementAvailableType = Media::CloudEnhancementAvailableType::TRASH;
+    if (FuzzBool(data, size)) {
+        cloudEnhancementAvailableType = Media::CloudEnhancementAvailableType::EDIT;
+    }
+    Media::EnhancementManager::GetInstance().CancelTasksInternal(testFileIds, testphotoIds,
+            cloudEnhancementAvailableType);
     NativeRdb::RdbPredicates servicePredicates(FuzzString(data, size));
     Media::EnhancementManager::GetInstance().GenerateAddAutoServicePredicates(servicePredicates);
-    Media::EnhancementManager::GetInstance().GenerateCancelOperationPredicates(FuzzInt32(data, size), servicePredicates);
-    Media::EnhancementManager::GetInstance().AddAutoServiceTask(mediaEnhanceBundle, FuzzInt32(data, size), FuzzString(data, size));
+    Media::EnhancementManager::GetInstance().GenerateCancelOperationPredicates(FuzzInt32(data, size),
+        servicePredicates);
+    Media::EnhancementManager::GetInstance().AddAutoServiceTask(mediaEnhanceBundle, FuzzInt32(data, size),
+        FuzzString(data, size));
     Media::EnhancementManager::GetInstance().HandleCancelAllAutoOperation();
     Media::EnhancementManager::GetInstance().HandlePauseAllOperation();
     Media::EnhancementManager::GetInstance().HandleResumeAllOperation();
     Media::EnhancementManager::GetInstance().HandleStateChangedOperation(FuzzBool(data, size));
     Media::EnhancementManager::GetInstance().HandleNetChange(FuzzBool(data, size), FuzzBool(data + offset, size));
-    Media::EnhancementManager::GetInstance().HandlePhotosAutoOptionChange(FuzzBool(data, size) ? FuzzString(data, size) : Media::PHOTO_OPTION_CLOSE);
+    string photosAutoOption = Media::PHOTO_OPTION_CLOSE;
+    if (FuzzBool(data, size)) {
+        photosAutoOption = FuzzString(data, size);
+    }
+    Media::EnhancementManager::GetInstance().HandlePhotosAutoOptionChange(photosAutoOption);
     Media::EnhancementManager::GetInstance().HandlePhotosWaterMarkChange(FuzzBool(data, size));
     Media::EnhancementManager::GetInstance().InitAsync();
 }
@@ -555,6 +569,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     OHOS::EnhancementManagerTest(data, size);
+    OHOS::EnhancementManagerExtraTest(data, size);
     OHOS::EnhancementTaskManagerTest(data, size);
     OHOS::CloudEnhancementGetCountTest(data, size);
     OHOS::EnhancementServiceAdpterTest(data, size);
