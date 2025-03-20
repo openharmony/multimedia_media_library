@@ -20,6 +20,7 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 #include "media_log.h"
+#include "mtp_manager.h"
 #include "mtp_media_library.h"
 using namespace std;
 using namespace testing::ext;
@@ -27,7 +28,11 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-void MtpFileObserverTest::SetUpTestCase(void) {}
+void MtpFileObserverTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+}
+
 void MtpFileObserverTest::TearDownTestCase(void) {}
 void MtpFileObserverTest::SetUp() {}
 void MtpFileObserverTest::TearDown(void) {}

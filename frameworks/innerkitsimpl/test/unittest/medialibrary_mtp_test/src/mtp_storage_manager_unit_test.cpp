@@ -16,6 +16,7 @@
 #include <thread>
 #include "mtp_storage_manager_unit_test.h"
 #include "mtp_storage_manager.h"
+#include "mtp_manager.h"
 #include "mtp_constants.h"
 
 using namespace std;
@@ -28,7 +29,10 @@ static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const std::string TEST_PATH_DATA = "/storage/media/local/files/Docs/Desktop";
 const std::shared_ptr<MtpStorageManager> mtpStorageManager_ = MtpStorageManager::GetInstance();
 
-void MtpStorageManagerUnitTest::SetUpTestCase(void) {}
+void MtpStorageManagerUnitTest::SetUpTestCase(void)
+{
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+}
 
 void MtpStorageManagerUnitTest::TearDownTestCase(void)
 {

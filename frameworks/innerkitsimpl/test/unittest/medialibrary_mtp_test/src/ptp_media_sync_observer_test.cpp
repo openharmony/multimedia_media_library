@@ -35,12 +35,23 @@ namespace OHOS {
 namespace Media {
 const uint16_t MTP_FORMAT_TEST_CODE = 0x1001;
 const uint32_t MTP_FORMAT_TEST_CODE_2 = 1234;
-static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
+static std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_ = nullptr;
 static constexpr int32_t HANDLE_TEST = 1;
 static constexpr int STORAGE_MANAGER_UID = 5003;
 const int32_t ERR_NUM = -1;
 
-void PtpMediaSyncObserverUnitTest::SetUpTestCase(void) {}
+void PtpMediaSyncObserverUnitTest::SetUpTestCase(void)
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        return;
+    }
+    auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
+    if (dataShareHelper_ == nullptr) {
+        dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    }
+}
+
 void PtpMediaSyncObserverUnitTest::TearDownTestCase(void) {}
 void PtpMediaSyncObserverUnitTest::SetUp() {}
 void PtpMediaSyncObserverUnitTest::TearDown(void) {}
@@ -77,10 +88,6 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_002, TestSize.Lev
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
-    if (sDataShareHelper_ == nullptr) {
-        auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, Media::MEDIALIBRARY_DATA_URI);
-    }
     vector<string> handles = {"1", "2"};
     mediaSyncObserver->GetHandlesFromPhotosInfoBurstKeys(handles);
 
@@ -101,10 +108,6 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_003, TestSize.Lev
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
-    if (sDataShareHelper_ == nullptr) {
-        auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, Media::MEDIALIBRARY_DATA_URI);
-    }
     mediaSyncObserver->GetAllDeleteHandles();
 
     int32_t res = mediaSyncObserver->GetAddEditAlbumHandle(HANDLE_TEST);
@@ -124,10 +127,6 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_004, TestSize.Lev
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
-    if (sDataShareHelper_ == nullptr) {
-        auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, Media::MEDIALIBRARY_DATA_URI);
-    }
     mediaSyncObserver->AddPhotoHandle(HANDLE_TEST);
 
     int32_t res = mediaSyncObserver->GetAddEditAlbumHandle(HANDLE_TEST);
@@ -147,10 +146,6 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_005, TestSize.Lev
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
-    if (sDataShareHelper_ == nullptr) {
-        auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, Media::MEDIALIBRARY_DATA_URI);
-    }
     mediaSyncObserver->GetAddEditPhotoHandles(HANDLE_TEST);
 
     int32_t res = mediaSyncObserver->GetAddEditAlbumHandle(HANDLE_TEST);
@@ -170,10 +165,6 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_006, TestSize.Lev
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
-    if (sDataShareHelper_ == nullptr) {
-        auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, Media::MEDIALIBRARY_DATA_URI);
-    }
     int32_t res = mediaSyncObserver->GetAddEditAlbumHandle(HANDLE_TEST);
     EXPECT_EQ(res, ERR_NUM);
 }
