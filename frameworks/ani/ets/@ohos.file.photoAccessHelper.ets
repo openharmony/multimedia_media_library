@@ -166,6 +166,10 @@ export namespace photoAccessHelper {
   export type MemberType = number | string | boolean;
 
   export interface PhotoAsset {
+    readonly uri: string;
+    readonly photoType: PhotoType;
+    readonly displayName: string;
+
     get(member: string): MemberType;
     set(member: string, value: string): void;
     commitModify(callback: AsyncCallback<void>): void;
@@ -187,6 +191,10 @@ export namespace photoAccessHelper {
   }
 
   class PhotoAssetHandle implements PhotoAsset {
+    readonly uri: string = "";
+    readonly photoType: PhotoType;
+    readonly displayName: string = "";
+
     private nativePhotoAsset: long = 0;
     constructor(context: long) {
       if (this.nativePhotoAsset == 0) {
@@ -602,6 +610,11 @@ export namespace photoAccessHelper {
 
   export interface FetchResult<T> {
     getCount(): number;
+    isAfterLast(): boolean;
+    getFirstObject(callback: AsyncCallback<T | undefined>): void;
+    getFirstObject(): Promise<T>;
+    getNextObject(callback: AsyncCallback<T | undefined>): void;
+    getNextObject(): Promise<T>;
     getAllObjects(callback: AsyncCallback<Array<T> | undefined>): void;
     getAllObjects(): Promise<Array<T>>;
     close(): void;
@@ -618,6 +631,51 @@ export namespace photoAccessHelper {
     native getNextObjectSync(): T;
     native getAllObjectsSync(): Array<T>;
     native close(): void;
+
+    isAfterLast(): boolean {
+      return false;
+    }
+    getFirstObject(callback: AsyncCallback<T | undefined>): void {}
+    getFirstObject(): Promise<T> {
+      return new Promise<T>((resolve: (v: T) => void, reject: RejectString) => {
+        let cb = (): T => { return this.getFirstObjectSync() };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret === null || ret === undefined) {
+            let err: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
+            reject(err);
+          } else {
+            let result = ret as T;
+            resolve(result);
+          }
+        });
+      });
+    }
+
+    getNextObject(callback: AsyncCallback<T | undefined>): void {}
+    getNextObject(): Promise<T> {
+      return new Promise<T>((resolve: (v: T) => void, reject: RejectString) => {
+        let cb = (): T => { return this.getNextObjectSync() };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret === null || ret === undefined) {
+            let err: BusinessError<string> = {
+              code: -1,
+              data: "Operation failed",
+              name: "",
+              message: ""
+            };
+            reject(err);
+          } else {
+            let result = ret as T;
+            resolve(result);
+          }
+        });
+      });
+    }
 
     getAllObjects(callback: AsyncCallback<Array<T> | undefined, void>): void {
       let task = new taskpool.Task(() => this.getAllObjectsSync());
@@ -860,6 +918,16 @@ export namespace photoAccessHelper {
     getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): Promise<FetchResult<Album>>;
     stopCreateThumbnailTask(taskId: int): void;
+    getBurstAssets(burstKey: string, options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
+    createAsset(displayName: string, callback: AsyncCallback<PhotoAsset | undefined>): void;
+    createAsset(displayName: string): Promise<PhotoAsset>;
+    createAsset(displayName: string, options: PhotoCreateOptions): Promise<PhotoAsset>;
+    createAsset(displayName: string, options: PhotoCreateOptions,
+      callback: AsyncCallback<PhotoAsset | undefined>): void;
+    createAsset(photoType: PhotoType, extension: string, options: CreateOptions,
+      callback: AsyncCallback<string | undefined>): void;
+    createAsset(photoType: PhotoType, extension: string, callback: AsyncCallback<string | undefined>): void;
+    createAsset(photoType: PhotoType, extension: string, options?: CreateOptions): Promise<string>;
   }
 
   class PhotoAccessHelperHandle implements PhotoAccessHelper {
@@ -908,6 +976,45 @@ export namespace photoAccessHelper {
             resolve(buffer as FetchResult<Album>);
           }
         });
+      });
+    }
+
+    getBurstAssets(burstKey: string, options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
+      return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void,
+        reject: RejectString) => {
+        let emptyResult: FetchResult<PhotoAsset> = new FetchResultHandle<PhotoAsset>(0);
+        resolve(emptyResult);
+      });
+    }
+
+    createAsset(displayName: string, callback: AsyncCallback<PhotoAsset | undefined>): void {}
+
+    createAsset(displayName: string): Promise<PhotoAsset> {
+      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: (e: BusinessError<string>) => void) => {
+          let emptyResult: PhotoAsset = new PhotoAssetHandle(0);
+          resolve(emptyResult);
+        });
+    }
+
+    createAsset(displayName: string, options: PhotoCreateOptions): Promise<PhotoAsset> {
+      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: (e: BusinessError<string>) => void) => {
+        let emptyResult: PhotoAsset = new PhotoAssetHandle(0);
+        resolve(emptyResult);
+      });
+    }
+
+    createAsset(displayName: string, options: PhotoCreateOptions,
+      callback: AsyncCallback<PhotoAsset | undefined>): void {}
+
+    createAsset(photoType: PhotoType, extension: string, options: CreateOptions,
+      callback: AsyncCallback<string | undefined>): void {}
+
+    createAsset(photoType: PhotoType, extension: string, callback: AsyncCallback<string | undefined>): void {}
+
+    createAsset(photoType: PhotoType, extension: string, options?: CreateOptions): Promise<string> {
+      return new Promise<string>((resolve: (v: string) => void, reject: (e: BusinessError<string>) => void) => {
+        let emptyResult: string = "";
+        resolve(emptyResult);
       });
     }
 

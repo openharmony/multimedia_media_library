@@ -55,7 +55,6 @@ void MediaAssetsChangeRequestAni::RecordChangeOperation(AssetsChangeOperation ch
 void MediaAssetsChangeRequestAni::SetFavorite([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_boolean isFavorite)
 {
-    DEBUG_LOG_T("start SetFavorite");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return;
@@ -68,13 +67,11 @@ void MediaAssetsChangeRequestAni::SetFavorite([[maybe_unused]] ani_env *env, [[m
         fileAsset->SetFavorite(isFavorite);
     }
     RecordChangeOperation(AssetsChangeOperation::BATCH_SET_FAVORITE);
-    DEBUG_LOG_T("end SetFavorite");
 }
 
 void MediaAssetsChangeRequestAni::SetHidden([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_boolean isHidden)
 {
-    DEBUG_LOG_T("start SetHidden");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return;
@@ -87,7 +84,6 @@ void MediaAssetsChangeRequestAni::SetHidden([[maybe_unused]] ani_env *env, [[may
         fileAsset->SetHidden(isHidden);
     }
     RecordChangeOperation(AssetsChangeOperation::BATCH_SET_HIDDEN);
-    DEBUG_LOG_T("end SetHidden");
 }
 
 bool MediaAssetsChangeRequestAni::SetAssetsPropertyExecute(const AssetsChangeOperation& changeOperation)
@@ -178,25 +174,21 @@ bool MediaAssetsChangeRequestAni::GetHiddenStatus()
 
 MediaAssetsChangeRequestAni* MediaAssetsChangeRequestAni::unwrapp(ani_env *env, ani_object object)
 {
-    DEBUG_LOG_T("start unwrapp");
     ani_long context;
     if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativeMediaAssetsChangeRequestHandleImpl", &context)) {
-        DEBUG_LOG_T("unwrapp err");
+        ANI_ERR_LOG("unwrapp err");
         return nullptr;
     }
-    DEBUG_LOG_T("end unwrapp");
     return reinterpret_cast<MediaAssetsChangeRequestAni *>(context);
 }
 
 ani_object MediaAssetsChangeRequestAni::create([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz)
 {
-    DEBUG_LOG_T("aning create");
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     vector<shared_ptr<FileAsset>> fileAssets = {fileAsset};
     auto nativeMediaAssetsChangeRequestHandleImpl = new MediaAssetsChangeRequestAni(fileAssets);
-    DEBUG_LOG_T("aning create MediaAssetsChangeRequestAni");
     if (nativeMediaAssetsChangeRequestHandleImpl == nullptr) {
-        DEBUG_LOG_T("aning nativeMediaAssetsChangeRequestHandleImpl is nullptr");
+        ANI_ERR_LOG("aning nativeMediaAssetsChangeRequestHandleImpl is nullptr");
         ani_object nullobj = nullptr;
         return nullobj;
     }
@@ -223,7 +215,6 @@ ani_object MediaAssetsChangeRequestAni::create([[maybe_unused]] ani_env *env, [[
 
 ani_status MediaAssetsChangeRequestAni::MediaAssetsChangeRequestAniInit(ani_env *env)
 {
-    DEBUG_LOG_T("aning MediaAssetsChangeRequestAniInit start");
     ani_class cls;
     if (ANI_OK != env->FindClass(ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str(), &cls)) {
         return ANI_ERROR;
