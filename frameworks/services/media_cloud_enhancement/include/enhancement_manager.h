@@ -97,12 +97,12 @@ private:
     const EnhancementManager &operator=(const EnhancementManager &manager) = delete;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     void GenerateAddServicePredicates(bool isAuto, NativeRdb::RdbPredicates &servicePredicates);
-    void GenerateAddAutoServicePredicates(NativeRdb::RdbPredicates &servicePredicates);
-    void GenerateCancelOperationPredicates(int32_t fileId, NativeRdb::RdbPredicates &servicePredicates);
+    EXPORT void GenerateAddAutoServicePredicates(NativeRdb::RdbPredicates &servicePredicates);
+    EXPORT void GenerateCancelOperationPredicates(int32_t fileId, NativeRdb::RdbPredicates &servicePredicates);
     sptr<PhotosAutoOptionObserver> photosAutoOptionObserver_ = nullptr;
     sptr<PhotosWaterMarkObserver> photosWaterMarkObserver_ = nullptr;
     bool IsAutoTaskEnabled();
-    int32_t HandleCancelAllAutoOperation();
+    EXPORT int32_t HandleCancelAllAutoOperation();
     void ResetProcessingAutoToSupport();
     bool IsAddOperationEnabled(int32_t triggerMode);
 #endif
