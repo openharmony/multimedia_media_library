@@ -25,7 +25,7 @@ class DatabaseAdapter {
 public:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
-    static int32_t Update(MediaLibraryCommand &cmd);
+    EXPORT static int32_t Update(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS
