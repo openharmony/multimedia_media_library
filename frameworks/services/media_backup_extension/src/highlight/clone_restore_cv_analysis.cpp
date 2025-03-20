@@ -136,19 +136,14 @@ void CloneRestoreCVAnalysis::GetAssetMapInfos(CloneRestoreHighlight &cloneHighli
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("resultSet is nullptr");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
 
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t oldFileId = GetInt32Val("map_asset_source", resultSet);
             int32_t oldAssetId = GetInt32Val("map_asset_destination", resultSet);
             sdMapDatas_.emplace_back(std::make_pair(oldFileId, oldAssetId));
             int32_t newFileId = cloneHighlight.GetNewHighlightPhotoId(oldFileId);
-            if (assetIdMap_.count(oldAssetId) == 0) {
-                assetIdMap_[oldAssetId] = GetNewAssetId(newFileId);
-            }
+            CHECK_AND_EXECUTE(assetIdMap_.count(oldAssetId) != 0, assetIdMap_[oldAssetId] = GetNewAssetId(newFileId));
             fileIdMap_[oldFileId] = newFileId;
         }
         resultSet->GetRowCount(rowCount);
@@ -178,18 +173,13 @@ void CloneRestoreCVAnalysis::GetAssetAlbumInfos(CloneRestoreHighlight &cloneHigh
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("resultSet is nullptr");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
 
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t oldAlbumId = GetInt32Val("map_album", resultSet);
             int32_t oldAssetId = GetInt32Val("map_asset", resultSet);
             assetMapDatas_.emplace_back(std::make_pair(oldAlbumId, oldAssetId));
-            if (albumIdMap_.count(oldAlbumId) > 0) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(albumIdMap_.count(oldAlbumId) <= 0);
             albumIdMap_[oldAlbumId] = cloneHighlight.GetNewHighlightAlbumId(oldAlbumId);
         }
         resultSet->GetRowCount(rowCount);
@@ -266,16 +256,13 @@ void CloneRestoreCVAnalysis::GetAnalysisLabelInfos(CloneRestoreHighlight &cloneH
         const std::string QUERY_SQL = "SELECT * FROM tab_analysis_label LIMIT " + std::to_string(offset) + ", " +
             std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
-        if (resultSet == nullptr) {
-            MEDIA_INFO_LOG("query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "query resultSql is null.");
+
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             AnalysisLabelInfo info;
             GetLabelRowInfo(info, resultSet);
-            if (info.fileId.has_value()) {
-                info.fileIdNew = cloneHighlight.GetNewHighlightPhotoId(info.fileId.value());
-            }
+            CHECK_AND_EXECUTE(!info.fileId.has_value(),
+                info.fileIdNew = cloneHighlight.GetNewHighlightPhotoId(info.fileId.value()));
             labelInfos_.emplace_back(info);
         }
         resultSet->GetRowCount(rowCount);
@@ -352,9 +339,9 @@ std::unordered_set<std::string> CloneRestoreCVAnalysis::GetCommonColumns(const s
     std::unordered_set<std::string> result;
     auto comparedColumns = GetValueFromMap(ALBUM_COLUMNS_MAP, tableName);
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
-        if (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() && comparedColumns.count(it->first) > 0) {
-            result.insert(it->first);
-        }
+        bool cond = (srcColumnInfoMap.find(it->first) != srcColumnInfoMap.end() &&
+            comparedColumns.count(it->first) > 0);
+        CHECK_AND_EXECUTE(!cond, result.insert(it->first));
     }
     return result;
 }
@@ -367,16 +354,13 @@ void CloneRestoreCVAnalysis::GetAnalysisSaliencyInfos(CloneRestoreHighlight &clo
         const std::string QUERY_SQL = "SELECT * FROM tab_analysis_saliency_detect LIMIT " + std::to_string(offset) +
             ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
-        if (resultSet == nullptr) {
-            MEDIA_INFO_LOG("query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_INFO_LOG(resultSet != nullptr, "query resultSql is null.");
+
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             AnalysisSaliencyInfo info;
             GetSaliencyRowInfo(info, resultSet);
-            if (info.fileId.has_value()) {
-                info.fileIdNew = cloneHighlight.GetNewHighlightPhotoId(info.fileId.value());
-            }
+            CHECK_AND_EXECUTE(!info.fileId.has_value(),
+                info.fileIdNew = cloneHighlight.GetNewHighlightPhotoId(info.fileId.value()));
             saliencyInfos_.emplace_back(info);
         }
         resultSet->GetRowCount(rowCount);
@@ -444,16 +428,12 @@ void CloneRestoreCVAnalysis::GetAnalysisRecommendationInfos(CloneRestoreHighligh
         const std::string QUERY_SQL = "SELECT * FROM tab_analysis_recommendation LIMIT " + std::to_string(offset) +
             ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
-        if (resultSet == nullptr) {
-            MEDIA_INFO_LOG("query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_INFO_LOG(resultSet != nullptr, "query resultSql is null.");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             AnalysisRecommendationInfo info;
             GetRecommendationRowInfo(info, resultSet);
-            if (info.fileId.has_value()) {
-                info.fileIdNew = cloneHighlight.GetNewHighlightPhotoId(info.fileId.value());
-            }
+            CHECK_AND_EXECUTE(!info.fileId.has_value(),
+                info.fileIdNew = cloneHighlight.GetNewHighlightPhotoId(info.fileId.value()));
             recommendInfos_.emplace_back(info);
         }
         resultSet->GetRowCount(rowCount);
@@ -591,10 +571,10 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
             newPlayInfo["effectline"]["effectline"][effectlineIndex]["transitionVideoUri"], cloneHighlight);
         newPlayInfo["effectline"]["effectline"][effectlineIndex]["transitionVideoUri"] = transVideoUri;
 
-        if (effectlineIndex > 0 &&
-            newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["effect"] == EFFECTLINE_TYPE_MASK1) {
-            newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["transitionVideoUri"] = transVideoUri;
-        }
+        bool cond = (effectlineIndex > 0 &&
+            newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["effect"] == EFFECTLINE_TYPE_MASK1);
+        CHECK_AND_EXECUTE(!cond,
+            newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["transitionVideoUri"] = transVideoUri);
     }
 
     for (size_t infoIndex = 0; infoIndex < EFFECTLINE_ID.size(); infoIndex++) {
@@ -612,9 +592,7 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
         for (size_t uriIndex = 0;
             uriIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]].size();
             uriIndex++) {
-            if (uriIndex >= newFileIds.size()) {
-                break;
-            }
+            CHECK_AND_BREAK(uriIndex < newFileIds.size());
             std::string newFileUri = cloneHighlight.GetNewHighlightPhotoUri(newFileIds[uriIndex]);
             newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex] = newFileUri;
         }
@@ -702,11 +680,10 @@ std::string CloneRestoreCVAnalysis::GetNewPhotoUriByUri(const std::string &oldUr
 void CloneRestoreCVAnalysis::MoveAnalysisAssets(const std::string &srcPath, const std::string &dstPath)
 {
     int32_t errCode = BackupFileUtils::MoveFile(srcPath.c_str(), dstPath.c_str(), sceneCode_);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("move file failed, srcPath:%{public}s, dstPath:%{public}s, errcode:%{public}d",
-            BackupFileUtils::GarbleFilePath(srcPath, sceneCode_, garblePath_).c_str(),
-            BackupFileUtils::GarbleFilePath(dstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode == E_OK,
+        "move file failed, srcPath:%{public}s, dstPath:%{public}s, errcode:%{public}d",
+        BackupFileUtils::GarbleFilePath(srcPath, sceneCode_, garblePath_).c_str(),
+        BackupFileUtils::GarbleFilePath(dstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
 }
 
 void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &cloneHighlight)
@@ -721,16 +698,14 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
 
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             std::optional<int32_t> oldAlbumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "album_id");
-            if (!oldAlbumId.has_value()) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(oldAlbumId.has_value());
             std::optional<int32_t> playId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "play_info_id");
             std::optional<std::string> oldPlayInfo =
                 BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "play_info");
             std::string newPlayInfo = "null";
-            if (oldPlayInfo.has_value()) {
-                newPlayInfo = ParsePlayInfo(oldPlayInfo.value(), cloneHighlight);
-            }
+            CHECK_AND_EXECUTE(!oldPlayInfo.has_value(),
+                newPlayInfo = ParsePlayInfo(oldPlayInfo.value(), cloneHighlight));
+
             int32_t albumId = cloneHighlight.GetNewHighlightAlbumId(oldAlbumId.value());
             std::string updatePlayInfoSql = "UPDATE tab_highlight_play_info SET play_info = ? "
                 " WHERE album_id = ? ";
