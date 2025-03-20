@@ -35,12 +35,12 @@ group("media_library_fuzztest") {
     "medialibraryextensionupdate_fuzzer:MediaLibraryExtensionUpdateFuzzTest",
     "medialibrarymediaphotoassetproxy_fuzzer:MediaLibraryMediaPhotoAssetProxyFuzzTest",
     "medialibrarymetarecover_fuzzer:MediaLibraryMetaRecoverFuzzTest",
+    "medialibraryrefreshmanager_fuzzer:MediaLibraryRefreshManagerFuzzTest",
     "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",
     "medialibrarythumbnail_fuzzer:MediaLibraryThumbnailFuzzTest",
     "medialibraryuripermissionoperations_fuzzer:MediaLibraryUriPermissionOperationsFuzzTest",
     "medialibraryurisensitiveoperations_fuzzer:MediaLibraryUriSensitiveOperationsFuzzTest",
     "medialibraryutil_fuzzer:MediaLibraryUtilFuzzTest",
-    "medialibraryrefreshmanager_fuzzer:MediaLibraryRefreshManagerFuzzTest",
   ]
 
   if (defined(global_parts_info.hdf_drivers_interface_usb) &&
