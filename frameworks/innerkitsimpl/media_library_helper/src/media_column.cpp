@@ -555,6 +555,7 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         PHOTO_DATE_YEAR,
         PHOTO_DATE_MONTH,
         PHOTO_DATE_DAY,
+        PHOTO_DETAIL_TIME,
         PHOTO_SHOOTING_MODE,
         PHOTO_SHOOTING_MODE_TAG,
         PHOTO_OWNER_ALBUM_ID,

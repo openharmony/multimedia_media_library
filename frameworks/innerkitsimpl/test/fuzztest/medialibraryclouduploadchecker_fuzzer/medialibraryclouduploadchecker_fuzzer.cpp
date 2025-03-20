@@ -104,16 +104,10 @@ static void RepairNoOriginButLcdTest(const uint8_t *data, size_t size)
     Media::CloudUploadChecker::RepairNoOriginButLcd();
 }
 
-static void RepairNoDetailTimeTest()
-{
-    Media::CloudUploadChecker::RepairNoDetailTime();
-}
-
 static void CloudUploadCheckerTest(const uint8_t *data, size_t size)
 {
     HandleNoOriginPhotoTest(data, size);
     RepairNoOriginButLcdTest(data, size);
-    RepairNoDetailTimeTest();
 }
 
 void SetTables()
