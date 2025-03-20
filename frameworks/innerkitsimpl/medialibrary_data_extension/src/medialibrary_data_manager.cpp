@@ -160,7 +160,7 @@ const int32_t PHOTO_CLOUD_POSITION = 2;
 const int32_t PHOTO_LOCAL_CLOUD_POSITION = 3;
 const int32_t UPDATE_DIRTY_CLOUD_CLONE_V1 = 1;
 const int32_t UPDATE_DIRTY_CLOUD_CLONE_V2 = 2;
-const int32_t ERROR_OLD_FILE_ID_OFFSET = 1000000;
+const int32_t ERROR_OLD_FILE_ID_OFFSET = -1000000;
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
 static const std::string NO_UPDATE_DIRTY_CLOUD_CLONE_V2 = "no_update_dirty_cloud_clone_v2";
@@ -2570,16 +2570,11 @@ static int32_t DoUpdateDirtyForCloudCloneOperationV2(const shared_ptr<MediaLibra
     int32_t ret = rdbStore->Update(changeRows, updatePostBucket, updatePredicates);
     CHECK_AND_RETURN_RET_LOG((ret == E_OK && changeRows > 0), E_FAIL,
         "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
-    for (auto fileId : fileIds) {
-        ValuesBucket updateOldPhotosBucket;
-        int32_t oldFileId = ERROR_OLD_FILE_ID_OFFSET - static_cast<int32_t>(std::stoi(fileId));
-        updatePostBucket.Put(COLUMN_OLD_FILE_ID, oldFileId);
-        AbsRdbPredicates updateOldPhotosPredicates = AbsRdbPredicates(PhotoColumn::TAB_OLD_PHOTOS_TABLE);
-        updateOldPhotosPredicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-        ret = rdbStore->Update(changeRows, updateOldPhotosBucket, updateOldPhotosPredicates);
-        CHECK_AND_RETURN_RET_LOG((ret == E_OK && changeRows > 0), E_FAIL,
-            "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
-    }
+    
+    string updateSql = "UPDATE " + PhotoColumn::TAB_OLD_PHOTOS_TABLE + " SET " + 
+        COLUMN_OLD_FILE_ID + " = (" + ERROR_OLD_FILE_ID_OFFSET  " - " + MediaColumn::MEDIA_ID + ") "+
+        "WHERE " +  MediaColumn::MEDIA_ID + "IN (?,?,?,?)";
+    ret = rdbStore_->ExecuteSql(updateSql, fileIds);
     return ret;
 }
 
