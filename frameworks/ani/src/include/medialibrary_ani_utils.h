@@ -106,11 +106,11 @@
         }                                                           \
     } while (0)
 
-#define CHECK_STATUS_RET(cond, message)                             \
+#define CHECK_STATUS_RET(cond, message, ...)                        \
     do {                                                            \
         ani_status __ret = (cond);                                  \
         if (__ret != ANI_OK) {                                      \
-            ANI_ERR_LOG(message);                                   \
+            ANI_ERR_LOG(message, ##__VA_ARGS__);                    \
             return __ret;                                           \
         }                                                           \
     } while (0)
@@ -294,6 +294,10 @@ public:
     static ani_status GetParamStringWithLength(ani_env *env, ani_string arg, int32_t maxLen, std::string &str);
     static ani_status GetParamStringPathMax(ani_env *env, ani_string arg, std::string &str);
     static ani_status GetParamStringPathMax(ani_env *env, ani_object arg, std::string &str);
+
+    static ani_status ToAniBooleanObject(ani_env *env, bool src, ani_object &aniObj);
+    static ani_status ToAniIntObject(ani_env *env, int32_t src, ani_object &aniObj);
+    static ani_status ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj);
 
     static ani_status GetUint32Array(ani_env *env, ani_object arg, std::vector<uint32_t> &array);
     static ani_status ToAniInt32Array(ani_env *env, const std::vector<uint32_t> &array, ani_object &aniArray);
