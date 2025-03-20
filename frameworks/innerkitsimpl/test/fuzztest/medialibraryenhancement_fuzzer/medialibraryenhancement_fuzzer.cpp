@@ -31,6 +31,9 @@
 #include "medialibrary_unistore.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_file_ext_ability.h"
+#include "medialibrary_photo_operations.h"
+#include "result_set_utils.h"
+#include "medialibrary_rdb_utils.h"
 
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
 #define private public
@@ -175,6 +178,138 @@ static inline int32_t FuzzCEErrorCodeType(const uint8_t* data, size_t size)
     return static_cast<int32_t>(Media::CEErrorCodeType::NON_RECOVERABLE);
 }
 
+static int32_t CreatePhotoApi10(int mediaType, const string &displayName)
+{
+    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::CREATE,
+        Media::MediaLibraryApi::API_10);
+    NativeRdb::ValuesBucket values;
+    values.PutString(Media::MediaColumn::MEDIA_NAME, displayName);
+    values.PutInt(Media::MediaColumn::MEDIA_TYPE, mediaType);
+    cmd.SetValueBucket(values);
+    int32_t ret = Media::MediaLibraryPhotoOperations::Create(cmd);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Create Photo failed, errCode=%{public}d", ret);
+        return ret;
+    }
+    return ret;
+}
+
+string GetFilePath(int fileId)
+{
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
+        return "";
+    }
+
+    vector<string> columns = { Media::PhotoColumn::MEDIA_FILE_PATH };
+    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::QUERY,
+        Media::MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(Media::PhotoColumn::MEDIA_ID, to_string(fileId));
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("can not get rdbstore");
+        return "";
+    }
+    auto resultSet = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->Query(cmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get file Path");
+        return "";
+    }
+    string path = Media::GetStringVal(Media::PhotoColumn::MEDIA_FILE_PATH, resultSet);
+    return path;
+}
+
+int32_t MakePhotoUnpending(int fileId, bool isRefresh)
+{
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
+        return Media::E_INVALID_FILEID;
+    }
+
+    string path = GetFilePath(fileId);
+    if (path.empty()) {
+        MEDIA_ERR_LOG("Get path failed");
+        return Media::E_INVALID_VALUES;
+    }
+    int32_t errCode = Media::MediaFileUtils::CreateAsset(path);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Can not create asset");
+        return errCode;
+    }
+
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("can not get rdbstore");
+        return Media::E_HAS_DB_ERROR;
+    }
+    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::UPDATE);
+    NativeRdb::ValuesBucket values;
+    values.PutLong(Media::PhotoColumn::MEDIA_TIME_PENDING, 0);
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(Media::PhotoColumn::MEDIA_ID, to_string(fileId));
+    int32_t changedRows = -1;
+    errCode = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore()->Update(cmd, changedRows);
+    if (errCode != E_OK || changedRows <= 0) {
+        MEDIA_ERR_LOG("Update pending failed, errCode = %{public}d, changeRows = %{public}d",
+            errCode, changedRows);
+        return errCode;
+    }
+
+    if (isRefresh) {
+        Media::MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+            Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
+        Media::MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+            Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
+    }
+    return E_OK;
+}
+
+int32_t SetDefaultPhotoApi10(int mediaType, const std::string &displayName, bool isFresh = true)
+{
+    int fileId = CreatePhotoApi10(mediaType, displayName);
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("create photo failed, res=%{public}d", fileId);
+        return fileId;
+    }
+    int32_t errCode = MakePhotoUnpending(fileId, isFresh);
+    if (errCode != E_OK) {
+        return errCode;
+    }
+    return fileId;
+}
+
+int32_t PrepareHighQualityPhoto(const string &photoId, const string &displayName)
+{
+    auto fileId = SetDefaultPhotoApi10(Media::MediaType::MEDIA_TYPE_IMAGE, displayName);
+    // update multi-stages capture db info
+    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO, Media::OperationType::UPDATE,
+        Media::MediaLibraryApi::API_10);
+    NativeRdb::ValuesBucket values;
+    values.Put(Media::PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(Media::MultiStagesPhotoQuality::FULL));
+    values.Put(Media::PhotoColumn::PHOTO_CE_AVAILABLE,
+        static_cast<int32_t>(Media::CloudEnhancementAvailableType::PROCESSING_AUTO));
+    values.Put(Media::PhotoColumn::PHOTO_ID, photoId);
+    values.Put(Media::PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, 1);
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(Media::MediaColumn::MEDIA_ID, to_string(fileId));
+    Media::MediaLibraryPhotoOperations::Update(cmd);
+
+    return fileId;
+}
+
+int32_t UpdateCEAvailable(int32_t fileId, int32_t ceAvailable, bool hasCloudWaterMark = false)
+{
+    // update cloud enhancement ce_available
+    Media::MediaLibraryCommand cmd(Media::OperationObject::FILESYSTEM_PHOTO,
+        Media::OperationType::UPDATE, Media::MediaLibraryApi::API_10);
+    NativeRdb::ValuesBucket values;
+    values.Put(Media::PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+    if (hasCloudWaterMark) {
+        values.Put(Media::PhotoColumn::PHOTO_HAS_CLOUD_WATERMARK, 1);
+    }
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(Media::MediaColumn::MEDIA_ID, to_string(fileId));
+    return Media::MediaLibraryPhotoOperations::Update(cmd);
+}
+
 static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
 {
     if (g_rdbStore == nullptr) {
@@ -280,6 +415,45 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
     offset += sizeof(int32_t);
     Media::EnhancementManager::GetInstance().AddServiceTask(mediaEnhanceBundle, FuzzInt32(data + offset, size),
         FuzzString(data, size), FuzzBool(data, size));
+}
+
+static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
+{
+    int32_t offset = sizeof(int32_t);
+    MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
+        = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
+    string photoId = FuzzString(data, size);
+    int32_t testFileId = PrepareHighQualityPhoto(photoId, FuzzString(data, size));
+    UpdateCEAvailable(testFileId, FuzzInt32(data, size));
+    vector<string> testFileIds;
+    testFileIds.push_back(to_string(testFileId));
+    testFileIds.push_back("-1");
+    vector<string> testphotoIds;
+
+    Media::CloudEnhancementAvailableType cloudEnhancementAvailableType = Media::CloudEnhancementAvailableType::TRASH;
+    if (FuzzBool(data, size)) {
+        cloudEnhancementAvailableType = Media::CloudEnhancementAvailableType::EDIT;
+    }
+    Media::EnhancementManager::GetInstance().CancelTasksInternal(testFileIds, testphotoIds,
+        cloudEnhancementAvailableType);
+    NativeRdb::RdbPredicates servicePredicates(FuzzString(data, size));
+    Media::EnhancementManager::GetInstance().GenerateAddAutoServicePredicates(servicePredicates);
+    Media::EnhancementManager::GetInstance().GenerateCancelOperationPredicates(FuzzInt32(data, size),
+        servicePredicates);
+    Media::EnhancementManager::GetInstance().AddAutoServiceTask(mediaEnhanceBundle, FuzzInt32(data, size),
+        FuzzString(data, size));
+    Media::EnhancementManager::GetInstance().HandleCancelAllAutoOperation();
+    Media::EnhancementManager::GetInstance().HandlePauseAllOperation();
+    Media::EnhancementManager::GetInstance().HandleResumeAllOperation();
+    Media::EnhancementManager::GetInstance().HandleStateChangedOperation(FuzzBool(data, size));
+    Media::EnhancementManager::GetInstance().HandleNetChange(FuzzBool(data, size), FuzzBool(data + offset, size));
+    string photosAutoOption = Media::PHOTO_OPTION_CLOSE;
+    if (FuzzBool(data, size)) {
+        photosAutoOption = FuzzString(data, size);
+    }
+    Media::EnhancementManager::GetInstance().HandlePhotosAutoOptionChange(photosAutoOption);
+    Media::EnhancementManager::GetInstance().HandlePhotosWaterMarkChange(FuzzBool(data, size));
+    Media::EnhancementManager::GetInstance().InitAsync();
 }
 
 static void EnhancementTaskManagerTest(const uint8_t *data, size_t size)
@@ -401,6 +575,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     OHOS::EnhancementManagerTest(data, size);
+    OHOS::EnhancementManagerExtraTest(data, size);
     OHOS::EnhancementTaskManagerTest(data, size);
     OHOS::CloudEnhancementGetCountTest(data, size);
     OHOS::EnhancementServiceAdpterTest(data, size);
