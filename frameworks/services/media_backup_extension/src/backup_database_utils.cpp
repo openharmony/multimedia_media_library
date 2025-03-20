@@ -764,8 +764,7 @@ void BackupDatabaseUtils::UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
     }
 }
 
-    /* 双框架的group_id是合并相册之一的某一 tag_id */
-void BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+void BackupDatabaseUtils::UpdateFaceGroupTagOfGallery(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
 {
     std::vector<TagPairOpt> tagPairs = QueryTagInfo(mediaLibraryRdb);
     std::vector<TagPairOpt> updatedPairs;

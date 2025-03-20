@@ -1298,7 +1298,7 @@ void UpgradeRestore::UpdateFaceAnalysisStatus()
         return;
     }
     int64_t startUpdateGroupTag = MediaFileUtils::UTCTimeMilliSeconds();
-    BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateFaceGroupTagOfGallery(mediaLibraryRdb_);
     int64_t startUpdateTotal = MediaFileUtils::UTCTimeMilliSeconds();
     BackupDatabaseUtils::UpdateAnalysisTotalStatus(mediaLibraryRdb_);
     int64_t startUpdateFaceTag = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1317,7 +1317,7 @@ void UpgradeRestore::UpdateDualCloneFaceAnalysisStatus()
         return;
     }
 
-    BackupDatabaseUtils::UpdateFaceGroupTagOfDualFrame(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateFaceGroupTagOfGallery(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisPhotoMapStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
 }
