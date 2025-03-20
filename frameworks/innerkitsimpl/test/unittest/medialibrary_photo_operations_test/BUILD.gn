@@ -66,6 +66,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "./src/operation/photo_mimetype_operation_test.cpp",
     "./src/operation/photo_owner_album_id_operation_test.cpp",
     "./src/photo_album_operation/photo_album_lpath_operation_test.cpp",
+    "./src/photo_album_operation/photo_album_merge_operation_test.cpp",
   ]
 
   deps = [
