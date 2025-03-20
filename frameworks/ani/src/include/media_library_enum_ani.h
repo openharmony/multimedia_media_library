@@ -24,59 +24,20 @@
 namespace OHOS {
 namespace Media {
 
-enum EnumTypeInt32 {
-    PhotoTypeAni,
-    PhotoSubtypeAni,
-    DynamicRangeTypeAni,
-    PositionTypeAni,
-    AnalysisTypeAni,
-    RecommendationTypeAni,
-    DeliveryModeAni,
-    CompatibleModeAni,
-    SourceModeAni,
-    PhotoPermissionTypeAni,
-    HideSensitiveTypeAni,
-    AuthorizationModeAni,
-    CompleteButtonTextAni,
-    WatermarkTypeAni,
-    HiddenPhotosDisplayModeAni,
-    AlbumTypeAni,
-    AlbumSubtypeAni,
-    RequestPhotoTypeAni,
-    NotifyTypeAni,
-    ResourceTypeAni,
-    ImageFileTypeAni,
-    MovingPhotoEffectModeAni,
-    VideoEnhancementTypeAni,
-    HighlightAlbumInfoTypeAni,
-    HighlightUserActionTypeAni,
-    ThumbnailTypeAni,
-    CloudEnhancementTaskStageAni,
-    CloudEnhancementStateAni,
-};
-
-enum EnumTypeString {
-    PhotoKeysAni,
-    AlbumKeysAni,
-    DefaultChangeUriAni,
-    PhotoViewMIMETypesAni,
-};
-
 class MediaLibraryEnumAni {
 public:
-    static ani_status EnumGetValueInt32(ani_env *env, EnumTypeInt32 enumType, ani_enum_item enumItem, int32_t &value);
-    static ani_status EnumGetValueString(ani_env *env, EnumTypeString enumType, ani_enum_item enumItem,
-        std::string &value);
+    static ani_status EnumGetValueInt32(ani_env *env, ani_enum_item enumItem, int32_t &value);
+    static ani_status EnumGetValueString(ani_env *env, ani_enum_item enumItem, std::string &value);
 
-    static bool EnumGetIndex(MediaType value, ani_int &enumIndex);
-    static bool EnumGetIndex(PhotoSubType value, ani_int &enumIndex);
-    static bool EnumGetIndex(DynamicRangeType value, ani_int &enumIndex);
-    static bool EnumGetIndex(PhotoPositionType value, ani_int &enumIndex);
-    static bool EnumGetIndex(PhotoAlbumType value, ani_int &enumIndex);
-    static bool EnumGetIndex(PhotoAlbumSubType value, ani_int &enumIndex);
-    static bool EnumGetIndex(NotifyType value, ani_int &enumIndex);
-    static bool EnumGetIndex(MovingPhotoEffectMode value, ani_int &enumIndex);
-    static bool EnumGetIndex(CloudEnhancementTaskStage value, ani_int &enumIndex);
+    static ani_status ToAniEnum(ani_env *env, MediaType value, ani_enum_item &aniEnumItem);
+    static ani_status ToAniEnum(ani_env *env, PhotoSubType value, ani_enum_item &aniEnumItem);
+    static ani_status ToAniEnum(ani_env *env, DynamicRangeType value, ani_enum_item &aniEnumItem);
+    static ani_status ToAniEnum(ani_env *env, PhotoPositionType value, ani_enum_item &aniEnumItem);
+    static ani_status ToAniEnum(ani_env *env, PhotoAlbumType value, ani_enum_item &aniEnumItem);
+    static ani_status ToAniEnum(ani_env *env, PhotoAlbumSubType value, ani_enum_item &aniEnumItem);
+    static ani_status ToAniEnum(ani_env *env, NotifyType value, ani_enum_item &aniEnumItem);
+    static ani_status ToAniEnum(ani_env *env, MovingPhotoEffectMode value, ani_enum_item &aniEnumItem);
+    static ani_status ToAniEnum(ani_env *env, CloudEnhancementTaskStage value, ani_enum_item &aniEnumItem);
 };
 
 } // namespace Media

@@ -317,8 +317,8 @@ static ani_status ParseAlbumTypes(ani_env *env, ani_enum_item albumTypeItem, ani
     /* Parse the first argument to photo album type */
     AlbumType albumType;
     int32_t albumTypeInt;
-    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, EnumTypeInt32::AlbumTypeAni,
-        albumTypeItem, albumTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumType");
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, albumTypeItem,
+        albumTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumType");
     albumType = static_cast<AlbumType>(albumTypeInt);
     if (!PhotoAlbum::CheckPhotoAlbumType(static_cast<PhotoAlbumType>(albumTypeInt))) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -329,8 +329,8 @@ static ani_status ParseAlbumTypes(ani_env *env, ani_enum_item albumTypeItem, ani
     /* Parse the second argument to photo album subType */
     PhotoAlbumSubType photoAlbumSubType;
     int32_t albumSubTypeInt;
-    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, EnumTypeInt32::AlbumSubtypeAni,
-        albumSubtype, albumSubTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumSubtype");
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryEnumAni::EnumGetValueInt32(env, albumSubtype,
+        albumSubTypeInt) == ANI_OK, ANI_INVALID_ARGS, "Failed to get albumSubtype");
     photoAlbumSubType = static_cast<PhotoAlbumSubType>(albumSubTypeInt);
     if (!PhotoAlbum::CheckPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(albumSubTypeInt))) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);

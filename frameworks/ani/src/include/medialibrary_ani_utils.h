@@ -176,7 +176,7 @@ const std::string API_VERSION = "api_version";
 
 const std::string PENDING_STATUS = "pending";
 
-enum NapiAssetType {
+enum AniAssetType {
     TYPE_DEFAULT = 0,
     TYPE_AUDIO = 1,
     TYPE_PHOTO = 2,
@@ -320,9 +320,9 @@ public:
     static ani_status GetOptionalStringPathMaxField(ani_env *env, ani_object src,
         const std::string &fieldName, std::string &value);
     static ani_status GetOptionalEnumInt32Field(ani_env *env, ani_object src, const std::string &fieldName,
-        EnumTypeInt32 enumType, int32_t &value);
+        int32_t &value);
     static ani_status GetOptionalEnumStringField(ani_env *env, ani_object src, const std::string &fieldName,
-        EnumTypeString enumType, std::string &value);
+        std::string &value);
     static std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> GetCreateOptions(
         ani_env *env, ani_object src);
     static std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> GetPhotoCreateOptions(
@@ -355,7 +355,7 @@ public:
     static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
 
     static ani_status AddDefaultAssetColumns(ani_env *env, std::vector<std::string> &fetchColumn,
-        std::function<bool(const std::string &columnName)> isValidColumn, NapiAssetType assetType,
+        std::function<bool(const std::string &columnName)> isValidColumn, AniAssetType assetType,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
 
     static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType,
