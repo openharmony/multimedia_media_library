@@ -1,0 +1,17 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+data_desc,index,data,size,title,display_name,media_type,mime_type,owner_package,owner_appid,package_name,device_name,date_added,date_modified,date_taken,duration,time_pending,is_favorite,date_trashed,date_deleted,hidden,parent,relative_path,virtual_path,dirty,cloud_id,meta_date_modified,sync_status,cloud_version,orientation,latitude,longitude,height,width,edit_time,lcd_visit_time,position,subtype,original_subtype,camera_shot_key,user_comment,all_exif,date_year,date_month,date_day,shooting_mode,shooting_mode_tag,last_visit_time,hidden_time,thumb_status,clean_flag,photo_id,photo_quality,first_visit_time,deferred_proc_type,dynamic_range_type,moving_photo_effect_mode,cover_position,thumbnail_ready,lcd_size,thumb_size,front_camera,is_temp,burst_cover_level,burst_key,ce_available,ce_status_code,strong_association,associate_file_id,has_cloud_watermark,detail_time,owner_album_id,original_asset_cloud_id,thumbnail_visible,source_path,metadata_flags,supported_watermark_type,
+unknown,11202,/storage/cloud/files/Photo/16/IMG_1739459136_000.jpg,14528988,IMG_20250213_230356,IMG_20250213_230356.jpg,1,image/jpeg,com.huawei.hmos.camera,com.huawei.hmos.camera_BCIGDVukYoy/QUwTiEq29Yw5kpBc+7lAL0KtFqAohcGnuvwV4J/bgXCJ5zvcRTV/IXyzewcMl+EWOs9PTNShGra6nyVYbpUjOKnGaAHR8bMN888r4I003WN+RC4SJh9aRA==,相机,,1739459036146 ,1739459052831 ,1739459036022 ,0,0,0,0,0,0,0,,,1,1c854334ffe54d16881f8a92700cddcdfed7976ab9e64fd2bb743183d98c3877,1739459052879 ,0,0,0,,,4096,3072,0,2,1,0,,,,,2025,202502,20250213,,0,1739459053228 ,0,0,0,20250213230356000 ,0,0,1,1,0,0,1739459053369 ,1440:1920,350:466,0,0,1,,0,,0,0,0,2025:02:13 23:03:56,11,,1,,1,1,0
+unknown,11203,/storage/cloud/files/Photo/1/IMG_1739459136_001.jpg,13961786,IMG_20250213_230356_1,IMG_20250213_230356_1.jpg,1,image/jpeg,com.huawei.hmos.camera,com.huawei.hmos.camera_BCIGDVukYoy/QUwTiEq29Yw5kpBc+7lAL0KtFqAohcGnuvwV4J/bgXCJ5zvcRTV/IXyzewcMl+EWOs9PTNShGra6nyVYbpUjOKnGaAHR8bMN888r4I003WN+RC4SJh9aRA==,相机,,1739459036946 ,1739459055711 ,1739459036890 ,0,0,0,0,0,0,0,,,1,7089585010d84a5b9b4e7f0efcf1be9bcb49bdc5d0f1477e9ef233eb228ac2f0,1739459055770 ,0,0,0,,,4096,3072,0,2,1,0,,,,,2025,202502,20250213,,0,1739459055957 ,0,0,0,20250213230356800 ,0,0,1,1,0,0,1739459056046 ,1440:1920,350:466,0,0,1,,0,,0,0,0,2025:02:13 23:03:56,11,,1,,1,1,0

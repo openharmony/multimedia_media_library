@@ -1047,5 +1047,29 @@ Uri MediaDataShareExtAbility::DenormalizeUri(const Uri &uri)
     MEDIA_INFO_LOG("%{public}s end.", __func__);
     return ret;
 }
+
+int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option)
+{
+    PermParam permParam = {.isWrite = false};
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_ERR, "permissionHandler_ is nullptr");
+    uint32_t operationCode = data.ReadUint32();
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t ret = E_IPC_SEVICE_NOT_FOUND;
+    for (auto &controllerService : this->serviceFactory_.GetAllMediaControllerService()) {
+        if (!controllerService->Accept(operationCode)) {
+            continue;
+        }
+        controllerService->OnRemoteRequest(operationCode, data, reply, option);
+        ret = E_OK;
+        break;
+    }
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t costTime = endTime - startTime;
+    MEDIA_INFO_LOG("API excuted, code: %{public}d, ret: %{public}d, costTime: %{public}ld",
+        static_cast<int32_t>(operationCode),
+        ret,
+        static_cast<long>(costTime));
+    return ret;
+}
 } // namespace AbilityRuntime
 } // namespace OHOS

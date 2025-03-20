@@ -148,4 +148,14 @@
             <option name="shell" value="mv /data/test/res/CreateImageLcdTest_001.jpg /data/test/res/no_gps.jpg"/>
         </preparer>
     </target>
+    <target name="media_library_cloud_sync_test">
+        <preparer>
+            <option name="shell" value="rm -rf /data/test/cloudsync"/>
+            <option name="shell" value="mkdir -p /data/test/cloudsync"/>
+            <option name="push" value="cloudsync_datafile/database_mock-photos.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/database_mock-photo_album.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/data_client-photos.csv -> /data/test/cloudsync" src="res"/>
+            <option name="push" value="cloudsync_datafile/data_client-photo_album.csv -> /data/test/cloudsync" src="res"/>
+        </preparer>
+    </target>
 </configuration>
