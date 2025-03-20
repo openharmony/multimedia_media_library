@@ -2571,10 +2571,14 @@ static int32_t DoUpdateDirtyForCloudCloneOperationV2(const shared_ptr<MediaLibra
     CHECK_AND_RETURN_RET_LOG((ret == E_OK && changeRows > 0), E_FAIL,
         "Failed to UpdateDirtyForCloudClone, ret: %{public}d, updateRows: %{public}d", ret, changeRows);
     
-    string updateSql = "UPDATE " + PhotoColumn::TAB_OLD_PHOTOS_TABLE + " SET " + 
-        COLUMN_OLD_FILE_ID + " = (" + ERROR_OLD_FILE_ID_OFFSET  " - " + MediaColumn::MEDIA_ID + ") "+
+    string updateSql = "UPDATE " + PhotoColumn::TAB_OLD_PHOTOS_TABLE + " SET " +
+        COLUMN_OLD_FILE_ID + " = (" + std::to_string(ERROR_OLD_FILE_ID_OFFSET) + " - " + MediaColumn::MEDIA_ID + ") "+
         "WHERE " +  MediaColumn::MEDIA_ID + "IN (?,?,?,?)";
-    ret = rdbStore_->ExecuteSql(updateSql, fileIds);
+    vector<ValueObject> bindArgs;
+    for (auto fileId : fileIds) {
+        bindArgs.push_back(fileId);
+    }
+    ret = rdbStore->ExecuteSql(updateSql, fileIds);
     return ret;
 }
 
