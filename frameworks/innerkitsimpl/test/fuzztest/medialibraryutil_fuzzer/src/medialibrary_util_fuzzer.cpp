@@ -39,7 +39,6 @@
 #include "media_analysis_helper.h"
 #include "background_cloud_file_processor.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_album_refresh.h"
 #include "scanner_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
@@ -391,11 +390,6 @@ static void MultistageTest(const uint8_t *data, size_t size)
     MEDIA_INFO_LOG("MultistageTest");
 }
 
-static void RefreshAlbumTest()
-{
-    Media::RefreshAlbums(true);
-}
-
 static void ActiveAnalysisTest()
 {
     std::vector<std::string> fileIds;
@@ -536,7 +530,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::MediaLibraryManagerTest(data, size);
     OHOS::MultistageAdapterTest(data, size);
     OHOS::MultistageTest(data, size);
-    OHOS::RefreshAlbumTest();
     OHOS::ActiveAnalysisTest();
     OHOS::CloudDownloadTest();
     OHOS::CpuUtilsTest(data, size);
