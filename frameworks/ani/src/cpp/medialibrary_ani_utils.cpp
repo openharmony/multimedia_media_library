@@ -480,8 +480,8 @@ ani_status MediaLibraryAniUtils::GetOptionalStringPathMaxField(ani_env *env, ani
     const std::string &fieldName, std::string &value)
 {
     ani_ref field_ref;
-    if (ANI_OK != env->Object_GetFieldByName_Ref(src, fieldName.c_str(), &field_ref)) {
-        ANI_ERR_LOG("Object_GetFieldByName_Ref %{public}s Failed", fieldName.c_str());
+    if (ANI_OK != env->Object_GetPropertyByName_Ref(src, fieldName.c_str(), &field_ref)) {
+        ANI_ERR_LOG("Object_GetPropertyByName_Ref %{public}s Failed", fieldName.c_str());
         return ANI_INVALID_ARGS;
     }
 
@@ -498,11 +498,11 @@ ani_status MediaLibraryAniUtils::GetOptionalStringPathMaxField(ani_env *env, ani
 }
 
 ani_status MediaLibraryAniUtils::GetOptionalEnumInt32Field(ani_env *env, ani_object src, const std::string &fieldName,
-    EnumTypeInt32 enumType, int32_t &value)
+    int32_t &value)
 {
     ani_ref field_ref;
-    if (ANI_OK != env->Object_GetFieldByName_Ref(src, fieldName.c_str(), &field_ref)) {
-        ANI_ERR_LOG("Object_GetFieldByName_Ref %{public}s Failed", fieldName.c_str());
+    if (ANI_OK != env->Object_GetPropertyByName_Ref(src, fieldName.c_str(), &field_ref)) {
+        ANI_ERR_LOG("Object_GetPropertyByName_Ref %{public}s Failed", fieldName.c_str());
         return ANI_INVALID_ARGS;
     }
 
@@ -513,20 +513,20 @@ ani_status MediaLibraryAniUtils::GetOptionalEnumInt32Field(ani_env *env, ani_obj
         return ANI_NOT_FOUND;
     }
 
-    ani_enum_item enumItem;
-    enumItem = static_cast<ani_enum_item>(field_ref);
-
-    MediaLibraryEnumAni::EnumGetValueInt32(env, enumType, enumItem, value);
+    ani_int enum_value {};
+    CHECK_STATUS_RET(env->EnumItem_GetValue_Int(static_cast<ani_enum_item>(field_ref), &enum_value),
+        "EnumItem_GetValue_Int failed");
+    CHECK_STATUS_RET(GetInt32(env, enum_value, value), "GetInt32 failed");
     ANI_INFO_LOG("%{public}s Get %{public}s: %{public}d", __func__, fieldName.c_str(), value);
     return ANI_OK;
 }
 
 ani_status MediaLibraryAniUtils::GetOptionalEnumStringField(ani_env *env, ani_object src, const std::string &fieldName,
-    EnumTypeString enumType, std::string &value)
+    std::string &value)
 {
     ani_ref field_ref;
-    if (ANI_OK != env->Object_GetFieldByName_Ref(src, fieldName.c_str(), &field_ref)) {
-        ANI_ERR_LOG("Object_GetFieldByName_Ref %{public}s Failed", fieldName.c_str());
+    if (ANI_OK != env->Object_GetPropertyByName_Ref(src, fieldName.c_str(), &field_ref)) {
+        ANI_ERR_LOG("Object_GetPropertyByName_Ref %{public}s Failed", fieldName.c_str());
         return ANI_INVALID_ARGS;
     }
 
@@ -537,10 +537,10 @@ ani_status MediaLibraryAniUtils::GetOptionalEnumStringField(ani_env *env, ani_ob
         return ANI_NOT_FOUND;
     }
 
-    ani_enum_item enumItem;
-    enumItem = static_cast<ani_enum_item>(field_ref);
-
-    MediaLibraryEnumAni::EnumGetValueString(env, enumType, enumItem, value);
+    ani_string aniString {};
+    CHECK_STATUS_RET(env->EnumItem_GetValue_String(static_cast<ani_enum_item>(field_ref), &aniString),
+        "EnumItem_GetValue_String failed");
+    CHECK_STATUS_RET(GetString(env, aniString, value), "GetString failed");
     ANI_INFO_LOG("%{public}s Get %{public}s: %{public}s", __func__, fieldName.c_str(), value.c_str());
     return ANI_OK;
 }
@@ -555,7 +555,7 @@ std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> MediaL
     }
 
     int32_t subtype;
-    if (ANI_OK == GetOptionalEnumInt32Field(env, src, "subtype", EnumTypeInt32::PhotoSubtypeAni, subtype)) {
+    if (ANI_OK == GetOptionalEnumInt32Field(env, src, "subtype", subtype)) {
         result[PhotoColumn::PHOTO_SUBTYPE] = subtype;
     }
     return result;
@@ -571,7 +571,7 @@ std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> MediaL
     }
 
     int32_t subtype;
-    if (ANI_OK == GetOptionalEnumInt32Field(env, src, "subtype", EnumTypeInt32::PhotoSubtypeAni, subtype)) {
+    if (ANI_OK == GetOptionalEnumInt32Field(env, src, "subtype", subtype)) {
         result[PhotoColumn::PHOTO_SUBTYPE] = subtype;
     }
     return result;
@@ -1044,7 +1044,7 @@ void MediaLibraryAniUtils::UriAppendKeyValue(string &uri, const string &key, con
 }
 
 ani_status MediaLibraryAniUtils::AddDefaultAssetColumns(ani_env *env, vector<string> &fetchColumn,
-    function<bool(const string &columnName)> isValidColumn, NapiAssetType assetType,
+    function<bool(const string &columnName)> isValidColumn, AniAssetType assetType,
     const PhotoAlbumSubType subType)
 {
     auto validFetchColumns = MediaColumn::DEFAULT_FETCH_COLUMNS;

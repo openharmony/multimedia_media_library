@@ -156,15 +156,14 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
 
     ani_method albumTypeSetter {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>albumType", nullptr, &albumTypeSetter), "No <set>albumType");
-    ani_int albumType = 0;
-    CHECK_COND_RET(MediaLibraryEnumAni::EnumGetIndex(attrs.albumType, albumType), ANI_ERROR,
-        "Get albumType index fail");
+    ani_enum_item albumType = 0;
+    CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.albumType, albumType), "Get albumType index fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, albumTypeSetter, albumType), "<set>albumType fail");
 
     ani_method albumSubtypeSetter {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>albumSubtype", nullptr, &albumSubtypeSetter), "No <set>subtype");
-    ani_int albumSubtype = 0;
-    CHECK_COND_RET(MediaLibraryEnumAni::EnumGetIndex(attrs.albumSubtype, albumSubtype), ANI_ERROR,
+    ani_enum_item albumSubtype = 0;
+    CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.albumSubtype, albumSubtype),
         "Get albumSubtype index fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, albumSubtypeSetter, albumSubtype), "<set>albumType fail");
 
@@ -290,7 +289,7 @@ static ani_status ParseArgsGetPhotoAssets(ani_env *env, ani_object object, ani_o
         return ANI_INVALID_ARGS;
     }
     CHECK_STATUS_RET(MediaLibraryAniUtils::AddDefaultAssetColumns(env, context->fetchColumn,
-        PhotoColumn::IsPhotoColumn, NapiAssetType::TYPE_PHOTO), "AddDefaultAssetColumns failed");
+        PhotoColumn::IsPhotoColumn, AniAssetType::TYPE_PHOTO), "AddDefaultAssetColumns failed");
     if (photoAlbum->GetHiddenOnly() || photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIDDEN) {
         if (!MediaLibraryAniUtils::IsSystemApp()) {
             AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
