@@ -54,6 +54,18 @@
     ],
     "requestPermissions": [
       {
+        "name": "ohos.permission.DISTRIBUTED_DATASYNC",
+        "reason": "$string:permission_distributed_datasync",
+        "usedScene": {
+          "abilities": [
+            "MainAbility",
+            "DataShareExtAbility",
+            "MediaBackupExtensionAbility"
+          ],
+          "when": "inuse"
+        }
+      },
+      {
         "name": "ohos.permission.PERMISSION_USED_STATS",
         "reason": "$string:permission_used_stats",
         "usedScene": {
