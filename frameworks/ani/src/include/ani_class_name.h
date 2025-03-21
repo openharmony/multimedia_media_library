@@ -35,39 +35,15 @@ static const std::string ANI_CLASS_MEDIA_ALBUM_CHANGE_REQUEST = ANI_CLASS_SPACE 
 static const std::string ANI_CLASS_MEDIA_ASSET_CHANGE_REQUEST = ANI_CLASS_SPACE + "MediaAssetChangeRequest;";
 static const std::string ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST =  ANI_CLASS_SPACE + "MediaAssetsChangeRequest;";
 
-static const std::string ANI_CLASS_ENUM_PHOTO_TYPE = ANI_CLASS_SPACE + "#PhotoType;";
-static const std::string ANI_CLASS_ENUM_PHOTO_SUBTYPE = ANI_CLASS_SPACE + "#PhotoSubtype;";
-static const std::string ANI_CLASS_ENUM_DYNAMIC_RANGE_TYPE = ANI_CLASS_SPACE + "#DynamicRangeType;";
-static const std::string ANI_CLASS_ENUM_POSITION_TYPE = ANI_CLASS_SPACE + "#PositionType;";
-static const std::string ANI_CLASS_ENUM_ANALYSIS_TYPE = ANI_CLASS_SPACE + "#AnalysisType;";
-static const std::string ANI_CLASS_ENUM_RECOMMENDATION_TYPE = ANI_CLASS_SPACE + "#RecommendationType;";
-static const std::string ANI_CLASS_ENUM_DELIVERY_MODE = ANI_CLASS_SPACE + "#DeliveryMode;";
-static const std::string ANI_CLASS_ENUM_COMPATIBLE_MODE = ANI_CLASS_SPACE + "#DeliveryMode;";
-static const std::string ANI_CLASS_ENUM_SOURCE_MODE = ANI_CLASS_SPACE + "#SourceMode;";
-static const std::string ANI_CLASS_ENUM_PHOTO_PERMISSION_TYPE = ANI_CLASS_SPACE + "#PhotoPermissionType;";
-static const std::string ANI_CLASS_ENUM_HIDE_SENSITIVE_TYPE = ANI_CLASS_SPACE + "#HideSensitiveType;";
-static const std::string ANI_CLASS_ENUM_AUTHORIZATION_MODE = ANI_CLASS_SPACE + "#AuthorizationMode;";
-static const std::string ANI_CLASS_ENUM_COMPLETE_BUTTON_TEXT = ANI_CLASS_SPACE + "#CompleteButtonText;";
-static const std::string ANI_CLASS_ENUM_WATERMARK_TYPE = ANI_CLASS_SPACE + "#WatermarkType;";
-static const std::string ANI_CLASS_ENUM_HIDDEN_PHOTOS_DISPLAY_MODE = ANI_CLASS_SPACE + "#HiddenPhotosDisplayMode;";
-static const std::string ANI_CLASS_ENUM_ALBUM_TYPE = ANI_CLASS_SPACE + "#AlbumType;";
-static const std::string ANI_CLASS_ENUM_ALBUM_SUBTYPE = ANI_CLASS_SPACE + "#AlbumSubtype;";
-static const std::string ANI_CLASS_ENUM_REQUEST_PHOTO_TYPE = ANI_CLASS_SPACE + "#RequestPhotoType;";
-static const std::string ANI_CLASS_ENUM_NOTIFY_TYPE = ANI_CLASS_SPACE + "#NotifyType;";
-static const std::string ANI_CLASS_ENUM_RESOURCE_TYPE = ANI_CLASS_SPACE + "#ResourceType;";
-static const std::string ANI_CLASS_ENUM_IMAGE_FILE_TYPE = ANI_CLASS_SPACE + "#ImageFileType;";
-static const std::string ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE = ANI_CLASS_SPACE + "#MovingPhotoEffectMode;";
-static const std::string ANI_CLASS_ENUM_VIDEO_ENHANCEMENT_TYPE = ANI_CLASS_SPACE + "#VideoEnhancementType;";
-static const std::string ANI_CLASS_ENUM_HIGHLIGHT_ALBUM_INFO_TYPE = ANI_CLASS_SPACE + "#HighlightAlbumInfoType;";
-static const std::string ANI_CLASS_ENUM_HIGHLIGHT_USER_ACTION_TYPE = ANI_CLASS_SPACE + "#HighlightUserActionType;";
-static const std::string ANI_CLASS_ENUM_THUMBNAIL_TYPE = ANI_CLASS_SPACE + "#ThumbnailType;";
-static const std::string ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_TASK_STAGE = ANI_CLASS_SPACE + "#CloudEnhancementTaskStage;";
-static const std::string ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_STATE = ANI_CLASS_SPACE + "#CloudEnhancementState;";
-
-static const std::string ANI_CLASS_ENUM_PHOTO_KEYS = ANI_CLASS_SPACE + "#PhotoKeys;";
-static const std::string ANI_CLASS_ENUM_ALBUM_KEYS = ANI_CLASS_SPACE + "#AlbumKeys;";
-static const std::string ANI_CLASS_ENUM_DEFAULT_CHANGE_URI = ANI_CLASS_SPACE + "#DefaultChangeUri;";
-static const std::string ANI_CLASS_ENUM_PHOTO_VIEW_MIME_TYPES = ANI_CLASS_SPACE + "#PhotoViewMIMETypes;";
+static const std::string ANI_CLASS_ENUM_PHOTO_TYPE = ANI_CLASS_SPACE + "PhotoType;";
+static const std::string ANI_CLASS_ENUM_PHOTO_SUBTYPE = ANI_CLASS_SPACE + "PhotoSubtype;";
+static const std::string ANI_CLASS_ENUM_DYNAMIC_RANGE_TYPE = ANI_CLASS_SPACE + "DynamicRangeType;";
+static const std::string ANI_CLASS_ENUM_POSITION_TYPE = ANI_CLASS_SPACE + "PositionType;";
+static const std::string ANI_CLASS_ENUM_ALBUM_TYPE = ANI_CLASS_SPACE + "AlbumType;";
+static const std::string ANI_CLASS_ENUM_ALBUM_SUBTYPE = ANI_CLASS_SPACE + "AlbumSubtype;";
+static const std::string ANI_CLASS_ENUM_NOTIFY_TYPE = ANI_CLASS_SPACE + "NotifyType;";
+static const std::string ANI_CLASS_ENUM_MOVING_PHOTO_EFFECT_MODE = ANI_CLASS_SPACE + "MovingPhotoEffectMode;";
+static const std::string ANI_CLASS_ENUM_CLOUD_ENHANCEMENT_TASK_STAGE = ANI_CLASS_SPACE + "CloudEnhancementTaskStage;";
 
 } // namespace Media
 } // namespace OHOS

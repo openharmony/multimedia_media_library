@@ -85,7 +85,7 @@ struct MediaLibraryAsyncContext : public AniError {
     bool isDelete;
     bool isCreateByComponent;
     bool isCreateByAgent;
-    NapiAssetType assetType;
+    AniAssetType assetType;
     AlbumType albumType;
     PhotoAccessHelperAni *objectInfo;
     std::string selection;
