@@ -143,10 +143,9 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
 
 void CloudMediaAssetManager::CheckStorageAndRecoverDownloadTask()
 {
-    if (operation_ == nullptr || operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::PAUSED ||
-        operation_->GetTaskPauseCause() != CloudMediaTaskPauseCause::ROM_LIMIT) {
-        return;
-    }
+    bool cond = (operation_ == nullptr || operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::PAUSED ||
+        operation_->GetTaskPauseCause() != CloudMediaTaskPauseCause::ROM_LIMIT);
+    CHECK_AND_RETURN(!cond);
     MEDIA_INFO_LOG("begin to check storage and recover downloadTask.");
     operation_->CheckStorageAndRecoverDownloadTask();
 }
@@ -284,15 +283,9 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
             }
             MEDIA_INFO_LOG("Detele cloud file, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
         }
-        if (!deleteFlag) {
-            MEDIA_ERR_LOG("DeleteEditdata or InvalidateThumbnail failed!");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(deleteFlag, "DeleteEditdata or InvalidateThumbnail failed!");
         ret = DeleteBatchCloudFile(fileIds);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("DeleteBatchCloudFile failed!");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "DeleteBatchCloudFile failed!");
         fileIds.clear();
         paths.clear();
         dateTakens.clear();
@@ -383,10 +376,7 @@ int32_t CloudMediaAssetManager::UpdateCloudMeidaAssets()
     std::vector<std::string> updateFileIds = {};
     while (HasDataForUpdate(updateFileIds) && cycleNumber <= CYCLE_NUMBER) {
         int32_t ret = UpdateCloudAssets(updateFileIds);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("UpdateCloudAssets failed, ret: %{public}d", ret);
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "UpdateCloudAssets failed, ret: %{public}d", ret);
 
         notifyFileIds.insert(notifyFileIds.end(), updateFileIds.begin(), updateFileIds.end());
         updateFileIds.clear();
@@ -539,9 +529,8 @@ int32_t CloudMediaAssetManager::GetDownloadType()
 
 bool CloudMediaAssetManager::SetBgDownloadPermission(const bool &flag)
 {
-    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
-        return false;
-    }
+    bool cond = (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE);
+    CHECK_AND_RETURN_RET(!cond, false);
     MEDIA_INFO_LOG("Success set isBgDownloadPermission, flag: %{public}d.", static_cast<int32_t>(flag));
     operation_->isBgDownloadPermission_ = flag;
     return true;

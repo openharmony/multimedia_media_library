@@ -425,9 +425,7 @@ static string BuildReuseSql(int32_t id, const ValuesBucket& albumValues,
         } else {
             UseDefaultCreateValue(schemaIter->first, schemaIter->second, sql, bindArgs, id);
         }
-        if (std::next(schemaIter) != photoAlbumSchema.end()) {
-            sql.append(", ");
-        }
+        CHECK_AND_EXECUTE(std::next(schemaIter) == photoAlbumSchema.end(), sql.append(", "));
     }
     sql.append(" WHERE album_id = ?");
     bindArgs.push_back(ValueObject {id});
@@ -619,9 +617,7 @@ static void NotifyPortraitAlbum(const vector<int32_t> &changedAlbumIds)
 
 static void NotifyHighlightAlbum(const vector<int32_t> &changedAlbumIds)
 {
-    if (changedAlbumIds.size() <= 0) {
-        return;
-    }
+    CHECK_AND_RETURN(changedAlbumIds.size() > 0);
     auto watch = MediaLibraryNotify::GetInstance();
     for (int32_t albumId : changedAlbumIds) {
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(
@@ -1134,9 +1130,8 @@ int32_t MediaLibraryAlbumOperations::GetLPathFromSourcePath(const string& source
         if lPath from source path is /Pictures/Screenshots,
         it should be converted to /Pictures/Screenrecords if the asset is a video
     */
-    if (lPath == AlbumPlugin::LPATH_SCREEN_SHOTS && mediaType == MEDIA_TYPE_VIDEO) {
-        lPath = AlbumPlugin::LPATH_SCREEN_RECORDS;
-    }
+    bool cond = (lPath == AlbumPlugin::LPATH_SCREEN_SHOTS && mediaType == MEDIA_TYPE_VIDEO);
+    CHECK_AND_EXECUTE(!cond, lPath = AlbumPlugin::LPATH_SCREEN_RECORDS);
     return E_OK;
 }
 
@@ -1152,16 +1147,11 @@ static bool HasSameLpath(const string &lPath, const string &assetId)
         int albumIdIndex;
         int32_t albumId;
         albumResultSet->GetColumnIndex(PhotoAlbumColumns::ALBUM_ID, albumIdIndex);
-        if (albumResultSet->GetInt(albumIdIndex, albumId) != NativeRdb::E_OK) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(albumResultSet->GetInt(albumIdIndex, albumId) == NativeRdb::E_OK, false);
         const std::string UPDATE_ALBUM_ID_IN_PHOTOS = "UPDATE Photos Set owner_album_id = " +
             to_string(albumId) + " WHERE file_id = " + assetId;
         int ret = rdbStore->ExecuteSql(UPDATE_ALBUM_ID_IN_PHOTOS);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Update new album is fails");
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false, "Update new album is fails");
     }
     return true;
 }
@@ -1172,9 +1162,8 @@ void MediaLibraryAlbumOperations::RecoverAlbum(const string& assetId, const stri
     CHECK_AND_RETURN_LOG(!lPath.empty(), "lPath empty, cannot recover album");
     CHECK_AND_RETURN_LOG(!HasSameLpath(lPath, assetId), "Has same lpath, no need to build new one");
     const string userAlbumMark = "/Users/";
-    if (lPath.find(userAlbumMark) != string::npos) {
-        isUserAlbum = true;
-    }
+    CHECK_AND_EXECUTE(lPath.find(userAlbumMark) == string::npos, isUserAlbum = true);
+
     MEDIA_INFO_LOG("new album need to build, lpath is %{public}s", lPath.c_str());
     string albumName;
     string bundleName = "";
@@ -1346,17 +1335,14 @@ void DealWithHighlightSdTable(const DataSharePredicates &predicates)
         const std::string DELETE_ITEM_FROM_SD_MAP =
             "DELETE FROM tab_analysis_asset_sd_map WHERE map_asset_source = " + assetId;
         int32_t ret = rdbStore->ExecuteSql(DELETE_ITEM_FROM_SD_MAP);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("DELETE highlight video failed, id is: %{public}s", assetId.c_str());
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(ret == NativeRdb::E_OK,
+            "DELETE highlight video failed, id is: %{public}s", assetId.c_str());
+
         const std::string DELETE_ITEM_FROM_ALBUM_MAP =
             "DELETE FROM tab_analysis_album_asset_map WHERE map_asset = " + assetId;
         ret = rdbStore->ExecuteSql(DELETE_ITEM_FROM_ALBUM_MAP);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("DELETE highlight video failed, id is: %{public}s", assetId.c_str());
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(ret == NativeRdb::E_OK,
+            "DELETE highlight video failed, id is: %{public}s", assetId.c_str());
     }
     MEDIA_INFO_LOG("Deal with highlight video finished");
 }
@@ -1381,10 +1367,8 @@ static inline int32_t DeletePhotoAssetsCompleted(const DataSharePredicates &pred
     DealWithHighlightSdTable(predicates);
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     int32_t deletedRows = MediaLibraryAssetOperations::DeletePermanently(rdbPredicates, isAging);
-    if (!isAging) {
-        MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
-            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX));
-    }
+    CHECK_AND_EXECUTE(isAging,  MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX)));
     return deletedRows;
 }
 
@@ -1673,9 +1657,7 @@ static int32_t HandlePortraitNullReferenceCondition(const int32_t currentAlbumId
      // move order curosr to the end
     ObtainNotifyPortraitAlbumIds(currentAlbumOrder, maxAlbumOrder + 1, changedAlbumIds);
     err = UpdatePortraitNullReferenceOrder(currentAlbumId, currentAlbumOrder, maxAlbumOrder);
-    if (err == E_OK) {
-        NotifyPortraitAlbum(changedAlbumIds);
-    }
+    CHECK_AND_EXECUTE(err != E_OK, NotifyPortraitAlbum(changedAlbumIds));
     return err;
 }
 
@@ -1690,9 +1672,8 @@ static int32_t ObtainPortraitAlbumOrders(const int32_t currentAlbumId, const int
     const std::string queryCurrentAlbumOrder = "SELECT " + RANK + " FROM " +
         ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId);
     auto resultSet = uniStore->QuerySql(queryCurrentAlbumOrder);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, E_HAS_DB_ERROR);
     if (GetIntValueFromResultSet(resultSet, RANK, currentAlbumOrder) != NativeRdb::E_OK) {
         return E_HAS_DB_ERROR;
     }
@@ -1700,9 +1681,8 @@ static int32_t ObtainPortraitAlbumOrders(const int32_t currentAlbumId, const int
     const std::string queryReferenceAlbumOrder = "SELECT " + RANK + " FROM " +
         ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(referenceAlbumId);
     resultSet = uniStore->QuerySql(queryReferenceAlbumOrder);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
-    }
+    cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, E_HAS_DB_ERROR);
     if (GetIntValueFromResultSet(resultSet, RANK, referenceAlbumOrder) != NativeRdb::E_OK) {
         return E_HAS_DB_ERROR;
     }
@@ -1815,9 +1795,9 @@ int32_t OrderSingleAlbum(const ValuesBucket &values)
     int32_t albumSubtype;
     err = GetIntVal(values, PhotoAlbumColumns::ALBUM_TYPE, albumType);
     int errorSubtype = GetIntVal(values, PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubtype);
-    if (err == E_OK && errorSubtype == E_OK && (albumType == PhotoAlbumType::SMART && albumSubtype == PORTRAIT)) {
-        return OrderPortraitFavoriteAlbum(currentAlbumId, referenceAlbumId);
-    }
+    bool cond = (err == E_OK && errorSubtype == E_OK &&
+        (albumType == PhotoAlbumType::SMART && albumSubtype == PORTRAIT));
+    CHECK_AND_RETURN_RET(!cond, OrderPortraitFavoriteAlbum(currentAlbumId, referenceAlbumId));
     if (referenceAlbumId == NULL_REFERENCE_ALBUM_ID) {
         return HandleNullReferenceCondition(currentAlbumId);
     }
@@ -2297,21 +2277,14 @@ void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryRdbStore> 
 static void GetHighlightCoverStatus(const string &albumId, int32_t &currentCoverStatus)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr! failed update index");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr! failed update index");
     const std::string queryCoverStatus =
         "SELECT status FROM " + HIGHLIGHT_COVER_INFO_TABLE + " WHERE album_id = "
         "(SELECT id FROM tab_highlight_album WHERE album_id = " + albumId + " LIMIT 1)";
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(queryCoverStatus);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr! failed update index");
-        return;
-    }
-    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        currentCoverStatus = GetInt32Val(COVER_STATUS, resultSet);
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr! failed update index");
+    CHECK_AND_EXECUTE(resultSet->GoToNextRow() != NativeRdb::E_OK,
+        currentCoverStatus = GetInt32Val(COVER_STATUS, resultSet));
 }
 
 int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
@@ -2319,22 +2292,17 @@ int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicat
     MEDIA_INFO_LOG("Start set highlight cover uri");
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
-    if (whereArgs.size() == 0) {
-        MEDIA_ERR_LOG("no target album id");
-        return E_INVALID_VALUES;
-    }
+    CHECK_AND_RETURN_RET_LOG(whereArgs.size() != 0, E_INVALID_VALUES, "no target album id");
+
     string targetAlbumId = whereArgs[0];
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight cover uri");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
+        "uniStore is nullptr! failed update for set highlight cover uri");
+
     string coverUri;
     int err = GetStringVal(values, COVER_URI, coverUri);
-    if (err < 0 || coverUri.empty()) {
-        MEDIA_ERR_LOG("invalid album cover uri");
-        return E_INVALID_VALUES;
-    }
+    bool cond = (err < 0 || coverUri.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, E_INVALID_VALUES, "invalid album cover uri");
 
     int32_t currentCoverStatus = 0;
     GetHighlightCoverStatus(targetAlbumId, currentCoverStatus);
@@ -2358,22 +2326,17 @@ int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredica
     MEDIA_INFO_LOG("Start set highlight album name");
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
-    if (whereArgs.size() == 0) {
-        MEDIA_ERR_LOG("no target highlight album id");
-        return E_INVALID_VALUES;
-    }
+    CHECK_AND_RETURN_RET_LOG(whereArgs.size() != 0, E_INVALID_VALUES, "no target highlight album id");
+
     string highlightAlbumId = whereArgs[0];
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight album name");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
+        "uniStore is nullptr! failed update for set highlight album name");
+
     string albumName;
     int err = GetStringVal(values, ALBUM_NAME, albumName);
-    if (err < 0 || albumName.empty()) {
-        MEDIA_ERR_LOG("invalid album name");
-        return E_INVALID_VALUES;
-    }
+    bool cond = (err < 0 || albumName.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, E_INVALID_VALUES, "invalid album name");
 
     int32_t currentCoverStatus = 0;
     GetHighlightCoverStatus(highlightAlbumId, currentCoverStatus);
