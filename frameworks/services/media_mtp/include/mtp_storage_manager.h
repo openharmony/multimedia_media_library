@@ -28,6 +28,7 @@ namespace OHOS {
 namespace Media {
 class MtpStorageManager {
 public:
+    MtpStorageManager() = default;
     ~MtpStorageManager() = default;
     static std::shared_ptr<MtpStorageManager> GetInstance();
     int64_t GetTotalSize(const std::string &path = std::string(""));
@@ -43,7 +44,6 @@ public:
     std::string GetSystemLanguage();
     std::string GetStorageDescription(const uint16_t type);
 private:
-    MtpStorageManager() = default;
     std::vector<std::shared_ptr<Storage>> storages;
 };
 } // namespace Media
