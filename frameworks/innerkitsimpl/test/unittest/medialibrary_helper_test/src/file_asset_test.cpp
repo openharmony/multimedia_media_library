@@ -174,5 +174,46 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_GetMemberValue_Test_001, TestSize
     fileAsset.SetId(TEST_FILE_ID);
     EXPECT_EQ(get<int32_t>(fileAsset.GetMemberValue(MEDIA_DATA_DB_ID)), TEST_FILE_ID);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_001, TestSize.Level0)
+{
+    FileAsset fileAsset;
+    int32_t fd = 0;
+    int32_t openStatus = 0;
+    fileAsset.openStatusMap_ = nullptr;
+    fileAsset.SetOpenStatus(fd, openStatus);
+    EXPECT_EQ(fileAsset.GetOpenStatus(fd), 0);
+    EXPECT_EQ(fileAsset.GetOpenStatus(1), E_INVALID_VALUES);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_002, TestSize.Level0)
+{
+    FileAsset fileAsset;
+    int32_t fd = 0;
+    int32_t openStatus = 0;
+    fileAsset.openStatusMap_ = make_shared<unordered_map<int32_t, int32_t>>();
+    fileAsset.SetOpenStatus(fd, openStatus);
+    EXPECT_EQ(fileAsset.GetOpenStatus(fd), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_003, TestSize.Level0)
+{
+    FileAsset fileAsset;
+    string colName = "";
+    ResultSetDataType type = TYPE_STRING;
+    fileAsset.resultTypeMap_.insert(make_pair(colName, type));
+    fileAsset.SetResultTypeMap(colName, type);
+    EXPECT_FALSE(fileAsset.resultTypeMap_.empty());
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_004, TestSize.Level0)
+{
+    FileAsset fileAsset;
+    string colName = "";
+    ResultSetDataType type = TYPE_STRING;
+    fileAsset.SetResultTypeMap(colName, type);
+    EXPECT_FALSE(fileAsset.resultTypeMap_.empty());
+    EXPECT_FALSE(fileAsset.resultTypeMap_.empty());
+}
 } // namespace Media
 } // namespace OHOS
