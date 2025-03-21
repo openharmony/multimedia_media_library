@@ -140,7 +140,7 @@ void InitAlbumsTestData()
 
 void ClearAllTableData()
 {
-    string clearPhotoAlbumSql = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
+    string clearPhotoAlbumSql = "DELETE FROM " + PhotoAlbumColumns::TABLE;
     string clearAnalysisAlbumSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE;
     string clearRefreshAlbumSql = "DELETE FROM " + ALBUM_REFRESH_TABLE;
     vector<string> executeSqlStrs = {
