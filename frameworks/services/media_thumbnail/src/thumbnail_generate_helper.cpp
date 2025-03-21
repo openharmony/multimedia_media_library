@@ -66,10 +66,6 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
     if (isSync) {
         WaitStatus status;
         bool isSuccess = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData, status);
-        if (status == WaitStatus::INSERT) {
-            IThumbnailHelper::UpdateThumbnailState(opts, thumbnailData, isSuccess);
-        }
-        
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -95,9 +91,6 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(ThumbRdbOp
     if (isSync) {
         WaitStatus status;
         bool isSuccess = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData, status);
-        if (status == WaitStatus::INSERT) {
-            IThumbnailHelper::UpdateThumbnailState(opts, thumbnailData, isSuccess);
-        }
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -507,9 +500,6 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
     }
     if (thumbType != ThumbnailType::LCD) {
         bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data, status);
-        if (status == WaitStatus::INSERT) {
-            IThumbnailHelper::UpdateThumbnailState(opts, data, isSuccess);
-        }
         if (!isSuccess) {
             MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s",
                 DfxUtils::GetSafePath(data.path).c_str());

@@ -75,12 +75,9 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
     }
     WaitStatus status;
     bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_, status);
-    if (status == WaitStatus::INSERT) {
+    if (status == WaitStatus::INSERT || status == WaitStatus::WAIT_CONTINUE) {
         if (isSuccess && !data->thumbnailData_.tracks.empty() && (data->thumbnailData_.trigger == "0")) {
             UpdateHighlightDbState(data->opts_, data->thumbnailData_);
-        }
-        if (data->thumbnailData_.tracks.empty()) {
-            UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
         }
     }
     
@@ -105,10 +102,6 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
     }
     WaitStatus status;
     bool isSuccess = DoCreateThumbnail(data->opts_, data->thumbnailData_, status);
-    if (status == WaitStatus::INSERT) {
-        UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
-    }
-    
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -134,9 +127,6 @@ void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
     }
     WaitStatus status;
     bool isSuccess = DoCreateAstcEx(data->opts_, data->thumbnailData_, status);
-    if (status == WaitStatus::INSERT || status == WaitStatus::WAIT_CONTINUE) {
-        UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
-    }
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -355,6 +345,7 @@ bool ThumbnailWait::TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType ty
         if (!thumbnailWait->CheckSavedFileMap(data.id, type, data.dateModified)) {
             MEDIA_ERR_LOG("TrySaveCurrentPixelMap cancelled, latest file exists, path: %{public}s",
                 DfxUtils::GetSafePath(data.path).c_str());
+            data.needUpdateDb = false;
             return false;
         }
 
@@ -393,6 +384,7 @@ bool ThumbnailWait::TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, 
             MEDIA_ERR_LOG("TrySaveCurrentPicture cancelled, latest file exists, path: %{public}s",
                 DfxUtils::GetSafePath(data.path).c_str());
             ThumbnailUtils::CancelAfterPacking(tempOutputPath);
+            data.needUpdateDb = false;
             return false;
         }
 
@@ -1023,6 +1015,9 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
 
     if (!IsCreateThumbnailSuccess(opts, data)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
+        if (data.needUpdateDb) {
+            IThumbnailHelper::UpdateThumbnailState(opts, data, false);
+        }
         return false;
     }
 
@@ -1033,6 +1028,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
     data.needCheckWaitStatus = false;
     MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime, data.stats.scene,
         AstcGenScene::SCREEN_ON, data.id);
+    IThumbnailHelper::UpdateThumbnailState(opts, data, true);
     return true;
 }
 
