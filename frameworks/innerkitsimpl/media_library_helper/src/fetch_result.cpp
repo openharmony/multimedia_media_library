@@ -97,6 +97,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_IS_AUTO, TYPE_INT32 },
         { PhotoColumn::PHOTO_MEDIA_SUFFIX, TYPE_STRING },
         { PhotoColumn::PHOTO_IS_RECENT_SHOW, TYPE_INT32 },
+        { MEDIA_SUM_SIZE, TYPE_INT64 },
     };
     return RESULT_TYPE_MAP;
 }

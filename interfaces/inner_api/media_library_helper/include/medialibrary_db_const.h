@@ -324,6 +324,7 @@ const std::string MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS = "stage_video_task_stat
 
 const std::string MEDIA_COLUMN_COUNT = "count(*)";
 const std::string MEDIA_COLUMN_COUNT_1 = "count(1)";
+const std::string MEDIA_SUM_SIZE = "sum(size)";
 
 const std::string PHOTO_INDEX = "photo_index";
 
