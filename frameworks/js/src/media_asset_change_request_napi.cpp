@@ -1196,7 +1196,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetDisplayName(napi_env env, napi_call
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, newDisplayName) == napi_ok,
         "Failed to parse args");
     CHECK_COND_WITH_MESSAGE(env,
-        MediaFileUtils::GetMimeTypeFromDisplayName(newDisplayName) == DEFAULT_MIME_TYPE,
+        MediaFileUtils::GetMimeTypeFromDisplayName(newDisplayName) != DEFAULT_MIME_TYPE,
         "Invalid newDisplayName, Extension is not support.");
     CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(newDisplayName) == E_OK, "Invalid display name.");
