@@ -2573,12 +2573,15 @@ static int32_t DoUpdateDirtyForCloudCloneOperationV2(const shared_ptr<MediaLibra
     
     string updateSql = "UPDATE " + PhotoColumn::TAB_OLD_PHOTOS_TABLE + " SET " +
         COLUMN_OLD_FILE_ID + " = (" + std::to_string(ERROR_OLD_FILE_ID_OFFSET) + " - " + MediaColumn::MEDIA_ID + ") "+
-        "WHERE " +  MediaColumn::MEDIA_ID + "IN (?,?,?,?)";
+        "WHERE " +  MediaColumn::MEDIA_ID + " IN ";
     vector<ValueObject> bindArgs;
     for (auto fileId : fileIds) {
         bindArgs.push_back(fileId);
+        updateSql.append("?,");
     }
-    ret = rdbStore->ExecuteSql(updateSql, fileIds);
+    updateSql = updateSql.substr(0, updateSql.length() -1);
+    updateSql.append(")");
+    ret = rdbStore->ExecuteSql(updateSql, bindArgs);
     return ret;
 }
 
