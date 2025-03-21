@@ -23,10 +23,12 @@
 #include "albums_refresh_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_log.h"
-
-using namespace testing::ext;
+#include "photo_map_column.h"
 
 namespace OHOS::Media {
+using namespace testing::ext;
+using namespace OHOS::NativeRdb;
+
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::string CREATE_ALBUM_REFRESH_TABLE = "CREATE TABLE IF NOT EXISTS " + ALBUM_REFRESH_TABLE + " ("
     + REFRESH_ALBUM_ID + " INT PRIMARY KEY, " + ALBUM_REFRESH_STATUS + " INT)";
