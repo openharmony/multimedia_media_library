@@ -210,16 +210,14 @@ Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desire
     float desiredScale = static_cast<float>(thumbDesiredSize.height) / static_cast<float>(thumbDesiredSize.width);
     float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
     float scale = 1.0f;
+    Size thumbDecodeSize = thumbDesiredSize;
     if (sourceScale - desiredScale <= EPSILON) {
-        scale = (float)thumbDesiredSize.height / sourceSize.height;
+        scale = min((float)thumbDesiredSize.height / sourceSize.height, 1.0f);
+        thumbDecodeSize.width = static_cast<int32_t> (scale * sourceSize.width);
     } else {
-        scale = (float)thumbDesiredSize.width / sourceSize.width;
+        scale = min((float)thumbDesiredSize.width / sourceSize.width, 1.0f);
+        thumbDecodeSize.height = static_cast<int32_t> (scale * sourceSize.height);
     }
-    scale = scale < 1.0f ? scale : 1.0f;
-    Size thumbDecodeSize = {
-        static_cast<int32_t> (scale * sourceSize.width),
-        static_cast<int32_t> (scale * sourceSize.height),
-    };
 
     width = sourceSize.width;
     height = sourceSize.height;
