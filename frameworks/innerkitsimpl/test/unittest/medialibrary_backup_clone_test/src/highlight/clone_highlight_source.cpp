@@ -246,7 +246,7 @@ void CloneHighlightSource::InsertAnalysisPhotoMap(std::shared_ptr<NativeRdb::Rdb
 void CloneHighlightSource::InsertHighlightAlbum(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
     // id, album_id, ai_album_id, subtitle
-    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_ALBUM_TABLE + VALUES_BEGIN + "1, 1, 2, '2024.05.22', 'TYPE_DBSCAN, "
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_ALBUM_TABLE + VALUES_BEGIN + "1, 1, 2, '2024.05.22', 'TYPE_DBSCAN', "
         "'Old_AOI_0', '[]', 1716307200000, 1716392070000, 1738992083745, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0" +
         VALUES_END);
 }
