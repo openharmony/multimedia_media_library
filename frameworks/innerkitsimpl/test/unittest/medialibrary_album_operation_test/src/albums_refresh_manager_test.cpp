@@ -29,6 +29,7 @@
 #include "vision_db_sqls_more.h"
 
 namespace OHOS::Media {
+using namespace std;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 
@@ -42,6 +43,19 @@ static constexpr int32_t ANALYSIS_ALBUM_ID = 10;
 static constexpr int32_t ANALYSIS_ALBUM_SUBTYPE = PhotoAlbumSubType::PORTRAIT;
 static constexpr int32_t REFRESH_ALBUM_STATUS = 0;
 static constexpr int32_t NOTIFY_ADD_URI_SIZE = 10;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
+int32_t ExecSqls(const vector<string> &sqls)
+{
+    EXPECT_NE((g_rdbStore == nullptr), true);
+    int32_t err = E_OK;
+    for (const auto &sql : sqls) {
+        err = g_rdbStore->ExecuteSql(sql);
+        MEDIA_INFO_LOG("exec sql: %{public}s result: %{public}d", sql.c_str(), err);
+        EXPECT_EQ(err, E_OK);
+    }
+    return E_OK;
+}
 
 void CleanTestTables()
 {
@@ -84,7 +98,8 @@ void InsertPhotoAlbumTestData()
     valuesBucket.Put(ALBUM_ID, PHOTO_ALBUM_ID);
     valuesBucket.Put(ALBUM_SUBTYPE, PHOTO_ALBUM_SUBTYPE);
     int64_t outRowId = 0;
-    int errCode = g_rdbStore->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int ret = g_rdbStore->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
 }
 
 void InsertAnalysisAlbumTestData()
@@ -93,25 +108,26 @@ void InsertAnalysisAlbumTestData()
     valuesBucket.Put(ALBUM_ID, ANALYSIS_ALBUM_ID);
     valuesBucket.Put(ALBUM_SUBTYPE, ANALYSIS_ALBUM_SUBTYPE);
     int64_t outRowId = 0;
-    int errCode = g_rdbStore->Insert(outRowId, ANALYSIS_ALBUM_TABLE, valuesBucket);
+    int ret = g_rdbStore->Insert(outRowId, ANALYSIS_ALBUM_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
 }
 
 void InsertRefreshAlbumTestData()
 {
     // Insert photo album
-    ValuesBucket valuesBucket;
-    valuesBucket.Put(REFRESH_ALBUM_ID, PHOTO_ALBUM_ID);
-    valuesBucket.Put(ALBUM_REFRESH_STATUS, REFRESH_ALBUM_STATUS);
+    ValuesBucket photoValuesBucket;
+    photoValuesBucket.Put(REFRESH_ALBUM_ID, PHOTO_ALBUM_ID);
+    photoValuesBucket.Put(ALBUM_REFRESH_STATUS, REFRESH_ALBUM_STATUS);
     int64_t outRowId = 0;
-    int ret = g_rdbStore->Insert(outRowId, ALBUM_REFRESH_TABLE, valuesBucket);
+    int ret = g_rdbStore->Insert(outRowId, ALBUM_REFRESH_TABLE, photoValuesBucket);
     EXPECT_EQ(ret, E_OK);
 
     // Insert analysis album
-    ValuesBucket valuesBucket;
-    valuesBucket.Put(REFRESH_ALBUM_ID, ANALYSIS_ALBUM_ID + ANALYSIS_ALBUM_OFFSET);
-    valuesBucket.Put(ALBUM_REFRESH_STATUS, REFRESH_ALBUM_STATUS);
+    ValuesBucket analysisValuesBucket;
+    analysisValuesBucket.Put(REFRESH_ALBUM_ID, ANALYSIS_ALBUM_ID + ANALYSIS_ALBUM_OFFSET);
+    analysisValuesBucket.Put(ALBUM_REFRESH_STATUS, REFRESH_ALBUM_STATUS);
     outRowId = 0;
-    ret = g_rdbStore->Insert(outRowId, ALBUM_REFRESH_TABLE, valuesBucket);
+    ret = g_rdbStore->Insert(outRowId, ALBUM_REFRESH_TABLE, analysisValuesBucket);
     EXPECT_EQ(ret, E_OK);
 }
 
