@@ -57,7 +57,7 @@ int32_t ExecSqls(const vector<string> &sqls)
     return E_OK;
 }
 
-void CleanTestTables()
+void CleanAllTestTables()
 {
     vector<string> dropTableList = {
         PhotoAlbumColumns::TABLE,
@@ -75,7 +75,7 @@ void CleanTestTables()
     }
 }
 
-void SetTables()
+void SetAllTestTables()
 {
     vector<string> createTableSqlList = {
         PhotoAlbumColumns::CREATE_TABLE,
@@ -138,7 +138,7 @@ void InitAlbumsTestData()
     InsertRefreshAlbumTestData();
 }
 
-void ClearData()
+void ClearAllTableData()
 {
     string clearPhotoAlbumSql = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
     string clearAnalysisAlbumSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE;
@@ -159,14 +159,14 @@ void AlbumsRefreshManagerTest::SetUpTestCase(void)
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
         exit(1);
     }
-    SetTables();
+    SetAllTestTables();
     MEDIA_INFO_LOG("SetUpTestCase");
 }
 
 void AlbumsRefreshManagerTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("TearDownTestCase");
-    CleanTestTables();
+    CleanAllTestTables();
     g_rdbStore = nullptr;
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
@@ -174,7 +174,7 @@ void AlbumsRefreshManagerTest::TearDownTestCase(void)
 void AlbumsRefreshManagerTest::SetUp()
 {
     MEDIA_INFO_LOG("SetUp");
-    ClearData();
+    ClearAllTableData();
     InitAlbumsTestData();
 }
 
