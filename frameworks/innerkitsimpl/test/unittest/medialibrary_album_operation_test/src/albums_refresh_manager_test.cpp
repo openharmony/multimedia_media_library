@@ -23,7 +23,10 @@
 #include "albums_refresh_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_log.h"
-#include "photo_map_column.h"
+#include "media_refresh_album_column.h"
+#include "photo_album_column.h"
+#include "vision_column.h"
+#include "vision_db_sqls_more.h"
 
 namespace OHOS::Media {
 using namespace testing::ext;
