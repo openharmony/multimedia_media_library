@@ -140,7 +140,7 @@ void AlbumsRefreshManagerTest::SetUpTestCase(void)
 {
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
+        MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
         exit(1);
     }
     SetTables();
@@ -173,7 +173,7 @@ HWTEST_F(AlbumsRefreshManagerTest, RefreshPhotoAlbumsBySyncNotifyInfo_Test_001, 
     EXPECT_NE((g_rdbStore == nullptr), true);
     SyncNotifyInfo info;
     info.taskType = TIME_END_SYNC;
-    AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
+    AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(g_rdbStore, info);
     EXPECT_EQ(info.forceRefreshType, ForceRefreshType::NONE);
 }
 
@@ -186,7 +186,7 @@ HWTEST_F(AlbumsRefreshManagerTest, RefreshPhotoAlbumsBySyncNotifyInfo_Test_002, 
     info.notifyType = NOTIFY_ADD;
     info.urisSize = NOTIFY_ADD_URI_SIZE;
     info.forceRefreshType = ForceRefreshType::NONE;
-    AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
+    AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(g_rdbStore, info);
     EXPECT_EQ(info.notifyAlbums, true);
 }
 }  // namespace OHOS::Media
