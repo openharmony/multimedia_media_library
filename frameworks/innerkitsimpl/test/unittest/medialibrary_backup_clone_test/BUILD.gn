@@ -42,6 +42,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_UTILS_PATH}/include",
     "../medialibrary_unittest_utils/include",
     "./include",
+    "./include/highlight",
   ]
 
   sources = [
@@ -88,6 +89,8 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/upgrade_restore.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/clone_source.cpp",
+    "./src/highlight/clone_highlight_source.cpp",
+    "./src/highlight/clone_restore_highlight_test.cpp",
     "./src/medialibrary_backup_clone_test.cpp",
   ]
 
