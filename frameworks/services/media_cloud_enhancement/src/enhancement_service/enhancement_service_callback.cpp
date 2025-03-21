@@ -240,7 +240,8 @@ void EnhancementServiceCallback::DealWithSuccessedTask(CloudEnhancementThreadTas
     int32_t hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
     int32_t sourceSubtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     int32_t sourceCEAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
-    CHECK_AND_PRINT_LOG(sourceCEAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING),
+    CHECK_AND_PRINT_LOG((sourceCEAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL) ||
+        sourceCEAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO)),
         "enhancement callback error: db CE_AVAILABLE status not processing, file_id: %{public}d", sourceFileId);
     // save 120 per
     shared_ptr<CloudEnhancementFileInfo> info = make_shared<CloudEnhancementFileInfo>(sourceFileId,
@@ -284,7 +285,8 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
     string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
     resultSet->Close();
-    CHECK_AND_PRINT_LOG(ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING),
+    CHECK_AND_PRINT_LOG((ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_MANUAL) ||
+        ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::PROCESSING_AUTO)),
         "enhancement callback error: db CE_AVAILABLE status not processing, file_id: %{public}d", fileId);
     NativeRdb::ValuesBucket valueBucket;
     if (statusCode == static_cast<int32_t>(CEErrorCodeType::EXECUTE_FAILED) ||
