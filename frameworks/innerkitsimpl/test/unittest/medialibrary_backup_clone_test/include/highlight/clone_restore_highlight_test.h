@@ -20,17 +20,16 @@
 #include "rdb_helper.h"
 #include "result_set_utils.h"
 #include "backup_const.h"
- 
+
 namespace OHOS {
 namespace Media {
 class CloneRestoreHighlightTest : public testing::Test {
 public:
-     static void SetUpTestCase(void);
-     static void TearDownTestCase(void);
-     void SetUp();
-     void TearDown();
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
 } // namespace Media
 } // namespace OHOS
 #endif // CLONE_RESTORE_HIGHLIGHT_TEST_H
- 
