@@ -1669,6 +1669,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_VISION_UPDATE_TRIGGER_FOR_UPDATE_ANALYSIS_ALBUM_TOTAL_STATUS,
     CREATE_ANALYSIS_ALBUM_ASET_MAP_TABLE,
     CREATE_ANALYSIS_ASSET_SD_MAP_TABLE,
+    CREATE_TAB_ASSET_ALBUM_OPERATION,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -2672,7 +2673,7 @@ void AddAlbumOrderColumn(RdbStore &store)
         " FOR EACH ROW " +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = album_order - 1" +
-        " WHERE album_order > old.album_order; " +
+        " WHERE album_order > old.album_order;" +
         " END";
     const std::string albumInsertTrigger =
         " CREATE TRIGGER IF NOT EXISTS insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
@@ -3721,6 +3722,43 @@ int32_t MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(const std::sh
     return E_OK;
 }
 
+void AddAssetAlbumOperationTable(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        CREATE_TAB_ASSET_ALBUM_OPERATION,
+        "DROP TRIGGER IF EXISTS photos_delete_trigger",
+        "DROP TRIGGER IF EXISTS album_delete_trigger",
+        "DROP TRIGGER IF EXISTS album_modify_trigger",
+        "DROP TRIGGER IF EXISTS update_order_trigger",
+        "DROP TRIGGER IF EXISTS insert_order_trigger",
+        "DROP TRIGGER IF EXISTS delete_vision_trigger",
+        "DROP TRIGGER IF EXISTS update_vision_trigger",
+        "DROP TRIGGER IF EXISTS insert_vision_trigger",
+        "DROP TRIGGER IF EXISTS update_search_trigger",
+        "DROP TRIGGER IF EXISTS update_search_status_trigger",
+        "DROP TRIGGER IF EXISTS album_update_search_trigger",
+        "DROP TRIGGER IF EXISTS insert_photo_update_album_bundlename",
+        "DROP TRIGGER IF EXISTS insert_source_photo_update_album_id_trigger",
+        "DROP TRIGGER IF EXISTS insert_source_photo_create_source_album_trigger",
+        PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
+        PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER,
+        PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
+        PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER,
+        PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER,
+        CREATE_VISION_DELETE_TRIGGER,
+        CREATE_VISION_UPDATE_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
+        CREATE_SEARCH_UPDATE_TRIGGER,
+        CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+        CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        CREATE_INSERT_SOURCE_UPDATE_ALBUM_ID_TRIGGER,
+        CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start create asset and album operation table");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void AddHighlightMapTable(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -4324,6 +4362,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_HIGHLIGHT_MOVING_PHOTO) {
         AddMovingPhotoRelatedData(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
+        AddAssetAlbumOperationTable(store);
     }
 }
 
