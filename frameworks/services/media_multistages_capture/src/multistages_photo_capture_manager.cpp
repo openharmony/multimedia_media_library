@@ -178,7 +178,7 @@ void MultiStagesPhotoCaptureManager::SaveLowQualityPicture(const std::string &im
 
 // 高质量编辑图片存20S
 void MultiStagesPhotoCaptureManager::DealHighQualityPicture(const std::string &imageId,
-    std::shared_ptr<Media::Picture> picture, bool isEdited)
+    std::shared_ptr<Media::Picture> picture, bool isEdited, bool isTakeEffect)
 {
     MEDIA_INFO_LOG("photoid: %{public}s", imageId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
@@ -192,6 +192,7 @@ void MultiStagesPhotoCaptureManager::DealHighQualityPicture(const std::string &i
     time_t expireTime = currentTime + SAVE_PICTURE_TIMEOUT_SEC;
     std::string imageIdInPair = imageId;
     sptr<PicturePair> picturePair= new PicturePair(std::move(picture), imageIdInPair, expireTime, true, isEdited);
+    picturePair->SetTakeEffect(isTakeEffect);
     pictureManagerThread->InsertPictureData(imageId, picturePair, HIGH_QUALITY_PICTURE);
 }
 

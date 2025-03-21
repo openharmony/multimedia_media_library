@@ -61,7 +61,7 @@ public:
     EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
     EXPORT static int32_t ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
         std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type,
-        std::shared_ptr<Media::Picture> &resultPicture);
+        std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect);
     EXPORT static int32_t Save(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
@@ -167,6 +167,7 @@ private:
     static int32_t UpdateOwnerAlbumId(MediaLibraryCommand &cmd);
     static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset>& fileAsset,
         const std::string& id, bool& isMovingPhotoVideo);
+    static int32_t GetTakeEffect(std::shared_ptr<Media::Picture> &picture, std::string &photoId);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, std::string &mimeType, const int32_t &fileType,
         std::string &oldFilePath);

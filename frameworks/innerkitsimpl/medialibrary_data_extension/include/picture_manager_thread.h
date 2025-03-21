@@ -49,7 +49,7 @@ public:
     void Resume();
     EXPORT void InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair, PictureType pictureType);
     EXPORT std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId,
-        bool &isHighQualityPicture, bool isCleanImmediately = false);
+        bool &isHighQualityPicture, bool &isTakeEffect, bool isCleanImmediately = false);
     EXPORT bool IsExsitDataForPictureType(PictureType pictureType);
     EXPORT bool IsExsitPictureByImageId(const std::string& imageId);
     EXPORT void SaveLowQualityPicture(const std::string& imageId = "default");
