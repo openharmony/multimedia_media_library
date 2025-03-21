@@ -78,7 +78,6 @@ void InsertPhotoAlbumTestData()
     ValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, PHOTO_ALBUM_ID);
     valuesBucket.Put(ALBUM_SUBTYPE, PHOTO_ALBUM_SUBTYPE);
-
     int64_t outRowId = 0;
     int errCode = g_rdbStore->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
 }
@@ -88,7 +87,6 @@ void InsertAnalysisAlbumTestData()
     ValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, ANALYSIS_ALBUM_ID);
     valuesBucket.Put(ALBUM_SUBTYPE, ANALYSIS_ALBUM_SUBTYPE);
-    
     int64_t outRowId = 0;
     int errCode = g_rdbStore->Insert(outRowId, ANALYSIS_ALBUM_TABLE, valuesBucket);
 }
@@ -171,7 +169,7 @@ HWTEST_F(AlbumsRefreshManagerTest, RefreshPhotoAlbumsBySyncNotifyInfo_Test_001, 
     SyncNotifyInfo info;
     info.taskType = TIME_END_SYNC;
     AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(rdbStore, info);
-    EXPECT_EQ(info.forceRefreshType, ForceRefreshType::NONE); 
+    EXPECT_EQ(info.forceRefreshType, ForceRefreshType::NONE);
 }
 
 HWTEST_F(AlbumsRefreshManagerTest, RefreshPhotoAlbumsBySyncNotifyInfo_Test_002, TestSize.Level0)
