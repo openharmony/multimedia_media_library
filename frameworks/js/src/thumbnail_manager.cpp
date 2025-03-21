@@ -447,12 +447,10 @@ static int32_t GetArrayBufferFromServer(const string &uriStr, const string &path
     } else {
         size = thmSize;
     }
-    NAPI_DEBUG_LOG("ZJC GetArrayBufferFromServer type = %{public}d", static_cast<int>(type));
-    NAPI_DEBUG_LOG("ZJC GetArrayBufferFromServer size = %{public}d", static_cast<int>(size));
     string openUriStr = uriStr + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         MEDIA_DATA_DB_WIDTH + "=" + to_string(size) + "&" + MEDIA_DATA_DB_HEIGHT + "=" +
         to_string(size);
-    NAPI_DEBUG_LOG("ZJC GetArrayBufferFromServer openUriStr = %{public}s", openUriStr.c_str());
+    NAPI_DEBUG_LOG("GetArrayBufferFromServer openUriStr = %{public}s", openUriStr.c_str());
     if (IsAsciiString(path)) {
         openUriStr += "&" + THUMBNAIL_PATH + "=" + path;
     }
