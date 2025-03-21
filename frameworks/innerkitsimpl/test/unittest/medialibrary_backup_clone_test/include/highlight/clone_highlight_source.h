@@ -37,7 +37,7 @@ enum class InsertType {
     TAB_ANALYSIS_ALBUM_ASSET_MAP,
     TAB_ANALYSIS_LABEL,
     TAB_ANALYSIS_RECOMMENDATION,
-    TAB_ANALYSIS_SALIENCY_DETECT,
+    TAB_ANALYSIS_SALIENCY_DETECT
 };
 
 class CloneHighlightSource {
@@ -62,10 +62,10 @@ public:
 
 class CloneHighlightOpenCall : public NativeRdb::RdbOpenCallback {
 public:
-     int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
-     int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
-     void Init(const std::vector<std::string> &tableList);
-     std::vector<std::string> createSqls_;
+    int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
+    int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
+    void Init(const std::vector<std::string> &tableList);
+    std::vector<std::string> createSqls_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -71,11 +71,11 @@ const string INSERT_PHOTO = "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + "(" + M
     MediaColumn::MEDIA_HIDDEN + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH + ", " +
     PhotoColumn::PHOTO_EDIT_TIME + ", " + PhotoColumn::PHOTO_SHOOTING_MODE + ")";
 const string INSERT_ANALYSIS_ALBUM = "INSERT INTO " + ANALYSIS_ALBUM_TABLE + "(" + ANALYSIS_COL_ALBUM_ID + ", " +
-    ANALYSIS_COL_ALBUM_TYPE + ", " + ANALYSIS_COL_ALBUM_SUBTYPE + ", " + "(" + ANALYSIS_COL_ALBUM_NAME + ", " +
-    ANALYSIS_COL_COUNT + ", " + ANALYSIS_COL_DATE_MODIFIED + ") ";
+    ANALYSIS_COL_ALBUM_TYPE + ", " + ANALYSIS_COL_ALBUM_SUBTYPE + ", " + ANALYSIS_COL_ALBUM_NAME + ", " +
+    ANALYSIS_COL_COUNT + ", " + ANALYSIS_COL_DATE_MODIFIED + ")";
 const string INSERT_ANALYSIS_PHOTO_MAP = "INSERT INTO " + ANALYSIS_PHOTO_MAP_TABLE + "(" + MAP_ALBUM + ", " +
     MAP_ASSET + ", " + ORDER_POSITION + ")";
-const string INSERT_HILHLIGHT_ALBUM_TABLE = "INSERT INTO " + HIGHLIGHT_ALBUM_TABLE + "(id, " + ALBUM_ID + ", " +
+const string INSERT_HIGHLIGHT_ALBUM_TABLE = "INSERT INTO " + HIGHLIGHT_ALBUM_TABLE + "(id, " + ALBUM_ID + ", " +
     AI_ALBUM_ID + ", " + SUB_TITLE + ", " + CLUSTER_TYPE + ", " + CLUSTER_SUB_TYPE + ", " + CLUSTER_CONDITION + ", " +
     MIN_DATE_ADDED + ", " + MAX_DATE_ADDED + ", " + GENERATE_TIME + ", " + HIGHLIGHT_VERSION + ", " +
     HIGHLIGHT_STATUS + ", " + HIGHLIGHT_INSERT_PIC_COUNT + ", " + HIGHLIGHT_REMOVE_PIC_COUNT + ", " +
@@ -84,9 +84,9 @@ const string INSERT_HILHLIGHT_ALBUM_TABLE = "INSERT INTO " + HIGHLIGHT_ALBUM_TAB
     HIGHLIGHT_RENDER_VIEWED_DURATION + ", " + HIGHLIGHT_ART_LAYOUT_VIEWED_TIMES + ", " +
     HIGHLIGHT_ART_LAYOUT_VIEWED_DURATION + ", " + HIGHLIGHT_MUSIC_EDIT_COUNT + ", " +
     HIGHLIGHT_FILTER_EDIT_COUNT + ") ";
-const string INSERT_HILHLIGHT_COVER_INFO_TABLE = "INSERT INTO " + HIGHLIGHT_COVER_INFO_TABLE + "(" + ALBUM_ID + ", " +
+const string INSERT_HIGHLIGHT_COVER_INFO_TABLE = "INSERT INTO " + HIGHLIGHT_COVER_INFO_TABLE + "(" + ALBUM_ID + ", " +
     RATIO + ", " + COVER_SERVICE_VERSION + ", " + COVER_KEY + ", " + COVER_STATUS + ")";
-const string INSERT_HILHLIGHT_PLAY_INFO_TABLE = "INSERT INTO " + HIGHLIGHT_PLAY_INFO_TABLE + "(" + ALBUM_ID + ", " +
+const string INSERT_HIGHLIGHT_PLAY_INFO_TABLE = "INSERT INTO " + HIGHLIGHT_PLAY_INFO_TABLE + "(" + ALBUM_ID + ", " +
     PLAY_INFO_ID + ", " + MUSIC + ", " + FILTER + ", " + HIGHLIGHT_PLAY_INFO + ", " + IS_CHOSEN + ", " +
     PLAY_INFO_VERSION + ", " + HIGHLIGHTING_ALGO_VERSION + ", " + CAMERA_MOVEMENT_ALGO_VERSION + ", " +
     TRANSITION_ALGO_VERSION + ", " + PLAY_SERVICE_VERSION + ", " + PLAY_INFO_STATUS + ")";
@@ -95,7 +95,7 @@ const string INSERT_ANALYSIS_ASSET_SD_MAP_TABLE = "INSERT INTO " + ANALYSIS_ASSE
 const string INSERT_ANALYSIS_ALBUM_ASSET_MAP_TABLE = "INSERT INTO " + ANALYSIS_ALBUM_ASSET_MAP_TABLE + "(" +
     HIGHLIGHT_MAP_ALBUM + ", " + HIGHLIGHT_MAP_ASSET + ")";
 const string INSERT_VISION_LABEL_TABLE = "INSERT INTO " + VISION_LABEL_TABLE + "(id, " +
-    FILE_ID + ", " + CATEGORY_ID + ", " + SUB_LABEL + ", " + PROB + ", " + FEATURE + ", " + SIM_RESULT +
+    FILE_ID + ", " + CATEGORY_ID + ", " + SUB_LABEL + ", " + PROB + ", " + FEATURE + ", " + SIM_RESULT + ", " +
     LABEL_VERSION + ")";
 const string INSERT_VISION_RECOMMENDATION_TABLE = "INSERT INTO " + VISION_RECOMMENDATION_TABLE + "(id, " +
     FILE_ID + ", " + RECOMMENDATION_ID + ", " + RECOMMENDATION_RESOLUTION + ", " + RECOMMENDATION_SCALE_X + ", " +
@@ -137,11 +137,11 @@ void CloneHighlightOpenCall::Init(const vector<string> &tableList)
 void CloneHighlightSource::Init(const string &dbPath, const vector<string> &tableList)
 {
     NativeRdb::RdbStoreConfig config(dbPath);
-    CloneOpenCall helper;
+    CloneHighlightOpenCall helper;
     helper.Init(tableList);
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
-    cloneStorePtr_ = store;
+    this->cloneStorePtr_ = store;
     Insert(tableList, this->cloneStorePtr_);
 }
 
@@ -216,7 +216,7 @@ void CloneHighlightSource::InsertPhoto(std::shared_ptr<NativeRdb::RdbStore> rdbP
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
     // height, width, edit_time, shooting_mode
     rdbPtr->ExecuteSql(INSERT_PHOTO + VALUES_BEGIN + "1, " +
-        "'/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg', 175258, 'cam_pic', 'cam_pic.jpg', 1, " +
+        "'/storage/cloud/files/Photo/16/test.jpg', 175258, 'cam_pic', 'cam_pic.jpg', 1, " +
         "'com.ohos.camera', '相机', 1501924205218, 1501924205423, 1501924205, 0, 0, 0, 0, " +
         "1280, 960, 0, '1'" + VALUES_END); // cam, pic, shootingmode = 1
     rdbPtr->ExecuteSql(INSERT_PHOTO + VALUES_BEGIN + "2, " +
@@ -245,8 +245,8 @@ void CloneHighlightSource::InsertAnalysisPhotoMap(std::shared_ptr<NativeRdb::Rdb
 
 void CloneHighlightSource::InsertHighlightAlbum(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
-    // album_id, album_type, album_subtype, album_name
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_ALBUM_TABLE + VALUES_BEGIN + "1, 1, 2, '2024.05.22', 'TYPE_DBSCAN, "
+    // id, album_id, ai_album_id, subtitle
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_ALBUM_TABLE + VALUES_BEGIN + "1, 1, 2, '2024.05.22', 'TYPE_DBSCAN, "
         "'Old_AOI_0', '[]', 1716307200000, 1716392070000, 1738992083745, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0" +
         VALUES_END);
 }
@@ -254,29 +254,29 @@ void CloneHighlightSource::InsertHighlightAlbum(std::shared_ptr<NativeRdb::RdbSt
 void CloneHighlightSource::InsertHighlightCover(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
     // insert data into Highlight Cover
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, '1_1', 0, "
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, '1_1', 0, "
         "'test_highlight_album_1_1_file://media', 1" + VALUES_END);
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, '3_2', 0, "
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, '3_2', 0, "
         "'test_highlight_album_3_2_file://media', 1" + VALUES_END);
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, '3_4', 0, "
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, '3_4', 0, "
         "'test_highlight_album_3_4_file://media', 1" + VALUES_END);
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'microcard', 0, "
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'microcard', 0, "
         "'test_highlight_album_microcard_file://media', 1" + VALUES_END);
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'medium_card', 0, "
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'medium_card', 0, "
         "'test_highlight_album_medium_card_file://media', 1" + VALUES_END);
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'big_card', 0, "
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'big_card', 0, "
         "'test_highlight_album_big_card_file://media', 1" + VALUES_END);
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'screen_0_ver', 0, "
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'screen_0_ver', 0, "
         "'test_highlight_album_screen_0_ver_file://media', 1" + VALUES_END);
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'screen_0_hor', 0, "
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_COVER_INFO_TABLE + VALUES_BEGIN + "1, 'screen_0_hor', 0, "
         "'test_highlight_album_screen_0_hor_file://media', 1" + VALUES_END);
 }
 
 void CloneHighlightSource::InsertHighlightPlayInfo(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
 {
     // insert data into Highlight Play Info
-    rdbPtr->ExecuteSql(INSERT_HILHLIGHT_PLAY_INFO_TABLE + VALUES_BEGIN +
-        "1, 0, '/test/files/test.mp3', 8, '{}', 1, 1, 'V1,0,2', 'V1,0,3', 'V1,0,2', 1, 0" + VALUES_END);
+    rdbPtr->ExecuteSql(INSERT_HIGHLIGHT_PLAY_INFO_TABLE + VALUES_BEGIN +
+        "1, 0, '/test/files/test.mp3', 8, '{}', 1, 1, 'V1.0.2', 'V1.0.3', 'V1.0.2', 1, 0" + VALUES_END);
 }
 
 void CloneHighlightSource::InsertSDMap(std::shared_ptr<NativeRdb::RdbStore> rdbPtr)
