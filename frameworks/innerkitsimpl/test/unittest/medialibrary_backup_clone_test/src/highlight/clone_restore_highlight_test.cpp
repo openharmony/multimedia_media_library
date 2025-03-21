@@ -57,7 +57,7 @@ const vector<string> CLEAR_SQLS = {
 const string TEST_BACKUP_PATH = "/data/test/backup/db";
 const string TEST_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const string TEST_BACKUP_DB_PATH = TEST_BACKUP_PATH + TEST_DB_PATH;
-const stirng NONE_CONDITION = "1";
+const string NONE_CONDITION = "1";
 const int32_t TEST_ID = 1;
 const int32_t TEST_NEW_ID = 2;
 const int32_t INVALID_COUNT = -1;
@@ -65,9 +65,9 @@ const int32_t INVALID_COUNT = -1;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 shared_ptr<MediaLibraryRdbStore> newRdbStore;
-unique_ptr<CloneRestore> cloneRestoreHighlight = nullptr;
+unique_ptr<CloneRestoreHighlight> cloneRestoreHighlight = nullptr;
 
-void ExecuterRdbSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
+void ExecuteRdbSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
 {
     for (const auto &sql : sqls) {
         int32_t errCode = store->ExecuteSql(sql);
@@ -81,7 +81,7 @@ void ExecuterRdbSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string>
 void ClearHighlightData()
 {
     MEDIA_INFO_LOG("Start clear data");
-    ExecuteSqls(g_rdbStore->GetRaw(), CLEAR_SQLS);
+    ExecuteRdbSqls(newRdbStore->GetRaw(), CLEAR_SQLS);
     if (cloneRestoreHighlight) {
         cloneRestoreHighlight->analysisInfos_.clear();
         cloneRestoreHighlight->highlightInfos_.clear();
@@ -147,7 +147,7 @@ int32_t GetAlbumCountByCondition(shared_ptr<NativeRdb::RdbStore> rdbStore, const
 {
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + tableName + " WHERE " + condition;
     int32_t result = INVALID_COUNT;
-    QueryInt(rdbStore, querySql, MEDIA_COLUMN_COUNT_1, result);
+    QueryIntBySql(rdbStore, querySql, MEDIA_COLUMN_COUNT_1, result);
     return result;
 }
 
@@ -157,9 +157,9 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_
     ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE,
-        HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE};
+        HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     cloneRestoreHighlight->RestoreAlbums();
     EXPECT_EQ(cloneRestoreHighlight->isMapOrder_, true);
     string analysisCondition = "album_name = 'test_highlight_album'";
@@ -181,7 +181,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_00
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     cloneRestoreHighlight->isMapOrder_ = true;
     vector<FileInfo> fileInfos;
     FileInfo testFileInfo;
@@ -195,7 +195,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_00
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
     testAnalysisInfo.albumIdOld = make_optional<int32_t>(TEST_ID);
     testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_NEW_ID);
-    testAnalysisInfo.OldCoverUri = make_optional<string>("file://media/Photo/1/test/IMG_00000000_000000.jpg");
+    testAnalysisInfo.oldCoverUri = make_optional<string>("file://media/Photo/1/test/IMG_00000000_000000.jpg");
     testAnalysisInfo.albumName = make_optional<string>("testAlbumName");
     cloneRestoreHighlight->analysisInfos_.emplace_back(testAnalysisInfo);
 
@@ -214,7 +214,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_batch_query_photo_te
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     vector<FileInfo> fileInfos;
     FileInfo testFileInfo1;
     testFileInfo1.fileIdOld = 1;
@@ -247,7 +247,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_0
     CloneHighlightSource cloneHighlightSource;
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     cloneRestoreHighlight->isMapOrder_ = false;
     FileInfo testFileInfo;
     testFileInfo.fileIdOld = 1;
@@ -275,9 +275,9 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_001 start");
     ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE};
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
     testAnalysisInfo.oldCoverUri = make_optional<string>("file://testOldCoverUri");
     testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_ID);
@@ -306,9 +306,9 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_002 start");
     ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE};
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
     testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_ID);
     testAnalysisInfo.coverUri = "file://testNewCoverUri";
@@ -335,9 +335,9 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_003 start");
     ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE};
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
     testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_ID);
     testAnalysisInfo.coverUri = "file://testNewCoverUri";
@@ -364,9 +364,9 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_004 start");
     ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE};
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
     testAnalysisInfo.oldCoverUri = make_optional<string>("file://testOldCoverUri");
     testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_ID);
@@ -395,9 +395,9 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_005 start");
     ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE};
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_COVER_INFO_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
     testAnalysisInfo.oldCoverUri = make_optional<string>("file://testOldCoverUri");
     testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_ID);
@@ -465,14 +465,14 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_deduplicate_test_001
     MEDIA_INFO_LOG("clone_restore_highlight_deduplicate_test_001 start");
     ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, HIGHLIGHT_ALBUM_TABLE};
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, HIGHLIGHT_ALBUM_TABLE };
     cloneHighlightSource.Insert(tableList, newRdbStore->GetRaw());
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource->cloneStorePtr_, "");
+    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
-    testAnalysisInfo.albumIdOld = make_optional<int32_t>(TEST_ID);  
+    testAnalysisInfo.albumIdOld = make_optional<int32_t>(TEST_ID);
     testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_ID);
     testAnalysisInfo.highlightIdNew = make_optional<int32_t>(TEST_ID);
-    testAnalysisInfo.albumName = make_optional<string>("testAlbumName");
+    testAnalysisInfo.albumName = make_optional<string>("test_highlight_album");
     cloneRestoreHighlight->analysisInfos_.emplace_back(testAnalysisInfo);
 
     CloneRestoreHighlight::HighlightAlbumInfo testHighlightInfo;
@@ -486,7 +486,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_deduplicate_test_001
 
     cloneRestoreHighlight->HighlightDeduplicate(testHighlightInfo);
     string highlightCondition = "highlight_status = -2";
-    int32_t highlightCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), ANALYSIS_ALBUM_TABLE, analysisCondition);
+    int32_t highlightCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_ALBUM_TABLE, highlightCondition);
     EXPECT_EQ(highlightCount, 1);
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
