@@ -527,9 +527,8 @@ void UpgradeRestore::RestoreBatchForCloud(int32_t offset)
 {
     std::vector<FileInfo> infos = QueryCloudFileInfos(offset);
     MEDIA_INFO_LOG("the infos size is %{public}zu", infos.size());
-    if (InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) != E_OK) {
-        galleryFailedOffsets.push_back(offset);
-    }
+    CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
+        galleryFailedOffsets.push_back(offset));
     this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, infos);
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
@@ -539,9 +538,8 @@ void UpgradeRestore::RestoreBatch(int32_t offset)
 {
     MEDIA_INFO_LOG("start restore from gallery, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfos(offset);
-    if (InsertPhoto(sceneCode_, infos, SourceType::GALLERY) != E_OK) {
-        galleryFailedOffsets.push_back(offset);
-    }
+    CHECK_AND_EXECUTE(InsertPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
+        galleryFailedOffsets.push_back(offset));
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
 }
@@ -623,9 +621,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
-        if (ParseResultSetFromGallery(resultSet, tmpInfo)) {
-            result.emplace_back(tmpInfo);
-        }
+        CHECK_AND_EXECUTE(!ParseResultSetFromGallery(resultSet, tmpInfo), result.emplace_back(tmpInfo));
     }
     return result;
 }
@@ -641,9 +637,7 @@ std::vector<FileInfo> UpgradeRestore::QueryCloudFileInfos(int32_t offset)
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query cloud resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
-        if (ParseResultSetFromGallery(resultSet, tmpInfo)) {
-            result.emplace_back(tmpInfo);
-        }
+        CHECK_AND_EXECUTE(!ParseResultSetFromGallery(resultSet, tmpInfo),  result.emplace_back(tmpInfo));
     }
     return result;
 }
@@ -1064,9 +1058,8 @@ void UpgradeRestore::BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlb
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t albumId = GetInt32Val(ALBUM_ID, resultSet);
         std::string tagId = GetStringVal(TAG_ID, resultSet);
-        if (albumId <= 0 || tagId.empty()) {
-            continue;
-        }
+        bool cond = (albumId <= 0 || tagId.empty());
+        CHECK_AND_CONTINUE(!cond);
         portraitAlbumIdMap_[tagId] = albumId;
     }
 }
@@ -1087,9 +1080,7 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
-        if (hash.empty()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(!hash.empty());
         needQuerySet.insert(hash);
     }
     CHECK_AND_RETURN_RET(!needQuerySet.empty(), false);
@@ -1101,9 +1092,7 @@ void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInf
     int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum)
 {
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    if (needQueryMap.count(PhotoRelatedType::PORTRAIT) == 0) {
-        return;
-    }
+    CHECK_AND_RETURN(needQueryMap.count(PhotoRelatedType::PORTRAIT) != 0);
     bool cond = (mediaLibraryRdb_ == nullptr || fileInfos.empty());
     CHECK_AND_RETURN_LOG(!cond, "mediaLibraryRdb_ is null or fileInfos empty");
 
@@ -1150,12 +1139,10 @@ void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, co
 {
     auto needQuerySet = needQueryMap.at(PhotoRelatedType::PORTRAIT);
     for (const auto &fileInfo : fileInfos) {
-        if (needQuerySet.count(fileInfo.hashCode) == 0 || fileInfo.fileIdNew <= 0) {
-            continue;
-        }
-        if (fileInfoMap.count(fileInfo.hashCode) > 0) {
-            continue; // select the first one to build map
-        }
+        bool cond = (needQuerySet.count(fileInfo.hashCode) == 0 || fileInfo.fileIdNew <= 0);
+        CHECK_AND_CONTINUE(!cond);
+        // select the first one to build map
+        CHECK_AND_CONTINUE(fileInfoMap.count(fileInfo.hashCode) <= 0);
         BackupDatabaseUtils::UpdateSelection(hashSelection, fileInfo.hashCode, true);
         fileInfoMap[fileInfo.hashCode] = fileInfo;
     }
@@ -1243,12 +1230,9 @@ std::vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(const std::
 {
     std::vector<NativeRdb::ValuesBucket> values;
     for (auto &faceInfo : faceInfos) {
-        if (excludedFiles.count(faceInfo.hash) > 0) {
-            continue;
-        }
-        if (isMap && faceInfo.tagIdNew == TAG_ID_UNPROCESSED) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(excludedFiles.count(faceInfo.hash) <= 0);
+        bool cond = (isMap && faceInfo.tagIdNew == TAG_ID_UNPROCESSED);
+        CHECK_AND_CONTINUE(!cond);
         NativeRdb::ValuesBucket value = GetInsertValue(faceInfo, isMap);
         values.emplace_back(value);
     }
@@ -1284,9 +1268,7 @@ void UpgradeRestore::UpdateFilesWithFace(std::unordered_set<std::string> &filesW
     const std::vector<FaceInfo> &faceInfos)
 {
     for (const auto &faceInfo : faceInfos) {
-        if (faceInfo.hash.empty()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(!faceInfo.hash.empty());
         filesWithFace.insert(faceInfo.hash);
     }
 }

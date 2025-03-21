@@ -36,9 +36,8 @@ static const std::string CLOUD_URI = CLOUD_DATASHARE_URI + "key=useMobileNetwork
 
 void CloudMediaAssetObserver::OnChange(const ChangeInfo &changeInfo)
 {
-    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
-        return;
-    }
+    bool cond = (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE);
+    CHECK_AND_RETURN(!cond);
     CHECK_AND_RETURN_INFO_LOG(!CommonEventUtils::IsWifiConnected(), "wifi is connection.");
 
     std::list<Uri> uris = changeInfo.uris_;
@@ -49,9 +48,7 @@ void CloudMediaAssetObserver::OnChange(const ChangeInfo &changeInfo)
         bool isUnlimitedTrafficStatusOn = CloudSyncUtils::IsUnlimitedTrafficStatusOn();
         if (operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::DOWNLOADING) {
             operation_->isUnlimitedTrafficStatusOn_ = isUnlimitedTrafficStatusOn;
-            if (isUnlimitedTrafficStatusOn) {
-                return;
-            }
+            CHECK_AND_RETURN(!isUnlimitedTrafficStatusOn);
             CloudMediaTaskPauseCause pauseCause = MedialibrarySubscriber::IsCellularNetConnected() ?
                 CloudMediaTaskPauseCause::WIFI_UNAVAILABLE : CloudMediaTaskPauseCause::NETWORK_FLOW_LIMIT;
             operation_->PauseDownloadTask(pauseCause);

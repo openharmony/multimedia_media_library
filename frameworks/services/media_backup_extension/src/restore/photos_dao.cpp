@@ -142,9 +142,8 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileBySourcePath(const FileInfo &fil
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
 
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return rowData;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, rowData);
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
