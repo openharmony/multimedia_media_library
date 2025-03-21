@@ -103,9 +103,8 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
 {
     token_ = token;
-    if (sDataShareHelper_ == nullptr) {
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-    }
+    CHECK_AND_EXECUTE(sDataShareHelper_ != nullptr,
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI));
 }
 
 sptr<IRemoteObject> MediaLibraryManager::InitToken()
@@ -206,13 +205,8 @@ static bool CheckPhotoUri(const string &uri)
 
 int32_t MediaLibraryManager::OpenAsset(string &uri, const string openMode)
 {
-    if (openMode.empty()) {
-        return E_ERR;
-    }
-    if (!CheckUri(uri)) {
-        MEDIA_ERR_LOG("invalid uri");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET(!openMode.empty(), E_ERR);
+    CHECK_AND_RETURN_RET_LOG(CheckUri(uri), E_ERR, "invalid uri");
     string originOpenMode = openMode;
     std::transform(originOpenMode.begin(), originOpenMode.end(),
         originOpenMode.begin(), [](unsigned char c) {return std::tolower(c);});
@@ -315,10 +309,7 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 std::shared_ptr<DataShareResultSet> GetResultSetFromPhotos(const string &value, vector<string> &columns,
     sptr<IRemoteObject> &token, shared_ptr<DataShare::DataShareHelper> &dataShareHelper)
 {
-    if (!CheckPhotoUri(value)) {
-        MEDIA_ERR_LOG("Failed to check invalid uri: %{public}s", value.c_str());
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(CheckPhotoUri(value), nullptr, "Failed to check invalid uri: %{public}s", value.c_str());
     Uri queryUri(PAH_QUERY_PHOTO);
     DataSharePredicates predicates;
     string fileId = MediaFileUtils::GetIdFromUri(value);
@@ -356,23 +347,17 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
 
 static int32_t SolvePath(const string &filePath, string &tempPath, string &userId)
 {
-    if (filePath.empty()) {
-        return E_INVALID_PATH;
-    }
-
+    CHECK_AND_RETURN_RET(!filePath.empty(), E_INVALID_PATH);
     string prePath = PRE_PATH_VALUES;
     if (filePath.find(prePath) != 0) {
         return E_CHECK_ROOT_DIR_FAIL;
     }
     string postpath = filePath.substr(prePath.length());
     auto pos = postpath.find('/');
-    if (pos == string::npos) {
-        return E_INVALID_ARGUMENTS;
-    }
+    CHECK_AND_RETURN_RET(pos != string::npos, E_INVALID_ARGUMENTS);
     userId = postpath.substr(0, pos);
     postpath = postpath.substr(pos + 1);
     tempPath = prePath + postpath;
-
     return E_SUCCESS;
 }
 
@@ -405,9 +390,7 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
 {
     string uri = fileUri.ToString();
     MediaFileUri virtualUri(uri);
-    if (!virtualUri.IsValid()) {
-        return E_URI_INVALID;
-    }
+    CHECK_AND_RETURN_RET(virtualUri.IsValid(), E_URI_INVALID);
     string virtualId = virtualUri.GetFileId();
 #ifdef MEDIALIBRARY_COMPATIBILITY
     if (MediaFileUtils::GetTableFromVirtualUri(uri) != MEDIALIBRARY_TABLE) {
@@ -505,27 +488,16 @@ std::string MediaLibraryManager::GetSandboxPath(const std::string &path, const S
 static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool isAstc)
 {
     int32_t fd = -1;
-    if (sandboxPath.empty()) {
-        MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s",
-            MediaFileUtils::DesensitizePath(path).c_str());
-        return fd;
-    }
+    CHECK_AND_RETURN_RET_LOG(!sandboxPath.empty(), fd, "OpenThumbnail sandboxPath is empty, path :%{public}s",
+        MediaFileUtils::DesensitizePath(path).c_str());
     string absFilePath;
-    if (PathToRealPath(sandboxPath, absFilePath)) {
-        return open(absFilePath.c_str(), O_RDONLY);
-    }
-    if (!isAstc) {
-        return fd;
-    }
+    CHECK_AND_RETURN_RET(!PathToRealPath(sandboxPath, absFilePath), open(absFilePath.c_str(), O_RDONLY));
+    CHECK_AND_RETURN_RET(isAstc, fd);
     string suffixStr = "THM_ASTC.astc";
     size_t thmIdx = sandboxPath.find(suffixStr);
-    if (thmIdx == std::string::npos) {
-        return fd;
-    }
+    CHECK_AND_RETURN_RET(thmIdx != std::string::npos, fd);
     sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
-    if (!PathToRealPath(sandboxPath, absFilePath)) {
-        return fd;
-    }
+    CHECK_AND_RETURN_RET(PathToRealPath(sandboxPath, absFilePath), fd);
     return open(absFilePath.c_str(), O_RDONLY);
 }
 
@@ -538,18 +510,13 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     if (pos != std::string::npos) {
         pos += MULTI_USER_URI_FLAG.length();
         size_t end = str.find_first_of("&?", pos);
-        if (end == std::string::npos) {
-            end = str.length();
-        }
+        CHECK_AND_EXECUTE(end != std::string::npos, end = str.length());
         userId = str.substr(pos, end - pos);
         MEDIA_ERR_LOG("OpenThumbnail for other user is %{public}s", userId.c_str());
     }
     shared_ptr<DataShare::DataShareHelper> dataShareHelper = userId != "" ? DataShare::DataShareHelper::Creator(token_,
         MEDIALIBRARY_DATA_URI + "?" + MULTI_USER_URI_FLAG + userId) : sDataShareHelper_;
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("Failed to open thumbnail, dataShareHelper is nullptr");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper != nullptr, E_ERR, "Failed to open thumbnail, dataShareHelper is nullptr");
     if (path.empty()) {
         MEDIA_ERR_LOG("OpenThumbnail path is empty");
         Uri openUri(uriStr);
@@ -557,14 +524,10 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     }
     string sandboxPath = GetSandboxPath(path, size, isAstc);
     int32_t fd = GetFdFromSandbox(path, sandboxPath, isAstc);
-    if (fd > 0) {
-        return fd;
-    }
+    CHECK_AND_RETURN_RET(fd <= 0, fd);
     MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, errno %{public}d path :%{public}s fd %{public}d",
         errno, MediaFileUtils::DesensitizePath(path).c_str(), fd);
-    if (IsAsciiString(path)) {
-        uriStr += "&" + THUMBNAIL_PATH + "=" + path;
-    }
+    CHECK_AND_EXECUTE(!IsAsciiString(path), uriStr += "&" + THUMBNAIL_PATH + "=" + path);
     Uri openUri(uriStr);
     return dataShareHelper->OpenFile(openUri, "R");
 }
@@ -577,9 +540,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
 void MediaLibraryManager::GetUriIdPrefix(std::string &fileUri)
 {
     MediaFileUri mediaUri(fileUri);
-    if (!mediaUri.IsApi10()) {
-        return;
-    }
+    CHECK_AND_RETURN(mediaUri.IsApi10());
     auto slashIdx = fileUri.rfind('/');
     if (slashIdx == std::string::npos) {
         return;
@@ -625,9 +586,7 @@ static void GetUriParamsFromQueryKey(UriParams& uriParams,
 static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &uriParams)
 {
     MediaFileUri mediaUri(uri);
-    if (!mediaUri.IsValid()) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(mediaUri.IsValid(), false);
     if (isOldVer) {
         auto index = uri.find("thumbnail");
         if (index == string::npos || index == 0) {
@@ -637,14 +596,11 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
         MediaLibraryManager::GetUriIdPrefix(uriParams.fileUri);
         index += strlen("thumbnail");
         index = uri.find('/', index);
-        if (index == string::npos) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(index != string::npos, false);
+
         index += 1;
         auto tmpIdx = uri.find('/', index);
-        if (tmpIdx == string::npos) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(tmpIdx != string::npos, false);
 
         int32_t width = 0;
         StrToInt(uri.substr(index, tmpIdx - index), width);
@@ -666,10 +622,8 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
 
 bool MediaLibraryManager::IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
 {
-    if (imageSize.height <= 0 || targetSize.height <= 0) {
-        return false;
-    }
-
+    bool cond = (imageSize.height <= 0 || targetSize.height <= 0);
+    CHECK_AND_RETURN_RET(!cond, false);
     float imageSizeScale = static_cast<float>(imageSize.width) / static_cast<float>(imageSize.height);
     float targetSizeScale = static_cast<float>(targetSize.width) / static_cast<float>(targetSize.height);
     if (imageSizeScale - targetSizeScale > FLOAT_EPSILON || targetSizeScale - imageSizeScale > FLOAT_EPSILON) {
@@ -687,34 +641,25 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
     SourceOptions opts;
     uint32_t err = 0;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
-    if (imageSource  == nullptr) {
-        MEDIA_ERR_LOG("CreateImageSource err %{public}d", err);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, nullptr, "CreateImageSource err %{public}d", err);
 
     ImageInfo imageInfo;
     err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GetImageInfo err %{public}d", err);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, nullptr, "GetImageInfo err %{public}d", err);
 
     bool isEqualsRatio = IfSizeEqualsRatio(imageInfo.size, size);
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = isEqualsRatio ? size : imageInfo.size;
     decodeOpts.desiredDynamicRange = dynamicRange;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    if (pixelMap == nullptr) {
-        MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, nullptr, "CreatePixelMap err %{public}d", err);
 
     PostProc postProc;
-    if (size.width != 0 && size.width != DEFAULT_ORIGINAL && !isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
-        MEDIA_ERR_LOG("CenterScale failed, size: %{public}d * %{public}d, imageInfo size: %{public}d * %{public}d",
-            size.width, size.height, imageInfo.size.width, imageInfo.size.height);
-        return nullptr;
-    }
+    bool cond = (size.width != 0 && size.width != DEFAULT_ORIGINAL && !isEqualsRatio &&
+        !postProc.CenterScale(size, *pixelMap));
+    CHECK_AND_RETURN_RET_LOG(!cond, nullptr, "CenterScale failed, size: %{public}d * %{public}d,"
+        " imageInfo size: %{public}d * %{public}d", size.width, size.height,
+        imageInfo.size.width, imageInfo.size.height);
 
     // Make the ashmem of pixelmap to be purgeable after the operation on ashmem.
     // And then make the pixelmap subject to PurgeableManager's control.
@@ -734,16 +679,12 @@ unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(UriParams& params)
         "=" + to_string(params.size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(params.size.height);
     if (params.user != "") {
         openUriStr = openUriStr + "&" + THUMBNAIL_USER + "=" + params.user;
-        if (!params.path.empty() && !params.path.find(MULTI_USER_URI_FLAG)) {
-            params.path = params.path + "&" + THUMBNAIL_USER + "=" + params.user;
-        }
+        bool cond = (!params.path.empty() && !params.path.find(MULTI_USER_URI_FLAG));
+        CHECK_AND_EXECUTE(!cond, params.path = params.path + "&" + THUMBNAIL_USER + "=" + params.user);
     }
     tracer.Start("DataShare::OpenThumbnail");
     UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, params.path, params.size, params.isAstc));
-    if (uniqueFd.Get() < 0) {
-        MEDIA_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniqueFd.Get() >= 0, nullptr, "queryThumb is null, errCode is %{public}d", uniqueFd.Get());
     tracer.Finish();
     return DecodeThumbnail(uniqueFd, params.size, params.dynamicRange);
 }
@@ -1034,19 +975,14 @@ std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
         return uri;
     }
     std::vector<std::string> uris;
-    if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(MediaFileUtils::SplitMovingPhotoUri(uri, uris), "");
     return uris[MOVING_PHOTO_IMAGE_POS];
 }
 
 int64_t MediaLibraryManager::GetSandboxMovingPhotoTime(const string& uri)
 {
     vector<string> uris;
-    if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET(MediaFileUtils::SplitMovingPhotoUri(uri, uris), E_ERR);
     AppFileService::ModuleFileUri::FileUri imageFileUri(uris[MOVING_PHOTO_IMAGE_POS]);
     string imageRealPath = imageFileUri.GetRealPath();
     struct stat imageStatInfo {};
@@ -1132,9 +1068,8 @@ static void CheckAccessTokenPermissionExecute(uint32_t tokenId, uint32_t checkFl
         checkWriteResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
     } else if (checkFlag == URI_PERMISSION_FLAG_READWRITE) {
         checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, readPermmisionMap[mediaType]);
-        if (checkReadResult != PermissionState::PERMISSION_GRANTED) {
-            checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
-        }
+        CHECK_AND_EXECUTE(checkReadResult == PermissionState::PERMISSION_GRANTED,
+            checkReadResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]));
         checkWriteResult = AccessTokenKit::VerifyAccessToken(tokenId, writePermmisionMap[mediaType]);
     }
     isReadable = checkReadResult == PermissionState::PERMISSION_GRANTED;

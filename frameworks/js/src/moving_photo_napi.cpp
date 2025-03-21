@@ -670,7 +670,6 @@ static void DeleteProcessHandlerSafe(ProgressHandler *handler, napi_env env)
     if (handler == nullptr) {
         return;
     }
-    NAPI_DEBUG_LOG("[ProgressHandler delete] %{public}p.", handler);
     if (handler->progressRef != nullptr && env != nullptr) {
         napi_delete_reference(env, handler->progressRef);
         handler->progressRef = nullptr;

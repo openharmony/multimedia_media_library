@@ -40,10 +40,8 @@ static void GetMaxFileId(int32_t& maxFileId)
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "get rdb store failed");
     string queryMaxSql = "SELECT Max(file_id) FROM " + PhotoColumn::PHOTOS_TABLE;
     auto resultSet = rdbStore->QuerySql(queryMaxSql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to get max file_id!");
-        return;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_LOG(!cond, "Failed to get max file_id!");
     resultSet->GetInt(0, maxFileId);
     resultSet->Close();
     return;
@@ -66,9 +64,7 @@ void CloudEnhancementChecker::AddPermissionForCloudEnhancement()
         to_string(static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT)));
     auto resultSet = MediaLibraryRdbStore::StepQueryWithoutCheck(predicates, columns);
     errCode = (resultSet == nullptr) ? E_ERR : E_OK;
-    if (resultSet != nullptr) {
-        errCode = (resultSet->GoToFirstRow() != E_OK) ? E_ERR : E_OK;
-    }
+    CHECK_AND_EXECUTE(resultSet == nullptr, errCode = (resultSet->GoToFirstRow() != E_OK) ? E_ERR : E_OK);
     if (errCode == E_ERR) {
         int32_t maxFileId = 0;
         GetMaxFileId(maxFileId);

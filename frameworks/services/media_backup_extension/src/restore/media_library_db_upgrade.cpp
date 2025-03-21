@@ -164,10 +164,7 @@ int32_t MediaLibraryDbUpgrade::UpdatelPathColumn(NativeRdb::RdbStore &store)
  */
 int32_t MediaLibraryDbUpgrade::AddOwnerAlbumIdColumn(NativeRdb::RdbStore &store)
 {
-    if (this->dbUpgradeUtils_.IsColumnExists(store, "Photos", "owner_album_id")) {
-        return NativeRdb::E_OK;
-    }
-
+    CHECK_AND_RETURN_RET(!this->dbUpgradeUtils_.IsColumnExists(store, "Photos", "owner_album_id"), NativeRdb::E_OK);
     std::vector<NativeRdb::ValueObject> args;
     std::string sql = this->SQL_PHOTOS_TABLE_ADD_OWNER_ALBUM_ID;
     int32_t ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(sql, args); });
