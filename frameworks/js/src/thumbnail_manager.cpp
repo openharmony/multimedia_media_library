@@ -440,8 +440,18 @@ static PixelMapPtr DecodeThumbnail(const UniqueFd &uniqueFd, const Size &size)
 
 static int32_t GetArrayBufferFromServer(const string &uriStr, const string &path, const int32_t &type)
 {
+    int32_t lcdSize = -1;
+    int32_t thmSize = 0;
+    int32_t size = 0;
+    if (type == 1) {
+        size = lcdSize;
+    } else {
+        size = thmSize;
+    }
     string openUriStr = uriStr + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
-        MEDIA_DATA_DB_TYPE + "=" + to_string(type);
+        MEDIA_DATA_DB_WIDTH + "=" + to_string(size) + "&" + MEDIA_DATA_DB_HEIGHT + "=" +
+        to_string(size);
+    NAPI_DEBUG_LOG("GetArrayBufferFromServer openUriStr = %{public}s", openUriStr.c_str());
     if (IsAsciiString(path)) {
         openUriStr += "&" + THUMBNAIL_PATH + "=" + path;
     }
