@@ -211,6 +211,9 @@ public:
 
     EXPORT int32_t GetSupportedWatermarkType() const;
     EXPORT void SetSupportedWatermarkType(int32_t watermarkType);
+
+    EXPORT int32_t GetIsAuto() const;
+    EXPORT void SetIsAuto(int32_t isAuto);
 private:
     int32_t GetInt32Member(const std::string &name) const;
     int64_t GetInt64Member(const std::string &name) const;
