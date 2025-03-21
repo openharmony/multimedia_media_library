@@ -125,10 +125,8 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetCloudPhotosInPhotoMap(int3
 std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosNotInPhotoMap(int32_t offset, int32_t pageSize)
 {
     std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
-    if (this->mediaLibraryOriginalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, nullptr,
+        "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     return this->mediaLibraryOriginalRdb_->QuerySql(this->SQL_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP, bindArgs);
 }
 
@@ -138,10 +136,8 @@ std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetPhotosNotInPhotoMap(int32_
 std::shared_ptr<NativeRdb::ResultSet> PhotosClone::GetCloudPhotosNotInPhotoMap(int32_t offset, int32_t pageSize)
 {
     std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
-    if (this->mediaLibraryOriginalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("singleCloud Media_Restore: mediaLibraryOriginalRdb_ is null.");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, nullptr,
+        "singleCloud Media_Restore: mediaLibraryOriginalRdb_ is null.");
     return this->mediaLibraryOriginalRdb_->QuerySql(this->SQL_CLOUD_PHOTOS_TABLE_QUERY_NOT_IN_PHOTO_MAP, bindArgs);
 }
 
@@ -223,10 +219,9 @@ std::string PhotosClone::FindBundleName(const FileInfo &fileInfo)
 {
     PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->FindAlbumInfo(fileInfo);
     // Only provide the bundle name of the SOURCE album.
-    if (albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
-        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC)) {
-        return "";
-    }
+    bool cond = (albumInfo.albumType != static_cast<int32_t>(PhotoAlbumType::SOURCE) ||
+        albumInfo.albumSubType != static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC));
+    CHECK_AND_RETURN_RET(!cond, "");
     return albumInfo.bundleName;
 }
 
@@ -239,15 +234,10 @@ std::vector<PhotosDao::PhotosRowData> PhotosClone::FindDuplicateBurstKey()
     int pageSize = 200;
     do {
         std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
-        if (this->mediaLibraryOriginalRdb_ == nullptr) {
-            MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(this->mediaLibraryOriginalRdb_ != nullptr,
+            "Media_Restore: mediaLibraryOriginalRdb_ is null.");
         auto resultSet = this->mediaLibraryTargetRdb_->QuerySql(querySql, bindArgs);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "Query resultSql is null.");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             PhotosDao::PhotosRowData info;
             info.burstKey = GetStringVal("burst_key", resultSet);
@@ -263,9 +253,7 @@ std::vector<PhotosDao::PhotosRowData> PhotosClone::FindDuplicateBurstKey()
 
 int32_t PhotosClone::FindPhotoQuality(const FileInfo &fileInfo)
 {
-    if (fileInfo.photoQuality == 1) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(fileInfo.photoQuality != 1, 0);
     return fileInfo.photoQuality;
 }
 
@@ -304,9 +292,7 @@ int32_t PhotosClone::FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> 
     MEDIA_INFO_LOG("Media_Restore: onProcess Update otherTotalNumber_: %{public}lld", (long long)totalNumber);
     std::string executeSql = this->SQL_PHOTOS_TABLE_BURST_KEY_UPDATE;
     for (auto &info : duplicateBurstKeyList) {
-        if (info.burstKey.empty()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(!info.burstKey.empty());
         std::string burstKeyNew = this->GenerateUuid();
         std::vector<NativeRdb::ValueObject> bindArgs = {burstKeyNew, info.ownerAlbumId, info.burstKey};
         MEDIA_INFO_LOG("Media_Restore: executeSql = %{public}s, bindArgs=%{public}s",
@@ -330,15 +316,10 @@ int32_t PhotosClone::FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> 
 
 std::string PhotosClone::FindSourcePath(const FileInfo &fileInfo)
 {
-    if (fileInfo.lPath.empty()) {
-        return fileInfo.sourcePath;
-    }
-    if (!fileInfo.sourcePath.empty()) {
-        return fileInfo.sourcePath;
-    }
-    if (fileInfo.hidden == 0 && fileInfo.recycledTime == 0) {
-        return fileInfo.sourcePath;
-    }
+    CHECK_AND_RETURN_RET(!fileInfo.lPath.empty(), fileInfo.sourcePath);
+    CHECK_AND_RETURN_RET(fileInfo.sourcePath.empty(), fileInfo.sourcePath);
+    bool cond = (fileInfo.hidden == 0 && fileInfo.recycledTime == 0);
+    CHECK_AND_RETURN_RET(!cond, fileInfo.sourcePath);
     return this->SOURCE_PATH_PREFIX + fileInfo.lPath + "/" + fileInfo.displayName;
 }
 
@@ -348,14 +329,11 @@ std::string PhotosClone::FindSourcePath(const FileInfo &fileInfo)
 int32_t PhotosClone::GetNoNeedMigrateCount()
 {
     std::string querySql = this->SQL_PHOTOS_TABLE_COUNT_NO_NEED_MIGRATE;
-    if (this->mediaLibraryOriginalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryOriginalRdb_ != nullptr, 0,
+        "Media_Restore: mediaLibraryOriginalRdb_ is null.");
     auto resultSet = this->mediaLibraryOriginalRdb_->QuerySql(querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
     return GetInt32Val("count", resultSet);
 }
 }  // namespace OHOS::Media

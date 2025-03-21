@@ -312,10 +312,9 @@ void BackgroundCloudFileProcessor::CheckAndUpdateDownloadCnt(std::string uri, in
     bool updateDownloadCntFlag = true;
     unique_lock<mutex> downloadLock(downloadResultMutex_);
     if (downloadResult_.find(uri) != downloadResult_.end()) {
-        if ((downloadResult_[uri] == DownloadStatus::NETWORK_UNAVAILABLE) ||
-            (downloadResult_[uri] == DownloadStatus::STORAGE_FULL)) {
-                updateDownloadCntFlag = false;
-            }
+        bool cond = ((downloadResult_[uri] == DownloadStatus::NETWORK_UNAVAILABLE) ||
+            (downloadResult_[uri] == DownloadStatus::STORAGE_FULL));
+        CHECK_AND_EXECUTE(!cond, updateDownloadCntFlag = false);
     }
     downloadLock.unlock();
 
@@ -336,10 +335,9 @@ void BackgroundCloudFileProcessor::GetDownloadNum(int64_t &downloadNum)
         downloadNum = MAX_DOWNLOAD_NUM;
     } else {
         downloadNum = minutes;
-        if ((currentMilliSecond - lastDownloadMilliSecond) - (minutes * downloadInterval_)
-            > (HALF * downloadInterval_)) {
-            downloadNum++;
-        }
+        bool cond = ((currentMilliSecond - lastDownloadMilliSecond) - (minutes * downloadInterval_)
+            > (HALF * downloadInterval_));
+        CHECK_AND_EXECUTE(!cond, downloadNum++);
     }
 }
 
@@ -825,14 +823,8 @@ void BackgroundCloudFileProcessor::StartTimer()
 {
     lock_guard<recursive_mutex> lock(mutex_);
     MEDIA_INFO_LOG("Turn on the background download cloud file timer");
-
-    if (cloudDataTimerId_ > 0) {
-        timer_.Unregister(cloudDataTimerId_);
-    }
-    if (startTimerId_ > 0) {
-        timer_.Unregister(startTimerId_);
-    }
-
+    CHECK_AND_EXECUTE(cloudDataTimerId_ <= 0, timer_.Unregister(cloudDataTimerId_));
+    CHECK_AND_EXECUTE(startTimerId_ <= 0, timer_.Unregister(startTimerId_));
     uint32_t ret = timer_.Setup();
     CHECK_AND_PRINT_LOG(ret == Utils::TIMER_ERR_OK,
         "Failed to start background download cloud files timer, err: %{public}d", ret);

@@ -1097,15 +1097,11 @@ static vector<string> QueryAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbSto
     string idArgs;
     for (size_t i = 0; i < uris.size(); i++) {
         string fileId = GetPhotoId(uris[i]);
-        if (fileId.size() > 0) {
-            idArgs.append("'").append(fileId).append("'").append(",");
-        }
-        if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
-            continue;
-        }
-        if (idArgs.size() == 0) {
-            continue;
-        }
+        CHECK_AND_EXECUTE(fileId.size() <= 0, idArgs.append("'").append(fileId).append("'").append(","));
+        bool cond = ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1);
+        CHECK_AND_CONTINUE(!cond);
+        CHECK_AND_CONTINUE(idArgs.size() != 0);
+
         idArgs = idArgs.substr(0, idArgs.size() - 1);
         const string sql = ""
             "WITH PhotoAlbumIds AS ( SELECT album_id FROM PhotoAlbum WHERE album_type = " +
@@ -1120,10 +1116,7 @@ static vector<string> QueryAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbSto
             "  file_id IN ( " +
             idArgs + " );";
         auto resultSet = rdbStore->QueryByStep(sql);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Failed to Query AlbumId");
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(resultSet != nullptr, "Failed to Query AlbumId");
         while (resultSet->GoToNextRow() == E_OK) {
             albumIds.push_back(to_string(GetIntValFromColumn(resultSet, 0)));
         }
@@ -1491,6 +1484,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         if (fileAssetsUri.empty()) {
             continue;
         }
+
         MediaLibraryPhotoOperations::UpdateSourcePath(fileAssetsIds);
         RdbPredicates predicatesPhotos(PhotoColumn::PHOTOS_TABLE);
         predicatesPhotos.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
@@ -1499,10 +1493,8 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
         int32_t updateRow = -1;
         int ret = rdbStore->Update(updateRow, values, predicatesPhotos);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Update failed on trashed, album id is: %{public}s", albumId.c_str());
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(ret == NativeRdb::E_OK,
+            "Update failed on trashed, album id is: %{public}s", albumId.c_str());
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
             to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),
@@ -2449,18 +2441,14 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<MediaLibraryRdbS
             ret = E_SUCCESS;
             continue;
         }
-        if (ret != E_SUCCESS) {
-            break;
-        }
+        CHECK_AND_BREAK(ret == E_SUCCESS);
         this_thread::sleep_for(chrono::milliseconds(PowerEfficiencyManager::GetAlbumUpdateInterval()));
         isRefresh = true;
     }
     // update SHOOTING_MODE album
     vector<string> subtype = { std::to_string(PhotoAlbumSubType::SHOOTING_MODE) };
     ret = RefreshAnalysisPhotoAlbums(rdbStore, refreshProcessHandler, subtype);
-    if (ret == E_EMPTY_ALBUM_ID) {
-        ret = E_SUCCESS;
-    }
+    CHECK_AND_EXECUTE(ret != E_EMPTY_ALBUM_ID, ret = E_SUCCESS);
 
     if (ret != E_SUCCESS) {
         // refresh failed and set flag, try to refresh next time
@@ -2470,9 +2458,7 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<MediaLibraryRdbS
         SetNeedRefreshAlbum(false);
     }
     isInRefreshTask = false;
-    if (isRefresh) {
-        refreshCallback();
-    }
+    CHECK_AND_EXECUTE(!isRefresh, refreshCallback());
 
     return ret;
 }
@@ -2598,9 +2584,8 @@ int GetNewDictionaryDataCount(const std::shared_ptr<MediaLibraryRdbStore> rdbSto
     do {
         string cityId = GetStringValFromColumn(resultSet, CITY_ID);
         string cityName = GetStringValFromColumn(resultSet, CITY_NAME);
-        if (cityId == "" || cityName == "") {
-            continue;
-        }
+        bool cond = (cityId == "" || cityName == "");
+        CHECK_AND_CONTINUE(!cond);
         citySet.insert(cityId);
     } while (!resultSet->GoToNextRow());
     return citySet.size();
@@ -2773,9 +2758,8 @@ static std::map<std::string, int64_t> QueryTokenIdMap(const shared_ptr<NativeRdb
         string appId;
         GetStringFromResultSet(resultSet, AppUriPermissionColumn::APP_ID, appId);
         int64_t tokenId;
-        if (PermissionUtils::GetMainTokenId(appId, tokenId)) {
-            appIdTokenIdMap.emplace(appId, tokenId);
-        }
+        CHECK_AND_EXECUTE(!PermissionUtils::GetMainTokenId(appId, tokenId),
+            appIdTokenIdMap.emplace(appId, tokenId));
     }
     return appIdTokenIdMap;
 }
@@ -2809,9 +2793,7 @@ void MediaLibraryRdbUtils::TransformAppId2TokenId(const shared_ptr<MediaLibraryR
         refreshValues.PutLong(AppUriPermissionColumn::TARGET_TOKENID, pair.second);
         refreshValues.PutLong(AppUriPermissionColumn::SOURCE_TOKENID, pair.second);
         int changeRows = 0;
-        if (store->Update(changeRows, refreshValues, rdbPredicate) == E_OK) {
-            successCount++;
-        }
+        CHECK_AND_EXECUTE(store->Update(changeRows, refreshValues, rdbPredicate) != E_OK, successCount++);
     }
     MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}u, successcount:%{public}d",
         tokenIdMap.size(), successCount);

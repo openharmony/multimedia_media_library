@@ -92,33 +92,24 @@ void CloudUploadChecker::HandlePhotoInfos(std::vector<CheckedPhotoInfo> photoInf
     std::vector<std::string> noLcdList;
     vector<int32_t> repairedIdList;
     for (CheckedPhotoInfo &photoInfo : photoInfos) {
-        if (MediaFileUtils::IsFileExists(photoInfo.path)) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(!MediaFileUtils::IsFileExists(photoInfo.path));
         string lcdPath = GetThumbnailPath(photoInfo.path, THUMBNAIL_LCD_SUFFIX);
         if (MediaFileUtils::IsFileExists(lcdPath)) {
             MEDIA_INFO_LOG("lcd path exists but origin failed not, file_id: %{public}d", photoInfo.fileId);
             bool ret = MediaFileUtils::CopyFileUtil(lcdPath, photoInfo.path);
-            if (!ret) {
-                MEDIA_ERR_LOG(
-                    "copy lcd to origin photo failed, file_id: %{public}d, ret: %{public}d", photoInfo.fileId, ret);
-                continue;
-            }
+            CHECK_AND_CONTINUE_ERR_LOG(ret, "copy lcd to origin photo failed,"
+                " file_id: %{public}d, ret: %{public}d", photoInfo.fileId, ret);
             struct stat fst{};
-            if (stat(photoInfo.path.c_str(), &fst) != 0) {
-                MEDIA_ERR_LOG("stat syscall failed, file_id=%{public}d, errno=%{public}d", photoInfo.fileId, errno);
-                continue;
-            }
+            CHECK_AND_CONTINUE_ERR_LOG(stat(photoInfo.path.c_str(), &fst) == 0,
+                "stat syscall failed, file_id=%{public}d, errno=%{public}d", photoInfo.fileId, errno);
             RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
             predicates.EqualTo(MediaColumn::MEDIA_ID, photoInfo.fileId);
             ValuesBucket values;
             values.PutLong(MediaColumn::MEDIA_SIZE, static_cast<int64_t>(fst.st_size));
             int32_t updateCount = 0;
             auto err = rdbStore->Update(updateCount, values, predicates);
-            if (err != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("repair from lcd failed, file_id=%{public}d, err=%{public}d", photoInfo.fileId, err);
-                continue;
-            }
+            CHECK_AND_CONTINUE_ERR_LOG(err == NativeRdb::E_OK,
+                "repair from lcd failed, file_id=%{public}d, err=%{public}d", photoInfo.fileId, err);
             repairedIdList.emplace_back(photoInfo.fileId);
         } else {
             noLcdList.push_back(to_string(photoInfo.fileId));
@@ -149,10 +140,8 @@ int32_t CloudUploadChecker::GetPhotoCount(int32_t startFileId)
     std::string queryCount = " COUNT(*) AS Count";
     std::string sql = GetQuerySql(startFileId, queryCount);
     std::shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(sql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("resultSet is null or count is 0");
-        return 0;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_LOG(!cond, 0, "resultSet is null or count is 0");
     int32_t count = get<int32_t>(ResultSetUtils::GetValFromColumn("Count", resultSet, TYPE_INT32));
     return count;
 }
@@ -231,9 +220,7 @@ void CloudUploadChecker::QueryLcdAndRepair(int32_t startFileId, int32_t &outFile
             MEDIA_WARN_LOG("Failed to get data path");
             continue;
         }
-        if (MediaFileUtils::IsFileExists(path)) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(!MediaFileUtils::IsFileExists(path));
         fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
         string lcdPath = GetThumbnailPath(path, THUMBNAIL_LCD_SUFFIX);
         if (MediaFileUtils::IsFileExists(lcdPath)) {
