@@ -398,6 +398,9 @@ const std::string QUERY_TAB_OLD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_OLD_PH
 const std::string TAB_FACARD_PHOTO = "tab_facard_photos_operation";
 const std::string PAH_STORE_FACARD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_FACARD_PHOTO + "/" + OPRN_STORE_FORM_ID;
 const std::string PAH_REMOVE_FACARD_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TAB_FACARD_PHOTO + "/" + OPRN_REMOVE_FORM_ID;
+
+const std::string ASSET_ALBUM_OPERATION = "tab_asset_and_album_operation";
+
 } // namespace Media
 } // namespace OHOS
 

@@ -145,6 +145,8 @@ const std::string PhotoColumn::PHOTO_SCHPT_DATE_MONTH_COUNT_READY_INDEX = "idx_s
 const std::string PhotoColumn::PHOTO_SCHPT_CLOUD_ENHANCEMENT_ALBUM_INDEX = "idx_schpt_cloud_enhancement_album_index";
 const std::string PhotoColumn::LATITUDE_INDEX = "idx_latitude";
 const std::string PhotoColumn::LONGITUDE_INDEX = "idx_longtitude";
+const std::string PhotoColumn::OPERATION_TYPE = "type";
+const std::string PhotoColumn::OPERATION_OPT_TYPE = "opt_type";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -153,6 +155,7 @@ const std::string PhotoColumn::PHOTO_DETAIL_TIME_FORMAT = "%Y:%m:%d %H:%M:%S";
 
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
 const std::string PhotoColumn::TAB_OLD_PHOTOS_TABLE = "tab_old_photos";
+const std::string PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE = "tab_asset_and_album_operation";
 
 const std::string PhotoColumn::FILES_CLOUD_DIR = "/storage/cloud/files/";
 const std::string PhotoColumn::FILES_LOCAL_DIR = "/storage/media/local/files/";
@@ -419,7 +422,12 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
                         " AND OLD." + PhotoColumn::PHOTO_POSITION + " = 1 AND is_caller_self_func() = 'true'" +
                         " BEGIN DELETE FROM " + PhotoColumn::PHOTOS_TABLE +
-                        " WHERE " + PhotoColumn::MEDIA_ID + " = old." + PhotoColumn::MEDIA_ID + "; END;";
+                        " WHERE " + PhotoColumn::MEDIA_ID + " = old." + PhotoColumn::MEDIA_ID + ";" +
+                        " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
+                        MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
+                        PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
+                        " VALUES (" + " old.file_id, old.data, 2, 1);" +
+                        " END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_fdirty_trigger AFTER UPDATE ON " +
