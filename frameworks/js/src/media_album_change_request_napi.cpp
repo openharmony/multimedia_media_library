@@ -778,6 +778,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetDisplayLevel(napi_env env, napi_cal
         "Only portrait album can set album display level");
     photoAlbum->SetDisplayLevel(displayLevel);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_DISPLAY_LEVEL);
+    NAPI_INFO_LOG("Set display level change request, album id: %{public}d, display level: %{public}d",
+        photoAlbum->GetAlbumId(), displayLevel);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
