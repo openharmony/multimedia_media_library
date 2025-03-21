@@ -192,9 +192,8 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
 
     ani_method photoTypeSetter {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>photoType", nullptr, &photoTypeSetter), "No <set>photoType");
-    ani_int photoType = 0;
-    CHECK_COND_RET(MediaLibraryEnumAni::EnumGetIndex(attrs.photoType, photoType), ANI_ERROR,
-        "Get photoType index fail");
+    ani_enum_item photoType = 0;
+    CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.photoType, photoType), "Get photoType index fail");
     CHECK_STATUS_RET(env->Object_CallMethod_Void(object, photoTypeSetter, photoType), "<set>photoType fail");
 
     ani_method uriSetter {};
@@ -833,7 +832,7 @@ ani_string FileAssetAni::GetAnalysisData([[maybe_unused]] ani_env *env, ani_obje
     }
 
     int32_t value;
-    MediaLibraryEnumAni::EnumGetValueInt32(env, EnumTypeInt32::AnalysisTypeAni, analysisType, value);
+    MediaLibraryEnumAni::EnumGetValueInt32(env, analysisType, value);
 
     auto fileAssetPtr = fileAssetAni->GetFileAssetInstance();
     unique_ptr<FileAssetContext> context = make_unique<FileAssetContext>();
