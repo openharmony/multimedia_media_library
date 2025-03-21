@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef ALBUM_REFRESH_MANAGER_TEST_H
-#define ALBUM_REFRESH_MANAGER_TEST_H
+#ifndef ALBUMS_REFRESH_MANAGER_TEST_H
+#define ALBUMS_REFRESH_MANAGER_TEST_H
 
 #include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-class AlbumRefreshManagerTest : public testing::Test {
+class AlbumsRefreshManagerTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -29,4 +29,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // ALBUM_REFRESH_MANAGER_TEST_H
+#endif // ALBUMS_REFRESH_MANAGER_TEST_H
