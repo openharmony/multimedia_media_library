@@ -98,7 +98,7 @@ void InsertPhotoAlbumTestData()
     valuesBucket.Put(ALBUM_ID, PHOTO_ALBUM_ID);
     valuesBucket.Put(ALBUM_SUBTYPE, PHOTO_ALBUM_SUBTYPE);
     int64_t outRowId = 0;
-    int ret = g_rdbStore->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    int ret = g_rdbStore->Insert(outRowId, PhotoAlbumColumns::TABLE, valuesBucket);
     EXPECT_EQ(ret, E_OK);
 }
 
