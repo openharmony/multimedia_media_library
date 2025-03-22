@@ -464,6 +464,9 @@ int32_t MediaLibraryPhotoOperations::ProcessMovingPhotoOprnKey(MediaLibraryComma
             E_INVALID_VALUES,
             "Failed convert to live photo");
         fileAsset->SetPath(livePhotoPath);
+    } else if (movingPhotoOprnKey == OPEN_PRIVATE_MOVING_PHOTO_METADATA) {
+        string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(fileAsset->GetPath());
+        fileAsset->SetPath(extraDataPath);
     }
     return E_OK;
 }

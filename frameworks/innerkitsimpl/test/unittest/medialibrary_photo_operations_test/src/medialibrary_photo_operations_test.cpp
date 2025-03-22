@@ -4083,5 +4083,64 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestS
     EXPECT_NE(resultSet, nullptr);
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_metadata_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_read_moving_photo_metadata_test");
+
+    // create moving photo
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
+    ValuesBucket valuesBucket;
+    valuesBucket.PutString(ASSET_EXTENTION, "jpg");
+    valuesBucket.PutString(PhotoColumn::MEDIA_TITLE, "moving_photo_metadata_test");
+    valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    valuesBucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
+    cmd.SetValueBucket(valuesBucket);
+    cmd.SetBundleName("test_bundle_name");
+    MediaLibraryPhotoOperations::Create(cmd);
+    int32_t fileId = QueryPhotoIdByDisplayName("moving_photo_metadata_test.jpg");
+    EXPECT_GE(fileId, 0);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    string fileUriStr = fileUri.ToString();
+    Uri uri(fileUriStr);
+    MediaLibraryCommand openMovingPhotoImageCmd(uri, Media::OperationType::OPEN);
+    int32_t imageFd = MediaLibraryPhotoOperations::Open(openMovingPhotoImageCmd, "w");
+    EXPECT_GE(imageFd, 0);
+    int32_t resWrite = write(imageFd, FILE_TEST_JPG, sizeof(FILE_TEST_JPG));
+    EXPECT_GE(resWrite, 0);
+
+    string videoUriStr = fileUriStr;
+    MediaFileUtils::UriAppendKeyValue(videoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
+    Uri videoUri(videoUriStr);
+    MediaLibraryCommand openMovingPhotoVideoCmd(videoUri, Media::OperationType::OPEN);
+    openMovingPhotoVideoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t videoFd = MediaLibraryDataManager::GetInstance()->OpenFile(openMovingPhotoVideoCmd, "w");
+    EXPECT_GE(videoFd, 0);
+    resWrite = write(videoFd, FILE_TEST_MP4, sizeof(FILE_TEST_MP4));
+    EXPECT_GE(resWrite, 0);
+
+    MediaLibraryCommand closeFileCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutString(MEDIA_DATA_DB_URI, fileUriStr);
+    closeFileCmd.SetValueBucket(closeValues);
+    MediaLibraryPhotoOperations::Close(closeFileCmd);
+
+    // read moving photo metadata
+    string metadataUriStr = fileUriStr;
+    MediaFileUtils::UriAppendKeyValue(
+        metadataUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_MOVING_PHOTO_METADATA);
+    Uri metadataUri(metadataUriStr);
+    MediaLibraryCommand metadataCmd(metadataUri, Media::OperationType::OPEN);
+    metadataCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t metadataFd = MediaLibraryDataManager::GetInstance()->OpenFile(metadataCmd, "r");
+    EXPECT_GE(metadataFd, 0);
+    int64_t destLen = lseek(metadataFd, 0, SEEK_END);
+    EXPECT_GE(destLen, 0);
+
+    close(imageFd);
+    close(videoFd);
+    close(metadataFd);
+    MEDIA_INFO_LOG("end tdd photo_oprn_read_moving_photo_metadata_test");
+}
 } // namespace Media
 } // namespace OHOS
