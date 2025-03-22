@@ -182,7 +182,7 @@ const std::string CREATE_ALBUM_UPDATE_SEARCH_TRIGGER =
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
     MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
     PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " old.file_id, old.data, 3, 2);" +
+    " VALUES (" + " old.album_id, old.lpath, 3, 2);" +
     " END;";
 
 // Listening of cv tab_analysis_total: update of(status)  ,update cv_status
