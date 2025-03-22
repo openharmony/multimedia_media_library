@@ -100,6 +100,7 @@ thread_local napi_ref SendablePhotoAccessHelper::sPositionTypeEnumRef_ = nullptr
 thread_local napi_ref SendablePhotoAccessHelper::sAlbumType_ = nullptr;
 thread_local napi_ref SendablePhotoAccessHelper::sAlbumSubType_ = nullptr;
 thread_local napi_ref SendablePhotoAccessHelper::sMovingPhotoEffectModeEnumRef_ = nullptr;
+thread_local napi_ref SendablePhotoAccessHelper::sDynamicRangeTypeEnumRef_ = nullptr;
 
 SendablePhotoAccessHelper::SendablePhotoAccessHelper()
     : env_(nullptr) {}
@@ -143,6 +144,7 @@ napi_value SendablePhotoAccessHelper::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubtype", CreatePhotoSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("MovingPhotoEffectMode", CreateMovingPhotoEffectModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("DynamicRangeType", CreateDynamicRangeTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -1086,6 +1088,11 @@ napi_value SendablePhotoAccessHelper::CreateAlbumSubTypeEnum(napi_env env)
 napi_value SendablePhotoAccessHelper::CreateMovingPhotoEffectModeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, movingPhotoEffectModeEnum, sMovingPhotoEffectModeEnumRef_);
+}
+
+napi_value SendablePhotoAccessHelper::CreateDynamicRangeTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, dynamicRangeTypeEnum, sDynamicRangeTypeEnumRef_);
 }
 
 static napi_value GetAlbumFetchOption(napi_env env, unique_ptr<SendablePhotoAccessHelperAsyncContext> &context,
