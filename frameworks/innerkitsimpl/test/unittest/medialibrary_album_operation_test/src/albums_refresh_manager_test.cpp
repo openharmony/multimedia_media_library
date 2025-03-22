@@ -36,7 +36,7 @@ using namespace OHOS::NativeRdb;
 using ChangeType = DataShare::DataShareObserver::ChangeType;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static std::string CREATE_ALBUM_REFRESH_TABLE = "CREATE TABLE IF NOT EXISTS " + ALBUM_REFRESH_TABLE + " ("
+static std::string createAlbumRefreshTable = "CREATE TABLE IF NOT EXISTS " + ALBUM_REFRESH_TABLE + " ("
     + REFRESH_ALBUM_ID + " INT PRIMARY KEY, " + ALBUM_REFRESH_STATUS + " INT)";
 
 static constexpr int32_t PHOTO_ALBUM_ID = 2;
@@ -82,7 +82,7 @@ void SetAllTestTables()
     vector<string> createTableSqlList = {
         PhotoAlbumColumns::CREATE_TABLE,
         CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
-        CREATE_ALBUM_REFRESH_TABLE,
+        createAlbumRefreshTable,
     };
     for (auto &createTableSql : createTableSqlList) {
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
