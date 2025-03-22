@@ -153,10 +153,6 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER =
     " AND old." + ALBUM_DIRTY + " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) +
     " AND is_caller_self_func() = 'true' BEGIN DELETE FROM " + TABLE +
     " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func();" +
-    " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
-    MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " old.album_id, old.lpath, 2, 2);" +
     " END;";
 
 const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
@@ -169,10 +165,6 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
     " BEGIN UPDATE " + TABLE + " SET dirty = " +
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
     " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func();" +
-    " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
-    MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " new.album_id, new.lpath, 3, 2);" +
     " END;";
 
 const std::string PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER =
@@ -181,10 +173,6 @@ const std::string PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER =
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = album_order - 1" +
         " WHERE album_order > old.album_order; " +
-        " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
-        MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-        PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-        " VALUES (" + " old.album_id, old.lpath, 2, 2);" +
         " END";
 
 const std::string PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER =
@@ -193,10 +181,6 @@ const std::string PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER =
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = (" +
         " SELECT COALESCE(MAX(album_order), 0) + 1 FROM " + PhotoAlbumColumns::TABLE +
         ") WHERE rowid = new.rowid;" +
-        " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
-        MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-        PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-        " VALUES (" + " new.album_id, new.lpath, 1, 2);" +
         " END";
 
 bool PhotoAlbumColumns::IsPhotoAlbumColumn(const string &columnName)

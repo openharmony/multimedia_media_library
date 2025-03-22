@@ -423,10 +423,6 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         " AND OLD." + PhotoColumn::PHOTO_POSITION + " = 1 AND is_caller_self_func() = 'true'" +
                         " BEGIN DELETE FROM " + PhotoColumn::PHOTOS_TABLE +
                         " WHERE " + PhotoColumn::MEDIA_ID + " = old." + PhotoColumn::MEDIA_ID + ";" +
-                        " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
-                        MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-                        PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-                        " VALUES (" + " old.file_id, old.data, 2, 1);" +
                         " END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
