@@ -77,6 +77,7 @@
 #include "medialibrary_location_operations.h"
 #include "medialibrary_meta_recovery.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_operation_record.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_restore.h"
@@ -108,6 +109,7 @@
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
+#include "source_album.h"
 #include "system_ability_definition.h"
 #include "timer.h"
 #include "trash_async_worker.h"
@@ -442,6 +444,27 @@ static void AddGroupTagIndex(const shared_ptr<MediaLibraryRdbStore>& store)
     MEDIA_INFO_LOG("end add group tag index");
 }
 
+void AddAssetAlbumOperationTable(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    const vector<string> executeSqlStrs = {
+        CREATE_TAB_ASSET_ALBUM_OPERATION,
+        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
+        CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
+        CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start create asset and album operation table");
+    for (auto sql : executeSqlStrs) {
+        int ret = store->ExecuteSql(sql);
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddAssetAlbumOperationTable failed: execute sql %{private}s failed",
+            sql.c_str());
+        MEDIA_INFO_LOG("Execute sql %{private}s success", sql.c_str());
+    }
+    MEDIA_INFO_LOG("end create asset and album operation table");
+}
+
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
@@ -472,6 +495,10 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_ANALYZE_PHOTOS) {
         MediaLibraryRdbUtils::AnalyzePhotosData();
         rdbStore->SetOldVersion(VERSION_ANALYZE_PHOTOS);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
+        AddAssetAlbumOperationTable(rdbStore);
     }
 }
 
