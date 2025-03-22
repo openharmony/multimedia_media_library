@@ -245,7 +245,6 @@ HWTEST_F(AlbumsRefreshManagerTest, GetSyncNotifyInfo_Notify_INVALID, TestSize.Le
 {
     MEDIA_INFO_LOG("Start GetSyncNotifyInfo_Notify_INVALID");
     CloudSyncNotifyInfo notifyInfo;
-    notifyInfo.type = ChangeType::DELETE;
     NotifyType notifyType = AlbumsRefreshManager::GetInstance()
                                                 .GetSyncNotifyInfo(notifyInfo, OTHER_URI_TYPE)
                                                 .notifyType;
