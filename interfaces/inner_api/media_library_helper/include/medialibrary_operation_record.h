@@ -74,9 +74,9 @@ const std::string OPERATION_ASSET_UPDATE_TRIGGER = "operation_asset_update_trigg
 const std::string CREATE_OPERATION_ASSET_UPDATE_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS operation_asset_update_trigger AFTER UPDATE ON " +
     PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
-    " WHEN "
-    " (OLD.POSITION = 2 OR NEW.POSITION = 3)" +
-    " OR (OLD.POSITION = 3 OR NEW.POSITION = 2)" +
+    " WHEN " +
+    " (OLD.POSITION = 2 AND NEW.POSITION = 3)" +
+    " OR (OLD.POSITION = 3 AND NEW.POSITION = 2)" +
     " OR (NEW.POSITION <> 2" +
     " AND (NEW.data <> OLD.data" +
     " OR NEW.size <> OLD.size" +
@@ -85,7 +85,7 @@ const std::string CREATE_OPERATION_ASSET_UPDATE_TRIGGER =
     " OR NEW.owner_album_id <> OLD.owner_album_id" +
     " OR NEW.date_modified <> OLD.date_modified" +
     " OR NEW.date_trashed <> OLD.date_trashed" +
-    " OR NEW.date_taken <> OLD.taken" +
+    " OR NEW.date_taken <> OLD.date_taken" +
     " OR NEW.height <> OLD.height" +
     " OR NEW.width <> OLD.width" +
     " OR NEW.latitude <> OLD.latitude" +
@@ -123,7 +123,7 @@ const std::string CREATE_OPERATION_ALBUM_INSERT_TRIGGER =
 const std::string OPERATION_ALBUM_DELETE_TRIGGER = "operation_album_delete_trigger";
 const std::string CREATE_OPERATION_ALBUM_DELETE_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS operation_album_delete_trigger AFTER DELETE ON " +
-    PhotoAlbumColumns::TABLE + 
+    PhotoAlbumColumns::TABLE +
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
@@ -137,7 +137,7 @@ const std::string CREATE_OPERATION_ALBUM_UPDATE_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS operation_asset_update_trigger AFTER UPDATE ON " +
     PhotoAlbumColumns::TABLE + " FOR EACH ROW " +
     " WHEN "
-    " NEW.album_id <> OLD.album_id" +
+    " NEW.album_name <> OLD.album_name" +
     " OR NEW.lpath <> OLD.lpath" +
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +

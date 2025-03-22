@@ -458,8 +458,8 @@ void AddAssetAlbumOperationTable(const shared_ptr<MediaLibraryRdbStore>& store)
     MEDIA_INFO_LOG("start create asset and album operation table");
     for (auto sql : executeSqlStrs) {
         int ret = store->ExecuteSql(sql);
-        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddAssetAlbumOperationTable failed: execute sql %{private}s failed",
-            sql.c_str());
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+            "AddAssetAlbumOperationTable failed: execute sql %{private}s failed", sql.c_str());
         MEDIA_INFO_LOG("Execute sql %{private}s success", sql.c_str());
     }
     MEDIA_INFO_LOG("end create asset and album operation table");
