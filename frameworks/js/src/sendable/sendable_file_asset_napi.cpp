@@ -102,6 +102,7 @@ static const std::string ANALYSIS_STATUS_ANALYZED = "Analyzed, no results";
 
 const std::string LANGUAGE_ZH = "zh-Hans";
 const std::string LANGUAGE_EN = "en-Latn-US";
+const std::string LANGUAGE_ZH_TR = "zh-Hant";
 
 std::mutex SendableFileAssetNapi::mutex_;
 
@@ -863,8 +864,10 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
         //Chinese and English supported. Other languages English default.
-        if (LANGUAGE_ZH != language) {
+        if (language == LANGUAGE_ZH || language == LANGUAGE_ZH_TR) {
             language = LANGUAGE_ZH;
+        } else {
+            language = LANGUAGE_EN;
         }
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
             GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
