@@ -4319,6 +4319,17 @@ static void AddAlbumPluginBundleName(RdbStore &store)
     MEDIA_INFO_LOG("End updating album plugin");
 }
 
+static void FixMdirtyTriggerToUploadDetailTime(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start updating mdirty trigger to upload detail_time");
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("End updating mdirty trigger to upload detail_time");
+}
+
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
@@ -4366,6 +4377,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
         AddAssetAlbumOperationTable(store);
+    }
+
+    if (oldVersion < VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME) {
+        FixMdirtyTriggerToUploadDetailTime(store);
     }
 }
 
