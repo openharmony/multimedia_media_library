@@ -25,6 +25,7 @@
 #include "media_log.h"
 #include "media_refresh_album_column.h"
 #include "photo_album_column.h"
+#include "userfile_manager_types.h"
 #include "vision_column.h"
 #include "vision_db_sqls_more.h"
 
@@ -204,5 +205,49 @@ HWTEST_F(AlbumsRefreshManagerTest, RefreshPhotoAlbumsBySyncNotifyInfo_Test_002, 
     info.forceRefreshType = ForceRefreshType::NONE;
     AlbumsRefreshManager::GetInstance().RefreshPhotoAlbumsBySyncNotifyInfo(g_rdbStore, info);
     EXPECT_EQ(info.notifyAlbums, true);
+}
+
+HWTEST_F(AlbumsRefreshManagerTest, GetSyncNotifyInfo_Notify_ADD, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start GetSyncNotifyInfo_Notify_ADD");
+    CloudSyncNotifyInfo notifyInfo;
+    notifyInfo.type = ChangeType::INSERT;
+    NotifyType notifyType = AlbumsRefreshManager::GetInstance()
+                                                .GetSyncNotifyInfo(notifyInfo, OTHER_URI_TYPE)
+                                                .notifyType;
+    EXPECT_EQ(notifyType, NOTIFY_ADD);
+}
+
+HWTEST_F(AlbumsRefreshManagerTest, GetSyncNotifyInfo_Notify_REMOVE, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start GetSyncNotifyInfo_Notify_REMOVE");
+    CloudSyncNotifyInfo notifyInfo;
+    notifyInfo.type = ChangeType::DELETE;
+    NotifyType notifyType = AlbumsRefreshManager::GetInstance()
+                                                .GetSyncNotifyInfo(notifyInfo, OTHER_URI_TYPE)
+                                                .notifyType;
+    EXPECT_EQ(notifyType, NOTIFY_REMOVE);
+}
+
+HWTEST_F(AlbumsRefreshManagerTest, GetSyncNotifyInfo_Notify_UPDATE, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start GetSyncNotifyInfo_Notify_UPDATE");
+    CloudSyncNotifyInfo notifyInfo;
+    notifyInfo.type = ChangeType::UPDATE;
+    NotifyType notifyType = AlbumsRefreshManager::GetInstance()
+                                                .GetSyncNotifyInfo(notifyInfo, OTHER_URI_TYPE)
+                                                .notifyType;
+    EXPECT_EQ(notifyType, NOTIFY_UPDATE);
+}
+
+HWTEST_F(AlbumsRefreshManagerTest, GetSyncNotifyInfo_Notify_INVALID, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start GetSyncNotifyInfo_Notify_INVALID");
+    CloudSyncNotifyInfo notifyInfo;
+    notifyInfo.type = ChangeType::DELETE;
+    NotifyType notifyType = AlbumsRefreshManager::GetInstance()
+                                                .GetSyncNotifyInfo(notifyInfo, OTHER_URI_TYPE)
+                                                .notifyType;
+    EXPECT_EQ(notifyType, NOTIFY_INVALID);
 }
 }  // namespace OHOS::Media
