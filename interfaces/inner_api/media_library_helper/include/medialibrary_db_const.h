@@ -446,6 +446,7 @@ const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name
 // moving photo param
 const std::string CREATE_MOVING_PHOTO_VIDEO = "create_video";
 const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
+const std::string OPEN_PRIVATE_MOVING_PHOTO_METADATA = "open_metadata";
 const std::string OPEN_PRIVATE_LIVE_PHOTO = "open_private_live_photo";
 const std::string OPEN_MOVING_PHOTO_VIDEO_CLOUD = "open_moving_photo_video_cloud";
 const std::string NOTIFY_VIDEO_SAVE_FINISHED = "notify_video_save_finished"; // movingPhoto video save finish
