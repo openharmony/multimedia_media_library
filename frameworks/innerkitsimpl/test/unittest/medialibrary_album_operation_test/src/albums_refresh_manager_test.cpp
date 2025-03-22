@@ -33,6 +33,7 @@ namespace OHOS::Media {
 using namespace std;
 using namespace testing::ext;
 using namespace OHOS::NativeRdb;
+using ChangeType = DataShare::DataShareObserver::ChangeType;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::string CREATE_ALBUM_REFRESH_TABLE = "CREATE TABLE IF NOT EXISTS " + ALBUM_REFRESH_TABLE + " ("
