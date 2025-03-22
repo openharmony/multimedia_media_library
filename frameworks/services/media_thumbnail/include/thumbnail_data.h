@@ -161,6 +161,7 @@ public:
     EXPORT bool isOpeningCloudFile {false};
     EXPORT bool isNeedStoreSize {true};
     EXPORT bool needCheckWaitStatus {false};
+    EXPORT bool needUpdateDb {true};
     EXPORT ThumbnailSource source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
