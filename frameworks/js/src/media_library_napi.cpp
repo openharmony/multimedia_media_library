@@ -173,6 +173,7 @@ const std::string TOKEN_ID = "tokenId";
 
 const std::string LANGUAGE_ZH = "zh-Hans";
 const std::string LANGUAGE_EN = "en-Latn-US";
+const std::string LANGUAGE_ZH_TR = "zh-Hant";
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
@@ -6972,8 +6973,10 @@ static void JSGetAnalysisDataExecute(napi_env env, MediaLibraryAsyncContext *con
             AOI, POI, FIRST_AOI, FIRST_POI, LOCATION_VERSION, FIRST_AOI_CATEGORY, FIRST_POI_CATEGORY};
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
         //Chinese and English supported. Other languages English default.
-        if (LANGUAGE_ZH != language) {
+        if (language == LANGUAGE_ZH || language == LANGUAGE_ZH_TR) {
             language = LANGUAGE_ZH;
+        } else {
+            language = LANGUAGE_EN;
         }
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
             GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
