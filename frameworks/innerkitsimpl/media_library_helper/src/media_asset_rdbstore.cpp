@@ -141,6 +141,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
     config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
+    config.SetCollatorLocales("zh_CN");
 
     MediaLibraryDataCallBack rdbDataCallBack;
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
