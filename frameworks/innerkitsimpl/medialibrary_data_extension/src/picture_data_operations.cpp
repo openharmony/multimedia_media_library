@@ -34,7 +34,7 @@ const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
 
 PictureDataOperations::PictureDataOperations()
 {
-    max_capibilty = stoi(system::GetParameter("const.multimedia.max_picture_capbility", "3")); // MAX_PICTURE_CAPBILITY
+    max_capibilty = stoi(system::GetParameter("const.multimedia.max_picture_capbility", "1")); // MAX_PICTURE_CAPBILITY
 }
 
 PictureDataOperations::~PictureDataOperations()
