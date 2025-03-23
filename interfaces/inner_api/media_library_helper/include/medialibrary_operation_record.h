@@ -22,7 +22,6 @@
 
 namespace OHOS {
 namespace Media {
-const std::string ID = "id";
 const std::string OPT_TYPE = "opt_type";
 const std::string TYPE = "type";
 const std::string IS_SENT = "is_sent";
