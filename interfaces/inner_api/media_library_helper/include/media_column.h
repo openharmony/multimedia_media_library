@@ -279,10 +279,6 @@ public:
     static const std::string HIGHTLIGHT_COVER_URI EXPORT;
     static const std::string HIGHTLIGHT_URI EXPORT;
 
-    static const std::string OPERATION_OPT_TYPE EXPORT;
-    static const std::string OPERATION_TYPE EXPORT;
-    static const std::string IS_SENT EXPORT;
-
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();
     EXPORT static std::string CheckMetaRecoveryPhotoColumns();
