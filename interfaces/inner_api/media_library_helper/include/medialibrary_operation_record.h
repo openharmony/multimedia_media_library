@@ -50,8 +50,9 @@ const std::string CREATE_OPERATION_ASSET_INSERT_TRIGGER =
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES ( NEW.file_id, NEW.data, 1, 1 );" +
+    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + ", " +
+    PhotoColumn::IS_SENT +
+    " ) VALUES ( NEW.file_id, NEW.data, 1, 1, 0);" +
     " END;";
 
 // Listening of Assets: delete
@@ -64,8 +65,9 @@ const std::string CREATE_OPERATION_ASSET_DELETE_TRIGGER =
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES ( OLD.file_id, OLD.data, 2, 1 );" +
+    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + ", " +
+    PhotoColumn::IS_SENT +
+    " ) VALUES ( OLD.file_id, OLD.data, 2, 1, 0);" +
     " END;";
 
 // Listening of Assets: update (title,date_modified,latitude,longitude
@@ -103,8 +105,9 @@ const std::string CREATE_OPERATION_ASSET_UPDATE_TRIGGER =
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES ( OLD.file_id, OLD.data, 3, 1 );" +
+    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE +
+    ", " + PhotoColumn::IS_SENT +
+    " ) VALUES ( OLD.file_id, OLD.data, 3, 1, 0);" +
     " END;";
 
 // Listening of album: insert
@@ -115,8 +118,9 @@ const std::string CREATE_OPERATION_ALBUM_INSERT_TRIGGER =
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES ( NEW.album_id, NEW.lpath, 1, 2 );" +
+    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE +
+    ", " + PhotoColumn::IS_SENT +
+    " ) VALUES ( NEW.album_id, NEW.lpath, 1, 2, 0);" +
     " END;";
 
 // Listening of album: delete
@@ -127,8 +131,9 @@ const std::string CREATE_OPERATION_ALBUM_DELETE_TRIGGER =
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES ( OLD.album_id, OLD.lpath, 2, 2 );" +
+    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE +
+    ", " + PhotoColumn::IS_SENT +
+    " ) VALUES ( OLD.album_id, OLD.lpath, 2, 2, 0);" +
     " END;";
 
 // Listening of album: update
@@ -142,8 +147,9 @@ const std::string CREATE_OPERATION_ALBUM_UPDATE_TRIGGER =
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES ( OLD.album_id, OLD.lpath, 3, 2 );" +
+    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE +
+    ", " + PhotoColumn::IS_SENT +
+    " ) VALUES ( OLD.album_id, OLD.lpath, 3, 2, 0);" +
     " END;";
 } // namespace Media
 } // namespace OHOS

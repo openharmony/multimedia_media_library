@@ -147,6 +147,7 @@ const std::string PhotoColumn::LATITUDE_INDEX = "idx_latitude";
 const std::string PhotoColumn::LONGITUDE_INDEX = "idx_longtitude";
 const std::string PhotoColumn::OPERATION_TYPE = "type";
 const std::string PhotoColumn::OPERATION_OPT_TYPE = "opt_type";
+const std::string PhotoColumn::IS_SENT = "is_sent";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
