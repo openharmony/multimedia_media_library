@@ -281,6 +281,7 @@ public:
 
     static const std::string OPERATION_OPT_TYPE EXPORT;
     static const std::string OPERATION_TYPE EXPORT;
+    static const std::string IS_SENT EXPORT;
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();
