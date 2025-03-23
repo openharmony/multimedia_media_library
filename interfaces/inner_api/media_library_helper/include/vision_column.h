@@ -44,7 +44,6 @@ const std::string ANALYSIS_ALBUM_TABLE = "AnalysisAlbum";
 const std::string ANALYSIS_PHOTO_MAP_TABLE = "AnalysisPhotoMap";
 const std::string ANALYSIS_ASSET_SD_MAP_TABLE = "tab_analysis_asset_sd_map";
 const std::string ANALYSIS_ALBUM_ASSET_MAP_TABLE = "tab_analysis_album_asset_map";
-const std::string ASSET_AND_ALBUM_OPERATION_TABLE = "tab_asset_and_album_operation";
 // fake column for merge album
 const std::string TARGET_ALBUM_ID = "target_album_id";
 

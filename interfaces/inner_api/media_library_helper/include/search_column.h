@@ -101,10 +101,6 @@ const std::string CREATE_SEARCH_UPDATE_TRIGGER =
     " SET " + " ( data, date_modified, latitude, longitude ) = " +
     " ( NEW.data, NEW.date_modified, NEW.latitude, NEW.longitude ) " +
     " WHERE " + TBL_SEARCH_FILE_ID + " = OLD.file_id;" +
-    " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
-    MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " old.file_id, old.data, 3, 1);" +
     " END;";
 
 // Listening of Photos: update (title,date_modified,latitude,longitude
@@ -121,10 +117,6 @@ const std::string CREATE_SEARCH_UPDATE_STATUS_TRIGGER =
     " WHERE " + " (" + TBL_SEARCH_FILE_ID + " = OLD.file_id" +
     " AND (" + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) +
     " OR " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED_NEW) + "));" +
-    " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
-    MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " old.file_id, old.data, 3, 1);" +
     " END;";
 
 // Listening of Photos: delete
@@ -179,10 +171,6 @@ const std::string CREATE_ALBUM_UPDATE_SEARCH_TRIGGER =
     " WHERE " + " ( old.album_id = PhotoMap.map_album ) " +
     " ) " +
     " );" +
-    " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE + " (" +
-    MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
-    PhotoColumn::OPERATION_OPT_TYPE + ", " + PhotoColumn::OPERATION_TYPE + " )" +
-    " VALUES (" + " old.album_id, old.lpath, 3, 2);" +
     " END;";
 
 // Listening of cv tab_analysis_total: update of(status)  ,update cv_status
