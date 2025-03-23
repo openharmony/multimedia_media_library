@@ -59,7 +59,7 @@ const std::string OPERATION_ASSET_DELETE_TRIGGER = "operation_asset_delete_trigg
 const std::string CREATE_OPERATION_ASSET_DELETE_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS operation_asset_delete_trigger AFTER DELETE ON " +
     PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
-    " WHEN (NEW.media_type = 1 OR NEW.media_type = 2)" +
+    " WHEN (OLD.media_type = 1 OR OLD.media_type = 2)" +
     " AND OLD.POSITION <> 2" +
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
@@ -111,7 +111,7 @@ const std::string CREATE_OPERATION_ASSET_UPDATE_TRIGGER =
 const std::string OPERATION_ALBUM_INSERT_TRIGGER = "operation_album_insert_trigger";
 const std::string CREATE_OPERATION_ALBUM_INSERT_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS operation_album_insert_trigger AFTER INSERT ON " +
-    PhotoAlbumColumns::TABLE + 
+    PhotoAlbumColumns::TABLE +
     " BEGIN " +
     " INSERT INTO " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
     " (" + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " +
