@@ -5825,7 +5825,6 @@ static void GetPhotoIndexExec(napi_env env, void *data, ResultNapiType type)
     int32_t ret = resultSet->GetRowCount(rowCount);
     if (ret != 0) {
         NAPI_ERR_LOG("resultSet get row count err: %{public}d.", ret);
-
     }
     if (rowCount != 1) {
         NAPI_ERR_LOG("more than one record, rowCount: %{public}d.", rowCount);
