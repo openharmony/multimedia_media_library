@@ -455,8 +455,10 @@ static bool IsValidResourceType(int32_t resourceType)
 {
     return resourceType == static_cast<int32_t>(ResourceType::IMAGE_RESOURCE) ||
            resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE) ||
-           resourceType == static_cast<int32_t>(ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE) ||
-           resourceType == static_cast<int32_t>(ResourceType::PRIVATE_MOVING_PHOTO_METADATA);
+           (resourceType == static_cast<int32_t>(ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE) &&
+               MediaLibraryNapiUtils::IsSystemApp()) ||
+           (resourceType == static_cast<int32_t>(ResourceType::PRIVATE_MOVING_PHOTO_METADATA) &&
+               MediaLibraryNapiUtils::IsSystemApp());
 }
 
 static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const napi_value argv[],
