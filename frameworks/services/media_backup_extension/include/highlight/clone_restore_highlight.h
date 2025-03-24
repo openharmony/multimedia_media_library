@@ -250,8 +250,10 @@ private:
     bool IsMapColumnOrderExist();
     void HighlightDeduplicate(const HighlightAlbumInfo &info);
     std::vector<NativeRdb::ValueObject> GetHighlightDuplicateIds(const HighlightAlbumInfo &info,
-        std::string &duplicateAlbumName);
+        std::string &duplicateAlbumName, std::unordered_set<int32_t> &duplicateAnalysisAlbumIdSet);
     void UpdateHighlightDuplicateRows(const std::vector<NativeRdb::ValueObject> &changeIds,
+        const std::string &duplicateAlbumName);
+    void DeleteAnalysisDuplicateRows(const std::unordered_set<int32_t> &duplicateAnalysisAlbumIdSet,
         const std::string &duplicateAlbumName);
 
 private:
