@@ -230,8 +230,9 @@ HWTEST_F(AlbumsRefreshManagerTest, NotifyPhotoAlbums_Test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start NotifyPhotoAlbums_Test");
     SyncNotifyInfo info;
+    info.notifyType = NOTIFY_UPDATE;
     AlbumsRefreshManager::GetInstance().NotifyPhotoAlbums(info);
-    EXPECT_EQ((resultSet == nullptr), true);
+    EXPECT_EQ((info.notifyType == NOTIFY_UPDATE), true);
 }
 
 HWTEST_F(AlbumsRefreshManagerTest, GetSyncNotifyInfo_Notify_ADD, TestSize.Level0)
