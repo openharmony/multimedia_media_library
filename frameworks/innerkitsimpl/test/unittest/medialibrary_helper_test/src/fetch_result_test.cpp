@@ -555,5 +555,113 @@ HWTEST_F(MediaLibraryFetchResultUnitTest, FetchResult_media_column_Test_001, Tes
     ret = AudioColumn::IsAudioColumn("media_column");
     EXPECT_EQ(ret, false);
 }
+
+/*
+ * Feature : MediaLibraryFetchResultUnitTest
+ * Function : Close GetFirstObject GetNextObject GetLastObject
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryFetchResultUnitTest, FetchResult_Test_001, TestSize.Level0)
+{
+    shared_ptr<FetchResult<AlbumAsset>> fetchResult = make_shared<FetchResult<AlbumAsset>>();
+    ASSERT_NE(fetchResult, nullptr);
+
+    fetchResult->resultset_ = nullptr;
+    fetchResult->Close();
+    auto res = fetchResult->GetNextObject();
+    fetchResult->GetLastObject();
+    EXPECT_EQ(res, nullptr);
+
+    fetchResult->resultset_ = make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(fetchResult->resultset_, nullptr);
+
+    fetchResult->GetFirstObject();
+    res = fetchResult->GetNextObject();
+    fetchResult->GetLastObject();
+    EXPECT_EQ(res, nullptr);
+
+    fetchResult->Close();
+}
+
+/*
+ * Feature : MediaLibraryFetchResultUnitTest
+ * Function : IsAtLastRow
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryFetchResultUnitTest, FetchResult_Test_002, TestSize.Level0)
+{
+    shared_ptr<FetchResult<AlbumAsset>> fetchResult = make_shared<FetchResult<AlbumAsset>>();
+    ASSERT_NE(fetchResult, nullptr);
+
+    fetchResult->resultset_ = nullptr;
+    bool res = fetchResult->IsAtLastRow();
+    EXPECT_FALSE(res);
+
+    fetchResult->resultset_ = make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(fetchResult->resultset_, nullptr);
+    res = fetchResult->IsAtLastRow();
+    bool retVal = false;
+    fetchResult->resultset_->IsAtLastRow(retVal);
+    EXPECT_EQ(res, retVal);
+
+    fetchResult->Close();
+}
+
+/*
+ * Feature : MediaLibraryFetchResultUnitTest
+ * Function : GetRowValFromColumn
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryFetchResultUnitTest, FetchResult_Test_003, TestSize.Level0)
+{
+    shared_ptr<FetchResult<AlbumAsset>> fetchResult = make_shared<FetchResult<AlbumAsset>>();
+    ASSERT_NE(fetchResult, nullptr);
+
+    fetchResult->resultset_ = nullptr;
+    string columnName = "";
+    shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
+    ResultSetDataType dataType = TYPE_STRING;
+    auto res = get<string>(fetchResult->GetRowValFromColumn(columnName, dataType, resultSet));
+    EXPECT_EQ(res, "");
+
+    fetchResult->resultset_ = make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(fetchResult->resultset_, nullptr);
+    fetchResult->GetRowValFromColumn(columnName, dataType, resultSet);
+}
+
+/*
+ * Feature : MediaLibraryFetchResultUnitTest
+ * Function : GetValByIndex
+ * SubFunction : NA
+ * FunctionPoints : NA
+ * EnvContions : NA
+ * CaseDescription : NA
+ */
+HWTEST_F(MediaLibraryFetchResultUnitTest, FetchResult_Test_004, TestSize.Level0)
+{
+    shared_ptr<FetchResult<AlbumAsset>> fetchResult = make_shared<FetchResult<AlbumAsset>>();
+    ASSERT_NE(fetchResult, nullptr);
+
+    fetchResult->resultset_ = nullptr;
+    int32_t index = 1;
+    ResultSetDataType dataType = TYPE_STRING;
+    shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
+    auto res = get<string>(fetchResult->GetValByIndex(index, dataType, resultSet));
+    EXPECT_EQ(res, "");
+
+    dataType = TYPE_DOUBLE;
+    fetchResult->resultset_ = make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(fetchResult->resultset_, nullptr);
+    fetchResult->GetValByIndex(index, dataType, resultSet);
+}
 } // namespace Media
 } // namespace OHOS
