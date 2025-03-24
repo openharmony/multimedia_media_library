@@ -580,5 +580,165 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetTimeIdFromUri_Test_003, T
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
     EXPECT_EQ(uriBatch.size(), 2);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ParseUri_Test_001, TestSize.Level0)
+{
+    enum {
+        API10_PHOTO_URI_TEST,
+        API10_PHOTOALBUM_URI_TEST,
+        API10_AUDIO_URI_TEST,
+        API9_URI_TEST,
+        API10_ANALYSISALBUM_URI_TEST,
+    };
+    std::string uri_test = "file://media/PhotoAlbum/";
+    std::string uri_test2 = "file://media/AnalysisAlbum/";
+    std::shared_ptr<MediaFileUri> mediaFileUri = std::make_shared<MediaFileUri>("1");
+    ASSERT_NE(mediaFileUri, nullptr);
+    mediaFileUri->ParseUri(uri_test);
+    EXPECT_EQ(mediaFileUri->uriType_, API10_PHOTOALBUM_URI_TEST);
+
+    std::shared_ptr<MediaFileUri> mediaFileUri2 = std::make_shared<MediaFileUri>("3");
+    ASSERT_NE(mediaFileUri2, nullptr);
+    mediaFileUri->ParseUri(uri_test2);
+    EXPECT_EQ(mediaFileUri->uriType_, API10_ANALYSISALBUM_URI_TEST);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_MediaFileUriConstruct_Test_001, TestSize.Level0)
+{
+    std::shared_ptr<MediaFileUri> mediaFileUri = std::make_shared<MediaFileUri>("1");
+    ASSERT_NE(mediaFileUri, nullptr);
+    MediaType mediatype = MEDIA_TYPE_FILE;
+    EXPECT_NE(mediaFileUri->MediaFileUriConstruct(mediatype, OLD_URI_PATH, OLD_URI_PATH, MEDIA_API_VERSION_V10,
+        DEFAULT_EXTR_PATH), "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetNetworkId_Test_001, TestSize.Level0)
+{
+    std::shared_ptr<MediaFileUri> mediaFileUri = std::make_shared<MediaFileUri>("1");
+    ASSERT_NE(mediaFileUri, nullptr);
+    mediaFileUri->networkId_ = "No empty";
+    std::string test = mediaFileUri->GetNetworkId();
+    EXPECT_NE(test, "empty");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilePath_Test_001, TestSize.Level0)
+{
+    std::shared_ptr<MediaFileUri> mediaFileUri = std::make_shared<MediaFileUri>("1");
+    ASSERT_NE(mediaFileUri, nullptr);
+    mediaFileUri->networkId_ = "No empty";
+    std::string test = mediaFileUri->GetFilePath();
+    EXPECT_EQ(test, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsValid_Test2_001, TestSize.Level0)
+{
+    std::shared_ptr<MediaFileUri> mediaFileUri = std::make_shared<MediaFileUri>(OLD_URI_PRE);
+    std::shared_ptr<MediaFileUri> mediaFileUri2 = std::make_shared<MediaFileUri>(NEW_URI_PRE);
+    ASSERT_NE(mediaFileUri, nullptr);
+    ASSERT_NE(mediaFileUri2, nullptr);
+    mediaFileUri->networkId_ = "No empty";
+    bool test = mediaFileUri->IsValid();
+    EXPECT_EQ(test, true);
+
+    test = mediaFileUri2->IsValid();
+    EXPECT_EQ(test, true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsValid_Test2_002, TestSize.Level0)
+{
+    std::shared_ptr<MediaFileUri> mediaFileUri = std::make_shared<MediaFileUri>(OLD_URI);
+    std::shared_ptr<MediaFileUri> mediaFileUri2 = std::make_shared<MediaFileUri>(NEW_URI);
+    ASSERT_NE(mediaFileUri, nullptr);
+    ASSERT_NE(mediaFileUri2, nullptr);
+    mediaFileUri->networkId_ = "No empty";
+    bool test = mediaFileUri->IsValid();
+    EXPECT_EQ(test, true);
+
+    test = mediaFileUri2->IsValid();
+    EXPECT_EQ(test, true);
+
+    mediaFileUri->ParseUri(OLD_URI_NEW_VER);
+    test = mediaFileUri->IsValid();
+    EXPECT_EQ(test, true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriType_Test_002, TestSize.Level0)
+{
+    std::shared_ptr<MediaFileUri> mediaFileUri = std::make_shared<MediaFileUri>("1");
+    ASSERT_NE(mediaFileUri, nullptr);
+    int test = mediaFileUri->GetUriType();
+    EXPECT_EQ(test, 3);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaTypeFromUri_Test_002, TestSize.Level0)
+{
+    string uri = PhotoColumn::PHOTO_URI_PREFIX;
+    EXPECT_NE(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = AudioColumn::AUDIO_URI_PREFIX;
+    EXPECT_NE(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = "file://media/PhotoAlbum/";
+    EXPECT_NE(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = AUDIO_URI_PREFIX;
+    EXPECT_NE(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = VIDEO_URI_PREFIX;
+    EXPECT_NE(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = IMAGE_URI_PREFIX;
+    EXPECT_NE(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = ALBUM_URI_PREFIX;
+    EXPECT_NE(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = FILE_URI_PREFIX;
+    EXPECT_NE(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = HIGHLIGHT_URI_PREFIX;
+    EXPECT_NE(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetTimeIdFromUri_Test2_001, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch = {"123", "", "&offset="};
+    std::vector<std::string> timeIdBatch;
+    MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch);
+    EXPECT_EQ(uriBatch.size(), 3);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetTimeIdFromUri_Test2_002, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch = {"&time_id=", "&time_id=1&offset=1"};
+    std::vector<std::string> timeIdBatch;
+    int32_t start = 0;
+    int32_t count = 0;
+    MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    EXPECT_EQ(uriBatch.size(), 2);
+
+    std::vector<std::string> uriBatch2 = {"", "&time_id=", "&time_id=1&offset=1"};
+    std::vector<std::string> timeIdBatch2;
+    MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    EXPECT_EQ(uriBatch.size(), 2);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaTypeUri_Test_003, TestSize.Level0)
+{
+    MediaType mediaType = MEDIA_TYPE_VIDEO;
+    int32_t apiVersion = MEDIA_API_VERSION_DEFAULT;
+    auto ret = MediaFileUri::GetMediaTypeUri(mediaType, apiVersion);
+    EXPECT_EQ(ret, "/video");
+
+    mediaType = MEDIA_TYPE_AUDIO;
+    apiVersion = MEDIA_API_VERSION_DEFAULT;
+    ret = MediaFileUri::GetMediaTypeUri(mediaType, apiVersion);
+    EXPECT_EQ(ret, "/audio");
+
+    mediaType = MEDIA_TYPE_IMAGE;
+    apiVersion = MEDIA_API_VERSION_DEFAULT;
+    ret = MediaFileUri::GetMediaTypeUri(mediaType, apiVersion);
+    EXPECT_EQ(ret, "/image");
+}
 } // namespace Media
 } // namespace OHOS
