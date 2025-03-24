@@ -44,28 +44,12 @@ static void DataShareCreator(const sptr<IRemoteObject> &token, shared_ptr<DataSh
 shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(ani_env *env, ani_object object)
 {
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
-    ani_boolean isStageMode = false;
-    ani_status status = IsStageContext(env, object, isStageMode);
-    if (status != ANI_OK || !isStageMode) {
-        auto ability = GetCurrentAbility(env);
-        if (ability == nullptr) {
-            ANI_ERR_LOG("Failed to get native ability instance");
-            return nullptr;
-        }
-        auto context = ability->GetContext();
-        if (context == nullptr) {
-            ANI_ERR_LOG("Failed to get native context instance");
-            return nullptr;
-        }
-        DataShareCreator(context->GetToken(), dataShareHelper);
-    } else {
-        auto context = GetStageModeContext(env, object);
-        if (context == nullptr) {
-            ANI_ERR_LOG("Failed to get native stage context instance");
-            return nullptr;
-        }
-        DataShareCreator(context->GetToken(), dataShareHelper);
+    auto context = GetStageModeContext(env, object);
+    if (context == nullptr) {
+        ANI_ERR_LOG("Failed to get native stage context instance");
+        return nullptr;
     }
+    DataShareCreator(context->GetToken(), dataShareHelper);
     MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(dataShareHelper);
     return dataShareHelper;
 }
