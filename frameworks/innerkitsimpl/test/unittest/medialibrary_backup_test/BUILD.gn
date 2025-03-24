@@ -107,8 +107,6 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
 
-  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
-
   external_deps = [
     "ability_base:want",
     "ability_base:zuri",
@@ -124,6 +122,7 @@ ohos_unittest("medialibrary_backup_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
+    "e2fsprogs:libext2_uuid",
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",

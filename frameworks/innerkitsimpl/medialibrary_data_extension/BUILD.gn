@@ -426,6 +426,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "data_share:datashare_provider",
     "dfs_service:cloudsync_kit_inner",
     "drivers_interface_display:display_commontype_idl_headers",
+    "e2fsprogs:libext2_uuid",
     "eventhandler:libeventhandler",
     "ffrt:libffrt",
     "file_api:filemgmt_libn",
@@ -453,8 +454,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "window_manager:libdm",
     "zlib:shared_libz",
   ]
-
-  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
 
   defines = []
   if (defined(global_parts_info) &&
