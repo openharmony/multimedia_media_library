@@ -139,7 +139,7 @@ HWTEST_F(HiAuditTest, HiAuditTest_GetFormattedTimestamp_test_005, TestSize.Level
     EXPECT_EQ(result.length(), 14); // YYYYMMDDHHMMSS
 
     for (char c : result) {
-        EXPECT_TRUE(isdigit(c)) << "时间戳应只包含数字";
+        EXPECT_TRUE(isdigit(c)) << "timestamp just include digit";
     }
 
     std::string result2 = BackupHiAudit::GetInstance().GetFormattedTimestamp(now * 1000, "%Y-%m-%d");
