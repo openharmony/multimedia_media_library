@@ -15,18 +15,11 @@
 
 #include "hi_audit_test.h"
 
-#include <iostream>
-#include <thread>
-#include <chrono>
 #include <fstream>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <filesystem>
 #include "media_log.h"
 #define private public
 #include "backup_hi_audit.h"
+
 using namespace std;
 using namespace testing::ext;
 namespace OHOS {

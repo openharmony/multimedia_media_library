@@ -17,6 +17,15 @@
 #define HI_AUDIT_TEST_H
 #include <gtest/gtest.h>
 
+#include <iostream>
+#include <thread>
+#include <chrono>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <filesystem>
+
 namespace OHOS {
 namespace Media {
 class HiAuditTest : public testing::Test {
