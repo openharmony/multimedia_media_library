@@ -174,7 +174,7 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
 }
 
 std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const std::string& imageId,
-    bool &isHighQualityPicture, bool isCleanImmediately)
+    bool &isHighQualityPicture, bool &isTakeEffect, bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter %{public}s enter", imageId.c_str());
     enum PictureType pictureType;
@@ -182,7 +182,7 @@ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const 
     isHighQualityPicture = false;
     for (pictureType = HIGH_QUALITY_PICTURE; pictureType >= LOW_QUALITY_PICTURE;
         pictureType = (PictureType)(pictureType - 1)) {
-        picture = GetDataWithImageIdAndPictureType(imageId, pictureType, isCleanImmediately);
+        picture = GetDataWithImageIdAndPictureType(imageId, pictureType, isTakeEffect, isCleanImmediately);
         if (picture != nullptr && picture->GetMainPixel() != nullptr) {
             MEDIA_INFO_LOG("GetDataWithImageId is founded, pictureType:%{public}d", static_cast<int32_t>(pictureType));
             isHighQualityPicture = (pictureType == HIGH_QUALITY_PICTURE);
@@ -220,7 +220,7 @@ void PictureDataOperations::SavePictureWithImageId(const std::string& imageId)
 }
 
 std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageIdAndPictureType(const std::string& imageId,
-    PictureType pictureType, bool isCleanImmediately)
+    PictureType pictureType, bool &isTakeEffect, bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter ");
     lock_guard<mutex>  lock(pictureMapMutex_);
@@ -239,6 +239,7 @@ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageIdAndPict
             if (iter != highQualityPictureMap_.end()) {
                 (iter->second)->isCleanImmediately_ = isCleanImmediately;
                 picture = (iter->second)->picture_;
+                isTakeEffect = (iter->second)->isTakeEffect_;
             }
             break;
         default:
