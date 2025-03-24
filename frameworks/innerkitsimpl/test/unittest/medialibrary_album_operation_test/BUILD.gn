@@ -23,7 +23,6 @@ ohos_unittest("medialibrary_album_operation_test") {
   module_out_path = "media_library/medialibrary-album"
   include_dirs = [
     "./include",
-    "./include/media_albums_refresh",
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_CLOUD_SYNC_PATH}/include",
@@ -41,7 +40,6 @@ ohos_unittest("medialibrary_album_operation_test") {
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_album_operation_test.cpp",
-    "./src/media_albums_refresh/albums_refresh_manager_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
