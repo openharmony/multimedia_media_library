@@ -1007,7 +1007,7 @@ void CloneRestoreHighlight::ReportCloneRestoreHighlightTask()
 void CloneRestoreHighlight::HighlightDeduplicate(const HighlightAlbumInfo &info)
 {
     std::string duplicateAlbumName = "";
-    std::vector<NativeRdb::ValueObject> duplicateAnalysisAlbumIdSet;
+    std::unordered_set<int32_t> duplicateAnalysisAlbumIdSet;
     std::vector<NativeRdb::ValueObject> changeIds =
         GetHighlightDuplicateIds(info, duplicateAlbumName, duplicateAnalysisAlbumIdSet);
     UpdateHighlightDuplicateRows(changeIds, duplicateAlbumName);
@@ -1029,7 +1029,7 @@ std::vector<NativeRdb::ValueObject> CloneRestoreHighlight::GetHighlightDuplicate
                 analysisInfo.albumIdOld.value() == info.albumIdOld.value();
         });
     CHECK_AND_RETURN_RET((it != analysisInfos_.end() && it->albumName.has_value()), changeIds);
-    duplicateAlbumName = it->albumName.value();
+    duplicateAlbumName = it->albumName.value();  
 
     const std::string QUERY_SQL = "SELECT t.id, t.album_id, t.ai_album_id "
         "FROM tab_highlight_album AS t INNER JOIN AnalysisAlbum AS a "
@@ -1077,9 +1077,8 @@ void CloneRestoreHighlight::DeleteAnalysisDuplicateRows(const std::unordered_set
     int32_t deleteRows = -1;
     std::vector<NativeRdb::ValueObject> duplicateAnalysisAlbumIds(duplicateAnalysisAlbumIdSet.begin(),
         duplicateAnalysisAlbumIdSet.end());
-    std::unique_ptr<NativeRdb::AbsRdbPredicates> deletePredicates =
-        make_unique<NativeRdb::AbsRdbPredicates>("AnalysisAlbum");
-    deletePredicates->In("album_id", duplicateAnalysisAlbumIds);
+    NativeRdb::AbsRdbPredicates deletePredicates("AnalysisAlbum");
+    deletePredicates.In("album_id", duplicateAnalysisAlbumIds);
     BackupDatabaseUtils::Delete(deletePredicates, deleteRows, mediaLibraryRdb_);
     MEDIA_INFO_LOG("delete duplicate analysis album, duplicate album name: %{public}s, duplicate nums: %{public}zu, "
         "delete nums: %{public}d", duplicateAlbumName.c_str(), duplicateAnalysisAlbumIds.size(), deleteRows);
