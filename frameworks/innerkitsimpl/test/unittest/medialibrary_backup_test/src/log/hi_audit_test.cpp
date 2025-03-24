@@ -37,14 +37,16 @@ const std::string HIAUDIT_LOG_NAME = HIAUDIT_CONFIG.logPath + HIAUDIT_CONFIG.log
 
 void HiAuditTest::SetUpTestCase(void) {}
 void HiAuditTest::TearDownTestCase(void) {}
-void HiAuditTest::SetUp(void) {
+void HiAuditTest::SetUp(void)
+{
     std::error_code errcode;
     if (std::filesystem::exists(HIAUDIT_LOG_NAME)) {
         std::filesystem::remove(HIAUDIT_LOG_NAME, errcode);
     }
 }
 
-void HiAuditTest::TearDown(void) {
+void HiAuditTest::TearDown(void)
+{
     std::error_code errcode;
     if (std::filesystem::exists(HIAUDIT_LOG_NAME)) {
         std::filesystem::remove(HIAUDIT_LOG_NAME, errcode);
