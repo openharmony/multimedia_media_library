@@ -27,12 +27,14 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/include",
     "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
   ]
 
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/albums_refresh_manager_test.cpp",
     "./src/medialibrary_datamanager_test.cpp",
   ]
   deps = [

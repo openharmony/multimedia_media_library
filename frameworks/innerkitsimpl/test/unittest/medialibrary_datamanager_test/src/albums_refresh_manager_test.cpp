@@ -214,7 +214,7 @@ HWTEST_F(AlbumsRefreshManagerTest, CovertCloudId2AlbumId_Test, TestSize.Level0)
     vector<string> cloudIds;
     auto resultSet = AlbumsRefreshManager::GetInstance()
                                         .CovertCloudId2AlbumId(g_rdbStore, cloudIds);
-    EXPECT_EQ((resultSet == nullptr), true);
+    EXPECT_EQ((resultSet == nullptr), false);
 }
 
 HWTEST_F(AlbumsRefreshManagerTest, CovertCloudId2FileId_Test, TestSize.Level0)
@@ -223,7 +223,7 @@ HWTEST_F(AlbumsRefreshManagerTest, CovertCloudId2FileId_Test, TestSize.Level0)
     vector<string> cloudIds;
     auto resultSet = AlbumsRefreshManager::GetInstance()
                                         .CovertCloudId2FileId(g_rdbStore, cloudIds);
-    EXPECT_EQ((resultSet == nullptr), true);
+    EXPECT_EQ((resultSet == nullptr), false);
 }
 
 HWTEST_F(AlbumsRefreshManagerTest, NotifyPhotoAlbums_Test, TestSize.Level0)
