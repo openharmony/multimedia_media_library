@@ -903,16 +903,9 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_delete_api10_test_001, Test
 
     // set audio
     int fileId = SetDefaultAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId < E_OK) {
-        MEDIA_ERR_LOG("Set Default audio failed, ret = %{public}d", fileId);
-        return;
-    }
+    EXPECT_GE(fileId, E_OK);
     string filePath = GetFilePath(fileId);
-    if (filePath.empty()) {
-        MEDIA_ERR_LOG("Get filePath failed");
-        return;
-    }
-
+    EXPECT_FALSE(filePath.empty());
     EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), true);
     int32_t count = GetAudioAssetCountIndb(AudioColumn::MEDIA_NAME, "audio.mp3");
     EXPECT_EQ(count, 1);
@@ -1014,11 +1007,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_001, TestS
     MEDIA_INFO_LOG("start tdd audio_oprn_query_api10_test_001");
 
     int32_t fileId1 = SetDefaultAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio1.mp3");
-    if (fileId1 < E_OK) {
-        MEDIA_ERR_LOG("Set Default audio failed, ret = %{public}d", fileId1);
-        return;
-    }
-
+    EXPECT_GE(fileId1, E_OK);
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY,
         MediaLibraryApi::API_10);
@@ -1027,13 +1016,10 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_001, TestS
     cmd.SetDataSharePred(predicates);
     vector<string> columns;
     auto resultSet = MediaLibraryAudioOperations::Query(cmd, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "audio1.mp3");
-    } else {
-        MEDIA_ERR_LOG("Test first tdd Query failed");
-        return;
-    }
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "audio1.mp3");
 
     MEDIA_INFO_LOG("end tdd audio_oprn_query_api10_test_001");
 }
@@ -1043,16 +1029,9 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_002, TestS
     MEDIA_INFO_LOG("start tdd audio_oprn_query_api10_test_002");
 
     int32_t fileId1 = SetDefaultAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio1.mp3");
-    if (fileId1 < E_OK) {
-        MEDIA_ERR_LOG("Set Default audio failed, ret = %{public}d", fileId1);
-        return;
-    }
+    EXPECT_GE(fileId1, E_OK);
     int32_t fileId2 = SetDefaultAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio2.mp3");
-    if (fileId2 < E_OK) {
-        MEDIA_ERR_LOG("Set Default audio failed, ret = %{public}d", fileId2);
-        return;
-    }
-
+    EXPECT_GE(fileId2, E_OK);
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY,
         MediaLibraryApi::API_10);
@@ -1063,21 +1042,13 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_002, TestS
     cmd.SetDataSharePred(predicates);
     vector<string> columns;
     auto resultSet = MediaLibraryAudioOperations::Query(cmd, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "audio1.mp3");
-    } else {
-        MEDIA_ERR_LOG("Test first tdd Query failed");
-        return;
-    }
-
-    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "audio2.mp3");
-    } else {
-        MEDIA_ERR_LOG("Test second tdd Query failed");
-        return;
-    }
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "audio1.mp3");
+    EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "audio2.mp3");
 
     MEDIA_INFO_LOG("end tdd audio_oprn_query_api10_test_002");
 }
@@ -1087,11 +1058,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_003, TestS
     MEDIA_INFO_LOG("start tdd audio_oprn_query_api10_test_003");
 
     int32_t fileId1 = SetDefaultAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio1.mp3");
-    if (fileId1 < E_OK) {
-        MEDIA_ERR_LOG("Set Default audio failed, ret = %{public}d", fileId1);
-        return;
-    }
-
+    EXPECT_GE(fileId1, E_OK);
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY,
         MediaLibraryApi::API_10);
@@ -1102,17 +1069,14 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_003, TestS
     columns.push_back(MediaColumn::MEDIA_NAME);
     columns.push_back(MediaColumn::MEDIA_DATE_ADDED);
     auto resultSet = MediaLibraryAudioOperations::Query(cmd, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "audio1.mp3");
-        int64_t dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
-        EXPECT_GE(dateAdded, 0L);
-        int64_t dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
-        EXPECT_EQ(dateModified, 0L);
-    } else {
-        MEDIA_ERR_LOG("Test first tdd Query failed");
-        return;
-    }
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "audio1.mp3");
+    int64_t dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
+    EXPECT_GE(dateAdded, 0L);
+    int64_t dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+    EXPECT_EQ(dateModified, 0L);
     MEDIA_INFO_LOG("end tdd audio_oprn_query_api10_test_003");
 }
 
@@ -1120,11 +1084,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_001, Test
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_001");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestAudioUpdateParamsApi10(AudioColumn::MEDIA_ID, to_string(fileId),
         { { AudioColumn::MEDIA_NAME, "aud.mp3" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
@@ -1137,11 +1097,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_002, Test
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_002");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestAudioUpdateParamsApi10(AudioColumn::MEDIA_ID, to_string(fileId),
         { { AudioColumn::MEDIA_NAME, "" } },
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
@@ -1181,11 +1137,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_003, Test
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_003");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     unordered_map<string, string> updateMap1 = {
         { AudioColumn::MEDIA_TITLE, "audio1" },
         { AudioColumn::MEDIA_NAME, "audio2.mp3" }
@@ -1207,17 +1159,9 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_004, Test
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_004");
     int32_t fileId1 = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId1);
-        return;
-    }
-
+    EXPECT_GE(fileId1, 0);
     int32_t fileId2 = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "aud.mp3");
-    if (fileId2 < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId2);
-        return;
-    }
-
+    EXPECT_GE(fileId2, 0);
     TestAudioUpdateParamsApi10(AudioColumn::MEDIA_ID, to_string(fileId1),
         { { AudioColumn::MEDIA_TITLE, "audio1" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
@@ -1237,11 +1181,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_005, Test
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_005");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestAudioUpdateParamsVerifyFunctionFailed(AudioColumn::MEDIA_ID, to_string(fileId),
         { { AudioColumn::MEDIA_ID, "1"} });
     TestAudioUpdateParamsVerifyFunctionFailed(AudioColumn::MEDIA_ID, to_string(fileId),
@@ -1280,11 +1220,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_006, Test
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_006");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestAudioUpdateParamsVerifyFunctionFailed(AudioColumn::MEDIA_ID, to_string(fileId),
         { { AudioColumn::AUDIO_ARTIST, "1"} });
     TestAudioUpdateParamsVerifyFunctionFailed(AudioColumn::MEDIA_ID, to_string(fileId),
@@ -1299,11 +1235,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_001, TestS
     string displayName = "audio.mp3";
     string relativePath = "Audios/1/";
     int32_t fileId = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, displayName, relativePath);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     unordered_map<string, string> updateMap = {
         { AudioColumn::MEDIA_NAME, "audio1.mp3" },
         { AudioColumn::MEDIA_RELATIVE_PATH, "Audios/2" }
@@ -1326,11 +1258,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_002, TestS
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_002");
     string relativePath = "Audios/1/";
     int32_t fileId = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3", relativePath);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId),
         { { AudioColumn::MEDIA_NAME, "" } },
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
@@ -1371,11 +1299,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_003, TestS
     MEDIA_INFO_LOG("start audio_oprn_update_api9_test_003");
     string relativePath = "Audios/1/";
     int32_t fileId = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3", relativePath);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     string defaultDisplayName = "audio.mp3";
     string longEnglishRelativePath = "Audios/" + CHAR256_ENGLISH + "/";
     string longChineseRelativePath = "Audios/" + CHAR256_CHINESE + "/";
@@ -1410,16 +1334,9 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_004, TestS
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_004");
     string relativePath = "Audios/1/";
     int32_t fileId1 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, "audio1.mp3", relativePath);
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId1);
-        return;
-    }
+    EXPECT_GE(fileId1, 0);
     int32_t fileId2 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, "audio2.mp3", relativePath);
-    if (fileId2 < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId2);
-        return;
-    }
-
+    EXPECT_GE(fileId2, 0);
     TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId2),
         { { AudioColumn::MEDIA_NAME, "audio1.mp3" } },
         [] (int32_t result) { EXPECT_EQ(result, E_HAS_DB_ERROR); });
@@ -1431,16 +1348,9 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_005, TestS
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_005");
     string displayName = "audio.mp3";
     int32_t fileId1 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, displayName, "Audios/1/");
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId1);
-        return;
-    }
+    EXPECT_GE(fileId1, 0)；
     int32_t fileId2 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, displayName, "Audios/2/");
-    if (fileId2 < 0) {
-        MEDIA_ERR_LOG("CreateAudio In APi10 failed, ret=%{public}d", fileId2);
-        return;
-    }
-
+    EXPECT_GE(fileId2, 0);
     TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId2),
         { { AudioColumn::MEDIA_RELATIVE_PATH, "Audios/1" } },
         [] (int32_t result) { EXPECT_EQ(result, E_HAS_DB_ERROR); });
@@ -1462,11 +1372,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_open_api10_test_001, TestSi
     MEDIA_INFO_LOG("start tdd audio_oprn_open_api10_test_001");
 
     int fileId = SetDefaultAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create audio failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestAudioOpenParamsApi10(fileId, "",
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
     TestAudioOpenParamsApi10(fileId, "m",
@@ -1482,11 +1388,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_close_api10_test_001, TestS
     MEDIA_INFO_LOG("start tdd audio_oprn_close_api10_test_001");
 
     int fileId = SetDefaultAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create audio failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     auto fileAssetPtr = QueryAudioAsset(AudioColumn::MEDIA_ID, to_string(fileId));
     static constexpr int LARGE_NUM = 1000;
     fileAssetPtr->SetId(fileId + LARGE_NUM);

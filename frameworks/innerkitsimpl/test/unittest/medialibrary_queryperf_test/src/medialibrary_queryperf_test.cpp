@@ -160,7 +160,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_001, TestSize.Lev
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
-
+    EXPECT_GE(end, start);
     GTEST_LOG_(INFO) << "QueryALLColumn Cost: " << ((double)(end - start)/50) << "ms";
 }
 
@@ -189,7 +189,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_002, TestSize.Lev
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
-
+    EXPECT(end, start);
     GTEST_LOG_(INFO) << "Query10Column Cost: " << ((double)(end - start)/50) << "ms";
 }
 
@@ -219,7 +219,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_003, TestSize.Lev
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
-
+    EXPECT_GE(end, start);
     GTEST_LOG_(INFO) << "Query10Columnlimit50 Cost: " << ((double)(end - start)/50) << "ms";
 }
 
