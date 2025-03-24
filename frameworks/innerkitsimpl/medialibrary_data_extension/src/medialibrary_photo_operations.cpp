@@ -1504,7 +1504,8 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
     int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
-        "Failed to query file asset vector from db, errCode=%{private}d", errCode);
+        "Failed to query file asset vector from db, errCode=%{public}d, predicates=%{public}s",
+        errCode, cmd.GetAbsRdbPredicates()->ToString().c_str());
 
     int32_t updateRows = UpdateFileInDb(cmd);
     CHECK_AND_RETURN_RET_LOG(updateRows >= 0, updateRows,
