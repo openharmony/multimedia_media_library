@@ -227,15 +227,9 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_004, TestSize.L
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
         MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("can not get rdbstore");
-        return;
-    }
+    EXPECT_NE(g_rdbStore, nullptr);
     auto resultSet = g_rdbStore->Query(cmd, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not get file Path");
-        return;
-    }
+    EXPECT_NE(resultSet, nullptr);
     MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(upgradeStore, ALBUM_NUM, resultSet,
         assetId, displayName);
     MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(rdbStorePtr, ALBUM_NUM, resultSet,
@@ -347,15 +341,9 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_012, TestSize.L
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
         MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("can not get rdbstore");
-        return;
-    }
+    EXPECT_NE(g_rdbStore, nullptr);
     auto resultSet = g_rdbStore->Query(cmd, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not get file Path");
-        return;
-    }
+    EXPECT_NE(resultSet, nullptr);
     string albumName = "Image";
     MediaLibraryAlbumFusionUtils::BuildAlbumInsertValuesSetName(rdbStorePtr,
         values, resultSet, albumName);
@@ -402,15 +390,9 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_014, TestSize.L
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
         MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(NUM_ONE));
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("can not get rdbstore");
-        return;
-    }
+    EXPECT_NE(g_rdbStore, nullptr);
     auto resultSet = g_rdbStore->Query(cmd, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not get file Path");
-        return;
-    }
+    EXPECT_NE(resultSet, nullptr);
     MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(upgradeStore, resultSet, albumId,
         newAlbumId);
     MediaLibraryAlbumFusionUtils::MergeClashSourceAlbum(rdbStorePtr, resultSet, albumId,
