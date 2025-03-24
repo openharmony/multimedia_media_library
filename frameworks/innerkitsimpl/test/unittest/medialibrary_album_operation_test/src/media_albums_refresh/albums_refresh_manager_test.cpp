@@ -222,7 +222,7 @@ HWTEST_F(AlbumsRefreshManagerTest, CovertCloudId2FileId_Test, TestSize.Level0)
     MEDIA_INFO_LOG("Start CovertCloudId2FileId_Test");
     vector<string> cloudIds;
     auto resultSet = AlbumsRefreshManager::GetInstance()
-                                        .CovertCloudId2FileId(info);
+                                        .CovertCloudId2FileId(g_rdbStore, cloudIds);
     EXPECT_EQ((resultSet == nullptr), true);
 }
 
