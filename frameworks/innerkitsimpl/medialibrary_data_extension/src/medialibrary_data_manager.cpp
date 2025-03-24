@@ -499,6 +499,7 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 
     if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
         AddAssetAlbumOperationTable(rdbStore);
+        rdbStore->SetOldVersion(VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION);
     }
 }
 
