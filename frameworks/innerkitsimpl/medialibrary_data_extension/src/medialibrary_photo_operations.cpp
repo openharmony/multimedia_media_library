@@ -2883,12 +2883,31 @@ int32_t MediaLibraryPhotoOperations::GetPicture(const int32_t &fileId, std::shar
 
     MEDIA_INFO_LOG("photoId: %{public}s", photoId.c_str());
     auto pictureManagerThread = PictureManagerThread::GetInstance();
+    bool isTakeEffect = false;
     CHECK_AND_EXECUTE(pictureManagerThread == nullptr,
-        picture = pictureManagerThread->GetDataWithImageId(photoId, isHighQualityPicture, isCleanImmediately));
+        picture = pictureManagerThread->GetDataWithImageId(photoId,
+        isHighQualityPicture, isTakeEffect, isCleanImmediately));
     CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
     MEDIA_INFO_LOG("photoId: %{public}s, picture use: %{public}d, picture point to addr: %{public}s",
         photoId.c_str(), static_cast<int32_t>(picture.use_count()),
         std::to_string(reinterpret_cast<long long>(picture.get())).c_str());
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::GetTakeEffect(std::shared_ptr<Media::Picture> &picture, std::string &photoId)
+{
+    auto pictureManagerThread = PictureManagerThread::GetInstance();
+    bool isHighQualityPicture = false;
+    bool isTakeEffect = false;
+    if (pictureManagerThread != nullptr) {
+        picture = pictureManagerThread->GetDataWithImageId(photoId, isHighQualityPicture,
+            isTakeEffect, false);
+    }
+    CHECK_AND_RETURN_RET_LOG(picture != nullptr, E_FILE_EXIST, "picture is not exists!");
+    MEDIA_INFO_LOG("get takeEffect: %{public}d", isTakeEffect);
+    if (isTakeEffect) {
+        return E_ERR;
+    }
     return E_OK;
 }
 
@@ -3004,7 +3023,8 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     string editData = "";
     string editDataCameraPath = GetEditDataCameraPath(assetPath);
     if (ReadEditdataFromFile(editDataCameraPath, editData) == E_OK &&
-        GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK) {
+        GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK &&
+        GetTakeEffect(picture, photoId) == E_OK) {
         MediaFileUtils::CopyFileUtil(assetPath, GetEditDataSourcePath(assetPath));
         int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
         FileUtils::DealPicture(format, assetPath, picture);
@@ -3543,7 +3563,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
 
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
     std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type,
-    std::shared_ptr<Media::Picture> &resultPicture)
+    std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
@@ -3574,6 +3594,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(bool isEd
             CHECK_AND_RETURN_RET_LOG(AddFiltersToPicture(picture, path, editData, mime_type) == E_OK, E_FAIL,
                 "Failed to add filters to photo");
             resultPicture = picture;
+            isTakeEffect = true;
             return E_OK;
         }
     }
