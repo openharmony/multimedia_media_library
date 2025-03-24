@@ -818,6 +818,7 @@ void MovingPhotoNapi::OnProgress(napi_env env, napi_value cb, void *context, voi
     int32_t process = progressHandler->retProgressValue.progress;
     int32_t type = progressHandler->retProgressValue.type;
     if ((type == INFO_TYPE_TRANSCODER_COMPLETED) || type == INFO_TYPE_ERROR) {
+        MediaCallTranscode::CallTranscodeRelease(progressHandler->requestId);
         bool isTranscoder;
         {
             std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
@@ -838,10 +839,10 @@ void MovingPhotoNapi::OnProgress(napi_env env, napi_value cb, void *context, voi
         if (type == INFO_TYPE_ERROR) {
             context->error = JS_INNER_FAIL;
         }
-        MediaCallTranscode::CallTranscodeRelease(progressHandler->requestId);
         CallRequestContentCallBack(env, context);
         NAPI_INFO_LOG("OnProgress INFO_TYPE_TRANSCODER_COMPLETED type:%{public}d, process:%{public}d", type, process);
         DeleteProcessHandlerSafe(progressHandler, env);
+        return;
     }
     CHECK_NULL_PTR_RETURN_VOID(progressHandler->progressRef, "Onprogress callback is null");
     CallMovingProgressCallback(env, *progressHandler, process);
