@@ -21,6 +21,7 @@ group("media_library_fuzztest") {
     "medialibrarycloudmediaassetmanager_fuzzer:MediaLibraryCloudMediaAssetManagerFuzzTest",
     "medialibraryclouduploadchecker_fuzzer:MediaLibraryCloudUploadCheckerFuzzTest",
     "medialibrarycommon_fuzzer:MediaLibraryCommonFuzzTest",
+    "medialibrarydfx_fuzzer:MediaLibraryDfxFuzzTest",
     "medialibraryenhancement_fuzzer:MediaLibraryEnhancementFuzzTest",
     "medialibraryextension_fuzzer:MediaLibraryExtensionFuzzTest",
     "medialibraryextensionbatchinsert_fuzzer:MediaLibraryExtensionBatchInsertFuzzTest",
