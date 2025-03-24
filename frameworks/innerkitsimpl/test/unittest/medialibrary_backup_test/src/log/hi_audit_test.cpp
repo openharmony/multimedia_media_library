@@ -63,12 +63,12 @@ HWTEST_F(HiAuditTest, HiAuditTest_DirectoryExists_test_001, TestSize.Level0)
     MEDIA_INFO_LOG("HiAuditTest_DirectoryExists_test_001 begin");
     std::error_code errcode;
     std::filesystem::create_directories(HIAUDIT_CONFIG.logPath, errcode);
-    ASSERT_TRUE(errcode.value() == 0) << "目录创建失败: " << errcode.message();
+    ASSERT_TRUE(errcode.value() == 0) << "create dit fail: " << errcode.message();
     DIR *dir = opendir(HIAUDIT_CONFIG.logPath.c_str());
-    ASSERT_NE(dir, nullptr) << "目录打开失败";
+    ASSERT_NE(dir, nullptr) << "open dir fail";
     closedir(dir);
     int fd = open(HIAUDIT_LOG_NAME.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644);
-    ASSERT_GT(fd, 0) << "文件创建失败: " << strerror(errno);
+    ASSERT_GT(fd, 0) << "create file fail " << strerror(errno);
     close(fd);
     BackupHiAudit &audit = BackupHiAudit::GetInstance();
     EXPECT_GT(audit.writeFd_, 0);
@@ -90,7 +90,7 @@ HWTEST_F(HiAuditTest, HiAuditTest_DirectoryNotExists_test_002, TestSize.Level0)
     std::string tempLogName = tempConfig.logPath + tempConfig.logName + "_audit.csv";
 
     DIR *dir = opendir(tempConfig.logPath.c_str());
-    ASSERT_EQ(dir, nullptr) << "目录不应该存在";
+    ASSERT_EQ(dir, nullptr) << "dir is not exsit";
     if (dir != nullptr) {
         closedir(dir);
     }
@@ -122,11 +122,10 @@ HWTEST_F(HiAuditTest, HiAuditTest_GetMilliseconds_test_004, TestSize.Level0)
     MEDIA_INFO_LOG("HiAuditTest_GetMilliseconds_test_004 begin");
     uint64_t time1 = BackupHiAudit::GetInstance().GetMilliseconds();
 
-    usleep(10000); // 睡眠10毫秒
+    usleep(10000);
 
     uint64_t time2 = BackupHiAudit::GetInstance().GetMilliseconds();
 
-    // 验证时间递增
     EXPECT_GT(time2, time1);
     MEDIA_INFO_LOG("HiAuditTest_GetMilliseconds_test_004 end");
 }
@@ -137,15 +136,14 @@ HWTEST_F(HiAuditTest, HiAuditTest_GetFormattedTimestamp_test_005, TestSize.Level
     time_t now = time(nullptr);
     std::string result = BackupHiAudit::GetInstance().GetFormattedTimestamp(now * 1000, "%Y%m%d%H%M%S");
 
-    EXPECT_EQ(result.length(), 14); // YYYYMMDDHHMMSS格式为14位
+    EXPECT_EQ(result.length(), 14); // YYYYMMDDHHMMSS
 
     for (char c : result) {
         EXPECT_TRUE(isdigit(c)) << "时间戳应只包含数字";
     }
 
-    // 测试不同的格式
     std::string result2 = BackupHiAudit::GetInstance().GetFormattedTimestamp(now * 1000, "%Y-%m-%d");
-    EXPECT_EQ(result2.length(), 10); // YYYY-MM-DD格式为10位
+    EXPECT_EQ(result2.length(), 10); // YYYY-MM-DD
     EXPECT_EQ(result2[4], '-');
     EXPECT_EQ(result2[7], '-');
 
