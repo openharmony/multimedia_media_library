@@ -1946,6 +1946,11 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
     return MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
 }
 
+inline bool CheckLatitudeAndLongitude(const string &latitude, const string &longitude)
+{
+    return latitude != "" && longitude != "" && !(latitude == "0" && longitude == "0");
+}
+
 shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, const vector<string> &columns)
 {
     auto queryResult = MediaLibraryRdbStore::QueryWithFilter(rdbPredicates, columns);
@@ -1967,7 +1972,7 @@ shared_ptr<NativeRdb::ResultSet> QueryGeo(const RdbPredicates &rdbPredicates, co
         "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, addressDescription: %{private}s",
         fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
 
-    if (!(latitude == "0" && longitude == "0") && addressDescription.empty()) {
+    if (CheckLatitudeAndLongitude(latitude, longitude) && addressDescription.empty()) {
         std::packaged_task<bool()> pt(
             [=] { return MediaAnalysisHelper::ParseGeoInfo({ fileId + "," + latitude + "," + longitude }, false); });
         std::future<bool> futureResult = pt.get_future();
@@ -2016,7 +2021,7 @@ shared_ptr<NativeRdb::ResultSet> QueryGeoAssets(const RdbPredicates &rdbPredicat
                 "QueryGeo, fileId: %{public}s, latitude: %{public}s, longitude: %{public}s, "
                 "addressDescription: %{private}s",
                 fileId.c_str(), latitude.c_str(), longitude.c_str(), addressDescription.c_str());
-            if (!(latitude == "0" && longitude == "0") && addressDescription.empty()) {
+            if (CheckLatitudeAndLongitude(latitude, longitude) && addressDescription.empty()) {
                 geoInfo.push_back(fileId + "," + latitude + "," + longitude);
             }
         }
