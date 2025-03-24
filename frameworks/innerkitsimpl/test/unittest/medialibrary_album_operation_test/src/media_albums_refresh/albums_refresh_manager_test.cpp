@@ -208,6 +208,32 @@ HWTEST_F(AlbumsRefreshManagerTest, RefreshPhotoAlbumsBySyncNotifyInfo_Test_002, 
     EXPECT_EQ(info.notifyAlbums, true);
 }
 
+HWTEST_F(AlbumsRefreshManagerTest, CovertCloudId2AlbumId_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start CovertCloudId2AlbumId_Test");
+    vector<string> cloudIds;
+    auto resultSet = AlbumsRefreshManager::GetInstance()
+                                        .CovertCloudId2AlbumId(g_rdbStore, cloudIds);
+    EXPECT_EQ((resultSet == nullptr), true);
+}
+
+HWTEST_F(AlbumsRefreshManagerTest, CovertCloudId2FileId_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start CovertCloudId2FileId_Test");
+    vector<string> cloudIds;
+    auto resultSet = AlbumsRefreshManager::GetInstance()
+                                        .CovertCloudId2FileId(info);
+    EXPECT_EQ((resultSet == nullptr), true);
+}
+
+HWTEST_F(AlbumsRefreshManagerTest, NotifyPhotoAlbums_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start NotifyPhotoAlbums_Test");
+    SyncNotifyInfo info;
+    AlbumsRefreshManager::GetInstance().NotifyPhotoAlbums(info);
+    EXPECT_EQ((resultSet == nullptr), true);
+}
+
 HWTEST_F(AlbumsRefreshManagerTest, GetSyncNotifyInfo_Notify_ADD, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start GetSyncNotifyInfo_Notify_ADD");
