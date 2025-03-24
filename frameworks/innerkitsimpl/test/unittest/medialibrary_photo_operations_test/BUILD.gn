@@ -90,6 +90,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
+    "e2fsprogs:libext2_uuid",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
