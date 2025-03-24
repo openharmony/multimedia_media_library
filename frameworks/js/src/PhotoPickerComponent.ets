@@ -398,7 +398,11 @@ export struct PhotoPickerComponent {
     };
     if (filter.MIMETypeArray) {
       for (let mimeType of filter.MIMETypeArray) {
-        MIMETypeFilterObj.MIMETypeArray.push(this.convertMIMETypeToFilterType(mimeType));
+        if (PHOTO_VIEW_MIME_TYPE_MAP.has(mimeType)) {
+          o.MIMETypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+        } else {
+          o.MIMETypeArray.push(mimeType);
+        }
       }
     }
     return MIMETypeFilterObj;
