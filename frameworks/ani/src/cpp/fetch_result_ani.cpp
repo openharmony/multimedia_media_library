@@ -14,9 +14,11 @@
  */
 
 #include "fetch_result_ani.h"
-#include "media_log.h"
-#include "ani_class_name.h"
+
 #include <iostream>
+
+#include "ani_class_name.h"
+#include "medialibrary_ani_log.h"
 #include "medialibrary_ani_utils.h"
 
 namespace OHOS::Media {
@@ -26,7 +28,7 @@ ani_status FetchFileResultAni::FetchFileResultInit(ani_env *env)
     ani_class cls;
     auto status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
-        MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
+        ANI_ERR_LOG("Failed to find class: %{public}s", className);
         return status;
     }
 
@@ -39,10 +41,11 @@ ani_status FetchFileResultAni::FetchFileResultInit(ani_env *env)
     };
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
     if (status != ANI_OK) {
-        MEDIA_ERR_LOG("Failed to bind native methods to: %{public}s", className);
+        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
         return status;
     };
 
+    ANI_INFO_LOG("FetchFileResultInit ok");
     return ANI_OK;
 }
 
@@ -78,6 +81,7 @@ std::shared_ptr<FetchResult<SmartAlbumAsset>> FetchFileResultAni::GetFetchSmartA
 
 void FetchFileResultAni::GetFetchResult(unique_ptr<FetchFileResultAni> &obj)
 {
+    ANI_INFO_LOG("GetFetchResult type: %{public}d", sFetchResType_);
     switch (sFetchResType_) {
         case FetchResType::TYPE_FILE: {
             auto fileResult = make_shared<FetchResult<FileAsset>>(move(sFetchFileResult_->GetDataShareResultSet()));
@@ -118,24 +122,23 @@ ani_object FetchFileResultAni::FetchFileResultAniConstructor(ani_env *env, [[may
     GetFetchResult(obj);
     obj->propertyPtr->fetchResType_ = sFetchResType_;
 
-    static const char *className = ANI_CLASS_FETCH_RESULT.c_str();
     ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
+    if (ANI_OK != env->FindClass(ANI_CLASS_FETCH_RESULT.c_str(), &cls)) {
+        ANI_ERR_LOG("Failed to find class: %{public}s", ANI_CLASS_FETCH_RESULT.c_str());
         ani_object nullobj = nullptr;
         return nullobj;
     }
 
     ani_method ctor;
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", nullptr, &ctor)) {
-        MEDIA_ERR_LOG("Failed to find method: %{public}s", "ctor");
+        ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
         ani_object nullobj = nullptr;
         return nullobj;
     }
 
     ani_object fetchResult;
     if (ANI_OK !=env->Object_New(cls, ctor, &fetchResult, reinterpret_cast<ani_long>(obj.release()))) {
-        MEDIA_ERR_LOG("New fetchResult Fail");
+        ANI_ERR_LOG("New fetchResult Fail");
     }
     return fetchResult;
 }
@@ -155,6 +158,12 @@ FetchFileResultAni* FetchFileResultAni::Unwrap(ani_env *env, ani_object fetchFil
 static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContext>& aniContest)
 {
     auto propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
+    if (propertyPtr == nullptr) {
+        ANI_ERR_LOG("propertyPtr is nullptr");
+        return;
+    }
+
+    ANI_INFO_LOG("GetAllObject type: %{public}d", propertyPtr->fetchResType_);
     switch (propertyPtr->fetchResType_) {
         case FetchResType::TYPE_FILE: {
             auto fetchResult = propertyPtr->fetchFileResult_;
@@ -193,7 +202,7 @@ static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContex
             break;
         }
         default:
-            MEDIA_ERR_LOG("unsupported FetchResType");
+            ANI_ERR_LOG("unsupported FetchResType");
             break;
     }
 }
@@ -201,11 +210,11 @@ static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContex
 static bool CheckIfFFRAniNotEmpty(FetchFileResultAni* obj)
 {
     if (obj == nullptr) {
-        MEDIA_ERR_LOG("FetchFileResultNapi is nullptr");
+        ANI_ERR_LOG("FetchFileResultNapi is nullptr");
         return false;
     }
     if (obj->CheckIfPropertyPtrNull()) {
-        MEDIA_ERR_LOG("PropertyPtr in FetchFileResultNapi is nullptr");
+        ANI_ERR_LOG("PropertyPtr in FetchFileResultNapi is nullptr");
         return false;
     }
     return true;
@@ -215,7 +224,8 @@ static ani_object GetAllObjectComplete(ani_env *env, std::unique_ptr<FetchFileRe
 {
     ani_object result = nullptr;
     ani_status status;
-    auto fetchResType = context->objectPtr->fetchResType_;
+    FetchResType fetchResType = context->objectPtr->fetchResType_;
+    ANI_INFO_LOG("fetchResType: %{public}d", fetchResType);
     switch (fetchResType) {
         case FetchResType::TYPE_FILE:
             status = MediaLibraryAniUtils::ToFileAssetAniArray(env, context->fileAssetArray, result);
@@ -248,16 +258,24 @@ ani_object FetchFileResultAni::GetAllObjects(ani_env *env, [[maybe_unused]] ani_
 
 ani_status FetchFileResultAni::Close(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle)
 {
-    auto fetchFileResultAni = Unwrap(env, fetchFileResultHandle);
-    delete fetchFileResultAni;
+    FetchFileResultAni* fetchFileResultAni = Unwrap(env, fetchFileResultHandle);
+    if (fetchFileResultAni) {
+        delete fetchFileResultAni;
+    }
     return ANI_OK;
 }
 
 ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<FileAsset>> fileResult)
 {
+    if (fileResult == nullptr) {
+        ANI_ERR_LOG("fetchResult FileAsset is nullptr");
+        return nullptr;
+    }
+
     sFetchResType_ = fileResult->GetFetchResType();
     sFetchFileResult_ = move(fileResult);
     ani_object result = nullptr;
+    ANI_INFO_LOG("get FileAsset result type: %{public}d", sFetchFileResult_->GetResultNapiType());
     switch (sFetchFileResult_->GetResultNapiType()) {
         case ResultNapiType::TYPE_USERFILE_MGR: {
             result = FetchFileResultAniConstructor(env, nullptr);
@@ -277,9 +295,15 @@ ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_p
 
 ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<PhotoAlbum>> fileResult)
 {
+    if (fileResult == nullptr) {
+        ANI_ERR_LOG("fetchResult PhotoAlbum is nullptr");
+        return nullptr;
+    }
+
     sFetchResType_ = fileResult->GetFetchResType();
     sFetchPhotoAlbumResult_ = move(fileResult);
     ani_object result = nullptr;
+    ANI_INFO_LOG("get PhotoAlbum result type: %{public}d", sFetchPhotoAlbumResult_->GetResultNapiType());
     switch (sFetchPhotoAlbumResult_->GetResultNapiType()) {
         case ResultNapiType::TYPE_USERFILE_MGR: {
             result = FetchFileResultAniConstructor(env, nullptr);
@@ -300,6 +324,12 @@ ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_p
 static void GetFirstAsset(std::unique_ptr<FetchFileResultAniContext>& aniContest)
 {
     auto propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
+    if (propertyPtr == nullptr) {
+        ANI_ERR_LOG("propertyPtr is nullptr");
+        return;
+    }
+
+    ANI_INFO_LOG("getFirstAsset type: %{public}d", propertyPtr->fetchResType_);
     switch (propertyPtr->fetchResType_) {
         case FetchResType::TYPE_FILE: {
             aniContest->fileAsset = propertyPtr->fetchFileResult_->GetFirstObject();
@@ -325,6 +355,12 @@ static void GetFirstAsset(std::unique_ptr<FetchFileResultAniContext>& aniContest
 
 static ani_object GetPositionObjectComplete(ani_env *env, std::unique_ptr<FetchFileResultAniContext>& aniContest)
 {
+    if (aniContest->objectPtr == nullptr) {
+        ANI_ERR_LOG("aniContest->objectPtr is nullptr");
+        return nullptr;
+    }
+
+    ANI_INFO_LOG("fetch result type: %{public}d", aniContest->objectPtr->fetchResType_);
     ani_object etsAsset = nullptr;
     switch (aniContest->objectPtr->fetchResType_) {
         case FetchResType::TYPE_FILE: {
@@ -365,7 +401,13 @@ ani_object FetchFileResultAni::GetFirstObject(ani_env *env, [[maybe_unused]] ani
 
 static void GetNextAsset(std::unique_ptr<FetchFileResultAniContext>& aniContest)
 {
-    auto propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
+    std::shared_ptr<FetchResultProperty> propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
+    if (propertyPtr == nullptr) {
+        ANI_ERR_LOG("propertyPtr is nullptr");
+        return;
+    }
+
+    ANI_INFO_LOG("fetch result type: %{public}d", propertyPtr->fetchResType_);
     switch (propertyPtr->fetchResType_) {
         case FetchResType::TYPE_FILE: {
             aniContest->fileAsset = propertyPtr->fetchFileResult_->GetNextObject();
@@ -412,6 +454,7 @@ ani_double FetchFileResultAni::GetCount([[maybe_unused]] ani_env *env,
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
     if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
+        ANI_INFO_LOG("fetch result type: %{public}d", aniContext->objectInfo->GetFetchResType());
         switch (aniContext->objectInfo->GetFetchResType()) {
             case FetchResType::TYPE_FILE:
                 count = aniContext->objectInfo->GetFetchFileResultObject()->GetCount();

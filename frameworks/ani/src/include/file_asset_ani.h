@@ -71,6 +71,7 @@ public:
     static ani_string GetAnalysisData([[maybe_unused]] ani_env *env, ani_object object, ani_enum_item analysisType);
     static void SetHidden([[maybe_unused]] ani_env *env, ani_object object, ani_boolean hiddenState);
     static void SetFavorite([[maybe_unused]] ani_env *env, ani_object object, ani_boolean favoriteState);
+
 private:
     static thread_local std::shared_ptr<FileAsset> sFileAsset_;
     std::shared_ptr<FileAsset> fileAssetPtr = nullptr;
