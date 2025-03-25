@@ -1048,8 +1048,8 @@ std::vector<NativeRdb::ValueObject> CloneRestoreHighlight::GetHighlightDuplicate
         std::optional<int32_t> aiAlbumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "ai_album_id");
         CHECK_AND_CONTINUE(highlightId.has_value());
         changeIds.emplace_back(highlightId.value());
-        CHECK_AND_EXECUTE(albumId.has_value(), duplicateAnalysisAlbumIdSet.insert(albumId.value()));
-        CHECK_AND_EXECUTE(aiAlbumId.has_value(), duplicateAnalysisAlbumIdSet.insert(aiAlbumId.value()));
+        CHECK_AND_EXECUTE(!albumId.has_value(), duplicateAnalysisAlbumIdSet.insert(albumId.value()));
+        CHECK_AND_EXECUTE(!aiAlbumId.has_value(), duplicateAnalysisAlbumIdSet.insert(aiAlbumId.value()));
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     resultSet->Close();
     return changeIds;
