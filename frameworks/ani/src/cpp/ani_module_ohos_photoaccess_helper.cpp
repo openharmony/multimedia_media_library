@@ -19,9 +19,9 @@
 #include "media_album_change_request_ani.h"
 #include "media_asset_change_request_ani.h"
 #include "media_assets_change_request_ani.h"
+#include "media_library_ani.h"
 #include "medialibrary_ani_log.h"
 #include "moving_photo_ani.h"
-#include "photo_access_helper_ani.h"
 #include "photo_album_ani.h"
 #include "photo_proxy_ani.h"
 
@@ -44,7 +44,7 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
 
     std::array staticMethods = {
         ani_native_function {"getPhotoAccessHelper", nullptr,
-            reinterpret_cast<void *>(PhotoAccessHelperAni::Constructor)},
+            reinterpret_cast<void *>(MediaLibraryAni::Constructor)},
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(staticCls, staticMethods.data(), staticMethods.size())) {
@@ -52,7 +52,7 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
         return ANI_ERROR;
     };
 
-    CHECK_STATUS_RET(PhotoAccessHelperAni::PhotoAccessHelperInit(env), "PhotoAccessHelperInit fail");
+    CHECK_STATUS_RET(MediaLibraryAni::PhotoAccessHelperInit(env), "PhotoAccessHelperInit fail");
     CHECK_STATUS_RET(PhotoAlbumAni::PhotoAccessInit(env), "PhotoAccessInit fail");
     CHECK_STATUS_RET(FileAssetAni::FileAssetAniInit(env), "FileAssetAniInit fail");
     CHECK_STATUS_RET(FetchFileResultAni::FetchFileResultInit(env), "FetchFileResultInit fail");

@@ -29,7 +29,7 @@ struct AniError {
     EXPORT void SetApiName(const std::string &Name);
     void SaveError(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     EXPORT void SaveError(int32_t ret);
-    EXPORT void HandleError(ani_env *env, ani_error &errorObj);
+    EXPORT void HandleError(ani_env *env, ani_object &errorObj);
     EXPORT static void ThrowError(ani_env *env, int32_t err, const std::string &errMsg = "");
     EXPORT static void ThrowError(ani_env *env, int32_t err, const char *func, int32_t line,
         const std::string &errMsg = "");

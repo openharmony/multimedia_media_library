@@ -46,12 +46,12 @@ public:
     ~ThumbnailGenerateHandler() = default;
 };
 
-class PhotoAccessHelperAni {
+class MediaLibraryAni {
 public:
     static ani_status PhotoAccessHelperInit(ani_env *env);
     static ani_object Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz,
         [[maybe_unused]] ani_object context);
-    static PhotoAccessHelperAni* Unwrap(ani_env *env, ani_object object);
+    static MediaLibraryAni* Unwrap(ani_env *env, ani_object object);
 
     static ani_object GetPhotoAlbums(ani_env *env, ani_object object, ani_enum_item albumTypeItem,
         ani_enum_item albumSubtypeItem, ani_object fetchOptions);
@@ -87,7 +87,7 @@ struct MediaLibraryAsyncContext : public AniError {
     bool isCreateByAgent;
     AniAssetType assetType;
     AlbumType albumType;
-    PhotoAccessHelperAni *objectInfo;
+    MediaLibraryAni *objectInfo;
     std::string selection;
     std::vector<std::string> selectionArgs;
     std::string order;
@@ -119,7 +119,6 @@ struct MediaLibraryAsyncContext : public AniError {
     int32_t smartAlbumId = -1;
     int32_t isLocationAlbum = 0;
     int32_t isHighlightAlbum = 0;
-    size_t argc;
     ResultNapiType resultNapiType;
     std::string tableName;
     std::vector<uint32_t> mediaTypes;
