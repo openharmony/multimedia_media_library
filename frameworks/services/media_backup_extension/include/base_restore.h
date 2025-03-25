@@ -27,6 +27,7 @@
 #include "photos_data_handler.h"
 #include "rdb_helper.h"
 #include "result_set.h"
+#include "metadata.h"
 #include "tab_old_photos_restore.h"
 #include "geo_knowledge_restore.h"
 #include "highlight_restore.h"
@@ -83,6 +84,7 @@ protected:
     int InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     virtual int InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
+    void SetMetaDataValue(const FileInfo &fileInfo, std::unique_ptr<Metadata> &metadata);
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
         int64_t &rowNum);

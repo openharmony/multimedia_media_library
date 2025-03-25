@@ -39,7 +39,6 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_errno.h"
-#include "metadata.h"
 #include "moving_photo_file_utils.h"
 #include <nlohmann/json.hpp>
 #include "parameters.h"
@@ -479,6 +478,21 @@ static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
     CHECK_AND_EXECUTE(!cond, fileInfo.orientation = metadata->GetOrientation());
 }
 
+static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
+    FileInfo &fileInfo)
+{
+    if (fileInfo.userComment.empty()) {
+        fileInfo.userComment = metadata->GetUserComment();
+        MEDIA_INFO_LOG("user comment is empty, reset to metadata value:%{public}s", metadata->GetUserComment().c_str());
+    }
+
+    bool hasUserComment = value.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
+    if (hasUserComment) {
+        value.Delete(PhotoColumn::PHOTO_USER_COMMENT);
+    }
+    value.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
+}
+
 static void SetCoverPosition(const FileInfo &fileInfo,
     const unique_ptr<Metadata> &imageMetaData, NativeRdb::ValuesBucket &value)
 {
@@ -502,20 +516,24 @@ static void SetCoverPosition(const FileInfo &fileInfo,
     value.PutLong(PhotoColumn::PHOTO_COVER_POSITION, static_cast<int64_t>(coverPosition));
 }
 
-void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
+void BaseRestore::SetMetaDataValue(const FileInfo &fileInfo, std::unique_ptr<Metadata> &data)
 {
-    std::unique_ptr<Metadata> data = make_unique<Metadata>();
     data->SetFilePath(fileInfo.filePath);
     data->SetFileMediaType(fileInfo.fileType);
     data->SetFileDateModified(fileInfo.dateModified);
     data->SetFileName(fileInfo.displayName);
     BackupFileUtils::FillMetadata(data);
-    MediaType mediaType = data->GetFileMediaType();
+}
+
+void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
+{
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    SetMetaDataValue(fileInfo, data);
 
     value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
     value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
-    value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
+    value.PutInt(MediaColumn::MEDIA_TYPE, data->GetFileMediaType());
     value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
     if (fileInfo.fileSize != 0) {
         value.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
@@ -540,6 +558,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
     InsertDateAdded(data, value);
     InsertOrientation(data, value, fileInfo, sceneCode_);
+    InsertUserComment(data, value, fileInfo);
     int64_t dateAdded = 0;
     NativeRdb::ValueObject valueObject;
     if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {

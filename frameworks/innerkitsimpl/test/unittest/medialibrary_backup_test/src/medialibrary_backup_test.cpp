@@ -1304,6 +1304,43 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetValueFromMetaData, Test
     GTEST_LOG_(INFO) << "medialib_backup_test_SetValueFromMetaData end";
 }
 
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetUserComment_TEST1, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST1 start";
+    FileInfo fileInfo;
+    fileInfo.filePath = "TEST";
+    fileInfo.userComment = "TEST123";
+    NativeRdb::ValuesBucket valueBucket;
+    // no column user comment
+    bool hasUserComment = valueBucket.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
+    EXPECT_EQ(hasUserComment, false);
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    upgrade->SetValueFromMetaData(fileInfo, valueBucket);
+    hasUserComment = valueBucket.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
+    EXPECT_EQ(hasUserComment, true);
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST1 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetUserComment_TEST2, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST2 start";
+    FileInfo fileInfo;
+    fileInfo.filePath = "TEST";
+    fileInfo.userComment = "TEST123";
+    NativeRdb::ValuesBucket valueBucket;
+    // has column user comment
+    valueBucket.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
+    bool hasUserComment = valueBucket.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
+    EXPECT_EQ(hasUserComment, true);
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    upgrade->SetValueFromMetaData(fileInfo, valueBucket);
+    hasUserComment = valueBucket.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
+    EXPECT_EQ(hasUserComment, true);
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST2 end";
+}
+
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetBackupInfo, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetBackupInfo start";
