@@ -25,6 +25,7 @@
 #include "media_device_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
+#include "media_library_ani.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -41,7 +42,6 @@
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
 #include "userfilemgr_uri.h"
-#include "photo_access_helper_ani.h"
 #include <nlohmann/json.hpp>
 
 using namespace std;
@@ -758,27 +758,34 @@ ani_status MediaLibraryAniUtils::GetFetchOption(ani_env *env, ani_object fetchOp
     return ANI_OK;
 }
 
+DataSharePredicates* MediaLibraryAniUtils::UnwrapPredicate(ani_env *env, const ani_object predicates)
+{
+    ani_class cls {};
+    static const std::string className = "L@ohos/data/dataSharePredicates/dataSharePredicates/DataSharePredicates;";
+    CHECK_COND_RET(env->FindClass(className.c_str(), &cls) == ANI_OK, nullptr, "Can't find class DataSharePredicates");
+
+    ani_method getMethod {};
+    CHECK_COND_RET(env->Class_FindMethod(cls, "getNativePtr", nullptr, &getMethod) == ANI_OK, nullptr,
+        "Can't find method getNativePtr");
+
+    ani_long nativePtr = 0;
+    CHECK_COND_RET(env->Object_CallMethod_Long(predicates, getMethod, &nativePtr) == ANI_OK, nullptr,
+        "Call getNativePtr fail");
+    CHECK_COND_RET(nativePtr != 0, nullptr, "Invalid nativePtr: 0");
+    return reinterpret_cast<DataSharePredicates*>(nativePtr);
+}
+
 template <class AniContext>
 ani_status MediaLibraryAniUtils::GetPredicate(ani_env *env, const ani_object fetchOptions, const std::string &propName,
     AniContext &context, FetchOptionType fetchOptType)
 {
     ani_object property {};
-    CHECK_STATUS_RET(GetProperty(env, fetchOptions, propName, property), "GetProperty predicates failed");
+    CHECK_STATUS_RET(GetProperty(env, fetchOptions, propName, property), "GetProperty predicates fail");
 
-    ani_class cls {};
-    static const std::string className = "L@ohos/data/dataSharePredicates/dataSharePredicates/DataSharePredicates;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find class DataSharePredicates");
-
-    ani_method getMethod {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "getNativePtr", nullptr, &getMethod),
-        "Can't find method getNativePtr");
-
-    ani_long nativePtr = 0;
-    CHECK_STATUS_RET(env->Object_CallMethod_Long(property, getMethod, &nativePtr), "Call getNativePtr fail");
-    std::shared_ptr<DataSharePredicates> predicate(reinterpret_cast<DataSharePredicates*>(nativePtr));
-    auto absPredicate = static_cast<shared_ptr<DataShareAbsPredicates>>(predicate);
-    CHECK_COND_RET(HandleSpecialPredicate(context, absPredicate, fetchOptType), ANI_INVALID_ARGS, "invalid predicate");
-    CHECK_COND_RET(GetLocationPredicate(context, absPredicate), ANI_INVALID_ARGS, "invalid predicate");
+    DataSharePredicates* predicate = MediaLibraryAniUtils::UnwrapPredicate(env, property);
+    CHECK_COND_RET(predicate != nullptr, ANI_INVALID_ARGS, "UnwrapPredicate fail");
+    CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType), ANI_INVALID_ARGS, "invalid predicate");
+    CHECK_COND_RET(GetLocationPredicate(context, predicate), ANI_INVALID_ARGS, "invalid predicate");
     return ANI_OK;
 }
 
@@ -807,7 +814,7 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 
 template <class AniContext>
 bool MediaLibraryAniUtils::HandleSpecialPredicate(AniContext &context,
-    std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, FetchOptionType fetchOptType)
+    DataSharePredicates *predicate, FetchOptionType fetchOptType)
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
@@ -863,8 +870,7 @@ bool MediaLibraryAniUtils::HandleSpecialPredicate(AniContext &context,
 }
 
 template <class AniContext>
-bool MediaLibraryAniUtils::GetLocationPredicate(AniContext &context,
-    std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate)
+bool MediaLibraryAniUtils::GetLocationPredicate(AniContext &context, DataSharePredicates *predicate)
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
@@ -940,7 +946,7 @@ int MediaLibraryAniUtils::TransErrorCode(const string &Name, int error)
     return error;
 }
 
-void MediaLibraryAniUtils::HandleError(ani_env *env, int error, ani_error &errorObj, const std::string &Name)
+void MediaLibraryAniUtils::HandleError(ani_env *env, int error, ani_object &errorObj, const std::string &Name)
 {
     if (error == ERR_DEFAULT) {
         return;
@@ -958,10 +964,34 @@ void MediaLibraryAniUtils::HandleError(ani_env *env, int error, ani_error &error
     ANI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), originalError);
 }
 
-void MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_error &errorObj, const int32_t errCode,
+void MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_object &errorObj, const int32_t errCode,
     const string &errMsg)
 {
-    errorObj = nullptr;
+    static const std::string className = "L@ohos/file/photoAccessHelper/MediaLibraryAniError;";
+    ani_class cls {};
+    ani_status status = env->FindClass(className.c_str(), &cls);
+    if (status != ANI_OK) {
+        ANI_ERR_LOG("Can't find class %{public}s", className.c_str());
+        return;
+    }
+
+    ani_method ctor {};
+    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "DLstd/core/String;:V", &ctor)) {
+        ANI_ERR_LOG("Can't find <ctor> from class %{public}s", className.c_str());
+        return;
+    }
+
+    ani_string error_msg {};
+    if (ANI_OK != MediaLibraryAniUtils::ToAniString(env, errMsg, error_msg)) {
+        ANI_ERR_LOG("Call ToAniString function failed.");
+        return;
+    }
+
+    if (ANI_OK != env->Object_New(cls, ctor, &errorObj, (ani_double)errCode, error_msg)) {
+        ANI_ERR_LOG("New MediaLibraryAniError object failed.");
+        return;
+    }
+    return;
 }
 
 string MediaLibraryAniUtils::GetStringValueByColumn(shared_ptr<DataShare::DataShareResultSet> resultSet,
@@ -1385,11 +1415,17 @@ bool MediaLibraryAniUtils::IsFeaturedSinglePortraitAlbum(
     return isFeaturedSinglePortrait;
 }
 
+ani_status MediaLibraryAniUtils::FindClass(ani_env *env, const std::string &className, ani_class *cls)
+{
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), cls), "Can't find class");
+    return ANI_OK;
+}
+
 ani_status MediaLibraryAniUtils::FindClassMethod(ani_env *env, const std::string &className,
     const std::string &methodName, ani_method *method)
 {
     ani_class cls {};
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find class");
+    CHECK_STATUS_RET(MediaLibraryAniUtils::FindClass(env, className, &cls), "Can't find class");
     CHECK_STATUS_RET(env->Class_FindMethod(cls, methodName.c_str(), nullptr, method), "Can't find method");
 
     return ANI_OK;
@@ -1406,10 +1442,10 @@ template ani_status MediaLibraryAniUtils::GetPredicate<unique_ptr<PhotoAlbumAniC
     FetchOptionType fetchOptType);
 
 template bool MediaLibraryAniUtils::HandleSpecialPredicate<unique_ptr<PhotoAlbumAniContext>>(
-    unique_ptr<PhotoAlbumAniContext> &context, std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate,
+    unique_ptr<PhotoAlbumAniContext> &context, DataSharePredicates *predicate,
     FetchOptionType fetchOptType);
 
 template bool MediaLibraryAniUtils::GetLocationPredicate<unique_ptr<PhotoAlbumAniContext>>(
-    unique_ptr<PhotoAlbumAniContext> &context, std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate);
+    unique_ptr<PhotoAlbumAniContext> &context, DataSharePredicates *predicate);
 } // namespace Media
 } // namespace OHOS

@@ -14,8 +14,8 @@
  */
 
 #include "media_change_request_ani.h"
+#include "media_library_ani.h"
 #include "userfile_client.h"
-#include "photo_access_helper_ani.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,7 +34,7 @@ bool MediaChangeRequestAni::InitUserFileClient(ani_env *env, ani_object object)
         return true;
     }
 
-    std::unique_lock<std::mutex> helperLock(PhotoAccessHelperAni::sUserFileClientMutex_);
+    std::unique_lock<std::mutex> helperLock(MediaLibraryAni::sUserFileClientMutex_);
     if (!UserFileClient::IsValid()) {
         UserFileClient::Init(env, object);
     }

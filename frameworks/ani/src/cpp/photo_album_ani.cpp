@@ -51,13 +51,12 @@ PhotoAlbumAni::~PhotoAlbumAni() = default;
 ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
 {
     ani_class cls;
-    if (ANI_OK != env->FindClass(ANI_CLASS_PHOTO_ALBUM.c_str(), &cls)) {
-        ANI_ERR_LOG("Failed to find class: %{public}s", ANI_CLASS_PHOTO_ALBUM.c_str());
+    if (ANI_OK != env->FindClass(PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE.c_str(), &cls)) {
+        ANI_ERR_LOG("Failed to find class: %{public}s", PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE.c_str());
         return ANI_ERROR;
     }
 
     std::array methods = {
-        ani_native_function {"create", nullptr, reinterpret_cast<void *>(CreateEmptyPhotoAlbumAni)},
         ani_native_function {"getAssetsInner", nullptr, reinterpret_cast<void *>(PhotoAccessGetPhotoAssets)},
         ani_native_function {"getAssetsSync", nullptr, reinterpret_cast<void *>(PhotoAccessGetPhotoAssetsSync)},
         ani_native_function {"commitModifyInner", nullptr, reinterpret_cast<void *>(PhotoAccessHelperCommitModify)},
@@ -72,20 +71,12 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
-        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", ANI_CLASS_PHOTO_ALBUM.c_str());
+        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE.c_str());
         return ANI_ERROR;
     }
 
     ANI_INFO_LOG("PhotoAccessInit ok");
     return ANI_OK;
-}
-
-ani_object PhotoAlbumAni::CreateEmptyPhotoAlbumAni(ani_env *env, ani_class clazz)
-{
-    pAlbumData_ = new PhotoAlbum();
-    ani_object result = PhotoAlbumAniConstructor(env, clazz);
-    pAlbumData_ = nullptr;
-    return result;
 }
 
 ani_object PhotoAlbumAni::CreatePhotoAlbumAni(ani_env *env, std::unique_ptr<PhotoAlbum> &albumData)
@@ -94,8 +85,17 @@ ani_object PhotoAlbumAni::CreatePhotoAlbumAni(ani_env *env, std::unique_ptr<Phot
         return nullptr;
     }
 
+    ani_class cls {};
+    if (albumData->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE, &cls) == ANI_OK,
+            nullptr, "Can't find class");
+    } else {
+        CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, UFM_ANI_CLASS_PHOTO_ALBUM_HANDLE, &cls) == ANI_OK,
+            nullptr, "Can't find class");
+    }
+
     pAlbumData_ = albumData.release();
-    ani_object result = PhotoAlbumAniConstructor(env, nullptr);
+    ani_object result = PhotoAlbumAniConstructor(env, cls);
     pAlbumData_ = nullptr;
     return result;
 }
@@ -107,7 +107,11 @@ ani_object PhotoAlbumAni::CreatePhotoAlbumAni(ani_env *env, std::shared_ptr<Phot
         return nullptr;
     }
 
-    ani_object result = PhotoAlbumAniConstructor(env, nullptr);
+    ani_class cls {};
+    CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE, &cls) == ANI_OK,
+        nullptr, "Can't find class");
+
+    ani_object result = PhotoAlbumAniConstructor(env, cls);
     PhotoAlbumAni *photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, result);
     CHECK_COND_RET(photoAlbumAni != nullptr, nullptr, "PhotoAlbumAni is nullptr");
     photoAlbumAni->photoAlbumPtr = albumData;
@@ -193,14 +197,10 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
     return ANI_OK;
 }
 
-ani_object PhotoAlbumAni::PhotoAlbumAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz)
+ani_object PhotoAlbumAni::PhotoAlbumAniConstructor(ani_env *env, ani_class clazz)
 {
-    ani_class cls {};
-    CHECK_COND_RET(env->FindClass(ANI_CLASS_PHOTO_ALBUM.c_str(), &cls) == ANI_OK, nullptr,
-        "Failed to find class: %{public}s", ANI_CLASS_PHOTO_ALBUM.c_str());
-
     ani_method ctor {};
-    CHECK_COND_RET(env->Class_FindMethod(cls, "<ctor>", nullptr, &ctor) == ANI_OK, nullptr,
+    CHECK_COND_RET(env->Class_FindMethod(clazz, "<ctor>", nullptr, &ctor) == ANI_OK, nullptr,
         "Failed to find method: <ctor>");
 
     unique_ptr<PhotoAlbumAni> obj = make_unique<PhotoAlbumAni>();
@@ -209,9 +209,9 @@ ani_object PhotoAlbumAni::PhotoAlbumAniConstructor(ani_env *env, [[maybe_unused]
         obj->SetPhotoAlbumAniProperties();
     }
     ani_object albumHandle {};
-    CHECK_COND_RET(env->Object_New(cls, ctor, &albumHandle, reinterpret_cast<ani_long>(obj.release())) == ANI_OK,
+    CHECK_COND_RET(env->Object_New(clazz, ctor, &albumHandle, reinterpret_cast<ani_long>(obj.release())) == ANI_OK,
         nullptr, "New PhotoAlbumHandle Fail");
-    CHECK_COND_RET(BindAniAttributes(env, cls, albumHandle) == ANI_OK, nullptr, "PhotoAlbum BindAniAttributes Fail");
+    CHECK_COND_RET(BindAniAttributes(env, clazz, albumHandle) == ANI_OK, nullptr, "PhotoAlbum BindAniAttributes Fail");
     return albumHandle;
 }
 
@@ -346,7 +346,7 @@ static void PhotoAccessGetPhotoAssetsExecute(ani_env *env, unique_ptr<PhotoAlbum
 static ani_object GetPhotoAssetsComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
     ani_object fetchRes {};
-    ani_error errorObj {};
+    ani_object errorObj {};
     if (context->fetchResult != nullptr) {
         fetchRes = FetchFileResultAni::CreateFetchFileResult(env, move(context->fetchResult));
         if (fetchRes == nullptr) {
@@ -404,6 +404,15 @@ ani_object PhotoAlbumAni::PhotoAccessGetPhotoAssetsSync(ani_env *env, ani_object
     return PhotoAccessGetPhotoAssetsExecuteSync(env, context);
 }
 
+void SyncAlbumName(ani_env *env, ani_object object, std::shared_ptr<PhotoAlbum> &photoAlbum)
+{
+    std::string albumName = "";
+    CHECK_IF_EQUAL(MediaLibraryAniUtils::GetProperty(env, object, "albumName", albumName) == ANI_OK,
+        "Failed to get albumName");
+    CHECK_IF_EQUAL(!albumName.empty(), "Get empty albumName");
+    photoAlbum->SetAlbumName(albumName);
+}
+
 static ani_status ParseArgsCommitModify(ani_env *env, ani_object object, unique_ptr<PhotoAlbumAniContext> &context)
 {
     context->objectInfo = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, object);
@@ -422,6 +431,7 @@ static ani_status ParseArgsCommitModify(ani_env *env, ani_object object, unique_
         return ANI_INVALID_ARGS;
     }
 
+    SyncAlbumName(env, object, photoAlbum);
     if (MediaFileUtils::CheckAlbumName(photoAlbum->GetAlbumName()) < 0) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return ANI_INVALID_ARGS;
@@ -444,7 +454,7 @@ static void CommitModifyExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &
 
 static void CommitModifyComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
-    ani_error errorObj {};
+    ani_object errorObj {};
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, errorObj);
     }
@@ -601,7 +611,7 @@ static void PhotoAlbumAddAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAniCon
 
 static void PhotoAlbumAddAssetsComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
-    ani_error errorObj {};
+    ani_object errorObj {};
     if (context->error == ERR_DEFAULT) {
         auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
         photoAlbum->SetCount(context->newCount);
@@ -678,7 +688,7 @@ static void PhotoAlbumRemoveAssetsExecute(ani_env *env, unique_ptr<PhotoAlbumAni
 
 static void PhotoAlbumRemoveAssetsComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
-    ani_error errorObj {};
+    ani_object errorObj {};
     if (context->error == ERR_DEFAULT) {
         auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
         photoAlbum->SetCount(context->newCount);
@@ -755,7 +765,7 @@ static void TrashAlbumExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &co
 
 static void TrashAlbumComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
-    ani_error errorObj {};
+    ani_object errorObj {};
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, errorObj);
     }
@@ -881,7 +891,7 @@ static void PhotoAccessHelperGetFaceIdExec(ani_env *env, unique_ptr<PhotoAlbumAn
 static ani_string GetFaceIdComplete(ani_env *env, unique_ptr<PhotoAlbumAniContext> &context)
 {
     ani_string result {};
-    ani_error errorObj {};
+    ani_object errorObj {};
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, errorObj);
     } else {

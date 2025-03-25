@@ -153,7 +153,7 @@
 #define RETURN_ANI_UNDEFINED(env)                                         \
     do {                                                                  \
         ani_ref result = nullptr;                                         \
-        ani_status __ret = ((env)->GetUndefined(&result));                  \
+        ani_status __ret = ((env)->GetUndefined(&result));                \
         CHECK_ARGS((env), __ret, JS_INNER_FAIL);                          \
         return static_cast<ani_object>(result);                           \
     } while (0)
@@ -332,28 +332,28 @@ public:
     static std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> GetPhotoCreateOptions(
         ani_env *env, ani_object src);
 
+    static DataShare::DataSharePredicates* UnwrapPredicate(ani_env *env, const ani_object predicates);
     template <class AniContext>
     static ani_status GetPredicate(ani_env *env, const ani_object fetchOptions, const std::string &propName,
         AniContext &context, FetchOptionType fetchOptType);
     template <class AniContext>
     static bool HandleSpecialPredicate(AniContext &context,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate, FetchOptionType fetchOptType);
+        DataShare::DataSharePredicates *predicate, FetchOptionType fetchOptType);
 
     template <class AniContext>
     static ani_status GetFetchOption(ani_env *env, ani_object fetchOptions, FetchOptionType fetchOptType,
         AniContext &context);
 
     template <class AniContext>
-    static bool GetLocationPredicate(AniContext &context,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate);
+    static bool GetLocationPredicate(AniContext &context, DataShare::DataSharePredicates *predicate);
 
     static int TransErrorCode(const std::string &Name, std::shared_ptr<DataShare::DataShareResultSet> resultSet);
 
     static int TransErrorCode(const std::string &Name, int error);
 
-    static void HandleError(ani_env *env, int error, ani_error &errorObj, const std::string &Name);
+    static void HandleError(ani_env *env, int error, ani_object &errorObj, const std::string &Name);
 
-    static void CreateAniErrorObject(ani_env *env, ani_error &errorObj, const int32_t errCode,
+    static void CreateAniErrorObject(ani_env *env, ani_object &errorObj, const int32_t errCode,
         const std::string &errMsg);
 
     static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
@@ -384,6 +384,8 @@ public:
 
     static std::string GetStringValueByColumn(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::string columnName);
+
+    static ani_status FindClass(ani_env *env, const std::string &className, ani_class *cls);
 
     static ani_status FindClassMethod(ani_env *env, const std::string &className, const std::string &methodName,
         ani_method *method);
