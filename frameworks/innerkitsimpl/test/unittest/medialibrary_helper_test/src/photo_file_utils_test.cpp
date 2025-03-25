@@ -175,5 +175,118 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_001, TestS
     EXPECT_EQ(MediaFileUtils::DeleteDir("/storage/cloud/files/Photo/1/"), true);
     EXPECT_EQ(MediaFileUtils::DeleteDir("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg"), true);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_003, TestSize.Level0)
+{
+    string photoPath = "";
+    EXPECT_EQ(PhotoFileUtils::GetEditDataPath(photoPath), "");
+
+    photoPath = "/storage/cloud/files/Photo/1/IMG_123435213_124.jpg";
+    EXPECT_EQ(PhotoFileUtils::GetEditDataPath(photoPath),
+        "/storage/cloud/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata");
+    EXPECT_EQ(PhotoFileUtils::GetEditDataPath(photoPath, -1),
+        "/storage/cloud/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata");
+    EXPECT_EQ(PhotoFileUtils::GetEditDataPath(photoPath, 100),
+        "/storage/cloud/100/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata");
+    EXPECT_EQ(PhotoFileUtils::GetEditDataPath(photoPath, 101),
+        "/storage/cloud/101/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_003, TestSize.Level0)
+{
+    string photoPath = "";
+    EXPECT_EQ(PhotoFileUtils::GetEditDataCameraPath(photoPath), "");
+
+    photoPath = "/storage/cloud/files/Photo/1/IMG_123435213_124.jpg";
+    EXPECT_EQ(PhotoFileUtils::GetEditDataCameraPath(photoPath),
+        "/storage/cloud/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata_camera");
+    EXPECT_EQ(PhotoFileUtils::GetEditDataCameraPath(photoPath, -1),
+        "/storage/cloud/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata_camera");
+    EXPECT_EQ(PhotoFileUtils::GetEditDataCameraPath(photoPath, 100),
+        "/storage/cloud/100/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata_camera");
+    EXPECT_EQ(PhotoFileUtils::GetEditDataCameraPath(photoPath, 101),
+        "/storage/cloud/101/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata_camera");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasSource_002, TestSize.Level0)
+{
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 0), false);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 10), false);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 1), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 5), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(true, 0, 0), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(true, 0, 10), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(true, 0, 2), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 0), false);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 2), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 1), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 3), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 4), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 5), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 6), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 7), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 8), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 9), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 10), false);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 1, 0), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(true, 1, 0), true);
+    EXPECT_EQ(PhotoFileUtils::HasSource(false, 1, 2), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetMetaPathFromOrignalPath_001, TestSize.Level0)
+{
+    string photoPath = "";
+    string metaPath = "";
+    EXPECT_EQ(PhotoFileUtils::GetMetaPathFromOrignalPath(photoPath, metaPath), -209);
+
+    photoPath = "/123/456/789";
+    EXPECT_EQ(PhotoFileUtils::GetMetaPathFromOrignalPath(photoPath, metaPath), -209);
+
+    photoPath = "/data/media/Recovery/Photo/IMG_123.jpg";
+    EXPECT_EQ(PhotoFileUtils::GetMetaPathFromOrignalPath(photoPath, metaPath), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetMetaDataRealPath_001, TestSize.Level0)
+{
+    string photoPath = "";
+    int32_t userId = 0;
+    EXPECT_EQ(PhotoFileUtils::GetMetaDataRealPath(photoPath, userId), "");
+
+    photoPath = "/123/456/789";
+    EXPECT_EQ(PhotoFileUtils::GetMetaDataRealPath(photoPath, userId), "");
+
+    photoPath = "/storage/cloud/files/Photo/1/IMG_123435213_124.jpg";
+    EXPECT_EQ(PhotoFileUtils::GetMetaDataRealPath(photoPath, userId),
+        "/storage/cloud/0/files/.meta/Photo/1/IMG_123435213_124.jpg.json");
+
+    userId = -1;
+    EXPECT_EQ(PhotoFileUtils::GetMetaDataRealPath(photoPath, userId),
+        "/storage/cloud/files/.meta/Photo/1/IMG_123435213_124.jpg.json");
+    userId = 1;
+    EXPECT_EQ(PhotoFileUtils::GetMetaDataRealPath(photoPath, userId),
+        "/storage/cloud/1/files/.meta/Photo/1/IMG_123435213_124.jpg.json");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_002, TestSize.Level0)
+{
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/Photo/1/"), true);
+    string photoPath = "";
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), false);
+    photoPath = "/storage/cloud/files/Photo/1/IMG_123456789_123.jpg";
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), false);
+
+    EXPECT_EQ(MediaFileUtils::CreateFile(photoPath), true);
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), false);
+
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg/THM.jpg"), true);
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), false);
+    EXPECT_EQ(MediaFileUtils::CreateFile("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg/LCD.jpg"), true);
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), false);
+    EXPECT_EQ(MediaFileUtils::DeleteDir("/storage/cloud/files/Photo/1/"), true);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg"), true);
+    EXPECT_EQ(PhotoFileUtils::IsThumbnailLatest(photoPath), false);
+    EXPECT_EQ(MediaFileUtils::DeleteDir("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg"), true);
+}
 } // namespace Media
 } // namespace OHOS
