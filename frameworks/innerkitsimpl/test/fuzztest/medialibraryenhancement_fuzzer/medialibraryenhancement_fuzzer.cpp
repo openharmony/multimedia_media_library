@@ -419,7 +419,9 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
 
 static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
 {
-    int32_t offset = sizeof(int32_t);
+    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(uint32_t)) {
+        return;
+    }
     MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
         = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
     string photoId = FuzzString(data, size);
@@ -446,7 +448,7 @@ static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
     Media::EnhancementManager::GetInstance().HandlePauseAllOperation();
     Media::EnhancementManager::GetInstance().HandleResumeAllOperation();
     Media::EnhancementManager::GetInstance().HandleStateChangedOperation(FuzzBool(data, size));
-    Media::EnhancementManager::GetInstance().HandleNetChange(FuzzBool(data, size), FuzzBool(data + offset, size));
+    Media::EnhancementManager::GetInstance().HandleNetChange(FuzzBool(data, size), FuzzBool(data, size));
     string photosAutoOption = Media::PHOTO_OPTION_CLOSE;
     if (FuzzBool(data, size)) {
         photosAutoOption = FuzzString(data, size);
