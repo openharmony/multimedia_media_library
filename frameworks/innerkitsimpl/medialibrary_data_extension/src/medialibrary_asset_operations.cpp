@@ -1342,7 +1342,7 @@ int32_t MediaLibraryAssetOperations::GetUpdateValuesBucket(
     if (fileAsset->GetDirty() == static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) {
         values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_FDIRTY));
     }
-    MEDIA_INFO_LOG("wang do: newDisplayName: %{public}s.", newDisplayName.c_str());
+    MEDIA_INFO_LOG("newDisplayName: %{public}s.", newDisplayName.c_str());
     return E_OK;
 }
 
