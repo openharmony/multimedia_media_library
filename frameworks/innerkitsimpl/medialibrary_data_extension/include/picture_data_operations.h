@@ -131,7 +131,7 @@ private:
     void CleanHighQualityPictureDataInternal(const std::string& imageId, sptr<PicturePair>& picturePair,
         std::list<std::string>& pictureImageIdList);
 
-    const int MAX_PICTURE_CAPBILITY = 3;
+    const int MAX_PICTURE_CAPBILITY = 1;
     int max_capibilty = MAX_PICTURE_CAPBILITY;
     std::mutex pictureMapMutex_;
     std::map<std::string, sptr<PicturePair>> lowQualityPictureMap_;
