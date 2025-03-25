@@ -40,8 +40,8 @@ static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::string g_createAlbumRefreshTable = "CREATE TABLE IF NOT EXISTS " + ALBUM_REFRESH_TABLE + " ("
     + REFRESH_ALBUM_ID + " INT PRIMARY KEY, " + ALBUM_REFRESH_STATUS + " INT)";
 
-static constexpr int32_t PHOTO_ALBUM_ID = 2;
-static constexpr int32_t PHOTO_ALBUM_SUBTYPE = PhotoAlbumSubType::VIDEO;
+static constexpr int32_t PHOTO_ALBUM_ID = 11;
+static constexpr int32_t PHOTO_ALBUM_SUBTYPE = PhotoAlbumSubType::USER_GENERIC;
 static constexpr int32_t ANALYSIS_ALBUM_ID = 10;
 static constexpr int32_t ANALYSIS_ALBUM_SUBTYPE = PhotoAlbumSubType::PORTRAIT;
 static constexpr int32_t REFRESH_ALBUM_STATUS = 0;
@@ -63,7 +63,6 @@ int32_t ExecSqls(const vector<string> &sqls)
 void CleanAllTestTables()
 {
     vector<string> dropTableList = {
-        PhotoAlbumColumns::TABLE,
         ANALYSIS_ALBUM_TABLE,
         ALBUM_REFRESH_TABLE,
     };
@@ -81,7 +80,6 @@ void CleanAllTestTables()
 void SetAllTestTables()
 {
     vector<string> createTableSqlList = {
-        PhotoAlbumColumns::CREATE_TABLE,
         CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
         g_createAlbumRefreshTable,
     };
@@ -99,6 +97,7 @@ void InsertPhotoAlbumTestData()
 {
     ValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, PHOTO_ALBUM_ID);
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
     valuesBucket.Put(ALBUM_SUBTYPE, PHOTO_ALBUM_SUBTYPE);
     int64_t outRowId = 0;
     int ret = g_rdbStore->Insert(outRowId, PhotoAlbumColumns::TABLE, valuesBucket);
@@ -143,7 +142,8 @@ void InitAlbumsTestData()
 
 void ClearAllTableData()
 {
-    string clearPhotoAlbumSql = "DELETE FROM " + PhotoAlbumColumns::TABLE;
+    string clearPhotoAlbumSql = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
+        PhotoAlbumColumns::ALBUM_TYPE + " != " + to_string(PhotoAlbumType::SYSTEM);
     string clearAnalysisAlbumSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE;
     string clearRefreshAlbumSql = "DELETE FROM " + ALBUM_REFRESH_TABLE;
     vector<string> executeSqlStrs = {
@@ -164,23 +164,20 @@ void AlbumsRefreshManagerTest::SetUpTestCase(void)
         exit(1);
     }
     SetAllTestTables();
+    ClearAllTableData();
     MEDIA_INFO_LOG("SetUpTestCase");
 }
 
 void AlbumsRefreshManagerTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("TearDownTestCase");
-    MediaLibraryUnitTestUtils::CleanTestFiles();
-    CleanAllTestTables();
-    g_rdbStore = nullptr;
+    ClearAllTableData();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void AlbumsRefreshManagerTest::SetUp()
 {
     MEDIA_INFO_LOG("SetUp");
-    MediaLibraryUnitTestUtils::CleanTestFiles();
-    MediaLibraryUnitTestUtils::Init();
     ClearAllTableData();
     InitAlbumsTestData();
 }
