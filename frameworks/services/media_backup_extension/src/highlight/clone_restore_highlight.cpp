@@ -1029,7 +1029,7 @@ std::vector<NativeRdb::ValueObject> CloneRestoreHighlight::GetHighlightDuplicate
                 analysisInfo.albumIdOld.value() == info.albumIdOld.value();
         });
     CHECK_AND_RETURN_RET((it != analysisInfos_.end() && it->albumName.has_value()), changeIds);
-    duplicateAlbumName = it->albumName.value();  
+    duplicateAlbumName = it->albumName.value();
 
     const std::string QUERY_SQL = "SELECT t.id, t.album_id, t.ai_album_id "
         "FROM tab_highlight_album AS t INNER JOIN AnalysisAlbum AS a "
