@@ -419,7 +419,8 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
 
 static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(uint32_t)) {
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
         return;
     }
     MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
