@@ -42,6 +42,8 @@ ani_status MovingPhotoAni::MovingPhotoInit(ani_env *env)
         MEDIA_ERR_LOG("Failed to bind native methods to: %{public}s", className);
         return status;
     }
+
+    ANI_INFO_LOG("MovingPhotoInit ok");
     return ANI_OK;
 }
 
@@ -77,6 +79,7 @@ MovingPhotoAni* MovingPhotoAni::Unwrap(ani_env *env, ani_object object)
 {
     ani_long movingPhoto;
     if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativeMovingPhoto", &movingPhoto)) {
+        MEDIA_ERR_LOG("get nativeMovingPhoto Fail");
         return nullptr;
     }
     return reinterpret_cast<MovingPhotoAni*>(movingPhoto);

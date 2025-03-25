@@ -169,6 +169,8 @@ ani_status FileAssetAni::FileAssetAniInit(ani_env *env)
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
         return status;
     }
+
+    ANI_INFO_LOG("FileAssetAniInit ok");
     return ANI_OK;
 }
 
@@ -189,6 +191,8 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
 {
     FileAssetAttributes attrs;
     CHECK_STATUS_RET(GetFileAssetAttributes(env, object, attrs), "GetFileAssetAttributes fail");
+    ANI_INFO_LOG("GetFileAsset uri: %{private}s, displayName: %{private}s, photoType: %{public}d",
+        attrs.uri.c_str(), attrs.displayName.c_str(), attrs.photoType);
 
     ani_method photoTypeSetter {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>photoType", nullptr, &photoTypeSetter), "No <set>photoType");
@@ -217,10 +221,9 @@ ani_object FileAssetAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_unus
     std::shared_ptr<FileAsset> fileAssetPtr = std::make_shared<FileAsset>();
     std::unique_ptr<FileAssetAni> nativeFileAssetAni = std::make_unique<FileAssetAni>(fileAssetPtr);
 
-    static const char *className = ANI_CLASS_PHOTO_ASSET.c_str();
     ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        ANI_ERR_LOG("Failed to find class: %{public}s", className);
+    if (ANI_OK != env->FindClass(ANI_CLASS_PHOTO_ASSET.c_str(), &cls)) {
+        ANI_ERR_LOG("Failed to find class: %{public}s", ANI_CLASS_PHOTO_ASSET.c_str());
         ani_object nullobj = nullptr;
         return nullobj;
     }
@@ -239,6 +242,8 @@ ani_object FileAssetAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_unus
     }
     CHECK_COND_RET(BindAniAttributes(env, cls, fileAsset_object) == ANI_OK, nullptr,
         "fileAsset BindAniAttributes Fail");
+
+    ANI_INFO_LOG("FileAssetAni Constructor ok");
     return fileAsset_object;
 }
 
@@ -272,10 +277,9 @@ FileAssetAni* FileAssetAni::CreateFileAsset(ani_env *env, std::unique_ptr<FileAs
 
 ani_object FileAssetAni::Wrap(ani_env *env, FileAssetAni* fileAssetAni)
 {
-    static const char *className = ANI_CLASS_PHOTO_ASSET.c_str();
     ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        ANI_ERR_LOG("Failed to find class: %{public}s", className);
+    if (ANI_OK != env->FindClass(ANI_CLASS_PHOTO_ASSET.c_str(), &cls)) {
+        ANI_ERR_LOG("Failed to find class: %{public}s", ANI_CLASS_PHOTO_ASSET.c_str());
         ani_object nullobj = nullptr;
         return nullobj;
     }
@@ -300,6 +304,7 @@ FileAssetAni* FileAssetAni::Unwrap(ani_env *env, ani_object object)
 {
     ani_long fileAsset;
     if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativePhotoAsset", &fileAsset)) {
+        ANI_ERR_LOG("get FileAssetAni nativePhotoAsset failed");
         return nullptr;
     }
     return reinterpret_cast<FileAssetAni*>(fileAsset);
@@ -318,8 +323,10 @@ void FileAssetAni::Set(ani_env *env, ani_object object, ani_string member, ani_s
     std::string valueStr;
     MediaLibraryAniUtils::GetString(env, value, valueStr);
 
-    auto fileAssetPtr = fileAssetAni->fileAssetPtr;
-    auto resultNapiType = fileAssetPtr->GetResultNapiType();
+    std::shared_ptr<FileAsset> fileAssetPtr = fileAssetAni->fileAssetPtr;
+    ResultNapiType resultNapiType = fileAssetPtr->GetResultNapiType();
+    ANI_INFO_LOG("fileAsset set key: %{public}s, value: %{public}s, type: %{public}d",
+        memberStr.c_str(), valueStr.c_str(), resultNapiType);
     if (resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         if (memberStr == MediaColumn::MEDIA_TITLE) {
             fileAssetPtr->SetTitle(valueStr);
@@ -469,10 +476,12 @@ static ani_object HandleGettingDetailTimeKey(ani_env *env, const shared_ptr<File
     ani_object aniResult = nullptr;
     auto detailTimeValue = fileAssetPtr->GetMemberMap().at(PhotoColumn::PHOTO_DETAIL_TIME);
     if (detailTimeValue.index() == MEMBER_TYPE_STRING && !get<string>(detailTimeValue).empty()) {
+        ANI_INFO_LOG("detailTimeValue type is string");
         ani_string aniDetailTime {};
         MediaLibraryAniUtils::ToAniString(env, get<string>(detailTimeValue), aniDetailTime);
         return reinterpret_cast<ani_object>(aniDetailTime);
     } else {
+        ANI_INFO_LOG("detailTimeValue from database");
         string fileId = MediaFileUtils::GetIdFromUri(fileAssetPtr->GetUri());
         string queryUriStr = PAH_QUERY_PHOTO;
         MediaLibraryAniUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -520,28 +529,34 @@ ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
 
     std::string inputKey;
     MediaLibraryAniUtils::GetString(env, member, inputKey);
+    ANI_INFO_LOG("FileAsset get key: %{public}s", inputKey.c_str());
 
     if (CheckSystemApiKeys(env, inputKey) < 0) {
+        ANI_ERR_LOG("CheckSystemApiKeys failed");
         return nullptr;
     }
 
     ani_object aniResult = nullptr;
     if (DATE_TRANSITION_MAP.count(inputKey) != 0) {
+        ANI_ERR_LOG("key not in DATE_TRANSITION_MAP");
         return HandleDateTransitionKey(env, DATE_TRANSITION_MAP.at(inputKey), fileAssetPtr);
     }
 
     if (fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
+        ANI_ERR_LOG("key not found");
         AniError::ThrowError(env, JS_E_FILE_KEY);
         return aniResult;
     }
 
     if (IsSpecialKey(inputKey)) {
+        ANI_ERR_LOG("IsSpecialKey");
         return HandleGettingSpecialKey(env, inputKey, fileAssetPtr);
     }
     if (inputKey == PhotoColumn::PHOTO_DETAIL_TIME) {
         return HandleGettingDetailTimeKey(env, fileAssetPtr);
     }
     auto m = fileAssetPtr->GetMemberMap().at(inputKey);
+    ANI_INFO_LOG("FileAsset get value type: %{public}d", m.index());
     if (m.index() == MEMBER_TYPE_STRING) {
         ani_string aniString {};
         MediaLibraryAniUtils::ToAniString(env, std::get<std::string>(m), aniString);
@@ -685,6 +700,7 @@ static bool CheckFileOpenStatus(FileAssetContext *context, int fd)
 
 void FileAssetAni::Close(ani_env *env, ani_object object, ani_double fd)
 {
+    ANI_INFO_LOG("fileAsset close fd: %{public}lf", fd);
     auto fileAssetAni = Unwrap(env, object);
     if (fileAssetAni == nullptr || fileAssetAni->GetFileAssetInstance() == nullptr) {
         ANI_ERR_LOG("fileAssetAni is nullptr");
@@ -696,6 +712,7 @@ void FileAssetAni::Close(ani_env *env, ani_object object, ani_double fd)
     context->objectPtr = fileAssetPtr;
     UniqueFd unifd(context->fd);
     if (!CheckFileOpenStatus(context.get(), unifd.Get())) {
+        ANI_ERR_LOG("CheckFileOpenStatus failed");
         return;
     }
     string closeUri;
@@ -703,6 +720,7 @@ void FileAssetAni::Close(ani_env *env, ani_object object, ani_double fd)
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
         closeUri = PAH_CLOSE_PHOTO;
     } else {
+        ANI_ERR_LOG("fileAsset close failed");
         context->SaveError(-EINVAL);
         return;
     }
@@ -712,6 +730,7 @@ void FileAssetAni::Close(ani_env *env, ani_object object, ani_double fd)
     Uri closeAssetUri(closeUri);
     int32_t ret = UserFileClient::Insert(closeAssetUri, context->valuesBucket);
     if (ret != E_SUCCESS) {
+        ANI_ERR_LOG("fileAsset close failed, ret: %{public}d", ret);
         context->SaveError(ret);
         return;
     } else {
@@ -740,6 +759,7 @@ ani_object FileAssetAni::GetThumbnail(ani_env *env, ani_object object, ani_objec
     if (MediaLibraryAniUtils::isUndefined(env, size) == ANI_FALSE) {
         ani_class cls;
         if (ANI_OK != env->FindClass(ANI_CLASS_SIZE.c_str(), &cls)) {
+            ANI_ERR_LOG("FindClass: %{public}s failed", ANI_CLASS_SIZE.c_str());
             return nullptr;
         }
         ani_method heightGetter;
@@ -754,9 +774,11 @@ ani_object FileAssetAni::GetThumbnail(ani_env *env, ani_object object, ani_objec
         ani_double heightValue;
         ani_double widthValue;
         if (ANI_OK != env->Object_CallMethod_Double(size, heightGetter, &heightValue)) {
+            ANI_ERR_LOG("get height failed");
             return nullptr;
         }
         if (ANI_OK != env->Object_CallMethod_Double(size, widthGetter, &widthValue)) {
+            ANI_ERR_LOG("get width failed");
             return nullptr;
         }
         double height;
@@ -793,6 +815,7 @@ void FileAssetAni::SetUserComment([[maybe_unused]] ani_env *env, ani_object obje
 
     string userCommentStr;
     MediaLibraryAniUtils::GetString(env, userComment, userCommentStr);
+    ANI_INFO_LOG("SetUserComment: %{public}s", userCommentStr.c_str());
 
     auto fileAssetPtr = fileAssetAni->GetFileAssetInstance();
     unique_ptr<FileAssetContext> context = make_unique<FileAssetContext>();
@@ -924,6 +947,8 @@ void FileAssetAni::SetHidden([[maybe_unused]] ani_env *env, ani_object object, a
         context->objectPtr->SetHidden(context->isHidden);
         context->changedRows = changedRows;
     }
+
+    ANI_INFO_LOG("SetHidden ok");
 }
 
 void FileAssetAni::SetFavorite([[maybe_unused]] ani_env *env, ani_object object, ani_boolean favoriteState)
@@ -973,5 +998,7 @@ void FileAssetAni::SetFavorite([[maybe_unused]] ani_env *env, ani_object object,
         context->objectPtr->SetFavorite(context->isFavorite);
         context->changedRows = changedRows;
     }
+
+    ANI_INFO_LOG("SetFavorite ok");
 }
 } // namespace OHOS::Media
