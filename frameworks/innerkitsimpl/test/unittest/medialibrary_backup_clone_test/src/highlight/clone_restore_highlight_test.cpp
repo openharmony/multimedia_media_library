@@ -485,7 +485,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_deduplicate_test_001
     cloneRestoreHighlight->highlightInfos_.emplace_back(testHighlightInfo);
 
     cloneRestoreHighlight->HighlightDeduplicate(testHighlightInfo);
-    string highlightCondition = "highlight_status = -2";
+    string highlightCondition = "highlight_status = -4";
     int32_t highlightCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), HIGHLIGHT_ALBUM_TABLE, highlightCondition);
     EXPECT_EQ(highlightCount, 1);
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
