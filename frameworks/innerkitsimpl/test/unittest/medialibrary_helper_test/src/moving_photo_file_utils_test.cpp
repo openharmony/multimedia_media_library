@@ -440,5 +440,82 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoSize_001
     result = MovingPhotoFileUtils::GetMovingPhotoSize("/storage/cloud/files/Photo/1/IMG_123435123_123.jpg");
     EXPECT_EQ(result, 0);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_003, TestSize.Level0)
+{
+    string dirPath = "/storage/cloud/files/Photo/1";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string imagePath = dirPath + "/" + "livePhotoSamePath.jpg";
+    string videoPath = dirPath + "/" + "video.mp4";
+    off_t fileSize{0};
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, 0, fileSize), E_OK);
+    EXPECT_EQ(WriteFileContent(imagePath, FILE_TEST_JPG, sizeof(FILE_TEST_JPG)), true);
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, 0, fileSize), E_OK);
+    EXPECT_EQ(WriteFileContent(videoPath, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), true);
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, 0, fileSize), E_OK);
+    EXPECT_EQ(fileSize, MIN_STANDARD_SIZE);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_004, TestSize.Level0)
+{
+    string dirPath = "/storage/cloud/files/Photo/1";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string imagePath = dirPath + "/livePhoto.jpg";
+    string videoPath = dirPath + "/video.mp4";
+    off_t fileSize = 0;
+
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen("/invalid/path", videoPath, 0, 0, fileSize), E_HAS_FS_ERROR);
+
+    string extraDir = MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(imagePath);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(extraDir + "/extra.dat"), true);
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, 0, fileSize), E_HAS_FS_ERROR);
+
+    EXPECT_EQ(chmod(dirPath.c_str(), 0555), 0);
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, 0, fileSize), E_HAS_FS_ERROR);
+    EXPECT_EQ(chmod(dirPath.c_str(), 0755), 0);
+
+    string extraPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(imagePath);
+    EXPECT_EQ(MediaFileUtils::CreateAsset(extraPath), 0);
+    EXPECT_EQ(chmod(extraPath.c_str(), 0444), 0);
+    EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, 0, fileSize), E_HAS_FS_ERROR);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_002, TestSize.Level0)
+{
+    string dirPath = "/storage/cloud/files/Photo/1";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string videoPath = dirPath + "/" + "video.mp4";
+    EXPECT_EQ(WriteFileContent(videoPath, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), true);
+    int32_t fd = open(videoPath.c_str(), O_RDONLY);
+    EXPECT_GT(fd, 0);
+    EXPECT_EQ(MovingPhotoFileUtils::GetFrameIndex(100, fd), 0);
+    EXPECT_EQ(MovingPhotoFileUtils::GetFrameIndex(100, 0), 0);
+    EXPECT_EQ(MovingPhotoFileUtils::GetFrameIndex(9223372036854775807, 0), 0);
+    EXPECT_EQ(MovingPhotoFileUtils::GetFrameIndex(9223372036854775807, fd), 0);
+    close(fd);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_003, TestSize.Level0)
+{
+    string dirPath = "";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string videoPath = "";
+    EXPECT_EQ(WriteFileContent(videoPath, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), false);
+    int32_t fd = open(videoPath.c_str(), O_RDONLY);
+    EXPECT_EQ(MovingPhotoFileUtils::GetFrameIndex(100, fd), 0);
+    close(fd);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_003, TestSize.Level0)
+{
+    string movingPhotoImagepath = "/123/456/789/IMG_123435213_987.jpg";
+    string sourceLivePhotoPath;
+    EXPECT_LT(MovingPhotoFileUtils::ConvertToSourceLivePhoto(movingPhotoImagepath, sourceLivePhotoPath), E_OK);
+    EXPECT_EQ(sourceLivePhotoPath, "");
+
+    movingPhotoImagepath = "";
+    EXPECT_LT(MovingPhotoFileUtils::ConvertToSourceLivePhoto(movingPhotoImagepath, sourceLivePhotoPath), E_OK);
+    EXPECT_EQ(sourceLivePhotoPath, "");
+}
 } // namespace Media
 } // namespace OHOS
