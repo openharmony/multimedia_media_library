@@ -1311,7 +1311,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_002, TestS
     string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     EXPECT_EQ(name, "photo1.jpg");
     EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
-    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     EXPECT_EQ(name, "photo2.jpg");
 
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_002");

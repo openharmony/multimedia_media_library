@@ -1047,7 +1047,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_002, TestS
     string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     EXPECT_EQ(name, "audio1.mp3");
     EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
-    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     EXPECT_EQ(name, "audio2.mp3");
 
     MEDIA_INFO_LOG("end tdd audio_oprn_query_api10_test_002");
@@ -1348,7 +1348,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_005, TestS
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_005");
     string displayName = "audio.mp3";
     int32_t fileId1 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, displayName, "Audios/1/");
-    EXPECT_GE(fileId1, 0)；
+    EXPECT_GE(fileId1, 0);
     int32_t fileId2 = SetDefaultAudioApi9(MediaType::MEDIA_TYPE_AUDIO, displayName, "Audios/2/");
     EXPECT_GE(fileId2, 0);
     TestAudioUpdateParamsApi9(AudioColumn::MEDIA_ID, to_string(fileId2),
