@@ -5721,12 +5721,14 @@ static napi_value ParseArgsIndexof(napi_env env, napi_callback_info info,
     MediaFileUri photoUri(uri);
     CHECK_COND(env, photoUri.GetUriType() == API10_PHOTO_URI, JS_ERR_PARAMETER_INVALID);
     context->fetchColumn.emplace_back(photoUri.GetFileId());
+    NAPI_INFO_LOG("current fileId: %{public}s", photoUri.GetFileId().c_str());
     if (!album.empty()) {
         MediaFileUri albumUri(album);
         CHECK_COND(env, albumUri.GetUriType() == API10_PHOTOALBUM_URI ||
             albumUri.GetUriType() == API10_ANALYSISALBUM_URI, JS_ERR_PARAMETER_INVALID);
         context->isAnalysisAlbum = (albumUri.GetUriType() == API10_ANALYSISALBUM_URI);
         context->fetchColumn.emplace_back(albumUri.GetFileId());
+        NAPI_INFO_LOG("current albumId: %{public}s", albumUri.GetFileId().c_str());
     } else {
         context->fetchColumn.emplace_back(album);
     }
@@ -5817,6 +5819,7 @@ static void GetPhotoIndexExec(napi_env env, void *data, ResultNapiType type)
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode,
         GetUserIdFromContext(context));
     if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet is nullptr");
         context->SaveError(errCode);
         return;
     }
