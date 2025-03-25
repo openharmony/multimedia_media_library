@@ -97,6 +97,9 @@ static string extractIdByAlbumUriString(const string &input)
     string out = input;
     string prefix = PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX;
     size_t pos = out.find(prefix);
+    if (pos == string::npos) {
+        return "";
+    }
     out.replace(pos, prefix.length(), "");
     return out;
 }

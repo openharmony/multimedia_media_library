@@ -315,56 +315,10 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
     return true;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::AddQueryDateTakenTime(
-    std::vector<std::string>& columns)
-{
-    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
-    CHECK_AND_RETURN_RET(it != columns.end(), nullptr);
-    auto itData = find(columns.begin(), columns.end(), MEDIA_DATA_DB_DATE_TAKEN);
-    CHECK_AND_RETURN_RET(itData != columns.end(), nullptr);
-    std::string extraWhereSql = "";
-    auto itForThumbnailVisible = find(columns.begin(), columns.end(), PhotoColumn::PHOTO_THUMBNAIL_VISIBLE);
-    if (itForThumbnailVisible != columns.end()) {
-        extraWhereSql = " AND thumbnail_visible = 1 ";
-    }
-
-    std::string sql = ""
-        "SELECT"
-        "  count( * ) AS count,"
-        "  date_taken,"
-        "  date_day,"
-        "  burst_key,"
-        "  display_name,"
-        "  file_id,"
-        "  media_type,"
-        "  subtype "
-        "FROM"
-        "  Photos "
-        "WHERE"
-        "  sync_status = 0 "
-        "  AND clean_flag = 0 "
-        "  AND date_trashed = 0 "
-        "  AND time_pending = 0 "
-        "  AND hidden = 0 "
-        "  AND is_temp = 0 "
-        "  AND burst_cover_level = 1 " +
-        extraWhereSql +
-        "GROUP BY"
-        "  date_day "
-        "ORDER BY"
-        "  date_day DESC;";
-
-    auto resultSet = rdbStore_->QuerySql(sql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
-    return resultSet;
-}
-
 std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
     const DataShare::DataSharePredicates& predicates, std::vector<std::string>& columns, OperationObject& object)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, nullptr, "fail to acquire rdb when query");
-    auto ret = AddQueryDateTakenTime(columns);
-    CHECK_AND_RETURN_RET(ret == nullptr, ret);
     std::string tableName = GetTableNameFromOprnObject(object);
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);
     AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
