@@ -155,6 +155,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_001, TestSize.Lev
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
     tracer.Start("QueryALLColumn");
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     EXPECT_NE(mediaLibraryDataManager, nullptr);
     for (int i = 0; i < 50; i++) {
         auto result = mediaLibraryDataManager->rdbStore_->Query(predicates, columns);
