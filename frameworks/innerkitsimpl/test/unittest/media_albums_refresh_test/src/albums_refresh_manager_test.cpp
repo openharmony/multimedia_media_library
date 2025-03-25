@@ -22,6 +22,7 @@
 
 #include "albums_refresh_manager.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #include "media_log.h"
 #include "media_refresh_album_column.h"
 #include "photo_album_column.h"
@@ -156,6 +157,7 @@ void ClearAllTableData()
 
 void AlbumsRefreshManagerTest::SetUpTestCase(void)
 {
+    MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get g_rdbStore");
@@ -168,6 +170,7 @@ void AlbumsRefreshManagerTest::SetUpTestCase(void)
 void AlbumsRefreshManagerTest::TearDownTestCase(void)
 {
     MEDIA_INFO_LOG("TearDownTestCase");
+    MediaLibraryUnitTestUtils::CleanTestFiles();
     CleanAllTestTables();
     g_rdbStore = nullptr;
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
@@ -176,6 +179,8 @@ void AlbumsRefreshManagerTest::TearDownTestCase(void)
 void AlbumsRefreshManagerTest::SetUp()
 {
     MEDIA_INFO_LOG("SetUp");
+    MediaLibraryUnitTestUtils::CleanTestFiles();
+    MediaLibraryUnitTestUtils::Init();
     ClearAllTableData();
     InitAlbumsTestData();
 }
