@@ -76,6 +76,7 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
         return ANI_ERROR;
     }
 
+    ANI_INFO_LOG("PhotoAccessInit ok");
     return ANI_OK;
 }
 

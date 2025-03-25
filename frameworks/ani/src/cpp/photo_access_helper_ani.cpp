@@ -82,6 +82,8 @@ ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
         ANI_ERR_LOG("Failed to bind native methods to: %{public}s", className);
         return status;
     }
+
+    ANI_INFO_LOG("PhotoAccessHelperInit ok");
     return ANI_OK;
 }
 
