@@ -34,8 +34,7 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace Media {
 std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetAssetsSync(
-    const std::vector<std::string> &fetchColumns,
-    std::shared_ptr<OHOS::DataShare::DataShareAbsPredicates> predicate)
+    const std::vector<std::string> &fetchColumns, DataSharePredicates *predicate)
 {
     std::vector<std::unique_ptr<FileAsset>> result;
 
@@ -53,8 +52,7 @@ std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetAssetsSync(
 }
 
 std::unique_ptr<FetchResult<FileAsset>> MediaAniNativeImpl::GetAssets(
-    const std::vector<std::string> &fetchColumns,
-    std::shared_ptr<DataShare::DataShareAbsPredicates> predicate)
+    const std::vector<std::string> &fetchColumns, DataSharePredicates *predicate)
 {
     std::shared_ptr<MediaLibraryAsyncContext> context = GetAssetsContext(fetchColumns, predicate);
     if (context == nullptr) {
@@ -71,8 +69,7 @@ std::unique_ptr<FetchResult<FileAsset>> MediaAniNativeImpl::GetAssets(
 }
 
 std::shared_ptr<MediaLibraryAsyncContext> MediaAniNativeImpl::GetAssetsContext(
-    const std::vector<std::string> &fetchColumns,
-    std::shared_ptr<DataShare::DataShareAbsPredicates> predicate)
+    const std::vector<std::string> &fetchColumns, DataSharePredicates *predicate)
 {
     std::shared_ptr<MediaLibraryAsyncContext> context = std::make_shared<MediaLibraryAsyncContext>();
     if (!HandleSpecialPredicate(context, predicate, ASSET_FETCH_OPT)) {
@@ -125,7 +122,7 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 }
 
 bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
-    std::shared_ptr<DataShare::DataShareAbsPredicates> predicate, const FetchOptionType &fetchOptType)
+    DataSharePredicates *predicate, const FetchOptionType &fetchOptType)
 {
     constexpr int32_t fieldIdx = 0;
     constexpr int32_t valueIdx = 1;
@@ -181,7 +178,7 @@ bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyn
 }
 
 bool MediaAniNativeImpl::GetLocationPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
-    shared_ptr<DataShareAbsPredicates> predicate)
+    DataSharePredicates *predicate)
 {
     constexpr int32_t fieldIdx = 0;
     constexpr int32_t valueIdx = 1;

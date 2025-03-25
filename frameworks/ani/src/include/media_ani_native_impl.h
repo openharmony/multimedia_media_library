@@ -25,17 +25,17 @@
 #include "fetch_result.h"
 #include "file_asset.h"
 #include "datashare_predicates.h"
+#include "media_library_ani.h"
 #include "medialibrary_ani_utils.h"
-#include "photo_access_helper_ani.h"
 
 namespace OHOS {
 namespace Media {
 class MediaAniNativeImpl {
 private:
     static bool HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> predicate, const FetchOptionType &fetchOptType);
+        DataShare::DataSharePredicates *predicate, const FetchOptionType &fetchOptType);
     static bool GetLocationPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> predicate);
+        DataShare::DataSharePredicates *predicate);
     static bool AddDefaultAssetColumns(std::vector<std::string> &fetchColumn,
         std::function<bool(const std::string &columnName)> isValidColumn,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
@@ -43,13 +43,13 @@ private:
         std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
     static bool PhotoAccessGetAssetsExecute(std::shared_ptr<MediaLibraryAsyncContext> context);
     static std::shared_ptr<MediaLibraryAsyncContext> GetAssetsContext(const std::vector<std::string> &fetchColumns,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> predicate);
+        DataShare::DataSharePredicates *predicate);
 
 public:
     static std::vector<std::unique_ptr<FileAsset>> GetAssetsSync(const std::vector<std::string> &fetchColumns,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> predicate);
+        DataShare::DataSharePredicates *predicate);
     static std::unique_ptr<FetchResult<FileAsset>> GetAssets(const std::vector<std::string> &fetchColumns,
-        std::shared_ptr<DataShare::DataShareAbsPredicates> predicate);
+        DataShare::DataSharePredicates *predicate);
 };
 } // namespace Media
 } // namespace OHOS
