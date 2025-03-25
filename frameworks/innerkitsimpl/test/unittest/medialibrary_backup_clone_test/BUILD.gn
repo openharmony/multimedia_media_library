@@ -114,6 +114,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
+    "e2fsprogs:libext2_uuid",
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
@@ -130,8 +131,6 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "relational_store:rdb_data_share_adapter",
     "zlib:shared_libz",
   ]
-
-  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
 
   defines = []
 
