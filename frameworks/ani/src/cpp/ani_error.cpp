@@ -38,7 +38,7 @@ void AniError::SaveError(int32_t ret)
     }
 }
 
-void AniError::HandleError(ani_env *env, ani_error &errorObj)
+void AniError::HandleError(ani_env *env, ani_object &errorObj)
 {
     // deal with context->error
     MediaLibraryAniUtils::HandleError(env, error, errorObj, apiName);
@@ -55,9 +55,9 @@ void AniError::ThrowError(ani_env *env, int32_t err, const std::string &errMsg)
     }
 
     ANI_ERR_LOG("ThrowError errCode:%{public}d errMsg:%{public}s", err, message.c_str());
-    ani_error aniError;
+    ani_object aniError;
     MediaLibraryAniUtils::CreateAniErrorObject(env, aniError, err, errMsg);
-    env->ThrowError(aniError);
+    env->ThrowError(static_cast<ani_error>(aniError));
 }
 
 void AniError::ThrowError(ani_env *env, int32_t err, const char *funcName, int32_t line, const std::string &errMsg)
@@ -72,9 +72,9 @@ void AniError::ThrowError(ani_env *env, int32_t err, const char *funcName, int32
 
     ANI_ERR_LOG("{%{public}s:%d} ThrowError errCode:%{public}d errMsg:%{public}s", funcName, line,
         err, message.c_str());
-    ani_error aniError;
+    ani_object aniError;
     MediaLibraryAniUtils::CreateAniErrorObject(env, aniError, err, errMsg);
-    env->ThrowError(aniError);
+    env->ThrowError(static_cast<ani_error>(aniError));
 }
 
 } // namespace Media

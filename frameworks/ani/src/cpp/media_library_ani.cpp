@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "photo_access_helper_ani.h"
+#include "media_library_ani.h"
 
 #include <iostream>
 #include <string>
@@ -47,7 +47,7 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
-std::mutex PhotoAccessHelperAni::sUserFileClientMutex_;
+std::mutex MediaLibraryAni::sUserFileClientMutex_;
 thread_local std::unique_ptr<ChangeListenerAni> g_listObj = nullptr;
 
 static SafeMap<int32_t, std::shared_ptr<ThumbnailBatchGenerateObserver>> thumbnailGenerateObserverMap;
@@ -56,7 +56,7 @@ static SafeMap<int32_t, std::shared_ptr<ThumbnailGenerateHandler>> thumbnailGene
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
 
-ani_status PhotoAccessHelperAni::PhotoAccessHelperInit(ani_env *env)
+ani_status MediaLibraryAni::PhotoAccessHelperInit(ani_env *env)
 {
     static const char *className = ANI_CLASS_PHOTO_ACCESS_HELPER.c_str();
     ani_class cls;
@@ -117,7 +117,7 @@ static void ReleaseThumbnailTask(int32_t requestId)
     DeleteThumbnailHandler(requestId);
 }
 
-void PhotoAccessHelperAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env,
+void MediaLibraryAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env,
     [[maybe_unused]] ani_object object, ani_int taskId)
 {
     ANI_DEBUG_LOG("PhotoAccessStopCreateThumbnailTask with taskId: %{public}d", taskId);
@@ -144,7 +144,7 @@ void PhotoAccessHelperAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] a
     ANI_DEBUG_LOG("MediaLibraryAni::PhotoAccessStopCreateThumbnailTask Finished");
 }
 
-ani_object PhotoAccessHelperAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+ani_object MediaLibraryAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_object options)
 {
     ani_ref fetchColumns;
@@ -158,25 +158,16 @@ ani_object PhotoAccessHelperAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[
         return nullptr;
     }
 
-    const std::string className = "L@ohos/data/dataSharePredicates/dataSharePredicates/DataSharePredicates;";
-    const std::string methodName = "getNativePtr";
-    ani_method getMethod = nullptr;
-    if (ANI_OK != MediaLibraryAniUtils::FindClassMethod(env, className, methodName, &getMethod)) {
-        ANI_ERR_LOG("find class: %{public}s method: %{public}s failed", className.c_str(), methodName.c_str());
-        return nullptr;
-    }
     ani_ref predicates;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "predicates", &predicates)) {
         ANI_ERR_LOG("get fieldname predicates failed");
         return nullptr;
     }
-    ani_long nativePtr = 0;
-    if (ANI_OK != env->Object_CallMethod_Long((ani_object)predicates, getMethod, &nativePtr)) {
-        ANI_ERR_LOG("call method: getNativePtr failed");
+    DataSharePredicates* predicate = MediaLibraryAniUtils::UnwrapPredicate(env, (ani_object)predicates);
+    if (predicate == nullptr) {
+        ANI_ERR_LOG("UnwrapPredicate failed");
         return nullptr;
     }
-    std::shared_ptr<DataSharePredicates> predicate(reinterpret_cast<DataSharePredicates*>(nativePtr));
-    std::shared_ptr<DataShareAbsPredicates> absPredicate = static_cast<shared_ptr<DataShareAbsPredicates>>(predicate);
     std::vector<std::unique_ptr<FileAsset>> fileAssetArray = MediaAniNativeImpl::GetAssetsSync(fetchColumnsVec,
         predicate);
 
@@ -187,7 +178,7 @@ ani_object PhotoAccessHelperAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[
     return result;
 }
 
-ani_object PhotoAccessHelperAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+ani_object MediaLibraryAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_object options)
 {
     ani_ref fetchColumns;
@@ -201,25 +192,16 @@ ani_object PhotoAccessHelperAni::GetAssetsInner([[maybe_unused]] ani_env *env, [
         return nullptr;
     }
 
-    const std::string className = "L@ohos/data/dataSharePredicates/dataSharePredicates/DataSharePredicates;";
-    const std::string methodName = "getNativePtr";
-    ani_method getMethod = nullptr;
-    if (ANI_OK != MediaLibraryAniUtils::FindClassMethod(env, className, methodName, &getMethod)) {
-        ANI_ERR_LOG("find class: %{public}s method: %{public}s failed", className.c_str(), methodName.c_str());
-        return nullptr;
-    }
     ani_ref predicates;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "predicates", &predicates)) {
         ANI_ERR_LOG("get fieldname predicates failed");
         return nullptr;
     }
-    ani_long nativePtr = 0;
-    if (ANI_OK != env->Object_CallMethod_Long((ani_object)predicates, getMethod, &nativePtr)) {
-        ANI_ERR_LOG("call method: getNativePtr failed");
+    DataSharePredicates* predicate = MediaLibraryAniUtils::UnwrapPredicate(env, (ani_object)predicates);
+    if (predicate == nullptr) {
+        ANI_ERR_LOG("UnwrapPredicate failed");
         return nullptr;
     }
-    std::shared_ptr<DataSharePredicates> predicate(reinterpret_cast<DataSharePredicates*>(nativePtr));
-    std::shared_ptr<DataShareAbsPredicates> absPredicate = static_cast<shared_ptr<DataShareAbsPredicates>>(predicate);
     std::unique_ptr<FetchResult<FileAsset>> fileAsset = MediaAniNativeImpl::GetAssets(fetchColumnsVec, predicate);
 
     ani_object result = nullptr;
@@ -232,7 +214,7 @@ ani_object PhotoAccessHelperAni::GetAssetsInner([[maybe_unused]] ani_env *env, [
 bool InitUserFileClient(ani_env *env, [[maybe_unused]] ani_object context, bool isAsync = false)
 {
     if (isAsync) {
-        std::unique_lock<std::mutex> helperLock(PhotoAccessHelperAni::sUserFileClientMutex_);
+        std::unique_lock<std::mutex> helperLock(MediaLibraryAni::sUserFileClientMutex_);
         if (!UserFileClient::IsValid()) {
             UserFileClient::Init(env, context);
             if (!UserFileClient::IsValid()) {
@@ -246,13 +228,13 @@ bool InitUserFileClient(ani_env *env, [[maybe_unused]] ani_object context, bool 
     return true;
 }
 
-ani_object PhotoAccessHelperAni::Constructor(ani_env *env, [[maybe_unused]] ani_class clazz,
+ani_object MediaLibraryAni::Constructor(ani_env *env, [[maybe_unused]] ani_class clazz,
     [[maybe_unused]] ani_object context)
 {
     ani_object result = nullptr;
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAcessHelperAniConstructor");
-    std::unique_ptr<PhotoAccessHelperAni> nativeHandle = std::make_unique<PhotoAccessHelperAni>();
+    std::unique_ptr<MediaLibraryAni> nativeHandle = std::make_unique<MediaLibraryAni>();
 
     nativeHandle->env_ = env;
     // Initialize the ChangeListener object
@@ -285,13 +267,13 @@ ani_object PhotoAccessHelperAni::Constructor(ani_env *env, [[maybe_unused]] ani_
     return result;
 }
 
-PhotoAccessHelperAni* PhotoAccessHelperAni::Unwrap(ani_env *env, ani_object object)
+MediaLibraryAni* MediaLibraryAni::Unwrap(ani_env *env, ani_object object)
 {
     ani_long photoAccessHelper;
     if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativePhotoAccessHelper", &photoAccessHelper)) {
         return nullptr;
     }
-    return reinterpret_cast<PhotoAccessHelperAni*>(photoAccessHelper);
+    return reinterpret_cast<MediaLibraryAni*>(photoAccessHelper);
 }
 
 static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &context, const int32_t albumSubType)
@@ -493,7 +475,7 @@ static ani_object GetPhotoAlbumsComplete(ani_env *env, unique_ptr<MediaLibraryAs
     tracer.Start("GetPhotoAlbumsComplete");
 
     ani_object fetchRes {};
-    ani_error errorObj {};
+    ani_object errorObj {};
     if (context->error != ERR_DEFAULT  || context->fetchPhotoAlbumResult == nullptr) {
         ANI_ERR_LOG("No fetch file result found!");
         context->HandleError(env, errorObj);
@@ -509,7 +491,7 @@ static ani_object GetPhotoAlbumsComplete(ani_env *env, unique_ptr<MediaLibraryAs
     return fetchRes;
 }
 
-ani_object PhotoAccessHelperAni::GetPhotoAlbums(ani_env *env, ani_object object, ani_enum_item albumTypeItem,
+ani_object MediaLibraryAni::GetPhotoAlbums(ani_env *env, ani_object object, ani_enum_item albumTypeItem,
     ani_enum_item albumSubtypeItem, ani_object fetchOptions)
 {
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -521,14 +503,19 @@ ani_object PhotoAccessHelperAni::GetPhotoAlbums(ani_env *env, ani_object object,
     return(GetPhotoAlbumsComplete(env, asyncContext));
 }
 
-ani_status PhotoAccessHelperAni::Release(ani_env *env, ani_object object)
+ani_status MediaLibraryAni::Release(ani_env *env, ani_object object)
 {
-    auto photoAccessHelperAni = Unwrap(env, object);
-    delete photoAccessHelperAni;
+    auto mediaLibraryAni = Unwrap(env, object);
+    if (mediaLibraryAni == nullptr) {
+        ANI_ERR_LOG("mediaLibraryAni is nullptr");
+        return ANI_ERROR;
+    }
+    delete mediaLibraryAni;
+    mediaLibraryAni = nullptr;
     return ANI_OK;
 }
 
-ani_status PhotoAccessHelperAni::ApplyChanges(ani_env *env, ani_object object)
+ani_status MediaLibraryAni::ApplyChanges(ani_env *env, ani_object object)
 {
     auto mediaChangeRequestAni = MediaChangeRequestAni::Unwrap(env, object);
     return mediaChangeRequestAni->ApplyChanges(env, object);
@@ -811,7 +798,7 @@ static void PhotoAccessCreateAssetExecute(MediaLibraryAsyncContext* context)
     }
 }
 
-ani_object PhotoAccessHelperAni::createAsset1([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object thisObject,
+ani_object MediaLibraryAni::createAsset1([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object thisObject,
     [[maybe_unused]] ani_string stringObj)
 {
     MediaLibraryTracer tracer;
