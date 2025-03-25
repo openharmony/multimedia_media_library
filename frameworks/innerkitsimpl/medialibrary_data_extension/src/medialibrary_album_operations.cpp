@@ -2312,7 +2312,7 @@ int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicat
     GetHighlightCoverStatus(targetAlbumId, currentCoverStatus);
     int32_t newCoverStatus = static_cast<uint32_t>(currentCoverStatus) | HIGHLIGHT_COVER_STATUS_COVER;
     std::string updateAnalysisAlbum = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
-        "' WHERE " + ALBUM_ID + " = " + targetAlbumId;
+        "', " + IS_COVER_SATISFIED + " = 2 WHERE " + ALBUM_ID + " = " + targetAlbumId;
     std::string updateCoverInfoTable = "UPDATE " + HIGHLIGHT_COVER_INFO_TABLE +
         " SET " + COVER_STATUS + " = " + to_string(newCoverStatus) +
         " WHERE " + ALBUM_ID + " = (SELECT id FROM tab_highlight_album WHERE album_id = " + targetAlbumId + " LIMIT 1)";
