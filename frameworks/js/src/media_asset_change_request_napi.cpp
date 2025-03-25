@@ -1195,12 +1195,11 @@ napi_value MediaAssetChangeRequestNapi::JSSetDisplayName(napi_env env, napi_call
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, newDisplayName) == napi_ok,
         "Failed to parse args");
-    CHECK_COND_WITH_MESSAGE(env,
-        MediaFileUtils::GetMimeTypeFromDisplayName(newDisplayName) != DEFAULT_MIME_TYPE,
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::GetMimeTypeFromDisplayName(newDisplayName) != DEFAULT_MIME_TYPE,
         "Invalid newDisplayName, Extension is not support.");
     CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(newDisplayName) == E_OK, "Invalid display name.");
-    NAPI_INFO_LOG("wang do: newDisplayName: %{public}s", newDisplayName.c_str());
+    NAPI_INFO_LOG("newDisplayName: %{public}s", newDisplayName.c_str());
 
     std::string newTitle = MediaFileUtils::GetTitleFromDisplayName(newDisplayName);
     std::string newExtension = MediaFileUtils::GetExtensionFromPath(newDisplayName);
@@ -1211,12 +1210,12 @@ napi_value MediaAssetChangeRequestNapi::JSSetDisplayName(napi_env env, napi_call
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env,
         fileAsset != nullptr && fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::BURST),
-        JS_INNER_FAIL);
+        OHOS_INVALID_PARAM_CODE);
 
     MediaType oldMediaType = fileAsset->GetMediaType();
     std::string oldExtension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
     CHECK_COND_WITH_MESSAGE(env, newMediaType == oldMediaType,
-        "Invalid newDisplayName, newMediaType is not equal to oldMediaType.");
+        "Renaming across different media types is not supported.");
     
     auto setTitleIndex = std::find(changeRequest->assetChangeOperations_.begin(),
         changeRequest->assetChangeOperations_.end(), AssetChangeOperation::SET_TITLE);
