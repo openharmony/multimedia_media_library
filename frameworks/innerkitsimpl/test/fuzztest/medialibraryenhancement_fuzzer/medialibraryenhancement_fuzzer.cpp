@@ -456,7 +456,6 @@ static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
     }
     Media::EnhancementManager::GetInstance().HandlePhotosAutoOptionChange(photosAutoOption);
     Media::EnhancementManager::GetInstance().HandlePhotosWaterMarkChange(FuzzBool(data, size));
-    Media::EnhancementManager::GetInstance().InitAsync();
 }
 
 static void EnhancementTaskManagerTest(const uint8_t *data, size_t size)
