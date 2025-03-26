@@ -188,9 +188,7 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
             (long long)migrateAudioDuplicateNumber_, (long long) migrateDatabaseMapNumber_);
         UpdateDatabase();
     } else {
-        if (errorCode != EXTERNAL_DB_NOT_EXIST) {
-            SetErrorCode(RestoreError::INIT_FAILED);
-        }
+        CHECK_AND_EXECUTE(errorCode == EXTERNAL_DB_NOT_EXIST, SetErrorCode(RestoreError::INIT_FAILED));
         ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, errorCode);
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
@@ -983,14 +981,8 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
 {
     MEDIA_INFO_LOG("START STEP 2 INSERT CLOUD");
     MEDIA_INFO_LOG("Start insert cloud %{public}zu photos", fileInfos.size());
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ iS null in cloud clone");
-        return E_OK;
-    }
-    if (fileInfos.empty()) {
-        MEDIA_ERR_LOG("fileInfos are empty in cloud clone");
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ iS null in cloud clone");
+    CHECK_AND_RETURN_RET_LOG(!fileInfos.empty(), E_OK, "fileInfos are empty in cloud clone");
     int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetCloudInsertValues(sceneCode, fileInfos, sourceType);
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1034,10 +1026,7 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
 
 void BaseRestore::DeleteMoveFailedData(std::vector<std::string> &moveFailedData)
 {
-    if (moveFailedData.empty()) {
-        MEDIA_INFO_LOG("No move failed");
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(!moveFailedData.empty(), "No move failed");
     MEDIA_INFO_LOG("%{public}d file move failed", static_cast<int>(moveFailedData.size()));
     NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.In(MediaColumn::MEDIA_FILE_PATH, moveFailedData);
@@ -1397,10 +1386,7 @@ void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t s
         return;
     }
     NeedQueryMap needQueryMap;
-    if (!NeedBatchQueryPhoto(fileInfos, needQueryMap)) {
-        MEDIA_INFO_LOG("There is no need to batch query photo");
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(NeedBatchQueryPhoto(fileInfos, needQueryMap), "There is no need to batch query photo");
     int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
     BatchQueryPhoto(fileInfos, false, needQueryMap);
     int64_t startInsertMap = MediaFileUtils::UTCTimeMilliSeconds();

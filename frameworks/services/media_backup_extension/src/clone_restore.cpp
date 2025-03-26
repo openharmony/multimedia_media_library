@@ -999,9 +999,7 @@ int32_t CloneRestore::MoveCloudThumbnailDir(FileInfo &fileInfo)
 */
 int32_t CloneRestore::MoveThumbnail(FileInfo &fileInfo)
 {
-    if (!hasCloneThumbnailDir_) {
-        return E_NO_SUCH_FILE;
-    }
+    CHECK_AND_RETURN_RET(hasCloneThumbnailDir_, E_NO_SUCH_FILE);
     if (fileInfo.thumbnailReady < RESTORE_THUMBNAIL_READY_SUCCESS &&
         fileInfo.lcdVisitTime < RESTORE_LCD_VISIT_TIME_SUCCESS) {
         MEDIA_INFO_LOG("Thumbnail dose not exist, id:%{public}d, path:%{public}s",
@@ -1317,9 +1315,7 @@ void CloneRestore::GetQueryWhereClause(const string &tableName, const unordered_
     string &queryWhereClause = tableQueryWhereClauseMap_[tableName];
     queryWhereClause.clear();
     for (auto it = queryWhereClauseMap.begin(); it != queryWhereClauseMap.end(); ++it) {
-        if (columnInfoMap.count(it->first) == 0) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(columnInfoMap.count(it->first) != 0);
         if (!queryWhereClause.empty()) {
             queryWhereClause += " AND ";
         }
@@ -1461,21 +1457,15 @@ void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &
 {
     auto &albumIdMap = tableAlbumIdMap_[tableName];
     for (auto &albumInfo : albumInfos) {
-        if (albumInfo.albumIdOld <= 0) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(albumInfo.albumIdOld > 0);
         string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + tableName + " WHERE " +
             PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(albumInfo.albumType) + " AND " +
             PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
             PhotoAlbumColumns::ALBUM_NAME + " = '" + albumInfo.albumName + "'";
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK);
         albumInfo.albumIdNew = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
-        if (albumInfo.albumIdNew <= 0) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(albumInfo.albumIdNew > 0);
         albumIdMap[albumInfo.albumIdOld] = albumInfo.albumIdNew;
     }
 }
@@ -1801,39 +1791,21 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
 
 static size_t QueryThumbPhotoSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
 {
-    if (mediaRdb == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return 0;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(mediaRdb != nullptr, 0, "rdbStore is nullptr");
     const string sql = "SELECT SUM(" + PhotoExtColumn::THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE +
                        " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE;
     auto resultSet = mediaRdb->QuerySql(sql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is null!");
-        return 0;
-    }
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("go to first row failed");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "resultSet is null!");
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, 0, "go to first row failed");
     int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE, resultSet, TYPE_INT64));
-    if (size < 0) {
-        MEDIA_ERR_LOG("Invalid thumPhoto size from db: %{public}" PRId64, size);
-        return 0;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(size >= 0, 0, "Invalid thumPhoto size from db: %{public}" PRId64, size);
     resultSet->Close();
     return static_cast<size_t>(size);
 }
 
 size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> mediaRdb)
 {
-    if (mediaRdb == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
-        return 0;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(mediaRdb != nullptr, 0, "rdbStore is nullptr");
     // media asset size
     size_t thumbPhotoSize = QueryThumbPhotoSize(mediaRdb);
     string querySizeSql = "SELECT cast(" + std::to_string(thumbPhotoSize) +
@@ -1842,10 +1814,7 @@ size_t CloneRestore::StatClonetotalSize(std::shared_ptr<NativeRdb::RdbStore> med
         " UNION " + querySizeSql;
 
     auto resultSet = mediaRdb->QuerySql(mediaVolumeQuery);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to execute media volume query");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "Failed to execute media volume query");
 
     int64_t totalVolume = 0;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
