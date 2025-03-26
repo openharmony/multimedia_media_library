@@ -170,7 +170,7 @@ int32_t PhotoOwnerAlbumIdOperation::FixPhotoRelation()
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     // Distinguish between files with and without albums
     std::string fileIdWithComma = this->ToStringWithComma(this->fileIds_);
-    bool containsScreenVideo;
+    bool containsScreenVideo = false;
     std::vector<std::string> fileIdsWithoutAlbum = this->GetFileIdsWithoutAlbum(fileIdWithComma, containsScreenVideo);
     std::vector<std::string> fileIdsWithAlbum = this->GetFileIdsWithAlbum(fileIdWithComma, containsScreenVideo);
     MEDIA_INFO_LOG("Media_Operation: fileId size: %{public}zu, fileIdsWithoutAlbum size: %{public}zu, "
