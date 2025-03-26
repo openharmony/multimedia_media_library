@@ -204,24 +204,16 @@ int64_t PhotosRestore::FindDateTrashed(const FileInfo &fileInfo)
  */
 void PhotosRestore::GetDuplicateData(int32_t duplicateDataCount)
 {
-    if (duplicateDataCount <= 0) {
-        return;
-    }
+    CHECK_AND_RETURN(duplicateDataCount > 0);
     std::string querySql = this->SQL_GALLERY_MEDIA_QUERY_DUPLICATE_DATA;
     int rowCount = 0;
     int offset = 0;
     int pageSize = 200;
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, pageSize};
-        if (this->galleryRdb_ == nullptr) {
-            MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(this->galleryRdb_ != nullptr, "Media_Restore: galleryRdb_ is null.");
         auto resultSet = this->galleryRdb_->QuerySql(querySql, params);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "Query resultSql is null.");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             std::string data = GetStringVal(GALLERY_FILE_DATA, resultSet);
             int32_t count = GetInt32Val(CUSTOM_COUNT, resultSet);
@@ -242,9 +234,7 @@ void PhotosRestore::GetDuplicateData(int32_t duplicateDataCount)
 bool PhotosRestore::IsDuplicateData(const std::string &data)
 {
     std::lock_guard<mutex> lock(this->duplicateDataUsedCountMutex_);
-    if (this->duplicateDataUsedCountMap_.count(data) == 0) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(this->duplicateDataUsedCountMap_.count(data) != 0, false);
     this->duplicateDataUsedCountMap_[data]++;
     return this->duplicateDataUsedCountMap_.at(data) > 1;
 }
@@ -266,9 +256,8 @@ int32_t PhotosRestore::FindPhotoQuality(const FileInfo &fileInfo)
 std::string PhotosRestore::GetSuffix(const std::string &displayName)
 {
     size_t dotPos = displayName.rfind('.');
-    if (dotPos != std::string::npos) {
-        return this->ToLower(displayName.substr(dotPos + 1));  // without dot, e.g. "jpg"
-    }
+    /* without dot, e.g. "jpg" */
+    CHECK_AND_RETURN_RET(dotPos == std::string::npos, this->ToLower(displayName.substr(dotPos + 1)));
     return "";
 }
 
@@ -278,9 +267,8 @@ std::string PhotosRestore::GetSuffix(const std::string &displayName)
 int32_t PhotosRestore::FindMediaType(const FileInfo &fileInfo)
 {
     int32_t dualMediaType = fileInfo.fileType;
-    if (dualMediaType == DUAL_MEDIA_TYPE::IMAGE_TYPE || dualMediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) {
-        return dualMediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
-    }
+    bool cond = (dualMediaType == DUAL_MEDIA_TYPE::IMAGE_TYPE || dualMediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE);
+    CHECK_AND_RETURN_RET(!cond, (dualMediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE));
     std::string suffix = this->GetSuffix(fileInfo.displayName);
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(MimeTypeUtils::GetMimeTypeFromExtension(suffix));
     MEDIA_INFO_LOG("Media_Restore: correct mediaType from %{public}d to %{public}d, displayName: %{public}s",
@@ -295,9 +283,7 @@ int32_t PhotosRestore::FindMediaType(const FileInfo &fileInfo)
  */
 std::string PhotosRestore::FindSourcePath(const FileInfo &fileInfo)
 {
-    if (!fileInfo.sourcePath.empty()) {
-        return fileInfo.sourcePath;
-    }
+    CHECK_AND_RETURN_RET(fileInfo.sourcePath.empty(), fileInfo.sourcePath);
     std::string lPath = "/Pictures/其它";
     if (!fileInfo.lPath.empty()) {
         lPath = fileInfo.lPath;
@@ -312,9 +298,7 @@ std::string PhotosRestore::FindSourcePath(const FileInfo &fileInfo)
  */
 int32_t PhotosRestore::FindStrongAssociation(const FileInfo &fileInfo)
 {
-    if (fileInfo.photoQuality == DUAL_ENHANCEMENT_PHOTO_QUALITY) {
-        return CLOUD_ENHANCEMENT_ALBUM;
-    }
+    CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, CLOUD_ENHANCEMENT_ALBUM);
     return 0;
 }
 
@@ -323,9 +307,7 @@ int32_t PhotosRestore::FindStrongAssociation(const FileInfo &fileInfo)
  */
 int32_t PhotosRestore::FindCeAvailable(const FileInfo &fileInfo)
 {
-    if (fileInfo.photoQuality == DUAL_ENHANCEMENT_PHOTO_QUALITY) {
-        return SINGLE_CLOUD_ENHANCEMENT_PHOTO;
-    }
+    CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, SINGLE_CLOUD_ENHANCEMENT_PHOTO);
     return 0;
 }
 }  // namespace OHOS::Media

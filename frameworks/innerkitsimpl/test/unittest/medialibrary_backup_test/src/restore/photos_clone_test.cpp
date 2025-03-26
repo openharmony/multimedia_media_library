@@ -144,4 +144,120 @@ HWTEST_F(PhotosCloneTest, FindAlbumInfo_Scenario_3_TRASHED_LPATH_EMPTY_Test, Tes
     EXPECT_EQ(albumRowData.albumId, 0);
     EXPECT_EQ(albumRowData.lPath, "/DCIM/Camera");
 }
+
+HWTEST_F(PhotosCloneTest, GetPhotosRowCountInPhotoMap_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetPhotosRowCountInPhotoMap_Test start");
+    auto count = PhotosClone().GetPhotosRowCountInPhotoMap();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("GetPhotosRowCountInPhotoMap_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, GetCloudPhotosRowCountInPhotoMap_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetCloudPhotosRowCountInPhotoMap_Test start");
+    auto count = PhotosClone().GetCloudPhotosRowCountInPhotoMap();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("GetCloudPhotosRowCountInPhotoMap_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, GetPhotosRowCountNotInPhotoMap_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetPhotosRowCountNotInPhotoMap_Test start");
+    auto count = PhotosClone().GetPhotosRowCountNotInPhotoMap();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("GetPhotosRowCountNotInPhotoMap_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, GetCloudPhotosRowCountNotInPhotoMap_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetCloudPhotosRowCountNotInPhotoMap_Test start");
+    auto count = PhotosClone().GetCloudPhotosRowCountNotInPhotoMap();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("GetCloudPhotosRowCountNotInPhotoMap_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, FindlPath_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindlPath_Test start");
+    FileInfo fileInfo;
+    fileInfo.lPath = "/Pictures/其它";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_VIDEO;
+    fileInfo.recycledTime = 1;
+    fileInfo.sourcePath = "/storage/emulated/0/DCIM/Camera/SVID_20241029_225550_1.mp4";
+    std::string lPath = PhotosClone().FindlPath(fileInfo);
+    EXPECT_FALSE(lPath.empty());
+    EXPECT_EQ(lPath, "/DCIM/Camera");
+    MEDIA_INFO_LOG("FindlPath_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, FindAlbumId_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindAlbumId_Test start");
+    FileInfo fileInfo;
+    fileInfo.lPath = "/Pictures/其它";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_VIDEO;
+    fileInfo.recycledTime = 1;
+    fileInfo.sourcePath = "/storage/emulated/0/DCIM/Camera/SVID_20241029_225550_1.mp4";
+    auto albumId = PhotosClone().FindAlbumId(fileInfo);
+    EXPECT_EQ(albumId, 0);
+    MEDIA_INFO_LOG("FindAlbumId_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, FindPackageName_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindPackageName_Test start");
+    FileInfo fileInfo;
+    fileInfo.lPath = "/Pictures/其它";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_VIDEO;
+    fileInfo.recycledTime = 1;
+    fileInfo.sourcePath = "/storage/emulated/0/DCIM/Camera/SVID_20241029_225550_1.mp4";
+    std::string albumName = PhotosClone().FindPackageName(fileInfo);
+    EXPECT_FALSE(albumName.empty());
+    EXPECT_EQ(albumName, "Camera");
+    MEDIA_INFO_LOG("FindPackageName_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, FindBundleName_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindBundleName_Test start");
+    FileInfo fileInfo;
+    fileInfo.lPath = "/Pictures/其它";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_VIDEO;
+    fileInfo.recycledTime = 1;
+    fileInfo.sourcePath = "/storage/emulated/0/DCIM/Camera/SVID_20241029_225550_1.mp4";
+    std::string bundleName = PhotosClone().FindBundleName(fileInfo);
+    EXPECT_TRUE(bundleName.empty());
+    MEDIA_INFO_LOG("FindBundleName_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, GenerateUuid_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GenerateUuid_Test start");
+    std::string uuid = PhotosClone().GenerateUuid();
+    EXPECT_FALSE(uuid.empty());
+    MEDIA_INFO_LOG("GenerateUuid_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, FindSourcePath_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindSourcePath_Test start");
+    FileInfo fileInfo;
+    fileInfo.lPath = "/Pictures/SourceTemp";
+    fileInfo.fileType = MediaType::MEDIA_TYPE_VIDEO;
+    fileInfo.recycledTime = 1;
+    fileInfo.displayName = "Sp.jpg";
+    std::string sourcePath = PhotosClone().FindSourcePath(fileInfo);
+    EXPECT_FALSE(sourcePath.empty());
+    EXPECT_EQ(sourcePath, "/storage/emulated/0/Pictures/SourceTemp/Sp.jpg");
+    MEDIA_INFO_LOG("FindSourcePath_Test end");
+}
+
+HWTEST_F(PhotosCloneTest, GetNoNeedMigrateCount_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetNoNeedMigrateCount_Test start");
+    auto count = PhotosClone().GetNoNeedMigrateCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("GetNoNeedMigrateCount_Test end");
+}
 }  // namespace OHOS::Media

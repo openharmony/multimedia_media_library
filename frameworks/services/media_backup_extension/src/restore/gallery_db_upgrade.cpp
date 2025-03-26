@@ -26,10 +26,8 @@ namespace DataTransfer {
  */
 int32_t GalleryDbUpgrade::OnUpgrade(std::shared_ptr<NativeRdb::RdbStore> galleryRdbPtr)
 {
-    if (galleryRdbPtr == nullptr) {
-        MEDIA_WARN_LOG("galleryRdbPtr is nullptr, Maybe init failed, skip gallery db upgrade.");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_WARN_LOG(galleryRdbPtr != nullptr, -1,
+        "galleryRdbPtr is nullptr, Maybe init failed, skip gallery db upgrade.");
     return this->OnUpgrade(*galleryRdbPtr);
 }
 
@@ -57,9 +55,8 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
  */
 int32_t GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &store)
 {
-    if (this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "photo_quality")) {
-        return NativeRdb::E_OK;
-    }
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "photo_quality");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
     std::string sql = this->SQL_GALLERY_MEDIA_TABLE_ADD_PHOTO_QUALITY;
     int32_t ret = store.ExecuteSql(sql);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia failed,"
@@ -73,9 +70,8 @@ int32_t GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &sto
  */
  int32_t GalleryDbUpgrade::AddResolutionOfGalleryMedia(NativeRdb::RdbStore &store)
 {
-    if (this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "resolution")) {
-        return NativeRdb::E_OK;
-    }
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "resolution");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
     std::string sql = this->SQL_GALLERY_MEDIA_TABLE_ADD_RESOLUTION;
     int32_t ret = store.ExecuteSql(sql);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GalleryDbUpgrade::AddResolutionOfGalleryMedia failed,"
@@ -89,9 +85,8 @@ int32_t GalleryDbUpgrade::AddPhotoQualityOfGalleryMedia(NativeRdb::RdbStore &sto
  */
 int32_t GalleryDbUpgrade::AddRelativeBucketIdOfGalleryAlbum(NativeRdb::RdbStore &store)
 {
-    if (this->dbUpgradeUtils_.IsColumnExists(store, "gallery_album", "relativeBucketId")) {
-        return NativeRdb::E_OK;
-    }
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "gallery_album", "relativeBucketId");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
     std::string sql = this->SQL_GALLERY_ALBUM_TABLE_ADD_RELATIVE_BUCKET_ID;
     int32_t ret = store.ExecuteSql(sql);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
@@ -110,9 +105,8 @@ int32_t GalleryDbUpgrade::GarbageAlbumUpgrade(NativeRdb::RdbStore &store)
 
 int32_t GalleryDbUpgrade::GarbageAlbumCheckOrAddRelativeBucketId(NativeRdb::RdbStore &store)
 {
-    if (this->dbUpgradeUtils_.IsColumnExists(store, "garbage_album", "relative_bucket_id")) {
-        return NativeRdb::E_OK;
-    }
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "garbage_album", "relative_bucket_id");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
     std::string sql = this->SQL_GARBAGE_ALBUM_TABLE_ADD_RELATIVE_BUCKET_ID;
     int32_t ret = store.ExecuteSql(sql);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GarbageAlbumCheckOrAddRelativeBucketId failed,"
@@ -123,9 +117,8 @@ int32_t GalleryDbUpgrade::GarbageAlbumCheckOrAddRelativeBucketId(NativeRdb::RdbS
 
 int32_t GalleryDbUpgrade::GarbageAlbumCheckOrAddType(NativeRdb::RdbStore &store)
 {
-    if (this->dbUpgradeUtils_.IsColumnExists(store, "garbage_album", "type")) {
-        return NativeRdb::E_OK;
-    }
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "garbage_album", "type");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
     std::string sql = this->SQL_GARBAGE_ALBUM_TABLE_ADD_TYPE;
     int32_t ret = store.ExecuteSql(sql);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GarbageAlbumCheckOrAddType failed,"
@@ -159,9 +152,8 @@ int32_t GalleryDbUpgrade::AddIndexOfAlbumPlugin(NativeRdb::RdbStore &store)
  */
  int32_t GalleryDbUpgrade::AddStoryChosenOfGalleryMedia(NativeRdb::RdbStore &store)
 {
-    if (this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "story_chosen")) {
-        return NativeRdb::E_OK;
-    }
+    bool cond = this->dbUpgradeUtils_.IsColumnExists(store, "gallery_media", "story_chosen");
+    CHECK_AND_RETURN_RET(!cond, NativeRdb::E_OK);
     std::string sql = this->SQL_GALLERY_MEDIA_TABLE_ADD_STORY_CHOSEN;
     int32_t ret = store.ExecuteSql(sql);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GalleryDbUpgrade::AddStoryChosenOfGalleryMedia failed,"
