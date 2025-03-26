@@ -210,6 +210,9 @@ private:
     void GetAccountValid() override;
     int32_t GetHighlightCloudMediaCnt();
     void RestoreHighlightAlbums();
+    void AddToPhotosFailedOffsets(int32_t offset);
+    void ProcessPhotosBatchFailedOffsets();
+    void ProcessCloudPhotosFailedOffsets();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -250,7 +253,8 @@ private:
     std::shared_ptr<MediaLibraryKvStore> oldYearKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
-    std::vector<int> photosFailedOffsets;
+    std::vector<int> photosFailedOffsets_;
+    ffrt::mutex photosFailedMutex_;
     CloneRestoreClassify cloneRestoreClassify_;
     CloneRestoreGeo cloneRestoreGeo_;
     CloneRestoreHighlight cloneRestoreHighlight_;

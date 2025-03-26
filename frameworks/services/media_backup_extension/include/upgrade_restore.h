@@ -117,6 +117,10 @@ private:
     std::string CheckGalleryDbIntegrity();
     void RestorePhotoInner();
     void PrcoessBurstPhotos();
+    void AddToGalleryFailedOffsets(int32_t offset);
+    void AddToExternalFailedOffsets(int32_t offset);
+    void ProcessGalleryFailedOffsets();
+    void ProcessExternalFailedOffsets();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -141,8 +145,10 @@ private:
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
     BackupDatabaseHelper backupDatabaseHelper_;
-    std::vector<int> galleryFailedOffsets;
-    std::vector<int> externalFailedOffsets;
+    std::vector<int> galleryFailedOffsets_;
+    std::vector<int> externalFailedOffsets_;
+    ffrt::mutex galleryFailedMutex_;
+    ffrt::mutex externalFailedMutex_;
     int32_t maxId_{-1};
 };
 } // namespace Media
