@@ -268,7 +268,8 @@ int32_t PhotosRestore::FindMediaType(const FileInfo &fileInfo)
 {
     int32_t dualMediaType = fileInfo.fileType;
     bool cond = (dualMediaType == DUAL_MEDIA_TYPE::IMAGE_TYPE || dualMediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE);
-    CHECK_AND_RETURN_RET(!cond, (dualMediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE));
+    CHECK_AND_RETURN_RET(!cond,
+        (dualMediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE));
     std::string suffix = this->GetSuffix(fileInfo.displayName);
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(MimeTypeUtils::GetMimeTypeFromExtension(suffix));
     MEDIA_INFO_LOG("Media_Restore: correct mediaType from %{public}d to %{public}d, displayName: %{public}s",
