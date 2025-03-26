@@ -262,7 +262,7 @@ int32_t MediaLibraryVisionOperations::InitForegroundAnalysisMeta(MediaLibraryCom
     return E_OK;
 }
 
-int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis()
+int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis(const std::string &assetUri)
 {
     Uri uri(PAH_UPDATE_ANA_FOREGROUND);
     MediaLibraryCommand cmd(uri);
@@ -270,6 +270,12 @@ int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis()
     DataShareValuesBucket value;
     value.Put(FOREGROUND_ANALYSIS_TYPE, AnalysisType::ANALYSIS_SEARCH_INDEX);
     value.Put(FOREGROUND_ANALYSIS_TASK_ID, ForegroundAnalysisMeta::GetIncTaskId());
+    std::string photoUri = assetUri;
+    std::string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(photoUri);
+    if (!fileId.empty()) {
+        std::vector<std::string> fileIds = { fileId };
+        predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
+    }
     return MediaLibraryDataManager::GetInstance()->Update(cmd, value, predicates);
 }
 }
