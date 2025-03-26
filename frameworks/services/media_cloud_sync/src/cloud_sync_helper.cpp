@@ -116,31 +116,27 @@ bool CloudSyncHelper::IsSyncSwitchOpen()
     predicates.EqualTo(BUNDLE_NAME_KEY, GALLERY_BUNDLE_NAME);
     std::vector<std::string> columns = {SWITCH_STATUS_KEY};
     auto resultSet = dataShareHelper_->Query(uri, predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_INFO_LOG("resultSet is null, maybe never login");
-        return false;
-    }
+    bool errConn = resultSet == nullptr;
+    CHECK_AND_RETURN_RET_LOG(!errConn, false, "Media_Cloud: resultSet is null, maybe never login");
 
     int32_t rowCount = -1;
     int32_t ret = resultSet->GetRowCount(rowCount);
-    if (ret != 0 || rowCount < 0) {
-        MEDIA_ERR_LOG("get cloud status fail ret is %{public}d, rowcount is %{public}d", ret, rowCount);
-        return true;
-    } else if (rowCount == 0) {
-        MEDIA_INFO_LOG("rowCount is 0");
-        return true;
-    }
+    errConn = ret != 0 || rowCount < 0;
+    CHECK_AND_RETURN_RET_LOG(
+        !errConn, false, "Media_Cloud: get cloud status fail ret is %{public}d, rowcount is %{public}d", ret, rowCount);
+    errConn = rowCount == 0;
+    CHECK_AND_RETURN_RET_LOG(!errConn, false, "Media_Cloud: rowCount is 0");
 
     int64_t status = 0;
     int32_t columnIndex = -1;
     ret = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == 0, true, "goto first err");
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Media_Cloud: goto first err");
 
     ret = resultSet->GetColumnIndex(SWITCH_STATUS_KEY, columnIndex);
-    CHECK_AND_RETURN_RET_LOG(ret == 0, true, "Get Column index err");
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Media_Cloud: Get Column index err");
 
     ret = resultSet->GetLong(columnIndex, status);
-    CHECK_AND_RETURN_RET_LOG(ret == 0, true, "get long err");
+    CHECK_AND_RETURN_RET_LOG(ret == 0, false, "Media_Cloud: get long err");
     return status == 1;
 }
 
