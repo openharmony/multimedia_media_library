@@ -69,6 +69,9 @@ const string TEST_FILE_PATH_PHOTO = "test_file_path_photo";
 const string TEST_FILE_PATH_VIDEO = "test_file_path_video";
 const string TEST_FILE_PATH_AUDIO = "test_file_path_audio";
 const string TASK_ID = "1";
+const string TEST_DIR_PATH = "test";
+const int32_t TEST_ORIENTATION_ZERO = 0;
+const int32_t TEST_ORIENTATION_NINETY = 90;
 const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
     "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " != " +
@@ -2297,6 +2300,364 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_
     std::string backupInfo;
     backupRestoreService.GetBackupInfo(CLONE_RESTORE_ID, backupInfo);
     EXPECT_EQ(backupInfo, "");
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_account_valid_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_account_valid_test");
+    restoreService -> restoreInfo_ = R"([{"type":"singleAccountId", "detail":"test"}])";
+    (void)restoreService -> GetAccountValid();
+    EXPECT_FALSE(restoreService -> isAccountValid_);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_photo_test");
+    restoreService -> RestorePhoto();
+    restoreService -> RestorePhotoForCloud();
+    EXPECT_EQ(restoreService -> totalNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_file_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_move_migrate_file_test");
+    FileInfo fileInfo;
+    fileInfo.needMove = true;
+    fileInfo.filePath = TEST_DIR_PATH;
+    fileInfo.cloudPath = TEST_DIR_PATH;
+    fileInfo.specialFileType = LIVE_PHOTO_TYPE;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    int64_t fileMoveCount = 0;
+    int64_t videoFileMoveCount = 0;
+    restoreService -> MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount);
+    EXPECT_TRUE(fileInfos[0].needVisible);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_cloud_file_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_move_migrate_cloud_file_test");
+    FileInfo fileInfo;
+    fileInfo.needMove = true;
+    fileInfo.filePath = TEST_DIR_PATH;
+    fileInfo.specialFileType = LIVE_PHOTO_TYPE;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    int32_t fileMoveCount = 0;
+    int32_t videoFileMoveCount = 0;
+    int32_t sceneCode = 0;
+    restoreService -> MoveMigrateCloudFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    EXPECT_EQ(restoreService -> migrateFileNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_cloud_photo_file_exist_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_cloud_photo_file_exist_test");
+    FileInfo fileInfo;
+    CloudPhotoFileExistFlag resultExistFlag;
+    restoreService -> GetCloudPhotoFileExistFlag(fileInfo, resultExistFlag);
+    EXPECT_FALSE(resultExistFlag.isLcdExist);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_cloud_photo_files_verify_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_cloud_photo_files_verify_test");
+    FileInfo fileInfo1;
+    fileInfo1.cloudPath = TEST_DIR_PATH;
+    fileInfo1.orientation = TEST_ORIENTATION_NINETY;
+    FileInfo fileInfo2;
+    fileInfo2.cloudPath = TEST_DIR_PATH;
+    fileInfo2.orientation = TEST_ORIENTATION_ZERO;
+    std::vector<FileInfo> fileInfos = {fileInfo1, fileInfo2};
+    std::vector<FileInfo> LCDNotFound;
+    std::vector<FileInfo> THMNotFound;
+    CloudPhotoFileExistFlag resultExistFlag;
+    unordered_map<string, CloudPhotoFileExistFlag> resultExistMap = {
+        {"test", resultExistFlag}
+    };
+    restoreService -> CloudPhotoFilesVerify(fileInfos, LCDNotFound, THMNotFound, resultExistMap);
+    EXPECT_EQ(LCDNotFound.size(), fileInfos.size());
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_photo_test");
+    FileInfo fileInfo;
+    fileInfo.isNew = true;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    restoreService -> InsertPhoto(fileInfos);
+    EXPECT_EQ(restoreService -> migrateDatabaseNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_cloud_photo_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_cloud_photo_test");
+    FileInfo fileInfo;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    restoreService -> InsertCloudPhoto(CLONE_RESTORE_ID, fileInfos, 0);
+    EXPECT_EQ(restoreService -> migrateCloudSuccessNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_batch_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_photo_batch_test");
+    restoreService -> RestorePhotoBatch(0, 0);
+    EXPECT_EQ(restoreService -> migrateDatabaseNumber_, 0);
+    restoreService -> RestorePhotoBatch(0, 1);
+    EXPECT_EQ(restoreService -> migrateDatabaseNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_for_cloud_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_batch_for_cloud_test");
+    restoreService -> RestoreBatchForCloud(0, 0);
+    EXPECT_EQ(restoreService -> migrateDatabaseNumber_, 0);
+    restoreService -> RestoreBatchForCloud(0, 1);
+    EXPECT_EQ(restoreService -> migrateDatabaseNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_asset_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_move_asset_test_001");
+    FileInfo fileInfo;
+    fileInfo.isRelatedToPhotoMap = 1;
+    fileInfo.thumbnailReady = RESTORE_THUMBNAIL_READY_SUCCESS;
+    int32_t ret = restoreService -> MoveAsset(fileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_asset_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_move_asset_test_002");
+    FileInfo fileInfo;
+    fileInfo.isRelatedToPhotoMap = 0;
+    fileInfo.thumbnailReady = RESTORE_THUMBNAIL_READY_NO_THUMBNAIL;
+    int32_t ret = restoreService -> MoveAsset(fileInfo);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_insert_value_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_thumbnail_insert_value_test_001");
+    FileInfo fileInfo;
+    NativeRdb::ValuesBucket values;
+    restoreService -> hasCloneThumbnailDir_ = false;
+    restoreService -> GetThumbnailInsertValue(fileInfo, values);
+    int lcdVisitTime;
+    ValueObject valueObject;
+    values.GetObject(PhotoColumn::PHOTO_LCD_VISIT_TIME, valueObject);
+    valueObject.GetInt(lcdVisitTime);
+    EXPECT_EQ(lcdVisitTime, RESTORE_LCD_VISIT_TIME_NO_LCD);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_insert_value_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_thumbnail_insert_value_test_002");
+    FileInfo fileInfo;
+    NativeRdb::ValuesBucket values;
+    restoreService -> hasCloneThumbnailDir_ = true;
+    restoreService -> isInitKvstoreSuccess_ = false;
+    restoreService -> GetThumbnailInsertValue(fileInfo, values);
+    int thumbnailReady;
+    ValueObject valueObject;
+    values.GetObject(PhotoColumn::PHOTO_THUMBNAIL_READY, valueObject);
+    valueObject.GetInt(thumbnailReady);
+    EXPECT_EQ(thumbnailReady, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_insert_value_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_thumbnail_insert_value_test_003");
+    FileInfo fileInfo;
+    fileInfo.thumbnailReady = RESTORE_THUMBNAIL_READY_NO_THUMBNAIL;
+    NativeRdb::ValuesBucket values;
+    restoreService -> hasCloneThumbnailDir_ = true;
+    restoreService -> isInitKvstoreSuccess_ = true;
+    restoreService -> GetThumbnailInsertValue(fileInfo, values);
+    int thumbnailReady;
+    ValueObject valueObject;
+    values.GetObject(PhotoColumn::PHOTO_THUMBNAIL_READY, valueObject);
+    valueObject.GetInt(thumbnailReady);
+    EXPECT_EQ(thumbnailReady, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_gallery_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_gallery_test");
+    restoreService -> RestoreGallery();
+    EXPECT_EQ(restoreService -> isSyncSwitchOn_, false);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prepare_cloud_path_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_prepare_cloud_path_test");
+    FileInfo fileInfo1;
+    fileInfo1.relativePath = TEST_DIR_PATH;
+    fileInfo1.isNew = true;
+    fileInfo1.isRelatedToPhotoMap = 1;
+    std::string tableName = TEST_DIR_PATH;
+    bool ret = restoreService -> PrepareCloudPath(tableName, fileInfo1);
+    EXPECT_EQ(ret, false);
+
+    FileInfo fileInfo2;
+    fileInfo2.relativePath = TEST_DIR_PATH;
+    fileInfo2.isNew = false;
+    ret = restoreService -> PrepareCloudPath(tableName, fileInfo2);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_music_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_music_test");
+    restoreService -> RestoreMusic();
+    EXPECT_EQ(restoreService -> audioTotalNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_audio_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_audio_test");
+    restoreService -> mediaLibraryRdb_ = g_rdbStore -> GetRaw();
+    FileInfo fileInfo;
+    fileInfo.filePath = TEST_DIR_PATH;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    restoreService -> InsertAudio(fileInfos);
+    EXPECT_EQ(restoreService -> migrateAudioFileNumber_, 0);
+    restoreService -> mediaLibraryRdb_ = nullptr;
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_batch_test");
+    restoreService -> RestorePhotoBatch(0, 0);
+    restoreService -> RestoreBatchForCloud(0, 0);
+    EXPECT_EQ(restoreService -> migrateDatabaseNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_related_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_photo_related_test");
+    FileInfo fileInfo;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    restoreService -> InsertPhotoRelated(fileInfos);
+    EXPECT_EQ(restoreService -> migrateDatabaseMapNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_batch_update_file_info_data_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_batch_update_file_info_data_test");
+    FileInfo fileInfo1, fileInfo2;
+    fileInfo1.cloudPath = TEST_DIR_PATH;
+    fileInfo1.orientation = TEST_ORIENTATION_ZERO;
+    fileInfo2.cloudPath = TEST_DIR_PATH;
+    fileInfo2.orientation = TEST_ORIENTATION_NINETY;
+    std::vector<FileInfo> fileInfos = {fileInfo1, fileInfo2};
+    CloudPhotoFileExistFlag resultExistFlag;
+    unordered_map<string, CloudPhotoFileExistFlag> resultExistMap;
+    resultExistFlag.isThmExist = true;
+    resultExistFlag.isLcdExist = true;
+    resultExistMap[TEST_DIR_PATH] = resultExistFlag;
+    restoreService -> BatchUpdateFileInfoData(fileInfos, resultExistMap);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_001");
+    FileInfo fileInfo;
+    fileInfo.orientation = TEST_ORIENTATION_ZERO;
+    CloudPhotoFileExistFlag resultExistFlag;
+    resultExistFlag.isThmExist = true;
+    resultExistFlag.isLcdExist = true;
+    int32_t ret = restoreService -> CheckThumbStatus(fileInfo, resultExistFlag);
+    EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_ALL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_002");
+    FileInfo fileInfo;
+    fileInfo.orientation = TEST_ORIENTATION_ZERO;
+    CloudPhotoFileExistFlag resultExistFlag;
+    resultExistFlag.isThmExist = true;
+    resultExistFlag.isLcdExist = false;
+    int32_t ret = restoreService -> CheckThumbStatus(fileInfo, resultExistFlag);
+    EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_LCD);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_003");
+    FileInfo fileInfo;
+    fileInfo.orientation = TEST_ORIENTATION_ZERO;
+    CloudPhotoFileExistFlag resultExistFlag;
+    resultExistFlag.isThmExist = false;
+    resultExistFlag.isLcdExist = true;
+    int32_t ret = restoreService -> CheckThumbStatus(fileInfo, resultExistFlag);
+    EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_THUMB);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_004");
+    FileInfo fileInfo;
+    fileInfo.orientation = TEST_ORIENTATION_ZERO;
+    CloudPhotoFileExistFlag resultExistFlag;
+    resultExistFlag.isThmExist = false;
+    resultExistFlag.isLcdExist = false;
+    int32_t ret = restoreService -> CheckThumbStatus(fileInfo, resultExistFlag);
+    EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_ALL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_005");
+    FileInfo fileInfo;
+    fileInfo.orientation = TEST_ORIENTATION_NINETY;
+    CloudPhotoFileExistFlag resultExistFlag;
+    resultExistFlag.isExThmExist = true;
+    resultExistFlag.isExLcdExist = true;
+    int32_t ret = restoreService -> CheckThumbStatus(fileInfo, resultExistFlag);
+    EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_ALL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_006");
+    FileInfo fileInfo;
+    fileInfo.orientation = TEST_ORIENTATION_NINETY;
+    CloudPhotoFileExistFlag resultExistFlag;
+    resultExistFlag.isExThmExist = true;
+    resultExistFlag.isExLcdExist = false;
+    int32_t ret = restoreService -> CheckThumbStatus(fileInfo, resultExistFlag);
+    EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_LCD);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_007");
+    FileInfo fileInfo;
+    fileInfo.orientation = TEST_ORIENTATION_NINETY;
+    CloudPhotoFileExistFlag resultExistFlag;
+    resultExistFlag.isExThmExist = false;
+    resultExistFlag.isExLcdExist = true;
+    int32_t ret = restoreService -> CheckThumbStatus(fileInfo, resultExistFlag);
+    EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_THUMB);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_008");
+    FileInfo fileInfo;
+    fileInfo.orientation = TEST_ORIENTATION_NINETY;
+    CloudPhotoFileExistFlag resultExistFlag;
+    resultExistFlag.isExThmExist = false;
+    resultExistFlag.isExLcdExist = false;
+    int32_t ret = restoreService -> CheckThumbStatus(fileInfo, resultExistFlag);
+    EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_ALL);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_backup_test");
+    restoreService -> StartBackup();
+    EXPECT_EQ(MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR), true);
 }
 } // namespace Media
 } // namespace OHOS
