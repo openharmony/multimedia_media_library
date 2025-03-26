@@ -460,7 +460,7 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
     string strTemp = resultMap.at(AV_KEY_DATE_TIME_FORMAT);
     if (strTemp != "") {
         int64_t int64TempMeta = convertTimeStr2TimeStamp(strTemp);
-        if (int64TempMeta < 0) {
+        if (int64TempMeta <= 0) {
             data->SetDateTaken(data->GetFileDateModified());
         } else {
             data->SetDateTaken(int64TempMeta * MSEC_TO_SEC);
