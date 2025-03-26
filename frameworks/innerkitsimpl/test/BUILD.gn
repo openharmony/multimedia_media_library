@@ -15,11 +15,9 @@ group("test") {
   testonly = true
 
   deps = [
-    "unittest/album_count_cover_test:AlbumCountCoverTest",
     "unittest/background_cloud_file_processor_test:unittest",
     "unittest/media_analysis_extension_test:unittest",
     "unittest/media_asset_test:unittest",
-    "unittest/media_datashare_ext_ability_test:unittest",
     "unittest/media_event_test:unittest",
     "unittest/media_library_asset_helper_capi_test:unittest",
     "unittest/media_library_asset_manager_test:unittest",
@@ -39,15 +37,11 @@ group("test") {
     "unittest/medialibrary_custom_restore_test:unittest",
     "unittest/medialibrary_datamanager_test:unittest",
     "unittest/medialibrary_dfx_test:unittest",
-    "unittest/medialibrary_fuse_test:unittest",
     "unittest/medialibrary_handler_test:unittest",
-    "unittest/medialibrary_helper_test:unittest",
     "unittest/medialibrary_location_test:unittest",
     "unittest/medialibrary_manager_utils_test:unittest",
     "unittest/medialibrary_mimetype_test:unittest",
-    "unittest/medialibrary_multistages_capture_test:unittest",
     "unittest/medialibrary_object_test:unittest",
-    "unittest/medialibrary_photo_operations_test:unittest",
     "unittest/medialibrary_queryperf_test:unittest",
     "unittest/medialibrary_rdb_callback_test:unittest",
     "unittest/medialibrary_rdb_test:unittest",

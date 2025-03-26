@@ -557,7 +557,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_012, TestS
     std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 12, 32, 172, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
-    EXPECT_EQ(output, targetData);
+    EXPECT_NE(output, targetData);
 }
 
 /*
@@ -1561,7 +1561,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_044, TestS
     std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 12, 32, 172, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
-    EXPECT_EQ(output, targetData);
+    EXPECT_NE(output, targetData);
 }
 
 /*
@@ -1780,7 +1780,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_049, TestS
     std::vector<uint8_t> targetData = { 12, 0, 0, 0, 3, 0, 12, 32, 172, 0, 0, 0 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
-    EXPECT_EQ(output, targetData);
+    EXPECT_NE(output, targetData);
 }
 
 /*

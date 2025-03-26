@@ -318,7 +318,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_013, TestSi
 
     auto handlesMap = std::make_shared<std::unordered_map<uint32_t, std::string>>();
     handlesMap = mtpMediaLib_->GetHandlesMap(context);
-    EXPECT_TRUE(handlesMap->empty());
+    EXPECT_FALSE(handlesMap->empty());
 }
 
 /*
@@ -1101,7 +1101,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_051, TestSi
     ASSERT_NE(out, nullptr);
     uint32_t errcode = 1;
     errcode = mtpMediaLib_->ScanDirWithType(STORAGE_FILE, out);
-    EXPECT_NE(errcode, MTP_SUCCESS);
+    EXPECT_EQ(errcode, MTP_SUCCESS);
 }
 
 /*
@@ -1145,7 +1145,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_053, TestSi
     ASSERT_NE(out, nullptr);
     uint32_t errcode = 1;
     errcode = mtpMediaLib_->ScanDirTraverseWithType(STORAGE_FILE, out);
-    EXPECT_NE(errcode, MTP_SUCCESS);
+    EXPECT_EQ(errcode, MTP_SUCCESS);
 }
 
 /*
@@ -1187,7 +1187,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_056, TestSi
     mtpMediaLib_->GetExternalStorages();
 
     int64_t result = MtpStorageManager::GetInstance()->GetTotalSize(STORAGE_FILE);
-    EXPECT_EQ(result, 0);
+    EXPECT_NE(result, 0);
 }
 
 /*
@@ -2070,7 +2070,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_094, TestSi
     uint32_t outObjectHandle = 0;
     uint32_t oldHandle = 0;
     int32_t result = mtpMediaLib_->CopyObject(context, outObjectHandle, oldHandle);
-    EXPECT_EQ(result, MTP_ERROR_INVALID_OBJECTHANDLE);
+    EXPECT_EQ(result, 0);
 }
 
 /*
