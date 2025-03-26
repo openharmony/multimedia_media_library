@@ -512,7 +512,7 @@ void ConvertColumnsForFeaturedSinglePortrait(SendablePhotoAlbumNapiAsyncContext 
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     int portraitAlbumId = 0;
-    if (photoAlbum != nullptr && photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::CLASSIFY ||
+    if ((photoAlbum != nullptr && photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::CLASSIFY)||
         photoAlbum->GetAlbumName().compare(to_string(portraitAlbumId)) != 0) {
         return;
     }
