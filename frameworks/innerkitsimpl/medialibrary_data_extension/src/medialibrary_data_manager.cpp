@@ -516,7 +516,7 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     }
 
     if (oldVersion < VERSION_ADD_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX) {
-        AddAssetAlbumOperationTable(rdbStore);
+        AddAnalysisPhotoMapMapAssetIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX);
     }
 }
