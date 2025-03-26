@@ -22,6 +22,8 @@
 #include "backup_database_helper.h"
 #include "base_restore.h"
 #include "burst_key_generator.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "photos_restore.h"
 
 namespace OHOS {
@@ -120,7 +122,7 @@ private:
     void AddToGalleryFailedOffsets(int32_t offset);
     void AddToExternalFailedOffsets(int32_t offset);
     void ProcessGalleryFailedOffsets();
-    void ProcessExternalFailedOffsets();
+    void ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

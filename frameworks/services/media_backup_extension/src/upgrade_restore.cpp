@@ -24,8 +24,6 @@
 #include "backup_log_utils.h"
 #include "database_report.h"
 #include "cloud_sync_helper.h"
-#include "ffrt.h"
-#include "ffrt_inner.h"
 #include "gallery_db_upgrade.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -500,7 +498,7 @@ void UpgradeRestore::AddToExternalFailedOffsets(int32_t offset)
     externalFailedOffsets_.push_back(offset);
 }
 
-void UpgradeRestore::ProcessExternalFailedOffsets()
+void UpgradeRestore::ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type)
 {
     std::lock_guard<ffrt::mutex> lock(externalFailedMutex_);
     size_t vectorLen = externalFailedOffsets_.size();
@@ -587,7 +585,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
             }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    ProcessExternalFailedOffsets();
+    ProcessExternalFailedOffsets(maxId, isCamera, type);
 }
 
 void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)

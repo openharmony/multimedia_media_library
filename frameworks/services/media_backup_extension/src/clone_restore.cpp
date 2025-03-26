@@ -24,8 +24,6 @@
 #include "backup_log_utils.h"
 #include "cloud_sync_utils.h"
 #include "database_report.h"
-#include "ffrt.h"
-#include "ffrt_inner.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_library_db_upgrade.h"
