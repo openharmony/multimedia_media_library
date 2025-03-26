@@ -35,7 +35,7 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace Media {
 const int FRONT_CV_MAX_LIMIT = 20;
-const int FRONT_INDEX_MAX_LIMIT = 5000;
+const int FRONT_INDEX_MAX_LIMIT = 2000;
 ForegroundAnalysisMeta::ForegroundAnalysisMeta(std::shared_ptr<NativeRdb::ResultSet> result)
 {
     if (result == nullptr) {
@@ -173,8 +173,18 @@ void ForegroundAnalysisMeta::StartAnalysisService()
     if (opType_ == ForegroundAnalysisOpType::FOREGROUND_NOT_HANDLE) {
         return;
     }
-    MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}u", taskId_, opType_,
-        fileIds_.size());
+    std::thread([taskId = taskId_, opType = opType_, fileIds = fileIds_]()-> void {
+        MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}u", taskId, opType,
+            fileIds.size());
+        if (opType & ForegroundAnalysisOpType::OCR_AND_LABEL) {
+            MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
+                IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_OCR, fileIds, taskId);
+        }
+        if (opType & ForegroundAnalysisOpType::SEARCH_INDEX) {
+            MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
+                IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX, {}, taskId);
+        }
+    }).detach();
 }
 
 int32_t ForegroundAnalysisMeta::QueryPendingAnalyzeFileIds(MediaLibraryCommand &cmd, std::vector<std::string> &fileIds)
