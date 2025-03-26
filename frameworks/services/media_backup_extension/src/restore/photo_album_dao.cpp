@@ -198,7 +198,8 @@ int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowDat
     int32_t count = 0;
     for (const PhotoAlbumDao::PhotoAlbumRowData &data : photoAlbums) {
         bool cond = (data.lPath.empty() || data.albumName.empty());
-        CHECK_AND_CONTINUE_ERR_LOG(!cond, "Media_Restore: restore albums failed, lPath or albumName is empty. Object: %{public}s",
+        CHECK_AND_CONTINUE_ERR_LOG(!cond,
+            "Media_Restore: restore albums failed, lPath or albumName is empty. Object: %{public}s",
             this->ToString(data).c_str());
         std::vector<NativeRdb::ValueObject> bindArgs = {
             data.albumType, data.albumSubType, data.albumName, data.bundleName, data.lPath, data.priority};
