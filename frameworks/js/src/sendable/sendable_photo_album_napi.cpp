@@ -506,7 +506,7 @@ void ConvertColumnsForPortrait(SendablePhotoAlbumNapiAsyncContext *context)
 
 void ConvertColumnsForFeaturedSinglePortrait(SendablePhotoAlbumNapiAsyncContext *context)
 {
-    if (context == nullptr context->objectInfo == nullptr) {
+    if (context == nullptr || context->objectInfo == nullptr) {
         return;
     }
 
