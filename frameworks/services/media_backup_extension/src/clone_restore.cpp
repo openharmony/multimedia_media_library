@@ -322,11 +322,7 @@ void CloneRestore::RestorePhoto()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    size_t vectorLen = photosFailedOffsets.size();
-    needReportFailed_ = true;
-    for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestorePhotoBatch(offset, 1);
-    }
+    ProcessPhotosBatchFailedOffsets();
     needReportFailed_ = false;
     // Scenario 2, clone photos from Photos only.
     int32_t totalNumber = this->photosClone_.GetPhotosRowCountNotInPhotoMap();
@@ -338,11 +334,7 @@ void CloneRestore::RestorePhoto()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    vectorLen = photosFailedOffsets.size();
-    needReportFailed_ = true;
-    for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestorePhotoBatch(offset);
-    }
+    ProcessPhotosBatchFailedOffsets();
     this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
 }
 
@@ -374,6 +366,33 @@ void CloneRestore::GetAccountValid()
     isAccountValid_ = (oldId != "" && oldId == newId);
 }
 
+void CloneRestore::AddToPhotosFailedOffsets(int32_t offset)
+{
+    std::lock_guard<ffrt::mutex> lock(photosFailedMutex_);
+    photosFailedOffsets_.push_back(offset);
+}
+
+void CloneRestore::ProcessPhotosBatchFailedOffsets()
+{
+    std::lock_guard<ffrt::mutex> lock(photosFailedMutex_);
+    size_t vectorLen = photosFailedOffsets_.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestorePhotoBatch(photosFailedOffsets_[offset], 1);
+    }
+    photosFailedOffsets_.clear();
+}
+
+void CloneRestore::ProcessCloudPhotosFailedOffsets()
+{
+    std::lock_guard<ffrt::mutex> lock(photosFailedMutex_);
+    size_t vectorLen = photosFailedOffsets_.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestoreBatchForCloud(photosFailedOffsets_[offset]);
+    }
+}
+
 void CloneRestore::RestorePhotoForCloud()
 {
     MEDIA_INFO_LOG("singleClone start clone restore: photos");
@@ -397,12 +416,7 @@ void CloneRestore::RestorePhotoForCloud()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    size_t vectorLen = photosFailedOffsets.size();
-    needReportFailed_ = true;
-    for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestoreBatchForCloud(offset, 1);
-    }
-    photosFailedOffsets.clear();
+    ProcessCloudPhotosFailedOffsets();
     needReportFailed_ = false;
     int32_t totalNumber = this->photosClone_.GetCloudPhotosRowCountNotInPhotoMap();
     MEDIA_INFO_LOG("singleClone queryTotalNumberNot, totalNumber = %{public}d", totalNumber);
@@ -413,11 +427,7 @@ void CloneRestore::RestorePhotoForCloud()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    vectorLen = photosFailedOffsets.size();
-    needReportFailed_ = true;
-    for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestoreBatchForCloud(offset);
-    }
+    ProcessCloudPhotosFailedOffsets();
     this->photosClone_.OnStop(otherTotalNumber_, otherProcessStatus_);
 
     BackupDatabaseUtils::UpdateFaceAnalysisTblStatus(mediaLibraryRdb_);
@@ -1929,7 +1939,7 @@ void CloneRestore::RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap
     MEDIA_INFO_LOG(
         "start restore photo, offset: %{public}d, isRelatedToPhotoMap: %{public}d", offset, isRelatedToPhotoMap);
     vector<FileInfo> fileInfos = QueryFileInfos(offset, isRelatedToPhotoMap);
-    CHECK_AND_EXECUTE(InsertPhoto(fileInfos) == E_OK, photosFailedOffsets.push_back(offset));
+    CHECK_AND_EXECUTE(InsertPhoto(fileInfos) == E_OK, AddToPhotosFailedOffsets(offset));
     BatchNotifyPhoto(fileInfos);
     RestoreImageFaceInfo(fileInfos);
 
@@ -1944,7 +1954,7 @@ void CloneRestore::RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhoto
         "singlCloud restore photo, offset: %{public}d, isRelated: %{public}d", offset, isRelatedToPhotoMap);
     vector<FileInfo> fileInfos = QueryCloudFileInfos(offset, isRelatedToPhotoMap);
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, fileInfos, SourceType::PHOTOS) == E_OK,
-        photosFailedOffsets.push_back(offset));
+        AddToPhotosFailedOffsets(offset));
     BatchNotifyPhoto(fileInfos);
     RestoreImageFaceInfo(fileInfos);
 

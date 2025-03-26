@@ -478,6 +478,38 @@ void UpgradeRestore::InitGarbageAlbum()
     BackupDatabaseUtils::InitGarbageAlbum(galleryRdb_, cacheSet_, nickMap_);
 }
 
+void UpgradeRestore::AddToGalleryFailedOffsets(int32_t offset)
+{
+    std::lock_guard<ffrt::mutex> lock(galleryFailedMutex_);
+    galleryFailedOffsets_.push_back(offset);
+}
+
+void UpgradeRestore::ProcessGalleryFailedOffsets()
+{
+    std::lock_guard<ffrt::mutex> lock(galleryFailedMutex_);
+    size_t vectorLen = galleryFailedOffsets_.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestoreBatch(galleryFailedOffsets_[offset]);
+    }
+}
+
+void UpgradeRestore::AddToExternalFailedOffsets(int32_t offset)
+{
+    std::lock_guard<ffrt::mutex> lock(externalFailedMutex_);
+    externalFailedOffsets_.push_back(offset);
+}
+
+void UpgradeRestore::ProcessExternalFailedOffsets()
+{
+    std::lock_guard<ffrt::mutex> lock(externalFailedMutex_);
+    size_t vectorLen = externalFailedOffsets_.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestoreExternalBatch(externalFailedOffsets_[offset], maxId, isCamera, type);
+    }
+}
+
 void UpgradeRestore::RestoreFromGallery()
 {
     this->photosRestore_.LoadPhotoAlbums();
@@ -494,11 +526,7 @@ void UpgradeRestore::RestoreFromGallery()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    size_t vectorLen = galleryFailedOffsets.size();
-    needReportFailed_ = true;
-    for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestoreBatch(galleryFailedOffsets[offset]);
-    }
+    ProcessGalleryFailedOffsets();
 }
 
 void UpgradeRestore::RestoreCloudFromGallery()
@@ -516,11 +544,7 @@ void UpgradeRestore::RestoreCloudFromGallery()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    size_t vectorLen = galleryFailedOffsets.size();
-    needReportFailed_ = true;
-    for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestoreBatchForCloud(galleryFailedOffsets[offset]);
-    }
+    ProcessGalleryFailedOffsets();
 }
 
 void UpgradeRestore::RestoreBatchForCloud(int32_t offset)
@@ -528,7 +552,7 @@ void UpgradeRestore::RestoreBatchForCloud(int32_t offset)
     std::vector<FileInfo> infos = QueryCloudFileInfos(offset);
     MEDIA_INFO_LOG("the infos size is %{public}zu", infos.size());
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
-        galleryFailedOffsets.push_back(offset));
+        AddToGalleryFailedOffsets(offset));
     this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, infos);
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
@@ -539,7 +563,7 @@ void UpgradeRestore::RestoreBatch(int32_t offset)
     MEDIA_INFO_LOG("start restore from gallery, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfos(offset);
     CHECK_AND_EXECUTE(InsertPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
-        galleryFailedOffsets.push_back(offset));
+        AddToGalleryFailedOffsets(offset));
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
 }
@@ -563,11 +587,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
             }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    size_t vectorLen = externalFailedOffsets.size();
-    needReportFailed_ = true;
-    for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestoreExternalBatch(externalFailedOffsets[offset], maxId, isCamera, type);
-    }
+    ProcessExternalFailedOffsets();
 }
 
 void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)
@@ -575,7 +595,7 @@ void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool is
     MEDIA_INFO_LOG("start restore from external, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfosFromExternal(offset, maxId, isCamera);
     if (InsertPhoto(sceneCode_, infos, type) != E_OK) {
-        externalFailedOffsets.push_back(offset);
+        AddToExternalFailedOffsets(offset);
     }
 }
 
