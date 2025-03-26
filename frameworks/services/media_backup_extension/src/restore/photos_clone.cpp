@@ -298,18 +298,13 @@ int32_t PhotosClone::FixDuplicateBurstKeyInDifferentAlbum(std::atomic<uint64_t> 
         MEDIA_INFO_LOG("Media_Restore: executeSql = %{public}s, bindArgs=%{public}s",
             executeSql.c_str(),
             this->ToString(bindArgs).c_str());
-        if (this->mediaLibraryOriginalRdb_ == nullptr) {
-            MEDIA_ERR_LOG("Media_Restore: mediaLibraryOriginalRdb_ is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(this->mediaLibraryOriginalRdb_ != nullptr,
+            "Media_Restore: mediaLibraryOriginalRdb_ is null.");
         int32_t ret = this->mediaLibraryTargetRdb_->ExecuteSql(executeSql, bindArgs);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Media_Restore: FixDuplicateBurstKeyInDifferentAlbum failed,"
-                          " ret=%{public}d, sql=%{public}s, bindArgs=%{public}s",
-                ret,
-                executeSql.c_str(),
-                this->ToString(bindArgs).c_str());
-        }
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+            "Media_Restore: FixDuplicateBurstKeyInDifferentAlbum failed,"
+            " ret=%{public}d, sql=%{public}s, bindArgs=%{public}s",
+            ret, executeSql.c_str(), this->ToString(bindArgs).c_str());
     }
     return 0;
 }

@@ -63,7 +63,9 @@ void DbUpgradeUtilsTest::TearDown(void)
 
 HWTEST_F(DbUpgradeUtilsTest, DropAllTriggersTest, TestSize.Level0)
 {
+    MEDIA_INFO_LOG("DropAllTriggersTest start");
     auto medialibraryRdbPtr = DatabaseUtils().GetRdbStore(DB_PATH_MEDIALIBRARY);
+    ASSERT_NE(medialibraryRdbPtr, nullptr);
     this->CreateTempTriggersTable(medialibraryRdbPtr);
     std::vector<std::string> triggerNames =
         DataTransfer::DbUpgradeUtils().GetAllTriggers(*medialibraryRdbPtr, this->NAME_TEMP_TRIGGERS_TABLE);
@@ -72,5 +74,18 @@ HWTEST_F(DbUpgradeUtilsTest, DropAllTriggersTest, TestSize.Level0)
     EXPECT_EQ(ret, 0);
     triggerNames = DataTransfer::DbUpgradeUtils().GetAllTriggers(*medialibraryRdbPtr, this->NAME_TEMP_TRIGGERS_TABLE);
     EXPECT_TRUE(triggerNames.empty());
+    MEDIA_INFO_LOG("DropAllTriggersTest end");
+}
+
+HWTEST_F(DbUpgradeUtilsTest, GetAllUniqueIndexTest, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetAllUniqueIndexTest start");
+    auto medialibraryRdbPtr = DatabaseUtils().GetRdbStore(DB_PATH_MEDIALIBRARY);
+    ASSERT_NE(medialibraryRdbPtr, nullptr);
+    this->CreateTempUniqueTable(medialibraryRdbPtr);
+    std::vector<std::string> UniqueIndex =
+        DataTransfer::DbUpgradeUtils().GetAllUniqueIndex(*medialibraryRdbPtr, this->NAME_TEMP_UNIQUE_TABLE);
+    EXPECT_TRUE(UniqueIndex.empty());
+    MEDIA_INFO_LOG("GetAllUniqueIndexTest end");
 }
 }  // namespace OHOS::Media
