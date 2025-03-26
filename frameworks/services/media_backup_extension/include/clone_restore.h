@@ -37,6 +37,8 @@
 #include "clone_restore_classify.h"
 #include "clone_restore_geo.h"
 #include "clone_restore_geo_dictionary.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 
 namespace OHOS {
 namespace Media {
