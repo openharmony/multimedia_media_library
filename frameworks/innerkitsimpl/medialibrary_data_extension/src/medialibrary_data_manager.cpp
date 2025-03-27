@@ -466,6 +466,14 @@ void AddAssetAlbumOperationTable(const shared_ptr<MediaLibraryRdbStore>& store)
     MEDIA_INFO_LOG("end create asset and album operation table");
 }
 
+void CreateOperationAlbumUpdateTrigger(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("start create operation_album_update_trigger");
+    int ret = store->ExecuteSql(CREATE_OPERATION_ALBUM_UPDATE_TRIGGER);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "CreateOperationAlbumUpdateTrigger failed, execute sql failed");
+    MEDIA_INFO_LOG("end create operation_album_update_trigger");
+}
+
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
@@ -501,6 +509,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
         AddAssetAlbumOperationTable(rdbStore);
         rdbStore->SetOldVersion(VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION);
+    }
+
+    if (oldVersion < VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER) {
+        CreateOperationAlbumUpdateTrigger(rdbStore);
+        rdbStore->SetOldVersion(VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER);
     }
 }
 
