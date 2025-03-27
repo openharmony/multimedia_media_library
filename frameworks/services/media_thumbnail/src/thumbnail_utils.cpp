@@ -2167,7 +2167,8 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         } else if (columnValue == MEDIA_DATA_DB_POSITION) {
             int position = 0;
             err = resultSet->GetInt(index, position);
-            data.isLocalFile = (position == 1);
+            data.isLocalFile = (position == static_cast<int32_t>(PhotoPositionType::LOCAL) ||
+                position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
             data.position = position;
         } else if (columnValue == MEDIA_DATA_DB_HEIGHT) {
             err = resultSet->GetInt(index, data.photoHeight);
