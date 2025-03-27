@@ -122,6 +122,7 @@ private:
     void AddToGalleryFailedOffsets(int32_t offset);
     void AddToExternalFailedOffsets(int32_t offset);
     void ProcessGalleryFailedOffsets();
+    void ProcessCloudGalleryFailedOffsets();
     void ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type);
 
 private:

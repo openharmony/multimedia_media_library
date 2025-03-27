@@ -493,6 +493,17 @@ void UpgradeRestore::ProcessGalleryFailedOffsets()
     galleryFailedOffsets_.clear();
 }
 
+void UpgradeRestore::ProcessCloudGalleryFailedOffsets()
+{
+    std::lock_guard<ffrt::mutex> lock(galleryFailedMutex_);
+    size_t vectorLen = galleryFailedOffsets_.size();
+    needReportFailed_ = true;
+    for (size_t offset = 0; offset < vectorLen; offset++) {
+        RestoreBatchForCloud(galleryFailedOffsets_[offset]);
+    }
+    galleryFailedOffsets_.clear();
+}
+
 void UpgradeRestore::AddToExternalFailedOffsets(int32_t offset)
 {
     std::lock_guard<ffrt::mutex> lock(externalFailedMutex_);
@@ -544,7 +555,7 @@ void UpgradeRestore::RestoreCloudFromGallery()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    ProcessGalleryFailedOffsets();
+    ProcessCloudGalleryFailedOffsets();
 }
 
 void UpgradeRestore::RestoreBatchForCloud(int32_t offset)
