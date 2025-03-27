@@ -66,8 +66,9 @@ const std::string SET_LOCATION_VALUE = "1";
 const std::string SET_USER_ID_VALUE = "1";
 
 const std::string SET_DISPLAY_NAME_KEY = "set_displayName";
-const std::string IS_CAN_FALLBACK = "is_can_fallback";
+const std::string CAN_FALLBACK = "can_fallback";
 const std::string OLD_DISPLAY_NAME = "old_displayName";
+const std::string DEFAULT_MIME_TYPE = "application/octet-stream";
 
 static const std::array<int, 4> ORIENTATION_ARRAY = {0, 90, 180, 270};
 
@@ -1194,6 +1195,9 @@ napi_value MediaAssetChangeRequestNapi::JSSetDisplayName(napi_env env, napi_call
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, newDisplayName) == napi_ok,
         "Failed to parse args");
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaFileUtils::GetMimeTypeFromDisplayName(newDisplayName) == DEFAULT_MIME_TYPE,
+        "Invalid newDisplayName, Extension is not support.");
     CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(newDisplayName) == E_OK, "Invalid display name.");
     NAPI_INFO_LOG("wang do: newDisplayName: %{public}s", newDisplayName.c_str());
@@ -1212,7 +1216,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetDisplayName(napi_env env, napi_call
     MediaType oldMediaType = fileAsset->GetMediaType();
     std::string oldExtension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
     CHECK_COND_WITH_MESSAGE(env, newMediaType == oldMediaType,
-        "Invalid extension, oldExtension is not equal to newExtension.");
+        "Invalid newDisplayName, newMediaType is not equal to oldMediaType.");
     
     auto setTitleIndex = std::find(changeRequest->assetChangeOperations_.begin(),
         changeRequest->assetChangeOperations_.end(), AssetChangeOperation::SET_TITLE);
@@ -2013,7 +2017,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCacheWithCreation(
         isValid && MediaFileUtils::CheckDisplayName(displayName) == E_OK, E_FAIL, "Failed to check displayName");
     if (GetIsEditDisplayName()) {
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_DISPLAY_NAME_KEY, displayName);
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, IS_CAN_FALLBACK, "1");
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, CAN_FALLBACK, "1");
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, OLD_DISPLAY_NAME, oldDisplayName_);
         SetIsEditDisplayName(false);
     }
@@ -2032,7 +2036,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCacheWithoutCreation(std::string &uri
     DataShare::DataShareValuesBucket valuesBucket;
     if (GetIsEditDisplayName()) {
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_DISPLAY_NAME_KEY, fileAsset_->GetDisplayName());
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, IS_CAN_FALLBACK, "1");
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, CAN_FALLBACK, "1");
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, OLD_DISPLAY_NAME, oldDisplayName_);
         SetIsEditDisplayName(false);
     }
@@ -2397,7 +2401,7 @@ static bool SetDisplayNameExecute(MediaAssetChangeRequestAsyncContext& context)
     std::string uri = PAH_UPDATE_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_DISPLAY_NAME_KEY, fileAsset->GetDisplayName());
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, IS_CAN_FALLBACK, "0");
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, CAN_FALLBACK, "0");
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, OLD_DISPLAY_NAME, changeRequest->GetOldDisplayName());
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
@@ -2626,7 +2630,7 @@ static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
     DataShare::DataShareValuesBucket valuesBucket;
     if (changeRequest->GetIsEditDisplayName()) {
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, SET_DISPLAY_NAME_KEY, fileAsset->GetDisplayName());
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, IS_CAN_FALLBACK, "1");
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, CAN_FALLBACK, "1");
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, OLD_DISPLAY_NAME, changeRequest->GetOldDisplayName());
         valuesBucket.Put(MediaColumn::MEDIA_NAME, fileAsset->GetDisplayName());
         valuesBucket.Put(MediaColumn::MEDIA_TITLE, fileAsset->GetTitle());
