@@ -213,7 +213,7 @@ private:
     int32_t GetHighlightCloudMediaCnt();
     void RestoreHighlightAlbums();
     void AddToPhotosFailedOffsets(int32_t offset);
-    void ProcessPhotosBatchFailedOffsets();
+    void ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap = 0);
     void ProcessCloudPhotosFailedOffsets();
 
     template<typename T>
