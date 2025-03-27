@@ -88,7 +88,8 @@ const std::unordered_map<std::string, std::unordered_set<std::string>> ALBUM_COL
             "filter_edit_count",
             "is_muted",
             "is_favorite",
-            "theme"
+            "theme",
+            "use_subtitle"
         }
     },
     { "tab_highlight_cover_info",
@@ -551,6 +552,7 @@ void CloneRestoreHighlight::GetHighlightRowInfo(HighlightAlbumInfo &info,
     GetIfInIntersection("is_muted", info.isMuted, intersection, resultSet);
     GetIfInIntersection("is_favorite", info.isFavorite, intersection, resultSet);
     GetIfInIntersection("theme", info.theme, intersection, resultSet);
+    GetIfInIntersection("use_subtitle", info.useSubtitle, intersection, resultSet);
 }
 
 void CloneRestoreHighlight::GetHighlightNewAlbumId(HighlightAlbumInfo &info)
@@ -646,6 +648,7 @@ void CloneRestoreHighlight::GetHighlightInsertValue(NativeRdb::ValuesBucket &val
     PutIfInIntersection(value, "is_muted", info.isMuted, intersection);
     PutIfInIntersection(value, "is_favorite", info.isFavorite, intersection);
     PutIfInIntersection(value, "theme", info.theme, intersection);
+    PutIfInIntersection(value, "use_subtitle", info.useSubtitle, intersection);
 }
 
 void CloneRestoreHighlight::MoveHighlightCovers()
