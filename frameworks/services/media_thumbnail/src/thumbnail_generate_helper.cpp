@@ -169,8 +169,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
         CHECK_AND_RETURN_LOG(ThumbnailUtils::CheckRemainSpaceMeetCondition(THUMBNAIL_FREE_SIZE_LIMIT_10),
             "CreateAstcBackgroundTask free size is not enough, id:%{public}s, path:%{public}s",
             thumbnailData.id.c_str(), DfxUtils::GetSafePath(thumbnailData.path).c_str());
-        if (thumbnailData.isLocalFile ||
-            thumbnailData.position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)) {
+        if (thumbnailData.isLocalFile) {
             thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
             IThumbnailHelper::CreateThumbnail(data);
         } else {
@@ -243,8 +242,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcMthAndYear(ThumbRdbOpt &opts)
         MEDIA_ERR_LOG("CreateAstcMthAndYear query data from fileId failed, id: %{public}s", opts.fileId.c_str());
         return err;
     }
-    data.loaderOpts.loadingStates = (data.isLocalFile ||
-        data.position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)) ?
+    data.loaderOpts.loadingStates = data.isLocalFile ?
         SourceLoader::LOCAL_THUMB_SOURCE_LOADING_STATES : SourceLoader::CLOUD_SOURCE_LOADING_STATES;
     if (!IThumbnailHelper::DoCreateAstcMthAndYear(opts, data)) {
         return E_ERR;
@@ -318,14 +316,16 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
     for (auto& info : infos) {
         opts.row = info.id;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
-        if (info.isLocalFile || info.position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)) {
+        if (info.isLocalFile) {
             info.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
             IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail, opts, info, requestId);
+        } else if (info.orientation != 0) {
+            info.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
+            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstcEx, opts, info, requestId);
         } else {
             info.loaderOpts.loadingStates = info.mediaType == MEDIA_TYPE_VIDEO ?
                 SourceLoader::ALL_SOURCE_LOADING_CLOUD_VIDEO_STATES : SourceLoader::ALL_SOURCE_LOADING_STATES;
-            IThumbnailHelper::AddThumbnailGenBatchTask(info.orientation == 0 ?
-                IThumbnailHelper::CreateAstc : IThumbnailHelper::CreateAstcEx, opts, info, requestId);
+            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
         }
     }
     return E_OK;
