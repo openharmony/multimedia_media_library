@@ -60,7 +60,7 @@ int32_t MediaLibraryTableAssetAlbumOperations::OprnTableOversizeChecker(void)
         NativeRdb::RdbPredicates predicates(OPRN_TABLE_NAME);
         std::vector<std::string> columns;
 
-        auto resultSet = rdbStore->QueryWithFilter(rdbPredicate, columns);
+        auto resultSet = rdbStore->QueryWithFilter(predicates, columns);
         int rowCount = 0;
         auto ret = resultSet->GetRowCount(rowCount);
         if (ret != NativeRdb::E_OK) {
@@ -72,6 +72,7 @@ int32_t MediaLibraryTableAssetAlbumOperations::OprnTableOversizeChecker(void)
                 MEDIA_ERR_LOG("Query not match data fails");
                 return E_HAS_DB_ERROR;
             }
+            MEDIA_LOG_INFO("oprn table aging delete");
         }
         lastcheckTime = MediaFileUtils::UTCTimeMilliSeconds();
     }
