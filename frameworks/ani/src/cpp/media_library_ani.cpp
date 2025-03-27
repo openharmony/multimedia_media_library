@@ -52,6 +52,8 @@ thread_local std::unique_ptr<ChangeListenerAni> g_listObj = nullptr;
 
 static SafeMap<int32_t, std::shared_ptr<ThumbnailBatchGenerateObserver>> thumbnailGenerateObserverMap;
 static SafeMap<int32_t, std::shared_ptr<ThumbnailGenerateHandler>> thumbnailGenerateHandlerMap;
+static std::atomic<int32_t> requestIdCounter_ = 0;
+static std::atomic<int32_t> requestIdCallback_ = 0;
 
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
@@ -73,8 +75,10 @@ ani_status MediaLibraryAni::PhotoAccessHelperInit(ani_env *env)
         ani_native_function {"createAsset1", nullptr, reinterpret_cast<void *>(createAsset1)},
         ani_native_function {"getAssetsSync", nullptr, reinterpret_cast<void *>(GetAssetsSync)},
         ani_native_function {"getAssetsInner", nullptr, reinterpret_cast<void *>(GetAssetsInner)},
-        ani_native_function {"stopCreateThumbnailTask", "I:V",
+        ani_native_function {"stopCreateThumbnailTask", nullptr,
             reinterpret_cast<void *>(PhotoAccessStopCreateThumbnailTask)},
+        ani_native_function {"startCreateThumbnailTask", nullptr,
+            reinterpret_cast<void *>(PhotoAccessStartCreateThumbnailTask)},
     };
 
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
@@ -85,6 +89,40 @@ ani_status MediaLibraryAni::PhotoAccessHelperInit(ani_env *env)
 
     ANI_INFO_LOG("PhotoAccessHelperInit ok");
     return ANI_OK;
+}
+
+static ani_status ParseArgsStartCreateThumbnailTask(ani_env *env, ani_object object, ani_object predicate,
+    ani_object callback, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
+
+    context->objectInfo = MediaLibraryAni::Unwrap(env, object);
+    CHECK_COND_RET(context->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
+    // get callback function
+    if (callback != nullptr) {
+        context->callback = callback;
+    }
+    
+    CHECK_STATUS_RET(MediaLibraryAniUtils::ParsePredicates(env, predicate, context, ASSET_FETCH_OPT),
+        "invalid predicate");
+    return ANI_OK;
+}
+
+static void RegisterThumbnailGenerateObserver(ani_env *env,
+    std::unique_ptr<MediaLibraryAsyncContext> &asyncContext, int32_t requestId)
+{
+    std::shared_ptr<ThumbnailBatchGenerateObserver> dataObserver;
+    if (thumbnailGenerateObserverMap.Find(requestId, dataObserver)) {
+        ANI_INFO_LOG("RequestId: %{public}d exist in observer map, no need to register", requestId);
+        return;
+    }
+    dataObserver = std::make_shared<ThumbnailBatchGenerateObserver>();
+    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    UserFileClient::RegisterObserverExt(Uri(observerUri), dataObserver, false);
+    thumbnailGenerateObserverMap.Insert(requestId, dataObserver);
 }
 
 static void UnregisterThumbnailGenerateObserver(int32_t requestId)
@@ -117,11 +155,139 @@ static void ReleaseThumbnailTask(int32_t requestId)
     DeleteThumbnailHandler(requestId);
 }
 
+static void CreateThumbnailHandler(ani_env *env, std::unique_ptr<MediaLibraryAsyncContext> &asyncContext,
+    int32_t requestId)
+{
+    ani_object callback = asyncContext->callback;
+    ThreadFunciton threadSafeFunc = MediaLibraryAni::OnThumbnailGenerated;
+
+    std::shared_ptr<ThumbnailGenerateHandler> dataHandler =
+        std::make_shared<ThumbnailGenerateHandler>(callback, threadSafeFunc);
+    thumbnailGenerateHandlerMap.Insert(requestId, dataHandler);
+}
+
+void MediaLibraryAni::OnThumbnailGenerated(ani_env *env, ani_object callback, void *context, void *data)
+{
+    if (env == nullptr) {
+        return;
+    }
+    std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
+    if (!thumbnailGenerateHandlerMap.Find(requestIdCallback_, dataHandler)) {
+        return;
+    }
+
+    // calling onDataPrepared
+    ani_vm *etsVm;
+    ani_env *etsEnv;
+    [[maybe_unused]] int res = env->GetVM(&etsVm);
+    if (res != ANI_OK) {
+        return;
+    }
+    ani_option interopEnabled {"--interop=disable", nullptr};
+    ani_options aniArgs {1, &interopEnabled};
+    if (ANI_OK != etsVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &etsEnv)) {
+        return;
+    }
+    auto fnObject = reinterpret_cast<ani_fn_object>(static_cast<ani_ref>(callback));
+    const std::string str = "AsyncWorkName:ThumbSafeThread";
+    ani_string arg1 = {};
+    if (ANI_OK != etsEnv->String_NewUTF8(str.c_str(), str.size(), &arg1)) {
+        return;
+    }
+    std::vector<ani_ref> args = {reinterpret_cast<ani_ref>(arg1)};
+
+    ani_ref result;
+    if (ANI_OK != etsEnv->FunctionalObject_Call(fnObject, args.size(), args.data(), &result)) {
+        return;
+    }
+    if (ANI_OK != etsVm->DetachCurrentThread()) {
+        return;
+    }
+}
+
+static int32_t AssignRequestId()
+{
+    return ++requestIdCounter_;
+}
+
+static int32_t GetRequestId()
+{
+    return requestIdCounter_;
+}
+
+ani_int MediaLibraryAni::PhotoAccessStartCreateThumbnailTask([[maybe_unused]] ani_env *env,
+    [[maybe_unused]] ani_object object, ani_object predicate)
+{
+    ani_object callback = nullptr;
+    std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        ParseArgsStartCreateThumbnailTask(env, object, predicate, callback, asyncContext) == ANI_OK,
+        ANI_INVALID_ARGS, "ParseArgsStartCreateThumbnailTask error");
+    
+    ReleaseThumbnailTask(GetRequestId());
+    int32_t requestId = AssignRequestId();
+    RegisterThumbnailGenerateObserver(env, asyncContext, requestId);
+    CreateThumbnailHandler(env, asyncContext, requestId);
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, requestId);
+    string updateUri = PAH_START_GENERATE_THUMBNAILS;
+    MediaLibraryAniUtils::UriAppendKeyValue(updateUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(updateUri);
+    int changedRows = UserFileClient::Update(uri, asyncContext->predicates, valuesBucket);
+    if (changedRows < 0) {
+        ReleaseThumbnailTask(requestId);
+        asyncContext->SaveError(changedRows);
+        ANI_ERR_LOG("Create thumbnail task, update failed, err: %{public}d", changedRows);
+        return changedRows;
+    }
+    return requestId;
+}
+
+void ThumbnailBatchGenerateObserver::OnChange(const ChangeInfo &changeInfo)
+{
+    if (changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_THUMB_ADD)) {
+        return;
+    }
+
+    for (auto &uri : changeInfo.uris_) {
+        string uriString = uri.ToString();
+        auto pos = uriString.find_last_of('/');
+        if (pos == std::string::npos) {
+            continue;
+        }
+        requestIdCallback_ = std::stoi(uriString.substr(pos + 1));
+        std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
+        if (!thumbnailGenerateHandlerMap.Find(requestIdCallback_, dataHandler)) {
+            continue;
+        }
+        // napi_call_threadsafe_function
+    }
+}
+
+static ani_status ParseArgsStopCreateThumbnailTask(ani_env *env, ani_object object,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return ANI_ERROR;
+    }
+
+    context->objectInfo = MediaLibraryAni::Unwrap(env, object);
+    CHECK_COND_RET(context->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
+    return ANI_OK;
+}
+
 void MediaLibraryAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env,
     [[maybe_unused]] ani_object object, ani_int taskId)
 {
     ANI_DEBUG_LOG("PhotoAccessStopCreateThumbnailTask with taskId: %{public}d", taskId);
     std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
+
+    if (ParseArgsStopCreateThumbnailTask(env, object, asyncContext) != ANI_OK) {
+        ANI_ERR_LOG("ParseArgsStopCreateThumbnailTask error");
+        return;
+    }
 
     int32_t requestId = taskId;
     if (requestId <= 0) {

@@ -813,6 +813,18 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 }
 
 template <class AniContext>
+ani_status MediaLibraryAniUtils::ParsePredicates(ani_env *env, const ani_object predicate, AniContext &context,
+    FetchOptionType fetchOptType)
+{
+    DataSharePredicates* nativePredicate = MediaLibraryAniUtils::UnwrapPredicate(env, predicate);
+    CHECK_COND_RET(predicate != nullptr, ANI_INVALID_ARGS, "UnwrapPredicate fail");
+    CHECK_COND_RET(HandleSpecialPredicate(context, nativePredicate, fetchOptType), ANI_INVALID_ARGS,
+        "invalid predicate");
+    CHECK_COND_RET(GetLocationPredicate(context, nativePredicate), ANI_INVALID_ARGS, "invalid predicate");
+    return ANI_OK;
+}
+
+template <class AniContext>
 bool MediaLibraryAniUtils::HandleSpecialPredicate(AniContext &context,
     DataSharePredicates *predicate, FetchOptionType fetchOptType)
 {
@@ -1440,6 +1452,9 @@ template ani_status MediaLibraryAniUtils::GetFetchOption<unique_ptr<PhotoAlbumAn
 template ani_status MediaLibraryAniUtils::GetPredicate<unique_ptr<PhotoAlbumAniContext>>(ani_env *env,
     const ani_object fetchOptions, const std::string &propName, unique_ptr<PhotoAlbumAniContext> &context,
     FetchOptionType fetchOptType);
+
+template ani_status MediaLibraryAniUtils::ParsePredicates<unique_ptr<MediaLibraryAsyncContext>>(ani_env *env,
+    const ani_object predicate, unique_ptr<MediaLibraryAsyncContext> &context, FetchOptionType fetchOptType);
 
 template bool MediaLibraryAniUtils::HandleSpecialPredicate<unique_ptr<PhotoAlbumAniContext>>(
     unique_ptr<PhotoAlbumAniContext> &context, DataSharePredicates *predicate,
