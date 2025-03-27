@@ -72,7 +72,7 @@ int32_t MediaLibraryTableAssetAlbumOperations::OprnTableOversizeChecker(void)
                 MEDIA_ERR_LOG("Query not match data fails");
                 return E_HAS_DB_ERROR;
             }
-            MEDIA_LOG_INFO("oprn table aging delete");
+            MEDIA_INFO_LOG("oprn table aging delete");
         }
         lastcheckTime = MediaFileUtils::UTCTimeMilliSeconds();
     }
