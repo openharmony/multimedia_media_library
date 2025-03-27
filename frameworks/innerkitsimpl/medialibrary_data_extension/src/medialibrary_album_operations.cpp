@@ -2299,6 +2299,8 @@ int32_t SetHighlightCoverUri(const ValuesBucket &values, const DataSharePredicat
     CHECK_AND_RETURN_RET_LOG(whereArgs.size() != 0, E_INVALID_VALUES, "no target album id");
 
     string targetAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!targetAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(targetAlbumId),
+        , E_INVALID_VALUES, "target album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
         "uniStore is nullptr! failed update for set highlight cover uri");
@@ -2333,6 +2335,8 @@ int32_t SetHighlightAlbumName(const ValuesBucket &values, const DataSharePredica
     CHECK_AND_RETURN_RET_LOG(whereArgs.size() != 0, E_INVALID_VALUES, "no target highlight album id");
 
     string highlightAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!highlightAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(highlightAlbumId),
+        , E_INVALID_VALUES, "highlight album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
         "uniStore is nullptr! failed update for set highlight album name");
@@ -2369,6 +2373,8 @@ int32_t SetHighlightSubtitle(const ValuesBucket &values, const DataSharePredicat
         return E_INVALID_VALUES;
     }
     string highlightAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!highlightAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(highlightAlbumId),
+        , E_INVALID_VALUES, "highlight album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight album name");
@@ -2414,6 +2420,8 @@ int32_t SetIsMe(const ValuesBucket &values, const DataSharePredicates &predicate
         return E_INVALID_VALUES;
     }
     string targetAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!targetAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(targetAlbumId),
+        , E_INVALID_VALUES, "target album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr! failed update for merge albums");
@@ -2461,6 +2469,8 @@ int32_t SetAlbumName(const ValuesBucket &values, const DataSharePredicates &pred
         return E_INVALID_VALUES;
     }
     string targetAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!targetAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(targetAlbumId),
+        , E_INVALID_VALUES, "target album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL, "uniStore is nullptr! failed update for set album name");
     string albumName;
@@ -2518,6 +2528,8 @@ int32_t SetCoverUri(const ValuesBucket &values, const DataSharePredicates &predi
         return E_INVALID_VALUES;
     }
     string targetAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!targetAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(targetAlbumId),
+        , E_INVALID_VALUES, "target album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr! failed update for set album cover uri");
