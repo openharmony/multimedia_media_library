@@ -1012,5 +1012,39 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckSupportedWatermarkType_
     EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(4), false);
     EXPECT_EQ(MediaFileUtils::CheckSupportedWatermarkType(10), false);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateAssetRealName_Test_001, TestSize.Level0)
+{
+    int32_t fileId = 1;
+    int32_t mediaType = MediaType::MEDIA_TYPE_IMAGE;
+    string extension = "";
+    string name = "";
+    int32_t res = MediaFileUtils::CreateAssetRealName(fileId, mediaType, extension, name);
+    EXPECT_EQ(res, E_OK);
+
+    fileId = 1000;
+    mediaType = MediaType::MEDIA_TYPE_VIDEO;
+    res = MediaFileUtils::CreateAssetRealName(fileId, mediaType, extension, name);
+    EXPECT_EQ(res, E_OK);
+
+    mediaType = MediaType::MEDIA_TYPE_AUDIO;
+    res = MediaFileUtils::CreateAssetRealName(fileId, mediaType, extension, name);
+    EXPECT_EQ(res, E_OK);
+
+    mediaType = MediaType::MEDIA_TYPE_MEDIA;
+    res = MediaFileUtils::CreateAssetRealName(fileId, mediaType, extension, name);
+    EXPECT_EQ(res, E_INVALID_VALUES);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaTypeUri_Test_01, TestSize.Level0)
+{
+    MediaType mediaType = MEDIA_TYPE_SMARTALBUM;
+    string res = MediaFileUtils::GetMediaTypeUri(mediaType);
+    EXPECT_EQ(res, "datashare:///media/smartalbum");
+
+    mediaType = MEDIA_TYPE_DEVICE;
+    res = MediaFileUtils::GetMediaTypeUri(mediaType);
+    EXPECT_EQ(res, "datashare:///media/device");
+}
 } // namespace Media
 } // namespace OHOS
