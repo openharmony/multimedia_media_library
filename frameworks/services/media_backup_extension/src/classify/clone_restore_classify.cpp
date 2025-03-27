@@ -141,7 +141,7 @@ void CloneRestoreClassify::RestoreVideoMaps(std::vector<FileInfo> &fileInfos)
 }
 
 void CloneRestoreClassify::GetClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfo,
-    std::vector<FileInfo> &fileInfos, int32_t offset)
+    std::vector<FileInfo> &fileInfos, size_t offset)
 {
     std::unordered_map<std::string, std::string> columns;
     columns[FILE_ID] = FIELD_TYPE_INT;
@@ -179,7 +179,7 @@ void CloneRestoreClassify::GetClassifyInfos(std::vector<ClassifyCloneInfo> &clas
 }
 
 void CloneRestoreClassify::GetClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfo,
-    std::vector<FileInfo> &fileInfos, int32_t offset)
+    std::vector<FileInfo> &fileInfos, size_t offset)
 {
     std::unordered_map<std::string, std::string> columns;
     columns[FILE_ID] = FIELD_TYPE_INT;
