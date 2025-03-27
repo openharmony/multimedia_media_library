@@ -775,7 +775,7 @@ async function photoPickerSelect(...args) {
   }
 
   const config = parsePhotoPickerSelectOption(args);
-  console.log('[picker] config: ' + JSON.stringify(config));
+  console.log('[picker] config: ' + encrypt(JSON.stringify(config)));
   if (config.parameters.userId && config.parameters.userId > 0) {
     let check = await checkInteractAcrossLocalAccounts();
     if (!check) {
@@ -796,9 +796,9 @@ async function photoPickerSelect(...args) {
       throw getErr(ErrCode.CONTEXT_NO_EXIST);
     }
     let result = await startPhotoPicker(context, config);
-    console.log('[picker] result: ' + JSON.stringify(result));
+    console.log('[picker] result: ' + encrypt(JSON.stringify(result)));
     const selectResult = getPhotoPickerSelectResult(result);
-    console.log('[picker] selectResult: ' + JSON.stringify(selectResult));
+    console.log('[picker] selectResult: ' + encrypt(JSON.stringify(selectResult)));
     if (args.length === ARGS_TWO && typeof args[ARGS_ONE] === 'function') {
       return args[ARGS_ONE](selectResult.error, selectResult.data);
     } else if (args.length === ARGS_ONE && typeof args[ARGS_ZERO] === 'function') {
@@ -877,6 +877,13 @@ function PhotoViewPicker() {
 }
 
 function RecommendationOptions() {
+}
+
+function encrypt(data) {
+  if (data?.indexOf('file:///data/storage/') !== -1) {
+    return '';
+  }
+  return data.replace(/(\/\w+)\./g, '/******.');
 }
 
 class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest {
