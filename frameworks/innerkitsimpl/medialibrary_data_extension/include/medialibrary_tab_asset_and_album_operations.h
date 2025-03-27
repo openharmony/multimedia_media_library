@@ -39,7 +39,7 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::RdbPredicates &rdbPredicate,
         const std::vector<std::string> &columns);
     int32_t OprnTableOversizeChecker(void);
-    static int32_t Delete(NativeRdb::RdbPredicates &predicates);    
+    static int32_t Delete(NativeRdb::RdbPredicates &predicates);
 };
 } // namespace Media
 } // namespace OHOS
