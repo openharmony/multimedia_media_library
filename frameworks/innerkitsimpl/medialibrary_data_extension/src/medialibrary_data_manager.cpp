@@ -87,6 +87,7 @@
 #include "medialibrary_subscriber.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_tab_old_photos_operations.h"
+#include "medialibrary_tab_asset_and_album_operations.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
@@ -470,6 +471,14 @@ void AddAssetAlbumOperationTable(const shared_ptr<MediaLibraryRdbStore>& store)
     MEDIA_INFO_LOG("end create asset and album operation table");
 }
 
+void CreateOperationAlbumUpdateTrigger(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("start create operation_album_update_trigger");
+    int ret = store->ExecuteSql(CREATE_OPERATION_ALBUM_UPDATE_TRIGGER);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "CreateOperationAlbumUpdateTrigger failed, execute sql failed");
+    MEDIA_INFO_LOG("end create operation_album_update_trigger");
+}
+
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
@@ -505,6 +514,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
         AddAssetAlbumOperationTable(rdbStore);
         rdbStore->SetOldVersion(VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION);
+    }
+
+    if (oldVersion < VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER) {
+        CreateOperationAlbumUpdateTrigger(rdbStore);
+        rdbStore->SetOldVersion(VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER);
     }
 }
 
@@ -1542,6 +1556,8 @@ int32_t MediaLibraryDataManager::DoAging()
     PhotoCustomRestoreOperation::GetInstance().CleanTimeoutCustomRestoreTaskDir();
 
     ClearInvalidDeletedAlbum(); // Clear invalid album data with null cloudid and dirty '4'
+
+    MediaLibraryTableAssetAlbumOperations().OprnTableOversizeChecker();
 
     shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
     if (asyncWorker == nullptr) {

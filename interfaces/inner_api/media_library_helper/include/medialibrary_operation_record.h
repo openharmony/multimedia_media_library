@@ -132,7 +132,7 @@ const std::string CREATE_OPERATION_ALBUM_DELETE_TRIGGER =
 // Listening of album: update
 const std::string OPERATION_ALBUM_UPDATE_TRIGGER = "operation_album_update_trigger";
 const std::string CREATE_OPERATION_ALBUM_UPDATE_TRIGGER =
-    "CREATE TRIGGER IF NOT EXISTS operation_asset_update_trigger AFTER UPDATE ON " +
+    "CREATE TRIGGER IF NOT EXISTS operation_album_update_trigger AFTER UPDATE ON " +
     PhotoAlbumColumns::TABLE + " FOR EACH ROW " +
     " WHEN " +
     " NEW.album_name <> OLD.album_name" +
