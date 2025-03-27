@@ -435,7 +435,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level0)
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
     free(buf);
