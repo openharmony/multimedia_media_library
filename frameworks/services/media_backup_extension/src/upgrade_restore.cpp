@@ -393,9 +393,7 @@ void UpgradeRestore::RestorePhotoInner()
 
 void UpgradeRestore::RestorePhoto()
 {
-    if (!IsRestorePhoto()) {
-        return;
-    }
+    CHECK_AND_RETURN(IsRestorePhoto());
     AnalyzeSource();
     RestorePhotoInner();
     StopParameterForClone(sceneCode_);
