@@ -56,6 +56,7 @@ const int32_t ORIETATION_ZERO = 0;
 const int32_t MIGRATE_CLOUD_THM_TYPE = 0;
 const int32_t MIGRATE_CLOUD_LCD_TYPE = 1;
 const int32_t MIGRATE_CLOUD_ASTC_TYPE = 2;
+const int32_t RELEATED_TO_PHOTO_MAP = 1;
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
     { PhotoColumn::PHOTOS_TABLE,
         {
@@ -316,11 +317,11 @@ void CloneRestore::RestorePhoto()
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumberInPhotoMap; offset += CLONE_QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestorePhotoBatch(offset, 1); }, {&offset}, {},
+        ffrt::submit([this, offset]() { RestorePhotoBatch(offset, RELEATED_TO_PHOTO_MAP); }, {&offset}, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    ProcessPhotosBatchFailedOffsets();
+    ProcessPhotosBatchFailedOffsets(RELEATED_TO_PHOTO_MAP);
     needReportFailed_ = false;
     // Scenario 2, clone photos from Photos only.
     int32_t totalNumber = this->photosClone_.GetPhotosRowCountNotInPhotoMap();
@@ -370,13 +371,13 @@ void CloneRestore::AddToPhotosFailedOffsets(int32_t offset)
     photosFailedOffsets_.push_back(offset);
 }
 
-void CloneRestore::ProcessPhotosBatchFailedOffsets()
+void CloneRestore::ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap)
 {
     std::lock_guard<ffrt::mutex> lock(photosFailedMutex_);
     size_t vectorLen = photosFailedOffsets_.size();
     needReportFailed_ = true;
     for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestorePhotoBatch(photosFailedOffsets_[offset], 1);
+        RestorePhotoBatch(photosFailedOffsets_[offset], isRelatedToPhotoMap);
     }
     photosFailedOffsets_.clear();
 }
@@ -389,6 +390,7 @@ void CloneRestore::ProcessCloudPhotosFailedOffsets()
     for (size_t offset = 0; offset < vectorLen; offset++) {
         RestoreBatchForCloud(photosFailedOffsets_[offset]);
     }
+    photosFailedOffsets_.clear();
 }
 
 void CloneRestore::RestorePhotoForCloud()
