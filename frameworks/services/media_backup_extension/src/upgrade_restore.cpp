@@ -507,7 +507,7 @@ void UpgradeRestore::ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, 
     for (size_t offset = 0; offset < vectorLen; offset++) {
         RestoreExternalBatch(externalFailedOffsets_[offset], maxId, isCamera, type);
     }
-    galleryFailedOffsets_.clear();
+    externalFailedOffsets_.clear();
 }
 
 void UpgradeRestore::RestoreFromGallery()
