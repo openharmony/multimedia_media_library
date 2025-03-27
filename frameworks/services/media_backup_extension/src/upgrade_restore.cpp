@@ -955,6 +955,7 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
 
         result.emplace_back(portraitAlbumInfo);
     }
+    resultSet->Close();
     return result;
 }
 
@@ -1060,6 +1061,7 @@ void UpgradeRestore::BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlb
         CHECK_AND_CONTINUE(!cond);
         portraitAlbumIdMap_[tagId] = albumId;
     }
+    resultSet->Close();
 }
 
 bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)
@@ -1081,6 +1083,8 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         CHECK_AND_CONTINUE(!hash.empty());
         needQuerySet.insert(hash);
     }
+    resultSet->Close();
+
     CHECK_AND_RETURN_RET(!needQuerySet.empty(), false);
     needQueryMap[PhotoRelatedType::PORTRAIT] = needQuerySet;
     return true;
@@ -1185,6 +1189,7 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
         }
         result.emplace_back(faceInfo);
     }
+    resultSet->Close();
     return result;
 }
 
