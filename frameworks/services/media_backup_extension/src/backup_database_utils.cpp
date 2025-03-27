@@ -208,6 +208,7 @@ void BackupDatabaseUtils::QueryGalleryDuplicateDataCount(std::shared_ptr<NativeR
     CHECK_AND_RETURN(!cond);
     count = GetInt32Val("count", resultSet);
     total = GetInt32Val("total", resultSet);
+    resultSet->Close();
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::GetQueryResultSet(
@@ -234,6 +235,7 @@ std::unordered_map<std::string, std::string> BackupDatabaseUtils::GetColumnInfoM
         }
         columnInfoMap[columnName] = columnType;
     }
+    resultSet->Close();
     return columnInfoMap;
 }
 
@@ -476,6 +478,7 @@ std::vector<std::pair<std::string, std::string>> BackupDatabaseUtils::GetColumnI
         columnInfoPairs.emplace_back(columnName, columnType);
     }
 
+    resultSet->Close();
     return columnInfoPairs;
 }
 
@@ -672,6 +675,7 @@ std::vector<TagPairOpt> BackupDatabaseUtils::QueryTagInfo(std::shared_ptr<Native
         ParseFaceTagResultSet(resultSet, tagPair);
         result.emplace_back(tagPair);
     }
+    resultSet->Close();
     return result;
 }
 
@@ -837,6 +841,7 @@ std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::Rdb
     }
     std::string result = GetStringVal(COLUMN_INTEGRITY_CHECK, resultSet);
     MEDIA_INFO_LOG("Check db integrity: %{public}d, %{public}s, %{public}s", sceneCode, dbTag.c_str(), result.c_str());
+    resultSet->Close();
     return result;
 }
 
@@ -865,6 +870,7 @@ std::unordered_map<int32_t, int32_t> BackupDatabaseUtils::QueryMediaTypeCount(
     auto resultSet = GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is nullptr");
+        resultSet->Close();
         return mediaTypeCountMap;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -872,6 +878,7 @@ std::unordered_map<int32_t, int32_t> BackupDatabaseUtils::QueryMediaTypeCount(
         int32_t count = GetInt32Val(CUSTOM_COUNT, resultSet);
         mediaTypeCountMap[mediaType] = count;
     }
+    resultSet->Close();
     return mediaTypeCountMap;
 }
 
