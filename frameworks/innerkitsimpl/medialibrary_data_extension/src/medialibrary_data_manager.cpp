@@ -87,7 +87,7 @@
 #include "medialibrary_subscriber.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_tab_old_photos_operations.h"
-#include "medialibrary_asset_and_album_operations.h"
+#include "medialibrary_tab_asset_and_album_operations.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
