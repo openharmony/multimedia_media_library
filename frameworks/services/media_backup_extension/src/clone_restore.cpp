@@ -231,6 +231,8 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     SetParameterForClone();
     GetAccountValid();
     isSyncSwitchOn_ = CloudSyncUtils::IsCloudSyncSwitchOn();
+    MEDIA_INFO_LOG("the isAccountValid_ is %{public}d, the isSyncSwitchOn_ is %{public}d", isAccountValid_,
+        isSyncSwitchOn_);
 #ifdef CLOUD_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
