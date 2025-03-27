@@ -65,6 +65,7 @@ int32_t MediaLibraryTableAssetAlbumOperations::OprnTableOversizeChecker(void)
         auto ret = resultSet->GetRowCount(rowCount);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("rdb failed");
+            return E_HAS_DB_ERROR;
         }
         if (rowCount > OPRN_TABLE_OVERSIZE_LIMIT) {
             int ret = rdbStore->ExecuteSql(DELETE_FROM_OPERATION_TABLE);
