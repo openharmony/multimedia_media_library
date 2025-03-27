@@ -214,7 +214,7 @@ private:
     void RestoreHighlightAlbums();
     void AddToPhotosFailedOffsets(int32_t offset);
     void ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap = 0);
-    void ProcessCloudPhotosFailedOffsets();
+    void ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap = 0);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,

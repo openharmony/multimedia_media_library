@@ -382,13 +382,13 @@ void CloneRestore::ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap)
     photosFailedOffsets_.clear();
 }
 
-void CloneRestore::ProcessCloudPhotosFailedOffsets()
+void CloneRestore::ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap)
 {
     std::lock_guard<ffrt::mutex> lock(photosFailedMutex_);
     size_t vectorLen = photosFailedOffsets_.size();
     needReportFailed_ = true;
     for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestoreBatchForCloud(photosFailedOffsets_[offset]);
+        RestoreBatchForCloud(photosFailedOffsets_[offset], isRelatedToPhotoMap);
     }
     photosFailedOffsets_.clear();
 }
@@ -412,11 +412,11 @@ void CloneRestore::RestorePhotoForCloud()
     MEDIA_INFO_LOG("singleClone onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     for (int32_t offset = 0; offset < totalNumberInPhotoMap; offset += CLONE_QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreBatchForCloud(offset, 1); }, {&offset}, {},
+        ffrt::submit([this, offset]() { RestoreBatchForCloud(offset, RELEATED_TO_PHOTO_MAP); }, {&offset}, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
-    ProcessCloudPhotosFailedOffsets();
+    ProcessCloudPhotosFailedOffsets(RELEATED_TO_PHOTO_MAP);
     needReportFailed_ = false;
     int32_t totalNumber = this->photosClone_.GetCloudPhotosRowCountNotInPhotoMap();
     MEDIA_INFO_LOG("singleClone queryTotalNumberNot, totalNumber = %{public}d", totalNumber);
