@@ -155,12 +155,13 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_001, TestSize.Lev
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
     tracer.Start("QueryALLColumn");
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(mediaLibraryDataManager, nullptr);
     for (int i = 0; i < 50; i++) {
-        auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
+        auto result = mediaLibraryDataManager->rdbStore_->Query(predicates, columns);
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
-
     GTEST_LOG_(INFO) << "QueryALLColumn Cost: " << ((double)(end - start)/50) << "ms";
 }
 
@@ -184,12 +185,13 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_002, TestSize.Lev
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
     tracer.Start("Query10Column");
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(mediaLibraryDataManager, nullptr);
     for (int i = 0; i < 50; i++) {
-        auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
+        auto result = mediaLibraryDataManager->rdbStore_->Query(predicates, columns);
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
-
     GTEST_LOG_(INFO) << "Query10Column Cost: " << ((double)(end - start)/50) << "ms";
 }
 
@@ -214,12 +216,13 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_003, TestSize.Lev
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
     tracer.Start("Query10Columnlimit50");
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(mediaLibraryDataManager, nullptr);
     for (int i = 0; i < 50; i++) {
-        auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
+        auto result = mediaLibraryDataManager->rdbStore_->Query(predicates, columns);
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
-
     GTEST_LOG_(INFO) << "Query10Columnlimit50 Cost: " << ((double)(end - start)/50) << "ms";
 }
 

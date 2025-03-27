@@ -632,9 +632,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level0)
     MEDIA_INFO_LOG("Create a photo, and then hide it.");
     auto fileAsset = CreateImageAsset("Test_Hidden_Image_001.jpg");
     EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
     HideFileAsset(fileAsset, true);
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
@@ -643,9 +640,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level0)
     MEDIA_INFO_LOG("Create another photo, and then hide it.");
     auto fileAsset2 = CreateImageAsset("Test_Create_Image_002.jpg");
     EXPECT_NE(fileAsset2, nullptr);
-    if (fileAsset2 == nullptr) {
-        return;
-    }
     HideFileAsset(fileAsset2, true);
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
@@ -753,9 +747,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Create a photo.");
     auto fileAsset = CreateImageAsset("Test_Images_001.jpg");
     EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
 
     // 3. Create another photo.
@@ -763,9 +754,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Create another photo.");
     auto fileAsset2 = CreateImageAsset("Test_Images_002.jpg");
     EXPECT_NE(fileAsset2, nullptr);
-    if (fileAsset2 == nullptr) {
-        return;
-    }
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
 
     // 4. Hide a photo.
@@ -908,9 +896,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Create a video.");
     auto fileAsset = CreateVideoAsset("Test_Videos_001.mp4");
     EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
 
     // 3. Create another photo.
@@ -918,9 +903,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Create another photo.");
     auto fileAsset2 = CreateVideoAsset("Test_Videos_002.mp4");
     EXPECT_NE(fileAsset2, nullptr);
-    if (fileAsset2 == nullptr) {
-        return;
-    }
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
 
     // 4. Hide a photo.
