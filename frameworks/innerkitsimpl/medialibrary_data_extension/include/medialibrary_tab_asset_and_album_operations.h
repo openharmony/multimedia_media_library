@@ -21,15 +21,23 @@
 
 #include "abs_shared_result_set.h"
 #include "medialibrary_command.h"
+#include "medialibrary_errno.h"
 #include "rdb_utils.h"
 
 namespace OHOS {
 namespace Media {
 class MediaLibraryTableAssetAlbumOperations {
 public:
+    const std::string OPRN_TABLE_NAME = "tab_asset_and_album_operation";
+    const std::string DELETE_FROM_OPERATION_TABLE =
+        "DELETE From tab_asset_and_album_operation";
+    static constexpr int64_t OPRN_TABLE_OVERSIZE_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24h
+    static constexpr int32_t OPRN_TABLE_OVERSIZE_LIMIT = 500000;
+
     std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::RdbPredicates &rdbPredicate,
         const std::vector<std::string> &columns);
-    static int32_t Delete(NativeRdb::RdbPredicates &predicates);
+    int32_t OprnTableOversizeChecker(void);
+    static int32_t Delete(NativeRdb::RdbPredicates &predicates);    
 };
 } // namespace Media
 } // namespace OHOS
