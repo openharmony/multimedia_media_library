@@ -336,6 +336,11 @@ public:
     template <class AniContext>
     static ani_status GetPredicate(ani_env *env, const ani_object fetchOptions, const std::string &propName,
         AniContext &context, FetchOptionType fetchOptType);
+
+    template <class AniContext>
+    static ani_status ParsePredicates(ani_env *env, const ani_object predicate, AniContext &context,
+        FetchOptionType fetchOptType);
+
     template <class AniContext>
     static bool HandleSpecialPredicate(AniContext &context,
         DataShare::DataSharePredicates *predicate, FetchOptionType fetchOptType);
