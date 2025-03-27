@@ -61,8 +61,7 @@ int32_t MediaLibraryTableAssetAlbumOperations::OprnTableOversizeChecker(void)
         std::vector<std::string> columns;
 
         auto resultSet = rdbStore->QuerySql(GET_COUNT_FROM_OPERATION_TABLE);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK)
-        {
+        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Query not match data fails");
             return E_DB_FAIL;
         }
