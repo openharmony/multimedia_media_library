@@ -29,8 +29,10 @@ public:
 
 class TabOldPhotosRestoreTestUtils {
 public:
+    static void ClearAllData();
+    static void ClearPhotosData();
+    static void ClearTabOldPhotosData();
     static void InsertPhoto();
-    static void ClearData();
     static int32_t QueryTabOldPhotosCount();
 };
 }  // namespace OHOS::Media

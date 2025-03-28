@@ -39,27 +39,6 @@ const std::string TEST_OLD_DATA = "/storage/emulated/0/Pictures/test.jpg";
 
 static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
-void TabOldPhotosRestoreTestUtils::InsertPhoto()
-{
-    const std::string INSERT_SQL = "INSERT INTO Photos (file_id, data) VALUES (?, ?)";
-    const std::vector<NativeRdb::ValueObject> BIND_ARGS = { TEST_NEW_FILE_ID, TEST_NEW_DATA };
-    DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), INSERT_SQL, BIND_ARGS);
-}
-
-void TabOldPhotosRestoreTestUtils::ClearData()
-{
-    const std::vector<std::string> CLEAR_SQLS = {
-        "DELETE FROM Photos",
-        "DELETE FROM tab_old_photos",
-    };
-    DatabaseUtils::ExecuteSqls(g_rdbStore->GetRaw(), CLEAR_SQLS);
-}
-
-int32_t TabOldPhotosRestoreTestUtils::QueryTabOldPhotosCount()
-{
-    return DatabaseUtils::QueryInt(g_rdbStore->GetRaw(), "count(1)", "SELECT count(1) FROM tab_old_photos");
-}
-
 void TabOldPhotosRestoreTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("SetUpTestCase");
@@ -67,7 +46,7 @@ void TabOldPhotosRestoreTest::SetUpTestCase()
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(g_rdbStore, nullptr);
-    TabOldPhotosRestoreTestUtils::ClearData();
+    TabOldPhotosRestoreTestUtils::ClearAllData();
     MEDIA_INFO_LOG("Start InsertPhoto");
     TabOldPhotosRestoreTestUtils::InsertPhoto();
 }
@@ -75,11 +54,14 @@ void TabOldPhotosRestoreTest::SetUpTestCase()
 void TabOldPhotosRestoreTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("TearDownTestCase");
-    TabOldPhotosRestoreTestUtils::ClearData();
+    TabOldPhotosRestoreTestUtils::ClearAllData();
 }
 
 // SetUp:Execute before each test case
-void TabOldPhotosRestoreTest::SetUp() {}
+void TabOldPhotosRestoreTest::SetUp()
+{
+    TabOldPhotosRestoreTestUtils::ClearTabOldPhotosData();
+}
 
 void TabOldPhotosRestoreTest::TearDown() {}
 
@@ -100,8 +82,27 @@ HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_restore_empty_fileInfos_test_00
     TabOldPhotosRestore tabOldPhotosRestore;
     std::vector<FileInfo> fileInfos;
     int32_t ret = tabOldPhotosRestore.Restore(g_rdbStore->GetRaw(), fileInfos);
-    EXPECT_EQ(ret, NativeRdb::E_ERROR);
+    EXPECT_EQ(ret, NativeRdb::E_OK);
     MEDIA_INFO_LOG("End tab_old_photos_restore_empty_fileInfos_test_001");
+}
+
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_restore_duplicate_fileInfos_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_restore_duplicate_fileInfos_test_001");
+    TabOldPhotosRestore tabOldPhotosRestore;
+    FileInfo fileInfo;
+    fileInfo.localMediaId = TEST_OLD_LOCAL_MEDIA_ID;
+    fileInfo.oldPath = TEST_OLD_DATA;
+    fileInfo.cloudPath = TEST_NEW_DATA;
+    fileInfo.needMove = false;
+
+    std::vector<FileInfo> fileInfos = { fileInfo };
+    int32_t ret = tabOldPhotosRestore.Restore(g_rdbStore->GetRaw(), fileInfos);
+    EXPECT_EQ(ret, NativeRdb::E_OK);
+
+    int32_t count = TabOldPhotosRestoreTestUtils::QueryTabOldPhotosCount();
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("End tab_old_photos_restore_duplicate_fileInfos_test_001");
 }
 
 HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_restore_normal_test_001, TestSize.Level0)
@@ -120,5 +121,36 @@ HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_restore_normal_test_001, TestSi
     int32_t count = TabOldPhotosRestoreTestUtils::QueryTabOldPhotosCount();
     EXPECT_GT(count, 0);
     MEDIA_INFO_LOG("End tab_old_photos_restore_normal_test_001");
+}
+
+void TabOldPhotosRestoreTestUtils::ClearAllData()
+{
+    ClearPhotosData();
+    ClearTabOldPhotosData();
+}
+
+void TabOldPhotosRestoreTestUtils::ClearPhotosData()
+{
+    const std::string CLEAR_PHOTOS_SQL = "DELETE FROM Photos";
+    DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), CLEAR_PHOTOS_SQL);
+}
+
+void TabOldPhotosRestoreTestUtils::ClearTabOldPhotosData()
+{
+    const std::string CLEAR_TAB_OLD_PHOTOS_SQL = "DELETE FROM tab_old_photos";
+    DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), CLEAR_TAB_OLD_PHOTOS_SQL);
+}
+
+void TabOldPhotosRestoreTestUtils::InsertPhoto()
+{
+    const std::string INSERT_SQL = "INSERT INTO Photos (file_id, data) VALUES (?, ?)";
+    const std::vector<NativeRdb::ValueObject> BIND_ARGS = { TEST_NEW_FILE_ID, TEST_NEW_DATA };
+    DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), INSERT_SQL, BIND_ARGS);
+}
+
+int32_t TabOldPhotosRestoreTestUtils::QueryTabOldPhotosCount()
+{
+    const std::string QUERY_SQL = "SELECT count(1) FROM tab_old_photos";
+    return DatabaseUtils::QueryInt(g_rdbStore->GetRaw(), "count(1)", QUERY_SQL);
 }
 }  // namespace OHOS::Media
