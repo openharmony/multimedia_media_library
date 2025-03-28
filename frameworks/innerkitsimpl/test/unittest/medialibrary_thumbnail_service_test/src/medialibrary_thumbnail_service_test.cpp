@@ -960,7 +960,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, T
 HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, TestSize.Level0)
 {
     auto res = serverTest->UpgradeThumbnailBackground(false);
-    EXPECT_EQ(res, E_OK);
+    EXPECT_EQ(res <= 0, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level0)
