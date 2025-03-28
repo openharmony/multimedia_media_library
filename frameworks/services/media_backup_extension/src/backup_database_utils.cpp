@@ -870,7 +870,6 @@ std::unordered_map<int32_t, int32_t> BackupDatabaseUtils::QueryMediaTypeCount(
     auto resultSet = GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is nullptr");
-        resultSet->Close();
         return mediaTypeCountMap;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {

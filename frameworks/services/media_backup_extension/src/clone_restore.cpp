@@ -764,7 +764,6 @@ int32_t CloneRestore::QueryTotalNumber(const string &tableName)
     querySql += whereClause.empty() ? "" : " WHERE " + whereClause;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        resultSet->Close();
         return 0;
     }
     int32_t result = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
@@ -788,7 +787,6 @@ vector<AlbumInfo> CloneRestore::QueryAlbumInfos(const string &tableName, int32_t
     }
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
-        resultSet->Close();
         return result;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -1389,7 +1387,7 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
         fileInfos[index].fileIdNew = fileId;
         fileInfos[index].newAstcDateKey = dateTaken;
     }
-    BackupDatabaseUtils::GetQueryResultSet
+    resultSet->Close();
     BackupDatabaseUtils::UpdateAssociateFileId(mediaLibraryRdb_, fileInfos);
 }
 
@@ -1473,8 +1471,8 @@ void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &
         albumInfo.albumIdNew = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         CHECK_AND_CONTINUE(albumInfo.albumIdNew > 0);
         albumIdMap[albumInfo.albumIdOld] = albumInfo.albumIdNew;
+        resultSet->Close();
     }
-    resultSet->Close();
 }
 
 void CloneRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &totalRowNum)
