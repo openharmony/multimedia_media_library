@@ -326,8 +326,12 @@ int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
         "AND (t2.story_id LIKE '%,'||t1.story_id||',%' OR t2.portrait_id LIKE '%,'||t1.story_id||',%'))";
     std::shared_ptr<NativeRdb::ResultSet> resultSet =
         BackupDatabaseUtils::QuerySql(this->galleryRdb_, QUERY_SQL, {});
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query count of highlight cloud media failed.");
+        return -1;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
         return -1;
     }
     int32_t cnt = GetInt32Val("count", resultSet);
