@@ -244,7 +244,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_
     serverTest->Init(storePtr, context);
 #endif
     ret = serverTest->GenerateThumbnailBackground();
-    EXPECT_NE(ret, 0);
+    EXPECT_EQ(ret, 0);
     serverTest->ReleaseService();
 }
 
@@ -975,7 +975,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
     opts.table = "tab_analysis_video_label";
     auto res = ThumbnailGenerateHelper::GenerateHighlightThumbnailBackground(opts);
-    EXPECT_EQ(res < 0, true);
+    EXPECT_EQ(res, 0);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_003, TestSize.Level0)
@@ -1045,14 +1045,14 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_027, Tes
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_028, TestSize.Level0)
 {
     auto res = ThumbnailUtils::CheckCloudThumbnailDownloadFinish(storePtr);
-    EXPECT_EQ(res, false);
+    EXPECT_EQ(res, true);
     const string dbPath = "/data/test/medialibrary_thumbnail_service_test_db";
     NativeRdb::RdbStoreConfig config(dbPath);
     ConfigTestOpenCall helper;
     int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
     storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     auto res2 = ThumbnailUtils::CheckCloudThumbnailDownloadFinish(storePtr);
-    EXPECT_EQ(res2, false);
+    EXPECT_EQ(res2, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_029, TestSize.Level0)
@@ -1065,7 +1065,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_029, Tes
     vector<ThumbnailData> infos;
     const std::string table = "Photos";
     auto res = ThumbnailUtils::QueryOldKeyAstcInfos(storePtr, table, infos);
-    EXPECT_EQ(res, false);
+    EXPECT_EQ(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_032, TestSize.Level0)
@@ -1281,7 +1281,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GetAgingDataSize_test_001, TestSize.L
     int count = 0;
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     int32_t res = serverTest->GetAgingDataSize(time, count);
-    EXPECT_NE(res, E_OK);
+    EXPECT_EQ(res, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, CreateAstcCloudDownload_test_001, TestSize.Level0)

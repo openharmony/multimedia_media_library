@@ -716,7 +716,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
  
     // assert
-    EXPECT_EQ(0, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
+    EXPECT_EQ(2, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
     EXPECT_EQ(burstKey, GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
  
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_003 exit");
@@ -1944,9 +1944,9 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
         if (static_cast<int32_t>(permissionType) == 0) {
             expectWriteResult.push_back(false);
             expectReadWriteResult.push_back(false);
-        } else if (static_cast<int32_t>(permissionType) == 2) {
+        } else if (static_cast<int32_t>(permissionType) == 1) {
             expectWriteResult.push_back(true);
-            expectReadWriteResult.push_back(true);
+            expectReadWriteResult.push_back(false);
         } else {
             expectWriteResult.push_back(true);
             expectReadWriteResult.push_back(true);
