@@ -44,13 +44,31 @@ static std::string GetMediaLibraryDataUri(const int32_t userId)
     return mediaLibraryDataUri;
 }
 
+void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value)
+{
+    std::string uriKey = key + '=';
+    if (uri.find(uriKey) != std::string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == std::string::npos) ? '?' : '&';
+    std::string append = queryMark + key + '=' + value;
+
+    size_t posJ = uri.find('#');
+    if (posJ == std::string::npos) {
+        uri += append;
+    } else {
+        uri.insert(posJ, append);
+    }
+}
+
 static Uri MultiUserUriRecognition(Uri &uri, const int32_t userId)
 {
     if (userId == -1) {
         return uri;
     }
     std::string uriString = uri.ToString();
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(userId));
+    UriAppendKeyValue(uriString, USER_STR, to_string(userId));
     return Uri(uriString);
 }
 
@@ -353,6 +371,15 @@ std::string UserFileClient::GetType(Uri &uri)
         return "";
     }
     return GetDataShareHelperByUser(GetUserId())->GetType(uri);
+}
+
+int32_t UserFileClient::UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option)
+{
+    if (!IsValid(GetUserId())) {
+        NAPI_ERR_LOG("JS UserDefineFunc fail, helper null %{public}d", GetUserId());
+        return E_FAIL;
+    }
+    return GetDataShareHelperByUser(GetUserId())->UserDefineFunc(data, reply, option);
 }
 
 void UserFileClient::Clear()

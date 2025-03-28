@@ -19,6 +19,7 @@
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
 #include "napi_base_context.h"
+#include "message_parcel.h"
 #include "napi_error.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -63,6 +64,7 @@ public:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryRdb(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns);
     EXPORT static std::string GetType(Uri &uri);
+    EXPORT static int32_t UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option);
     EXPORT static void SetUserId(const int32_t userId);
     EXPORT static int32_t GetUserId();
     EXPORT static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelperByUser(const int32_t userId);
