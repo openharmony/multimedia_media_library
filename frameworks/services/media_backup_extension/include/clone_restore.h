@@ -37,6 +37,8 @@
 #include "clone_restore_classify.h"
 #include "clone_restore_geo.h"
 #include "clone_restore_geo_dictionary.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 
 namespace OHOS {
 namespace Media {
@@ -210,6 +212,9 @@ private:
     void GetAccountValid() override;
     int32_t GetHighlightCloudMediaCnt();
     void RestoreHighlightAlbums();
+    void AddToPhotosFailedOffsets(int32_t offset);
+    void ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap = 0);
+    void ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap = 0);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -250,7 +255,8 @@ private:
     std::shared_ptr<MediaLibraryKvStore> oldYearKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
-    std::vector<int> photosFailedOffsets;
+    std::vector<int> photosFailedOffsets_;
+    ffrt::mutex photosFailedMutex_;
     CloneRestoreClassify cloneRestoreClassify_;
     CloneRestoreGeo cloneRestoreGeo_;
     CloneRestoreHighlight cloneRestoreHighlight_;
