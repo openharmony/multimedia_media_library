@@ -103,12 +103,17 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             backupRetoreDir + "/" + galleryAppName_ + "/ce/shared_prefs/" + galleryAppName_ + "_preferences.xml";
         shouldIncludeSd_ = false;
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
+            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "", "External db is not exist.");
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             MEDIA_ERR_LOG("External db is not exist.");
             return EXTERNAL_DB_NOT_EXIST;
         }
         int32_t externalErr = BackupDatabaseUtils::InitDb(externalRdb_, EXTERNAL_DB_NAME, externalDbPath_,
             mediaAppName_, false);
         if (externalRdb_ == nullptr) {
+            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+                "External init rdb fail, err = " + std::to_string(externalErr));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             MEDIA_ERR_LOG("External init rdb fail, err = %{public}d", externalErr);
             return E_FAIL;
         }
@@ -121,6 +126,9 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
 int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 {
     if (isUpgrade && BaseRestore::Init() != E_OK) {
+        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+            "InitDb And Xml fail, isUpgrade = " + std::to_string(isUpgrade));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
         return E_FAIL;
     }
     if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
@@ -129,6 +137,9 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
         int32_t galleryErr = BackupDatabaseUtils::InitDb(galleryRdb_, GALLERY_DB_NAME, galleryDbPath_,
             galleryAppName_, false);
         if (galleryRdb_ == nullptr) {
+            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+                "Gallery init rdb fail, err = " + std::to_string(galleryErr));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             MEDIA_ERR_LOG("Gallery init rdb fail, err = %{public}d", galleryErr);
             return E_FAIL;
         }
@@ -140,6 +151,9 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
         int32_t audioErr = BackupDatabaseUtils::InitDb(audioRdb_, AUDIO_DB_NAME, audioDbPath_,
             audioAppName_, false);
         if (audioRdb_ == nullptr) {
+            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+                "audio init rdb fail, err = " + std::to_string(audioErr));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
             MEDIA_ERR_LOG("audio init rdb fail, err = %{public}d", audioErr);
             return E_FAIL;
         }
