@@ -18,6 +18,7 @@
 #include <numeric>
 
 #include "backup_database_utils.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
@@ -27,22 +28,22 @@ int32_t TabOldPhotosRestore::Restore(
     CHECK_AND_RETURN_RET_LOG(rdbStorePtr != nullptr, NativeRdb::E_DB_NOT_EXIST,
         "rdbStorePtr is nullptr, Maybe init failed");
 
+    int64_t startSet = MediaFileUtils::UTCTimeSeconds();
     TabOldPhotosRestoreHelper restoreHelper;
     restoreHelper.SetPlaceHoldersAndBindArgs(fileInfos);
     CHECK_AND_RETURN_RET_LOG(!restoreHelper.IsEmpty(), NativeRdb::E_ERROR, "restoreHelper is empty");
 
+    int64_t startInsert = MediaFileUtils::UTCTimeSeconds();
     std::string insertSql = restoreHelper.GetInsertSql();
     std::vector<NativeRdb::ValueObject> bindArgs = restoreHelper.GetBindArgs();
     int32_t ret = rdbStorePtr->ExecuteSql(insertSql, bindArgs);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, "
-                      "executeSql=%{public}s, bindArgs: %{public}s",
-            ret,
-            insertSql.c_str(),
-            this->ToString(bindArgs).c_str());
-        return ret;
-    }
-    return NativeRdb::E_OK;
+    CHECK_AND_EXECUTE(ret == NativeRdb::E_OK,
+        MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, executeSql=%{public}s, "
+            "bindArgs: %{public}s", ret, insertSql.c_str(), this->ToString(bindArgs).c_str()));
+
+    int64_t end = MediaFileUtils::UTCTimeSeconds();
+    MEDIA_INFO_LOG("Media_Restore: TabOldPhotosRestore set cost %{public}" PRId64 ", insert cost %{public}" PRId64,
+        startInsert - startSet, end - startInsert);
 }
 
 std::string TabOldPhotosRestore::ToString(const std::vector<NativeRdb::ValueObject> &values)
