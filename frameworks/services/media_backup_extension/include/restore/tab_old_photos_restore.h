@@ -35,6 +35,7 @@ class TabOldPhotosRestoreHelper {
 public:
     void SetPlaceHoldersAndBindArgs(const std::vector<FileInfo> &fileInfos);
     bool IsEmpty();
+    int32_t InsertIntoTable(std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr);
     std::string GetInsertSql();
     std::vector<NativeRdb::ValueObject> GetBindArgs();
 
