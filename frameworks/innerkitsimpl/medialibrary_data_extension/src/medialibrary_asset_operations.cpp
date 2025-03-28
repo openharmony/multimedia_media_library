@@ -103,7 +103,7 @@ constexpr int32_t BOTH_LOCAL_CLOUD_PHOTO_POSITION = 3;
 constexpr int32_t MAX_PROCESS_NUM = 200;
 constexpr int64_t INVALID_SIZE = 0;
 const std::string SET_DISPLAY_NAME_KEY = "set_displayName";
-const std::string IS_CAN_FALLBACK = "is_can_fallback";
+const std::string CAN_FALLBACK = "can_fallback";
 const std::string OLD_DISPLAY_NAME = "old_displayName";
 
 struct DeletedFilesParams {
@@ -1236,7 +1236,7 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
     return deletedRows;
 }
 
-bool MediaLibraryAssetOperations::IsNeedSetDisplayName(MediaLibraryCommand &cmd)
+bool MediaLibraryAssetOperations::IsSetDisplayName(MediaLibraryCommand &cmd)
 {
     std::string newDisplayName = cmd.GetQuerySetParam(SET_DISPLAY_NAME_KEY);
     CHECK_AND_RETURN_RET(!newDisplayName.empty(), false);
@@ -1246,16 +1246,16 @@ bool MediaLibraryAssetOperations::IsNeedSetDisplayName(MediaLibraryCommand &cmd)
 
 bool MediaLibraryAssetOperations::CheckUriBySetDisplayName(MediaLibraryCommand &cmd)
 {
-    CHECK_AND_RETURN_RET(IsNeedSetDisplayName(cmd), false);
+    CHECK_AND_RETURN_RET(IsSetDisplayName(cmd), false);
 
     std::string oldDisplayName = cmd.GetQuerySetParam(OLD_DISPLAY_NAME);
     CHECK_AND_RETURN_RET_LOG(!oldDisplayName.empty(), false,
         "Failed to setDisplayName, due to uri is not contain old displayName");
     MEDIA_INFO_LOG("Old display name is %{public}s.", oldDisplayName.c_str());
 
-    std::string isCallFallback = cmd.GetQuerySetParam(IS_CAN_FALLBACK);
+    std::string isCallFallback = cmd.GetQuerySetParam(CAN_FALLBACK);
     CHECK_AND_RETURN_RET_LOG(!isCallFallback.empty(), false,
-        "Failed to setDisplayName, due to uri is not contain is_can_fallback.");
+        "Failed to setDisplayName, due to uri is not contain can_fallback.");
     return true;
 }
 
@@ -1263,7 +1263,7 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged)
 {
     // if uri contains "set_displayName", it will do ChangeDisplayName();
-    CHECK_AND_RETURN_RET(!IsNeedSetDisplayName(cmd), ChangeDisplayName(cmd, fileAsset, isNameChanged));
+    CHECK_AND_RETURN_RET(!IsSetDisplayName(cmd), ChangeDisplayName(cmd, fileAsset, isNameChanged));
     ValuesBucket &values = cmd.GetValueBucket();
     ValueObject valueObject;
     string newTitle;
@@ -1372,13 +1372,13 @@ int32_t MediaLibraryAssetOperations::UpdateDbBySetDisplayName(
     return ret;
 }
 
-bool MediaLibraryAssetOperations::UpdateFileAssetBySetDisplayName(
+bool MediaLibraryAssetOperations::UpdateFileBySetDisplayName(
     MediaLibraryCommand &cmd, const shared_ptr<FileAsset> &fileAsset)
 {
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
-    MEDIA_INFO_LOG("UpdateFileAssetBySetDisplayName enter, fileId: %{public}d.", fileAsset->GetId());
+    MEDIA_INFO_LOG("UpdateFileBySetDisplayName enter, fileId: %{public}d.", fileAsset->GetId());
     CHECK_AND_RETURN_RET_LOG(CheckUriBySetDisplayName(cmd), false, "Failed to check uri.");
-    MEDIA_INFO_LOG("UpdateFileAssetBySetDisplayName enter");
+    MEDIA_INFO_LOG("UpdateFileBySetDisplayName enter");
     std::string newDisplayName = cmd.GetQuerySetParam(SET_DISPLAY_NAME_KEY);
 
     std::string oldPath = fileAsset->GetPath();
@@ -1396,7 +1396,7 @@ bool MediaLibraryAssetOperations::UpdateFileAssetBySetDisplayName(
             fileAsset->GetTitle().c_str());
         return false;
     }
-    MEDIA_INFO_LOG("UpdateFileAssetBySetDisplayName success.");
+    MEDIA_INFO_LOG("UpdateFileBySetDisplayName success.");
     return true;
 }
 
@@ -1422,7 +1422,8 @@ bool MediaLibraryAssetOperations::DeleteThumbByFileId(MediaLibraryCommand &cmd, 
 void MediaLibraryAssetOperations::RevertSetDisplayName(MediaLibraryCommand &cmd, shared_ptr<FileAsset> &fileAsset)
 {
     int32_t id;
-    if (!GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MEDIA_ID, id)) {
+    if (cmd.GetQuerySetParam(OLD_DISPLAY_NAME) == "1" &&
+        !GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MEDIA_ID, id)) {
         RevertSetDisplayNameByDelete(cmd, fileAsset);
     } else {
         RevertSetDisplayNameByUpdate(cmd, fileAsset);
