@@ -202,14 +202,14 @@ protected:
 
     EXPORT static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
-    static bool IsNeedSetDisplayName(MediaLibraryCommand &cmd);
+    static bool IsSetDisplayName(MediaLibraryCommand &cmd);
     static bool CheckUriBySetDisplayName(MediaLibraryCommand &cmd);
     static int32_t ChangeDisplayName(
         MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset, bool &isNameChanged);
     static int32_t GetUpdateValuesBucket(
         MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset, NativeRdb::ValuesBucket &values);
     static int32_t UpdateDbBySetDisplayName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
-    static bool UpdateFileAssetBySetDisplayName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static bool UpdateFileBySetDisplayName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static bool DeleteThumbByFileId(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static void RevertSetDisplayName(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
     static void RevertSetDisplayNameByDelete(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
