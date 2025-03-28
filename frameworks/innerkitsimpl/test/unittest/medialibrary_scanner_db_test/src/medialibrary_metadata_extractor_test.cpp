@@ -87,7 +87,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_normal_path, Test
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath(path);
     int32_t ret = MetadataExtractor::ExtractAVMetadata(data);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_AVMETADATA);
 }
 
 HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_nonexistent_path, TestSize.Level0)

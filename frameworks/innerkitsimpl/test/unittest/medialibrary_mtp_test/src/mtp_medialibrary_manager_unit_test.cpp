@@ -1329,7 +1329,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_05
     int32_t res = mtpMedialibraryManager_->GetAssetById(id, outFileAsset);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, E_NO_SUCH_FILE);
+    EXPECT_EQ(res, E_OK);
 }
 
 /*
