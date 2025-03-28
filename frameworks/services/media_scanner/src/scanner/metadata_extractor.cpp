@@ -461,13 +461,16 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
     if (strTemp != "") {
         int64_t int64TempMeta = convertTimeStr2TimeStamp(strTemp);
         if (int64TempMeta <= 0) {
+            // use modified time as date taken time when get date_taken fails
             data->SetDateTaken(data->GetFileDateModified());
+            MEDIA_DEBUG_LOG("Set date_taken use modified time");
         } else {
             data->SetDateTaken(int64TempMeta * MSEC_TO_SEC);
         }
     } else {
         // use modified time as date taken time when date taken not set
         data->SetDateTaken(data->GetFileDateModified());
+        MEDIA_DEBUG_LOG("Set date_taken use modified time");
     }
 
     strTemp = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
