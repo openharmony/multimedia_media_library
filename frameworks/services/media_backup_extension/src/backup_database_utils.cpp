@@ -134,10 +134,15 @@ int32_t BackupDatabaseUtils::QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbSt
         return 0;
     }
     auto resultSet = rdbStore->QuerySql(sql, args);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
+        return 0;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
         return 0;
     }
     int32_t result = GetInt32Val(column, resultSet);
+    resultSet->Close();
     return result;
 }
 
@@ -204,8 +209,12 @@ void BackupDatabaseUtils::QueryGalleryDuplicateDataCount(std::shared_ptr<NativeR
     static string QUERY_GALLERY_DUPLICATE_DATA_COUNT = "SELECT count(DISTINCT _data) as count, count(1) as total"
         " FROM gallery_media WHERE _data IN (SELECT _data FROM gallery_media GROUP BY _data HAVING count(1) > 1)";
     auto resultSet = GetQueryResultSet(galleryRdb, QUERY_GALLERY_DUPLICATE_DATA_COUNT);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    bool cond = (resultSet == nullptr);
     CHECK_AND_RETURN(!cond);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return;
+    }
     count = GetInt32Val("count", resultSet);
     total = GetInt32Val("total", resultSet);
     resultSet->Close();
@@ -835,8 +844,12 @@ std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::Rdb
 {
     const std::string querySql = "PRAGMA " + COLUMN_INTEGRITY_CHECK;
     auto resultSet = GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
         MEDIA_ERR_LOG ("Query resultSet is null or GoToFirstRow failed.");
+        return "";
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
         return "";
     }
     std::string result = GetStringVal(COLUMN_INTEGRITY_CHECK, resultSet);

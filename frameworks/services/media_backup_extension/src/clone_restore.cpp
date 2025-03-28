@@ -466,9 +466,12 @@ int32_t CloneRestore::GetHighlightCloudMediaCnt()
         "INNER JOIN Photos AS p ON p.file_id = m.map_asset "
         "WHERE a.album_subtype IN (4104, 4105) AND p.position = 2";
     std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this->mediaRdb_, QUERY_SQL, {});
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    bool cond = (resultSet == nullptr);
     CHECK_AND_RETURN_RET_LOG(!cond, -1, "query count of highlight cloud media failed.");
-
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return -1;
+    }
     int32_t cnt = GetInt32Val("count", resultSet);
     MEDIA_INFO_LOG("GetHighlightCloudMediaCnt is %{public}d", cnt);
     resultSet->Close();
@@ -763,7 +766,11 @@ int32_t CloneRestore::QueryTotalNumber(const string &tableName)
     string whereClause = GetQueryWhereClauseByTable(tableName);
     querySql += whereClause.empty() ? "" : " WHERE " + whereClause;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
+        return 0;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
         return 0;
     }
     int32_t result = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
@@ -1450,8 +1457,12 @@ bool CloneRestore::HasSameAlbum(const AlbumInfo &albumInfo, const string &tableN
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
         PhotoAlbumColumns::ALBUM_NAME + " = '" + albumInfo.albumName + "'";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    bool cond = (resultSet == nullptr);
     CHECK_AND_RETURN_RET(!cond, false);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return false;
+    }
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
     resultSet->Close();
     return count > 0;
@@ -1870,8 +1881,12 @@ int32_t CloneRestore::QueryTotalNumberByMediaType(shared_ptr<NativeRdb::RdbStore
     string whereClause = GetQueryWhereClauseByTable(tableName);
     querySql += whereClause.empty() ? "" : " AND " + whereClause;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    bool cond = (resultSet == nullptr);
     CHECK_AND_RETURN_RET(!cond, 0);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return 0;
+    }
     int32_t result = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
     resultSet->Close();
     return result;
