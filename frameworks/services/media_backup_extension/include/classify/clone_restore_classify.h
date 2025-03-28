@@ -72,9 +72,9 @@ private:
     };
 
     void GetClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfo,
-        std::vector<FileInfo> &fileInfos, int32_t offset);
+        std::vector<FileInfo> &fileInfos, size_t offset);
     void GetClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfo,
-        std::vector<FileInfo> &fileInfos, int32_t offset);
+        std::vector<FileInfo> &fileInfos, size_t offset);
     void DeduplicateClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfos,
         std::vector<FileInfo> &fileInfos);
     void DeduplicateClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos,

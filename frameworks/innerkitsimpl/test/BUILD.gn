@@ -17,6 +17,7 @@ group("test") {
   deps = [
     "unittest/album_count_cover_test:AlbumCountCoverTest",
     "unittest/background_cloud_file_processor_test:unittest",
+    "unittest/media_albums_refresh_test:unittest",
     "unittest/media_analysis_extension_test:unittest",
     "unittest/media_asset_change_request_test:unittest",
     "unittest/media_asset_test:unittest",
@@ -32,6 +33,7 @@ group("test") {
     "unittest/medialibrary_analysis_album_operation_test:unittest",
     "unittest/medialibrary_app_uri_permission_operations_test:unittest",
     "unittest/medialibrary_app_uri_sensitive_operations_test:unittest",
+    "unittest/medialibrary_astc_phase_test:unittest",
     "unittest/medialibrary_astc_phase_test:unittest",
     "unittest/medialibrary_audio_operations_test:unittest",
     "unittest/medialibrary_cloud_asset_download_test:unittest",

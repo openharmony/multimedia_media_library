@@ -57,6 +57,23 @@ config("media_data_extension_public_config") {
   include_albums_refresh =
       [ "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/include" ]
 
+  include_cloud_sync_server = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync/controller",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync/service",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/native/cloud_sync",
+  ]
+
+  include_media_ipc = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/vo",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/util",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/controller",
+  ]
+
+  include_media_po =
+      [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/po" ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -86,6 +103,9 @@ config("media_data_extension_public_config") {
   include_dirs += include_cloud_asset_download
   include_dirs += include_cloud_dirty_handle
   include_dirs += include_albums_refresh
+  include_dirs += include_cloud_sync_server
+  include_dirs += include_media_ipc
+  include_dirs += include_media_po
 
   if (media_library_feature_cloud_enhancement) {
     include_cloud_enhancement = [
@@ -267,6 +287,11 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_observer.cpp",
   ]
 
+  media_cloud_sync_server_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync/controller/cloud_media_data_controller_service.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync/service/cloud_media_data_service.cpp",
+  ]
+
   media_cloud_dirty_handle_source = [ "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_dirty_handle/cloud_upload_checker.cpp" ]
 
   media_albums_refresh_source = [
@@ -274,6 +299,9 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_notify.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_worker.cpp",
   ]
+
+  media_ipc_source =
+      [ "src/ipc/controller/media_controller_service_factory.cpp" ]
 
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
@@ -367,6 +395,8 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_cloud_asset_download_source
   sources += media_cloud_dirty_handle_source
   sources += media_albums_refresh_source
+  sources += media_cloud_sync_server_source
+  sources += media_ipc_source
 
   if (media_library_feature_cloud_enhancement) {
     media_cloud_enhancement_source = [

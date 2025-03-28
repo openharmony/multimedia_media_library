@@ -517,5 +517,97 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePho
     EXPECT_LT(MovingPhotoFileUtils::ConvertToSourceLivePhoto(movingPhotoImagepath, sourceLivePhotoPath), E_OK);
     EXPECT_EQ(sourceLivePhotoPath, "");
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_003, TestSize.Level0)
+{
+    string dirPath = "/data/test/ConvertToMovingPhoto_002";
+    string livePhotoPath = dirPath + "/" + "livePhotoSamePath.jpg";
+    EXPECT_EQ(WriteFileContent(livePhotoPath, FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO)), true);
+    string imagePath = dirPath + "/" + "livePhotoSamePath.jpg";
+    string videoPath = dirPath + "/" + "video.mp4";
+    string extraDataPath = dirPath + "/" + "extraData";
+    EXPECT_EQ(MovingPhotoFileUtils::ConvertToMovingPhoto(livePhotoPath, imagePath, videoPath, extraDataPath),
+        E_OK);
+
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    EXPECT_EQ(MovingPhotoFileUtils::ConvertToMovingPhoto("", imagePath, videoPath, extraDataPath), E_HAS_FS_ERROR);
+
+    EXPECT_EQ(MovingPhotoFileUtils::ConvertToMovingPhoto(livePhotoPath, "", videoPath, extraDataPath),
+        E_INVALID_LIVE_PHOTO);
+    EXPECT_EQ(MovingPhotoFileUtils::ConvertToMovingPhoto(livePhotoPath, imagePath, "", extraDataPath),
+        E_INVALID_LIVE_PHOTO);
+    EXPECT_EQ(MovingPhotoFileUtils::ConvertToMovingPhoto(livePhotoPath, imagePath, videoPath, ""),
+        E_INVALID_LIVE_PHOTO);
+
+    EXPECT_EQ(MovingPhotoFileUtils::ConvertToMovingPhoto(livePhotoPath, imagePath, videoPath, extraDataPath),
+        E_INVALID_LIVE_PHOTO);
+    EXPECT_EQ(CompareIfContentEquals(FILE_TEST_JPG, imagePath, sizeof(FILE_TEST_JPG)), true);
+    EXPECT_EQ(CompareIfContentEquals(FILE_TEST_MP4, videoPath, sizeof(FILE_TEST_MP4)), true);
+    EXPECT_EQ(CompareIfContentEquals(FILE_TEST_EXTRA_DATA, extraDataPath, sizeof(FILE_TEST_EXTRA_DATA)), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetCoverPosition_002, TestSize.Level0)
+{
+    std::string videoPath = "";
+    uint32_t frameIndex = 0;
+    uint64_t coverPosition = 0;
+    int32_t scene = 0;
+    EXPECT_EQ(MovingPhotoFileUtils::GetCoverPosition(videoPath, frameIndex, coverPosition, scene), E_HAS_FS_ERROR);
+    videoPath = "/data/test/ConvertToMovingPhoto_002/video.mp4";
+    EXPECT_EQ(MovingPhotoFileUtils::GetCoverPosition(videoPath, frameIndex, coverPosition, scene), E_AVMETADATA);
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/data/test/ConvertToMovingPhoto_002/"), true);
+    EXPECT_EQ(MediaFileUtils::CreateAsset(videoPath), E_FILE_EXIST);
+    EXPECT_EQ(MovingPhotoFileUtils::GetCoverPosition(videoPath, frameIndex, coverPosition, scene), E_AVMETADATA);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_008, TestSize.Level0)
+{
+    string tag = "";
+    uint32_t version = 0;
+    uint32_t frameIndex = 0;
+    bool hasCinemagraphInfo;
+    EXPECT_EQ(MovingPhotoFileUtils::GetVersionAndFrameNum(tag,
+        version, frameIndex, hasCinemagraphInfo), E_INVALID_VALUES);
+    tag = "v10_f2";
+    EXPECT_EQ(MovingPhotoFileUtils::GetVersionAndFrameNum(tag,
+        version, frameIndex, hasCinemagraphInfo), E_OK);
+    tag = "v10_f2_c ";
+    EXPECT_EQ(MovingPhotoFileUtils::GetVersionAndFrameNum(tag,
+        version, frameIndex, hasCinemagraphInfo), E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_009, TestSize.Level0)
+{
+    string testFile = "/data/test/version_tag.dat";
+    unsigned char tagData[10] = "v1_f2_c";
+    uint32_t version = 0;
+    uint32_t frameIndex = 0;
+    bool hasCinemagraphInfo;
+    EXPECT_EQ(WriteFileContent(testFile, tagData, sizeof(tagData)), true);
+
+    int32_t fd = -1;
+    EXPECT_EQ(MovingPhotoFileUtils::GetVersionAndFrameNum(fd,
+        version, frameIndex, hasCinemagraphInfo), E_HAS_FS_ERROR);
+
+    fd = open(testFile.c_str(), O_RDONLY);
+    EXPECT_GT(fd, 0);  // 确保文件打开成功
+
+    EXPECT_EQ(MovingPhotoFileUtils::GetVersionAndFrameNum(fd,
+        version, frameIndex, hasCinemagraphInfo), E_INVALID_LIVE_PHOTO);
+    EXPECT_FALSE(hasCinemagraphInfo);
+
+    close(fd);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(testFile), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceLivePhotoCachePath_002, TestSize.Level0)
+{
+    string imagePath = "";
+    int32_t userId = 1;
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath(imagePath, userId), "");
+    imagePath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
+    string extraDataPath = "/storage/cloud/1/files/.cache/Photo/1/IMG_123435213_231.jpg/sourceLivePhoto.jpg";
+    EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath(imagePath, userId), extraDataPath);
+}
 } // namespace Media
 } // namespace OHOS

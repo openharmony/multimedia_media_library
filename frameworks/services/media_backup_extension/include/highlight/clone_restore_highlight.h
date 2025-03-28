@@ -127,6 +127,7 @@ private:
         std::optional<int32_t> isMuted;
         std::optional<int32_t> isFavorite;
         std::optional<std::string> theme;
+        std::optional<int32_t> useSubtitle;
 
         std::string ToString() const
         {
