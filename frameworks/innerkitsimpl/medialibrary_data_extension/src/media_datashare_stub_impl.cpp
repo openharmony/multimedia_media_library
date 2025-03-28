@@ -17,9 +17,11 @@
 #include "media_datashare_stub_impl.h"
 
 #include "media_log.h"
+#include "medialibrary_errno.h"
 
 namespace OHOS {
 namespace DataShare {
+using namespace OHOS::Media;
 std::shared_ptr<MediaDataShareExtAbility> MediaDataShareStubImpl::GetOwner()
 {
     return extension_;
@@ -191,6 +193,16 @@ Uri MediaDataShareStubImpl::DenormalizeUri(const Uri &uri)
     urivalue = extension->DenormalizeUri(uri);
     MEDIA_DEBUG_LOG("end successfully.");
     return urivalue;
+}
+
+int32_t MediaDataShareStubImpl::UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option)
+{
+    auto client = sptr<MediaDataShareStubImpl>(this);
+    auto extension = client->GetOwner();
+    bool errConn = extension == nullptr;
+    CHECK_AND_RETURN_RET_LOG(!errConn, E_ERR, "%{public}s end failed.", __func__);
+    auto ret = extension->UserDefineFunc(data, reply, option);
+    return ret;
 }
 } // namespace DataShare
 } // namespace OHOS

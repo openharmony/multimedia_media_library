@@ -34,6 +34,7 @@ group("test") {
     "unittest/medialibrary_app_uri_permission_operations_test:unittest",
     "unittest/medialibrary_app_uri_sensitive_operations_test:unittest",
     "unittest/medialibrary_astc_phase_test:unittest",
+    "unittest/medialibrary_astc_phase_test:unittest",
     "unittest/medialibrary_audio_operations_test:unittest",
     "unittest/medialibrary_cloud_asset_download_test:unittest",
     "unittest/medialibrary_cloud_enhancement_test:unittest",
