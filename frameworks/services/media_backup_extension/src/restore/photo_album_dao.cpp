@@ -42,10 +42,8 @@ bool PhotoAlbumDao::CheckAlbumNameUnique(const std::string &albumName, const std
 {
     std::vector<NativeRdb::ValueObject> bindArgs = {albumName, lPath};
     std::string querySql = this->SQL_PHOTO_ALBUM_CHECK_ALBUM_NAME_UNIQUE;
-    if (this->mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, true,
+        "Media_Restore: mediaLibraryRdb_ is null.");
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
     bool cond = (resultSet == nullptr || resultSet->GoToNextRow() != NativeRdb::E_OK);
     CHECK_AND_RETURN_RET_LOG(!cond, true, "Media_Restore: Query resultSql is null.");
@@ -63,9 +61,8 @@ std::string PhotoAlbumDao::FindUniqueAlbumName(const PhotoAlbumDao::PhotoAlbumRo
     const std::string lPath = photoAlbum.lPath;
     // The PhotoAlbum is cached.
     PhotoAlbumDao::PhotoAlbumRowData albumDataInCache;
-    if (this->photoAlbumCache_.Find(StringUtils::ToLower(lPath), albumDataInCache)) {
-        return albumDataInCache.albumName;
-    }
+    CHECK_AND_RETURN_RET(!this->photoAlbumCache_.Find(StringUtils::ToLower(lPath), albumDataInCache),
+        albumDataInCache.albumName);
     // Check if the album name is unique.
     std::string albumName = photoAlbum.albumName;
     int32_t sequence = 1;
@@ -94,15 +91,9 @@ std::vector<PhotoAlbumDao::PhotoAlbumRowData> PhotoAlbumDao::GetPhotoAlbums()
     int pageSize = 200;
     do {
         std::vector<NativeRdb::ValueObject> bindArgs = {offset, pageSize};
-        if (this->mediaLibraryRdb_ == nullptr) {
-            MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(this->mediaLibraryRdb_ != nullptr, "Media_Restore: mediaLibraryRdb_ is null.");
         auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Media_Restore: Query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "Media_Restore: Query resultSql is null.");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             PhotoAlbumDao::PhotoAlbumRowData albumRowData;
             albumRowData.albumId = GetInt32Val(this->FIELD_NAME_ALBUM_ID, resultSet);
@@ -129,9 +120,7 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     std::unique_lock<std::mutex> lock(this->cacheLock_);
     // find the PhotoAlbum info by lPath in cache
     PhotoAlbumDao::PhotoAlbumRowData albumRowData;
-    if (this->photoAlbumCache_.Find(StringUtils::ToLower(lPath), albumRowData)) {
-        return albumRowData;
-    }
+    CHECK_AND_RETURN_RET(!this->photoAlbumCache_.Find(StringUtils::ToLower(lPath), albumRowData), albumRowData);
     MEDIA_INFO_LOG("Media_Restore: can not find the PhotoAlbum info by lPath in cache."
                    " lPath=%{public}s, lPath in cache=%{public}s",
         lPath.c_str(),
@@ -139,10 +128,8 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetPhotoAlbum(const std::string 
     // query the PhotoAlbum info by lPath from PhotoAlbum table
     std::vector<NativeRdb::ValueObject> bindArgs = {lPath};
     std::string querySql = this->SQL_PHOTO_ALBUM_SELECT_BY_LPATH;
-    if (this->mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return albumRowData;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, albumRowData,
+        "Media_Restore: mediaLibraryRdb_ is null.");
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, bindArgs);
     bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
     CHECK_AND_RETURN_RET_LOG(!cond, albumRowData, "Media_Restore: can not find the PhotoAlbum info by"
@@ -175,16 +162,12 @@ PhotoAlbumDao::PhotoAlbumRowData PhotoAlbumDao::GetOrCreatePhotoAlbum(const Phot
     std::unique_lock<std::mutex> lock(this->photoAlbumCreateLock_);
     // try to get from cache
     PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->GetPhotoAlbum(album.lPath);
-    if (!albumRowData.lPath.empty()) {
-        return albumRowData;
-    }
+    CHECK_AND_RETURN_RET(albumRowData.lPath.empty(), albumRowData);
     std::string uniqueAlbumName = this->FindUniqueAlbumName(album);
     std::vector<NativeRdb::ValueObject> bindArgs = {
         album.albumType, album.albumSubType, uniqueAlbumName, album.bundleName, album.lPath, album.priority};
-    if (this->mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return album;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, album,
+        "Media_Restore: mediaLibraryRdb_ is null.");
     auto err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, album, "Media_Restore: INSERT INTO PhotoAlbum failed,"
         "err = %{public}d, executeSql = %{public}s, bindArgs = %{public}s",
@@ -209,33 +192,22 @@ std::string PhotoAlbumDao::ToString(const std::vector<NativeRdb::ValueObject> &b
  */
 int32_t PhotoAlbumDao::RestoreAlbums(std::vector<PhotoAlbumDao::PhotoAlbumRowData> &photoAlbums)
 {
-    if (photoAlbums.empty()) {
-        MEDIA_INFO_LOG("Media_Restore: albumInfos are empty");
-        return NativeRdb::E_OK;
-    }
+    CHECK_AND_RETURN_RET_INFO_LOG(!photoAlbums.empty(), NativeRdb::E_OK, "Media_Restore: albumInfos are empty");
     int32_t err = NativeRdb::E_OK;
-    if (this->mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, E_FAIL, "Media_Restore: mediaLibraryRdb_ is null.");
     int32_t count = 0;
     for (const PhotoAlbumDao::PhotoAlbumRowData &data : photoAlbums) {
-        if (data.lPath.empty() || data.albumName.empty()) {
-            MEDIA_ERR_LOG("Media_Restore: restore albums failed, lPath or albumName is empty. Object: %{public}s",
-                this->ToString(data).c_str());
-            continue;
-        }
+        bool cond = (data.lPath.empty() || data.albumName.empty());
+        CHECK_AND_CONTINUE_ERR_LOG(!cond,
+            "Media_Restore: restore albums failed, lPath or albumName is empty. Object: %{public}s",
+            this->ToString(data).c_str());
         std::vector<NativeRdb::ValueObject> bindArgs = {
             data.albumType, data.albumSubType, data.albumName, data.bundleName, data.lPath, data.priority};
         err = BackupDatabaseUtils::ExecuteSQL(this->mediaLibraryRdb_, this->SQL_PHOTO_ALBUM_INSERT, bindArgs);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Media_Restore: restore albums failed, "
-                          "err = %{public}d, executeSql = %{public}s, bindArgs = %{public}s",
-                err,
-                this->SQL_PHOTO_ALBUM_INSERT.c_str(),
-                this->ToString(bindArgs).c_str());
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(err == NativeRdb::E_OK,
+            "Media_Restore: restore albums failed, "
+            "err = %{public}d, executeSql = %{public}s, bindArgs = %{public}s",
+            err, this->SQL_PHOTO_ALBUM_INSERT.c_str(), this->ToString(bindArgs).c_str());
         count++;
     }
     MEDIA_INFO_LOG("Media_Restore: restore albums success, total %{public}d, restored %{public}d",
@@ -264,9 +236,7 @@ void PhotoAlbumDao::LoadPhotoAlbums()
 {
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> photoAlbums = this->GetPhotoAlbums();
     for (const auto &album : photoAlbums) {
-        if (album.lPath.empty()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(!album.lPath.empty());
         this->photoAlbumCache_.Insert(StringUtils::ToLower(album.lPath), album);
     }
     MEDIA_INFO_LOG(
@@ -288,9 +258,7 @@ std::string PhotoAlbumDao::ParseSourcePathToLPath(const std::string &sourcePath)
         start_pos += GALLERT_ROOT_PATH.length();
         result = sourcePath.substr(start_pos, end_pos - start_pos);
         start_pos = result.find_first_of("/");
-        if (start_pos != std::string::npos) {
-            result = result.substr(start_pos);
-        }
+        CHECK_AND_EXECUTE(start_pos == std::string::npos, result = result.substr(start_pos));
     }
     return result;
 }
