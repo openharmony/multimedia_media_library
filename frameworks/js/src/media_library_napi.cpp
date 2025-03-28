@@ -7267,6 +7267,7 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
             GetUserIdFromContext(context));
     }
     if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet is nullptr, errCode is %{public}d", errCode);
         context->SaveError(errCode);
         return;
     }
