@@ -38,12 +38,18 @@ class ThumbnailBatchGenerateObserver : public DataShare::DataShareObserver {
     public:
         ThumbnailBatchGenerateObserver() = default;
         ~ThumbnailBatchGenerateObserver() = default;
+
+        void OnChange(const ChangeInfo &changeInfo) override;
 };
-    
+
+using ThreadFunciton = std::function<void(ani_env*, ani_object, void*, void*)>;
 class ThumbnailGenerateHandler {
 public:
-    ThumbnailGenerateHandler() = default;
+    ThumbnailGenerateHandler(ani_object ref, ThreadFunciton func) : callbackRef_(ref), threadSafeFunc_(func) {}
     ~ThumbnailGenerateHandler() = default;
+
+    ani_object callbackRef_;
+    ThreadFunciton threadSafeFunc_;
 };
 
 class MediaLibraryAni {
@@ -66,6 +72,9 @@ public:
     static std::mutex sUserFileClientMutex_;
     static void PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_int taskId);
+    static ani_int PhotoAccessStartCreateThumbnailTask([[maybe_unused]] ani_env *env,
+        [[maybe_unused]] ani_object object, ani_object predicate);
+    static void OnThumbnailGenerated(ani_env *env, ani_object callback, void *context, void *data);
 
 private:
     ani_env *env_;
@@ -135,6 +144,7 @@ struct MediaLibraryAsyncContext : public AniError {
     std::string indexProgress;
     std::shared_ptr<PickerCallBack> pickerCallBack;
     std::vector<std::string> analysisDatas;
+    ani_object callback;
 };
 } // namespace Media
 } // namespace OHOS
