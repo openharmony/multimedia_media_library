@@ -880,7 +880,7 @@ function RecommendationOptions() {
 }
 
 function encrypt(data) {
-  if (data?.indexOf('file:///data/storage/') !== -1) {
+  if (!data || data?.indexOf('file:///data/storage/') !== -1) {
     return '';
   }
   return data.replace(/(\/\w+)\./g, '/******.');
