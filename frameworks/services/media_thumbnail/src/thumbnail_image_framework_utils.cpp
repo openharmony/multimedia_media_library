@@ -188,6 +188,8 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyNoSurfaceBufferYuvPi
     opts.size.height = pixelMap->GetHeight();
     opts.pixelFormat = pixelMap->GetPixelFormat();
     std::shared_ptr<PixelMap> copyPixelMap = PixelMap::Create(opts);
+    CHECK_AND_RETURN_RET_LOG(copyPixelMap != nullptr, nullptr, "Create pixelMap failed");
+
     int32_t copyRes = memcpy_s(copyPixelMap->GetWritablePixels(), pixelMap->GetByteCount(),
         startPtr, pixelMap->GetByteCount());
     CHECK_AND_RETURN_RET_LOG(copyRes == E_OK, nullptr,
