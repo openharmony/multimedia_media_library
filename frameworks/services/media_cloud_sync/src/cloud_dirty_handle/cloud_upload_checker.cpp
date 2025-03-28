@@ -60,7 +60,6 @@ const std::string SQL_PHOTOS_TABLE_QUERY_NO_ORIGIN_BUT_LCD_COUNT = "SELECT"
                                                                    " ( dirty = 100 OR dirty = 1 )"
                                                                    " AND thumbnail_ready >= 3"
                                                                    " AND lcd_visit_time >= 2"
-                                                                   " AND date_trashed = 0"
                                                                    " AND file_id > ?;";
 
 const std::string SQL_PHOTOS_TABLE_QUERY_NO_ORIGIN_BUT_LCD_PHOTO = "SELECT"
@@ -75,13 +74,13 @@ const std::string SQL_PHOTOS_TABLE_QUERY_NO_ORIGIN_BUT_LCD_PHOTO = "SELECT"
                                                                    " ( dirty = 100 OR dirty = 1 )"
                                                                    " AND thumbnail_ready >= 3"
                                                                    " AND lcd_visit_time >= 2"
-                                                                   " AND date_trashed = 0"
                                                                    " AND file_id > ?"
                                                                    " LIMIT ?;";
 
 void CloudUploadChecker::HandleNoOriginPhoto()
 {
     MEDIA_INFO_LOG("start handle no origin photo!");
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t errCode = E_OK;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(TASK_PROGRESS_XML, errCode);
@@ -95,7 +94,8 @@ void CloudUploadChecker::HandleNoOriginPhoto()
         prefs->PutInt(NO_ORIGIN_PHOTO_NUMBER, curFileId);
         prefs->FlushSync();
     }
-    MEDIA_INFO_LOG("end handle no origin photo!");
+    MEDIA_INFO_LOG(
+        "end handle no origin photo! cost: %{public}" PRId64, MediaFileUtils::UTCTimeMilliSeconds() - startTime);
     return;
 }
 
@@ -125,14 +125,14 @@ int32_t GetPhotoRealSize(const bool isMovingPhoto, const std::string &path, size
 void CloudUploadChecker::UpdateFileSize(const CheckedPhotoInfo &photoInfo, bool isMovingPhoto)
 {
     size_t size = 0;
-    if (GetPhotoRealSize(isMovingPhoto, photoInfo.path, size) != E_OK) {
-        MEDIA_ERR_LOG("get photo real size failed, path=%{public}s", photoInfo.path.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(GetPhotoRealSize(isMovingPhoto, photoInfo.path, size) == E_OK,
+        "get photo real size failed, path=%{public}s",
+        photoInfo.path.c_str());
 
-    if (photoInfo.size == size) {
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(photoInfo.size != size,
+        "no need to update db file size, file_id=%{public}d, size=%{public}zu",
+        photoInfo.fileId,
+        size);
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
@@ -146,9 +146,16 @@ void CloudUploadChecker::UpdateFileSize(const CheckedPhotoInfo &photoInfo, bool 
 
     int32_t updateCount = 0;
     int32_t err = rdbStore->Update(updateCount, values, predicates);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("update db file size failed, file_id=%{public}d, err=%{public}d", photoInfo.fileId, err);
-    }
+
+    CHECK_AND_RETURN_LOG(err == NativeRdb::E_OK,
+        "update db file size failed, file_id=%{public}d, err=%{public}d",
+        photoInfo.fileId,
+        err);
+
+    MEDIA_INFO_LOG("update db file size succeed, file_id=%{public}d, old size=%{public}zu, new size=%{public}zu",
+        photoInfo.fileId,
+        photoInfo.size,
+        size);
 }
 
 void CloudUploadChecker::HandleMissingFile(
@@ -161,14 +168,11 @@ void CloudUploadChecker::HandleMissingFile(
         return;
     }
 
-    MEDIA_INFO_LOG("lcd path exists but origin file not found, file_id: %{public}d", photoInfo.fileId);
+    CHECK_AND_RETURN_LOG(MediaFileUtils::CopyFileUtil(lcdPath, photoInfo.path),
+        "copy lcd to origin photo failed, file_id: %{public}d",
+        photoInfo.fileId);
 
-    bool ret = MediaFileUtils::CopyFileUtil(lcdPath, photoInfo.path);
-    if (!ret) {
-        MEDIA_ERR_LOG("copy lcd to origin photo failed, file_id: %{public}d, ret: %{public}d", photoInfo.fileId, ret);
-        return;
-    }
-
+    MEDIA_INFO_LOG("copy lcd to origin photo succeed, file_id: %{public}d", photoInfo.fileId);
     UpdateFileSize(photoInfo, isMovingPhoto);
 }
 
@@ -177,9 +181,7 @@ void CloudUploadChecker::HandlePhotoInfos(const std::vector<CheckedPhotoInfo> &p
     std::vector<std::string> noLcdList;
 
     for (const CheckedPhotoInfo &photoInfo : photoInfos) {
-        if (!MedialibrarySubscriber::IsCurrentStatusOn()) {
-            break;
-        }
+        CHECK_AND_BREAK_INFO_LOG(MedialibrarySubscriber::IsCurrentStatusOn(), "current status is off, break");
         curFileId = photoInfo.fileId;
         bool isMovingPhoto = IsMovingPhoto(photoInfo.subtype, photoInfo.movingPhotoEffectMode);
         if (MediaFileUtils::IsFileExists(photoInfo.path)) {
@@ -221,13 +223,10 @@ std::vector<CheckedPhotoInfo> CloudUploadChecker::QueryPhotoInfo(int32_t startFi
     CHECK_AND_RETURN_RET_LOG(cond, photoInfos, "resultSet is null or count is 0");
 
     do {
-        CheckedPhotoInfo photoInfo;
         std::string path =
             get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
-        if (path.empty()) {
-            MEDIA_WARN_LOG("Failed to get data path");
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(!path.empty(), "Failed to get data path");
+        CheckedPhotoInfo photoInfo;
         photoInfo.fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
         photoInfo.path = path;
         photoInfo.size =
@@ -255,10 +254,7 @@ int32_t CloudUploadChecker::QueryLcdPhotoCount(int32_t startFileId)
 void CloudUploadChecker::RepairNoOriginPhoto()
 {
     std::unique_lock<std::mutex> lock(mutex_, std::defer_lock);
-    if (!lock.try_lock()) {
-        MEDIA_WARN_LOG("Repairing no origin photos has started, skipping this operation");
-        return;
-    }
+    CHECK_AND_RETURN_WARN_LOG(lock.try_lock(), "Repairing no origin photos has started, skipping this operation");
     MEDIA_INFO_LOG("start repair no origin photo!");
     int32_t errCode = E_OK;
     shared_ptr<NativePreferences::Preferences> prefs =
@@ -266,7 +262,7 @@ void CloudUploadChecker::RepairNoOriginPhoto()
     CHECK_AND_RETURN_LOG(prefs, "get preferences error: %{public}d", errCode);
     int scanlineVersion = prefs->GetInt(SCANLINE_VERSION, SCANLINE_DEFAULT_VERSION);
     MEDIA_INFO_LOG("scanline version: %{public}d", scanlineVersion);
-    if (scanlineVersion != SCANLINE_CURRENT_VERSION) {
+    if (scanlineVersion < SCANLINE_CURRENT_VERSION) {
         prefs->PutInt(NO_ORIGIN_PHOTO_NUMBER, 0);
         prefs->PutInt(SCANLINE_VERSION, SCANLINE_CURRENT_VERSION);
         prefs->FlushSync();
