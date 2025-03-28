@@ -478,9 +478,12 @@ int32_t CloneRestore::GetHighlightCloudMediaCnt()
         "INNER JOIN Photos AS p ON p.file_id = m.map_asset "
         "WHERE a.album_subtype IN (4104, 4105) AND p.position = 2";
     std::shared_ptr<NativeRdb::ResultSet> resultSet = BackupDatabaseUtils::QuerySql(this->mediaRdb_, QUERY_SQL, {});
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    bool cond = (resultSet == nullptr);
     CHECK_AND_RETURN_RET_LOG(!cond, -1, "query count of highlight cloud media failed.");
-
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return -1;
+    }
     int32_t cnt = GetInt32Val("count", resultSet);
     MEDIA_INFO_LOG("GetHighlightCloudMediaCnt is %{public}d", cnt);
     resultSet->Close();
@@ -775,10 +778,15 @@ int32_t CloneRestore::QueryTotalNumber(const string &tableName)
     string whereClause = GetQueryWhereClauseByTable(tableName);
     querySql += whereClause.empty() ? "" : " WHERE " + whereClause;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
+        return 0;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
         return 0;
     }
     int32_t result = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
+    resultSet->Close();
     return result;
 }
 
@@ -806,6 +814,7 @@ vector<AlbumInfo> CloneRestore::QueryAlbumInfos(const string &tableName, int32_t
             result.emplace_back(albumInfo);
         }
     }
+    resultSet->Close();
     return result;
 }
 
@@ -1397,6 +1406,7 @@ void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
         fileInfos[index].fileIdNew = fileId;
         fileInfos[index].newAstcDateKey = dateTaken;
     }
+    resultSet->Close();
     BackupDatabaseUtils::UpdateAssociateFileId(mediaLibraryRdb_, fileInfos);
 }
 
@@ -1459,9 +1469,14 @@ bool CloneRestore::HasSameAlbum(const AlbumInfo &albumInfo, const string &tableN
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
         PhotoAlbumColumns::ALBUM_NAME + " = '" + albumInfo.albumName + "'";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    bool cond = (resultSet == nullptr);
     CHECK_AND_RETURN_RET(!cond, false);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return false;
+    }
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
+    resultSet->Close();
     return count > 0;
 }
 
@@ -1479,6 +1494,7 @@ void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &
         albumInfo.albumIdNew = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         CHECK_AND_CONTINUE(albumInfo.albumIdNew > 0);
         albumIdMap[albumInfo.albumIdOld] = albumInfo.albumIdNew;
+        resultSet->Close();
     }
 }
 
@@ -1717,6 +1733,7 @@ vector<FileInfo> CloneRestore::QueryFileInfos(const string &tableName, int32_t o
             result.emplace_back(fileInfo);
         }
     }
+    resultSet->Close();
     return result;
 }
 
@@ -1876,9 +1893,14 @@ int32_t CloneRestore::QueryTotalNumberByMediaType(shared_ptr<NativeRdb::RdbStore
     string whereClause = GetQueryWhereClauseByTable(tableName);
     querySql += whereClause.empty() ? "" : " AND " + whereClause;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    bool cond = (resultSet == nullptr);
     CHECK_AND_RETURN_RET(!cond, 0);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return 0;
+    }
     int32_t result = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
+    resultSet->Close();
     return result;
 }
 
@@ -2044,6 +2066,7 @@ vector<MapInfo> CloneRestore::QueryMapInfos(const string &tableName, const strin
         mapInfo.fileId = fileIdMap.at(fileIdOld);
         mapInfos.emplace_back(mapInfo);
     }
+    resultSet->Close();
     return mapInfos;
 }
 
@@ -2184,7 +2207,7 @@ vector<AnalysisAlbumTbl> CloneRestore::QueryPortraitAlbumTbl(int32_t offset,
         ParsePortraitAlbumResultSet(resultSet, analysisAlbumTbl);
         result.emplace_back(analysisAlbumTbl);
     }
-
+    resultSet->Close();
     return result;
 }
 
@@ -2392,6 +2415,7 @@ std::unordered_set<std::string> CloneRestore::QueryAllPortraitAlbum()
         result.insert(dfxInfo);
     }
 
+    resultSet->Close();
     return result;
 }
 
@@ -2476,6 +2500,7 @@ std::vector<FaceTagTbl> CloneRestore::QueryFaceTagTbl(int32_t offset, const std:
         result.emplace_back(faceTagTbl);
     }
 
+    resultSet->Close();
     return result;
 }
 
@@ -2549,6 +2574,7 @@ std::vector<ImageFaceTbl> CloneRestore::QueryImageFaceTbl(int32_t offset, std::s
         result.emplace_back(imageFaceTbl);
     }
 
+    resultSet->Close();
     return result;
 }
 

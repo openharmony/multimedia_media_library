@@ -324,8 +324,12 @@ int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
         "AND (t2.story_id LIKE '%,'||t1.story_id||',%' OR t2.portrait_id LIKE '%,'||t1.story_id||',%'))";
     std::shared_ptr<NativeRdb::ResultSet> resultSet =
         BackupDatabaseUtils::QuerySql(this->galleryRdb_, QUERY_SQL, {});
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query count of highlight cloud media failed.");
+        return -1;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
         return -1;
     }
     int32_t cnt = GetInt32Val("count", resultSet);
@@ -986,6 +990,7 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
 
         result.emplace_back(portraitAlbumInfo);
     }
+    resultSet->Close();
     return result;
 }
 
@@ -1091,6 +1096,7 @@ void UpgradeRestore::BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlb
         CHECK_AND_CONTINUE(!cond);
         portraitAlbumIdMap_[tagId] = albumId;
     }
+    resultSet->Close();
 }
 
 bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)
@@ -1112,6 +1118,8 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         CHECK_AND_CONTINUE(!hash.empty());
         needQuerySet.insert(hash);
     }
+    resultSet->Close();
+
     CHECK_AND_RETURN_RET(!needQuerySet.empty(), false);
     needQueryMap[PhotoRelatedType::PORTRAIT] = needQuerySet;
     return true;
@@ -1216,6 +1224,7 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
         }
         result.emplace_back(faceInfo);
     }
+    resultSet->Close();
     return result;
 }
 
