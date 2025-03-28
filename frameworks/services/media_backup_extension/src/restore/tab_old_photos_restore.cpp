@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "TabOldPhotosRestore"
 
 #include "tab_old_photos_restore.h"
 
@@ -25,25 +26,21 @@ namespace OHOS::Media {
 int32_t TabOldPhotosRestore::Restore(
     std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr, const std::vector<FileInfo> &fileInfos)
 {
-    CHECK_AND_RETURN_RET_LOG(rdbStorePtr != nullptr, NativeRdb::E_DB_NOT_EXIST,
-        "rdbStorePtr is nullptr, Maybe init failed");
-
     int64_t startSet = MediaFileUtils::UTCTimeSeconds();
     TabOldPhotosRestoreHelper restoreHelper;
     restoreHelper.SetPlaceHoldersAndBindArgs(fileInfos);
-    CHECK_AND_RETURN_RET_LOG(!restoreHelper.IsEmpty(), NativeRdb::E_ERROR, "restoreHelper is empty");
+    CHECK_AND_RETURN_RET(!restoreHelper.IsEmpty(), NativeRdb::E_OK);
 
     int64_t startInsert = MediaFileUtils::UTCTimeSeconds();
-    std::string insertSql = restoreHelper.GetInsertSql();
-    std::vector<NativeRdb::ValueObject> bindArgs = restoreHelper.GetBindArgs();
-    int32_t ret = rdbStorePtr->ExecuteSql(insertSql, bindArgs);
+    int32_t ret = restoreHelper.InsertIntoTable(rdbStorePtr);
     CHECK_AND_EXECUTE(ret == NativeRdb::E_OK,
-        MEDIA_ERR_LOG("Media_Restore: TabOldPhotosRestore failed, ret=%{public}d, executeSql=%{public}s, "
-            "bindArgs: %{public}s", ret, insertSql.c_str(), this->ToString(bindArgs).c_str()));
+        MEDIA_ERR_LOG("Restore failed, ret=%{public}d, executeSql=%{public}s, bindArgs: %{public}s",
+            ret, restoreHelper.GetInsertSql().c_str(), ToString(restoreHelper.GetBindArgs()).c_str()));
 
     int64_t end = MediaFileUtils::UTCTimeSeconds();
-    MEDIA_INFO_LOG("Media_Restore: TabOldPhotosRestore set cost %{public}" PRId64 ", insert cost %{public}" PRId64,
+    MEDIA_INFO_LOG("Set cost %{public}" PRId64 ", insert cost %{public}" PRId64,
         startInsert - startSet, end - startInsert);
+    return ret;
 }
 
 std::string TabOldPhotosRestore::ToString(const std::vector<NativeRdb::ValueObject> &values)
@@ -71,6 +68,15 @@ void TabOldPhotosRestoreHelper::SetPlaceHoldersAndBindArgs(const std::vector<Fil
 bool TabOldPhotosRestoreHelper::IsEmpty()
 {
     return placeHolders_.empty() || bindArgs_.empty();
+}
+
+int32_t TabOldPhotosRestoreHelper::InsertIntoTable(std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStorePtr != nullptr, NativeRdb::E_DB_NOT_EXIST, "rdbStorePtr is nullptr");
+
+    std::string insertSql = GetInsertSql();
+    std::vector<NativeRdb::ValueObject> bindArgs = GetBindArgs();
+    return rdbStorePtr->ExecuteSql(insertSql, bindArgs);
 }
 
 std::string TabOldPhotosRestoreHelper::GetInsertSql()
