@@ -603,7 +603,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateBurstFromGallery faild");
     }
-    CloudUploadChecker::HandleNoOriginPhoto();
+    CloudUploadChecker::RepairNoOriginPhoto();
     ret = DoUpdateDateTakenWhenZero();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("DoUpdateDateTakenWhenZero faild");
