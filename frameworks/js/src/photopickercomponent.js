@@ -28,20 +28,12 @@ const fs = requireNapi('file.fs');
 const fileUri = requireNapi('file.fileuri');
 const bundleManager = requireNapi('bundle.bundleManager');
 const photoAccessHelper = requireNapi('file.photoAccessHelper');
-const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
-const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
-const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
-const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
-const JPEG_IMAGE_TYPE = 'JPEG_IMAGE_TYPE';
-const GIF_IMAGE_TYPE = 'GIF_IMAGE_TYPE';
-const PNG_IMAGE_TYPE = 'PNG_IMAGE_TYPE';
-const HEIC_IMAGE_TYPE = 'HEIC_IMAGE_TYPE';
-const HEIF_IMAGE_TYPE = 'HEIF_IMAGE_TYPE';
-const BMP_IMAGE_TYPE = 'BMP_IMAGE_TYPE';
-const WEBP_IMAGE_TYPE = 'WEBP_IMAGE_TYPE';
-const AVIF_IMAGE_TYPE = 'AVIF_IMAGE_TYPE';
-const MP4_VIDEO_TYPE = 'MP4_VIDEO_TYPE';
-const MOV_VIDEO_TYPE = 'MOV_VIDEO_TYPE';
+const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
+    ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
+    ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
+    ['video/*', 'FILTER_MEDIA_TYPE_VIDEO'],
+    ['image/movingPhoto', 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO']
+])
 
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
@@ -238,7 +230,7 @@ export class PhotoPickerComponent extends ViewPU {
                     uri: 'multipleselect',
                     targetPage: 'photoPage',
                     filterMediaType: this.convertMIMETypeToFilterType(null === (t = this.pickerOptions) || void 0 === t ? void 0 : t.MIMEType),
-                    MIMETypeFilter: this.parseMIMETypeFilter(null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.MIMETypeFilter),
+                    mimeTypeFilter: this.parseMimeTypeFilter(null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.mimeTypeFilter),
                     fileSizeFilter: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.fileSizeFilter,
                     videoDurationFilter: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.videoDurationFilter,
                     maxSelectNumber: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.maxSelectNumber,
@@ -423,18 +415,18 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onReceive: handleSaveCallback');
     }
 
-    parseMIMETypeFilter(filter) {
+    parseMimeTypeFilter(filter) {
         if (!filter) {
             return undefined;
         }
         let o = {};
-        o.MIMETypeArray = [];
-        if (filter.MIMETypeArray) {
-            for (let mimeType of filter.MIMETypeArray) {
+        o.mimeTypeArray = [];
+        if (filter.mimeTypeArray) {
+            for (let mimeType of filter.mimeTypeArray) {
                 if (PHOTO_VIEW_MIME_TYPE_MAP.has(mimeType)) {
-                    o.MIMETypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+                    o.mimeTypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
                   } else {
-                    o.MIMETypeArray.push(mimeType);
+                    o.mimeTypeArray.push(mimeType);
                 }
             }
         }
@@ -443,34 +435,10 @@ export class PhotoPickerComponent extends ViewPU {
 
     convertMIMETypeToFilterType(e) {
         let o;
-        if (e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
-            o = FILTER_MEDIA_TYPE_IMAGE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
-            o = FILTER_MEDIA_TYPE_VIDEO;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
-            o = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.JPEG_IMAGE_TYPE) {
-            o = JPEG_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.GIF_IMAGE_TYPE) {
-            o = GIF_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.PNG_IMAGE_TYPE) {
-            o = PNG_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.HEIC_IMAGE_TYPE) {
-            o = HEIC_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.HEIF_IMAGE_TYPE) {
-            o = HEIF_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.BMP_IMAGE_TYPE) {
-            o = BMP_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.WEBP_IMAGE_TYPE) {
-            o = WEBP_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.AVIF_IMAGE_TYPE) {
-            o = AVIF_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.MP4_VIDEO_TYPE) {
-            o = MP4_VIDEO_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.MOV_VIDEO_TYPE) {
-            o = MOV_VIDEO_TYPE;
+        if (PHOTO_VIEW_MIME_TYPE_MAP.has(e)) {
+            o = PHOTO_VIEW_MIME_TYPE_MAP.get(e);
         } else {
-            o = FILTER_MEDIA_TYPE_ALL;
+            o = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*');
         }
         console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(o));
         return o;
