@@ -2956,17 +2956,17 @@ int32_t MediaLibraryDataManager::UpdateBurstCoverLevelFromGallery()
 }
 
 int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryCommand &cmd,
-const vector<DataShareValuesBucket> &values)
+    const vector<DataShareValuesBucket> &values)
 {
     if (values.empty()) {
         return E_FAIL;
     }
 
-    if (MediaLibraryRestore::GetInstance.isBackuping() && !MediaLibraryRestore::GetInstance.IsWaiting()){
+    if (MediaLibraryRestore::GetInstance().isBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()){
         MEDIA_INFO_LOG("[BatchInsertMediaAnalysisData] rdb is backuping");
         return E_FAIL;
     }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance.GetRdbStore();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
@@ -2982,20 +2982,19 @@ const vector<DataShareValuesBucket> &values)
         case OperationObject::USER_PHOTOGRAPHY:
         case OperationObject::ANALYSIS_ASSET_SD_MAP:
         case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
-        case OperationObject::ANALYSIS_PHOTO_MAP:
-        {
+        case OperationObject::ANALYSIS_PHOTO_MAP: {
             std::vector<ValuesBucket> insertValues;
             for (auto value : values){
                 ValuesBucket valueInsert = RdbUtils::ToValuesBucket(value);
                 insertValues.push_back(valueInsert);
             }
-            int64_t outRowld = -1;
+            int64_t outRowId = -1;
             int32_t ret = rdbStore->BatchInsert(outRowld,cmd.GetTableName(),insertValues);
             if (ret != NativeRdb::E_OK) {
-                MEDIA_INFO_LOG("Batch insert media analysis values fail， err = %{public}d", ret);
+                MEDIA_ERR_LOG("Batch insert media analysis values fail， err = %{public}d", ret);
                 return E_FAIL;
             }
-            return outRowld;
+            return outRowId;
         }
         default:
             break;     
