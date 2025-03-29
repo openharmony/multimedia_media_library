@@ -843,9 +843,7 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
         }
     }
     vector<int64_t> formIds;
-    for (const auto &notifyUri : notifyUris) {
-        MediaLibraryFormMapOperations::GetFormMapFormId(notifyUri.c_str(), formIds);
-    }
+    MediaLibraryFormMapOperations::GetFormIdsByUris(notifyUris, formIds);
     if (!formIds.empty()) {
         MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
     }
@@ -904,9 +902,11 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
         " LIMIT 1"
         ") "
         "WHERE file_id IN (" + inClause + ")";
-
-    int32_t result = rdbStore->ExecuteSql(updateSql);
-    CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Failed to update source path, error code: %{private}d", result);
+    std::thread([=] {
+        int32_t result = rdbStore->ExecuteSql(updateSql);
+        CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Failed to update source path, error code: %{private}d",
+            result);
+    }).detach();
 }
 
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
