@@ -2962,7 +2962,7 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
         return E_FAIL;
     }
 
-    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+    if (MediaLibraryRestore::GetInstance().IsRealBackuping()) {
         MEDIA_INFO_LOG("[BatchInsertMediaAnalysisData] rdb is backuping");
         return E_FAIL;
     }
@@ -2991,7 +2991,7 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
             }
             int64_t outRowId = -1;
             int32_t ret = rdbStore->BatchInsert(outRowId, cmd.GetTableName(), insertValues);
-            if (ret != NativeRdb::E_OK) {
+            if (ret != NativeRdb::E_OK || outRowId < 0) {
                 MEDIA_ERR_LOG("Batch insert media analysis values fail, err = %{public}d", ret);
                 return E_FAIL;
             }
