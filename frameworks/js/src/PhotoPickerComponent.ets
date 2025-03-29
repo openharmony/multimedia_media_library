@@ -18,23 +18,15 @@ import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { bundleManager } from '@kit.AbilityKit';
 
-const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
-const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
-const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
-const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
-const JPEG_IMAGE_TYPE = 'JPEG_IMAGE_TYPE';
-const GIF_IMAGE_TYPE = 'GIF_IMAGE_TYPE';
-const PNG_IMAGE_TYPE = 'PNG_IMAGE_TYPE';
-const HEIC_IMAGE_TYPE = 'HEIC_IMAGE_TYPE';
-const HEIF_IMAGE_TYPE = 'HEIF_IMAGE_TYPE';
-const BMP_IMAGE_TYPE = 'BMP_IMAGE_TYPE';
-const WEBP_IMAGE_TYPE = 'WEBP_IMAGE_TYPE';
-const AVIF_IMAGE_TYPE = 'AVIF_IMAGE_TYPE';
-const MP4_VIDEO_TYPE = 'MP4_VIDEO_TYPE';
-const MOV_VIDEO_TYPE = 'MOV_VIDEO_TYPE';
+const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
+    ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
+    ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
+    ['video/*', 'FILTER_MEDIA_TYPE_VIDEO'],
+    ['image/movingPhoto', 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO']
+])
 
-interface MIMETypeFilter {
-  MIMETypeArray: string[],
+interface MimeTypeFilter {
+  mimeTypeArray: string[],
   filterType: number
 }
 
@@ -172,7 +164,7 @@ export struct PhotoPickerComponent {
             uri: "multipleselect",
             targetPage: "photoPage",
             filterMediaType: this.convertMIMETypeToFilterType(this.pickerOptions?.MIMEType),
-            MIMETypeFilter: this.parseMIMETypeFilter(this.pickerOptions?.MIMETypeFilter),
+            mimeTypeFilter: this.parseMimeTypeFilter(this.pickerOptions?.mimeTypeFilter),
             fileSizeFilter: this.pickerOptions?.fileSizeFilter,
             videoDurationFilter: this.pickerOptions?.videoDurationFilter,
             maxSelectNumber: this.pickerOptions?.maxSelectNumber as number,
@@ -389,55 +381,31 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onReceive: handleSaveCallback');
   }
 
-  parseMIMETypeFilter(filter?: photoAccessHelper.MIMETypeFilter): object | undefined {
+  parseMimeTypeFilter(filter?: photoAccessHelper.MimeTypeFilter): object | undefined {
     if (!filter) {
       return undefined;
     }
-    let MIMETypeFilterObj: photoAccessHelper.MIMETypeFilter = {
-      MIMETypeArray: [],
+    let MimeTypeFilterObj: photoAccessHelper.MimeTypeFilter = {
+      mimeTypeArray: [],
     };
-    if (filter.MIMETypeArray) {
-      for (let mimeType of filter.MIMETypeArray) {
+    if (filter.mimeTypeArray) {
+      for (let mimeType of filter.mimeTypeArray) {
         if (PHOTO_VIEW_MIME_TYPE_MAP.has(mimeType)) {
-          o.MIMETypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+          o.mimeTypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
         } else {
-          o.MIMETypeArray.push(mimeType);
+          o.mimeTypeArray.push(mimeType);
         }
       }
     }
-    return MIMETypeFilterObj;
+    return MimeTypeFilterObj;
   }
 
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
     let filterType: string;
-    if (mimeType === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
-      filterType = FILTER_MEDIA_TYPE_IMAGE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
-      filterType = FILTER_MEDIA_TYPE_VIDEO;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
-      filterType = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.JPEG_IMAGE_TYPE) {
-      filterType = JPEG_IMAGE_TYPE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.GIF_IMAGE_TYPE) {
-      filterType = GIF_IMAGE_TYPE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.PNG_IMAGE_TYPE) {
-      filterType = PNG_IMAGE_TYPE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.HEIC_IMAGE_TYPE) {
-      filterType = HEIC_IMAGE_TYPE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.HEIF_IMAGE_TYPE) {
-      filterType = HEIF_IMAGE_TYPE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.BMP_IMAGE_TYPE) {
-      filterType = BMP_IMAGE_TYPE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.WEBP_IMAGE_TYPE) {
-      filterType = WEBP_IMAGE_TYPE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.AVIF_IMAGE_TYPE) {
-      filterType = AVIF_IMAGE_TYPE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.MP4_VIDEO_TYPE) {
-      filterType = MP4_VIDEO_TYPE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.MOV_VIDEO_TYPE) {
-      filterType = MOV_VIDEO_TYPE;
+    if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
     } else {
-      filterType = FILTER_MEDIA_TYPE_ALL;
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*);
     }
     console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;

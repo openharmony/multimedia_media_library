@@ -721,7 +721,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
     config.parameters.userId = option.userId;
-    config.parameters.MIMETypeFilter = parseMIMETypeFilter(option.MIMETypeFilter);
+    config.parameters.mimeTypeFilter = parseMimeTypeFilter(option.mimeTypeFilter);
     config.parameters.fileSizeFilter = option.fileSizeFilter;
     config.parameters.videoDurationFilter = option.videoDurationFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
@@ -730,18 +730,18 @@ function parsePhotoPickerSelectOption(args) {
   return config;
 }
 
-function parseMIMETypeFilter(filter) {
+function parseMimeTypeFilter(filter) {
   if (!filter) {
       return undefined;
   }
   let o = {};
-  o.MIMETypeArray = [];
-  if (filter.MIMETypeArray) {
-    for (let mimeType of filter.MIMETypeArray) {
+  o.mimeTypeArray = [];
+  if (filter.mimeTypeArray) {
+    for (let mimeType of filter.mimeTypeArray) {
       if (PHOTO_VIEW_MIME_TYPE_MAP.has(mimeType)) {
-        o.MIMETypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+        o.mimeTypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
       } else {
-        o.MIMETypeArray.push(mimeType);
+        o.mimeTypeArray.push(mimeType);
       }
     }
   }
@@ -833,8 +833,8 @@ async function checkInteractAcrossLocalAccounts() {
   }
 }
 
-function MIMETypeFilter() {
-  this.MIMETypeArray = [];
+function MimeTypeFilter() {
+  this.mimeTypeArray = [];
 }
 
 function FileSizeFilter() {
@@ -953,7 +953,7 @@ export default {
   HighlightUserActionType: photoAccessHelper.HighlightUserActionType,
   RequestPhotoType: photoAccessHelper.RequestPhotoType,
   PhotoViewMIMETypes: PhotoViewMIMETypes,
-  MIMETypeFilter: MIMETypeFilter,
+  MimeTypeFilter: MimeTypeFilter,
   FileSizeFilter: FileSizeFilter,
   VideoDurationFilter: VideoDurationFilter,
   FilterOperator: FilterOperator,
