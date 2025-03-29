@@ -1072,6 +1072,12 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
         return E_INVALID_URI;
     }
+    
+    int insertResult= BatchInsertMediaAnalysisData(cmd, values);
+    if (insertResult > 0) {
+        return insertResult;
+    }
+
     int32_t rowCount = 0;
     for (auto it = values.begin(); it != values.end(); it++) {
         if (Insert(cmd, *it) >= 0) {
