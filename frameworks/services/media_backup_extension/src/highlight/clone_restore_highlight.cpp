@@ -413,11 +413,11 @@ void CloneRestoreHighlight::UpdateMapInsertValues(std::vector<NativeRdb::ValuesB
 void CloneRestoreHighlight::UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
     std::shared_ptr<NativeRdb::ResultSet> resultSet, std::unordered_map<int32_t, FileInfo> &fileInfoMap)
 {
-    std::optional<int32_t> oldFileId = BackupDataBaseUtils::GetOptionalValue<int32_t>(resultSet, "map_asset");
+    std::optional<int32_t> oldFileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "map_asset");
     bool exceptCond = oldFileId.has_value() && fileInfoMap.count(oldFileId.value()) > 0;
     CHECK_AND_RETURN_LOG(exceptCond, "the query oldFileId is invalid!");
     FileInfo fileInfo = fileInfoMap[oldFileId.value()];
-    std::optional<int32_t> oldAlbumId = BackupDataBaseUtils::GetOptionalValue<int32_t>(resultSet, "map_album");
+    std::optional<int32_t> oldAlbumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "map_album");
     CHECK_AND_RETURN_LOG(oldAlbumId.has_value(), "the query oldAlbumId is invalid!");
     auto it = std::find_if(analysisInfos_.begin(), analysisInfos_.end(),
         [oldAlbumId](const AnalysisAlbumInfo& info) {
