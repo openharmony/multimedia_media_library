@@ -133,7 +133,7 @@ HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_insert_into_table_failed
     TabOldPhotosRestoreHelper restoreHelper;
     restoreHelper.AddBindArgs(fileInfo); // insert sql & args incompatible
 
-    int32_t ret = restoreHelper.Insert(g_rdbStore->GetRaw());
+    int32_t ret = restoreHelper.InsertIntoTable(g_rdbStore->GetRaw());
     EXPECT_NE(ret, NativeRdb::E_OK);
     MEDIA_INFO_LOG("End tab_old_photos_helper_insert_into_table_failed_test_001");
 }

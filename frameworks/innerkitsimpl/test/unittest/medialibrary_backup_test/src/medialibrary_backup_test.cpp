@@ -36,6 +36,7 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "vision_db_sqls.h"
 #undef private
 #undef protected
 #include "mimetype_utils.h"
@@ -103,6 +104,7 @@ const vector<string> CLEAR_SQLS = {
     "DELETE FROM tab_analysis_image_face",
     "DELETE FROM tab_analysis_face_tag",
     "DELETE FROM tab_analysis_total",
+    CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
 };
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +

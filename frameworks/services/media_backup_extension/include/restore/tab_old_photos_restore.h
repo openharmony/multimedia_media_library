@@ -38,6 +38,7 @@ public:
     int32_t InsertIntoTable(std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr);
     std::string GetInsertSql();
     std::vector<NativeRdb::ValueObject> GetBindArgs();
+    size_t GetInsertSize();
 
 private:
     void AddPlaceHolders();
