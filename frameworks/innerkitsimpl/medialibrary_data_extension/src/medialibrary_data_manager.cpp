@@ -2962,10 +2962,11 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
         return E_FAIL;
     }
 
-    if (MediaLibraryRestore::GetInstance().isBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()){
+    if (MediaLibraryRestore::GetInstance().isBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
         MEDIA_INFO_LOG("[BatchInsertMediaAnalysisData] rdb is backuping");
         return E_FAIL;
     }
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
@@ -2989,17 +2990,17 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
                 insertValues.push_back(valueInsert);
             }
             int64_t outRowId = -1;
-            int32_t ret = rdbStore->BatchInsert(outRowld,cmd.GetTableName(),insertValues);
+            int32_t ret = rdbStore->BatchInsert(outRowId,cmd.GetTableName(),insertValues);
             if (ret != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("Batch insert media analysis values fail， err = %{public}d", ret);
+                MEDIA_ERR_LOG("Batch insert media analysis values fail, err = %{public}d", ret);
                 return E_FAIL;
             }
             return outRowId;
         }
         default:
-            break;     
+            break;
     }
-    return E_OK;
+    return E_FAIL;
 }
 }  // namespace Media
 }  // namespace OHOS
