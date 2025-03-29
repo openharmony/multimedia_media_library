@@ -850,4 +850,18 @@ bool MovingPhotoFileUtils::IsGraffiti(int32_t subtype, int32_t originalSubtype)
     return subtype == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
            originalSubtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
 }
+
+size_t MovingPhotoFileUtils::GetMovingPhotoSize(const std::string &imagePath, int32_t userId)
+{
+    string movingPhotoImagePath = AppendUserId(imagePath, userId);
+    string movingPhotoVideoPath = GetMovingPhotoVideoPath(imagePath, userId);
+    string movingPhotoExtraDataPath = GetMovingPhotoExtraDataPath(imagePath, userId);
+    size_t imageSize = 0;
+    size_t videoSize = 0;
+    size_t extraDataSize = 0;
+    (void)MediaFileUtils::GetFileSize(movingPhotoImagePath, imageSize);
+    (void)MediaFileUtils::GetFileSize(movingPhotoVideoPath, videoSize);
+    (void)MediaFileUtils::GetFileSize(movingPhotoExtraDataPath, extraDataSize);
+    return imageSize + videoSize + extraDataSize;
+}
 } // namespace OHOS::Media
