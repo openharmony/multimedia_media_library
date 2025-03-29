@@ -407,7 +407,7 @@ void CloneRestoreHighlight::UpdateMapInsertValues(std::vector<NativeRdb::ValuesB
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0)
+    } while (rowCount > 0);
 }
 
 void CloneRestoreHighlight::UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
