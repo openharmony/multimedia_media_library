@@ -24,16 +24,6 @@ const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
 const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
-const JPEG_IMAGE_TYPE = 'JPEG_IMAGE_TYPE';
-const GIF_IMAGE_TYPE = 'GIF_IMAGE_TYPE';
-const PNG_IMAGE_TYPE = 'PNG_IMAGE_TYPE';
-const HEIC_IMAGE_TYPE = 'HEIC_IMAGE_TYPE';
-const HEIF_IMAGE_TYPE = 'HEIF_IMAGE_TYPE';
-const BMP_IMAGE_TYPE = 'BMP_IMAGE_TYPE';
-const WEBP_IMAGE_TYPE = 'WEBP_IMAGE_TYPE';
-const AVIF_IMAGE_TYPE = 'AVIF_IMAGE_TYPE';
-const MP4_VIDEO_TYPE = 'MP4_VIDEO_TYPE';
-const MOV_VIDEO_TYPE = 'MOV_VIDEO_TYPE';
 
 export class RecentPhotoComponent extends ViewPU {
     constructor(j3, k3, l3, m3 = -1, n3 = undefined, o3) {
@@ -148,26 +138,6 @@ export class RecentPhotoComponent extends ViewPU {
             o = FILTER_MEDIA_TYPE_VIDEO;
         } else if (e === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
             o = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.JPEG_IMAGE_TYPE) {
-            o = JPEG_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.GIF_IMAGE_TYPE) {
-            o = GIF_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.PNG_IMAGE_TYPE) {
-            o = PNG_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.HEIC_IMAGE_TYPE) {
-            o = HEIC_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.HEIF_IMAGE_TYPE) {
-            o = HEIF_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.BMP_IMAGE_TYPE) {
-            o = BMP_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.WEBP_IMAGE_TYPE) {
-            o = WEBP_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.AVIF_IMAGE_TYPE) {
-            o = AVIF_IMAGE_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.MP4_VIDEO_TYPE) {
-            o = MP4_VIDEO_TYPE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.MOV_VIDEO_TYPE) {
-            o = MOV_VIDEO_TYPE;
         } else {
             o = FILTER_MEDIA_TYPE_ALL;
         }
