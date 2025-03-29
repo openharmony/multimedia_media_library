@@ -533,6 +533,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         AddAnalysisPhotoMapAssetIndex(rdbStore);
         rdbStore->SetOldVersion(VERSION_ADD_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX);
     }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY) {
+        MediaLibraryRdbStore::UpdateMdirtyTriggerForTdirty(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY);
+    }
 }
 
 void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)

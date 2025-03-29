@@ -55,6 +55,11 @@ const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_SOURCE_LO
     { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
 };
 
+const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_ORIGIN_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::CLOUD_ORIGIN },
+    { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
+};
+
 const std::unordered_map<SourceState, SourceState> SourceLoader::ALL_SOURCE_LOADING_STATES = {
     { SourceState::BEGIN, SourceState::LOCAL_THUMB },
     { SourceState::LOCAL_THUMB, SourceState::LOCAL_LCD },
@@ -428,7 +433,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
 bool SourceLoader::CreateSourcePixelMap()
 {
-    if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO) {
+    if (data_.mediaType == MEDIA_TYPE_VIDEO) {
         return CreateVideoFramePixelMap();
     }
 
@@ -738,10 +743,9 @@ bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 std::string CloudOriginSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
-        // avoid opening cloud origin video file.
-        MEDIA_ERR_LOG("avoid opening cloud origin video file path:%{public}s",
+        MEDIA_ERR_LOG("Opening cloud origin video file, path:%{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
-        return "";
+        return data.path;
     }
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!IsCloudSourceAvailable(data.path)) {

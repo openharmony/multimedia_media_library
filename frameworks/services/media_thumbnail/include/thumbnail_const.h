@@ -126,6 +126,7 @@ const std::string THUMBNAIL_LCD_EX_SUFFIX = "THM_EX/LCD";
 const std::string THUMBNAIL_THUMB_EX_SUFFIX = "THM_EX/THM";
 
 const std::string FILE_URI_PREX = "file://";
+const std::string LOCAL_MEDIA_PREFIX = "/storage/media/local/files/";
 
 const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
 
