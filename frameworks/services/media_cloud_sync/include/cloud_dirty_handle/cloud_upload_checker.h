@@ -16,6 +16,7 @@
 #ifndef OHOS_CLOUD_UPLOAD_CHECKER_H
 #define OHOS_CLOUD_UPLOAD_CHECKER_H
 
+#include <mutex>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -27,19 +28,28 @@ namespace Media {
 struct CheckedPhotoInfo {
     int32_t fileId;
     std::string path;
+    size_t size;
+    int32_t subtype;
+    int32_t movingPhotoEffectMode;
 };
 
 class CloudUploadChecker {
 public:
-    static void HandleNoOriginPhoto();
+    static void RepairNoOriginPhoto();
 
 private:
-    static int32_t GetPhotoCount(int32_t startFileId);
-    static std::vector<CheckedPhotoInfo> QueryPhotoInfo(int32_t startFiled, int32_t &outFileId);
-    static std::string GetQuerySql(int32_t startFileId, std::string mediaColumns);
-    static void HandlePhotoInfos(std::vector<CheckedPhotoInfo>);
-    static void UpdateDirty(std::vector<std::string> idList, int32_t dirtyType);
+    static void HandleNoOriginPhoto();
+    static std::vector<CheckedPhotoInfo> QueryPhotoInfo(int32_t startFiled);
+    static void HandlePhotoInfos(const std::vector<CheckedPhotoInfo> &photoInfos, int32_t &curFileId);
+    static void UpdateDirty(const std::vector<std::string> &idList, int32_t dirtyType);
+    static int32_t QueryLcdPhotoCount(int32_t startFileId);
+    static void UpdateFileSize(const CheckedPhotoInfo &photoInfo, bool isMovingPhoto);
+    static void HandleMissingFile(
+        const CheckedPhotoInfo &photoInfo, bool isMovingPhoto, std::vector<std::string> &noLcdList);
+
+private:
+    static std::mutex mutex_;
 };
-} // namespace Media
-} // namespace OHOS
-#endif // OHOS_CLOUD_UPLOAD_CHECKER_H
+}  // namespace Media
+}  // namespace OHOS
+#endif  // OHOS_CLOUD_UPLOAD_CHECKER_H
