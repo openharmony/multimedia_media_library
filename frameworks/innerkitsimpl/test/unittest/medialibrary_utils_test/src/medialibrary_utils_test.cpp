@@ -722,9 +722,9 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseStringResult_test_001, TestSize.Le
     rdbPredicates.Limit(0);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     string dataTest = "";
-    ThumbnailUtils::ParseStringResult(resultSet, -1, dataTest, err);
+    ThumbnailUtils::ParseStringResult(resultSet, -1, dataTest);
     EXPECT_GT(err, E_OK);
-    ThumbnailUtils::ParseStringResult(resultSet, index, data, err);
+    ThumbnailUtils::ParseStringResult(resultSet, index, data);
     EXPECT_GT(err, E_OK);
 }
 

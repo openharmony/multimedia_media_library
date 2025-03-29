@@ -79,6 +79,7 @@ public:
     EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
     EXPORT void CancelAstcBatchTask(int32_t requestId);
     EXPORT bool CreateAstcMthAndYear(const std::string &id);
+    EXPORT bool RegenerateThumbnailFromCloud(const std::string &id);
     void UpdateAstcWithNewDateTaken(const std::string &fileId, const std::string &newDateTaken,
         const std::string &formerDateTaken);
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();

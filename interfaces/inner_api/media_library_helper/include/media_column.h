@@ -29,7 +29,8 @@ enum class DirtyTypes : int32_t {
     TYPE_DELETED,
     TYPE_RETRY,
     TYPE_SDIRTY,
-    TYPE_COPY
+    TYPE_COPY,
+    TYPE_TDIRTY
 };
 
 enum class MetadataFlags : int32_t {

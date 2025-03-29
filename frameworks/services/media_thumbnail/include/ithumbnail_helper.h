@@ -140,6 +140,7 @@ private:
     EXPORT static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool NeedGenerateExFile(ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS

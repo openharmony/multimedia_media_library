@@ -520,6 +520,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         CreateOperationAlbumUpdateTrigger(rdbStore);
         rdbStore->SetOldVersion(VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER);
     }
+
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY) {
+        MediaLibraryRdbStore::UpdateMdirtyTriggerForTdirty(rdbStore);
+        rdbStore->SetOldVersion(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY);
+    }
 }
 
 void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
