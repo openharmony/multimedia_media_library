@@ -41,8 +41,8 @@ int32_t TabOldPhotosRestore::Restore(
             ret, restoreHelper.GetInsertSql().c_str(), ToString(restoreHelper.GetBindArgs()).c_str()));
 
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("Set cost %{public}" PRId64 ", insert cost %{public}" PRId64,
-        startInsert - startSet, end - startInsert);
+    MEDIA_INFO_LOG("Set %{public}zu cost %{public}" PRId64 ", insert cost %{public}" PRId64,
+        restoreHelper.GetInsertSize(), startInsert - startSet, end - startInsert);
     return ret;
 }
 
@@ -90,6 +90,11 @@ std::string TabOldPhotosRestoreHelper::GetInsertSql()
 std::vector<NativeRdb::ValueObject> TabOldPhotosRestoreHelper::GetBindArgs()
 {
     return bindArgs_;
+}
+
+size_t TabOldPhotosRestoreHelper::GetInsertSize()
+{
+    return placeHolders_.size();
 }
 
 void TabOldPhotosRestoreHelper::AddPlaceHolders()
