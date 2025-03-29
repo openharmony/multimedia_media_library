@@ -87,7 +87,6 @@ void ClearHighlightData()
         cloneRestoreHighlight->highlightInfos_.clear();
         cloneRestoreHighlight->coverInfos_.clear();
         cloneRestoreHighlight->playInfos_.clear();
-        cloneRestoreHighlight->oldAlbumIds_.clear();
         cloneRestoreHighlight->albumPhotoCounter_.clear();
         cloneRestoreHighlight->intersectionMap_.clear();
         cloneRestoreHighlight->photoIdMap_.Clear();
@@ -198,8 +197,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_00
     testAnalysisInfo.oldCoverUri = make_optional<string>("file://media/Photo/1/test/IMG_00000000_000000.jpg");
     testAnalysisInfo.albumName = make_optional<string>("testAlbumName");
     cloneRestoreHighlight->analysisInfos_.emplace_back(testAnalysisInfo);
-
-    cloneRestoreHighlight->oldAlbumIds_.emplace_back(1);
     cloneRestoreHighlight->RestoreMaps(fileInfos);
     string mapCondition = "map_album = 2 AND map_asset = 2";
     int32_t mapCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), ANALYSIS_PHOTO_MAP_TABLE, mapCondition);
@@ -229,7 +226,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_0
     testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_NEW_ID);
     cloneRestoreHighlight->analysisInfos_.emplace_back(testAnalysisInfo);
 
-    cloneRestoreHighlight->oldAlbumIds_.emplace_back(1);
     vector<NativeRdb::ValuesBucket> values;
     cloneRestoreHighlight->UpdateMapInsertValues(values, fileInfos);
     string mapCondition = "map_album = 2 AND map_asset = 2";
