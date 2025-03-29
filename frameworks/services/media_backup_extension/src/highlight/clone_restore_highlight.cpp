@@ -188,14 +188,14 @@ void CloneRestoreHighlight::RestoreMaps(std::vector<FileInfo> &fileInfos)
     GetPhotoMapInfos(fileInfos);
     std::vector<NativeRdb::ValuesBucket> values;
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    UpdateMapInsertValues(values, fileInfo);
+    UpdateMapInsertValues(values, fileInfos);
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("UpdateMapInsertValues cost %{public}" PRId64, endTime - startTime);
 
     startTime = MediaFileUtils::UTCTimeMilliSeconds();
     InsertAnalysisPhotoMap(values);
     endTime = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("InsertAnalysisPhotoMap cost %{public}ld" PRId64, endTime - startTime);
+    MEDIA_INFO_LOG("InsertAnalysisPhotoMap cost %{public}" PRId64, endTime - startTime);
 }
 
 void CloneRestoreHighlight::UpdateAlbums()
@@ -407,23 +407,22 @@ void CloneRestoreHighlight::UpdateMapInsertValues(std::vector<NativeRdb::ValuesB
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    }
+    } while (rowCount > 0)
 }
 
 void CloneRestoreHighlight::UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
     std::shared_ptr<NativeRdb::ResultSet> resultSet, std::unordered_map<int32_t, FileInfo> &fileInfoMap)
 {
-    std::optional<int32_t> oldFileId = BackupDataBaseUtils::GetOptional<int32_t>(result, "map_asset");
+    std::optional<int32_t> oldFileId = BackupDataBaseUtils::GetOptionalValue<int32_t>(resultSet, "map_asset");
     bool exceptCond = oldFileId.has_value() && fileInfoMap.count(oldFileId.value()) > 0;
     CHECK_AND_RETURN_LOG(exceptCond, "the query oldFileId is invalid!");
     FileInfo fileInfo = fileInfoMap[oldFileId.value()];
-    std::optional<int32_t> oldAlbumId = BackupDataBaseUtils::GetOptional<int32_t>(result, "map_album");
+    std::optional<int32_t> oldAlbumId = BackupDataBaseUtils::GetOptionalValue<int32_t>(resultSet, "map_album");
     CHECK_AND_RETURN_LOG(oldAlbumId.has_value(), "the query oldAlbumId is invalid!");
     auto it = std::find_if(analysisInfos_.begin(), analysisInfos_.end(),
         [oldAlbumId](const AnalysisAlbumInfo& info) {
             return info.albumIdOld.has_value() && info.albumIdOld.value() == oldAlbumId.value();
         });
-    cond = (it == analysisInfos_.end() || !it->albumIdNew.has_value());
     CHECK_AND_RETURN_LOG(it != analysisInfos_.end() && it->albumIdNew.has_value(),
         "not find the needed album info, oldAlbumId: %{public}d", oldAlbumId.value());
 
