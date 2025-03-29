@@ -382,6 +382,7 @@ export struct PhotoPickerComponent {
   }
 
   parseMimeTypeFilter(filter?: photoAccessHelper.MimeTypeFilter): object | undefined {
+  parseMimeTypeFilter(filter?: photoAccessHelper.MimeTypeFilter): object | undefined {
     if (!filter) {
       return undefined;
     }
@@ -398,13 +399,17 @@ export struct PhotoPickerComponent {
       }
     }
     return MimeTypeFilterObj;
+    return MimeTypeFilterObj;
   }
 
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
     let filterType: string;
     if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
       filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
+    if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
     } else {
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*);
       filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*);
     }
     console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));

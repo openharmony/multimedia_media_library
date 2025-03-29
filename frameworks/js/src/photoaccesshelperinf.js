@@ -721,7 +721,11 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
     config.parameters.userId = option.userId;
+<<<<<<< HEAD
     config.parameters.mimeTypeFilter = parseMimeTypeFilter(option.mimeTypeFilter);
+=======
+    config.parameters.MimeTypeFilter = parseMimeTypeFilter(option.MimeTypeFilter);
+>>>>>>> af739b1418fa947f9a5ade70e20854ee21854fff
     config.parameters.fileSizeFilter = option.fileSizeFilter;
     config.parameters.videoDurationFilter = option.videoDurationFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
@@ -735,6 +739,7 @@ function parseMimeTypeFilter(filter) {
       return undefined;
   }
   let o = {};
+<<<<<<< HEAD
   o.mimeTypeArray = [];
   if (filter.mimeTypeArray) {
     for (let mimeType of filter.mimeTypeArray) {
@@ -742,6 +747,15 @@ function parseMimeTypeFilter(filter) {
         o.mimeTypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
       } else {
         o.mimeTypeArray.push(mimeType);
+=======
+  o.MimeTypeArray = [];
+  if (filter.MimeTypeArray) {
+    for (let mimeType of filter.MimeTypeArray) {
+      if (PHOTO_VIEW_MIME_TYPE_MAP.has(mimeType)) {
+        o.MimeTypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+      } else {
+        o.MimeTypeArray.push(mimeType);
+>>>>>>> af739b1418fa947f9a5ade70e20854ee21854fff
       }
     }
   }
@@ -834,7 +848,11 @@ async function checkInteractAcrossLocalAccounts() {
 }
 
 function MimeTypeFilter() {
+<<<<<<< HEAD
   this.mimeTypeArray = [];
+=======
+  this.MimeTypeArray = [];
+>>>>>>> af739b1418fa947f9a5ade70e20854ee21854fff
 }
 
 function FileSizeFilter() {
