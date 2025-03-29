@@ -141,6 +141,11 @@ public:
     static const std::unordered_map<SourceState, SourceState> CLOUD_SOURCE_LOADING_STATES;
 
     /*
+     * Define source loading states sequence for creating thumbnails from cloud origin photo.
+     */
+    static const std::unordered_map<SourceState, SourceState> CLOUD_ORIGIN_SOURCE_LOADING_STATES;
+
+    /*
      * Define source loading states sequence for creating thumbnails on demand.
      */
     static const std::unordered_map<SourceState, SourceState> ALL_SOURCE_LOADING_STATES;

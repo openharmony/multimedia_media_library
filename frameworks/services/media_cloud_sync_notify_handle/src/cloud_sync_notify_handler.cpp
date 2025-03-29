@@ -175,6 +175,7 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
 
 void CloudSyncNotifyHandler::HandleDirtyDataFix(const std::list<Uri> &uris, const CloudSyncErrType &errType)
 {
+    MEDIA_INFO_LOG("HandleDirtyDataFix start, err: %{public}d", static_cast<int32_t>(errType));
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
     switch (errType) {
         case CloudSyncErrType::CONTENT_NOT_FOUND:
@@ -194,6 +195,9 @@ void CloudSyncNotifyHandler::HandleDirtyDataFix(const std::list<Uri> &uris, cons
             break;
         case CloudSyncErrType::ALBUM_NOT_FOUND:
             HandleAlbumNotFound(uris);
+            break;
+        case CloudSyncErrType::THM_GENERATE_FAILED:
+            HandleThumbnailGenerateFailed(uris);
             break;
         default:
             MEDIA_ERR_LOG("HandleDirtyDataFix, Unrecognized error type : %{public}d", errType);
@@ -416,6 +420,28 @@ void CloudSyncNotifyHandler::HandleAlbumNotFound(const std::list<Uri> &uris)
         }
     }
     return;
+}
+
+void CloudSyncNotifyHandler::HandleThumbnailGenerateFailed(const std::list<Uri> &uris)
+{
+    for (auto &uri : uris) {
+        std::string uriString = uri.ToString();
+        std::string fileId = GetfileIdFromPastDirtyDataFixUri(uriString);
+        if (fileId == "") {
+            continue;
+        }
+        if (fileId.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+
+        int32_t err = ThumbnailService::GetInstance()->RegenerateThumbnailFromCloud(fileId);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("RegenerateThumbnailFromCloud failed : %{public}d", err);
+            continue;
+        }
+        MEDIA_INFO_LOG("RegenerateThumbnailFromCloud %{public}s success, uri: ", uriString.c_str());
+    }
 }
 
 void CloudSyncNotifyHandler::MakeResponsibilityChain()

@@ -557,6 +557,24 @@ void MediaLibraryRdbStore::UpdatePhotoQualityCloned(const std::shared_ptr<MediaL
     MEDIA_INFO_LOG("end UpdatePhotoQualityCloned");
 }
 
+void MediaLibraryRdbStore::UpdateMdirtyTriggerForTdirty(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start UpdateMdirtyTriggerForTdirty");
+    const string dropMdirtyCreateTrigger = "DROP TRIGGER IF EXISTS photos_mdirty_trigger";
+    int32_t ret = ExecSqlWithRetry([&]() { return store->ExecuteSql(dropMdirtyCreateTrigger); });
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("drop photos_mdirty_trigger fail, ret = %{public}d", ret);
+        UpdateFail(__FILE__, __LINE__);
+    }
+
+    ret = ExecSqlWithRetry([&]() { return store->ExecuteSql(PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER); });
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("add photos_mdirty_trigger fail, ret = %{public}d", ret);
+        UpdateFail(__FILE__, __LINE__);
+    }
+    MEDIA_INFO_LOG("end UpdateMdirtyTriggerForTdirty");
+}
+
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", version);
