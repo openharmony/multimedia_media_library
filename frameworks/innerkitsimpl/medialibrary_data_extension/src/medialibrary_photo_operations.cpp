@@ -109,6 +109,7 @@ const std::string SET_LOCATION_VALUE = "1";
 const std::string SET_DISPLAY_NAME_KEY = "set_displayName";
 const std::string CAN_FALLBACK = "can_fallback";
 const std::string OLD_DISPLAY_NAME = "old_displayName";
+const std::string EDITDATA = "{\"system\":\"\"}";
 
 enum ImageFileType : int32_t {
     JPEG = 1,
@@ -2536,6 +2537,22 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(std::shared_ptr<FileAsset> &fi
     return E_OK;
 }
 
+int32_t MediaLibraryPhotoOperations::DoRevertAfterAddFiltersFailed(const std::shared_ptr<FileAsset> &fileAsset,
+    const std::string &path, const std::string &sourcePath)
+{
+    MEDIA_WARN_LOG("Failed to add filters to photo.");
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(sourcePath, path), E_HAS_FS_ERROR,
+        "Failed to copy source file.");
+
+    string editDataPath = GetEditDataPath(path);
+    CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_VALUES, "EditData path is empty");
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(editDataPath), E_HAS_FS_ERROR,
+        "Failed to create editdata file %{private}s", editDataPath.c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, EDITDATA), E_HAS_FS_ERROR,
+        "Failed to write editdata:%{private}s", editDataPath.c_str());
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileAsset> &fileAsset,
     std::string &path, std::string &sourcePath)
 {
@@ -2556,8 +2573,10 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData) == E_OK, E_FAIL,
-            "Failed to add filters to photo");
+        if (AddFiltersToPhoto(sourcePath, path, editData) != E_OK) {
+            CHECK_AND_RETURN_RET_LOG(DoRevertAfterAddFiltersFailed(fileAsset, path, sourcePath) == E_OK, E_HAS_FS_ERROR,
+                "Failed to do revertAfterAddFiltersFailed");
+        }
         if (MovingPhotoFileUtils::IsMovingPhoto(subtype,
             fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType())) {
             CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset, false) == E_OK, E_FAIL,
