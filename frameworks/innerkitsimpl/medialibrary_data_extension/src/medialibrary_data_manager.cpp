@@ -1073,7 +1073,7 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         return E_INVALID_URI;
     }
     
-    int insertResult= BatchInsertMediaAnalysisData(cmd, values);
+    int insertResult = BatchInsertMediaAnalysisData(cmd, values);
     if (insertResult > 0) {
         return insertResult;
     }
@@ -2962,7 +2962,7 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
         return E_FAIL;
     }
 
-    if (MediaLibraryRestore::GetInstance().isBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
+    if (MediaLibraryRestore::GetInstance().IsBackuping() && !MediaLibraryRestore::GetInstance().IsWaiting()) {
         MEDIA_INFO_LOG("[BatchInsertMediaAnalysisData] rdb is backuping");
         return E_FAIL;
     }
@@ -2971,7 +2971,7 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    switch(cmd.GetOprnObject()) {
+    switch (cmd.GetOprnObject()) {
         case OperationObject::VISION_START ... OperationObject::VISION_END:
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
@@ -2985,12 +2985,12 @@ int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryComman
         case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             std::vector<ValuesBucket> insertValues;
-            for (auto value : values){
+            for (auto value : values) {
                 ValuesBucket valueInsert = RdbUtils::ToValuesBucket(value);
                 insertValues.push_back(valueInsert);
             }
             int64_t outRowId = -1;
-            int32_t ret = rdbStore->BatchInsert(outRowId,cmd.GetTableName(),insertValues);
+            int32_t ret = rdbStore->BatchInsert(outRowId, cmd.GetTableName(), insertValues);
             if (ret != NativeRdb::E_OK) {
                 MEDIA_ERR_LOG("Batch insert media analysis values fail, err = %{public}d", ret);
                 return E_FAIL;
