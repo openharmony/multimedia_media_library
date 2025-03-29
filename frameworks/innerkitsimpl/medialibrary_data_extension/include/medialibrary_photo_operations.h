@@ -168,6 +168,8 @@ private:
     static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset>& fileAsset,
         const std::string& id, bool& isMovingPhotoVideo);
     static int32_t GetTakeEffect(std::shared_ptr<Media::Picture> &picture, std::string &photoId);
+    static int32_t DoRevertAfterAddFiltersFailed(const std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &path, const std::string &sourcePath);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, std::string &mimeType, const int32_t &fileType,
         std::string &oldFilePath);

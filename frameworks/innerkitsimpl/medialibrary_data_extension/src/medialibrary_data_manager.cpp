@@ -450,6 +450,14 @@ static void AddGroupTagIndex(const shared_ptr<MediaLibraryRdbStore>& store)
     MEDIA_INFO_LOG("end add group tag index");
 }
 
+static void AddAnalysisPhotoMapAssetIndex(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("Adding map_asset index for ANALYSIS_PHOTO_MAP");
+    int ret = store->ExecuteSql(CREATE_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "AddAnalysisPhotoMapAssetIndex failed: execute sql failed");
+    MEDIA_INFO_LOG("end map_asset index for ANALYSIS_PHOTO_MAP");
+}
+
 void AddAssetAlbumOperationTable(const shared_ptr<MediaLibraryRdbStore>& store)
 {
     const vector<string> executeSqlStrs = {
@@ -519,6 +527,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER) {
         CreateOperationAlbumUpdateTrigger(rdbStore);
         rdbStore->SetOldVersion(VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER);
+    }
+
+    if (oldVersion < VERSION_ADD_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX) {
+        AddAnalysisPhotoMapAssetIndex(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX);
     }
 
     if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY) {
