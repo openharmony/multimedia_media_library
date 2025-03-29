@@ -139,6 +139,37 @@ void MediaLibraryFormMapOperations::GetFormMapFormId(const string &uri, vector<i
     }
 }
 
+void MediaLibraryFormMapOperations::GetFormIdsByUris(const vector<string> &notifyUris, vector<int64_t> &formIds)
+{
+    lock_guard<mutex> lock(mutex_);
+    MediaLibraryCommand queryFormMapCmd(OperationObject::PAH_FORM_MAP, OperationType::QUERY);
+    queryFormMapCmd.GetAbsRdbPredicates()->And()->In(FormMap::FORMMAP_URI, notifyUris);
+
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("UniStore is nullptr");
+        return;
+    }
+    vector<string> columns = {FormMap::FORMMAP_FORM_ID, FormMap::FORMMAP_URI};
+    auto queryResult = uniStore->Query(queryFormMapCmd, columns);
+    if (queryResult == nullptr) {
+        MEDIA_ERR_LOG("Failed to query form id!");
+        return;
+    }
+    while (queryResult->GoToNextRow() == NativeRdb::E_OK) {
+        string formId = GetStringVal(FormMap::FORMMAP_FORM_ID, queryResult);
+        if (formId.empty()) {
+            MEDIA_WARN_LOG("Failed to get form id from result!");
+            continue;
+        }
+        string uri = GetStringVal(FormMap::FORMMAP_URI, queryResult);
+        if (std::count(notifyUris.begin(), notifyUris.end(), uri) > 0) {
+            formIds.push_back(std::stoll(formId));
+        }
+    }
+    queryResult->Close();
+}
+
 string MediaLibraryFormMapOperations::GetFilePathById(const string &fileId)
 {
     MediaLibraryCommand queryCmd(OperationObject::UFM_PHOTO, OperationType::QUERY);
