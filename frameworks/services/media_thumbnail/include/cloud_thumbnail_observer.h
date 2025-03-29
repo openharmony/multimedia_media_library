@@ -32,6 +32,9 @@ public:
     EXPORT ~CloudThumbnailObserver() = default;
 
     EXPORT void OnChange(const ChangeInfo &changeInfo) override;
+private:
+    std::string ParseUriCloudDownload(const Uri &uri);
+    void CreateAstcBatchCloudDownload(const ChangeInfo &changeInfo);
 };
 
 } // namespace Media

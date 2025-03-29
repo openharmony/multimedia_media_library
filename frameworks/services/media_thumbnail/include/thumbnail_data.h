@@ -153,6 +153,7 @@ public:
     EXPORT int32_t orientation {0};
     EXPORT int32_t photoHeight {0};
     EXPORT int32_t photoWidth {0};
+    EXPORT int32_t dirty {-1};
     EXPORT uint8_t thumbnailQuality {THUMBNAIL_MID};
 
     // Loaded lcd source can be resized to generate thumbnail in order
@@ -160,6 +161,7 @@ public:
     EXPORT bool isLocalFile {true};
     EXPORT bool isOpeningCloudFile {false};
     EXPORT bool isNeedStoreSize {true};
+    EXPORT bool isRegenerateStage {false};
     EXPORT bool needCheckWaitStatus {false};
     EXPORT bool needUpdateDb {true};
     EXPORT ThumbnailSource source;
