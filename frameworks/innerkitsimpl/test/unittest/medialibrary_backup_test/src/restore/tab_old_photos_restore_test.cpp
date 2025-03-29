@@ -123,6 +123,21 @@ HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_restore_normal_test_001, TestSi
     MEDIA_INFO_LOG("End tab_old_photos_restore_normal_test_001");
 }
 
+HWTEST_F(TabOldPhotosRestoreTest, tab_old_photos_helper_insert_into_table_failed_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start tab_old_photos_helper_insert_into_table_failed_test_001");
+    FileInfo fileInfo;
+    fileInfo.localMediaId = TEST_OLD_LOCAL_MEDIA_ID;
+    fileInfo.oldPath = TEST_OLD_DATA;
+    fileInfo.cloudPath = TEST_NEW_DATA;
+    TabOldPhotosRestoreHelper restoreHelper;
+    restoreHelper.AddBindArgs(fileInfo); // insert sql & args incompatible
+
+    int32_t ret = restoreHelper.Insert(g_rdbStore->GetRaw());
+    EXPECT_NE(ret, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("End tab_old_photos_helper_insert_into_table_failed_test_001");
+}
+
 void TabOldPhotosRestoreTestUtils::ClearAllData()
 {
     ClearPhotosData();

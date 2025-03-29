@@ -26,18 +26,21 @@ namespace OHOS::Media {
 int32_t TabOldPhotosRestore::Restore(
     std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr, const std::vector<FileInfo> &fileInfos)
 {
-    int64_t startSet = MediaFileUtils::UTCTimeSeconds();
+    CHECK_AND_RETURN_RET_LOG(rdbStorePtr != nullptr, NativeRdb::E_DB_NOT_EXIST,
+        "rdbStorePtr is nullptr, Maybe init failed");
+
+    int64_t startSet = MediaFileUtils::UTCTimeMilliSeconds();
     TabOldPhotosRestoreHelper restoreHelper;
     restoreHelper.SetPlaceHoldersAndBindArgs(fileInfos);
     CHECK_AND_RETURN_RET(!restoreHelper.IsEmpty(), NativeRdb::E_OK);
 
-    int64_t startInsert = MediaFileUtils::UTCTimeSeconds();
+    int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t ret = restoreHelper.InsertIntoTable(rdbStorePtr);
     CHECK_AND_EXECUTE(ret == NativeRdb::E_OK,
         MEDIA_ERR_LOG("Restore failed, ret=%{public}d, executeSql=%{public}s, bindArgs: %{public}s",
             ret, restoreHelper.GetInsertSql().c_str(), ToString(restoreHelper.GetBindArgs()).c_str()));
 
-    int64_t end = MediaFileUtils::UTCTimeSeconds();
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("Set cost %{public}" PRId64 ", insert cost %{public}" PRId64,
         startInsert - startSet, end - startInsert);
     return ret;
