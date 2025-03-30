@@ -321,12 +321,13 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
 void EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement()
 {
     MEDIA_INFO_LOG("UpdateAlbumsForCloudEnhancement start");
+    bool sourceAlbumNotify = true;
     if (!needUpdateUris.empty()) {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
         MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, AlbumOperationType::DEFAULT,
             needUpdateUris, NotifyAlbumType::SYS_ALBUM);
-        MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, needUpdateUris, true);
+        MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, needUpdateUris, sourceAlbumNotify);
         needUpdateUris.clear();
     } else {
         MEDIA_INFO_LOG("no uris need to update albums");
