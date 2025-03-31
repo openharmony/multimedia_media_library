@@ -699,8 +699,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // update burst from gallery
     int32_t ret = DoUpdateBurstFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
-    CloudUploadChecker::RepairNoOriginButLcd();
-    CloudUploadChecker::HandleNoOriginPhoto();
+    CloudUploadChecker::RepairNoOriginPhoto();
 
     CloudUploadChecker::RepairNoDetailTime();
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
