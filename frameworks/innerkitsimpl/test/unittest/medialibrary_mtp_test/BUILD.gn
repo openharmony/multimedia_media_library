@@ -26,6 +26,7 @@ if (media_library_feature_mtp) {
     module_out_path = module_output_path
     include_dirs = [
       "./include",
+      "../get_self_permissions/include",
       "${MEDIALIB_MTP_PATH}/include",
       "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
       "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
@@ -40,6 +41,7 @@ if (media_library_feature_mtp) {
     cflags = [ "-fno-access-control" ]
 
     sources = [
+      "../get_self_permissions/src/get_self_permissions.cpp",
       "src/debug_printf.cpp",
       "src/medialibrary_mtp_unit_test.cpp",
       "src/medialibrary_ptp_unit_test.cpp",
@@ -76,6 +78,9 @@ if (media_library_feature_mtp) {
       "ability_runtime:abilitykit_native",
       "ability_runtime:app_context",
       "ability_runtime:dataobs_manager",
+      "access_token:libaccesstoken_sdk",
+      "access_token:libnativetoken_shared",
+      "access_token:libtokensetproc_shared",
       "c_utils:utils",
       "common_event_service:cesfwk_innerkits",
       "data_share:datashare_common",
