@@ -80,6 +80,7 @@ public:
     static void OnProgress(napi_env env, napi_value cb, void *context, void *data);
     static int32_t GetFdFromUri(const std::string &sandBoxUri);
     static void SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context);
+    static void RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context);
     static void CallRequestContentCallBack(napi_env env, MovingPhotoAsyncContext* context);
 private:
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);

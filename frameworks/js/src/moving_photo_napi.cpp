@@ -820,20 +820,71 @@ void CallMovingProgressCallback(napi_env env, ProgressHandler &progressHandler, 
     NAPI_DEBUG_LOG("CallProgressCallback process %{public}d", process);
 }
 
+void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context)
+{
+    if (context->position != POSITION_CLOUD) {
+        NAPI_ERR_LOG("Failed to check postion: %{public}d", context->position);
+        context->arrayBufferData = nullptr;
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    int32_t err = GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("Failed to get detailed size of moving photo");
+        context->arrayBufferData = nullptr;
+        context->SaveError(E_HAS_FS_ERROR);
+        return;
+    }
+
+    int32_t err = E_FAIL;
+    size_t fileSize = 0;
+    switch (context->resourceType) {
+        case ResourceType::IMAGE_RESOURCE:
+            fileSize = static_cast<size_t>(imageSize);
+            context->arrayBufferData = malloc(fileSize);
+            err = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, context->arrayBufferData, nullptr, nullptr);
+            break;
+        case ResourceType::VIDEO_RESOURCE:
+            fileSize = static_cast<size_t>(videoSize);
+            context->arrayBufferData = malloc(fileSize);
+            err = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, nullptr, context->arrayBufferData, nullptr);
+            break;
+        default:
+            NAPI_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(context->resourceType));
+            return -EINVAL;
+    }
+
+    if (!context->arrayBufferData) {
+        NAPI_ERR_LOG(
+            "Failed to get arraybuffer, resource type is %{public}d", static_cast<int32_t>(context->resourceType));
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+    context->arrayBufferLength = fileSize;
+}
+
 void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
 {
+    if (context->position == POSITION_CLOUD) {
+        return RequestCloudContentArrayBuffer(fd, context);
+    }
+
     UniqueFd uniqueFd(fd);
     off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
     if (fileLen < 0) {
         NAPI_ERR_LOG("Failed to get file length, error: %{public}d", errno);
-        context->error = E_HAS_FS_ERROR;
+        context->SaveError(E_HAS_FS_ERROR);
         return;
     }
 
     off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
     if (ret < 0) {
         NAPI_ERR_LOG("Failed to reset file offset, error: %{public}d", errno);
-        context->error = E_HAS_FS_ERROR;
+        context->SaveError(E_HAS_FS_ERROR);
         return;
     }
 
@@ -842,7 +893,7 @@ void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* con
     if (!context->arrayBufferData) {
         NAPI_ERR_LOG("Failed to malloc array buffer data, moving photo uri is %{public}s, resource type is %{public}d",
             context->movingPhotoUri.c_str(), static_cast<int32_t>(context->resourceType));
-        context->error = E_HAS_FS_ERROR;
+            context->error = JS_INNER_FAIL;
         return;
     }
     size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), context->arrayBufferData, fileSize));
@@ -851,7 +902,7 @@ void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* con
             "error: %{public}d", readBytes, fileSize, errno);
         free(context->arrayBufferData);
         context->arrayBufferData = nullptr;
-        context->error = E_HAS_FS_ERROR;
+        context->SaveError(E_HAS_FS_ERROR);
         return;
     }
     context->arrayBufferLength = fileSize;
