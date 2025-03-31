@@ -954,16 +954,17 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
     int32_t fileMoveCount = 0;
     int32_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    int64_t startRestore = MediaFileUtils::UTCTimeMilliSeconds();
     this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, fileInfos);
     int64_t startUpdate = MediaFileUtils::UTCTimeMilliSeconds();
     UpdatePhotosByFileInfoMap(mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
-        " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld. update cost"
-        " %{public}ld.",
-        (long)(startInsert - startGenerate), (long)rowNum, (long)(startInsertRelated - startInsert),
-        (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
-        (long)videoFileMoveCount, (long)(startUpdate - startMove), long(end - startUpdate));
+    MEDIA_INFO_LOG("generate values cost %{public}" PRId64 ", insert %{public}" PRId64 " assets cost %{public}" PRId64
+        ", insert photo related cost %{public}" PRId64 ", move %{public}d files (%{public}d + %{public}d) cost "
+        "%{public}" PRId64 ", old photos restore cost %{public}" PRId64 ", update cost %{public}" PRId64,
+        startInsert - startGenerate, rowNum, startInsertRelated - startInsert,
+        startMove - startInsertRelated, fileMoveCount, fileMoveCount - videoFileMoveCount, videoFileMoveCount,
+        startRestore - startMove, startUpdate - startRestore, end - startUpdate);
     return E_OK;
 }
 
@@ -998,16 +999,17 @@ int32_t BaseRestore::SetVisiblePhoto(std::vector<FileInfo> &fileInfos)
 
 int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
-    MEDIA_INFO_LOG("START STEP 2 INSERT CLOUD");
     MEDIA_INFO_LOG("Start insert cloud %{public}zu photos", fileInfos.size());
-    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ iS null in cloud clone");
+    CHECK_AND_RETURN_RET_LOG(mediaLibraryRdb_ != nullptr, E_OK, "mediaLibraryRdb_ is null in cloud clone");
     CHECK_AND_RETURN_RET_LOG(!fileInfos.empty(), E_OK, "fileInfos are empty in cloud clone");
+
     int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetCloudInsertValues(sceneCode, fileInfos, sourceType);
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, rowNum);
-    MEDIA_INFO_LOG("the insert result in insertCloudPhoto is %{public}d, the rowNum is %{public}lld", errCode, rowNum);
+    MEDIA_INFO_LOG("the insert result in insertCloudPhoto is %{public}d, the rowNum is %{public}" PRId64,
+        errCode, rowNum);
     totalCloudMetaNumber_ += rowNum;
     if (errCode != E_OK) {
         if (needReportFailed_) {
@@ -1032,13 +1034,15 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
     int32_t fileMoveCount = 0;
     int32_t videoFileMoveCount = 0;
     MoveMigrateCloudFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    int64_t startRestore = MediaFileUtils::UTCTimeMilliSeconds();
     this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, fileInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
-        " cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
-        (long)(startInsert - startGenerate), (long)rowNum, (long)(startInsertRelated - startInsert),
-        (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
-        (long)videoFileMoveCount, (long)(end - startMove));
+    MEDIA_INFO_LOG("generate values cost %{public}" PRId64 ", insert %{public}" PRId64 " assets cost %{public}" PRId64
+        ", insert photo related cost %{public}" PRId64 ", move %{public}d files (%{public}d + %{public}d) cost "
+        "%{public}" PRId64 ", old photos restore cost %{public}" PRId64,
+        startInsert - startGenerate, rowNum, startInsertRelated - startInsert,
+        startMove - startInsertRelated, fileMoveCount, fileMoveCount - videoFileMoveCount, videoFileMoveCount,
+        startRestore - startMove, end - startRestore);
     MEDIA_DEBUG_LOG("END STEP 2 INSERT CLOUD");
     return E_OK;
 }
