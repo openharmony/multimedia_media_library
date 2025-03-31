@@ -261,7 +261,7 @@ int32_t ParseDesiredMinSide(const ThumbnailType &type)
         default:
             break;
     }
-    return INT32_MAX_VALUE_LENGTH;
+    return std::numeric_limits<int32_t>::max();
 }
 
 void SwitchToNextState(ThumbnailData &data, SourceState &state)
