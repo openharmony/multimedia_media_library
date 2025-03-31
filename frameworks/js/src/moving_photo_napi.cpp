@@ -846,25 +846,25 @@ void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyn
         return;
     }
 
-    int32_t err = E_FAIL;
+    int32_t ret = E_FAIL;
     size_t fileSize = 0;
     switch (context->resourceType) {
         case ResourceType::IMAGE_RESOURCE:
             fileSize = static_cast<size_t>(imageSize);
             context->arrayBufferData = malloc(fileSize);
-            err = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, context->arrayBufferData, nullptr, nullptr);
+            ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, context->arrayBufferData, nullptr, nullptr);
             break;
         case ResourceType::VIDEO_RESOURCE:
             fileSize = static_cast<size_t>(videoSize);
             context->arrayBufferData = malloc(fileSize);
-            err = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, nullptr, context->arrayBufferData, nullptr);
+            ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, nullptr, context->arrayBufferData, nullptr);
             break;
         default:
             NAPI_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(context->resourceType));
-            return -EINVAL;
+            break;
     }
 
-    if (!context->arrayBufferData) {
+    if (!context->arrayBufferData || ret != E_OK) {
         NAPI_ERR_LOG(
             "Failed to get arraybuffer, resource type is %{public}d", static_cast<int32_t>(context->resourceType));
         context->error = JS_INNER_FAIL;
