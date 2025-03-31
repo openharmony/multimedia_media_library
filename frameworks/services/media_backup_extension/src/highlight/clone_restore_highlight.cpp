@@ -187,15 +187,13 @@ void CloneRestoreHighlight::RestoreMaps(std::vector<FileInfo> &fileInfos)
     MEDIA_INFO_LOG("restore highlight map start.");
     GetPhotoMapInfos(fileInfos);
     std::vector<NativeRdb::ValuesBucket> values;
-    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t startUpdateTime = MediaFileUtils::UTCTimeMilliSeconds();
     UpdateMapInsertValues(values, fileInfos);
-    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("UpdateMapInsertValues cost %{public}" PRId64, endTime - startTime);
-
-    startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t startInsertTime = MediaFileUtils::UTCTimeMilliSeconds();
     InsertAnalysisPhotoMap(values);
-    endTime = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("InsertAnalysisPhotoMap cost %{public}" PRId64, endTime - startTime);
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("UpdateMapInsertValues cost %{public}" PRId64 "InsertAnalysisPhotoMap cost %{public}" PRId64,
+        startInsertTime - startUpdateTime, endTime - startInsertTime);
 }
 
 void CloneRestoreHighlight::UpdateAlbums()
@@ -416,7 +414,7 @@ void CloneRestoreHighlight::UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb
     std::optional<int32_t> oldFileId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "map_asset");
     bool exceptCond = oldFileId.has_value() && fileInfoMap.count(oldFileId.value()) > 0;
     CHECK_AND_RETURN_LOG(exceptCond, "the query oldFileId is invalid!");
-    FileInfo fileInfo = fileInfoMap[oldFileId.value()];
+    FileInfo fileInfo = fileInfoMap.at(oldFileId.value());
     std::optional<int32_t> oldAlbumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "map_album");
     CHECK_AND_RETURN_LOG(oldAlbumId.has_value(), "the query oldAlbumId is invalid!");
     auto it = std::find_if(analysisInfos_.begin(), analysisInfos_.end(),
