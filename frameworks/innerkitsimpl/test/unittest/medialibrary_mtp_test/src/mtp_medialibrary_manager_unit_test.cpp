@@ -21,6 +21,8 @@
 #include "mtp_constants.h"
 #include "medialibrary_errno.h"
 #include "iservice_registry.h"
+#include "media_file_utils.h"
+#include "get_self_permissions.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -30,11 +32,22 @@ namespace Media {
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static constexpr int STORAGE_MANAGER_UID_TEST = 5003;
+constexpr int32_t MILLI_TO_SECOND = 1000;
 
 const std::shared_ptr<MtpMedialibraryManager> mtpMedialibraryManager_ = MtpMedialibraryManager::GetInstance();
 
-
-void MtpMediaLibraryManagerUnitTest::SetUpTestCase(void) {}
+void MtpMediaLibraryManagerUnitTest::SetUpTestCase(void)
+{
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MtpDataUtilsUnitTest", perms, tokenId);
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        return;
+    }
+}
 
 void MtpMediaLibraryManagerUnitTest::TearDownTestCase(void)
 {
@@ -89,7 +102,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_00
     int32_t res = mtpMedialibraryManager_->GetHandles(parentId, outHandles);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+    EXPECT_EQ(res, MTP_SUCCESS);
 }
 
 /*
@@ -115,7 +128,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_00
     int32_t res = mtpMedialibraryManager_->GetHandles(parentId, outHandles);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+    EXPECT_EQ(res, MTP_SUCCESS);
 }
 
 /*
@@ -158,7 +171,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_00
     int32_t res = mtpMedialibraryManager_->GetAlbumCloud();
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, MTP_ERROR_STORE_NOT_AVAILABLE);
+    EXPECT_EQ(res, MTP_SUCCESS);
 }
 
 /*
@@ -203,7 +216,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_00
     int32_t res = mtpMedialibraryManager_->GetAlbumCloudDisplay(ownerAlbumIds);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, MTP_ERROR_STORE_NOT_AVAILABLE);
+    EXPECT_EQ(res, MTP_SUCCESS);
 }
 
 /*
@@ -230,7 +243,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_00
     int32_t res = mtpMedialibraryManager_->GetAlbumCloudDisplay(ownerAlbumIds);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, MTP_ERROR_STORE_NOT_AVAILABLE);
+    EXPECT_EQ(res, MTP_SUCCESS);
 }
 
 /*
@@ -300,7 +313,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_01
     auto res = mtpMedialibraryManager_->GetAlbumInfo(context, isHandle);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, nullptr);
+    EXPECT_NE(res, nullptr);
 }
 
 /*
@@ -327,7 +340,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_01
     auto res = mtpMedialibraryManager_->GetAlbumInfo(context, isHandle);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, nullptr);
+    EXPECT_NE(res, nullptr);
 }
 
 /*
@@ -351,7 +364,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_01
     auto res = mtpMedialibraryManager_->GetOwnerAlbumIdList();
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, nullptr);
+    EXPECT_NE(res, nullptr);
 }
 
 /*
@@ -421,7 +434,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_01
     auto res = mtpMedialibraryManager_->GetPhotosInfo(context, isHandle);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, nullptr);
+    EXPECT_NE(res, nullptr);
 }
 
 /*
@@ -448,7 +461,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_01
     auto res = mtpMedialibraryManager_->GetPhotosInfo(context, isHandle);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, nullptr);
+    EXPECT_NE(res, nullptr);
 }
 
 /*
@@ -600,11 +613,11 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_02
 
     mtpMedialibraryManager_->dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     ASSERT_NE(mtpMedialibraryManager_->dataShareHelper_, nullptr);
-    shared_ptr<UInt32List> outHandles = nullptr;
+    shared_ptr<UInt32List> outHandles = std::make_shared<UInt32List>();
     int32_t res = mtpMedialibraryManager_->GetHandles(context, outHandles);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, MTP_ERROR_STORE_NOT_AVAILABLE);
+    EXPECT_EQ(res, MTP_SUCCESS);
 }
 
 /*
@@ -701,7 +714,7 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_02
     int32_t res = mtpMedialibraryManager_->GetHandles(context, outHandles);
 
     mtpMedialibraryManager_->Clear();
-    EXPECT_EQ(res, MTP_ERROR_STORE_NOT_AVAILABLE);
+    EXPECT_EQ(res, MTP_SUCCESS);
 }
 
 /*
@@ -960,12 +973,13 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_03
     ASSERT_NE(fileAsset, nullptr);
     MediaType mediaType = MEDIA_TYPE_ALBUM;
     fileAsset->SetMediaType(mediaType);
-
+    int64_t utcTime = MediaFileUtils::UTCTimeMilliSeconds();
+    fileAsset->SetDateModified(utcTime);
     uint32_t handle = 1;
     shared_ptr<ObjectInfo> outObjectInfo = std::make_shared<ObjectInfo>(handle);
     ASSERT_NE(outObjectInfo, nullptr);
     int32_t res = mtpMedialibraryManager_->SetObjectInfo(fileAsset, outObjectInfo);
-
+    ASSERT_EQ(outObjectInfo->dateModified, utcTime / MILLI_TO_SECOND);
     mtpMedialibraryManager_->Clear();
     EXPECT_EQ(res, MTP_SUCCESS);
 }
@@ -986,12 +1000,13 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_03
     ASSERT_NE(fileAsset, nullptr);
     MediaType mediaType = MEDIA_TYPE_IMAGE;
     fileAsset->SetMediaType(mediaType);
-
+    int64_t utcTime = MediaFileUtils::UTCTimeMilliSeconds();
+    fileAsset->SetDateModified(utcTime);
     uint32_t handle = 1;
     shared_ptr<ObjectInfo> outObjectInfo = std::make_shared<ObjectInfo>(handle);
     ASSERT_NE(outObjectInfo, nullptr);
     int32_t res = mtpMedialibraryManager_->SetObjectInfo(fileAsset, outObjectInfo);
-
+    ASSERT_EQ(outObjectInfo->dateModified, utcTime / MILLI_TO_SECOND);
     mtpMedialibraryManager_->Clear();
     EXPECT_EQ(res, MTP_SUCCESS);
 }
