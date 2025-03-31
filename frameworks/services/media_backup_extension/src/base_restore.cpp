@@ -200,16 +200,31 @@ int32_t BaseRestore::Init(void)
         return E_OK;
     }
     auto context = AbilityRuntime::Context::GetApplicationContext();
-    CHECK_AND_RETURN_RET_LOG(context != nullptr, E_FAIL, "Failed to get context");
+    if (context == nullptr) {
+        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "", "Failed to get context");
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        MEDIA_ERR_LOG("Failed to get context");
+        return E_FAIL;
+    }
 
     int32_t err = BackupDatabaseUtils::InitDb(mediaLibraryRdb_, MEDIA_DATA_ABILITY_DB_NAME, DATABASE_PATH, BUNDLE_NAME,
         true, context->GetArea());
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_FAIL, "medialibrary rdb fail, err = %{public}d", err);
+    if (err != E_OK) {
+        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "", "medialibrary rdb fail, err = " + std::to_string(err));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        MEDIA_ERR_LOG("medialibrary rdb fail, err = %{public}d", err);
+        return E_FAIL;
+    }
 
     int32_t sceneCode = 0;
     int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr, sceneCode, false);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
-        "When restore, InitMediaLibraryMgr fail, errcode = %{public}d", errCode);
+    if (errCode != E_OK) {
+        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+            "When restore, InitMediaLibraryMgr fail, errcode = " + std::to_string(errCode));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        MEDIA_ERR_LOG("When restore, InitMediaLibraryMgr fail, errcode = %{public}d", errCode);
+        return errCode;
+    }
 
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;
