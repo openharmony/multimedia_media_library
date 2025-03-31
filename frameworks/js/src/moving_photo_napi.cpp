@@ -23,7 +23,7 @@
 #include "directory_ex.h"
 #include "file_uri.h"
 #include "media_file_utils.h"
-#include "media_file_uri.h"
+#include "moving_photo_file_utils.h"
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_db_const.h"
@@ -294,7 +294,8 @@ static int32_t CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
     return E_OK;
 }
 
-static int32_t WriteToSandboxUri(int32_t srcFd, const string& sandboxUri, MovingPhotoResourceType type)
+static int32_t WriteToSandboxUri(int32_t srcFd, const string& sandboxUri,
+    MovingPhotoResourceType type = MovingPhotoResourceType::DEFAULT)
 {
     UniqueFd srcUniqueFd(srcFd);
 
@@ -346,7 +347,8 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
     if (!context->destImageUri.empty()) {
         int32_t imageFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true, context->position);
         CHECK_COND_RET(HandleFd(imageFd), imageFd, "Open source image file failed");
-        int32_t ret = WriteToSandboxUri(imageFd, context->destImageUri, position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_IMAGE);
+        int32_t ret = WriteToSandboxUri(imageFd, context->destImageUri,
+            position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_IMAGE : MovingPhotoResourceType::DEFAULT);
         CHECK_COND_RET(ret == E_OK, ret, "Write image to sandbox failed");
     }
     if (!context->destVideoUri.empty()) {
@@ -357,7 +359,8 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
             int32_t ret = MovingPhotoNapi::DoMovingPhotoTranscode(env, videoFd, context);
             CHECK_COND_RET(ret == E_OK, ret, "moving video transcode failed");
         } else {
-            int32_t ret = WriteToSandboxUri(videoFd, context->destVideoUri, position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_VIDEO);
+            int32_t ret = WriteToSandboxUri(videoFd, context->destVideoUri,
+                position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_VIDEO : MovingPhotoResourceType::DEFAULT);
             CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
         }
     }
@@ -832,7 +835,7 @@ void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyn
     int64_t imageSize = 0;
     int64_t videoSize = 0;
     int64_t extraDataSize = 0;
-    int32_t err = GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
+    int32_t err = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
     if (err != E_OK) {
         NAPI_ERR_LOG("Failed to get detailed size of moving photo");
         context->arrayBufferData = nullptr;
