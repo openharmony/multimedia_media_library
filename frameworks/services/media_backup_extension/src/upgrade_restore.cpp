@@ -661,7 +661,6 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
 
 std::vector<FileInfo> UpgradeRestore::QueryCloudFileInfos(int32_t offset)
 {
-    MEDIA_INFO_LOG("UpgradeRestore::QueryCloudFileInfos");
     std::vector<FileInfo> result;
     result.reserve(RESTORE_CLOUD_QUERY_COUNT);
     CHECK_AND_RETURN_RET_LOG(galleryRdb_ != nullptr, result, "cloud galleryRdb_ is nullptr, Maybe init failed.");

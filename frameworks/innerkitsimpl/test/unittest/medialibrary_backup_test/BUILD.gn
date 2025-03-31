@@ -103,6 +103,8 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/restore/photo_album_dao_test.cpp",
     "./src/restore/photos_clone_test.cpp",
     "./src/restore/photos_restore_test.cpp",
+    "./src/restore/tab_old_photos_restore_test.cpp",
+    "./src/utils/database_utils.cpp",
   ]
 
   deps = [
