@@ -192,7 +192,7 @@ void CloneRestoreHighlight::RestoreMaps(std::vector<FileInfo> &fileInfos)
     int64_t startInsertTime = MediaFileUtils::UTCTimeMilliSeconds();
     InsertAnalysisPhotoMap(values);
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("UpdateMapInsertValues cost %{public}" PRId64 "InsertAnalysisPhotoMap cost %{public}" PRId64,
+    MEDIA_INFO_LOG("UpdateMapInsertValues cost %{public}" PRId64 ", InsertAnalysisPhotoMap cost %{public}" PRId64,
         startInsertTime - startUpdateTime, endTime - startInsertTime);
 }
 
