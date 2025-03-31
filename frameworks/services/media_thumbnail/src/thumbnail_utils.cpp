@@ -341,7 +341,7 @@ bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, Size &desiredSize)
     return true;
 }
 
-bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
+bool ThumbnailUtils::LoadVideoFrame(ThumbnailData &data, Size &desiredSize, int64_t timeStamp)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     string path = data.path;
@@ -359,17 +359,10 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
-    std::shared_ptr<PixelMap> pixelMap;
-    if (!data.tracks.empty()) {
-        int64_t timestamp = std::stoll(data.timeStamp);
-        timestamp = timestamp * MS_TRANSFER_US;
-        pixelMap = avMetadataHelper->FetchFrameYuv(timestamp, AVMetadataQueryOption::AV_META_QUERY_CLOSEST,
-        param);
-    } else {
-        pixelMap = avMetadataHelper->FetchFrameYuv(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
-        param);
-    }
+    int32_t queryOption = (timeStamp == AV_FRAME_TIME) ?
+        AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC : AVMetadataQueryOption::AV_META_QUERY_CLOSEST;
 
+    std::shared_ptr<PixelMap> pixelMap = avMetadataHelper->FetchFrameYuv(timeStamp, queryOption, param);
     if (pixelMap == nullptr) {
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
