@@ -23,6 +23,7 @@
 #include "directory_ex.h"
 #include "file_uri.h"
 #include "media_file_utils.h"
+#include "media_file_uris.h"
 #include "moving_photo_file_utils.h"
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
@@ -348,7 +349,8 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
         int32_t imageFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true, context->position);
         CHECK_COND_RET(HandleFd(imageFd), imageFd, "Open source image file failed");
         int32_t ret = WriteToSandboxUri(imageFd, context->destImageUri,
-            position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_IMAGE : MovingPhotoResourceType::DEFAULT);
+            context->position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_IMAGE
+                                                : MovingPhotoResourceType::DEFAULT);
         CHECK_COND_RET(ret == E_OK, ret, "Write image to sandbox failed");
     }
     if (!context->destVideoUri.empty()) {
@@ -360,7 +362,8 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
             CHECK_COND_RET(ret == E_OK, ret, "moving video transcode failed");
         } else {
             int32_t ret = WriteToSandboxUri(videoFd, context->destVideoUri,
-                position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_VIDEO : MovingPhotoResourceType::DEFAULT);
+                context->position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_VIDEO
+                                                    : MovingPhotoResourceType::DEFAULT);
             CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
         }
     }
