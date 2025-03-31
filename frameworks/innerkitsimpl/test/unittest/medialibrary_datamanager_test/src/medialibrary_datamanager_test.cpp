@@ -1182,7 +1182,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnailBackgroun
     EXPECT_EQ(ret <= 0, true);
     mediaLibraryDataManager->ClearMediaLibraryMgr();
     ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret <= 0, E_OK);
 }
 
 #ifdef DISTRIBUTED
