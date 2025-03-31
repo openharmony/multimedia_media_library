@@ -735,16 +735,19 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const int32_t fd, const strin
     int64_t extraDataSize = 0;
     int32_t err = GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to get detailed size of moving photo");
+    off_t offset = 0;
     if (!movingPhotoImagePath.empty()) {
-        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(fd, movingPhotoImagePath, imageSize, 0)) == E_OK, err,
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(fd, movingPhotoImagePath, imageSize, offset)) == E_OK, err,
             "Failed to copy image of live photo");
     }
     if (!movingPhotoVideoPath.empty()) {
-        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(fd, movingPhotoVideoPath, videoSize, imageSize)) == E_OK, err,
+        offset = imageSize;
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(fd, movingPhotoVideoPath, videoSize, offset)) == E_OK, err,
             "Failed to copy video of live photo");
     }
     if (!extraDataPath.empty()) {
-        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(fd, extraDataPath, extraDataSize, imageSize + videoSize)) == E_OK, err,
+        offset = imageSize + videoSize;
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(fd, extraDataPath, extraDataSize, offset)) == E_OK, err,
             "Failed to copy extra data of live photo");
     }
     return E_OK;
