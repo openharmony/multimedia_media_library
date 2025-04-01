@@ -367,6 +367,57 @@ napi_value MediaAlbumChangeRequestNapi::JSCreateAlbumRequest(napi_env env, napi_
     return instance;
 }
 
+static napi_value DealWithDeletedAlbumsDefault(napi_env env, vector<napi_value>& napiValues,
+    unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
+{
+    vector<string> deleteIds;
+    for (const auto& napiValue : napiValues) {
+        PhotoAlbumNapi* obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
+        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get album napi object");
+        CHECK_COND_WITH_MESSAGE(env,
+            PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsHighlightAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
+            "Only user and highlight album can be deleted");
+        deleteIds.push_back(to_string(obj->GetAlbumId()));
+    }
+    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+    RETURN_NAPI_TRUE(env);
+}
+
+int32_t GetAlbumIdFromUri(const string &uri, string &albumId)
+{
+    auto startIndex = uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX);
+    if (startIndex != std::string::npos) {
+        albumId.clear();
+        albumId = uri.substr(startIndex + PhotoAlbumColumns::ALBUM_URI_PREFIX.length());
+        if (!all_of(albumId.begin(), albumId.end(), ::isdigit)) {
+            NAPI_ERR_LOG("albumId is not digit, albumId is %{private}s", albumId.c_str());
+            return E_URI_INVALID;
+        }
+    } else {
+        NAPI_ERR_LOG("Photo album uri format error");
+        return E_URI_INVALID;
+    }
+    return E_OK;
+}
+
+napi_value DealWithDeletedAlbumsByUri(napi_env env, vector<napi_value> &napiValues,
+    unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
+{
+    vector<string> deleteIds;
+    vector<string> albumUris;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetStringArray(env, napiValues, albumUris));
+    for (const auto& albumUri : albumUris) {
+        string albumId = "";
+        CHECK_COND_WITH_MESSAGE(env, GetAlbumIdFromUri(albumUri, albumId) == E_OK, "Failed to get albumId");
+        deleteIds.push_back(albumId);
+    }
+
+    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+    RETURN_NAPI_TRUE(env);
+}
+
 static napi_value ParseArgsDeleteAlbums(
     napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
 {
@@ -387,20 +438,15 @@ static napi_value ParseArgsDeleteAlbums(
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
     CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
-    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
 
-    vector<string> deleteIds;
-    for (const auto& napiValue : napiValues) {
-        PhotoAlbumNapi* obj = nullptr;
-        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
-        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get album napi object");
-        CHECK_COND_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsHighlightAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
-            "Only user and highlight album can be deleted");
-        deleteIds.push_back(to_string(obj->GetAlbumId()));
+    if (valueType == napi_object) {
+        CHECK_NULLPTR_RET(DealWithDeletedAlbumsDefault(env, napiValues, context));
+    } else if (valueType == napi_string) {
+        CHECK_NULLPTR_RET(DealWithDeletedAlbumsByUri(env, napiValues, context));
+    } else {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid argument type");
+        return nullptr;
     }
-    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
     RETURN_NAPI_TRUE(env);
 }
 
