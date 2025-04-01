@@ -1077,6 +1077,12 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
         return E_INVALID_URI;
     }
+    
+    int insertResult = BatchInsertMediaAnalysisData(cmd, values);
+    if (insertResult > 0) {
+        return insertResult;
+    }
+
     int32_t rowCount = 0;
     for (auto it = values.begin(); it != values.end(); it++) {
         if (Insert(cmd, *it) >= 0) {
@@ -2952,6 +2958,54 @@ int32_t MediaLibraryDataManager::UpdateBurstCoverLevelFromGallery()
             E_FAIL, "Failed to DoUpdateBurstCoverLevelOperation");
     }
     return E_OK;
+}
+
+int32_t MediaLibraryDataManager::BatchInsertMediaAnalysisData(MediaLibraryCommand &cmd,
+    const vector<DataShareValuesBucket> &values)
+{
+    if (values.empty()) {
+        return E_FAIL;
+    }
+
+    if (MediaLibraryRestore::GetInstance().IsRealBackuping()) {
+        MEDIA_INFO_LOG("[BatchInsertMediaAnalysisData] rdb is backuping");
+        return E_FAIL;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::VISION_START ... OperationObject::VISION_END:
+        case OperationObject::GEO_DICTIONARY:
+        case OperationObject::GEO_KNOWLEDGE:
+        case OperationObject::GEO_PHOTO:
+        case OperationObject::SEARCH_TOTAL:
+        case OperationObject::STORY_ALBUM:
+        case OperationObject::STORY_COVER:
+        case OperationObject::STORY_PLAY:
+        case OperationObject::USER_PHOTOGRAPHY:
+        case OperationObject::ANALYSIS_ASSET_SD_MAP:
+        case OperationObject::ANALYSIS_ALBUM_ASSET_MAP:
+        case OperationObject::ANALYSIS_PHOTO_MAP: {
+            std::vector<ValuesBucket> insertValues;
+            for (auto value : values) {
+                ValuesBucket valueInsert = RdbUtils::ToValuesBucket(value);
+                insertValues.push_back(valueInsert);
+            }
+            int64_t outRowId = -1;
+            int32_t ret = rdbStore->BatchInsert(outRowId, cmd.GetTableName(), insertValues);
+            if (ret != NativeRdb::E_OK || outRowId < 0) {
+                MEDIA_ERR_LOG("Batch insert media analysis values fail, err = %{public}d", ret);
+                return E_FAIL;
+            }
+            return outRowId;
+        }
+        default:
+            break;
+    }
+    return E_FAIL;
 }
 }  // namespace Media
 }  // namespace OHOS
