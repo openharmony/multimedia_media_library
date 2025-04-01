@@ -788,7 +788,8 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, true);
     if (err != E_OK) {
         MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}lld,"
-            "ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
+            "ownerAlbumId: %{public}d, ret = %{public}d",
+            assetId, static_cast<long long>(newAssetId), ownerAlbumId, err);
         return E_OK;
     }
     
