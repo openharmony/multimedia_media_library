@@ -44,6 +44,7 @@ struct MovingPhotoAsyncContext : public NapiError {
     std::string destImageUri;
     std::string destVideoUri;
     std::string destLivePhotoUri;
+    std::string destMetadataUri;
     RequestContentMode requestContentMode = UNDEFINED;
     void* arrayBufferData = nullptr;
     size_t arrayBufferLength = 0;
@@ -61,6 +62,7 @@ public:
     EXPORT static napi_value Init(napi_env env, napi_value exports);
     static int32_t OpenReadOnlyFile(const string& uri, bool isReadImage);
     static int32_t OpenReadOnlyLivePhoto(const string& destLivePhotoUri);
+    static int32_t OpenReadOnlyMetadata(const string& movingPhotoUri);
     static napi_value NewMovingPhotoNapi(napi_env env, const string& photoUri, SourceMode sourceMode,
         MovingPhotoParam movingPhotoParam,
         const std::function<void(int, int, std::string)> cb = [](int, int, std::string) {});

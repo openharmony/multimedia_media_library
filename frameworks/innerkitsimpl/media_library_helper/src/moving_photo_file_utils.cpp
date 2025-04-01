@@ -561,7 +561,8 @@ static bool IsValidHexInteger(const string &hexStr)
         return false;
     }
     uint64_t num = stoull(hexStr, nullptr, HEX_BASE);
-    if (num > numeric_limits<uint32_t>::max()) {
+    int32_t maxInteger = numeric_limits<int32_t>::max();
+    if (num > static_cast<uint64_t>(maxInteger)) {
         return false;
     }
     return true;
