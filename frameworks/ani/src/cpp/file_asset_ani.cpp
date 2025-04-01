@@ -562,14 +562,13 @@ ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
         MediaLibraryAniUtils::ToAniString(env, std::get<std::string>(m), aniString);
         return reinterpret_cast<ani_object>(aniString);
     } else if (m.index() == MEMBER_TYPE_INT32) {
-        MediaLibraryAniUtils::ToAniIntObject(env, std::get<int32_t>(m), aniResult);
-        return aniResult;
+        double val = static_cast<double>(std::get<int32_t>(m));
+        MediaLibraryAniUtils::ToAniDoubleObject(env, val, aniResult);
     } else if (m.index() == MEMBER_TYPE_INT64) {
-        MediaLibraryAniUtils::ToAniLongObject(env, GetCompatDate(inputKey, get<int64_t>(m)), aniResult);
-        return aniResult;
+        double val = static_cast<double>(GetCompatDate(inputKey, get<int64_t>(m)));
+        MediaLibraryAniUtils::ToAniDoubleObject(env, val, aniResult);
     } else {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return aniResult;
     }
     return aniResult;
 }
