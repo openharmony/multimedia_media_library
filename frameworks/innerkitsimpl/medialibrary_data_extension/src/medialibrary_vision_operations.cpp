@@ -233,14 +233,14 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::HandleForegr
     std::shared_ptr<ForegroundAnalysisMeta> cvInfo = nullptr;
     int32_t errCode = InitForegroundAnalysisMeta(cmd, cvInfo);
     if (errCode != NativeRdb::E_OK) {
-        return {};
+        return nullptr;
     }
     errCode = cvInfo->GenerateOpType(cmd);
     if (errCode != NativeRdb::E_OK) {
-        return {};
+        return nullptr;
     }
     cvInfo->StartAnalysisService();
-    return ForegroundAnalysisMeta::SelectErrCode(NativeRdb::E_OK);
+    return ForegroundAnalysisMeta::QueryByErrorCode(NativeRdb::E_OK);
 }
 
 int32_t MediaLibraryVisionOperations::InitForegroundAnalysisMeta(MediaLibraryCommand &cmd,
