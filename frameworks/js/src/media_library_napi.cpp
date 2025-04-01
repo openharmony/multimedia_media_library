@@ -486,10 +486,11 @@ static int32_t ParseUserIdFormCbInfo(napi_env env, napi_callback_info info)
 
 static int32_t GetUserIdFromContext(MediaLibraryAsyncContext *context)
 {
-    if (context == nullptr || context->objectInfo == nullptr) {
+    std::shared_ptr<MediaLibraryAsyncContext> safeContext(context, [](MediaLibraryAsyncContext*) {});
+    if (safeContext == nullptr || safeContext->objectInfo == nullptr) {
         return -1;
     }
-    return context->objectInfo->GetUserId();
+    return safeContext->objectInfo->GetUserId();
 }
 
 // Constructor callback
