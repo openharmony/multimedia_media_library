@@ -468,7 +468,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestS
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    int32_t res = mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    int32_t res = mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
 }
 
@@ -1176,7 +1176,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_008, TestSize.Level0)
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     DataShare::DataSharePredicates predicates;
     vector<string> columns;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
@@ -1188,20 +1188,20 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_008, TestSize.Level0)
     predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
     ASSERT_NE(dataShareHelper_, nullptr);
     resultSet = dataShareHelper_->Query(uri, predicates, columns);
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     std::string albumName = GetStringVal(MEDIA_DATA_DB_NAME, resultSet);
     ASSERT_EQ(outPropValue.outStrVal, albumName);
     property = MTP_PROPERTY_DATE_MODIFIED_CODE;
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     int64_t dateModified= GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet);
     std::string timeFormat = "%Y-%m-%d %H:%M:%S";
     EXPECT_EQ(outPropValue.outStrVal, CombinedTimeFunction(timeFormat, dateModified / MILLI_TO_SECOND));
     property = MTP_PROPERTY_DATE_ADDED_CODE;
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     int64_t dateAdded = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_ADDED, resultSet);
     ASSERT_EQ(outPropValue.outIntVal, dateAdded);
     property = MTP_PROPERTY_PARENT_OBJECT_CODE;
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     ASSERT_EQ(outPropValue.outIntVal, 0);
 }
 
@@ -1223,7 +1223,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_009, TestSize.Level0)
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     DataShare::DataSharePredicates predicates;
     vector<string> columns;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
