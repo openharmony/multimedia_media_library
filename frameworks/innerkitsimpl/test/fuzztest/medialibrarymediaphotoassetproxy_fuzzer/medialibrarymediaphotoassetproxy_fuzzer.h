@@ -42,7 +42,7 @@ class PhotoProxyFuzzTest : public PhotoProxy {
 public:
     PhotoProxyFuzzTest()
     {
-        time_t nowTime = time(NULL);
+        time_t nowTime = time(nullptr);
         if (nowTime == -1) {
             return;
         }
