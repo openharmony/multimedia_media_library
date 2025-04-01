@@ -222,6 +222,25 @@ int32_t MovingPhotoNapi::OpenReadOnlyLivePhoto(const string& destLivePhotoUri)
     return E_ERR;
 }
 
+int32_t MovingPhotoNapi::OpenReadOnlyMetadata(const string& movingPhotoUri)
+{
+    if (movingPhotoUri.empty()) {
+        NAPI_ERR_LOG("Failed to open metadata of moving photo, uri is empty");
+        return E_ERR;
+    }
+
+    if (!MediaFileUtils::IsMediaLibraryUri(movingPhotoUri)) {
+        NAPI_ERR_LOG("Failed to check uri of moving photo: %{private}s", movingPhotoUri.c_str());
+        return E_ERR;
+    }
+
+    string movingPhotoMetadataUri = movingPhotoUri;
+    MediaFileUtils::UriAppendKeyValue(
+        movingPhotoMetadataUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_MOVING_PHOTO_METADATA);
+    Uri uri(movingPhotoMetadataUri);
+    return UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
+}
+
 static int32_t CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
 {
     constexpr size_t bufferSize = 4096;
@@ -310,7 +329,12 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
         int32_t ret = WriteToSandboxUri(livePhotoFd, context->destLivePhotoUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
     }
-
+    if (!context->destMetadataUri.empty()) {
+        int32_t extraDataFd = MovingPhotoNapi::OpenReadOnlyMetadata(movingPhotoUri);
+        CHECK_COND_RET(HandleFd(extraDataFd), extraDataFd, "Open moving photo metadata failed");
+        int32_t ret = WriteToSandboxUri(extraDataFd, context->destMetadataUri);
+        CHECK_COND_RET(ret == E_OK, ret, "Write metadata to sandbox failed");
+    }
     return E_OK;
 }
 
@@ -333,7 +357,11 @@ static int32_t AcquireFdForArrayBuffer(MovingPhotoAsyncContext* context)
             return fd;
         case ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE:
             fd = MovingPhotoNapi::OpenReadOnlyLivePhoto(movingPhotoUri);
-            CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
+            CHECK_COND_RET(HandleFd(fd), fd, "Open live photo failed");
+            return fd;
+        case ResourceType::PRIVATE_MOVING_PHOTO_METADATA:
+            fd = MovingPhotoNapi::OpenReadOnlyMetadata(movingPhotoUri);
+            CHECK_COND_RET(HandleFd(fd), fd, "Open moving photo metadata failed");
             return fd;
         default:
             NAPI_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(context->resourceType));
@@ -425,9 +453,12 @@ static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext
 
 static bool IsValidResourceType(int32_t resourceType)
 {
-    return (resourceType == static_cast<int>(ResourceType::IMAGE_RESOURCE) ||
-        resourceType == static_cast<int>(ResourceType::VIDEO_RESOURCE) ||
-        resourceType == static_cast<int>(ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE));
+    return resourceType == static_cast<int32_t>(ResourceType::IMAGE_RESOURCE) ||
+           resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE) ||
+           (resourceType == static_cast<int32_t>(ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE) &&
+               MediaLibraryNapiUtils::IsSystemApp()) ||
+           (resourceType == static_cast<int32_t>(ResourceType::PRIVATE_MOVING_PHOTO_METADATA) &&
+               MediaLibraryNapiUtils::IsSystemApp());
 }
 
 static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const napi_value argv[],
@@ -461,18 +492,21 @@ static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const na
             CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[ARGS_ONE], context->destVideoUri),
                 JS_INNER_FAIL);
         } else if (valueTypeFront == napi_number && valueTypeBack == napi_string) {
-            // write image or video to sandbox
+            // write specific resource to sandbox
             CHECK_ARGS(env, napi_get_value_int32(env, argv[ARGS_ZERO], &resourceType), JS_INNER_FAIL);
             CHECK_COND_WITH_MESSAGE(env, IsValidResourceType(resourceType), "Invalid resource type");
-            if (resourceType == static_cast<int>(ResourceType::IMAGE_RESOURCE)) {
+            if (resourceType == static_cast<int32_t>(ResourceType::IMAGE_RESOURCE)) {
                 CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[ARGS_ONE],
                     context->destImageUri), JS_INNER_FAIL);
-            } else if (resourceType == static_cast<int>(ResourceType::VIDEO_RESOURCE)) {
+            } else if (resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE)) {
                 CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[ARGS_ONE],
                     context->destVideoUri), JS_INNER_FAIL);
-            } else {
+            } else if (resourceType == static_cast<int32_t>(ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE)) {
                 CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[ARGS_ONE],
                     context->destLivePhotoUri), JS_INNER_FAIL);
+            } else {
+                CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[ARGS_ONE],
+                    context->destMetadataUri), JS_INNER_FAIL);
             }
             context->resourceType = static_cast<ResourceType>(resourceType);
         } else {
