@@ -145,7 +145,7 @@ const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
 };
 
 const std::map<int32_t, std::string> FOREGROUND_ANALYSIS_ASSETS_MAP = {
-    { ANALYSIS_SEARCH_INDEX, PAH_UPDATE_ANA_FOREGROUND }
+    { ANALYSIS_SEARCH_INDEX, PAH_QUERY_ANA_FOREGROUND }
 };
 
 const std::string EXTENSION = "fileNameExtension";
@@ -8870,12 +8870,12 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
         return;
     }
 
-    Uri uri(FOREGROUND_ANALYSIS_ASSETS_MAP.at(context->analysisType));
-    DataShare::DataSharePredicates predicates;
-    DataShareValuesBucket value;
-    value.Put(FOREGROUND_ANALYSIS_TYPE, AnalysisType::ANALYSIS_SEARCH_INDEX);
     context->taskId = ForegroundAnalysisMeta::GetIncTaskId();
-    value.Put(FOREGROUND_ANALYSIS_TASK_ID, context->taskId);
+    std::string uriStr = FOREGROUND_ANALYSIS_ASSETS_MAP.at(context->analysisType);
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TYPE, to_string(context->analysisType));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TASK_ID, to_string(context->taskId));
+    Uri uri(uriStr);
+    DataShare::DataSharePredicates predicates;
     std::vector<std::string> fileIds;
     for (const auto &uri : context->uris) {
         std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUriString(uri);
@@ -8886,7 +8886,12 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
     if (!fileIds.empty()) {
         predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
     }
-    int errCode = UserFileClient::Update(uri, predicates, value);
+    int errCode = E_OK;
+    std::vector<std::string> columns;
+    auto result = UserFileClient::Query(uri, predicates, columns, errCode, GetUserIdFromContext(context));
+    if (result != nullptr) {
+        result->Close();
+    }
     if (errCode != E_OK) {
         context->SaveError(errCode);
         NAPI_ERR_LOG("Start assets analysis failed! errCode is = %{public}d", errCode);

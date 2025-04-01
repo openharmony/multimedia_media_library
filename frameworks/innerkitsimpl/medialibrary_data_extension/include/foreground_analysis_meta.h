@@ -46,6 +46,7 @@ public:
         return incTaskId.fetch_add(1, std::memory_order_relaxed);
     }
 
+    static std::shared_ptr<NativeRdb::ResultSet> SelectErrCode(int32_t errCode);
 private:
     bool IsMetaDirtyed();
     int32_t RefreshMeta();
@@ -56,7 +57,8 @@ private:
     void AppendAnalysisTypeOnWhereClause(int32_t type, std::string &whereClause);
     int32_t GetCurTaskId(MediaLibraryCommand &cmd);
 
-    int frontIndexLimit_ = 0;
+    static const int FRONT_INDEX_MAX_LIMIT = 2000;
+    int frontIndexLimit_ = FRONT_INDEX_MAX_LIMIT;
     int64_t frontIndexModified_ = 0L;
     int frontIndexCount_ = 0;
     int64_t frontCvModified_ = 0L;

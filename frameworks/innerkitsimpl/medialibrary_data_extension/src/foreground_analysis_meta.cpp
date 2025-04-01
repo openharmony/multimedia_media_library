@@ -35,7 +35,6 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace Media {
 const int FRONT_CV_MAX_LIMIT = 20;
-const int FRONT_INDEX_MAX_LIMIT = 2000;
 ForegroundAnalysisMeta::ForegroundAnalysisMeta(std::shared_ptr<NativeRdb::ResultSet> result)
 {
     if (result == nullptr) {
@@ -43,10 +42,11 @@ ForegroundAnalysisMeta::ForegroundAnalysisMeta(std::shared_ptr<NativeRdb::Result
     }
     while (result->GoToNextRow() == NativeRdb::E_OK) {
         int colIndex = 0;
+        int frontIndexLimit = 0;
         result->GetColumnIndex(FRONT_INDEX_LIMIT, colIndex);
-        result->GetInt(colIndex, frontIndexLimit_);
-        if (frontIndexLimit_ == 0) {
-            frontIndexLimit_ = FRONT_INDEX_MAX_LIMIT;
+        result->GetInt(colIndex, frontIndexLimit);
+        if (frontIndexLimit > 0) {
+            frontIndexLimit_ = frontIndexLimit;
         }
         result->GetColumnIndex(FRONT_INDEX_MODIFIED, colIndex);
         result->GetLong(colIndex, frontIndexModified_);
@@ -113,23 +113,8 @@ int32_t ForegroundAnalysisMeta::RefreshMeta()
     frontCvModified_ = curMoified;
     frontIndexCount_ = 0;
     frontCvCount_ = 0;
-    ValuesBucket valuesBucket;
-    valuesBucket.Put(FRONT_CV_MODIFIED, frontCvModified_);
-    valuesBucket.Put(FRONT_CV_COUNT, frontCvCount_);
-    valuesBucket.Put(FRONT_INDEX_MODIFIED, frontIndexModified_);
-    valuesBucket.Put(FRONT_INDEX_COUNT, frontIndexCount_);
-    MEDIA_INFO_LOG("refresh cv meta, insert:%{public}d", !isInit_);
-    if (!isInit_) {
-        int64_t outRowId = 0;
-        int errCode = rdbStore->Insert(outRowId, USER_PHOTOGRAPHY_INFO_TABLE, valuesBucket);
-        if (errCode == E_OK) {
-            isInit_ = true;
-        }
-        return errCode;
-    }
-    int changedRows = 0;
-    RdbPredicates predicates(USER_PHOTOGRAPHY_INFO_TABLE);
-    return rdbStore->Update(changedRows, valuesBucket, predicates);
+    isInit_ = true;
+    return E_OK;
 }
 
 int32_t ForegroundAnalysisMeta::CheckCvAnalysisCondition(MediaLibraryCommand &cmd)
@@ -198,10 +183,10 @@ int32_t ForegroundAnalysisMeta::QueryPendingAnalyzeFileIds(MediaLibraryCommand &
         MediaColumn::MEDIA_ID;
     std::string colmun = VISION_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID;
     std::string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
-    ValueObject valueObject;
     int32_t analysisType = AnalysisType::ANALYSIS_SEARCH_INDEX;
-    if (cmd.GetValueBucket().GetObject(FOREGROUND_ANALYSIS_TYPE, valueObject)) {
-        valueObject.GetInt(analysisType);
+    std::string aTypeParam = cmd.GetQuerySetParam(FOREGROUND_ANALYSIS_TYPE);
+    if (!aTypeParam.empty()) {
+        analysisType = std::atoi(aTypeParam.c_str());
     }
     AppendAnalysisTypeOnWhereClause(analysisType, whereClause);
     std::string orderBy = " ORDER BY " + PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_DATE_MODIFIED;
@@ -279,11 +264,21 @@ int32_t ForegroundAnalysisMeta::QueryPendingIndexCount(MediaLibraryCommand &cmd,
 int32_t ForegroundAnalysisMeta::GetCurTaskId(MediaLibraryCommand &cmd)
 {
     int32_t curTaskId = -1;
-    ValueObject valueObject;
-    if (cmd.GetValueBucket().GetObject(FOREGROUND_ANALYSIS_TASK_ID, valueObject)) {
-        valueObject.GetInt(curTaskId);
+    std::string idParam = cmd.GetQuerySetParam(FOREGROUND_ANALYSIS_TASK_ID);
+    if (!idParam.empty()) {
+        curTaskId = std::atoi(idParam.c_str());
     }
     return curTaskId;
+}
+
+std::shared_ptr<NativeRdb::ResultSet> ForegroundAnalysisMeta::SelectErrCode(int32_t errCode)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        return {};
+    }
+    std::string sql = "SELECT " + std::to_string(errCode);
+    return rdbStore->QuerySql(sql);
 }
 }
 }

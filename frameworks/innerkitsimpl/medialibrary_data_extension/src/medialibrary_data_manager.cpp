@@ -1401,8 +1401,6 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
                 return MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
             }
             break;
-        case OperationObject::ANALYSIS_FOREGROUND:
-            return MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(cmd);
         default:
             break;
     }
@@ -2160,6 +2158,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::ASSET_ALBUM_OPERATION:
             return MediaLibraryTableAssetAlbumOperations().Query(
                 RdbUtils::ToPredicates(predicates, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE), columns);
+        case OperationObject::ANALYSIS_FOREGROUND:
+            return MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(cmd);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
