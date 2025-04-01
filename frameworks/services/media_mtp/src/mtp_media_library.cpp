@@ -46,7 +46,6 @@ const std::string BACKUP_DIR_NAME                    = "/storage/media/local/fil
 const std::string APPDATA_DIR_NAME                   = "/storage/media/local/files/Docs/appdata";
 const std::string DESKTOP_NAME                       = "/storage/media/local/files/Docs/Desktop";
 const std::string PATH_SEPARATOR                     = "/";
-constexpr uint32_t BASE_USER_RANGE                   = 200000;
 constexpr int32_t NORMAL_WIDTH                       = 256;
 constexpr int32_t NORMAL_HEIGHT                      = 256;
 constexpr int32_t COMPRE_SIZE_LEVEL_2                = 204800;
@@ -56,17 +55,7 @@ static constexpr uint8_t THUMBNAIL_MID               = 90;
 static std::unordered_map<uint32_t, std::string> handleToPathMap;
 static std::unordered_map<std::string, uint32_t> pathToHandleMap;
 static std::shared_mutex g_mutex;
-enum HANDLE_DEFAULT_ID : uint32_t {
-    DEFAULT_PARENT_ID = 0,
-    START_ID
-};
-
 static std::unordered_map<uint32_t, std::string> storageIdToPathMap;
-enum STORAGE_ID : uint32_t {
-    INNER_STORAGE_ID = 1,
-    SD_START_ID = INNER_STORAGE_ID + 1,
-    SD_END_ID = SD_START_ID + 127
-};
 } // namespace
 
 std::atomic<uint32_t> MtpMediaLibrary::id_ = 0;
@@ -670,6 +659,12 @@ int32_t MtpMediaLibrary::GetIdByPath(const std::string &path, uint32_t &outId)
         outId = it->second;
         return E_SUCCESS;
     }
+    for (const auto &it : storageIdToPathMap) {
+        if (path.compare(it.second) == 0) {
+            outId = it.first;
+            return E_SUCCESS;
+        }
+    }
     return E_NO_SUCH_FILE;
 }
 
@@ -888,7 +883,7 @@ void MtpMediaLibrary::GetHandles(const uint32_t handle, const std::string &root,
 {
     CHECK_AND_RETURN_LOG(out != nullptr, "out is nullptr");
     auto it = handleToPathMap.find(handle);
-    if (it == handleToPathMap.end()) {
+    if (it == handleToPathMap.end() || access(it->second.c_str(), R_OK) != 0) {
         return;
     }
     out->emplace(handle, it->second);
@@ -1223,6 +1218,108 @@ void MtpMediaLibrary::ErasePathInfoSub(const std::string &path)
         }
     }
     std::vector<std::string>().swap(erasePaths);
+}
+
+int32_t MtpMediaLibrary::GetGalleryObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<ObjectInfo> &outObjectInfo, const std::string &name)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    bool cond = (context == nullptr || context->handle != PTP_IN_MTP_ID || outObjectInfo == nullptr || name.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, MTP_ERROR_INVALID_OBJECTHANDLE, "parameter error");
+
+    outObjectInfo->handle    = PTP_IN_MTP_ID;
+    outObjectInfo->name      = name;
+    outObjectInfo->parent    = DEFAULT_PARENT_ROOT;
+    outObjectInfo->storageID = INNER_STORAGE_ID;
+    outObjectInfo->format    = MTP_FORMAT_ASSOCIATION_CODE;
+
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMediaLibrary::GetGalleryPropValue(const std::shared_ptr<MtpOperationContext> &context,
+    uint64_t &outIntVal, uint128_t &outLongVal, std::string &outStrVal, const std::string &name)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    bool cond = (context == nullptr || name.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, MTP_ERROR_INVALID_OBJECTHANDLE, "parameter error");
+    MEDIA_DEBUG_LOG("handle[%{public}d] property[%{public}d]", context->handle, context->property);
+
+    if (MTP_PROPERTY_PARENT_OBJECT_CODE == context->property) {
+        outIntVal = DEFAULT_PARENT_ROOT;
+    }
+    if (MTP_PROPERTY_DISPLAY_NAME_CODE == context->property) {
+        outStrVal = name;
+    }
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMediaLibrary::GetGalleryObjectPropList(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<std::vector<Property>> &outProps, const std::string &name)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    return MtpDataUtils::GetGalleryPropList(context, outProps, name);
+}
+
+int32_t MtpMediaLibrary::CopyGalleryPhoto(const std::shared_ptr<MtpOperationContext> &context,
+    const PathMap &paths, uint32_t &outObjectHandle)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
+    std::string to("");
+    CHECK_AND_RETURN_RET_LOG(GetPathByContextParent(context, to) == MTP_SUCCESS,
+        MTP_ERROR_INVALID_OBJECTHANDLE, "to not found");
+    CHECK_AND_RETURN_RET_LOG(!paths.empty(), MTP_ERROR_INVALID_OBJECTHANDLE, "from is empty");
+    CHECK_AND_RETURN_RET_LOG(sf::is_directory(to), MTP_ERROR_INVALID_OBJECTHANDLE, "parent path is not dir");
+
+    std::error_code ec;
+    for (const auto &it : paths) {
+        CHECK_AND_CONTINUE_INFO_LOG(sf::exists(it.first, ec), "from path not exists err %{public}d", errno);
+        auto toPath = sf::path(to) / it.second;
+        sf::copy(sf::path(it.first), toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
+        CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MTP_ERROR_PARAMETER_NOT_SUPPORTED, "CopyObject failed");
+
+        {
+            WriteLock lock(g_mutex);
+            outObjectHandle = AddPathToMap(toPath);
+            MEDIA_INFO_LOG("CopyPhoto successful to[%{public}s], handle[%{public}d]", toPath.c_str(), outObjectHandle);
+        }
+    }
+
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMediaLibrary::CopyGalleryAlbum(const std::shared_ptr<MtpOperationContext> &context,
+    const std::string &albumName, const PathMap &paths, uint32_t &outObjectHandle)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
+    std::string to("");
+    CHECK_AND_RETURN_RET_LOG(GetPathByContextParent(context, to) == MTP_SUCCESS,
+        MTP_ERROR_INVALID_OBJECTHANDLE, "to not found");
+    CHECK_AND_RETURN_RET_LOG(!albumName.empty(), MTP_ERROR_INVALID_OBJECTHANDLE, "albumName is empty");
+
+    std::error_code ec;
+    CHECK_AND_RETURN_RET_LOG(sf::is_directory(to, ec), MTP_ERROR_INVALID_OBJECTHANDLE, "parent path is not dir");
+
+    auto toPath = sf::path(to) / sf::path(albumName);
+    sf::create_directory(toPath, ec);
+    CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MTP_ERROR_PARAMETER_NOT_SUPPORTED, "create folder failed");
+
+    {
+        WriteLock lock(g_mutex);
+        outObjectHandle = AddPathToMap(toPath);
+        MEDIA_INFO_LOG("CopyAlbum successful to[%{public}s], handle[%{public}d]", toPath.c_str(), outObjectHandle);
+    }
+
+    CHECK_AND_RETURN_RET_LOG(!paths.empty(), MTP_SUCCESS, "from is empty, empty folder");
+    for (auto it = paths.begin(); it != paths.end(); it++) {
+        CHECK_AND_CONTINUE_INFO_LOG(sf::exists(it->first, ec), "from path not exists err %{public}d", errno);
+        auto toPhoto = toPath / it->second;
+        sf::copy(it->first, toPhoto, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
+        CHECK_AND_CONTINUE_INFO_LOG(ec.value() == MTP_SUCCESS, "CopyGalleryAlbum err %{public}d", errno);
+        MEDIA_DEBUG_LOG("from[%{public}s], to[%{public}s]", it->first.c_str(), toPhoto.c_str());
+    }
+    return MTP_SUCCESS;
 }
 
 } // namespace Media
