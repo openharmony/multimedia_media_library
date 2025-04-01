@@ -606,7 +606,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_027, TestSi
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
-    for(int i = 1; i <= 10; i++) {
+    for (int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddPathToMap(FILE_PATH + std::to_string(i) + ".txt");
     }
 
@@ -880,7 +880,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_039, TestSi
     context->handle = handle;
     int32_t outFd = 0;
     mtpMediaLib_->GetFd(context, outFd);
-    int32_t result = mtpMediaLib_->CloseFd(context,outFd);
+    int32_t result = mtpMediaLib_->CloseFd(context, outFd);
     EXPECT_NE(result, MTP_SUCCESS);
 }
 
@@ -911,7 +911,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_040, TestSi
     mtpMediaLib_->GetIdByPath(STORAGE_FILE, parentId);
     context->handle = fromId;
     context->parent = parentId;
-    int32_t result = mtpMediaLib_->MoveObject(context,parentId);
+    int32_t result = mtpMediaLib_->MoveObject(context, parentId);
     EXPECT_NE(result, MTP_SUCCESS);
 }
 
