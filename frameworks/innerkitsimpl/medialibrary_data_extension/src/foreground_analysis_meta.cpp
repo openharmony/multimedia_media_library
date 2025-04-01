@@ -19,6 +19,7 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
@@ -34,7 +35,6 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
-const int FRONT_CV_MAX_LIMIT = 20;
 ForegroundAnalysisMeta::ForegroundAnalysisMeta(std::shared_ptr<NativeRdb::ResultSet> result)
 {
     if (result == nullptr) {
@@ -184,9 +184,9 @@ int32_t ForegroundAnalysisMeta::QueryPendingAnalyzeFileIds(MediaLibraryCommand &
     std::string colmun = VISION_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID;
     std::string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     int32_t analysisType = AnalysisType::ANALYSIS_SEARCH_INDEX;
-    std::string aTypeParam = cmd.GetQuerySetParam(FOREGROUND_ANALYSIS_TYPE);
-    if (!aTypeParam.empty()) {
-        analysisType = std::atoi(aTypeParam.c_str());
+    std::string analysisTypeParam = cmd.GetQuerySetParam(FOREGROUND_ANALYSIS_TYPE);
+    if (MediaLibraryDataManagerUtils::IsNumber(analysisTypeParam)) {
+        analysisType = std::atoi(analysisTypeParam.c_str());
     }
     AppendAnalysisTypeOnWhereClause(analysisType, whereClause);
     std::string orderBy = " ORDER BY " + PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_DATE_MODIFIED;
@@ -265,17 +265,17 @@ int32_t ForegroundAnalysisMeta::GetCurTaskId(MediaLibraryCommand &cmd)
 {
     int32_t curTaskId = -1;
     std::string idParam = cmd.GetQuerySetParam(FOREGROUND_ANALYSIS_TASK_ID);
-    if (!idParam.empty()) {
+    if (MediaLibraryDataManagerUtils::IsNumber(idParam)) {
         curTaskId = std::atoi(idParam.c_str());
     }
     return curTaskId;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> ForegroundAnalysisMeta::SelectErrCode(int32_t errCode)
+std::shared_ptr<NativeRdb::ResultSet> ForegroundAnalysisMeta::QueryByErrorCode(int32_t errCode)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        return {};
+        return nullptr;
     }
     std::string sql = "SELECT " + std::to_string(errCode);
     return rdbStore->QuerySql(sql);
