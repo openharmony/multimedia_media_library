@@ -23,7 +23,7 @@
 #include "directory_ex.h"
 #include "file_uri.h"
 #include "media_file_utils.h"
-#include "media_file_uris.h"
+#include "media_file_uri.h"
 #include "moving_photo_file_utils.h"
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
