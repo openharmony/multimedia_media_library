@@ -22,6 +22,7 @@
 #include <vector>
 #include <filesystem>
 #include "file_asset.h"
+#include "mtp_ptp_const.h"
 #include "mtp_operation_context.h"
 #include "object_info.h"
 #include "property.h"
@@ -72,6 +73,16 @@ public:
     EXPORT uint32_t ObserverAddPathToMap(const std::string &path);
     EXPORT void ObserverDeletePathToMap(const std::string &path);
 
+    EXPORT int32_t GetGalleryObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
+        std::shared_ptr<ObjectInfo> &outObjectInfo, const std::string &name);
+    EXPORT int32_t GetGalleryPropValue(const std::shared_ptr<MtpOperationContext> &context,
+        uint64_t &outIntVal, uint128_t &outLongVal, std::string &outStrVal, const std::string &name);
+    EXPORT int32_t GetGalleryObjectPropList(const std::shared_ptr<MtpOperationContext> &context,
+        std::shared_ptr<std::vector<Property>> &outProps, const std::string &name);
+    EXPORT int32_t CopyGalleryPhoto(const std::shared_ptr<MtpOperationContext> &context,
+        const PathMap &paths, uint32_t &outObjectHandle);
+    EXPORT int32_t CopyGalleryAlbum(const std::shared_ptr<MtpOperationContext> &context, const std::string &albumName,
+        const PathMap &paths, uint32_t &outObjectHandle);
 private:
     void AddToHandlePathMap(const std::string &path, const uint32_t id);
     void ModifyHandlePathMap(const std::string &from, const std::string &to);
