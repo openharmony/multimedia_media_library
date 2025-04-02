@@ -746,7 +746,7 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
                 continue;
             }
             CHECK_AND_PRINT_LOG(ret == E_OK, "Update play_info Sql err, highlight id: %{public}d, errCode: %{public}d",
-                    albumId, ret);
+                albumId, ret);
             ErrorInfo errorInfo(RestoreError::UPDATE_FAILED, 0, std::to_string(ret),
                 "Update play_info failed. highlight id:" + std::to_string(albumId));
             UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
