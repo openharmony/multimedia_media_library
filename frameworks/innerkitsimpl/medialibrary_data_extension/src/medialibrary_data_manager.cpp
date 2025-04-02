@@ -32,10 +32,6 @@
 #include "cloud_media_asset_manager.h"
 #include "cloud_sync_switch_observer.h"
 #include "datashare_abs_result_set.h"
-#ifdef DISTRIBUTED
-#include "device_manager.h"
-#include "device_manager_callback.h"
-#endif
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "dfx_utils.h"
@@ -65,10 +61,6 @@
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_common_utils.h"
-#ifdef DISTRIBUTED
-#include "medialibrary_device.h"
-#include "medialibrary_device_info.h"
-#endif
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
@@ -85,7 +77,6 @@
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_story_operations.h"
 #include "medialibrary_subscriber.h"
-#include "medialibrary_sync_operation.h"
 #include "medialibrary_tab_old_photos_operations.h"
 #include "medialibrary_tab_asset_and_album_operations.h"
 #include "medialibrary_tracer.h"
@@ -179,9 +170,6 @@ static const std::string COLUMN_OLD_FILE_ID = "old_file_id";
 static const std::string SUBSCRIBER_NAME = "POWER_USAGE";
 static const std::string MODULE_NAME = "com.ohos.medialibrary.medialibrarydata";
 #endif
-#ifdef DISTRIBUTED
-static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
-#endif
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
@@ -206,12 +194,6 @@ MediaLibraryDataManager::MediaLibraryDataManager(void)
 
 MediaLibraryDataManager::~MediaLibraryDataManager(void)
 {
-#ifdef DISTRIBUTED
-    if (kvStorePtr_ != nullptr) {
-        dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
-        kvStorePtr_ = nullptr;
-    }
-#endif
 }
 
 MediaLibraryDataManager* MediaLibraryDataManager::GetInstance()
@@ -349,10 +331,6 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     if (!MediaLibraryKvStoreManager::GetInstance().InitMonthAndYearKvStore(KvStoreRoleType::OWNER)) {
         MEDIA_ERR_LOG("failed at InitMonthAndYearKvStore");
     }
-#ifdef DISTRIBUTED
-    errCode = InitDeviceData();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitDeviceData");
-#endif
     MimeTypeUtils::InitMimeTypeMap();
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
     CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
@@ -669,24 +647,6 @@ void MediaLibraryDataManager::InitResourceInfo()
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
 }
 
-#ifdef DISTRIBUTED
-int32_t MediaLibraryDataManager::InitDeviceData()
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager InitDeviceData rdbStore is null");
-        return E_ERR;
-    }
-
-    MediaLibraryTracer tracer;
-    tracer.Start("InitDeviceRdbStoreTrace");
-    if (!MediaLibraryDevice::GetInstance()->InitDeviceRdbStore(rdbStore_)) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager InitDeviceData failed!");
-        return E_ERR;
-    }
-    return E_OK;
-}
-#endif
-
 __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibraryMgr()
 {
     lock_guard<shared_mutex> lock(mgrSharedMutex_);
@@ -714,17 +674,6 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
     MEDIA_INFO_LOG("CloseKvStore success");
-
-#ifdef DISTRIBUTED
-    if (kvStorePtr_ != nullptr) {
-        dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
-        kvStorePtr_ = nullptr;
-    }
-
-    if (MediaLibraryDevice::GetInstance()) {
-        MediaLibraryDevice::GetInstance()->Stop();
-    };
-#endif
 
     if (thumbnailService_ != nullptr) {
         thumbnailService_->ReleaseService();
@@ -1038,11 +987,6 @@ int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &
         case OperationType::AGING:
             result = thumbnailService_->LcdAging();
             break;
-#ifdef DISTRIBUTED
-        case OperationType::DISTRIBUTE_AGING:
-            result = DistributeDeviceAging();
-            break;
-#endif
         default:
             MEDIA_ERR_LOG("bad operation type %{public}u", cmd.GetOprnType());
     }
@@ -1744,50 +1688,6 @@ int32_t MediaLibraryDataManager::UpdateBurstFromGallery()
     return ret;
 }
 
-#ifdef DISTRIBUTED
-int32_t MediaLibraryDataManager::LcdDistributeAging()
-{
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::LcdDistributeAging IN");
-    auto deviceInstance = MediaLibraryDevice::GetInstance();
-    if ((thumbnailService_ == nullptr) || (deviceInstance == nullptr)) {
-        return E_THUMBNAIL_SERVICE_NULLPTR;
-    }
-    int32_t result = E_SUCCESS;
-    vector<string> deviceUdids;
-    deviceInstance->QueryAllDeviceUdid(deviceUdids);
-    for (string &udid : deviceUdids) {
-        result = thumbnailService_->LcdDistributeAging(udid);
-        if (result != E_SUCCESS) {
-            MEDIA_ERR_LOG("LcdDistributeAging fail result is %{public}d", result);
-            break;
-        }
-    }
-    return result;
-}
-
-int32_t MediaLibraryDataManager::DistributeDeviceAging()
-{
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::DistributeDeviceAging IN");
-    auto deviceInstance = MediaLibraryDevice::GetInstance();
-    if ((thumbnailService_ == nullptr) || (deviceInstance == nullptr)) {
-        return E_FAIL;
-    }
-    int32_t result = E_FAIL;
-    vector<MediaLibraryDeviceInfo> deviceDataBaseList;
-    deviceInstance->QueryAgingDeviceInfos(deviceDataBaseList);
-    MEDIA_DEBUG_LOG("MediaLibraryDevice InitDeviceRdbStore deviceDataBaseList size =  %{public}d",
-        (int) deviceDataBaseList.size());
-    for (MediaLibraryDeviceInfo deviceInfo : deviceDataBaseList) {
-        result = thumbnailService_->InvalidateDistributeThumbnail(deviceInfo.deviceUdid);
-        if (result != E_SUCCESS) {
-            MEDIA_ERR_LOG("invalidate fail %{public}d", result);
-            continue;
-        }
-    }
-    return result;
-}
-#endif
-
 int MediaLibraryDataManager::GetThumbnail(const string &uri)
 {
     CHECK_AND_RETURN_RET(thumbnailService_ != nullptr, E_THUMBNAIL_SERVICE_NULLPTR);
@@ -1870,48 +1770,6 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(MediaLibraryCommand &
     }
     return RdbUtils::ToResultSetBridge(absResultSet);
 }
-
-#ifdef DISTRIBUTED
-int32_t MediaLibraryDataManager::SyncPullThumbnailKeys(const Uri &uri)
-{
-    if (MediaLibraryDevice::GetInstance() == nullptr || !MediaLibraryDevice::GetInstance()->IsHasActiveDevice()) {
-        return E_ERR;
-    }
-    if (kvStorePtr_ == nullptr) {
-        return E_ERR;
-    }
-
-    MediaLibraryCommand cmd(uri, OperationType::QUERY);
-    cmd.GetAbsRdbPredicates()->BeginWrap()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE))
-        ->Or()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO))->EndWrap()
-        ->And()->EqualTo(MEDIA_DATA_DB_DATE_TRASHED, to_string(0))
-        ->And()->NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM))
-        ->OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
-    vector<string> columns = { MEDIA_DATA_DB_THUMBNAIL, MEDIA_DATA_DB_LCD };
-    auto resultset = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
-    if (resultset == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-
-    vector<string> thumbnailKeys;
-    int count = 0;
-    while (resultset->GoToNextRow() == NativeRdb::E_OK && count < MAX_QUERY_THUMBNAIL_KEY_COUNT) {
-        string thumbnailKey =
-            get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_THUMBNAIL, resultset, TYPE_STRING));
-        thumbnailKeys.push_back(thumbnailKey);
-        string lcdKey = get<string>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_LCD, resultset, TYPE_STRING));
-        thumbnailKeys.push_back(lcdKey);
-        count++;
-    }
-
-    if (thumbnailKeys.empty()) {
-        return E_NO_SUCH_FILE;
-    }
-    MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr_, thumbnailKeys,
-        MediaFileUtils::GetNetworkIdFromUri(uri.ToString()));
-    return E_SUCCESS;
-}
-#endif
 
 static const map<OperationObject, string> QUERY_CONDITION_MAP {
     { OperationObject::SMART_ALBUM, SMARTALBUM_DB_ID },
@@ -2182,40 +2040,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
     return QuerySet(cmd, columns, predicates, errCode);
 }
 
-#ifdef DISTRIBUTED
-bool MediaLibraryDataManager::QuerySync(const string &networkId, const string &tableName)
-{
-    if (networkId.empty() || tableName.empty()) {
-        return false;
-    }
-
-    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
-    auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
-    auto ret = deviceManager.GetLocalDeviceInfo(bundleName_, deviceInfo);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager QuerySync Failed to get local device info.");
-        return false;
-    }
-
-    if (networkId == string(deviceInfo.networkId)) {
-        return true;
-    }
-
-    int32_t syncStatus = DEVICE_SYNCSTATUSING;
-    auto result = MediaLibraryDevice::GetInstance()->GetDeviceSyncStatus(networkId, tableName, syncStatus);
-    if (result && syncStatus == DEVICE_SYNCSTATUS_COMPLETE) {
-        return true;
-    }
-
-    vector<string> devices = { networkId };
-    MediaLibrarySyncOpts syncOpts;
-    syncOpts.rdbStore = rdbStore_;
-    syncOpts.table = tableName;
-    syncOpts.bundleName = bundleName_;
-    return MediaLibrarySyncOperation::SyncPullTable(syncOpts, devices);
-}
-#endif
-
 int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -2272,11 +2096,7 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
     if (thumbnailService_ == nullptr) {
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
-#ifdef DISTRIBUTED
-    thumbnailService_->Init(rdbStore_, kvStorePtr_, extensionContext);
-#else
     thumbnailService_->Init(rdbStore_,  extensionContext);
-#endif
     return E_OK;
 }
 
@@ -2334,17 +2154,6 @@ int32_t MediaLibraryDataManager::SetCmdBundleAndDevice(MediaLibraryCommand &outC
         return E_GET_CLIENTBUNDLE_FAIL;
     }
     outCmd.SetBundleName(clientBundle);
-#ifdef DISTRIBUTED
-    OHOS::DistributedHardware::DmDeviceInfo deviceInfo;
-    auto &deviceManager = OHOS::DistributedHardware::DeviceManager::GetInstance();
-    int32_t ret = deviceManager.GetLocalDeviceInfo(bundleName_, deviceInfo);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("GetLocalDeviceInfo ret = %{public}d", ret);
-    } else {
-        outCmd.SetDeviceName(deviceInfo.deviceName);
-    }
-    return ret;
-#endif
     return 0;
 }
 

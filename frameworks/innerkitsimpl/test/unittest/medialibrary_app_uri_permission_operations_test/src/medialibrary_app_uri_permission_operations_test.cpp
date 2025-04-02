@@ -53,8 +53,6 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_uripermission_operations.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "uri.h"

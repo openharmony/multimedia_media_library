@@ -44,8 +44,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
@@ -95,42 +93,6 @@ void CleanTestTables()
         MEDIA_DEBUG_LOG("Drop %{private}s table success", dropTable.c_str());
     }
 }
-
-class ArkJsRuntime : public AbilityRuntime::JsRuntime {
-public:
-    ArkJsRuntime() {};
-
-    ~ArkJsRuntime() {};
-
-    void StartDebugMode(const DebugOption debugOption) {};
-    void FinishPreload() {};
-    bool LoadRepairPatch(const string& patchFile, const string& baseFile)
-    {
-        return true;
-    };
-    bool NotifyHotReloadPage()
-    {
-        return true;
-    };
-    bool UnLoadRepairPatch(const string& patchFile)
-    {
-        return true;
-    };
-    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
-    {
-        return true;
-    };
-};
-
-#ifdef FILEEXT
-void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
-{
-    for (auto t : fileList) {
-        MEDIA_DEBUG_LOG("medialib_ListFile_test_001 file.uri: %s, file.fileName: %s, file.mode: %d, file.mimeType: %s",
-            t.uri.c_str(), t.fileName.c_str(), t.mode, t.mimeType.c_str());
-    }
-}
-#endif
 
 struct UniqueMemberValuesBucket {
     string assetMediaType;
@@ -841,24 +803,6 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, Test
     };
     bool res = QueryAndVerifyAudioAsset(AudioColumn::MEDIA_NAME, name, verifyMap);
     EXPECT_EQ(res, true);
-#ifdef FILEEXT
-    shared_ptr<MediaFileExtAbility> mediaFileExtAbility;
-    MediaLibraryUnitTestUtils::Init();
-    ArkJsRuntime runtime;
-    mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
-    const int64_t offset = 0;
-    const int64_t maxCount = 100;
-    FileAccessFwk::FileFilter filter;
-
-    FileAccessFwk::FileInfo rootInfo;
-    rootInfo.uri = COMMON_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_AUDIO_URI;
-    rootInfo.mimeType = DEFAULT_AUDIO_MIME_TYPE_PREFIX;
-    vector<FileAccessFwk::FileInfo> rootFileList;
-    ret = mediaFileExtAbility->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
-    EXPECT_EQ(ret, E_SUCCESS);
-    EXPECT_EQ(rootFileList.size(), 1);
-    DisplayFileList(rootFileList);
-#endif
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_003");
 }
 

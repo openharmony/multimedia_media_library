@@ -30,7 +30,6 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore.h"
 #include "medialibrary_unistore_manager.h"
-#include "media_file_ext_ability.h"
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 #include "medialibrary_rdb_utils.h"

@@ -38,12 +38,6 @@ public:
 
     EXPORT static int32_t AgingLcdBatch(ThumbRdbOpt &opts);
 
-#ifdef DISTRIBUTED
-    EXPORT static int32_t AgingDistributeLcdBatch(ThumbRdbOpt &opts);
-    EXPORT static int32_t InvalidateDistributeBatch(ThumbRdbOpt &opts);
-    EXPORT static int32_t ClearKeyAndRecordFromMap(ThumbRdbOpt &opts);
-    EXPORT static int32_t ClearRemoteLcdFromFileTable(ThumbRdbOpt &opts);
-#endif
     EXPORT static int32_t ClearLcdFromFileTable(ThumbRdbOpt &opts);
     EXPORT static int32_t GetAgingDataCount(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &count);
 private:

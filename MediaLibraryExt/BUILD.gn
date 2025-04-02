@@ -28,8 +28,7 @@ ohos_hap("medialibrary_ext_hap") {
   module_install_dir = "app/com.ohos.medialibrary.MediaLibraryData"
   publicity_file = "../publicity.xml"
   if (defined(sign_hap_py_path)) {
-    certificate_profile =
-        "${MEDIALIB_INNERKITS_PATH}/signature/medialib_new.p7b"
+    certificate_profile = "./signature/medialib_new.p7b"
     key_alias = "medialibrarydata"
     private_key_path = "medialibrarydata"
     compatible_version = "9"
