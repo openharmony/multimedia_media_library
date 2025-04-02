@@ -114,17 +114,33 @@ void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight
     CHECK_AND_RETURN_LOG(cloneHighlight.IsCloneHighlight(), "clone highlight flag is false.");
 
     MEDIA_INFO_LOG("restore highlight cv analysis album start.");
+    int64_t startGetMapTime = MediaFileUtils::UTCTimeMilliSeconds();
     GetAssetMapInfos(cloneHighlight);
     GetAssetAlbumInfos(cloneHighlight);
-    UpdateHighlightPlayInfos(cloneHighlight);
+    int64_t startUpdatePlayInfoTime = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<int32_t> updateHighlightIds;
+    UpdateHighlightPlayInfos(cloneHighlight, updateHighlightIds);
+    cloneHighlight.UpdateHighlightStatus(updateHighlightIds);
+    int64_t startInsertMapTime = MediaFileUtils::UTCTimeMilliSeconds();
     InsertIntoAssetMap();
     InsertIntoSdMap();
+    int64_t startRestoreLabelTime = MediaFileUtils::UTCTimeMilliSeconds();
     GetAnalysisLabelInfos(cloneHighlight);
     InsertIntoAnalysisLabel();
+    int64_t startRestoreSaliencyTime = MediaFileUtils::UTCTimeMilliSeconds();
     GetAnalysisSaliencyInfos(cloneHighlight);
     InsertIntoAnalysisSaliency();
+    int64_t startRestoreRcmdTime = MediaFileUtils::UTCTimeMilliSeconds();
     GetAnalysisRecommendationInfos(cloneHighlight);
     InsertIntoAnalysisRecommendation();
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("RestoreAllCVAlbums cost %{public}" PRId64 ", GetMapInfos cost %{public}" PRId64
+        ", UpdateHighlightPlayInfos cost %{public}" PRId64 ", InsertMapInfos cost %{public}" PRId64
+        ", RestoreLabel cost %{public}" PRId64 ", RestoreSaliency cost %{public}" PRId64
+        ", RestoreRecommendation cost %{public}" PRId64, endTime - startGetMapTime,
+        startUpdatePlayInfoTime - startGetMapTime, startInsertMapTime - startUpdatePlayInfoTime,
+        startRestoreLabelTime - startInsertMapTime, startRestoreSaliencyTime - startRestoreLabelTime,
+        startRestoreRcmdTime - startRestoreSaliencyTime, endTime - startRestoreRcmdTime);
     ReportCloneRestoreCVAnalysisTask();
 }
 
@@ -521,7 +537,8 @@ void CloneRestoreCVAnalysis::GetRecommendationInsertValue(NativeRdb::ValuesBucke
 std::string CloneRestoreCVAnalysis::ParsePlayInfo(const std::string &oldPlayInfo, CloneRestoreHighlight &cloneHighlight)
 {
     nlohmann::json newPlayInfo = nlohmann::json::parse(oldPlayInfo, nullptr, false);
-    CHECK_AND_RETURN_RET_LOG(!newPlayInfo.is_discarded(), "", "parse json string failed.");
+    CHECK_AND_RETURN_RET_LOG(!newPlayInfo.is_discarded(), cloneHighlight.GetDefaultPlayInfo(),
+        "parse json string failed.");
     if (newPlayInfo["effectline"].contains("effectline")) {
         for (size_t effectlineIndex = 0; effectlineIndex < newPlayInfo["effectline"]["effectline"].size();
             effectlineIndex++) {
@@ -686,10 +703,12 @@ void CloneRestoreCVAnalysis::MoveAnalysisAssets(const std::string &srcPath, cons
         BackupFileUtils::GarbleFilePath(dstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
 }
 
-void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &cloneHighlight)
+void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &cloneHighlight,
+    std::vector<int32_t> &updateHighlightIds)
 {
     int32_t rowCount = 0;
     int32_t offset = 0;
+    std::string defalutPlayInfo = cloneHighlight.GetDefaultPlayInfo();
     do {
         const std::string QUERY_SQL = "SELECT album_id, play_info_id, play_info FROM tab_highlight_play_info LIMIT "
             + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
@@ -702,7 +721,7 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
             std::optional<int32_t> playId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "play_info_id");
             std::optional<std::string> oldPlayInfo =
                 BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "play_info");
-            std::string newPlayInfo = "null";
+            std::string newPlayInfo = defalutPlayInfo;
             CHECK_AND_EXECUTE(!oldPlayInfo.has_value(),
                 newPlayInfo = ParsePlayInfo(oldPlayInfo.value(), cloneHighlight));
 
@@ -720,7 +739,17 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
                 ret = BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb_, updatePlayInfoSql,
                     { newPlayInfo, albumId });
             }
-            CHECK_AND_PRINT_LOG(ret == E_OK, "executeSql err, errCode: %{public}d", ret);
+            bool successfulParseCond = (newPlayInfo != defaultPlayInfo && ret == E_OK) ||
+                (newPlayInfo == defaultPlayInfo && oldPlayInfo == defaultPlayInfo);
+            if (successfulParseCond) {
+                updateHighlightIds.emplace_back(albumId);
+                continue;
+            }
+            CHECK_AND_PRINT_LOG(ret == E_OK, "update play_info Sql err, highlight id: %{public}d, errCode: %{public}d",
+                    albumId, ret);
+            ErrorInfo errorInfo(RestoreError::UPDATE_FAILED, 0, std::to_string(ret),
+                "update play_info failed. highlight id:" + std::to_string(albumId));
+            UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
         }
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
