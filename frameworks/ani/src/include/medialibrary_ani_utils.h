@@ -298,6 +298,7 @@ public:
     static ani_status ToAniBooleanObject(ani_env *env, bool src, ani_object &aniObj);
     static ani_status ToAniIntObject(ani_env *env, int32_t src, ani_object &aniObj);
     static ani_status ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj);
+    static ani_status ToAniDoubleObject(ani_env *env, double src, ani_object &aniObj);
 
     static ani_status GetUint32Array(ani_env *env, ani_object arg, std::vector<uint32_t> &array);
     static ani_status ToAniInt32Array(ani_env *env, const std::vector<uint32_t> &array, ani_object &aniArray);

@@ -363,6 +363,19 @@ ani_status MediaLibraryAniUtils::ToAniIntObject(ani_env *env, int32_t src, ani_o
     return ANI_OK;
 }
 
+ani_status MediaLibraryAniUtils::ToAniDoubleObject(ani_env *env, double src, ani_object &aniObj)
+{
+    static const char *className = "Lstd/core/Double;";
+    ani_class cls {};
+    CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
+
+    ani_method ctor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "D:V", &ctor), "Failed to find method: ctor");
+
+    CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, static_cast<ani_double>(src)), "New double Object Fail");
+    return ANI_OK;
+}
+
 ani_status MediaLibraryAniUtils::ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj)
 {
     static const char *className = "Lescompat/BigInt;";
