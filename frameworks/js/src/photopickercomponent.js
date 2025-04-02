@@ -33,7 +33,7 @@ const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
     ['video/*', 'FILTER_MEDIA_TYPE_VIDEO'],
     ['image/movingPhoto', 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO']
-])
+]);
 
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
