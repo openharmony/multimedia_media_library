@@ -285,7 +285,7 @@ static napi_value ParseAssetArray(napi_env env, napi_value arg, vector<string>& 
     RETURN_NAPI_TRUE(env);
 }
 
-static bool CheckAssetsUriArray(const string& uri)
+static bool CheckAssetsUri(const string& uri)
 {
     if (uri.empty()) {
         return false;
@@ -296,7 +296,6 @@ static bool CheckAssetsUriArray(const string& uri)
     }
     string fileId = fileUri.GetFileId();
     if (!all_of(fileId.begin(), fileId.end(), ::isdigit) || atoi(fileId.c_str()) <= 0) {
-        NAPI_ERR_LOG("fileId is invalid, fileId is %{public}s", fileId.c_str());
         return false;
     }
     return true;
@@ -314,9 +313,11 @@ static napi_value GetUriArray(napi_env env, vector<napi_value> &napiValues, vect
         CHECK_ARGS(
             env, napi_get_value_string_utf8(env, napiValue, buffer.get(), PATH_MAX, &res), JS_ERR_PARAMETER_INVALID);
         string uri = buffer.get();
-        if (CheckAssetsUriArray(uri)) {
-            values.emplace_back(uri);
+        if (!CheckAssetsUri(uri)) {
+            NAPI_ERR_LOG("fileId is invalid, uri is %{public}s", uri.c_str());
+            continue;
         }
+        values.emplace_back(uri);
     }
     napi_value ret = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
