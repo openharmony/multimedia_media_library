@@ -122,10 +122,20 @@ HWTEST_F(HiAuditTest, HiAuditTest_DirectoryNotExists_test_002, TestSize.Level0)
 HWTEST_F(HiAuditTest, HiAuditTest_GetInstance_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("HiAuditTest_GetInstance_test_003 begin");
+
     BackupHiAudit &instance1 = BackupHiAudit::GetInstance();
     BackupHiAudit &instance2 = BackupHiAudit::GetInstance();
 
     EXPECT_EQ(&instance1, &instance2);
+
+
+    EXPECT_GE(instance1.writeFd_, 0) << "writeFd_ should be initialized properly";
+
+    uint64_t time1 = instance1.GetMilliseconds();
+    usleep(10000);
+    uint64_t time2 = instance1.GetMilliseconds();
+    EXPECT_GT(time2, time1) << "GetMilliseconds should return increasing values";
+
     MEDIA_INFO_LOG("HiAuditTest_GetInstance_test_003 end");
 }
 
