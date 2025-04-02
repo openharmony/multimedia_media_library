@@ -524,7 +524,14 @@ static int32_t QueryPhotoPosition(string movingPhotoUri, bool hasReadPermission,
         NAPI_ERR_LOG("query resultSet is nullptr");
         return E_ERR;
     }
-    resultSet->GetColumnIndex(PhotoColumn::PHOTO_POSITION, position);
+
+    int index;
+    int err = resultSet->GetColumnIndex(PhotoColumn::PHOTO_POSITION, index);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("Failed to GetColumnIndex");
+        return E_ERR;
+    }
+    resultSet->GetInt(index, position);
     return E_OK;
 }
 
