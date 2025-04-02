@@ -405,8 +405,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
     // When encode picture, if mainPixel width or height is odd, hardware encode would fail.
     // For the safety of encode process, only those of even desiredSize are allowed to generate througth picture.
-    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage() &&
-        data_.lcdDesiredSize.width % 2 == 0 && data_.lcdDesiredSize.height % 2 == 0;
+    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage();
     bool isGenerateSucceed = shouldGeneratePicture ?
         GeneratePictureSource(imageSource, targetSize) : GeneratePixelMapSource(imageSource, sourceSize, targetSize);
     if (!isGenerateSucceed && shouldGeneratePicture) {
