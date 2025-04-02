@@ -98,9 +98,6 @@ static vector<string> GetAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStor
 
 void AnalysisHandler::ProcessHandleData(PeriodTaskData *data)
 {
-    if (data == nullptr) {
-        return;
-    }
     CloudSyncHandleData handleData;
     if (GetHandleData(handleData) != E_OK) {
         return;
