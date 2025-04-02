@@ -404,7 +404,7 @@ static void GetPropValueBySetTest(const uint8_t* data, size_t size)
     uint32_t property = FuzzUInt32(data, size);
     PropertyValue outPropValue;
     const shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
-    MtpDataUtils::GetPropValueBySet(property, resultSet, outPropValue);
+    MtpDataUtils::GetPropValueBySet(property, resultSet, outPropValue, false);
 }
 
 static void GetMediaTypeByNameTest(const uint8_t* data, size_t size)

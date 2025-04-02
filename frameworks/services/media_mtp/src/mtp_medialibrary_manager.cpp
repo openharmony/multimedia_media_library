@@ -77,6 +77,7 @@ const string PARENT_ID_STRING = "0";
 const std::string MOVING_PHOTO_SUFFIX = ".mp4";
 constexpr int32_t MILLI_TO_SECOND = 1000;
 constexpr int32_t PATH_TIMEVAL_MAX = 2;
+constexpr int32_t MOVING_PHOTO_TYPE = 3;
 namespace {
 std::vector<std::string> g_photoColumns = {
     MediaColumn::MEDIA_ID + " + " + to_string(COMMON_PHOTOS_OFFSET) + " as " + MEDIA_DATA_DB_ID,
@@ -560,7 +561,15 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
         MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR), "outObjectInfo is nullptr");
     outObjectInfo->handle = static_cast<uint32_t>(fileAsset->GetId());
     outObjectInfo->name = fileAsset->GetDisplayName();
-    outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
+    if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
+        struct stat statInfo;
+        CHECK_AND_RETURN_RET_LOG(stat(fileAsset->GetPath().c_str(), &statInfo) == 0,
+            MtpErrorUtils::SolveGetObjectInfoError(E_NO_SUCH_FILE), "SetObjectInfo stat failed");
+        outObjectInfo->size = GetSizeFromOfft(statInfo.st_size);
+    } else {
+        outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
+    }
     outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
     outObjectInfo->dateCreated = fileAsset->GetDateAdded() / MILLI_TO_SECOND;
     outObjectInfo->dateModified = fileAsset->GetDateModified() / MILLI_TO_SECOND;
@@ -1167,7 +1176,8 @@ int32_t MtpMedialibraryManager::GetObjectPropValue(const shared_ptr<MtpOperation
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
         MTP_ERROR_INVALID_OBJECTHANDLE, "have no row");
     PropertyValue propValue;
-    int32_t errCode = MtpDataUtils::GetPropValueBySet(context->property, resultSet, propValue);
+    bool isVideoOfMovingPhoto = static_cast<int32_t>(context->handle / COMMON_PHOTOS_OFFSET) == MOVING_PHOTO_TYPE;
+    int32_t errCode = MtpDataUtils::GetPropValueBySet(context->property, resultSet, propValue, isVideoOfMovingPhoto);
     CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, MTP_ERROR_INVALID_OBJECTHANDLE, "fail to get GetPropValueBySet");
     outIntVal = propValue.outIntVal;
     outStrVal = propValue.outStrVal;
