@@ -154,7 +154,7 @@ public:
 
     EXPORT static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
     EXPORT static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
-    EXPORT static bool LoadVideoFile(ThumbnailData &data, Size &desiredSize);
+    EXPORT static bool LoadVideoFrame(ThumbnailData &data, Size &desiredSize, int64_t timeStamp);
     EXPORT static bool CheckCloudThumbnailDownloadFinish(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr);
     EXPORT static bool QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
         const std::string &table, std::vector<ThumbnailData> &infos);
