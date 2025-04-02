@@ -275,11 +275,14 @@ static void GetHiddenPredicates(RdbPredicates &predicates)
     predicates.EndWrap();
 }
 
-static void GetTrashPredicates(RdbPredicates &predicates)
+static void GetTrashPredicates(RdbPredicates &predicates, const bool hiddenState)
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    if (hiddenState) {
+        predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
+    }
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL,
         to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)));
@@ -357,7 +360,7 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
             return GetHiddenPredicates(predicates);
         }
         case PhotoAlbumSubType::TRASH: {
-            return GetTrashPredicates(predicates);
+            return GetTrashPredicates(predicates, hiddenState);
         }
         case PhotoAlbumSubType::SCREENSHOT: {
             return GetScreenshotPredicates(predicates, hiddenState);
