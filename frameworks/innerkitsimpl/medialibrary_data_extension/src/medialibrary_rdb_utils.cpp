@@ -1470,13 +1470,13 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
     for (auto albumId: predicates.GetWhereArgs()) {
         MEDIA_INFO_LOG("Start trashed album, album id is: %{public}s", albumId.c_str());
         const std::string QUERY_FILE_ASSET_INFO = "SELECT file_id, data, display_name FROM"
-            " Photos WHERE owner_album_id = " + albumId +
-            " AND clean_flag = 0 AND hidden = 0";
+            " Photos WHERE owner_album_id = " + albumId + " AND clean_flag = 0 AND hidden = 0";
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(QUERY_FILE_ASSET_INFO);
         vector<string> fileAssetsIds, fileAssetsUri;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t fileId = -1;
-            string assetData, displayName;
+            string assetData;
+            string displayName;
             GetIntFromResultSet(resultSet, MediaColumn::MEDIA_ID, fileId);
             GetStringFromResultSet(resultSet, MediaColumn::MEDIA_FILE_PATH, assetData);
             GetStringFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
