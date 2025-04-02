@@ -22,6 +22,7 @@
 #include <sstream>
 
 #include "file_asset_napi.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
