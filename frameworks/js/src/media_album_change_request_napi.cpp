@@ -288,6 +288,7 @@ static napi_value ParseAssetArray(napi_env env, napi_value arg, vector<string>& 
 static bool CheckAssetsUri(const string& uri)
 {
     if (uri.empty()) {
+        NAPI_ERR_LOG("uri is empty, can not get fileId");
         return false;
     }
     MediaFileUri fileUri(uri);
