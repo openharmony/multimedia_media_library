@@ -382,7 +382,6 @@ export struct PhotoPickerComponent {
   }
 
   parseMimeTypeFilter(filter?: photoAccessHelper.MimeTypeFilter): object | undefined {
-  parseMimeTypeFilter(filter?: photoAccessHelper.MimeTypeFilter): object | undefined {
     if (!filter) {
       return undefined;
     }
@@ -398,7 +397,6 @@ export struct PhotoPickerComponent {
         }
       }
     }
-    return MimeTypeFilterObj;
     return MimeTypeFilterObj;
   }
 
