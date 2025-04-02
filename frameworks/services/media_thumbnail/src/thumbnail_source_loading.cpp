@@ -299,7 +299,17 @@ bool SourceLoader::CreateVideoFramePixelMap()
 {
     MediaLibraryTracer tracer;
     tracer.Start("CreateVideoFramePixelMap");
-    return ThumbnailUtils::LoadVideoFile(data_, desiredSize_);
+    int64_t timeStamp = AV_FRAME_TIME;
+    if (!data_.tracks.empty()) {
+        int64_t timeStamp = std::stoll(data_.timeStamp);
+        timeStamp = timeStamp * MS_TRANSFER_US;
+    }
+    if (state_ == SourceState::CLOUD_ORIGIN && timeStamp != AV_FRAME_TIME) {
+        MEDIA_ERR_LOG("Avoid reading specific frame from cloud video, path %{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
+        return false;
+    }
+    return ThumbnailUtils::LoadVideoFrame(data_, desiredSize_, timeStamp);
 }
 
 void SourceLoader::SetCurrentStateFunction()

@@ -799,7 +799,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     std::string sourcePath = "";
     bool ret = ThumbnailUtils::LoadImageFile(data, desiredSize);
     EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::LoadVideoFile(data, desiredSize);
+    ret = ThumbnailUtils::LoadVideoFrame(data, desiredSize, 0);
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::LoadAudioFile(data, desiredSize);
     EXPECT_EQ(ret, false);
