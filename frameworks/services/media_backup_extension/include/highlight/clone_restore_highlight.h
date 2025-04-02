@@ -38,6 +38,8 @@ public:
     int32_t GetNewHighlightPhotoId(int32_t oldId);
     std::string GetNewHighlightPhotoUri(int32_t newId);
     bool IsCloneHighlight();
+    std::string GetDefaultPlayInfo();
+    void UpdateHighlightStatus(const std::vector<int32_t> &highlightIds);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket &values, const std::string &columnName,
@@ -234,6 +236,7 @@ private:
     void GetHighlightRowInfo(HighlightAlbumInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoHighlightAlbum();
     void GetHighlightInsertValue(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info);
+    void PutTempHighlightStatus(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info);
     void MoveHighlightCovers();
     void MoveHighlightWordart(const AnalysisAlbumInfo &info, const std::string &srcDir);
     void MoveHighlightGround(const AnalysisAlbumInfo &info, const std::string &srcDir);

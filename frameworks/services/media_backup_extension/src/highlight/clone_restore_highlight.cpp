@@ -28,6 +28,8 @@ const std::vector<std::string> HIGHLIGHT_RATIO_WORD_ART = { "1_1", "3_2", "3_4",
 const std::vector<std::string> HIGHLIGHT_COVER_NAME = { "foreground", "background"};
 const std::string MUSIC_DIR_DST_PATH = "/storage/media/local/files/highlight/music";
 const std::string GARBLE_DST_PATH = "/storage/media/local/files";
+const int32_t HIGHLIGHT_STATUS_PUSH = 1;
+const int32_t HIGHLIGHT_STATUS_NOT_PRODUCE = -1;
 const int32_t HIGHLIGHT_STATUS_DELETE = -4;
 
 const std::unordered_map<std::string, std::unordered_set<std::string>> ALBUM_COLUMNS_MAP = {
@@ -254,6 +256,44 @@ std::string CloneRestoreHighlight::GetNewHighlightPhotoUri(int32_t newId)
 bool CloneRestoreHighlight::IsCloneHighlight()
 {
     return isCloneHighlight_;
+}
+
+std::string CloneRestoreHighlight::GetDefaultPlayInfo()
+{
+    nlohmann::json playInfo;
+    playInfo["beatsInfo"] = nlohmann::json::array();
+    playInfo["effectline"] = nlohmann::json::object();
+    playInfo["effectline"]["effectline"] = nlohmann::json::array();
+    playInfo["timeline"] = nlohmann::json::array();
+    return playInfo.dump();
+}
+
+void CloneRestoreHighlight::UpdateHighlightStatus(const std::vector<int32_t> &highlightIds)
+{
+    std::vector<NativeRdb::ValueObject> updateIds;
+    for (auto highlightId : highlightIds) {
+        auto it = std::find_if(highlightInfos_.begin(), highlightInfos_.end(),
+        [highlightId](const HighlightAlbumInfo &highlightInfo) {
+            return highlightInfo.highlightIdNew.has_value() && highlightInfo.highlightIdNew.value() == highlightId &&
+                highlightInfo.highlightStatus.has_value() &&
+                highlightInfo.highlightStatus.value() == HIGHLIGHT_STATUS_PUSH;
+        });
+        CHECK_AND_CONTINUE(it != highlightInfos_.end());
+        updateIds.emplace_back(highlightId);
+    }
+    CHECK_AND_RETURN(!updateIds.empty());
+    int32_t changedRows = -1;
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
+        make_unique<NativeRdb::AbsRdbPredicates>("tab_highlight_album");
+    updatePredicates->In("id", updateIds);
+    NativeRdb::ValuesBucket rdbValues;
+    rdbValues.PutInt("highlight_status", HIGHLIGHT_STATUS_PUSH);
+    BackupDatabaseUtils::Update(mediaLibraryRdb_, changedRows, rdbValues, updatePredicates);
+    MEDIA_INFO_LOG("highlightStatus to be pushed num: %{public}zu, update num: %{public}d",
+        updateIds.size(), changedRows);
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
+        .Report("Update HighlightStatus", "1", "highlightStatus to be pushed num: " +
+        std::to_string(updateIds.size()) + ", update num: " + std::to_string(changedRows));
 }
 
 int32_t CloneRestoreHighlight::GetMaxAlbumId(const std::string &tableName, const std::string &idName)
@@ -597,6 +637,7 @@ void CloneRestoreHighlight::InsertIntoHighlightAlbum()
 
             NativeRdb::ValuesBucket value;
             GetHighlightInsertValue(value, highlightInfos_[index + offset]);
+            PutTempHighlightStatus(value, highlightInfos_[index + offset]);
             values.emplace_back(value);
         }
         int64_t rowNum = 0;
@@ -626,7 +667,6 @@ void CloneRestoreHighlight::GetHighlightInsertValue(NativeRdb::ValuesBucket &val
     PutIfInIntersection(value, "cluster_type", info.clusterType, intersection);
     PutIfInIntersection(value, "cluster_sub_type", info.clusterSubType, intersection);
     PutIfInIntersection(value, "cluster_condition", info.clusterCondition, intersection);
-    PutIfInIntersection(value, "highlight_status", info.highlightStatus, intersection);
     PutIfInIntersection(value, "remarks", info.remarks, intersection);
     PutIfInIntersection(value, "highlight_version", info.highlightVersion, intersection);
     PutIfInIntersection(value, "insert_pic_count", info.insertPicCount, intersection);
@@ -645,6 +685,15 @@ void CloneRestoreHighlight::GetHighlightInsertValue(NativeRdb::ValuesBucket &val
     PutIfInIntersection(value, "is_favorite", info.isFavorite, intersection);
     PutIfInIntersection(value, "theme", info.theme, intersection);
     PutIfInIntersection(value, "use_subtitle", info.useSubtitle, intersection);
+}
+
+void CloneRestoreHighlight::PutTempHighlightStatus(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info)
+{
+    std::unordered_set<std::string>& intersection = intersectionMap_["tab_highlight_album"];
+    std::optional<int32_t> status = info.highlightStatus;
+    CHECK_AND_EXECUTE(info.highlightStatus.value_or(HIGHLIGHT_STATUS_NOT_PRODUCE) != HIGHLIGHT_STATUS_PUSH,
+        status = std::make_optional<int32_t>(HIGHLIGHT_STATUS_NOT_PRODUCE));
+    PutIfInIntersection(value, "highlight_status", status, intersection);
 }
 
 void CloneRestoreHighlight::MoveHighlightCovers()
@@ -928,6 +977,7 @@ void CloneRestoreHighlight::InsertIntoHighlightPlayInfo()
             CHECK_AND_CONTINUE(playInfos_[index + offset].highlightIdNew.has_value());
             NativeRdb::ValuesBucket value;
             GetPlayInsertValue(value, playInfos_[index + offset]);
+            value.PutString("play_info", GetDefaultPlayInfo());
             values.emplace_back(value);
         }
 
