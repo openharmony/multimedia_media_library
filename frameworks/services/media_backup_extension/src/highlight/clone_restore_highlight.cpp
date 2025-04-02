@@ -281,19 +281,19 @@ void CloneRestoreHighlight::UpdateHighlightStatus(const std::vector<int32_t> &hi
         CHECK_AND_CONTINUE(it != highlightInfos_.end());
         updateIds.emplace_back(highlightId);
     }
-        CHECK_AND_RETURN(!updateIds.empty());
-        int32_t changedRows = -1;
-        std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
-            make_unique<NativeRdb::AbsRdbPredicates>("tab_highlight_album");
-        updatePredicate->IN("id", updateIds);
-        Nativedb::ValuesBucket rdbValue;
-        rdbValue.PutInt("highlight_status", HIGHLIGHT_STATUS_PUSH);
-        BackupDatabaseUtils::Update(mediaLibraryRdb_, changedRows, rdbValues, updatePredicates);
-        MEDIA_INFO_LOG("highlightStatus to be pushed num: %{public}zu, update num: %{public}d",
-            updateIds.size(), changedRows);
-        UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
-            .Report("Update HighlightStatus", "1", "highlightStatus to be pushed num: " +
-            std::to_string(updateIds.size()) + ", update num: " + std::to_string(changedRows));
+    CHECK_AND_RETURN(!updateIds.empty());
+    int32_t changedRows = -1;
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
+        make_unique<NativeRdb::AbsRdbPredicates>("tab_highlight_album");
+    updatePredicates->In("id", updateIds);
+    NativeRdb::ValuesBucket rdbValues;
+    rdbValues.PutInt("highlight_status", HIGHLIGHT_STATUS_PUSH);
+    BackupDatabaseUtils::Update(mediaLibraryRdb_, changedRows, rdbValues, updatePredicates);
+    MEDIA_INFO_LOG("highlightStatus to be pushed num: %{public}zu, update num: %{public}d",
+        updateIds.size(), changedRows);
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
+        .Report("Update HighlightStatus", "1", "highlightStatus to be pushed num: " +
+        std::to_string(updateIds.size()) + ", update num: " + std::to_string(changedRows));
 }
 
 int32_t CloneRestoreHighlight::GetMaxAlbumId(const std::string &tableName, const std::string &idName)

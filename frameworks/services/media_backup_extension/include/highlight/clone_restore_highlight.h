@@ -236,7 +236,7 @@ private:
     void GetHighlightRowInfo(HighlightAlbumInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoHighlightAlbum();
     void GetHighlightInsertValue(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info);
-    void PutTemHighlightStatus(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info);
+    void PutTempHighlightStatus(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info);
     void MoveHighlightCovers();
     void MoveHighlightWordart(const AnalysisAlbumInfo &info, const std::string &srcDir);
     void MoveHighlightGround(const AnalysisAlbumInfo &info, const std::string &srcDir);

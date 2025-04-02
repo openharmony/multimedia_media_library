@@ -708,7 +708,7 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
 {
     int32_t rowCount = 0;
     int32_t offset = 0;
-    std::string defalutPlayInfo = cloneHighlight.GetDefaultPlayInfo();
+    std::string defaultPlayInfo = cloneHighlight.GetDefaultPlayInfo();
     do {
         const std::string QUERY_SQL = "SELECT album_id, play_info_id, play_info FROM tab_highlight_play_info LIMIT "
             + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
@@ -721,7 +721,7 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
             std::optional<int32_t> playId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "play_info_id");
             std::optional<std::string> oldPlayInfo =
                 BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "play_info");
-            std::string newPlayInfo = defalutPlayInfo;
+            std::string newPlayInfo = defaultPlayInfo;
             CHECK_AND_EXECUTE(!oldPlayInfo.has_value(),
                 newPlayInfo = ParsePlayInfo(oldPlayInfo.value(), cloneHighlight));
 
@@ -745,10 +745,10 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
                 updateHighlightIds.emplace_back(albumId);
                 continue;
             }
-            CHECK_AND_PRINT_LOG(ret == E_OK, "update play_info Sql err, highlight id: %{public}d, errCode: %{public}d",
+            CHECK_AND_PRINT_LOG(ret == E_OK, "Update play_info Sql err, highlight id: %{public}d, errCode: %{public}d",
                     albumId, ret);
             ErrorInfo errorInfo(RestoreError::UPDATE_FAILED, 0, std::to_string(ret),
-                "update play_info failed. highlight id:" + std::to_string(albumId));
+                "Update play_info failed. highlight id:" + std::to_string(albumId));
             UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
         }
         resultSet->GetRowCount(rowCount);
