@@ -284,6 +284,44 @@ static napi_value ParseAssetArray(napi_env env, napi_value arg, vector<string>& 
     RETURN_NAPI_TRUE(env);
 }
 
+static bool CheckAssetsUriArray(const string& uri)
+{
+    if (uri.empty()) {
+        return false;
+    }
+    MediaFileUri fileUri(uri);
+    if (!fileUri.IsApi10()) {
+        fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
+    }
+    string fileId = fileUri.GetFileId();
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit) || atoi(fileId.c_str()) <= 0) {
+        NAPI_ERR_LOG("fileId is invalid, fileId is %{public}s", fileId.c_str());
+        return false;
+    }
+    return true;
+}
+
+static napi_value GetUriArray(napi_env env, vector<napi_value> &napiValues, vector<string> &values)
+{
+    napi_valuetype valueType = napi_undefined;
+    unique_ptr<char[]> buffer = make_unique<char[]>(PATH_MAX);
+    for (const auto &napiValue : napiValues) {
+        CHECK_ARGS(env, napi_typeof(env, napiValue, &valueType), JS_ERR_PARAMETER_INVALID);
+        CHECK_COND(env, valueType == napi_string, JS_ERR_PARAMETER_INVALID);
+
+        size_t res = 0;
+        CHECK_ARGS(
+            env, napi_get_value_string_utf8(env, napiValue, buffer.get(), PATH_MAX, &res), JS_ERR_PARAMETER_INVALID);
+        string uri = buffer.get();
+        if (CheckAssetsUriArray(uri)) {
+            values.emplace_back(uri);
+        }
+    }
+    napi_value ret = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
+    return ret;
+}
+
 static napi_value ParseUriOrAssetArray(napi_env env, napi_value arg, vector<string>& uriArray)
 {
     vector<napi_value> napiValues;
@@ -292,7 +330,7 @@ static napi_value ParseUriOrAssetArray(napi_env env, napi_value arg, vector<stri
     CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     if (valueType == napi_string) {
-        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetStringArray(env, napiValues, uriArray));
+        CHECK_NULLPTR_RET(GetUriArray(env, napiValues, uriArray));
     } else if (valueType == napi_object) {
         CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetUriArrayFromAssets(env, napiValues, uriArray));
     } else {
