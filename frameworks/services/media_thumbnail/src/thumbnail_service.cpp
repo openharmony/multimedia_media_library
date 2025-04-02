@@ -44,7 +44,6 @@
 #endif
 
 using namespace std;
-using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::AbilityRuntime;
 
@@ -56,9 +55,6 @@ ThumbnailService::ThumbnailService(void)
 {
     rdbStorePtr_ = nullptr;
     rdbPredicatePtr_ = nullptr;
-#ifdef DISTRIBUTED
-    kvStorePtr_ = nullptr;
-#endif
 }
 
 shared_ptr<ThumbnailService> ThumbnailService::GetInstance()
@@ -109,15 +105,9 @@ bool ThumbnailService::CheckSizeValid()
 }
 
 void ThumbnailService::Init(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-#ifdef DISTRIBUTED
-    const shared_ptr<SingleKvStore> &kvStore,
-#endif
     const shared_ptr<Context> &context)
 {
     rdbStorePtr_ = rdbStore;
-#ifdef DISTRIBUTED
-    kvStorePtr_ = kvStore;
-#endif
     context_ = context;
 
     if (!GetDefaultWindowSize(screenSize_)) {
@@ -131,9 +121,6 @@ void ThumbnailService::ReleaseService()
 {
     StopAllWorker();
     rdbStorePtr_ = nullptr;
-#ifdef DISTRIBUTED
-    kvStorePtr_ = nullptr;
-#endif
     context_ = nullptr;
     thumbnailServiceInstance_ = nullptr;
 }
@@ -434,9 +421,6 @@ int32_t ThumbnailService::GenerateThumbnailBackground()
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
-#ifdef DISTRIBUTED
-            .kvStore = kvStorePtr_,
-#endif
             .table = tableName
         };
 
@@ -524,9 +508,6 @@ int32_t ThumbnailService::LcdAging()
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
-#ifdef DISTRIBUTED
-            .kvStore = kvStorePtr_,
-#endif
             .table = tableName,
         };
         err = ThumbnailAgingHelper::AgingLcdBatch(opts);
@@ -537,37 +518,6 @@ int32_t ThumbnailService::LcdAging()
 
     return E_OK;
 }
-
-#ifdef DISTRIBUTED
-int32_t ThumbnailService::LcdDistributeAging(const string &udid)
-{
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
-        .udid = udid
-    };
-    int32_t err = ThumbnailAgingHelper::AgingDistributeLcdBatch(opts);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("AgingDistributeLcdBatch failed : %{public}d", err);
-        return err;
-    }
-    return E_OK;
-}
-
-int32_t ThumbnailService::InvalidateDistributeThumbnail(const string &udid)
-{
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
-        .udid = udid
-    };
-    int32_t err = ThumbnailAgingHelper::InvalidateDistributeBatch(opts);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("InvalidateDistributeBatch failed : %{public}d", err);
-    }
-    return err;
-}
-#endif
 
 bool ThumbnailService::HasInvalidateThumbnail(const std::string &id,
     const std::string &tableName, const std::string &path, const std::string &dateTaken)
@@ -601,9 +551,6 @@ int32_t ThumbnailService::GetAgingDataSize(const int64_t &time, int &count)
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
-#ifdef DISTRIBUTED
-            .kvStore = kvStorePtr_,
-#endif
             .table = tableName,
         };
         int tempCount = 0;
@@ -629,9 +576,6 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
-#ifdef DISTRIBUTED
-            .kvStore = kvStorePtr_,
-#endif
             .table = tableName
         };
         int32_t tempCount = 0;

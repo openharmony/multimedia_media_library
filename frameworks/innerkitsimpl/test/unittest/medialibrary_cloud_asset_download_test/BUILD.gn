@@ -27,7 +27,6 @@ ohos_unittest("medialibrary_cloud_asset_download_test") {
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
-    "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
   ]
 
   sources = [
@@ -63,7 +62,6 @@ ohos_unittest("medialibrary_cloud_asset_download_test") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {

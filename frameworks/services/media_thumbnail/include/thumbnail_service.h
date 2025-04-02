@@ -43,9 +43,6 @@ public:
     EXPORT int GetThumbnailFd(const std::string &uri, bool isAstc = false);
     EXPORT int GetKeyFrameThumbnailFd(const std::string &uri, bool isAstc = false);
     EXPORT int32_t LcdAging();
-#ifdef DISTRIBUTED
-    EXPORT int32_t LcdDistributeAging(const std::string &udid);
-#endif
     EXPORT int32_t GenerateThumbnailBackground();
     EXPORT int32_t UpgradeThumbnailBackground(bool isWifiConnected);
     EXPORT int32_t GenerateHighlightThumbnailBackground();
@@ -55,9 +52,6 @@ public:
     EXPORT int32_t RestoreThumbnailDualFrame(const int32_t &restoreAstcCount = ASTC_GENERATE_COUNT_AFTER_RESTORE);
     EXPORT void InterruptBgworker();
     EXPORT void StopAllWorker();
-#ifdef DISTRIBUTED
-    EXPORT int32_t InvalidateDistributeThumbnail(const std::string &udid);
-#endif
     EXPORT int32_t CreateThumbnailFileScaned(const std::string &uri, const std::string &path,
         bool isSync = false);
     EXPORT int32_t CreateThumbnailFileScanedWithPicture(const std::string &uri, const std::string &path,
@@ -67,9 +61,6 @@ public:
     bool HasInvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateTaken = "");
     EXPORT void Init(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
-#ifdef DISTRIBUTED
-        const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
-#endif
     const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     EXPORT int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
@@ -100,9 +91,6 @@ private:
         const std::string &uri, int32_t &beginStamp, int32_t &type);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
-#ifdef DISTRIBUTED
-    std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
-#endif
     std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     std::shared_ptr<NativeRdb::RdbPredicates> rdbPredicatePtr_;

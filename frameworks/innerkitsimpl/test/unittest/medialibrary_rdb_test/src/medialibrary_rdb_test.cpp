@@ -27,7 +27,6 @@
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_rdb_transaction.h"
-#include "medialibrary_sync_operation.h"
 #include "medialibrary_rdb_test.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
@@ -37,6 +36,7 @@
 using namespace std;
 using namespace OHOS;
 using namespace testing::ext;
+using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
@@ -334,16 +334,6 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level0)
     int32_t ret = trans.Start();
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryRdbTest, medialib_MediaLibraryRdbStoreObserver_test_001, TestSize.Level0)
-{
-    string bundleName = "medialib_MediaLibraryRdbStoreObserver_test_001";
-    std::shared_ptr<MediaLibraryRdbStoreObserver> test = make_shared<MediaLibraryRdbStoreObserver>(bundleName);
-    EXPECT_NE(test, nullptr);
-}
-#endif
-
 
 HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_001, TestSize.Level0)
 {

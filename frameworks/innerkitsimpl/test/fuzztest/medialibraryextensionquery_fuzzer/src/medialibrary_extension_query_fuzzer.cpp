@@ -24,7 +24,6 @@
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
 #include "media_datashare_ext_ability.h"
-#include "media_file_ext_ability.h"
 #include "media_datashare_stub_impl.h"
 #include "media_log.h"
 #include "runtime.h"
@@ -34,7 +33,6 @@ using namespace std;
 using namespace AbilityRuntime;
 using namespace DataShare;
 
-using namespace FileAccessFwk;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
     return static_cast<int32_t>(*data);

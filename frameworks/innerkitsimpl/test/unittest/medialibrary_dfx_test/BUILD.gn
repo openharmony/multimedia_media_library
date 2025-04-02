@@ -26,7 +26,6 @@ ohos_unittest("medialibrary_dfx_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "./include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
   ]
 
   cflags = [ "-fno-access-control" ]

@@ -126,12 +126,7 @@ void MediaLibraryThumbnailServiceTest::SetUp()
     }
     serverTest = ThumbnailService::GetInstance();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
-    #ifdef DISTRIBUTED
-        shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-        serverTest->Init(storePtr, kvStorePtr, context);
-    #else
-        serverTest->Init(storePtr, context);
-    #endif
+    serverTest->Init(storePtr, context);
 }
 
 void MediaLibraryThumbnailServiceTest::TearDown(void)
@@ -152,13 +147,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestS
         THUMBNAIL_WIDTH + "=1&" + THUMBNAIL_HEIGHT + "=1";
     fd = serverTest->GetThumbnailFd(uri);
     EXPECT_LT(fd, 0);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
-#ifdef DISTRIBUTED
-    serverTest->Init(storePtr, kvStorePtr, context);
-#else
     serverTest->Init(storePtr, context);
-#endif
     fd = serverTest->GetThumbnailFd(uri);
     EXPECT_LT(fd, 0);
     serverTest->ReleaseService();
@@ -188,39 +178,12 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdAging_test_001, TestSize.
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     int32_t ret = serverTest->LcdAging();
     EXPECT_EQ(ret, 0);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
-#ifdef DISTRIBUTED
-    serverTest->Init(storePtr, kvStorePtr, context);
-#else
     serverTest->Init(storePtr, context);
-#endif
     ret = serverTest->LcdAging();
     EXPECT_EQ(ret, 0);
     serverTest->ReleaseService();
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdDistributeAging_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    string udid = "";
-    int32_t ret = serverTest->LcdDistributeAging(udid);
-    EXPECT_EQ(ret, -1);
-    udid = "/storage/cloud/files/";
-    ret = serverTest->LcdDistributeAging(udid);
-    EXPECT_EQ(ret, -1);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    shared_ptr<OHOS::AbilityRuntime::Context> context;
-    serverTest->Init(storePtr, kvStorePtr, context);
-    ret = serverTest->LcdDistributeAging(udid);
-    EXPECT_EQ(ret, 0);
-    serverTest->ReleaseService();
-}
-#endif
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_test_001, TestSize.Level0)
 {
@@ -230,20 +193,11 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     int32_t ret = serverTest->GenerateThumbnailBackground();
     EXPECT_EQ(ret <= 0, true);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
-#ifdef DISTRIBUTED
-    serverTest->Init(nullptr, kvStorePtr, context);
-#else
     serverTest->Init(nullptr, context);
-#endif
     ret = serverTest->GenerateThumbnailBackground();
     EXPECT_NE(ret, 0);
-#ifdef DISTRIBUTED
-    serverTest->Init(storePtr, kvStorePtr, context);
-#else
     serverTest->Init(storePtr, context);
-#endif
     ret = serverTest->GenerateThumbnailBackground();
     EXPECT_NE(ret, 0);
     serverTest->ReleaseService();
@@ -257,14 +211,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InterruptBgworker_test_001, 
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     EXPECT_NE(serverTest, nullptr);
     serverTest->InterruptBgworker();
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    EXPECT_NE(kvStorePtr, nullptr);
     shared_ptr<OHOS::AbilityRuntime::Context> context;
-#ifdef DISTRIBUTED
-    serverTest->Init(storePtr, kvStorePtr, context);
-#else
     serverTest->Init(storePtr, context);
-#endif
     serverTest->InterruptBgworker();
     serverTest->ReleaseService();
 }
@@ -277,39 +225,11 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_StopAllWorker_test_001, Test
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     EXPECT_NE(serverTest, nullptr);
     serverTest->StopAllWorker();
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    EXPECT_NE(kvStorePtr, nullptr);
     shared_ptr<OHOS::AbilityRuntime::Context> context;
-#ifdef DISTRIBUTED
-    serverTest->Init(storePtr, kvStorePtr, context);
-#else
     serverTest->Init(storePtr, context);
-#endif
     serverTest->StopAllWorker();
     serverTest->ReleaseService();
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InvalidateDistributeThumbnail_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string udid = "";
-    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    int32_t ret = serverTest->InvalidateDistributeThumbnail(udid);
-    EXPECT_EQ(ret, -1);
-    udid = "/storage/cloud/files/";
-    ret = serverTest->InvalidateDistributeThumbnail(udid);
-    EXPECT_EQ(ret, -1);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    shared_ptr<OHOS::AbilityRuntime::Context> context;
-    serverTest->Init(storePtr, kvStorePtr, context);
-    ret = serverTest->InvalidateDistributeThumbnail(udid);
-    EXPECT_EQ(ret, 0);
-    serverTest->ReleaseService();
-}
-#endif
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_001, TestSize.Level0)
 {
