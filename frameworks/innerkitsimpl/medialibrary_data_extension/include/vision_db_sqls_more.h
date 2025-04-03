@@ -97,6 +97,14 @@ const std::string CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL = "CREATE INDEX IF NOT EX
 const std::string IDX_GROUP_TAG_FOR_ANALYSIS_ALBUM = "idx_group_tag";
 const std::string CREATE_ANALYSIS_ALBUM_GROUP_TAG_INDEX = "CREATE INDEX IF NOT EXISTS " +
     IDX_GROUP_TAG_FOR_ANALYSIS_ALBUM + " ON " + ANALYSIS_ALBUM_TABLE + " ( " + GROUP_TAG + " );";
+
+const std::string IDX_ALBUM_SUBTYPE_NAME = "indx_album_subtype_name";
+const std::string CREATE_ANALYSIS_ALBUM_SUBTYPE_NAME_INDEX = "CREATE INDEX IF NOT EXISTS " +
+    IDX_ALBUM_SUBTYPE_NAME + " ON " + ANALYSIS_ALBUM_TABLE + " ( " + ALBUM_SUBTYPE + "," + ALBUM_NAME + " ) WHERE " + ALBUM_NAME + " is not null;";
+
+const std::string IDX_ALBUM_TAG_ID = "indx_album_tag_id";
+const std::string CREATE_ANALYSIS_ALBUM_TAG_ID_INDEX = "CREATE INDEX IF NOT EXISTS " +
+    IDX_ALBUM_TAG_ID + " ON " + ANALYSIS_ALBUM_TABLE + " ( " + TAG_ID + " ) WHERE " + TAG_ID + " LIKE " + "'ser%'";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_DB_SQLS_MORE_H
