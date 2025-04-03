@@ -174,6 +174,13 @@ const std::unordered_map<int32_t, std::string> ALBUM_MAP = {
     { static_cast<int32_t>(PhotoAlbumSubType::HIDDEN), "HIDDEN" },
     { static_cast<int32_t>(PhotoAlbumSubType::TRASH), "TRASH" },
 };
+
+struct OperationRecordInfo {
+    int32_t addTotalCount;
+    int32_t delTotalCount;
+    int32_t updateTotalCount;
+    int32_t totalCount;
+};
 } // namespace Media
 } // namespace OHOS
 
