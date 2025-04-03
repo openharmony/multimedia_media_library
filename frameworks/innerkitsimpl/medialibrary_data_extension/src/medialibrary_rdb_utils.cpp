@@ -880,7 +880,7 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     predicates.InnerJoin(ANALYSIS_ALBUM_TABLE)->On({ clause });
 
     clause = "( AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where " + anaAlbumGroupTag + " IN ( SELECT "
-         + GROUP_TAG +" FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + albumId + " )))";
+         + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + albumId + " )))";
     predicates.SetWhereClause(clause + " AND ");
     predicates.BeginWrap();
     predicates.EqualTo(photosDateTrashed, to_string(0));
