@@ -30,10 +30,10 @@ namespace OHOS {
 namespace Media {
 const std::string RECORD_COUNT = "recordCount";
 const std::string ABNORMAL_VALUE = "-1";
-const std::String DFX_OPT_TYPE = "opt_type";
-const std::String OPT_ADD_VALUE = "1";
-const std::String OPT_DEL_VALUE = "2";
-const std::String OPT_UPDATE_VALUE = "3";
+const std::string DFX_OPT_TYPE = "opt_type";
+const std::string OPT_ADD_VALUE = "1";
+const std::string OPT_DEL_VALUE = "2";
+const std::string OPT_UPDATE_VALUE = "3";
 
 int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, int32_t position)
 {
