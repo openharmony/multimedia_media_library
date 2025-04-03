@@ -6826,54 +6826,6 @@ static std::string GetFaceAnalysisProgress()
     return retJson;
 }
 
-static std::string GetGeoAnalysisProgress()
-{
-    unordered_map<int, string> idxToCount = {
-        {0, "totalCount"}, {1, "finishedCount"}, {2, "cityAlbumCount"}
-    };
-    vector<string> columns = {
-        "COUNT(*) AS totalCount",
-        "SUM(CASE WHEN ((aesthetics_score != 0 AND label != 0 AND ocr != 0 AND face != 0 AND face != 1 AND face != 2 "
-            "AND saliency != 0 AND segmentation != 0 AND head != 0 AND Photos.media_type = 1) OR "
-            "(label != 0 AND face != 0 AND Photos.media_type = 2)) THEN 1 ELSE 0 END) AS finishedCount"
-    };
-    nlohmann::json jsonObj;
-    GetMediaAnalysisServiceProgress(jsonObj, idxToCount, columns);
-
-    Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
-    vector<string> albumColumns = {};
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SMART);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::GEOGRAPHY_CITY);
-    predicates.GreaterThan(PhotoAlbumColumns::ALBUM_COUNT, 0);
-    int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> ret = UserFileClient::Query(uri, predicates, albumColumns, errCode);
-    string retStr = jsonObj.dump();
-    if (ret == nullptr) {
-        NAPI_ERR_LOG("ret is nullptr and progress json is %{public}s", retStr.c_str());
-        return retStr;
-    }
-    if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("GotoFirstRow failed, errCode is %{public}d, json is %{public}s", errCode, retStr.c_str());
-        ret->Close();
-        return retStr;
-    }
-
-    int tmp = -1;
-    int32_t retCode = ret->GetRowCount(tmp);
-    if (retCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("Can not get row count from resultSet, errCode is %{public}d, progress json is %{public}s",
-            retCode, retStr.c_str());
-        ret->Close();
-        return retStr;
-    }
-    jsonObj[idxToCount[columns.size()]] = tmp;
-    ret->Close();
-    string jsonStr = jsonObj.dump();
-    NAPI_INFO_LOG("Progress json is %{public}s", jsonStr.c_str());
-    return jsonStr;
-}
-
 static std::string GetHighlightAnalysisProgress()
 {
     unordered_map<int, string> idxToCount = {
@@ -6924,10 +6876,6 @@ static void JSGetAnalysisProgressExecute(MediaLibraryAsyncContext* context)
         }
         case ANALYSIS_FACE: {
             context->analysisProgress = GetFaceAnalysisProgress();
-            break;
-        }
-        case ANALYSIS_GEO: {
-            context->analysisProgress = GetGeoAnalysisProgress();
             break;
         }
         case ANALYSIS_HIGHLIGHT: {
@@ -7130,6 +7078,9 @@ static napi_value ParseArgsStartAssetAnalysis(napi_env env, napi_callback_info i
         context->analysisType) == napi_ok, "analysisType invalid");
     CHECK_COND_WITH_MESSAGE(env, context->analysisType > AnalysisType::ANALYSIS_INVALID,
         "analysisType invalid:" + std::to_string(context->analysisType));
+    CHECK_COND_WITH_MESSAGE(env,
+        FOREGROUND_ANALYSIS_ASSETS_MAP.find(context->analysisType) != FOREGROUND_ANALYSIS_ASSETS_MAP.end(),
+        "analysisType is not supported:" + std::to_string(context->analysisType));
 
     // Parse asset uris
     if (context->argc == ARGS_TWO) {
@@ -7145,6 +7096,8 @@ static napi_value ParseArgsStartAssetAnalysis(napi_env env, napi_callback_info i
         if (!uris.empty()) {
             context->uris = uris;
         }
+    } else if (context->argc == ARGS_ONE) {
+        context->isFullAnalysis = true;
     }
 
     napi_value result = nullptr;
@@ -7868,7 +7821,6 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_BONE_POSE", AnalysisType::ANALYSIS_BONE_POSE },
         { "ANALYSIS_MULTI_CROP", AnalysisType::ANALYSIS_MULTI_CROP },
         { "ANALYSIS_HIGHLIGHT", AnalysisType::ANALYSIS_HIGHLIGHT },
-        { "ANALYSIS_GEO", AnalysisType::ANALYSIS_GEO },
         { "ANALYSIS_SEARCH_INDEX", AnalysisType::ANALYSIS_SEARCH_INDEX },
     };
 
@@ -8862,8 +8814,9 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    if (FOREGROUND_ANALYSIS_ASSETS_MAP.find(context->analysisType) == FOREGROUND_ANALYSIS_ASSETS_MAP.end()) {
-        NAPI_ERR_LOG("analysisType is not supported");
+    // 1. Start full analysis if need. 2. If uris are non-empty, start analysis for corresponding uris.
+    if (!context->isFullAnalysis && context->uris.empty()) {
+        NAPI_INFO_LOG("asset uris are empty");
         return;
     }
 
