@@ -39,6 +39,7 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+const uint8_t PACKOPTION_QUALITY = 95;
 FileUtils::FileUtils() {}
 
 FileUtils::~FileUtils() {}
@@ -164,6 +165,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     packOption.needsPackProperties = true;
     packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
     packOption.isEditScene = false;
+    packOption.quality = PACKOPTION_QUALITY;
     size_t lastSlash = path.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", path.c_str());
