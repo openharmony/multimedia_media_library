@@ -481,7 +481,7 @@ void MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(const shared_ptr<MediaLibr
     MEDIA_INFO_LOG("end update location knowledge index");
 }
 
-void MediaLibraryRdbStore::AddAbumSubtypeAndNameIdx(const shared_ptr<MediaLibraryRdbStore> store)
+void MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(const shared_ptr<MediaLibraryRdbStore> store)
 {
     MEDIA_INFO_LOG("start to add album subtype and name index");
     const vector<string> sqls = {
@@ -489,7 +489,7 @@ void MediaLibraryRdbStore::AddAbumSubtypeAndNameIdx(const shared_ptr<MediaLibrar
         CREATE_ANALYSIS_ALBUM_TAG_ID_INDEX
     };
     ExecSqls(sqls, *store->GetRaw().get());
-    MEDIA_INFO_LOG("end add ablum subtype and name index");
+    MEDIA_INFO_LOG("end add album subtype and name index");
 }
 
 void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
