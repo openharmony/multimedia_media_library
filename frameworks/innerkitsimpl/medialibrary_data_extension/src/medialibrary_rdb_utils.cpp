@@ -879,8 +879,9 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     clause = anaAlbumId + " = " + anaPhotoMapAlbum;
     predicates.InnerJoin(ANALYSIS_ALBUM_TABLE)->On({ clause });
 
-    clause = "( AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where " + anaAlbumGroupTag + " IN ( SELECT "
-         + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + albumId + " )))";
+    clause = "( AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where "
+        + anaAlbumGroupTag + " IN ( SELECT "+ GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " = " + albumId + " )))";
     predicates.SetWhereClause(clause + " AND ");
     predicates.BeginWrap();
     predicates.EqualTo(photosDateTrashed, to_string(0));
@@ -983,7 +984,7 @@ static shared_ptr<ResultSet> QueryPortraitAlbumCover(const shared_ptr<MediaLibra
         "AND Photos.is_temp = 0 "
         "AND Photos.burst_cover_level = 1 "
         "AND AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where AnalysisAlbum.group_tag \
-        IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
+            IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
         albumId +
         " LIMIT 1) )";
     predicates.SetWhereClause(clause);
@@ -1065,7 +1066,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     } else {
         if (!(subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END)) {
             predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
-        }     
+        }
     }
     auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
     CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
