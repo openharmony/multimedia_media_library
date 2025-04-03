@@ -801,7 +801,8 @@ bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &da
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
     auto pixelMap = data.source.GetPixelMap();
-    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "source is nullptr when generate type: %{public}s", TYPE_NAME_MAP.at(type).c_str());
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false,
+        "source is nullptr when generate type: %{public}s", TYPE_NAME_MAP.at(type).c_str());
 
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
         if (!ThumbnailUtils::CompressImage(pixelMap, type == ThumbnailType::THUMB ? data.thumbnail : data.thumbAstc,
