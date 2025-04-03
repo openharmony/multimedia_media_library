@@ -472,11 +472,11 @@ void DfxReporter::ReportOperationRecordInfo()
     int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
-        "MEDIALIB_OPRN_CURRENT_INFO";
+        "MEDIALIB_OPRN_CURRENT_INFO",
         HiviewDFX::HiSysEvent::EventType::STATISTIC,
         "CURRENT_OPT_ADD_COUNT", addTotalCount,
         "CURRENT_OPT_DELETE_COUNT", delTotalCount,
-        "CURRENT_OPT_UPDATE_COUNT", updateTotalCount,0
+        "CURRENT_OPT_UPDATE_COUNT", updateTotalCount,
         "CURRENT_OPT_TOTAL_COUNT", totalCount,
         "CURRENT_TIME", currentTime);
     if (ret != 0) {
@@ -490,7 +490,7 @@ void DfxReporter::ReportOperationRecordInfo()
     static int64_t lastOptQueryTime = 0;
     ret = HiSysEventWrite(
         MEDIA_LIBRARY,
-        "MEDIALIB_OPRN_CHANGE_INFO";
+        "MEDIALIB_OPRN_CHANGE_INFO",
         HiviewDFX::HiSysEvent::EventType::STATISTIC,
         "OPT_ADD_COUNT", addTotalCount - lastAddTotalCount,
         "OPT_DELETE_COUNT", delTotalCount - lastDelTotalCount,
