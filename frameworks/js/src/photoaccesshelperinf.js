@@ -953,6 +953,7 @@ export default {
   HighlightUserActionType: photoAccessHelper.HighlightUserActionType,
   RequestPhotoType: photoAccessHelper.RequestPhotoType,
   PhotoViewMIMETypes: PhotoViewMIMETypes,
+  SingleSelectionMode: SingleSelectionMode,
   MIMETypeFilter: MIMETypeFilter,
   FileSizeFilter: FileSizeFilter,
   VideoDurationFilter: VideoDurationFilter,
