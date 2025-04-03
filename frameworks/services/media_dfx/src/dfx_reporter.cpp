@@ -457,6 +457,58 @@ void DfxReporter::ReportPhotoRecordInfo()
     }
 }
 
+void DfxReporter::ReportOperationRecordInfo()
+{
+    OperationRecordInfo operationRecordInfo;
+    int32_t result = DfxDatabaseUtils::QueryOperationRecordInfo(operationRecordInfo);
+    if (result != 0) {
+        MEDIA_ERR_LOG("ReportOperationRecordInfo error:%{public}d", result);
+        return;
+    }
+    int32_t addTotalCount = operationRecordInfo.addTotalCount;
+    int32_t delTotalCount = operationRecordInfo.delTotalCount;
+    int32_t updateTotalCount = operationRecordInfo.updateTotalCount;
+    int32_t totalCount = operationRecordInfo.totalCount;
+    int64_t currentTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_OPRN_CURRENT_INFO";
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "CURRENT_OPT_ADD_COUNT", addTotalCount,
+        "CURRENT_OPT_DELETE_COUNT", delTotalCount,
+        "CURRENT_OPT_UPDATE_COUNT", updateTotalCount,0
+        "CURRENT_OPT_TOTAL_COUNT", totalCount,
+        "CURRENT_TIME", currentTime);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportOperationRecordInfo error:%{public}d", ret);
+    }
+
+    static int32_t lastAddTotalCount = 0;
+    static int32_t lastDelTotalCount = 0;
+    static int32_t lastUpdateTotalCount = 0;
+    static int32_t lastTotalCount = 0;
+    static int64_t lastOptQueryTime = 0;
+    ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_OPRN_CHANGE_INFO";
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "OPT_ADD_COUNT", addTotalCount - lastAddTotalCount,
+        "OPT_DELETE_COUNT", delTotalCount - lastDelTotalCount,
+        "OPT_UPDATE_COUNT", updateTotalCount - lastUpdateTotalCount,
+        "OPT_TOTAL_COUNT", totalCount - lastTotalCount,
+        "OPT_START_TIME", lastOptQueryTime,
+        "OPT_END_TIME", currentTime);
+
+    lastAddTotalCount = addTotalCount;
+    lastDelTotalCount = delTotalCount;
+    lastUpdateTotalCount = updateTotalCount;
+    lastTotalCount = totalCount;
+    lastOptQueryTime = currentTime;
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportOperationRecordInfo last info error:%{public}d", ret);
+    }
+}
+
 int32_t DfxReporter::ReportMedialibraryAPI(const string& callerPackage, const string& saveUri)
 {
     string currentDate = DfxUtils::GetCurrentDate();

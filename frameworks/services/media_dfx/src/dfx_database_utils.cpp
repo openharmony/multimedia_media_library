@@ -30,6 +30,10 @@ namespace OHOS {
 namespace Media {
 const std::string RECORD_COUNT = "recordCount";
 const std::string ABNORMAL_VALUE = "-1";
+const std::String DFX_OPT_TYPE = "opt_type";
+const std::String OPT_ADD_VALUE = "1";
+const std::String OPT_DEL_VALUE = "2";
+const std::String OPT_UPDATE_VALUE = "3";
 
 int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, int32_t position)
 {
@@ -118,6 +122,27 @@ static bool ParseResultSet(const string &querySql, int32_t mediaTypePara, int32_
     return true;
 }
 
+static bool QueryOperationResultSet(const string &querySql, int32_t &operationQueryInfoCount)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return E_HAS_DB_ERROR;
+    }
+    int32_t rowCount = 0;
+    auto resultSet = rdbStore->QuerySql(querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query not match data failed");
+        return E_DB_FAIL;
+    }
+    if (resultSet->GetInt(0, rowCount) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdb failed");
+        return E_DB_FAIL;
+    }
+    operationQueryInfoCount = rowCount;
+    return true;
+}
+
 static string GetDuplicateLpathCountQuerrySql()
 {
     return "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
@@ -203,6 +228,23 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
 
     BuildDbInfo(photoRecordInfo);
     return ret;
+}
+
+int32_t DfxDatabaseUtils::QueryOperationRecordInfo(OperationRecordInfo &operationRecordInfo)
+{
+    const string addTotalCountQuerySql = "SELECT COUNT(*) FROM" + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
+        "WHERE" + DFX_OPT_TYPE + "=" + OPT_ADD_VALUE;
+    const string delTotalCountQuerySql = "SELECT COUNT(*) FROM" + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
+        "WHERE" + DFX_OPT_TYPE + "=" + OPT_DEL_VALUE;
+    const string updateTotalCountQuerySql = "SELECT COUNT(*) FROM" + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
+        "WHERE" + DFX_OPT_TYPE + "=" + OPT_UPDATE_VALUE;
+
+    bool ret = QueryOperationResultSet(addTotalCountQuerySql, operationRecordInfo.addTotalCount);
+    ret = QueryOperationResultSet(delTotalCountQuerySql, operationRecordInfo.delTotalCount) && ret;
+    ret = QueryOperationResultSet(updateTotalCountQuerySql, operationRecordInfo.updateTotalCount) && ret;
+    operationRecordInfo.totalCount = operationRecordInfo.addTotalCount + operationRecordInfo.delTotalCount +
+        operationRecordInfo.updateTotalCount;
+    return ret ? E_OK : E_FAIL;
 }
 
 int32_t DfxDatabaseUtils::QueryAnalysisVersion(const std::string &table, const std::string &column)
