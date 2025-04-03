@@ -2873,7 +2873,7 @@ int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
         }
     }
 
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData), E_HAS_FS_ERROR,
+    CHECK_AND_PRINT_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData),
         "Failed to write editdata:%{private}s", editDataPath.c_str());
 
     return E_OK;
