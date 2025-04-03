@@ -985,7 +985,7 @@ static shared_ptr<ResultSet> QueryPortraitAlbumCover(const shared_ptr<MediaLibra
         "AND AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where AnalysisAlbum.group_tag \
         IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
         albumId +
-        " LIMIT 1) ";
+        " LIMIT 1) )";
     predicates.SetWhereClause(clause);
 
     predicates.OrderByAsc(
