@@ -549,11 +549,47 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     return rowId;
 }
 
+int32_t IsAllUserPhotoAlbum(std::shared_ptr<MediaLibraryRdbStore> rdbStore, RdbPredicates &predicates)
+{
+    vector<string> albumIds = predicates.GetWhereArgs();
+    RdbPredicates queryPredicates(PhotoAlbumColumns::TABLE);
+    queryPredicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
+    queryPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    queryPredicates.EndWrap();
+
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
+    shared_ptr<ResultSet> resultSet = rdbStore->Query(queryPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "queryResultSet is null!");
+
+    int32_t rowCount;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("result set get row count err %{public}d", ret);
+        return E_HAS_DB_ERROR;
+    }
+    resultSet->Close();
+    if (rowCount != albumIds.size()) {
+        int32_t nonUserAlbumUriCount = albumIds.size() - rowCount;
+        MEDIA_ERR_LOG("deleted Albums Uri Contains non-user albums count is %{public}d",
+            (int)nonUserAlbumUriCount);
+        return E_INVALID_URI;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
 {
     // Only user generic albums can be deleted
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "DeletePhotoAlbum failed. rdbStore is null");
+
+    int32_t ret = IsAllUserPhotoAlbum(rdbStore, predicates);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("deleted Album is all not userAlbum type");
+        return E_INVALID_URI;
+    }
+
     MEDIA_INFO_LOG("Delete user generic albums start");
     if (MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(rdbStore, predicates) <= 0) {
         MEDIA_ERR_LOG("Update trashed asset failed");
@@ -562,7 +598,6 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
     predicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
     predicates.EndWrap();
-
     int deleteRow = MediaLibraryRdbStore::Delete(predicates);
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
