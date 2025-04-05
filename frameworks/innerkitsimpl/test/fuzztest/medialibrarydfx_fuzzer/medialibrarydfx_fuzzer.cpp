@@ -179,16 +179,23 @@ static void DfxCollectorFuzzer(const uint8_t *data, size_t size)
 
 static void DfxDatabaseUtilsFuzzer(const uint8_t *data, size_t size)
 {
+    const int32_t int32Count = 3;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
+    int32_t offset = 0;
     int32_t fileId = InsertAlbumAsset(data, size);
     MEDIA_INFO_LOG("fileId: %{public}d.", fileId);
-    int32_t albumSubtype = FuzzInt32(data, size);
+    int32_t albumSubtype = FuzzInt32(data + offset, size);
     Media::DfxDatabaseUtils::QueryAlbumInfoBySubtype(albumSubtype);
     fileId = InsertPhotoAsset(data, size);
     MEDIA_INFO_LOG("fileId: %{public}d.", fileId);
     Media::DfxDatabaseUtils::QueryDirtyCloudPhoto();
 
-    int32_t downloadedThumb = FuzzInt32(data, size);
-    int32_t generatedThumb = FuzzInt32(data, size);
+    offset += sizeof(int32_t);
+    int32_t downloadedThumb = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t generatedThumb = FuzzInt32(data + offset, size);
     Media::DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(downloadedThumb, generatedThumb);
 
     bool isLocal = FuzzBool(data, size);
@@ -198,12 +205,20 @@ static void DfxDatabaseUtilsFuzzer(const uint8_t *data, size_t size)
 
 static void DfxTimerFuzzer(const uint8_t *data, size_t size)
 {
-    int32_t type = FuzzInt32(data, size);
-    int32_t object = FuzzInt32(data, size);
-    int64_t timeOut = FuzzInt64(data, size);
+    const int32_t int32Count = 3;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(int64_t)) {
+        return;
+    }
+    int32_t offset = 0;
+    int32_t type = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t object = FuzzInt32(data + offset, size);
+    offset += sizeof(int64_t);
+    int64_t timeOut = FuzzInt64(data + offset, size);
     bool isReport = FuzzBool(data, size);
     std::shared_ptr<Media::DfxTimer> dfxTimer = std::make_shared<Media::DfxTimer>(type, object, timeOut, isReport);
-    dfxTimer->SetCallerUid(FuzzInt32(data, size));
+    offset += sizeof(int32_t);
+    dfxTimer->SetCallerUid(FuzzInt32(data + offset, size));
     dfxTimer->End();
 }
 
@@ -218,7 +233,7 @@ static void DfxTransactionFuzzer(const uint8_t *data, size_t size)
     dfxTransaction->ReportError(abnormalType, errCode);
 }
 
-static void DfxWorkerFuzzer(const uint8_t *data, size_t size)
+static void DfxWorkerFuzzer()
 {
     auto dfxWorker = Media::DfxWorker::GetInstance();
     Media::DfxExecute execute;
@@ -281,6 +296,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::DfxDatabaseUtilsFuzzer(data, size);
     OHOS::DfxTimerFuzzer(data, size);
     OHOS::DfxTransactionFuzzer(data, size);
-    OHOS::DfxWorkerFuzzer(data, size);
+    OHOS::DfxWorkerFuzzer();
     return 0;
 }
