@@ -186,7 +186,7 @@ static void PermissionUtilsTest(const uint8_t *data, size_t size)
 
     std::string permission = FuzzString(data, size);
     offset += sizeof(int32_t);
-    Security::AccessToken::PermissionUsedType type = FuzzPermissionUsedType(data, size);
+    Security::AccessToken::PermissionUsedType type = FuzzPermissionUsedType(data + offset, size);
     Media::PermissionUtils::CollectPermissionInfo(permission, permGranted, type);
 
     offset += sizeof(int32_t);
