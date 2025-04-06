@@ -2876,7 +2876,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
             CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
             CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get photo napi object");
             deleteIds.push_back(to_string(obj->GetFileId()));
-        }    
+        }
     }
     context->predicates.In(PhotoColumn::MEDIA_ID, deleteIds);
     RETURN_NAPI_TRUE(env);
