@@ -2859,8 +2859,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     }
     vector<string> deleteIds;
     for (const auto& napiValue : napiValues) {
-        if (valueType == napi_string)
-        {
+        if (valueType == napi_string) {
             size_t str_length;
             napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length);
             std::vector<char> uriBuffer(str_length + 1);
@@ -2872,7 +2871,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
                 continue;
             }
             deleteIds.push_back(fileId);
-        } else if (valueType == napi_object) {
+        } else {
             FileAssetNapi* obj = nullptr;
             CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
             CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get photo napi object");
