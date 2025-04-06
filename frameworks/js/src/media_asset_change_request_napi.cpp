@@ -2832,7 +2832,6 @@ napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
 static napi_value ParseArgsDeleteLocalAssetsPermanently(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& context)
 {
-    NAPI_DEBUG_LOG("enter ParseArgsDeleteLocalAssetsPermanently.");
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -2859,9 +2858,20 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     vector<string> deleteIds;
     for (const auto& napiValue : napiValues) {
         if (valueType == napi_string) {
-            if (!ExtractAndPushFileId(env, napiValue, deleteIds)) {
+            size_t str_length = 0;
+            if (napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length) != napi_ok) {
+                NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get string length");
                 return nullptr;
-            }
+            };
+            std::vector<char> uriBuffer(str_length + 1);
+            if (napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) != napi_ok) {
+                NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to copy string");
+                return nullptr;
+            };
+            std::string uriStr(uriBuffer.data());
+            std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(uriStr);
+            CHECK_COND_WITH_MESSAGE(env, !fileId.empty(), "Invalid URI format or empty fileId");
+            deleteIds.push_back(fileId);
         } else {
             FileAssetNapi* obj = nullptr;
             CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
@@ -2871,35 +2881,6 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     }
     context->predicates.In(PhotoColumn::MEDIA_ID, deleteIds);
     RETURN_NAPI_TRUE(env);
-}
-
-static bool ExtractAndPushFileId (
-    napi_env env, napi_value napiValue, std::vector<std::string>& deleteIds)
-{
-    if (!env || !napiValue) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid parameters");
-        return false;
-    }
-    size_t str_length = 0;
-    napi_status status = napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length);
-    if (status != napi_ok) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get string length");
-        return false;
-    }
-    std::vector<char> buffer(str_length + 1);
-    status = napi_get_value_string_utf8(env, napiValue, buffer.data(), buffer.size(), nullptr);
-    if (status != napi_ok) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to copy string");
-        return false;
-    }
-    std::string uri(buffer.data(), str_length);
-    std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(uri);
-    if (fileId.empty()) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid URI format or empty fileId");
-        return false;
-    }
-    deleteIds.push_back(std::move(fileId));
-    return true;
 }
 
 static void DeleteLocalAssetsPermanentlydExecute(napi_env env, void* data)
