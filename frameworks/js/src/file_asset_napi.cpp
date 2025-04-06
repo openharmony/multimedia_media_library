@@ -2869,6 +2869,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::SUPPORTED_WATERMARK_TYPE,
         PhotoColumn::PHOTO_IS_AUTO,
         PhotoColumn::PHOTO_IS_RECENT_SHOW,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };

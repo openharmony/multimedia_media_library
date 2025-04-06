@@ -28,6 +28,7 @@ private:
         std::string filePath;
         int64_t dateModified{0};
         int32_t subtype{0};
+        bool isMovingPhoto{false};
         std::string videoFilePath;
         std::string editDataFolder;
         std::string thumbnailFolder;
