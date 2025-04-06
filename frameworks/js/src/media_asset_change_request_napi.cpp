@@ -2860,7 +2860,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     vector<string> deleteIds;
     for (const auto& napiValue : napiValues) {
         if (valueType == napi_string) {
-            size_t str_length=0;
+            size_t str_length = 0;
             napi_status result = napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length);
             CHECK_COND_RET(result == napi_ok, result, "Failed to get string length");
             std::vector<char> uriBuffer(str_length + 1);
