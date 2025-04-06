@@ -2839,8 +2839,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     }
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
-    CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
 
@@ -2851,6 +2850,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_object || valueType == napi_string,
         "Argument must be array of strings of PhotoAsset object");
+
     if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
             "Exceeded the maximum batch output quantity, cannot be deleted.");
