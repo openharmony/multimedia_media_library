@@ -2860,16 +2860,15 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     vector<string> deleteIds;
     for (const auto& napiValue : napiValues) {
         if (valueType == napi_string) {
-            size_t str_length;
-            napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length);
+            size_t str_length=0;
+            napi_status result = napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length);
+            CHECK_COND_RET(result == napi_ok, result, "Failed to get string length");
             std::vector<char> uriBuffer(str_length + 1);
-            napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr);
+            result = napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr);
+            CHECK_COND_RET(result == napi_ok, result, "Failed to copy string");
             std::string uriStr(uriBuffer.data());
             std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(uriStr);
-            if (fileId.empty()) {
-                NAPI_INFO_LOG("Invalid URI format");
-                continue;
-            }
+            CHECK_COND_WITH_MESSAGE(env, !fileId.empty(), "Invalid URI format or empty fileId");
             deleteIds.push_back(fileId);
         } else {
             FileAssetNapi* obj = nullptr;
