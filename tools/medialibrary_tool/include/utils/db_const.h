@@ -67,6 +67,7 @@ const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP = {
     { PhotoColumn::PHOTO_CLEAN_FLAG, ResultSetDataType::TYPE_INT32 },
     { PhotoColumn::PHOTO_THUMB_STATUS, ResultSetDataType::TYPE_INT32 },
     { PhotoColumn::PHOTO_SUBTYPE, ResultSetDataType::TYPE_INT32 },
+    { PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, ResultSetDataType::TYPE_INT32 },
     { PhotoColumn::CAMERA_SHOT_KEY, ResultSetDataType::TYPE_STRING },
     { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, TYPE_INT32},
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32},
