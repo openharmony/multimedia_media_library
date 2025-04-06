@@ -2849,7 +2849,8 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
     CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
-    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object || valueType == napi_string, "Argument must be array of strings of PhotoAsset object");
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object || valueType == napi_string,
+        "Argument must be array of strings of PhotoAsset object");
 
     if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
@@ -2862,10 +2863,6 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
         {
             size_t str_length;
             napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length);
-            if (str_length == 0) {
-                NAPI_INFO_LOG("Empty URI string");
-                continue;
-            }
             std::vector<char> uriBuffer(str_length + 1);
             napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr);
             std::string uriStr(uriBuffer.data());
