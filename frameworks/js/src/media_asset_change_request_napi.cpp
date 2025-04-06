@@ -2860,12 +2860,12 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
         if (valueType == napi_string) {
             size_t str_length = 0;
             if (napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length) != napi_ok) {
-                NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get string length");
+                NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get string length");
                 return nullptr;
             };
             std::vector<char> uriBuffer(str_length + 1);
             if (napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) != napi_ok) {
-                NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to copy string");
+                NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to copy string");
                 return nullptr;
             };
             std::string uriStr(uriBuffer.data());
