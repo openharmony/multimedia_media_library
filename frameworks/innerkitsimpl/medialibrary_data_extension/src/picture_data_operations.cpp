@@ -25,6 +25,7 @@
 #include "parameter.h"
 #include "parameters.h"
 #include "result_set_utils.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 namespace OHOS {
@@ -61,6 +62,8 @@ static bool IsPictureEdited(const string &photoId)
 
 static bool IsPictureTemp(const string &photoId)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("IsPictureTemp " + photoId);
     CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(photoId), false, "photoId is invalid");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore");
