@@ -2865,7 +2865,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
             std::vector<char> uriBuffer(str_length + 1);
             napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr);
             std::string uriStr(uriBuffer.data());
-            std::string fileId = MediaLibraryNapiUtils::getIdFromUri(uriStr);
+            std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(uriStr);
             if (fileId.empty()) {
                 NAPI_INFO_LOG("Invalid URI format");
                 continue;
