@@ -2851,7 +2851,6 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_object || valueType == napi_string,
         "Argument must be array of strings of PhotoAsset object");
-
     if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
             "Exceeded the maximum batch output quantity, cannot be deleted.");
