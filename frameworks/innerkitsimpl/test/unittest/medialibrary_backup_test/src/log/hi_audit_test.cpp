@@ -43,6 +43,7 @@ void HiAuditTest::SetUp(void)
     if (std::filesystem::exists(HIAUDIT_LOG_NAME)) {
         std::filesystem::remove(HIAUDIT_LOG_NAME, errcode);
     }
+    BackupHiAudit::GetInstance();
 }
 
 void HiAuditTest::TearDown(void)
@@ -57,18 +58,26 @@ HWTEST_F(HiAuditTest, HiAuditTest_DirectoryExists_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("HiAuditTest_DirectoryExists_test_001 begin");
     std::error_code errcode;
-    std::filesystem::create_directories(HIAUDIT_CONFIG.logPath, errcode);
-    ASSERT_TRUE(errcode.value() == 0) << "create dit fail: " << errcode.message();
+
+    if (!std::filesystem::exists(HIAUDIT_CONFIG.logPath)) {
+        std::filesystem::create_directories(HIAUDIT_CONFIG.logPath, errcode);
+        ASSERT_TRUE(errcode.value() == 0) << "Failed to create directory: " << errcode.message();
+    }
+
     DIR *dir = opendir(HIAUDIT_CONFIG.logPath.c_str());
-    ASSERT_NE(dir, nullptr) << "open dir fail";
+    ASSERT_NE(dir, nullptr) << "Failed to open directory";
     closedir(dir);
     int fd = open(HIAUDIT_LOG_NAME.c_str(), O_CREAT | O_APPEND | O_RDWR, 0644);
-    ASSERT_GT(fd, 0) << "create file fail " << strerror(errno);
+    ASSERT_GT(fd, 0) << "Failed to create file: " << strerror(errno);
     close(fd);
     BackupHiAudit &audit = BackupHiAudit::GetInstance();
     EXPECT_GT(audit.writeFd_, 0);
     struct stat st;
     ASSERT_EQ(stat(HIAUDIT_LOG_NAME.c_str(), &st), 0);
+
+    std::filesystem::remove(HIAUDIT_LOG_NAME, errcode);
+    ASSERT_TRUE(errcode.value() == 0) << "Failed to remove file: " << errcode.message();
+
     MEDIA_INFO_LOG("HiAuditTest_DirectoryExists_test_001 end");
 }
 
@@ -79,13 +88,14 @@ HWTEST_F(HiAuditTest, HiAuditTest_DirectoryNotExists_test_002, TestSize.Level0)
     std::string nonExistPath = "/data/storage/el2/log/audit_nonexist/";
     if (std::filesystem::exists(nonExistPath)) {
         std::filesystem::remove_all(nonExistPath, errcode);
+        ASSERT_TRUE(errcode.value() == 0) << "Failed to clean up non-existent path: " << errcode.message();
     }
 
     HiAuditConfig tempConfig = { nonExistPath, "media_library", 2 * 1024, 3 * 1024 * 1024, 10 };
     std::string tempLogName = tempConfig.logPath + tempConfig.logName + "_audit.csv";
 
     DIR *dir = opendir(tempConfig.logPath.c_str());
-    ASSERT_EQ(dir, nullptr) << "dir is not exsit";
+    ASSERT_EQ(dir, nullptr) << "Directory should not exist";
     if (dir != nullptr) {
         closedir(dir);
     }
@@ -93,22 +103,39 @@ HWTEST_F(HiAuditTest, HiAuditTest_DirectoryNotExists_test_002, TestSize.Level0)
     BackupHiAudit &audit = BackupHiAudit::GetInstance();
 
     dir = opendir(HIAUDIT_CONFIG.logPath.c_str());
-    EXPECT_NE(dir, nullptr);
+    ASSERT_NE(dir, nullptr) << "Default directory does not exist";
     if (dir != nullptr) {
         closedir(dir);
     }
 
     EXPECT_GT(audit.writeFd_, 0);
+
+    // Cleanup
+    if (std::filesystem::exists(nonExistPath)) {
+        std::filesystem::remove_all(nonExistPath, errcode);
+        ASSERT_TRUE(errcode.value() == 0) << "Failed to clean up non-existent path: " << errcode.message();
+    }
+
     MEDIA_INFO_LOG("HiAuditTest_DirectoryNotExists_test_002 end");
 }
 
 HWTEST_F(HiAuditTest, HiAuditTest_GetInstance_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("HiAuditTest_GetInstance_test_003 begin");
+
     BackupHiAudit &instance1 = BackupHiAudit::GetInstance();
     BackupHiAudit &instance2 = BackupHiAudit::GetInstance();
 
     EXPECT_EQ(&instance1, &instance2);
+
+
+    EXPECT_GE(instance1.writeFd_, 0) << "writeFd_ should be initialized properly";
+
+    uint64_t time1 = instance1.GetMilliseconds();
+    usleep(10000);
+    uint64_t time2 = instance1.GetMilliseconds();
+    EXPECT_GT(time2, time1) << "GetMilliseconds should return increasing values";
+
     MEDIA_INFO_LOG("HiAuditTest_GetInstance_test_003 end");
 }
 

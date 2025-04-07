@@ -145,7 +145,7 @@ const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
 };
 
 const std::map<int32_t, std::string> FOREGROUND_ANALYSIS_ASSETS_MAP = {
-    { ANALYSIS_SEARCH_INDEX, PAH_UPDATE_ANA_FOREGROUND }
+    { ANALYSIS_SEARCH_INDEX, PAH_QUERY_ANA_FOREGROUND }
 };
 
 const std::string EXTENSION = "fileNameExtension";
@@ -8357,6 +8357,45 @@ static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &contex
     return true;
 }
 
+static void ApplyTablePrefixToAlbumIdPredicates(DataSharePredicates& predicates)
+{
+    constexpr int32_t fieldIdx = 0;
+    auto& items = predicates.GetOperationList();
+    string targetColumn = "AnalysisAlbum.album_id";
+    std::vector<DataShare::OperationItem> tmpOperations = {};
+    for (const DataShare::OperationItem& item : items) {
+        if (item.singleParams.empty()) {
+            tmpOperations.push_back(item);
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(fieldIdx)) == PhotoAlbumColumns::ALBUM_ID) {
+            DataShare::OperationItem tmpItem = item;
+            tmpItem.singleParams[fieldIdx] = targetColumn;
+            tmpOperations.push_back(tmpItem);
+            continue;
+        }
+        tmpOperations.push_back(item);
+    }
+    predicates = DataSharePredicates(move(tmpOperations));
+}
+
+static void AddHighlightAlbumPredicates(DataSharePredicates& predicates, int32_t albumSubType)
+{
+    vector<string> onClause = {
+        ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+        HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+    };
+    if (albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+        onClause = {
+            ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+            HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID,
+        };
+    }
+    predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
+    predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
+    ApplyTablePrefixToAlbumIdPredicates(predicates);
+}
+
 static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     if (context->argc < ARGS_TWO) {
@@ -8396,18 +8435,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     }
     if (albumSubType == PhotoAlbumSubType::HIGHLIGHT || albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         context->isHighlightAlbum = albumSubType;
-        vector<string> onClause = {
-            ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-            HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
-        };
-        if (albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
-            onClause = {
-                ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-                HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID,
-            };
-        }
-        context->predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
-        context->predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
+        AddHighlightAlbumPredicates(context->predicates, albumSubType);
     }
 
     napi_value result = nullptr;
@@ -8842,12 +8870,12 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
         return;
     }
 
-    Uri uri(FOREGROUND_ANALYSIS_ASSETS_MAP.at(context->analysisType));
-    DataShare::DataSharePredicates predicates;
-    DataShareValuesBucket value;
-    value.Put(FOREGROUND_ANALYSIS_TYPE, AnalysisType::ANALYSIS_SEARCH_INDEX);
     context->taskId = ForegroundAnalysisMeta::GetIncTaskId();
-    value.Put(FOREGROUND_ANALYSIS_TASK_ID, context->taskId);
+    std::string uriStr = FOREGROUND_ANALYSIS_ASSETS_MAP.at(context->analysisType);
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TYPE, to_string(context->analysisType));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TASK_ID, to_string(context->taskId));
+    Uri uri(uriStr);
+    DataShare::DataSharePredicates predicates;
     std::vector<std::string> fileIds;
     for (const auto &uri : context->uris) {
         std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUriString(uri);
@@ -8858,7 +8886,12 @@ static void JSStartAssetAnalysisExecute(napi_env env, void *data)
     if (!fileIds.empty()) {
         predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
     }
-    int errCode = UserFileClient::Update(uri, predicates, value);
+    int errCode = E_OK;
+    std::vector<std::string> columns;
+    auto result = UserFileClient::Query(uri, predicates, columns, errCode, GetUserIdFromContext(context));
+    if (result != nullptr) {
+        result->Close();
+    }
     if (errCode != E_OK) {
         context->SaveError(errCode);
         NAPI_ERR_LOG("Start assets analysis failed! errCode is = %{public}d", errCode);

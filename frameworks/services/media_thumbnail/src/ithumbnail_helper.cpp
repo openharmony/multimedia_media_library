@@ -766,9 +766,14 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
     }
 }
 
+bool IThumbnailHelper::NeedGenerateExFile(ThumbnailData &data)
+{
+    return data.isLocalFile || data.isRegenerateStage;
+}
+
 bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (!data.isLocalFile) {
+    if (!NeedGenerateExFile(data)) {
         MEDIA_INFO_LOG("Create lcd when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
@@ -796,10 +801,8 @@ bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &da
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
     auto pixelMap = data.source.GetPixelMap();
-    if (pixelMap == nullptr) {
-        MEDIA_ERR_LOG("source is nullptr when generate type: %{public}s", TYPE_NAME_MAP.at(type).c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false,
+        "source is nullptr when generate type: %{public}s", TYPE_NAME_MAP.at(type).c_str());
 
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
         if (!ThumbnailUtils::CompressImage(pixelMap, type == ThumbnailType::THUMB ? data.thumbnail : data.thumbAstc,
@@ -834,7 +837,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
 
 bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (!data.isLocalFile) {
+    if (!NeedGenerateExFile(data)) {
         MEDIA_INFO_LOG("Create thumb when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
@@ -935,6 +938,14 @@ static int32_t IsPhotoVisible(const ThumbRdbOpt &opts, const ThumbnailData &data
     return GetInt32Val(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet);
 }
 
+std::string GetLocalOriginFilePath(const std::string &path)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    return LOCAL_MEDIA_PREFIX + path.substr(ROOT_MEDIA_DIR.length());
+}
+
 bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
     int thumbnailVisible = IsPhotoVisible(opts, data);
@@ -942,6 +953,21 @@ bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const Thumbna
     if (err != E_OK) {
         MEDIA_ERR_LOG("update thumbnail_ready failed, err = %{public}d", err);
         return false;
+    }
+
+    if (data.isRegenerateStage) {
+        string filePath = GetLocalOriginFilePath(data.path);
+        bool shouldUpdateFDirty = access(filePath.c_str(), F_OK) == 0;
+        ValuesBucket values;
+        int changedRows;
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ?
+            static_cast<int32_t>(DirtyType::TYPE_FDIRTY) : static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
+        MEDIA_ERR_LOG("update thumbnail_ready failed, err = %{public}d", err);
+        int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+            vector<string> { data.id });
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Update Regenerate dirty status failed! %{public}d", err);
+        }
     }
 
     auto watch = MediaLibraryNotify::GetInstance();

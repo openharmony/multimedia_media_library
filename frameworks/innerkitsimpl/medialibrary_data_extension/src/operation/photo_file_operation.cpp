@@ -23,6 +23,7 @@
 #include "medialibrary_kvstore_utils.h"
 #include "userfile_manager_types.h"
 #include "media_file_utils.h"
+#include "moving_photo_file_utils.h"
 #include "media_column.h"
 #include "result_set_utils.h"
 
@@ -52,6 +53,10 @@ int32_t PhotoFileOperation::CopyPhoto(
     sourcePhotoInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     sourcePhotoInfo.filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     sourcePhotoInfo.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    int32_t originalSubtype = GetInt32Val(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, resultSet);
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+    sourcePhotoInfo.isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
+        sourcePhotoInfo.subtype, effectMode, originalSubtype);
     sourcePhotoInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
     sourcePhotoInfo.videoFilePath = this->FindVideoFilePath(sourcePhotoInfo);
     sourcePhotoInfo.editDataFolder = this->FindEditDataFolder(sourcePhotoInfo);
@@ -162,7 +167,7 @@ std::string PhotoFileOperation::GetVideoFilePath(const PhotoFileOperation::Photo
  */
 std::string PhotoFileOperation::FindVideoFilePath(const PhotoFileOperation::PhotoAssetInfo &photoInfo)
 {
-    if (photoInfo.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+    if (!photoInfo.isMovingPhoto) {
         return "";
     }
     // If file path is empty, return empty string. Trace log will be printed in CopyPhotoFile.
@@ -365,7 +370,7 @@ int32_t PhotoFileOperation::CopyPhotoRelatedVideoFile(const PhotoFileOperation::
     const PhotoFileOperation::PhotoAssetInfo &targetPhotoInfo)
 {
     // If photoSubtype is MOVING_PHOTO, copy video file.
-    CHECK_AND_RETURN_RET(sourcePhotoInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), E_OK);
+    CHECK_AND_RETURN_RET(sourcePhotoInfo.isMovingPhoto, E_OK);
     std::string srcVideoPath = sourcePhotoInfo.videoFilePath;
     std::string targetVideoPath = targetPhotoInfo.videoFilePath;
     int64_t dateModified = targetPhotoInfo.dateModified;

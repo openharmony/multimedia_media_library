@@ -38,6 +38,8 @@ public:
     int32_t GetNewHighlightPhotoId(int32_t oldId);
     std::string GetNewHighlightPhotoUri(int32_t newId);
     bool IsCloneHighlight();
+    std::string GetDefaultPlayInfo();
+    void UpdateHighlightStatus(const std::vector<int32_t> &highlightIds);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket &values, const std::string &columnName,
@@ -221,10 +223,11 @@ private:
     void InsertIntoAnalysisAlbum();
     void GetAnalysisInsertValue(NativeRdb::ValuesBucket &value, const AnalysisAlbumInfo &info);
     int32_t GetMaxAlbumId(const std::string &tableName, const std::string &idName);
-    void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
-    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo);
-    void UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo,
-        const int32_t &oldAlbumId);
+    void GetPhotoMapInfos(const std::vector<FileInfo> &fileInfos);
+    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const std::vector<FileInfo> &fileInfos);
+    void UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
+        std::shared_ptr<NativeRdb::ResultSet> resultSet, std::unordered_map<int32_t, FileInfo> &fileInfoMap);
+    void InsertAnalysisPhotoMap(std::vector<NativeRdb::ValuesBucket> &values);
     int32_t BatchInsertWithRetry(const std::string &tableName, const std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
     NativeRdb::ValuesBucket GetMapInsertValue(int32_t albumId, int32_t fileId, std::optional<int32_t> &order);
@@ -233,6 +236,7 @@ private:
     void GetHighlightRowInfo(HighlightAlbumInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoHighlightAlbum();
     void GetHighlightInsertValue(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info);
+    void PutTempHighlightStatus(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info);
     void MoveHighlightCovers();
     void MoveHighlightWordart(const AnalysisAlbumInfo &info, const std::string &srcDir);
     void MoveHighlightGround(const AnalysisAlbumInfo &info, const std::string &srcDir);
@@ -268,7 +272,6 @@ private:
     std::vector<HighlightAlbumInfo> highlightInfos_;
     std::vector<HighlightCoverInfo> coverInfos_;
     std::vector<HighlightPlayInfo> playInfos_;
-    std::vector<int32_t> oldAlbumIds_;
     std::string coverPath_;
     std::string musicDir_;
     std::string garblePath_;

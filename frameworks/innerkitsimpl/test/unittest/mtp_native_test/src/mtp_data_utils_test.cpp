@@ -101,7 +101,7 @@ HWTEST_F(MtpNativeTest, mtp_GetPropValueBySet_test_001, TestSize.Level0)
     uint32_t property = MTP_PROPERTY_ALL_CODE;
     PropertyValue outPropValue;
     const shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
-    int32_t ret = MtpDataUtils::GetPropValueBySet(property, resultSet, outPropValue);
+    int32_t ret = MtpDataUtils::GetPropValueBySet(property, resultSet, outPropValue, false);
     EXPECT_EQ(ret, MTP_ERROR_INVALID_OBJECTHANDLE);
 }
 

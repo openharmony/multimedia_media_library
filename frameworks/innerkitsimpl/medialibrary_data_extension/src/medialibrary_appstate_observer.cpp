@@ -22,6 +22,7 @@
 #include "iservice_registry.h"
 #include "media_app_uri_permission_column.h"
 #include "media_app_uri_sensitive_column.h"
+#include "media_file_utils.h"
 #include "media_library_manager.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
@@ -32,6 +33,8 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::AppExecFwk;
+// set safe interval to avoid revoke a newly permmsion
+static constexpr int32_t SAFE_REVOKE_INTERVAL = 50;
 
 sptr<IAppMgr> MedialibraryAppStateObserverManager::GetAppManagerInstance()
 {
@@ -145,6 +148,9 @@ static int32_t DeleteTemporaryPermission(const std::shared_ptr<MediaLibraryRdbSt
     permissionTypes.emplace_back(to_string(
         static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
     predicates.And()->In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
+    // revoke permission before safetimestamp
+    predicates.LessThan(AppUriPermissionColumn::DATE_MODIFIED,
+        (MediaFileUtils::UTCTimeMilliSeconds() - SAFE_REVOKE_INTERVAL));
     int32_t deletedRows = -1;
 
     auto ret = rdbStore->Delete(deletedRows, predicates);
@@ -159,6 +165,9 @@ static int32_t DeleteHideSensitive(const std::shared_ptr<MediaLibraryRdbStore> r
 {
     NativeRdb::AbsRdbPredicates predicates(AppUriSensitiveColumn::APP_URI_SENSITIVE_TABLE);
     predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    // revoke permission before safetimestamp
+    predicates.LessThan(AppUriPermissionColumn::DATE_MODIFIED,
+        (MediaFileUtils::UTCTimeMilliSeconds() - SAFE_REVOKE_INTERVAL));
     int32_t deletedRows = -1;
     auto ret = rdbStore->Delete(deletedRows, predicates);
     bool cond = (ret != NativeRdb::E_OK || deletedRows < 0);

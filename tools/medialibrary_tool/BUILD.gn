@@ -24,7 +24,7 @@ ohos_executable("mediatool") {
 
   include_dirs = [
     "./include",
-    "../get_self_permissions/include",
+    "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/include",
     "${MEDIALIB_ROOT_PATH}/frameworks/innerkitsimpl/media_library_helper/include",
     "${MEDIALIB_ROOT_PATH}/frameworks/services/media_thumbnail/include",
     "${MEDIALIB_ROOT_PATH}/frameworks/utils/include",
@@ -34,7 +34,7 @@ ohos_executable("mediatool") {
   ]
 
   sources += [
-    "../get_self_permissions/src/get_self_permissions.cpp",
+    "${MEDIALIB_TEST_PATH}/unittest/get_self_permissions/src/get_self_permissions.cpp",
     "src/command/command.cpp",
     "src/command/delete_command_v10.cpp",
     "src/command/list_command_v10.cpp",

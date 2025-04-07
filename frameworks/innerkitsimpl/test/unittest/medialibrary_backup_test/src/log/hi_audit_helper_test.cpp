@@ -19,6 +19,7 @@
 
 #define private public
 #include "backup_hi_audit_helper.h"
+#include "backup_log_utils.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -33,35 +34,101 @@ void HiAuditHelperTest::SetUp(void) {}
 
 void HiAuditHelperTest::TearDown(void) {}
 
-HWTEST_F(HiAuditHelperTest, Write_Error_Audit_Log_Test_001, testing::ext::TestSize.Level0)
+HWTEST_F(HiAuditHelperTest, WriteErrorAuditLog_Test, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Write_Error_Audit_Log_Test_001 begin");
-    BackupHiAuditHelper helper;
-    ErrorInfo info(0, 1, "failed", "test error");
+    MEDIA_INFO_LOG("WriteErrorAuditLog_Test begin");
 
-    helper.WriteErrorAuditLog(info);
-    MEDIA_INFO_LOG("Write_Error_Audit_Log_Test_001 end");
+    BackupHiAuditHelper helper;
+    helper.SetSceneCode(123)
+          .SetTaskId("test_task_id");
+
+    ErrorInfo info(1001, 5, "custom_status", "error_extend");
+
+    BackupAuditLog auditLog;
+    helper.SetErrorAuditLog(auditLog, info);
+
+    EXPECT_EQ(auditLog.operationType, "RESTORE");
+    EXPECT_EQ(auditLog.cause, BackupLogUtils::RestoreErrorToString(1001));
+    EXPECT_EQ(auditLog.operationCount, 5u);
+    EXPECT_EQ(auditLog.operationStatus, "custom_status");
+    EXPECT_EQ(auditLog.operationScenario, "123");
+    EXPECT_EQ(auditLog.taskId, "test_task_id");
+    EXPECT_EQ(auditLog.extend, BackupLogUtils::Format("error_extend"));
+
+    MEDIA_INFO_LOG("WriteErrorAuditLog_Test end");
 }
 
-HWTEST_F(HiAuditHelperTest, Write_Progress_Audit_Log_Test_001, testing::ext::TestSize.Level0)
+HWTEST_F(HiAuditHelperTest, WriteProgressAuditLog_Test, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Write_Progress_Audit_Log_Test_001 begin");
+    MEDIA_INFO_LOG("WriteProgressAuditLog_Test begin");
+
     BackupHiAuditHelper helper;
+    helper.SetSceneCode(456)
+          .SetTaskId("progress_task");
+
     std::string status = "50%";
-    std::string extend = "progress info";
+    std::string extend = "progress_info";
 
-    helper.WriteProgressAuditLog(status, extend);
-    MEDIA_INFO_LOG("Write_Progress_Audit_Log_Test_001 end");
+    BackupAuditLog auditLog;
+    helper.SetProgressAuditLog(auditLog, status, extend);
+
+    EXPECT_EQ(auditLog.operationType, "STAT");
+    EXPECT_EQ(auditLog.cause, "PROGRESS");
+    EXPECT_EQ(auditLog.operationStatus, "50%");
+    EXPECT_EQ(auditLog.operationScenario, "456");
+    EXPECT_EQ(auditLog.taskId, "progress_task");
+    EXPECT_EQ(auditLog.extend, BackupLogUtils::Format("progress_info"));
+
+    MEDIA_INFO_LOG("WriteProgressAuditLog_Test end");
 }
 
-HWTEST_F(HiAuditHelperTest, Write_Report_Audit_Log_Test_001, testing::ext::TestSize.Level0)
+HWTEST_F(HiAuditHelperTest, WriteReportAuditLog_Test, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Write_Report_Audit_Log_Test_001 begin");
-    BackupHiAuditHelper helper;
-    std::string extend = "report info";
+    MEDIA_INFO_LOG("WriteReportAuditLog_Test begin");
 
-    helper.WriteReportAuditLog(extend);
-    MEDIA_INFO_LOG("Write_Report_Audit_Log_Test_001 end");
+    BackupHiAuditHelper helper;
+    helper.SetSceneCode(789)
+          .SetTaskId("report_task");
+
+    std::string extend = "report_info";
+
+    BackupAuditLog auditLog;
+    helper.SetReportAuditLog(auditLog, extend);
+
+    EXPECT_EQ(auditLog.operationType, "STAT");
+    EXPECT_EQ(auditLog.cause, "DFX");
+    EXPECT_EQ(auditLog.operationStatus, "success");
+    EXPECT_EQ(auditLog.operationScenario, "789");
+    EXPECT_EQ(auditLog.taskId, "report_task");
+    EXPECT_EQ(auditLog.extend, BackupLogUtils::Format("report_info"));
+
+    MEDIA_INFO_LOG("WriteReportAuditLog_Test end");
+}
+
+HWTEST_F(HiAuditHelperTest, WriteEmptyStatusAndExtend_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("WriteEmptyStatusAndExtend_Test begin");
+
+    BackupHiAuditHelper helper;
+    helper.SetSceneCode(999)
+          .SetTaskId("empty_test");
+
+    BackupAuditLog progressLog;
+    helper.SetProgressAuditLog(progressLog, "", "");
+    EXPECT_EQ(progressLog.operationStatus, "success");
+    EXPECT_EQ(progressLog.extend, BackupLogUtils::Format(""));
+
+    BackupAuditLog reportLog;
+    helper.SetReportAuditLog(reportLog, "");
+    EXPECT_EQ(reportLog.extend, BackupLogUtils::Format(""));
+
+    BackupAuditLog errorLog;
+    ErrorInfo emptyInfo(1001, 0, "", "");
+    helper.SetErrorAuditLog(errorLog, emptyInfo);
+    EXPECT_EQ(errorLog.operationStatus, "failed");
+    EXPECT_EQ(errorLog.extend, BackupLogUtils::Format(""));
+
+    MEDIA_INFO_LOG("WriteEmptyStatusAndExtend_Test end");
 }
 
 HWTEST_F(HiAuditHelperTest, Set_Basic_Audit_Log_Test_001, testing::ext::TestSize.Level0)

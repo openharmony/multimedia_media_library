@@ -33,6 +33,7 @@
 #include "userfilemgr_uri.h"
 #include "photo_album_column.h"
 #include "album_operation_uri.h"
+#include "get_self_permissions.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -47,10 +48,17 @@ const std::string PHOTO_PATH = "/storage/media/100/local/files/Docs/Desktop/1.jp
 const std::string TEST_BACKUP_PATH = "/data/test/backup/db";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 const std::string FILE_SUBTYPE = "1";
-
+const std::string EMPTY_COLUMN_NAME = "0";
+static constexpr int64_t MILLI_TO_SECOND = 1000;
+const std::string OTHER_ALBUM_NAME = "其它";
 
 void MtpDataUtilsUnitTest::SetUpTestCase(void)
 {
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MtpDataUtilsUnitTest", perms, tokenId);
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
         MEDIA_ERR_LOG("Get system ability mgr failed.");
@@ -65,6 +73,23 @@ void MtpDataUtilsUnitTest::TearDownTestCase(void) {}
 void MtpDataUtilsUnitTest::SetUp() {}
 void MtpDataUtilsUnitTest::TearDown(void) {}
 
+static std::string CombinedTimeFunction(const std::string &format, time_t curTime)
+{
+    if (format.empty()) {
+        return format;
+    }
+    time_t curTimeTemp = curTime;
+    if (curTimeTemp == 0) {
+        curTimeTemp = time(nullptr);
+    }
+    auto tmPtr = localtime(&curTimeTemp);
+    if (!tmPtr) {
+        return "";
+    }
+    char szDTime[32] = "";
+    (void)strftime(szDTime, sizeof(szDTime), format.c_str(), tmPtr);
+    return szDTime;
+}
 /*
  * Feature: MediaLibraryMTP
  * Function:
@@ -443,7 +468,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestS
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    int32_t res = mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    int32_t res = mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
 }
 
@@ -1151,24 +1176,33 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_008, TestSize.Level0)
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     DataShare::DataSharePredicates predicates;
     vector<string> columns;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
-    columns.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_PARENT_ID);
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_ID);
     columns.push_back(PhotoAlbumColumns::ALBUM_NAME + " as " + MEDIA_DATA_DB_NAME);
     columns.push_back(PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
     columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
-    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, "其他");
+    columns.push_back(EMPTY_COLUMN_NAME + " as " + MEDIA_DATA_DB_PARENT_ID);
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
     ASSERT_NE(dataShareHelper_, nullptr);
     resultSet = dataShareHelper_->Query(uri, predicates, columns);
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    std::string albumName = GetStringVal(MEDIA_DATA_DB_NAME, resultSet);
+    ASSERT_EQ(outPropValue.outStrVal, albumName);
     property = MTP_PROPERTY_DATE_MODIFIED_CODE;
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    int64_t dateModified= GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet);
+    std::string timeFormat = "%Y-%m-%d %H:%M:%S";
+    EXPECT_EQ(outPropValue.outStrVal, CombinedTimeFunction(timeFormat, dateModified / MILLI_TO_SECOND));
     property = MTP_PROPERTY_DATE_ADDED_CODE;
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    int64_t dateAdded = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_ADDED, resultSet);
+    ASSERT_EQ(outPropValue.outIntVal, dateAdded);
     property = MTP_PROPERTY_PARENT_OBJECT_CODE;
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    ASSERT_EQ(outPropValue.outIntVal, 0);
 }
 
 /*
@@ -1189,7 +1223,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_009, TestSize.Level0)
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     DataShare::DataSharePredicates predicates;
     vector<string> columns;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
@@ -1199,7 +1233,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_009, TestSize.Level0)
     columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
     columns.push_back(PHOTO_PATH  + " as " + MEDIA_DATA_DB_FILE_PATH);
     columns.push_back(FILE_SUBTYPE + " as " + COMPAT_FILE_SUBTYPE);
-    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, "其他");
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
     ASSERT_NE(dataShareHelper_, nullptr);
     resultSet = dataShareHelper_->Query(uri, predicates, columns);
     std::shared_ptr<UInt16List> properties = std::make_shared<UInt16List>();
@@ -1241,7 +1275,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_010, TestSize.Level0)
     columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
     columns.push_back(PHOTO_PATH  + " as " + MEDIA_DATA_DB_FILE_PATH);
     columns.push_back(FILE_SUBTYPE + " as " + MEDIA_DATA_DB_MEDIA_TYPE);
-    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, "其他");
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
     ASSERT_NE(dataShareHelper_, nullptr);
     resultSet = dataShareHelper_->Query(uri, predicates, columns);
     uint16_t outFormat = 0;
@@ -1271,7 +1305,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_011, TestSize.Level0)
     columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
     columns.push_back(PHOTO_PATH  + " as " + MEDIA_DATA_DB_FILE_PATH);
     columns.push_back("7 as " + MEDIA_DATA_DB_MEDIA_TYPE);
-    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, "其他");
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
     ASSERT_NE(dataShareHelper_, nullptr);
     resultSet = dataShareHelper_->Query(uri, predicates, columns);
     uint16_t outFormat = 0;
@@ -1300,7 +1334,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_012, TestSize.Level0)
     columns.push_back(PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
     columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
     columns.push_back(FILE_SUBTYPE + " as " + MEDIA_DATA_DB_MEDIA_TYPE);
-    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, "其他");
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
     ASSERT_NE(dataShareHelper_, nullptr);
     resultSet = dataShareHelper_->Query(uri, predicates, columns);
     uint16_t outFormat = 0;

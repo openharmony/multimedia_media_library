@@ -715,17 +715,16 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseStringResult_test_001, TestSize.Le
     };
     int index = 0;
     string data = "ParseStringResult";
-    int err = 0;
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.Limit(0);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    string dataTest = "";
-    ThumbnailUtils::ParseStringResult(resultSet, -1, dataTest, err);
-    EXPECT_GT(err, E_OK);
-    ThumbnailUtils::ParseStringResult(resultSet, index, data, err);
-    EXPECT_GT(err, E_OK);
+    string dataTest;
+    ThumbnailUtils::ParseStringResult(resultSet, -1, dataTest);
+    EXPECT_EQ(dataTest, "");
+    ThumbnailUtils::ParseStringResult(resultSet, index, dataTest);
+    EXPECT_EQ(dataTest, "");
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_checkResultSetCount_test_001, TestSize.Level0)
@@ -799,7 +798,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     std::string sourcePath = "";
     bool ret = ThumbnailUtils::LoadImageFile(data, desiredSize);
     EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::LoadVideoFile(data, desiredSize);
+    ret = ThumbnailUtils::LoadVideoFrame(data, desiredSize, 0);
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::LoadAudioFile(data, desiredSize);
     EXPECT_EQ(ret, false);
