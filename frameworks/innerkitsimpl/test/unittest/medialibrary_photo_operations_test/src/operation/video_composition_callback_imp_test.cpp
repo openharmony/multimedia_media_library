@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
- #define MLOG_TAG "VideoCompositionCallbackImplTest"
+#define MLOG_TAG "VideoCompositionCallbackImplTest"
 
 #include "video_composition_callback_imp_test.h"
 
@@ -265,4 +265,4 @@ HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_AddCompositionT
     MEDIA_INFO_LOG("end VideoComposition_Test_AddCompositionTask");
 }
 } // namespace Media
-} // namespace OHOS
+} // namespace OHOS
