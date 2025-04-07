@@ -15,7 +15,6 @@
 
 #include "media_library_ani.h"
 
-#include <iostream>
 #include <string>
 #include <array>
 #include <mutex>
@@ -75,6 +74,7 @@ ani_status MediaLibraryAni::PhotoAccessHelperInit(ani_env *env)
         ani_native_function {"applyChanges", nullptr, reinterpret_cast<void *>(ApplyChanges)},
         ani_native_function {"createAsset1", nullptr, reinterpret_cast<void *>(createAsset1)},
         ani_native_function {"getAssetsSync", nullptr, reinterpret_cast<void *>(GetAssetsSync)},
+        ani_native_function {"getFileAssetsInfo", nullptr, reinterpret_cast<void *>(GetFileAssetsInfo)},
         ani_native_function {"getAssetsInner", nullptr, reinterpret_cast<void *>(GetAssetsInner)},
         ani_native_function {"stopCreateThumbnailTask", nullptr,
             reinterpret_cast<void *>(PhotoAccessStopCreateThumbnailTask)},
@@ -311,9 +311,50 @@ void MediaLibraryAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_en
     ANI_DEBUG_LOG("MediaLibraryAni::PhotoAccessStopCreateThumbnailTask Finished");
 }
 
+ani_object MediaLibraryAni::GetFileAssetsInfo([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+    ani_object options)
+{
+    ANI_INFO_LOG("GetFileAssetsInfo start");
+
+    ani_ref fetchColumns;
+    if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
+        ANI_ERR_LOG("get fieldname fetchCloumns failed");
+        return nullptr;
+    }
+    std::vector<std::string> fetchColumnsVec;
+    if (ANI_OK != MediaLibraryAniUtils::GetStringArray(env, (ani_object)fetchColumns, fetchColumnsVec)) {
+        ANI_ERR_LOG("GetStringArray failed");
+        return nullptr;
+    }
+
+    ani_ref predicates;
+    if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "predicates", &predicates)) {
+        ANI_ERR_LOG("get fieldname predicates failed");
+        return nullptr;
+    }
+    DataSharePredicates* predicate = MediaLibraryAniUtils::UnwrapPredicate(env, (ani_object)predicates);
+    if (predicate == nullptr) {
+        ANI_ERR_LOG("UnwrapPredicate failed");
+        return nullptr;
+    }
+
+    std::vector<std::unique_ptr<FileAsset>> fileAssetArray = MediaAniNativeImpl::GetFileAssetsInfo(fetchColumnsVec,
+        predicate);
+
+    ani_object result = nullptr;
+    if (ANI_OK != MediaLibraryAniUtils::ToFileAssetInfoAniArray(env, fileAssetArray, result)) {
+        ANI_ERR_LOG("MediaLibraryAniUtils::ToFileAssetInfoAniArray failed");
+    }
+
+    ANI_INFO_LOG("GetFileAssetsInfo end");
+    return result;
+}
+
 ani_object MediaLibraryAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_object options)
 {
+    ANI_INFO_LOG("GetAssetsSync start");
+
     ani_ref fetchColumns;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
         ANI_ERR_LOG("get fieldname fetchCloumns failed");
@@ -342,12 +383,16 @@ ani_object MediaLibraryAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe
     if (ANI_OK != MediaLibraryAniUtils::ToFileAssetAniArray(env, fileAssetArray, result)) {
         ANI_ERR_LOG("MediaLibraryAniUtils::ToFileAssetAniArray failed");
     }
+
+    ANI_INFO_LOG("GetAssetsSync end");
     return result;
 }
 
 ani_object MediaLibraryAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_object options)
 {
+    ANI_INFO_LOG("GetAssetsInner start");
+
     ani_ref fetchColumns;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
         ANI_ERR_LOG("get fieldname fetchCloumns failed");
@@ -375,6 +420,8 @@ ani_object MediaLibraryAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[mayb
     if (ANI_OK != MediaLibraryAniUtils::ToFileAssetAniPtr(env, std::move(fileAsset), result)) {
         ANI_ERR_LOG("MediaLibraryAniUtils::ToFileAssetAniPtr failed");
     }
+
+    ANI_INFO_LOG("GetAssetsInner end");
     return result;
 }
 

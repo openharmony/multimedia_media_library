@@ -38,6 +38,7 @@ ohos_shared_library("photo_access_helper_ani") {
     "src/cpp/cloud_enhancement_ani.cpp",
     "src/cpp/fetch_result_ani.cpp",
     "src/cpp/file_asset_ani.cpp",
+    "src/cpp/file_asset_info_ani.cpp",
     "src/cpp/media_album_change_request_ani.cpp",
     "src/cpp/media_ani_native_impl.cpp",
     "src/cpp/media_asset_change_request_ani.cpp",
