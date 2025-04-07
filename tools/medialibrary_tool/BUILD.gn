@@ -70,7 +70,6 @@ ohos_executable("mediatool") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
-    "device_auth:deviceauth_sdk",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "init:libbegetutil",

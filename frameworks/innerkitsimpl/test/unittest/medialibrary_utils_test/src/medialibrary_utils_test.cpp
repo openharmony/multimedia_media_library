@@ -22,7 +22,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #define private public
-#include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
 #include "thumbnail_utils.h"
@@ -174,25 +173,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestS
     bool ret = ThumbnailUtils::QueryDistributeLcdCount(opts, outLcdCount, err);
     EXPECT_EQ(ret, false);
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryAgingDistributeLcdInfos_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string udid = "medialib_QueryAgingDistributeLcdInfos_test_001";
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .udid = udid
-    };
-    int LcdLimit = 0;
-    vector<ThumbnailData> infos;
-    int err = 0;
-    bool ret = ThumbnailUtils::QueryAgingDistributeLcdInfos(opts, LcdLimit, infos, err);
-    EXPECT_EQ(ret, false);
-}
-#endif
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryAgingLcdInfos_test_001, TestSize.Level0)
 {
@@ -408,41 +388,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateVisitTime_test_001, TestSize.Leve
     EXPECT_EQ(ret, false);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDeviceThumbnailRecords_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string udid = "medialib_QueryDeviceThumbnailRecords_test_001";
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .udid = udid
-    };
-    vector<ThumbnailData> infos;
-    int err = 0;
-    bool ret = ThumbnailUtils::QueryDeviceThumbnailRecords(opts, infos, err);
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryRemoteThumbnail_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    ThumbnailData data;
-    ThumbRdbOpt opts = {
-    .store = storePtr,
-    };
-    int err = 0;
-    bool ret = ThumbnailUtils::QueryRemoteThumbnail(opts, data, err);
-    EXPECT_EQ(ret, false);
-    opts.networkId = "medialib_QueryRemoteThumbnail_test";
-    ret = ThumbnailUtils::QueryRemoteThumbnail(opts, data, err);
-    EXPECT_EQ(ret, false);
-}
-#endif
-
 HWTEST_F(MediaLibraryUtilsTest, medialib_CleanThumbnailInfo_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
@@ -457,41 +402,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_CleanThumbnailInfo_test_001, TestSize.L
     EXPECT_EQ(ret, false);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPushTable_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string table = "medialib_SyncPushTable_test_001";
-    MediaLibrarySyncOpts syncOpts = {
-        .rdbStore = storePtr,
-        .table = table,
-        .bundleName = "medialib_SyncPushTable_test_001",
-    };
-    vector<string> devices;
-    bool isBlock = true;
-    bool ret = MediaLibrarySyncOperation::SyncPushTable(syncOpts, devices, isBlock);
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPullTable_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string table = "medialib_SyncPullTable_test_001";
-    MediaLibrarySyncOpts syncOpts = {
-        .rdbStore = storePtr,
-        .table = table,
-        .bundleName = "medialib_SyncPullTable_test_001",
-    };
-    vector<string> devices;
-    bool ret = MediaLibrarySyncOperation::SyncPullTable(syncOpts, devices);
-    EXPECT_EQ(ret, false);
-}
-#endif
-
 HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeImage_test_001, TestSize.Level0)
 {
     vector<uint8_t> data;
@@ -503,43 +413,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeImage_test_001, TestSize.Level0)
     ret = ThumbnailUtils::ResizeImage(data, size, pixelMap);
     EXPECT_EQ(ret, false);
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_WaitFor_test_001, TestSize.Level0)
-{
-    MediaLibrarySyncCallback mediaLibrary;
-    bool ret = mediaLibrary.WaitFor();
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteDistributeLcdData_test_001, TestSize.Level0)
-{
-    ThumbnailData thumbnailData;
-    ThumbRdbOpt opts;
-    bool ret = ThumbnailUtils::DeleteDistributeLcdData(opts, thumbnailData);
-    EXPECT_EQ(ret, false);
-    thumbnailData.lcdKey = "DeleteDistributeLcdData";
-    ret = ThumbnailUtils::DeleteDistributeLcdData(opts, thumbnailData);
-    EXPECT_EQ(ret, true);
-    opts.networkId = "medialib_DeleteDistributeLcdData_test_001";
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    opts.kvStore = kvStorePtr;
-    ret = ThumbnailUtils::DeleteDistributeLcdData(opts, thumbnailData);
-    EXPECT_EQ(ret, true);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_DoUpdateRemoteThumbnail_test_001, TestSize.Level0)
-{
-    ThumbnailData thumbnailData;
-    ThumbRdbOpt opts;
-    int err = 0;
-    bool ret = ThumbnailUtils::DoUpdateRemoteThumbnail(opts, thumbnailData, err);
-    EXPECT_EQ(ret, false);
-    opts.networkId = "medialib_DoUpdateRemoteThumbnail_test_001";
-    ret = ThumbnailUtils::DoUpdateRemoteThumbnail(opts, thumbnailData, err);
-    EXPECT_EQ(ret, false);
-}
-#endif
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteOriginImage_test_001, TestSize.Level0)
 {
@@ -569,59 +442,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateTakenFromKvStore_test_001
     bool ret = ThumbnailUtils::UpdateAstcDateTakenFromKvStore(opts, data);
     EXPECT_EQ(ret, false);
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPullKvstore_test_001, TestSize.Level0)
-{
-    vector<string> thumbnailKeys = {"SyncPullKvstore"};
-    auto ret = MediaLibrarySyncOperation::SyncPullKvstore(nullptr, thumbnailKeys, "");
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, thumbnailKeys, "");
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-    string networkId = "Kvstore";
-    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, thumbnailKeys, networkId);
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPushKvstore_test_001, TestSize.Level0)
-{
-    vector<string> thumbnailKeys = {"SyncPushKvstore"};
-    auto ret = MediaLibrarySyncOperation::SyncPushKvstore(nullptr, thumbnailKeys, "");
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, thumbnailKeys, "");
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-    string networkId = "Kvstore";
-    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, thumbnailKeys, networkId);
-    EXPECT_NE(ret, DistributedKv::Status::ERROR);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_RemoveDataFromKv_test_001, TestSize.Level0)
-{
-    bool ret = ThumbnailUtils::RemoveDataFromKv(nullptr, "");
-    EXPECT_EQ(ret, false);
-    string key = "RemoveDataFromKv";
-    ret = ThumbnailUtils::RemoveDataFromKv(nullptr, key);
-    EXPECT_EQ(ret, false);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = ThumbnailUtils::RemoveDataFromKv(kvStorePtr, key);
-    EXPECT_EQ(ret, true);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_IsImageExist_test_001, TestSize.Level0)
-{
-    string networkId = "medialib_IsImageExist_test_001";
-    bool ret = ThumbnailUtils::IsImageExist("", networkId, nullptr);
-    EXPECT_EQ(ret, false);
-    string key = "IsImageExist";
-    ret = ThumbnailUtils::IsImageExist(key, networkId, nullptr);
-    EXPECT_EQ(ret, false);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = ThumbnailUtils::IsImageExist(key, networkId, kvStorePtr);
-    EXPECT_EQ(ret, false);
-}
-#endif
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_compressImage_test_001, TestSize.Level0)
 {
@@ -684,25 +504,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseQueryResult_test_001, TestSize.Lev
     ThumbnailUtils::ParseQueryResult(resultSet, data, err, column);
     EXPECT_NE(err, 0);
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_deleteDistributeThumbnailInfo_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    ThumbRdbOpt opts;
-    opts.store = storePtr;
-    opts.networkId = "GetUdidByNetworkId";
-    opts.udid = "GetUdidByNetworkId";
-    string key = "RemoveDataFromKv";
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    opts.kvStore = kvStorePtr;
-    ThumbnailUtils::RemoveDataFromKv(opts.kvStore, key);
-    bool ret = ThumbnailUtils::DeleteDistributeThumbnailInfo(opts);
-    EXPECT_EQ(ret, false);
-}
-#endif
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_parseStringResult_test_001, TestSize.Level0)
 {
@@ -830,55 +631,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ConvertStrToInt32_test_001, TestSize.Le
     ret = ThumbnailUtils::ConvertStrToInt32(testStr, result);
     EXPECT_EQ(ret, false);
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_getUdidByNetworkId_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .networkId = "GetUdidByNetworkId",
-        .table = MEDIALIBRARY_TABLE,
-        .row = "GetUdidByNetworkId",
-    };
-    opts.store = storePtr;
-    string networkIdTest = "";
-    string outUdidTest = "";
-    int err = 0;
-    bool ret = ThumbnailUtils::GetUdidByNetworkId(opts, networkIdTest, outUdidTest, err);
-    EXPECT_EQ(ret, false);
-    string outUdid = "GetUdidByNetworkId";
-    ret = ThumbnailUtils::GetUdidByNetworkId(opts, opts.networkId, outUdid, err);
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_updateRemoteThumbnailInfo_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    ThumbRdbOpt opts;
-    ThumbnailData data;
-    int err = 0;
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    opts.kvStore = kvStorePtr;
-    opts.store = storePtr;
-    opts.networkId = "InsertRemoteThumbnailInfo";
-    opts.row = "InsertRemoteThumbnailInfo";
-    bool ret = ThumbnailUtils::UpdateRemoteThumbnailInfo(opts, data, err);
-    EXPECT_EQ(ret, false);
-    data.id = "0";
-    data.udid = "InsertRemoteThumbnailInfo";
-    opts.store = storePtr;
-    ThumbnailUtils::InsertRemoteThumbnailInfo(opts, data, err);
-    ret = ThumbnailUtils::UpdateRemoteThumbnailInfo(opts, data, err);
-    EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::CleanDistributeLcdInfo(opts);
-    EXPECT_EQ(ret, false);
-}
-#endif
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_001, TestSize.Level0)
 {

@@ -24,7 +24,6 @@
 #include "fa_ability_context.h"
 #include "datashare_proxy.h"
 #include "datashare_values_bucket.h"
-#include "medialibrary_sync_operation.h"
 #include "result_set_bridge.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker.h"

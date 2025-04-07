@@ -35,9 +35,6 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 struct ThumbRdbOpt {
     EXPORT std::shared_ptr<MediaLibraryRdbStore> store;
-#ifdef DISTRIBUTED
-    EXPORT std::shared_ptr<DistributedKv::SingleKvStore> kvStore;
-#endif
     EXPORT std::shared_ptr<AbilityRuntime::Context> context;
     EXPORT std::string networkId;
     EXPORT std::string path;
@@ -68,21 +65,9 @@ public:
     // RDB Store Query
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
         ThumbnailData &data, int &err);
-#ifdef DISTRIBUTED
-    EXPORT static bool QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    // KV Store
-    EXPORT static bool RemoveDataFromKv(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
-        const std::string &key);
-    EXPORT static bool IsImageExist(const std::string &key, const std::string &networkId,
-        const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
-    EXPORT static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
-#endif
     EXPORT static bool DeleteThumbFile(ThumbnailData &data, ThumbnailType type);
     EXPORT static bool DeleteThumbExDir(ThumbnailData &data);
     EXPORT static bool DeleteBeginTimestampDir(ThumbnailData &data);
-#ifdef DISTRIBUTED
-    EXPORT static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
-#endif
 
     EXPORT static bool DeleteOriginImage(ThumbRdbOpt &opts);
     EXPORT static bool DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts);
@@ -98,19 +83,12 @@ public:
     EXPORT static bool UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
     EXPORT static bool DoUpdateAstcDateTaken(ThumbRdbOpt &opts, ThumbnailData &data);
-#ifdef DISTRIBUTED
-    EXPORT static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-#endif
 
     // RDB Store generate and aging
     EXPORT static bool QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
     EXPORT static bool QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
     EXPORT static bool QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         std::vector<ThumbnailData> &infos, int &err);
-#ifdef DISTRIBUTED
-    EXPORT static bool QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
-        std::vector<ThumbnailData> &infos, int &err);
-#endif
     EXPORT static bool QueryNoLcdInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryLocalNoLcdInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
@@ -129,9 +107,6 @@ public:
     EXPORT static std::string GetHighlightValue(const std::string &str, const std::string &key);
     EXPORT static bool GetHighlightTracks(ThumbRdbOpt &opts, std::vector<int> &trackInfos, int32_t &err);
 
-#ifdef DISTRIBUTED
-    EXPORT static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
-#endif
     EXPORT static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
         int &err);
     EXPORT static bool ResizeThumb(int& width, int& height);
@@ -191,14 +166,6 @@ private:
     EXPORT static bool ConvertStrToInt32(const std::string &str, int32_t &ret);
     EXPORT static bool ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
         int32_t &videoWidth, int32_t &videoHeight);
-#ifdef DISTRIBUTED
-    // RDB Store
-    EXPORT static bool GetUdidByNetworkId(ThumbRdbOpt &opts, const std::string &networkId,
-        std::string &outUdid, int &err);
-    EXPORT static bool UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    EXPORT static bool InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    EXPORT static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts);
-#endif
 
     // scale
     EXPORT static bool ScaleFastThumb(ThumbnailData &data, const Size &size);

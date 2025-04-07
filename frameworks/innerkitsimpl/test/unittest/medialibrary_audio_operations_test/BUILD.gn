@@ -62,7 +62,6 @@ ohos_unittest("medialibrary_audio_operations_test") {
     "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {

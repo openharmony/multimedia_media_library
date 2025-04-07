@@ -47,8 +47,6 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
 #include "userfile_manager_types.h"

@@ -28,9 +28,6 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-#ifdef DISTRIBUTED
-class MediaLibraryRdbStoreObserver;
-#endif
 
 class MediaLibraryDataCallBack;
 
@@ -154,10 +151,6 @@ private:
     EXPORT static const std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
     static std::mutex reconstructLock_;
     static std::mutex walCheckPointMutex_;
-#ifdef DISTRIBUTED
-    std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
-#endif
-    std::string bundleName_ {BUNDLE_NAME};
     NativeRdb::RdbStoreConfig config_ {""};
 };
 
@@ -216,22 +209,6 @@ public:
     std::string bundleName_;
 };
 
-#ifdef DISTRIBUTED
-class MediaLibraryRdbStoreObserver : public NativeRdb::RdbStore::RdbStoreObserver {
-public:
-    explicit MediaLibraryRdbStoreObserver(const std::string &bundleName);
-    virtual ~MediaLibraryRdbStoreObserver();
-    void OnChange(const std::vector<std::string> &devices) override;
-
-private:
-    void NotifyDeviceChange();
-    static constexpr int NOTIFY_TIME_INTERVAL = 10000;
-    std::unique_ptr<OHOS::Utils::Timer> timer_;
-    uint32_t timerId_ {0};
-    std::string bundleName_;
-    bool isNotifyDeviceChange_;
-};
-#endif
 } // namespace Media
 } // namespace OHOS
 

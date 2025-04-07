@@ -24,13 +24,7 @@ ohos_prebuilt_etc("userfilemanager_mimetypes.json") {
 }
 
 config("media_data_extension_public_config") {
-  include_fileext = [ "${MEDIALIB_SERVICES_PATH}/media_file_extension/include" ]
   include_fuse = [ "${MEDIALIB_SERVICES_PATH}/media_fuse/include" ]
-  include_distributed = [
-    "${MEDIALIB_SERVICES_PATH}/media_distributed/include/database_manage",
-    "${MEDIALIB_SERVICES_PATH}/media_distributed/include/device_manage",
-    "${MEDIALIB_SERVICES_PATH}/media_distributed/include/devices_info_interact",
-  ]
   include_scanner = [
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
@@ -94,9 +88,7 @@ config("media_data_extension_public_config") {
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
-  include_dirs += include_fileext
   include_dirs += include_fuse
-  include_dirs += include_distributed
   include_dirs += include_scanner
   include_dirs += include_multistages_capture
   include_dirs += include_dfx
