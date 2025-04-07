@@ -233,6 +233,30 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts, bool
     return E_OK;
 }
 
+int32_t ThumbnailGenerateHelper::RegenerateThumbnailFromCloud(ThumbRdbOpt &opts)
+{
+    ThumbnailData data;
+    int err = 0;
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, opts.fileId, data, err);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Query data from fileId failed, path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        return err;
+    }
+    if (data.dirty != static_cast<int32_t>(DirtyType::TYPE_SYNCED)) {
+        MEDIA_ERR_LOG("Not synced data, RegenerateThumbnailFromCloud cancelled, path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        return err;
+    }
+
+    opts.row = data.id;
+    data.isRegenerateStage = true;
+    data.loaderOpts.loadingStates = SourceLoader::CLOUD_ORIGIN_SOURCE_LOADING_STATES;
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
+        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+    return E_OK;
+}
+
 int32_t ThumbnailGenerateHelper::CreateAstcMthAndYear(ThumbRdbOpt &opts)
 {
     ThumbnailData data;

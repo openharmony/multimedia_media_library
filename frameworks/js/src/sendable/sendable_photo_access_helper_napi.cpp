@@ -1137,6 +1137,39 @@ static bool ParseLocationAlbumTypes(unique_ptr<SendablePhotoAccessHelperAsyncCon
     return true;
 }
 
+static void ApplyTablePrefixToAlbumIdPredicates(DataSharePredicates& predicates)
+{
+    constexpr int32_t fieldIdx = 0;
+    auto& items = predicates.GetOperationList();
+    string targetColumn = "AnalysisAlbum.album_id";
+    std::vector<DataShare::OperationItem> tmpOperations = {};
+    for (const DataShare::OperationItem& item : items) {
+        if (item.singleParams.empty()) {
+            tmpOperations.push_back(item);
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(fieldIdx)) == PhotoAlbumColumns::ALBUM_ID) {
+            DataShare::OperationItem tmpItem = item;
+            tmpItem.singleParams[fieldIdx] = targetColumn;
+            tmpOperations.push_back(tmpItem);
+            continue;
+        }
+        tmpOperations.push_back(item);
+    }
+    predicates = DataSharePredicates(move(tmpOperations));
+}
+
+static void AddHighlightAlbumPredicates(DataSharePredicates& predicates)
+{
+    vector<string> onClause = {
+        ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+        HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+    };
+    predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
+    predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
+    ApplyTablePrefixToAlbumIdPredicates(predicates);
+}
+
 static napi_value ParseAlbumTypes(napi_env env, unique_ptr<SendablePhotoAccessHelperAsyncContext> &context)
 {
     if (context->argc < ARGS_TWO) {
@@ -1176,12 +1209,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<SendablePhotoAccessHe
     }
     if (albumSubType == PhotoAlbumSubType::HIGHLIGHT || albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         context->isHighlightAlbum = albumSubType;
-        vector<string> onClause = {
-            ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-            HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
-        };
-        context->predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
-        context->predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
+        AddHighlightAlbumPredicates(context->predicates);
     }
 
     napi_value result = nullptr;

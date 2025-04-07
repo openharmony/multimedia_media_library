@@ -110,6 +110,8 @@ private:
         SELECT \
             _id, \
             local_media_id, \
+            localThumbPath, \
+            localBigThumbPath, \
             _data, \
             _display_name, \
             description, \

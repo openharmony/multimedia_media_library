@@ -143,45 +143,6 @@ config("media_data_extension_public_config") {
   }
 }
 
-ohos_hap("medialibrary_ext_hap") {
-  hap_profile = "MediaLibraryExt/entry/src/main/module.json"
-  deps = [
-    ":MediaLibStage_js_assets",
-    ":MediaLibStage_resources",
-  ]
-  shared_libraries = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
-  certificate_profile = "${MEDIALIB_INNERKITS_PATH}/signature/medialib.p7b"
-  hap_name = "Media_Library_Ext"
-  part_name = "media_library"
-  subsystem_name = "multimedia"
-  module_install_dir = "app/com.ohos.medialibrary.MediaLibraryData"
-  publicity_file = "../../../publicity.xml"
-  if (defined(sign_hap_py_path)) {
-    certificate_profile =
-        "${MEDIALIB_INNERKITS_PATH}/signature/medialib_new.p7b"
-    key_alias = "medialibrarydata"
-    private_key_path = "medialibrarydata"
-    compatible_version = "9"
-  }
-}
-
-ohos_js_assets("MediaLibStage_js_assets") {
-  hap_profile = "MediaLibraryExt/entry/src/main/module.json"
-  ets2abc = true
-  source_dir = "MediaLibraryExt/entry/src/main/ets"
-}
-
-ohos_app_scope("MediaLibStage_app_profile") {
-  app_profile = "MediaLibraryExt/AppScope/app.json"
-  sources = [ "MediaLibraryExt/AppScope/resources" ]
-}
-
-ohos_resources("MediaLibStage_resources") {
-  sources = [ "MediaLibraryExt/entry/src/main/resources" ]
-  deps = [ ":MediaLibStage_app_profile" ]
-  hap_profile = "MediaLibraryExt/entry/src/main/module.json"
-}
-
 ohos_shared_library("medialibrary_data_extension") {
   install_enable = true
 

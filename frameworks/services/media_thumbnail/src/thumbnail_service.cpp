@@ -698,6 +698,21 @@ bool ThumbnailService::CreateAstcMthAndYear(const std::string &id)
     return true;
 }
 
+bool ThumbnailService::RegenerateThumbnailFromCloud(const string &id)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .fileId = id,
+    };
+    int err = ThumbnailGenerateHelper::RegenerateThumbnailFromCloud(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("RegenerateThumbnailFromCloud failed, err: %{public}d", err);
+        return false;
+    }
+    return true;
+}
+
 void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken)
 {
     ThumbnailData data;

@@ -29,6 +29,7 @@ struct CloneDbInfo {
     std::string data;
     double dateModified {0.0};
     double dateTaken {0.0};
+    bool fileExists {false};
 };
 
 class OthersCloneRestore : public BaseRestore {
@@ -44,6 +45,7 @@ private:
     void RestorePhoto(void);
     void RestoreAudio(void);
     void HandleRestData(void);
+    void ReportCloneBefore(void);
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         std::string dbName = "");
     bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
@@ -56,9 +58,17 @@ private:
     void AddAudioFile(FileInfo &tmpInfo);
     void SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo);
     int32_t GetAllfilesInCurrentDir(const std::string &path);
+    bool CheckSamePathForSD(const std::string &dataPath, FileInfo &fileInfo, const std::string &filePath);
     void UpDateFileModifiedTime(FileInfo &fileInfo);
+    void ReportMissingFilesFromDB(std::vector<CloneDbInfo> &mediaDbInfo, const std::string &dbType);
+    void GetDbInfo(int32_t sceneCode, std::vector<CloneDbInfo> &mediaDbInfo,
+        const std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo);
     bool HasSameFileForDualClone(FileInfo &fileInfo);
+    bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
+        std::string &relativePath, FileInfo &fileInfo);
+    bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
+        std::string &relativePath);
     void HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> mediaRdb, int32_t offset, int32_t sceneCode,
         std::vector<CloneDbInfo> &mediaDbInfo);
     void CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, std::vector<CloneDbInfo> &popInfos);
@@ -82,6 +92,8 @@ private:
     PhotoAlbumDao photoAlbumDao_;
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
+    int32_t photoFileNotFoundCount_ {0};
+    int32_t audioFileNotFoundCount_ {0};
 };
 } // namespace Media
 } // namespace OHOS

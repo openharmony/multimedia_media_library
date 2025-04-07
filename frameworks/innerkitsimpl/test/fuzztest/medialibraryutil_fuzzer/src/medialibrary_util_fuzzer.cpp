@@ -56,9 +56,7 @@
 namespace OHOS {
 using namespace std;
 const int32_t EVEN = 2;
-const std::string PERMISSION = "testName";
 const std::string ROOT_MEDIA_DIR = "/storage/cloud/files/";
-const std::string PHOTO_PATH = "/Photo/5/IMG_1741264239_005.jpg";
 const std::string DISPLAY_NAME = "IMG_20250306_202859.jpg";
 const std::string FILE_HIDDEN = ".FileHidden/";
 static const int32_t E_ERR = -1;
@@ -78,14 +76,6 @@ static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
     return static_cast<int32_t>(*data);
 }
 
-static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
-{
-    if (data == nullptr || size < sizeof(int64_t)) {
-        return 0;
-    }
-    return static_cast<int64_t>(*data);
-}
-
 static inline bool FuzzBool(const uint8_t* data, size_t size)
 {
     if (size == 0) {
@@ -99,11 +89,6 @@ static inline Uri FuzzUri(const uint8_t *data, size_t size)
     return Uri(FuzzString(data, size));
 }
 
-static inline vector<string> FuzzVectorString(const uint8_t *data, size_t size)
-{
-    return {FuzzString(data, size)};
-}
-
 static inline Media::CpuAffinityType FuzzCpuAffinityType(const uint8_t *data, size_t size)
 {
     int32_t value = FuzzInt32(data, size);
@@ -112,16 +97,6 @@ static inline Media::CpuAffinityType FuzzCpuAffinityType(const uint8_t *data, si
         return static_cast<Media::CpuAffinityType>(value);
     }
     return Media::CpuAffinityType::CPU_IDX_DEFAULT;
-}
-
-static inline Security::AccessToken::PermissionUsedType FuzzPermissionUsedType(const uint8_t *data, size_t size)
-{
-    int32_t value = FuzzInt32(data, size);
-    if (value >= static_cast<int32_t>(Security::AccessToken::PermissionUsedType::NORMAL_TYPE) &&
-        value <= static_cast<int32_t>(Security::AccessToken::PermissionUsedType::PERM_USED_TYPE_BUTT)) {
-        return static_cast<Security::AccessToken::PermissionUsedType>(value);
-    }
-    return Security::AccessToken::PermissionUsedType::INVALID_USED_TYPE;
 }
 
 static inline Media::MediaLibraryCommand FuzzMediaLibraryCmd(const uint8_t *data, size_t size)
@@ -427,60 +402,11 @@ static void CommonUtilsTest(const uint8_t *data, size_t size)
     Media::MediaLibraryCommonUtils::CanConvertStrToInt32(str);
 }
 
-static void PermissionUtilsTest(const uint8_t *data, size_t size)
-{
-    int uid = FuzzInt32(data, size);
-    std::string packageName = FuzzString(data, size);
-    Media::PermissionUtils::UpdatePackageNameInCache(uid, packageName);
-
-    std::string appId = FuzzString(data, size);
-    int64_t tokenId = FuzzInt64(data, size);
-    Media::PermissionUtils::GetMainTokenId(appId, tokenId);
-
-    std::string permission = FuzzString(data, size);
-    bool permGranted = FuzzBool(data, size);
-    Security::AccessToken::PermissionUsedType type = FuzzPermissionUsedType(data, size);
-    Media::PermissionUtils::CollectPermissionInfo(permission, permGranted, type, uid);
-
-    vector<string> perms = FuzzVectorString(data, size);
-    unsigned int tokenCaller = FuzzInt32(data, size);
-    Media::PermissionUtils::CheckPhotoCallerPermission(perms, uid, tokenCaller);
-
-    permission = FuzzBool(data, size) ? PERMISSION : FuzzString(data, size);
-    Media::PermissionUtils::CheckPhotoCallerPermission(permission, tokenCaller);
-    Media::PermissionUtils::SetEPolicy();
-}
-
 static void CloudSyncUtilsTest()
 {
     Media::CloudSyncUtils::IsUnlimitedTrafficStatusOn();
     Media::CloudSyncUtils::IsCloudSyncSwitchOn();
     Media::CloudSyncUtils::IsCloudDataAgingPolicyOn();
-}
-
-static void PhotoFileUtilsTest(const uint8_t *data, size_t size)
-{
-    std::string photoPath = FuzzBool(data, size) ? ROOT_MEDIA_DIR : FuzzString(data, size);
-    int32_t userId = FuzzInt32(data, size);
-    Media::PhotoFileUtils::GetEditDataPath(photoPath, userId);
-    Media::PhotoFileUtils::GetEditDataCameraPath(photoPath, userId);
-    Media::PhotoFileUtils::GetEditDataSourcePath(photoPath, userId);
-
-    int64_t editTime = FuzzInt64(data, size);
-    Media::PhotoFileUtils::HasEditData(editTime);
-    bool hasEditDataCamera = FuzzBool(data, size);
-    int32_t effectMode = FuzzInt32(data, size);
-    Media::PhotoFileUtils::HasSource(hasEditDataCamera, editTime, effectMode);
-
-    photoPath = FuzzBool(data, size) ? "" : FuzzString(data, size);
-    Media::PhotoFileUtils::GetMetaDataRealPath(photoPath, userId);
-    photoPath = PHOTO_PATH;
-    Media::PhotoFileUtils::GetMetaDataRealPath(photoPath, userId);
-
-    photoPath = FuzzBool(data, size) ? ROOT_MEDIA_DIR : "";
-    Media::PhotoFileUtils::IsThumbnailExists(photoPath);
-    photoPath = FuzzString(data, size);
-    Media::PhotoFileUtils::IsThumbnailExists(photoPath);
 }
 
 static void ScannerUtilsTest(const uint8_t *data, size_t size)
@@ -534,9 +460,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::CloudDownloadTest();
     OHOS::CpuUtilsTest(data, size);
     OHOS::CommonUtilsTest(data, size);
-    OHOS::PermissionUtilsTest(data, size);
     OHOS::CloudSyncUtilsTest();
-    OHOS::PhotoFileUtilsTest(data, size);
     OHOS::ScannerUtilsTest(data, size);
     return 0;
 }

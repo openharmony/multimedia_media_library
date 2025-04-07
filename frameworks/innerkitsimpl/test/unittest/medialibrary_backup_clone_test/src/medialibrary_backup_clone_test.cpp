@@ -1440,7 +1440,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlb
     FileInfo fileInfo;
     othersClone->clonePhoneName_ = "testPhone";
     othersClone->UpdateAlbumInfo(fileInfo);
-    EXPECT_EQ(fileInfo.bundleName, "testPhone");
+    EXPECT_NE(fileInfo.bundleName, "testPhone"); // no longer use clonePhoneName_ as album name
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlbumInfo_002, TestSize.Level0)

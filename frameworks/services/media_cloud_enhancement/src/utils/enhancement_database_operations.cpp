@@ -29,6 +29,7 @@
 #include "photo_album_column.h"
 #include "media_app_uri_permission_column.h"
 #include "media_library_extend_manager.h"
+#include "moving_photo_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -96,8 +97,11 @@ int32_t EnhancementDatabaseOperations::Update(ValuesBucket &rdbValues, AbsRdbPre
     return E_OK;
 }
 
-static void HandleDateAdded(const int64_t dateAdded, const MediaType type, ValuesBucket &outValues)
+static void HandleDateAdded(const MediaType type, ValuesBucket &outValues,
+    shared_ptr<NativeRdb::ResultSet> resultSet)
 {
+    int64_t dateAdded = GetInt64Val(PhotoColumn::MEDIA_DATE_ADDED, resultSet);
+    int64_t dateTaken = GetInt64Val(PhotoColumn::MEDIA_DATE_TAKEN, resultSet);
     outValues.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
     if (type != MEDIA_TYPE_PHOTO) {
         return;
@@ -108,7 +112,7 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
-    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
+    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
 }
 
 static void SetOwnerAlbumId(ValuesBucket &assetInfo, shared_ptr<NativeRdb::ResultSet> resultSet)
@@ -130,17 +134,10 @@ static void SetSupportedWatermarkType(int32_t sourceFileId, ValuesBucket &assetI
     assetInfo.PutInt(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType);
 }
 
-int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd,
-    const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info,
-    shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<TransactionOperations> trans)
+static void SetBasicAttributes(MediaLibraryCommand &cmd, const FileAsset &fileAsset,
+    ValuesBucket &assetInfo, shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
-    CHECK_AND_RETURN_RET_LOG(fileAsset.GetPath().empty() || !MediaFileUtils::IsFileExists(fileAsset.GetPath()),
-        E_FILE_EXIST, "file %{private}s exists now", fileAsset.GetPath().c_str());
     const string& displayName = fileAsset.GetDisplayName();
-    int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
-    ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
     string extension = ScannerUtils::GetFileExtension(displayName);
     assetInfo.PutString(MediaColumn::MEDIA_MIME_TYPE,
@@ -151,21 +148,51 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
-    HandleDateAdded(nowTime, MEDIA_TYPE_PHOTO, assetInfo);
-    // Set subtype if source image is moving photo
-    assetInfo.PutInt(MediaColumn::MEDIA_HIDDEN, info->hidden);
-    if (info->subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
-        int32_t dirty = GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet);
-        if (dirty < 0) {
-            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
-        }
-    }
+}
+
+static void SetCloudEnhancementAttributes(int32_t sourceFileId, ValuesBucket &assetInfo)
+{
     assetInfo.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
     assetInfo.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
     assetInfo.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, sourceFileId);
+}
+
+static void SetSpecialAttributes(ValuesBucket &assetInfo, shared_ptr<CloudEnhancementFileInfo> info,
+    shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    // Set hidden
+    assetInfo.PutInt(MediaColumn::MEDIA_HIDDEN, info->hidden);
+    // Set subtype if source image is moving photo
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+    int32_t originalSubtype = GetInt32Val(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, resultSet);
+    if (MovingPhotoFileUtils::IsMovingPhoto(info->subtype, effectMode, originalSubtype)) {
+        assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, info->subtype);
+        assetInfo.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
+        assetInfo.PutInt(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, originalSubtype);
+        MEDIA_INFO_LOG("subtype:%{public}d, moving_photo_effect_mode:%{public}d, original_subtype:%{public}d",
+            info->subtype, effectMode, originalSubtype);
+        int32_t dirty = GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet);
+        if (dirty < 0) {
+            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
+        }
+    }
+}
+
+int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd,
+    const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info,
+    shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<TransactionOperations> trans)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
+    CHECK_AND_RETURN_RET_LOG(fileAsset.GetPath().empty() || !MediaFileUtils::IsFileExists(fileAsset.GetPath()),
+        E_FILE_EXIST, "file %{private}s exists now", fileAsset.GetPath().c_str());
+    ValuesBucket assetInfo;
+    SetBasicAttributes(cmd, fileAsset, assetInfo, resultSet);
+    HandleDateAdded(MEDIA_TYPE_PHOTO, assetInfo, resultSet);
+    SetSpecialAttributes(assetInfo, info, resultSet);
+    SetCloudEnhancementAttributes(sourceFileId, assetInfo);
     SetOwnerAlbumId(assetInfo, resultSet);
     SetSupportedWatermarkType(sourceFileId, assetInfo, resultSet);
     cmd.SetValueBucket(assetInfo);

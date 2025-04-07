@@ -93,6 +93,7 @@ public:
     static int32_t ReportAlbumFusion(const AlbumFusionDfxDataPoint& reportData);
     void ReportAstcInfo(const LcdAndAstcCount& count);
     static int32_t ReportCustomRestoreFusion(const CustomRestoreDfxDataPoint& reportData);
+    void ReportOperationRecordInfo();
 };
 } // namespace Media
 } // namespace OHOS

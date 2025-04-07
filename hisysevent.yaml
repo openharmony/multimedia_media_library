@@ -200,3 +200,20 @@ MEDIALIB_CLOUD_SYNC_STAT:
   AVG_REF_USERSOURCE_ALBUM_T: { type: INT32, desc: Average time to refresh user and source albums }
   REF_ANALYSIS_ALBUM_C: { type: INT32, desc: Number of analysis albums refreshed }
   AVG_REF_ANALYSIS_ALBUM_T: { type: INT32, desc: Average time to refresh analysis albums }
+
+MEDIALIB_OPRN_CURRENT_INFO:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: mediaLibrary current operation table info }
+  CURRENT_OPT_ADD_COUNT: { type: INT32, desc: current add count }
+  CURRENT_OPT_DELETE_COUNT: { type: INT32, desc: current delete count }
+  CURRENT_OPT_UPDATE_COUNT: { type: INT32, desc: current update count }
+  CURRENT_OPT_TOTAL_COUNT: { type: INT32, desc: current total count }
+  CURRENT_TIME: { type: INT64, desc: current operation handle time }
+
+MEDIALIB_OPRN_CHANGE_INFO:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: mediaLibrary operation table change info }
+  OPT_ADD_COUNT: { type: INT32, desc: add change count }
+  OPT_DELETE_COUNT: { type: INT32, desc: delete change count }
+  OPT_UPDATE_COUNT: { type: INT32, desc: update change count }
+  OPT_TOTAL_COUNT: { type: INT32, desc: total change count }
+  OPT_START_TIME: { type: INT64, desc: operation handle start time }
+  OPT_END_TIME: { type: INT64, desc: operation handle end time }

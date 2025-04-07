@@ -87,7 +87,6 @@ void ClearHighlightData()
         cloneRestoreHighlight->highlightInfos_.clear();
         cloneRestoreHighlight->coverInfos_.clear();
         cloneRestoreHighlight->playInfos_.clear();
-        cloneRestoreHighlight->oldAlbumIds_.clear();
         cloneRestoreHighlight->albumPhotoCounter_.clear();
         cloneRestoreHighlight->intersectionMap_.clear();
         cloneRestoreHighlight->photoIdMap_.Clear();
@@ -179,7 +178,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_00
     MEDIA_INFO_LOG("clone_restore_highlight_restore_maps_test_001 start");
     ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
+    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
     cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     cloneRestoreHighlight->isMapOrder_ = true;
@@ -198,45 +197,10 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_00
     testAnalysisInfo.oldCoverUri = make_optional<string>("file://media/Photo/1/test/IMG_00000000_000000.jpg");
     testAnalysisInfo.albumName = make_optional<string>("testAlbumName");
     cloneRestoreHighlight->analysisInfos_.emplace_back(testAnalysisInfo);
-
-    cloneRestoreHighlight->oldAlbumIds_.emplace_back(1);
     cloneRestoreHighlight->RestoreMaps(fileInfos);
     string mapCondition = "map_album = 2 AND map_asset = 2";
     int32_t mapCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), ANALYSIS_PHOTO_MAP_TABLE, mapCondition);
     EXPECT_EQ(mapCount, 1);
-    ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
-}
-
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_batch_query_photo_test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("clone_restore_highlight_batch_query_photo_test_001 start");
-    ClearHighlightData();
-    CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
-    Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
-    cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
-    vector<FileInfo> fileInfos;
-    FileInfo testFileInfo1;
-    testFileInfo1.fileIdOld = 1;
-    testFileInfo1.fileIdNew = 0;
-    testFileInfo1.cloudPath = "/storage/cloud/files/Photo/16/test.jpg";
-    testFileInfo1.displayName = "IMG_00000000_000000.jpg";
-    testFileInfo1.oldPath = "/oldPath/test.jpg";
-    fileInfos.emplace_back(testFileInfo1);
-
-    FileInfo testFileInfo2;
-    testFileInfo2.fileIdOld = 1;
-    testFileInfo2.fileIdNew = 2;
-    testFileInfo2.cloudPath = "test.jpg";
-    testFileInfo2.displayName = "IMG_00000000_000000.jpg";
-    testFileInfo2.oldPath = "/oldPath/test.jpg";
-    fileInfos.emplace_back(testFileInfo2);
-
-    cloneRestoreHighlight->oldAlbumIds_.emplace_back(1);
-    cloneRestoreHighlight->BatchQueryPhoto(fileInfos);
-    string mapCondition = "map_album = 2 AND map_asset = 2";
-    int32_t mapCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), ANALYSIS_PHOTO_MAP_TABLE, mapCondition);
-    EXPECT_EQ(mapCount, 0);
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 
@@ -245,7 +209,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_0
     MEDIA_INFO_LOG("clone_restore_highlight_update_values_test_001 start");
     ClearHighlightData();
     CloneHighlightSource cloneHighlightSource;
-    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
+    vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
     cloneRestoreHighlight->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     cloneRestoreHighlight->isMapOrder_ = false;
@@ -255,15 +219,15 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_0
     testFileInfo.cloudPath = "/storage/cloud/files/Photo/16/test.jpg";
     testFileInfo.displayName = "IMG_00000000_000000.jpg";
     testFileInfo.oldPath = "/oldPath/test.jpg";
+    vector<FileInfo> fileInfos = { testFileInfo };
 
     CloneRestoreHighlight::AnalysisAlbumInfo testAnalysisInfo;
     testAnalysisInfo.albumIdOld = make_optional<int32_t>(TEST_ID);
     testAnalysisInfo.albumIdNew = make_optional<int32_t>(TEST_NEW_ID);
     cloneRestoreHighlight->analysisInfos_.emplace_back(testAnalysisInfo);
 
-    cloneRestoreHighlight->oldAlbumIds_.emplace_back(1);
     vector<NativeRdb::ValuesBucket> values;
-    cloneRestoreHighlight->UpdateMapInsertValuesByAlbumId(values, testFileInfo, 1);
+    cloneRestoreHighlight->UpdateMapInsertValues(values, fileInfos);
     string mapCondition = "map_album = 2 AND map_asset = 2";
     int32_t mapCount = GetAlbumCountByCondition(newRdbStore->GetRaw(), ANALYSIS_PHOTO_MAP_TABLE, mapCondition);
     EXPECT_EQ(values.empty(), false);

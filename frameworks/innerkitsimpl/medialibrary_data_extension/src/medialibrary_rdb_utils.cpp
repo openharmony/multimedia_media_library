@@ -1980,6 +1980,8 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibra
         albumResult = GetSystemAlbum(rdbStore, {
             to_string(PhotoAlbumSubType::IMAGE),
             to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::HIDDEN),
+            to_string(PhotoAlbumSubType::TRASH),
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::SCREENSHOT),
             to_string(PhotoAlbumSubType::CAMERA),
