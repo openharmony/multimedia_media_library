@@ -61,7 +61,7 @@ static std::pair<bool, bool> IsPictureTempAndEdited(const string &photoId)
         std::make_pair(false, false), "resultSet is empty");
     bool isTemp = (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 1);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
-    return std::make_pair<isTemp, isEdited>;
+    return std::make_pair(isTemp, isEdited);
 }
 
 void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap,
