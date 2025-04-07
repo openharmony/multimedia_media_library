@@ -28,7 +28,7 @@ namespace Media {
 struct CheckedPhotoInfo {
     int32_t fileId;
     std::string path;
-    size_t size;
+    int64_t size;
     int32_t subtype;
     int32_t movingPhotoEffectMode;
 };
