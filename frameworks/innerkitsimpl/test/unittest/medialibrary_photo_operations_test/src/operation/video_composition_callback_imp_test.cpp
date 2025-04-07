@@ -98,7 +98,7 @@ static void ClearAndRestart()
     SetTables();
 }
 
-string GetFilePath(int fileId)
+static string GetFilePath(int fileId)
 {
     if (fileId < 0) {
         MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
@@ -122,7 +122,7 @@ string GetFilePath(int fileId)
     return path;
 }
 
-int32_t MakePhotoUnpending(int fileId, bool isMovingPhoto = false)
+static int32_t MakePhotoUnpending(int fileId, bool isMovingPhoto = false)
 {
     if (fileId < 0) {
         MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
@@ -169,7 +169,7 @@ int32_t MakePhotoUnpending(int fileId, bool isMovingPhoto = false)
     return E_OK;
 }
 
-int32_t CreatePhotoApi10(int mediaType, const string &displayName)
+static int32_t CreatePhotoApi10(int mediaType, const string &displayName)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
