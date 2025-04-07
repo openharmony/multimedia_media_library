@@ -194,6 +194,8 @@ void MultiStagesPhotoCaptureManager::DealHighQualityPicture(const std::string &i
     sptr<PicturePair> picturePair= new PicturePair(std::move(picture), imageIdInPair, expireTime, true, isEdited);
     picturePair->SetTakeEffect(isTakeEffect);
     pictureManagerThread->InsertPictureData(imageId, picturePair, HIGH_QUALITY_PICTURE);
+    // delete raw file
+    MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
 }
 
 int32_t MultiStagesPhotoCaptureManager::UpdateDbInfo(MediaLibraryCommand &cmd)
