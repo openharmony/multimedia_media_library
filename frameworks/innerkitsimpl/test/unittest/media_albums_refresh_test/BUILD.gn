@@ -35,6 +35,7 @@ ohos_unittest("media_albums_refresh_test") {
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/albums_refresh_manager_test.cpp",
+    "./src/cloud_sync_observer_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
