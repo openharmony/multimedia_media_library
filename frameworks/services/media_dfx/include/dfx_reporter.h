@@ -65,6 +65,16 @@ struct LcdAndAstcCount {
     int32_t cloudAstcCount;
 };
 
+enum PhotoErrorType : int32_t {
+    PHOTO_INVALID_TYPE = -1,  // 无效参数
+    PHOTO_MISS_TYPE = 1,    // 图片丢失
+};
+
+struct PhotoErrorCount {
+    std::vector<int32_t> photoErrorTypes;     // 图片故障类型
+    std::vector<int32_t> photoErrorCounts;    // 图片故障数量
+};
+
 class DfxReporter {
 public:
     DfxReporter();
@@ -94,6 +104,7 @@ public:
     void ReportAstcInfo(const LcdAndAstcCount& count);
     static int32_t ReportCustomRestoreFusion(const CustomRestoreDfxDataPoint& reportData);
     void ReportOperationRecordInfo();
+    static int32_t ReportPhotoError(const PhotoErrorCount& reportData);
 };
 } // namespace Media
 } // namespace OHOS

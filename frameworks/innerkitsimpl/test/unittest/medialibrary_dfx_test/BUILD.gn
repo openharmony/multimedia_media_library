@@ -23,6 +23,7 @@ group("unittest") {
 ohos_unittest("medialibrary_dfx_test") {
   module_out_path = "media_library/media_library-asset"
   include_dirs = [
+    "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "./include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
@@ -62,6 +63,7 @@ ohos_unittest("medialibrary_dfx_test") {
     "data_share:datashare_provider",
     "dfs_service:cloudsync_kit_inner",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_core",
