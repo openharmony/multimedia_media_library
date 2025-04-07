@@ -105,10 +105,10 @@ inline bool IsMovingPhoto(int32_t subtype, int32_t movingPhotoEffectMode)
            movingPhotoEffectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY);
 }
 
-int32_t GetPhotoRealSize(const bool isMovingPhoto, const std::string &path, size_t &size)
+int32_t GetPhotoRealSize(const bool isMovingPhoto, const std::string &path, int64_t &size)
 {
     if (isMovingPhoto) {
-        size = MovingPhotoFileUtils::GetMovingPhotoSize(path);
+        size = static_cast<int64_t>(MovingPhotoFileUtils::GetMovingPhotoSize(path));
         return E_OK;
     }
     struct stat st {};
@@ -118,19 +118,19 @@ int32_t GetPhotoRealSize(const bool isMovingPhoto, const std::string &path, size
         path.c_str(),
         errno);
 
-    size = st.st_size;
+    size = static_cast<int64_t>(st.st_size);
     return E_OK;
 }
 
 void CloudUploadChecker::UpdateFileSize(const CheckedPhotoInfo &photoInfo, bool isMovingPhoto)
 {
-    size_t size = 0;
+    int64_t size = 0;
     CHECK_AND_RETURN_LOG(GetPhotoRealSize(isMovingPhoto, photoInfo.path, size) == E_OK,
         "get photo real size failed, path=%{public}s",
         photoInfo.path.c_str());
 
     CHECK_AND_RETURN_INFO_LOG(photoInfo.size != size,
-        "no need to update db file size, file_id=%{public}d, size=%{public}zu",
+        "no need to update db file size, file_id=%{public}d, size=%{public}" PRId64,
         photoInfo.fileId,
         size);
 
@@ -142,7 +142,7 @@ void CloudUploadChecker::UpdateFileSize(const CheckedPhotoInfo &photoInfo, bool 
 
     ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyTypes::TYPE_NEW));
-    values.PutLong(MediaColumn::MEDIA_SIZE, static_cast<int64_t>(size));
+    values.PutLong(MediaColumn::MEDIA_SIZE, size);
 
     int32_t updateCount = 0;
     int32_t err = rdbStore->Update(updateCount, values, predicates);
@@ -152,7 +152,8 @@ void CloudUploadChecker::UpdateFileSize(const CheckedPhotoInfo &photoInfo, bool 
         photoInfo.fileId,
         err);
 
-    MEDIA_INFO_LOG("update db file size succeed, file_id=%{public}d, old size=%{public}zu, new size=%{public}zu",
+    MEDIA_INFO_LOG("update db file size succeed, file_id=%{public}d, old size=%{public}" PRId64
+                   ", new size=%{public}" PRId64,
         photoInfo.fileId,
         photoInfo.size,
         size);
@@ -204,9 +205,9 @@ void CloudUploadChecker::UpdateDirty(const std::vector<std::string> &idList, int
     values.PutInt(PhotoColumn::PHOTO_DIRTY, dirtyType);
     int32_t updateCount = 0;
     int32_t err = rdbStore->Update(updateCount, values, predicates);
-    MEDIA_INFO_LOG("dirty: %{public}d, idList size: %{public}d, update size: %{public}d, err: %{public}d",
+    MEDIA_INFO_LOG("dirty: %{public}d, idList size: %{public}zu, update size: %{public}d, err: %{public}d",
         dirtyType,
-        static_cast<int32_t>(idList.size()),
+        idList.size(),
         updateCount,
         err);
 }
@@ -229,8 +230,7 @@ std::vector<CheckedPhotoInfo> CloudUploadChecker::QueryPhotoInfo(int32_t startFi
         CheckedPhotoInfo photoInfo;
         photoInfo.fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
         photoInfo.path = path;
-        photoInfo.size =
-            get<std::int64_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_SIZE, resultSet, TYPE_INT64));
+        photoInfo.size = get<int64_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_SIZE, resultSet, TYPE_INT64));
         photoInfo.subtype =
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32));
         photoInfo.movingPhotoEffectMode = get<int32_t>(
