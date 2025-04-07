@@ -100,11 +100,12 @@ const std::string CREATE_ANALYSIS_ALBUM_GROUP_TAG_INDEX = "CREATE INDEX IF NOT E
 
 const std::string IDX_ALBUM_SUBTYPE_NAME = "idx_album_subtype_name";
 const std::string CREATE_ANALYSIS_ALBUM_SUBTYPE_NAME_INDEX = "CREATE INDEX IF NOT EXISTS " +
-    IDX_ALBUM_SUBTYPE_NAME + " ON " + ANALYSIS_ALBUM_TABLE + " ( " + ALBUM_SUBTYPE + "," + ALBUM_NAME + " ) WHERE " + ALBUM_NAME + " is not null;";
+    IDX_ALBUM_SUBTYPE_NAME + " ON " + ANALYSIS_ALBUM_TABLE + " ( " + ALBUM_SUBTYPE + "," + ALBUM_NAME +
+    " ) WHERE " + ALBUM_NAME + " is not null;";
 
 const std::string IDX_ALBUM_TAG_ID = "idx_album_tag_id";
 const std::string CREATE_ANALYSIS_ALBUM_TAG_ID_INDEX = "CREATE INDEX IF NOT EXISTS " +
-    IDX_ALBUM_TAG_ID + " ON " + ANALYSIS_ALBUM_TABLE + " ( " + TAG_ID + " ) WHERE " + TAG_ID + " LIKE " + "'ser%'";
+    IDX_ALBUM_TAG_ID + " ON " + ANALYSIS_ALBUM_TABLE + " ( " + TAG_ID + " ) WHERE " + TAG_ID + " is not null;";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_DB_SQLS_MORE_H
