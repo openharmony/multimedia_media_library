@@ -84,6 +84,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32 },
         { PhotoColumn::PHOTO_FRONT_CAMERA, TYPE_STRING },
         { PhotoColumn::PHOTO_COVER_POSITION, TYPE_INT64 },
+        { PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, TYPE_INT32 },
         { PhotoColumn::PHOTO_BURST_COVER_LEVEL, TYPE_INT32 },
         { PhotoColumn::PHOTO_BURST_KEY, TYPE_STRING },
         { PhotoColumn::PHOTO_CE_AVAILABLE, TYPE_INT32 },
