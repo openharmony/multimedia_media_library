@@ -34,9 +34,6 @@
 #include "media_log.h"
 #include "media_remote_thumbnail_column.h"
 #include "media_smart_album_column.h"
-#ifdef DISTRIBUTED
-#include "medialibrary_device.h"
-#endif
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
 #include "medialibrary_business_record_column.h"
@@ -610,17 +607,6 @@ shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw()
 {
     return rdbStore_;
 }
-
-#ifdef DISTRIBUTED
-void GetAllNetworkId(vector<string> &networkIds)
-{
-    vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
-    MediaLibraryDevice::GetInstance()->GetAllNetworkId(deviceList);
-    for (auto& deviceInfo : deviceList) {
-        networkIds.push_back(deviceInfo.networkId);
-    }
-}
-#endif
 
 static void AddDefaultPhotoValues(ValuesBucket& values)
 {
@@ -4956,45 +4942,4 @@ int MediaLibraryRdbStore::ExecuteForChangedRowCount(int64_t &outValue, const std
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
     return ExecSqlWithRetry([&]() { return GetRaw()->ExecuteForChangedRowCount(outValue, sql, args); });
 }
-
-#ifdef DISTRIBUTED
-MediaLibraryRdbStoreObserver::MediaLibraryRdbStoreObserver(const string &bundleName)
-{
-    bundleName_ = bundleName;
-    isNotifyDeviceChange_ = false;
-
-    if (timer_ == nullptr) {
-        timer_ = make_unique<OHOS::Utils::Timer>(bundleName_);
-        timerId_ = timer_->Register(bind(&MediaLibraryRdbStoreObserver::NotifyDeviceChange, this),
-            NOTIFY_TIME_INTERVAL);
-        timer_->Setup();
-    }
-}
-
-MediaLibraryRdbStoreObserver::~MediaLibraryRdbStoreObserver()
-{
-    if (timer_ != nullptr) {
-        timer_->Shutdown();
-        timer_->Unregister(timerId_);
-        timer_ = nullptr;
-    }
-}
-
-void MediaLibraryRdbStoreObserver::OnChange(const vector<string> &devices)
-{
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreObserver OnChange call");
-    if (devices.empty() || bundleName_.empty()) {
-        return;
-    }
-    MediaLibraryDevice::GetInstance()->NotifyRemoteFileChange();
-}
-
-void MediaLibraryRdbStoreObserver::NotifyDeviceChange()
-{
-    if (isNotifyDeviceChange_) {
-        MediaLibraryDevice::GetInstance()->NotifyDeviceChange();
-        isNotifyDeviceChange_ = false;
-    }
-}
-#endif
 } // namespace OHOS::Media

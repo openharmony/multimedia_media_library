@@ -34,7 +34,6 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "media_column.h"
-#include "media_file_ext_ability.h"
 #include "media_datashare_stub_impl.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -249,32 +248,6 @@ static const std::vector<std::string> EXTENSION_URI_LISTS = {
     MEDIALIBRARY_DEVICE_URI,
     MEDIALIBRARY_SMART_URI,
     MEDIALIBRARY_REMOTEFILE_URI,
-};
-
-class ArkJsRuntime : public AbilityRuntime::JsRuntime {
-public:
-    ArkJsRuntime() {};
-
-    ~ArkJsRuntime() {};
-
-    void StartDebugMode(const DebugOption debugOption) {};
-    void FinishPreload() {};
-    bool LoadRepairPatch(const string& patchFile, const string& baseFile)
-    {
-        return true;
-    };
-    bool NotifyHotReloadPage()
-    {
-        return true;
-    };
-    bool UnLoadRepairPatch(const string& patchFile)
-    {
-        return true;
-    };
-    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
-    {
-        return true;
-    };
 };
 
 void CleanTestTables()

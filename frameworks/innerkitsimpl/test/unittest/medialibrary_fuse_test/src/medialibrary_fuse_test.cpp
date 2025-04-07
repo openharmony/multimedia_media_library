@@ -46,8 +46,6 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "uri.h"

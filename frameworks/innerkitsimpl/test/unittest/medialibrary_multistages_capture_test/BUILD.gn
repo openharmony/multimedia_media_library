@@ -26,7 +26,6 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-    "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
     "${MEDIALIB_THIRD_PARTY_PATH}/googletest/googletest/include",
   ]
 
@@ -67,7 +66,6 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   if (defined(global_parts_info) &&

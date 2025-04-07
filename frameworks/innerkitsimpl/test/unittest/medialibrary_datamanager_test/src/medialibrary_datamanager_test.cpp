@@ -17,8 +17,6 @@
 #include "medialibrary_datamanager_test.h"
 #include "fetch_result.h"
 #include "get_self_permissions.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_smart_map_column.h"
@@ -49,32 +47,6 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-class ArkJsRuntime : public AbilityRuntime::JsRuntime {
-public:
-    ArkJsRuntime() {};
-
-    ~ArkJsRuntime() {};
-
-    void StartDebugMode(const DebugOption debugOption) {};
-    void FinishPreload() {};
-    bool LoadRepairPatch(const string& patchFile, const string& baseFile)
-    {
-        return true;
-    };
-    bool NotifyHotReloadPage()
-    {
-        return true;
-    };
-    bool UnLoadRepairPatch(const string& patchFile)
-    {
-        return true;
-    };
-    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
-    {
-        return true;
-    };
-};
-
 namespace {
     shared_ptr<FileAsset> g_pictures = nullptr;
     shared_ptr<FileAsset> g_download = nullptr;
@@ -345,60 +317,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001,
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-#ifdef FILEEXT
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("DataManager_OpenFile_Test_001::Start");
-    ArkJsRuntime runtime;
-    shared_ptr<MediaFileExtAbility> mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
-    Uri fileAsset("");
-    shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("CreateFile_test_001", g_download, albumAsset), true);
-    Uri parentUri(albumAsset->GetUri());
-    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_test_001.jpg", fileAsset), E_SUCCESS);
-    for (auto const &mode : MEDIA_OPEN_MODES) {
-        string realUri = MediaFileUtils::GetRealUriFromVirtualUri(fileAsset.ToString());
-        MediaLibraryCommand cmd(Uri(realUri), OperationType::OPEN);
-        int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, mode);
-        EXPECT_GT(fd, 0);
-        if (fd > 0) {
-            close(fd);
-        }
-        MEDIA_INFO_LOG("DataManager_OpenFile_Test_001 mode: %{public}s, fd: %{public}d.", mode.c_str(), fd);
-    }
-}
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("DataManager_OpenFile_Test_002::Start");
-    Uri fileAsset("");
-    ArkJsRuntime runtime;
-    Uri parentUri(g_pictures->GetUri());
-    shared_ptr<MediaFileExtAbility> mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
-    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_Test_001.jpg", fileAsset), E_SUCCESS);
-    MEDIA_INFO_LOG("fileAsset = %{public}s", fileAsset.ToString().c_str());
-
-    string mode = "rt";
-    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(fileAsset.ToString());
-    MediaLibraryCommand cmd(Uri(realUri), OperationType::OPEN);
-    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, mode);
-    EXPECT_LT(fd, 0);
-    if (fd > 0) {
-        close(fd);
-    }
-    MEDIA_INFO_LOG("DataManager_OpenFile_Test_002 mode: %{public}s, fd: %{public}d.", mode.c_str(), fd);
-
-    mode = "ra";
-    MediaLibraryCommand raCmd(Uri(realUri), OperationType::OPEN);
-    fd = MediaLibraryDataManager::GetInstance()->OpenFile(raCmd, mode);
-    EXPECT_LT(fd, 0);
-    if (fd > 0) {
-        close(fd);
-    }
-    MEDIA_INFO_LOG("DataManager_OpenFile_Test_002 mode: %{public}s, fd: %{public}d.", mode.c_str(), fd);
-}
-#endif
-
 HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001::Start");
@@ -574,11 +492,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_00
 
     MediaLibraryUnitTestUtils::TrashFile(file1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), false);
-#ifdef FILEEXT
-    Uri parent(trashRecovery_File_005->GetUri());
-    Uri newUri("");
-    ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_File_005_renamed.jpg", newUri), E_SUCCESS);
-#endif
     MediaLibraryUnitTestUtils::RecoveryFile(file1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_005::End");
@@ -728,11 +641,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_005
 
     MediaLibraryUnitTestUtils::TrashFile(dir1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), false);
-#ifdef FILEEXT
-    Uri parent(trashRecovery_Dir_005->GetUri());
-    Uri newUri("");
-    ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_Dir_005_renamed.png", newUri), E_SUCCESS);
-#endif
     MediaLibraryUnitTestUtils::RecoveryFile(dir1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_005::End");
@@ -883,54 +791,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_005, Te
     EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 }
 
-#ifdef FILEEXT
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_001::Start");
-    Uri fileAsset("");
-    ArkJsRuntime runtime;
-    Uri parentUri(g_download->GetUri());
-    shared_ptr<MediaFileExtAbility> mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
-    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_Test_001.jpg", fileAsset), E_SUCCESS);
-    unordered_map<string, int32_t> expect {
-        { MEDIA_FILEMODE_READONLY, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_WRITEONLY, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_READWRITE, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_WRITETRUNCATE, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_WRITEAPPEND, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_READWRITETRUNCATE, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_READWRITEAPPEND, E_PERMISSION_DENIED },
-    };
-    for (const auto &inputMode : MEDIA_OPEN_MODES) {
-        auto ret = UriPermissionOperations::CheckUriPermission(fileAsset.ToString(), inputMode);
-        EXPECT_EQ(ret, expect[inputMode]);
-    }
-}
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_002::Start");
-    Uri fileAsset("");
-    ArkJsRuntime runtime;
-    Uri parentUri(g_download->GetUri());
-    shared_ptr<MediaFileExtAbility> mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
-    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_Test_002.jpg", fileAsset), E_SUCCESS);
-    unordered_map<string, int32_t> expect {
-        { MEDIA_FILEMODE_READONLY, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_WRITEONLY, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_READWRITE, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_WRITETRUNCATE, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_WRITEAPPEND, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_READWRITETRUNCATE, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_READWRITEAPPEND, E_PERMISSION_DENIED },
-    };
-    for (const auto &inputMode : MEDIA_OPEN_MODES) {
-        auto ret = UriPermissionOperations::CheckUriPermission(fileAsset.ToString(), inputMode);
-        EXPECT_EQ(ret, expect[inputMode]);
-    }
-}
-#endif
-
 string GetFileMediaTypeUri(int32_t mediaType, const string &networkId)
 {
     string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
@@ -988,19 +848,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
         mode.c_str(), inputMode.c_str(), ret);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_LcdDistributeAging_Test_001, TestSize.Level0)
-{
-    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    int32_t ret = mediaLibraryDataManager->LcdDistributeAging();
-    EXPECT_EQ(ret, E_OK);
-    shared_ptr<OHOS::AbilityRuntime::Context> extensionContext;
-    mediaLibraryDataManager->InitialiseThumbnailService(extensionContext);
-    ret = mediaLibraryDataManager->LcdDistributeAging();
-    EXPECT_EQ(ret, E_OK);
-}
-#endif
-
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetDirQuerySetMap_Test_001, TestSize.Level0)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
@@ -1040,19 +887,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoAging_Test_001, TestSize
     ret = mediaLibraryDataManager->DoAging();
     EXPECT_EQ(ret, E_OK);
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DistributeDeviceAging_Test_001, TestSize.Level0)
-{
-    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    int32_t ret = mediaLibraryDataManager->DistributeDeviceAging();
-    EXPECT_EQ(ret, E_FAIL);
-    shared_ptr<OHOS::AbilityRuntime::Context> extensionContext;
-    mediaLibraryDataManager->InitialiseThumbnailService(extensionContext);
-    ret = mediaLibraryDataManager->DistributeDeviceAging();
-    EXPECT_EQ(ret, E_FAIL);
-}
-#endif
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_001, TestSize.Level0)
 {
@@ -1184,21 +1018,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnailBackgroun
     ret = mediaLibraryDataManager->GenerateThumbnailBackground();
     EXPECT_EQ(ret <= 0, true);
 }
-
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QuerySync_Test_001, TestSize.Level0)
-{
-    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    string networkId = "";
-    string tableName = "";
-    bool ret = mediaLibraryDataManager->QuerySync(networkId, tableName);
-    EXPECT_EQ(ret, false);
-    string networkIdTest = "QuerySync";
-    string tableNameTest = "QuerySync";
-    ret = mediaLibraryDataManager->QuerySync(networkIdTest, tableNameTest);
-    EXPECT_EQ(ret, false);
-}
-#endif
 
 void ClearAnalysisAlbumTable()
 {

@@ -26,7 +26,6 @@
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_rdb_transaction.h"
-#include "medialibrary_sync_operation.h"
 #include "medialibrary_rdb_callback_test.h"
 #include "rdbstore_mock.h"
 #define private public
