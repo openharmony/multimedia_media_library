@@ -258,6 +258,7 @@ ani_object FetchFileResultAni::GetAllObjects(ani_env *env, [[maybe_unused]] ani_
 
 ani_status FetchFileResultAni::Close(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle)
 {
+    ANI_INFO_LOG("fetch result close");
     FetchFileResultAni* fetchFileResultAni = Unwrap(env, fetchFileResultHandle);
     if (fetchFileResultAni) {
         delete fetchFileResultAni;

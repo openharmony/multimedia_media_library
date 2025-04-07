@@ -32,24 +32,31 @@ namespace OHOS {
 namespace Media {
 class MediaAniNativeImpl {
 private:
+    static std::shared_ptr<MediaLibraryAsyncContext> GetAssetsContext(const std::vector<std::string> &fetchColumns,
+        const DataShare::DataSharePredicates *predicate);
     static bool HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
-        DataShare::DataSharePredicates *predicate, const FetchOptionType &fetchOptType);
+        const DataShare::DataSharePredicates *predicate, const FetchOptionType &fetchOptType);
     static bool GetLocationPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
-        DataShare::DataSharePredicates *predicate);
+        const DataShare::DataSharePredicates *predicate);
     static bool AddDefaultAssetColumns(std::vector<std::string> &fetchColumn,
         std::function<bool(const std::string &columnName)> isValidColumn,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
     static bool PhotoAccessGetAssetsExecuteSync(std::shared_ptr<MediaLibraryAsyncContext> context,
         std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
     static bool PhotoAccessGetAssetsExecute(std::shared_ptr<MediaLibraryAsyncContext> context);
-    static std::shared_ptr<MediaLibraryAsyncContext> GetAssetsContext(const std::vector<std::string> &fetchColumns,
-        DataShare::DataSharePredicates *predicate);
+    static bool PhotoAccessGetFileAssetsInfoExecute(std::shared_ptr<MediaLibraryAsyncContext> context,
+        std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
+    static std::unique_ptr<FileAsset> GetNextRowFileAsset(shared_ptr<NativeRdb::ResultSet> resultSet);
+    static void GetFileAssetField(int32_t index, string name, const shared_ptr<NativeRdb::ResultSet> resultSet,
+        std::unique_ptr<FileAsset> &fileAsset);
 
 public:
     static std::vector<std::unique_ptr<FileAsset>> GetAssetsSync(const std::vector<std::string> &fetchColumns,
-        DataShare::DataSharePredicates *predicate);
+        const DataShare::DataSharePredicates *predicate);
     static std::unique_ptr<FetchResult<FileAsset>> GetAssets(const std::vector<std::string> &fetchColumns,
-        DataShare::DataSharePredicates *predicate);
+        const DataShare::DataSharePredicates *predicate);
+    static std::vector<std::unique_ptr<FileAsset>> GetFileAssetsInfo(const std::vector<std::string> &fetchColumns,
+        const DataShare::DataSharePredicates *predicate);
 };
 } // namespace Media
 } // namespace OHOS

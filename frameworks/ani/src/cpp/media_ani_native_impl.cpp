@@ -33,8 +33,27 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
+std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetFileAssetsInfo(
+    const std::vector<std::string> &fetchColumns,
+    const DataShare::DataSharePredicates *predicate)
+{
+    std::vector<std::unique_ptr<FileAsset>> result;
+
+    std::shared_ptr<MediaLibraryAsyncContext> context = GetAssetsContext(fetchColumns, predicate);
+    if (context == nullptr) {
+        ANI_ERR_LOG("GetAssetsContext failed");
+        return result;
+    }
+
+    if (!PhotoAccessGetFileAssetsInfoExecute(context, result)) {
+        ANI_ERR_LOG("PhotoAccessGetFileAssetsInfoExecute failed");
+    }
+
+    return result;
+}
+
 std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetAssetsSync(
-    const std::vector<std::string> &fetchColumns, DataSharePredicates *predicate)
+    const std::vector<std::string> &fetchColumns, const DataSharePredicates *predicate)
 {
     std::vector<std::unique_ptr<FileAsset>> result;
 
@@ -52,7 +71,7 @@ std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetAssetsSync(
 }
 
 std::unique_ptr<FetchResult<FileAsset>> MediaAniNativeImpl::GetAssets(
-    const std::vector<std::string> &fetchColumns, DataSharePredicates *predicate)
+    const std::vector<std::string> &fetchColumns, const DataSharePredicates *predicate)
 {
     std::shared_ptr<MediaLibraryAsyncContext> context = GetAssetsContext(fetchColumns, predicate);
     if (context == nullptr) {
@@ -69,9 +88,10 @@ std::unique_ptr<FetchResult<FileAsset>> MediaAniNativeImpl::GetAssets(
 }
 
 std::shared_ptr<MediaLibraryAsyncContext> MediaAniNativeImpl::GetAssetsContext(
-    const std::vector<std::string> &fetchColumns, DataSharePredicates *predicate)
+    const std::vector<std::string> &fetchColumns, const DataSharePredicates *predicate)
 {
     std::shared_ptr<MediaLibraryAsyncContext> context = std::make_shared<MediaLibraryAsyncContext>();
+    context->assetType = TYPE_PHOTO;
     if (!HandleSpecialPredicate(context, predicate, ASSET_FETCH_OPT)) {
         ANI_ERR_LOG("HandleSpecialPredicate failed");
         return nullptr;
@@ -122,7 +142,7 @@ static bool HandleSpecialDateTypePredicate(const OperationItem &item,
 }
 
 bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
-    DataSharePredicates *predicate, const FetchOptionType &fetchOptType)
+    const DataSharePredicates *predicate, const FetchOptionType &fetchOptType)
 {
     constexpr int32_t fieldIdx = 0;
     constexpr int32_t valueIdx = 1;
@@ -178,7 +198,7 @@ bool MediaAniNativeImpl::HandleSpecialPredicate(std::shared_ptr<MediaLibraryAsyn
 }
 
 bool MediaAniNativeImpl::GetLocationPredicate(std::shared_ptr<MediaLibraryAsyncContext> context,
-    DataSharePredicates *predicate)
+    const DataSharePredicates *predicate)
 {
     constexpr int32_t fieldIdx = 0;
     constexpr int32_t valueIdx = 1;
@@ -348,6 +368,97 @@ bool MediaAniNativeImpl::PhotoAccessGetAssetsExecute(std::shared_ptr<MediaLibrar
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     return true;
+}
+
+bool MediaAniNativeImpl::PhotoAccessGetFileAssetsInfoExecute(std::shared_ptr<MediaLibraryAsyncContext> context,
+    std::vector<std::unique_ptr<FileAsset>>& fileAssetArray)
+{
+    if (context->assetType != TYPE_PHOTO) {
+        return false;
+    }
+    string queryUri = PAH_QUERY_PHOTO;
+    UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+
+    Uri uri(queryUri);
+    shared_ptr<NativeRdb::ResultSet> resultSet = UserFileClient::QueryRdb(uri,
+        context->predicates, context->fetchColumn);
+    if (resultSet == nullptr) {
+        ANI_ERR_LOG("QueryRdb failed");
+        return false;
+    }
+
+    while (!resultSet->GoToNextRow()) {
+        std::unique_ptr<FileAsset> fileAsset = GetNextRowFileAsset(resultSet);
+        if (fileAsset == nullptr) {
+            ANI_ERR_LOG("get fileAsset failed");
+            continue;
+        }
+        fileAssetArray.emplace_back(std::move(fileAsset));
+    }
+    return true;
+}
+
+std::unique_ptr<FileAsset> MediaAniNativeImpl::GetNextRowFileAsset(shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    if (resultSet == nullptr) {
+        ANI_ERR_LOG("resultSet is nullptr");
+        return nullptr;
+    }
+    vector<string> columnNames;
+    resultSet->GetAllColumnNames(columnNames);
+
+    std::unique_ptr<FileAsset> fileAsset;
+    int32_t index = -1;
+    for (const auto &name : columnNames) {
+        index++;
+
+        // Check if the column name exists in the type map
+        if (MediaLibraryAniUtils::GetTypeMap().count(name) == 0) {
+            continue;
+        }
+        GetFileAssetField(index, name, resultSet, fileAsset);
+    }
+    string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);
+    MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()), "", MEDIA_API_VERSION_V10, extrUri);
+    fileAsset->SetUri(move(fileUri.ToString()));
+
+    return fileAsset;
+}
+
+void MediaAniNativeImpl::GetFileAssetField(int32_t index, string name, const shared_ptr<NativeRdb::ResultSet> resultSet,
+    std::unique_ptr<FileAsset> &fileAsset)
+{
+    int status;
+    int integerVal = 0;
+    string stringVal = "";
+    int64_t longVal = 0;
+    double doubleVal = 0.0;
+    auto dataType = MediaLibraryAniUtils::GetTypeMap().at(name);
+    switch (dataType.first) {
+        case TYPE_STRING:
+            status = resultSet->GetString(index, stringVal);
+            ANI_DEBUG_LOG("GetFileAssetField TYPE_STRING: status: %{public}d", status);
+            fileAsset->GetMemberMap().emplace(name, stringVal);
+            break;
+        case TYPE_INT32:
+            status = resultSet->GetInt(index, integerVal);
+            ANI_DEBUG_LOG("GetFileAssetField TYPE_INT32: status: %{public}d", status);
+            fileAsset->GetMemberMap().emplace(name, integerVal);
+            break;
+        case TYPE_INT64:
+            status = resultSet->GetLong(index, longVal);
+            ANI_DEBUG_LOG("GetFileAssetField TYPE_INT64: status: %{public}d", status);
+            fileAsset->GetMemberMap().emplace(name, longVal);
+            break;
+        case TYPE_DOUBLE:
+            status = resultSet->GetDouble(index, doubleVal);
+            ANI_DEBUG_LOG("GetFileAssetField TYPE_DOUBLE: status: %{public}d", status);
+            fileAsset ->GetMemberMap().emplace(name, doubleVal);
+            break;
+        default:
+            ANI_ERR_LOG("not match dataType %{public}d", dataType.first);
+            break;
+    }
 }
 } // namespace Media
 } // namespace OHOS

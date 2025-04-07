@@ -67,6 +67,8 @@ public:
         [[maybe_unused]] ani_string stringObj);
     static ani_object GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_object options);
+    static ani_object GetFileAssetsInfo([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+        ani_object options);
     static ani_object GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_object options);
     static std::mutex sUserFileClientMutex_;

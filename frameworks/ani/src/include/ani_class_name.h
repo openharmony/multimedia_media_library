@@ -24,6 +24,7 @@ namespace Media {
 static const std::string PHOTO_ACCESS_HELPER_CLASS_SPACE = "L@ohos/file/photoAccessHelper/photoAccessHelper/";
 static const std::string USER_FILE_MANAGER_CLASS_SPACE = "L@ohos/filemanagement/userFileManager/userFileManager/";
 
+static const std::string ANI_CLASS_FILE_ASSET_INFO = PHOTO_ACCESS_HELPER_CLASS_SPACE + "FileAssetInfoHandle";
 static const std::string ANI_CLASS_CLOUD_ENHANCEMENT = PHOTO_ACCESS_HELPER_CLASS_SPACE + "CloudEnhancementHandle;";
 static const std::string ANI_CLASS_FETCH_RESULT = PHOTO_ACCESS_HELPER_CLASS_SPACE + "FetchResultHandle;";
 static const std::string PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE = PHOTO_ACCESS_HELPER_CLASS_SPACE + "AlbumHandle;";
