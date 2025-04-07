@@ -274,11 +274,11 @@ HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Sync_Prefix, TestSi
     obs->OnChange(infos);
 
     infos.data_ = R"({"taskType": 1, "syncId": "2", "syncType": 3, "syncType" : 4, "totalAssets" : 1, \
-        "totalAlbums" : 1})";
+"totalAlbums" : 1})";
     obs->OnChange(infos);
 
     infos.data_ = R"({"taskType": 0, "syncId": "2", "syncType": 3, "syncType" : 4, "totalAssets" : 1, \
-        "totalAlbums" : 1})";
+"totalAlbums" : 1})";
     obs->OnChange(infos);
     MEDIA_INFO_LOG("end CloudSyncObsOnChange_Gallery_Sync_Prefix");
 }
