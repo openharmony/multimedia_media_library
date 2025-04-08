@@ -478,6 +478,17 @@ void MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(const shared_ptr<MediaLibr
     MEDIA_INFO_LOG("end update location knowledge index");
 }
 
+void MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start to add album subtype and name index");
+    const vector<string> sqls = {
+        CREATE_ANALYSIS_ALBUM_SUBTYPE_NAME_INDEX,
+        CREATE_ANALYSIS_ALBUM_TAG_ID_INDEX
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end add album subtype and name index");
+}
+
 void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
@@ -1652,6 +1663,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
     CREATE_ANALYSIS_ALBUM_GROUP_TAG_INDEX,
+    CREATE_ANALYSIS_ALBUM_SUBTYPE_NAME_INDEX,
+    CREATE_ANALYSIS_ALBUM_TAG_ID_INDEX,
     CREATE_ANALYSIS_ALBUM_MAP,
     CREATE_HIGHLIGHT_ALBUM_TABLE,
     CREATE_HIGHLIGHT_COVER_INFO_TABLE,
