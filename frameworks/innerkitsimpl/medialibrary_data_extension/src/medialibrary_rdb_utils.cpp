@@ -52,6 +52,7 @@
 #include "search_column.h"
 #include "story_cover_info_column.h"
 #include "story_play_info_column.h"
+#include "photo_query_filter.h"
 #include "power_efficiency_manager.h"
 #include "rdb_sql_utils.h"
 #include "medialibrary_restore.h"
@@ -590,7 +591,11 @@ static int32_t QueryAlbumHiddenCount(const shared_ptr<MediaLibraryRdbStore> rdbS
 {
     const vector<string> columns = { MEDIA_COLUMN_COUNT_1 };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    GetAlbumPredicates(subtype, albumId, predicates, true);
+    if (subtype == PhotoAlbumSubType::TRASH) {
+        GetTrashAlbumHiddenPredicates(predicates);
+    } else {
+        GetAlbumPredicates(subtype, albumId, predicates, true);
+    }
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
     CHECK_AND_RETURN_RET(fetchResult != nullptr, E_HAS_DB_ERROR);
     return GetFileCount(fetchResult);
@@ -657,7 +662,11 @@ static int32_t SetAlbumCoverHiddenUri(const shared_ptr<MediaLibraryRdbStore> rdb
         PhotoColumn::MEDIA_NAME
     };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    GetAlbumPredicates(subtype, albumId, predicates, true);
+    if (subtype == PhotoAlbumSubType::TRASH) {
+        GetTrashAlbumHiddenPredicates(predicates);
+    } else {
+        GetAlbumPredicates(subtype, albumId, predicates, true);
+    }
     predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
     predicates.Limit(1);
 
@@ -1961,6 +1970,65 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumInternal(const shared_ptr<MediaLibra
     ForEachRow(rdbStore, datas, false, UpdateSysAlbumIfNeeded);
 }
 
+void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
+{
+    // get hidden_count in trash album
+    PhotoQueryFilter::Config config {};
+    config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
+    config.trashedConfig = PhotoQueryFilter::ConfigType::INCLUDE;
+    PhotoQueryFilter::ModifyPredicate(config, predicates);
+}
+
+int32_t QueryAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    UpdateAlbumData &data, ValuesBucket &values, PhotoAlbumSubType subType)
+{
+    const vector<string> columns = {
+        MEDIA_COLUMN_COUNT_1, PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME
+    };
+    
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    GetTrashAlbumHiddenPredicates(predicates);
+
+    auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
+
+    int32_t newCount = SetCount(fileResult, data, values, true, subType);
+    data.newTotalCount = newCount;
+    SetCover(fileResult, data, values, true);
+    return E_SUCCESS;
+}
+
+int32_t UpdateAlbumHiddenCountAndCover(std::shared_ptr<TransactionOperations> trans,
+    ValuesBucket &values, PhotoAlbumSubType subType)
+{ 
+    CHECK_AND_RETURN_RET_LOG(!values.IsEmpty(), E_SUCCESS,
+        "Failed to set update values when updating albums, album id");
+
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subType));
+    int32_t changedRows = 0;
+    err = trans->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "Failed to update album hidden count and cover!");
+    data.hasChanged = true;
+    return E_SUCCESS;
+}
+
+static int32_t HandleTrashAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    UpdateAlbumData &data)
+{
+    ValuesBucket values;
+    int32_t ret = QueryAlbumHiddenCountAndCover(rdbStore, data, values, PhotoAlbumSubType::TRASH);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to query trash album hidden count and cover!");
+
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    ret = UpdateAlbumHiddenCountAndCover(trans, values, PhotoAlbumSubType::TRASH);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to update trash album hidden count and cover!");
+
+    SendAlbumIdNotify(data);
+    return E_SUCCESS;
+}
+
 void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const vector<string> &subtypes)
 {
@@ -1999,6 +2067,10 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibra
         data.albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
         data.hiddenCount = GetAlbumCount(albumResult, PhotoAlbumColumns::HIDDEN_COUNT);
         data.hiddenCover = GetAlbumCover(albumResult, PhotoAlbumColumns::HIDDEN_COVER);
+        if (data.albumSubtype == PhotoAlbumSubType::TRASH) {
+            HandleTrashAlbumHiddenCountAndCover(rdbStore, data);
+            continue;
+        }
         datas.push_back(data);
     }
     albumResult->Close();
@@ -2026,6 +2098,22 @@ static void AddSystemAlbum(set<string> &systemAlbum, shared_ptr<NativeRdb::Resul
     }
     MEDIA_INFO_LOG("AddSystemAlbum minMediaType:%{public}d, maxMediaType:%{public}d, favorite:%{public}d,"
         " cloudAssociate:%{public}d,", minMediaType, maxMediaType, favorite, cloudAssociate);
+}
+
+static void GetUpdateAlbumByOperationType(set<string> &systemAlbum, set<string> &hiddenSystemAlbum,
+    AlbumOperationType albumOperationType, int32_t hidden)
+{
+    if (albumOperationType == AlbumOperationType::DELETE_PHOTO ||
+        albumOperationType == AlbumOperationType::RECOVER_PHOTO) {
+        systemAlbum.insert(to_string(PhotoAlbumSubType::TRASH));
+        if (hidden > 0) {
+            hiddenSystemAlbum.insert(to_string(PhotoAlbumSubType::TRASH));
+        }
+    }
+    if (albumOperationType == UNHIDE_PHOTO || hidden > 0) {
+        systemAlbum.insert(to_string(PhotoAlbumSubType::HIDDEN));
+        hiddenSystemAlbum.insert(to_string(PhotoAlbumSubType::HIDDEN));
+    }
 }
 
 static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &uris,
@@ -2060,16 +2148,10 @@ static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore
             continue;
         }
         while (resultSet->GoToNextRow() == E_OK) {
-            int hidden = GetIntValFromColumn(resultSet, 0);
+            int32_t hidden = GetIntValFromColumn(resultSet, 0);
             AddSystemAlbum(systemAlbum, resultSet);
             AddSystemAlbum(hiddenSystemAlbum, resultSet);
-            if (albumOperationType == AlbumOperationType::DELETE_PHOTO ||
-                albumOperationType == AlbumOperationType::RECOVER_PHOTO) {
-                systemAlbum.insert(to_string(PhotoAlbumSubType::TRASH));
-            }
-            if (albumOperationType == UNHIDE_PHOTO || hidden > 0) {
-                systemAlbum.insert(to_string(PhotoAlbumSubType::HIDDEN));
-            }
+            GetUpdateAlbumByOperationType(systemAlbum, hiddenSystemAlbum, albumOperationType, hidden);
         }
         resultSet->Close();
     }
