@@ -3308,9 +3308,10 @@ static void AddCheckFlag(RdbStore &store)
     MEDIA_INFO_LOG("end add check_flag columns");
 }
 
-static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
+static bool IsColumnExists(RdbStore &store, const std::string& tableName,
+    const std::string& columnName)
 {
-    std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
+    std::string checkSql = "PRAGMA table_info(" + tableName + ")";
     std::vector<NativeRdb::ValueObject> args;
     auto resultSet = store.QuerySql(checkSql, args);
     CHECK_AND_RETURN_RET(resultSet != nullptr, false);
@@ -3327,7 +3328,7 @@ static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
 static void AddCloudEnhanceColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking cloud enhancement column");
-    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_CE_AVAILABLE);
+    bool hasColumn = IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_CE_AVAILABLE);
     MEDIA_INFO_LOG("End checking cloud enhancement column: %{public}d", hasColumn);
     if (!hasColumn) {
         AddCloudEnhancementColumns(store);
@@ -3338,7 +3339,7 @@ static void AddCloudEnhanceColumnsFix(RdbStore& store)
 static void AddDynamicRangeColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking dynamic_range_type column");
-    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE);
+    bool hasColumn = IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE);
     MEDIA_INFO_LOG("End checking dynamic_range_type column: %{public}d", hasColumn);
     if (!hasColumn) {
         AddDynamicRangeType(store);
@@ -3349,7 +3350,7 @@ static void AddDynamicRangeColumnsFix(RdbStore& store)
 static void AddThumbnailReadyColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking thumbnail_ready column");
-    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_THUMBNAIL_READY);
+    bool hasColumn = IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_THUMBNAIL_READY);
     MEDIA_INFO_LOG("End checking thumbnail_ready column: %{public}d", hasColumn);
     if (!hasColumn) {
         AddThumbnailReady(store);
@@ -4318,6 +4319,63 @@ static void FixMdirtyTriggerToUploadDetailTime(RdbStore &store)
     MEDIA_INFO_LOG("End updating mdirty trigger to upload detail_time");
 }
 
+static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
+        MEDIA_INFO_LOG("Start VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
+        UpdateSourcePhotoAlbumTrigger(store);
+        MEDIA_INFO_LOG("End VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
+
+        MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
+        if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_IS_RECENT_SHOW)) {
+            AddIsRecentShow(store);
+        }
+        MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
+
+        MEDIA_INFO_LOG("Start VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH");
+        FixSourceAlbumCreateTriggersToUseLPath(store);
+        MEDIA_INFO_LOG("End VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH");
+
+        MEDIA_INFO_LOG("Start VERSION_ADD_IS_AUTO");
+        if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_IS_AUTO)) {
+            AddIsAutoColumns(store);
+        }
+        MEDIA_INFO_LOG("End VERSION_ADD_IS_AUTO");
+
+        MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME");
+        AddAlbumPluginBundleName(store);
+        MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME");
+
+        MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+        if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_MEDIA_SUFFIX)) {
+            AddMediaSuffixColumn(store);
+        }
+        MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+
+        MEDIA_INFO_LOG("Start VERSION_HIGHLIGHT_SUBTITLE");
+        if (!IsColumnExists(store, HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_USE_SUBTITLE)) {
+            AddHighlightUseSubtitle(store);
+        }
+        MEDIA_INFO_LOG("End VERSION_HIGHLIGHT_SUBTITLE");
+
+        MEDIA_INFO_LOG("Start VERSION_ADD_METARECOVERY");
+        if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_METADATA_FLAGS)) {
+            AddMetaRecovery(store);
+        }
+        MEDIA_INFO_LOG("End VERSION_ADD_METARECOVERY");
+
+        MEDIA_INFO_LOG("Start VERSION_ADD_HIGHLIGHT_TRIGGER");
+        if (!IsColumnExists(store, PhotoColumn::HIGHLIGHT_TABLE, PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER)) {
+            AddHighlightTriggerColumn(store);
+            AddHighlightInsertAndUpdateTrigger(store);
+            AddHighlightIndex(store);
+        }
+        MEDIA_INFO_LOG("End VERSION_ADD_HIGHLIGHT_TRIGGER");
+
+        
+    }
+}
+
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
@@ -4366,6 +4424,8 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME) {
         FixMdirtyTriggerToUploadDetailTime(store);
     }
+
+    UpgradeExtensionPart6(store, oldVersion);
 }
 
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
