@@ -20,6 +20,7 @@
 #include "accesstoken_kit.h"
 #include "basic/result_set.h"
 #include "datashare_predicates.h"
+#include "file_asset_info_ani.h"
 #include "location_column.h"
 #include "ipc_skeleton.h"
 #include "media_device_column.h"
@@ -673,6 +674,32 @@ ani_status MediaLibraryAniUtils::GetUriArrayFromAssets(ani_env *env, ani_object 
     return ANI_OK;
 }
 
+ani_status MediaLibraryAniUtils::ToFileAssetInfoAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
+    ani_object &aniArray)
+{
+    ani_class cls {};
+    static const std::string className = "Lescompat/Array;";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array.");
+
+    ani_method method {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &method),
+        "Can't find method <ctor> in Lescompat/Array.");
+
+    CHECK_STATUS_RET(env->Object_New(cls, method, &aniArray, array.size()), "Call method <ctor> failed.");
+
+    ani_method setMethod {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
+        "Can't find method set in Lescompat/Array.");
+
+    for (size_t i = 0; i < array.size(); ++i) {
+        ani_object fileAssetObj = FileAssetInfo::ToFileAssetInfoObject(env, std::move(array[i]));
+        CHECK_COND_RET(fileAssetObj != nullptr, ANI_ERROR, "CreateFileAssetObj failed");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, setMethod, (ani_int)i, fileAssetObj),
+            "Call method $_set failed.");
+    }
+    return ANI_OK;
+}
+
 ani_status MediaLibraryAniUtils::ToFileAssetAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
     ani_object &aniArray)
 {
@@ -690,7 +717,7 @@ ani_status MediaLibraryAniUtils::ToFileAssetAniArray(ani_env *env, std::vector<s
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
         "Can't find method set in Lescompat/Array.");
 
-    for (size_t i = 0; i < array.size(); i++) {
+    for (size_t i = 0; i < array.size(); ++i) {
         auto fileAssetAni = FileAssetAni::CreateFileAsset(env, array[i]);
         ani_object value = FileAssetAni::Wrap(env, fileAssetAni);
         CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAsset failed");
