@@ -45,36 +45,21 @@ PictureDataOperations::~PictureDataOperations()
     highQualityPictureImageId.clear();
 }
 
-static bool IsPictureEdited(const string &photoId)
-{
-    CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(photoId), false, "photoId is invalid");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore");
-    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::PHOTO_ID, photoId);
-    vector<string> columns { PhotoColumn::PHOTO_EDIT_TIME };
-    auto resultSet = rdbStore->Query(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, false,
-        "resultSet is empty");
-    bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
-    return isEdited;
-}
-
-static bool IsPictureTemp(const string &photoId)
+static int32_t IsPictureTempAndEdited(const string &photoId, bool &isTemp, bool &isEdited)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("IsPictureTemp " + photoId);
-    CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(photoId), false, "photoId is invalid");
+    tracer.Start("IsPictureTempAndEdited " + photoId);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "Failed to get rdbStore");
     NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_ID, photoId);
-    vector<string> columns { PhotoColumn::PHOTO_IS_TEMP };
+    vector<string> columns { PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::PHOTO_EDIT_TIME };
     auto resultSet = rdbStore->Query(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, false,
-        "resultSet is empty");
-    bool isTemp = (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 1);
-    return isTemp;
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        E_ERR, "resultSet is empty");
+    isTemp = (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 1);
+    isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
+    return E_OK;
 }
 
 void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap,
@@ -87,10 +72,11 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
         time_t now = time(nullptr);
         bool isNeedDeletePicture = ((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_);
         if (isNeedDeletePicture || ((iter->second)->expireTime_ + SAVE_PICTURE_TIMEOUT_SEC) < now) {
-            bool isTemp = IsPictureTemp(iter->first);
+            bool isTemp = false;
+            bool isEdited = false;
+            IsPictureTempAndEdited(iter->first, isTemp, isEdited);
             bool isLowQualityPicture = (pictureType != HIGH_QUALITY_PICTURE);
             if (isTemp) {
-                bool isEdited = IsPictureEdited(iter->first);
                 FileUtils::SavePicture(iter->first, (iter->second)->picture_, isEdited, isLowQualityPicture);
                 MEDIA_INFO_LOG("end SavePicture, photoId: %{public}s, isEdited: %{public}d",
                     (iter->first).c_str(), static_cast<int32_t>(isEdited));
@@ -184,9 +170,10 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
         std::string imageId = *iter;
         std::map<std::string, sptr<PicturePair>>::iterator iterPicture = highQualityPictureMap_.find(imageId);
         if (iterPicture != highQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
-            bool isTemp = IsPictureTemp(iterPicture->first);
+            bool isTemp = false;
+            bool isEdited = false;
+            IsPictureTempAndEdited(iterPicture->first, isTemp, isEdited);
             if (isTemp) {
-                bool isEdited = IsPictureEdited(iterPicture->first);
                 FileUtils::SavePicture(iterPicture->first, (iterPicture->second)->picture_, isEdited, false);
                 MEDIA_INFO_LOG("end SavePicture, photoId: %{public}s, isEdited: %{public}d",
                     (iterPicture->first).c_str(), static_cast<int32_t>(isEdited));
