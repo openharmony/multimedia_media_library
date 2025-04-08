@@ -21,6 +21,7 @@
 #include <fcntl.h>
 #include <iomanip>
 #include <sstream>
+#include <filesystem>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -63,11 +64,11 @@ BackupHiAudit& BackupHiAudit::GetInstance()
 
 void BackupHiAudit::Init()
 {
-    if (access(HIAUDIT_CONFIG.logPath.c_str(), F_OK) != 0) {
-        int ret = mkdir(HIAUDIT_CONFIG.logPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
-        if (ret != 0) {
-            MEDIA_ERR_LOG("Failed to create directory %{public}s.", HIAUDIT_CONFIG.logPath.c_str());
-        }
+    if (!std::filesystem::exists(HIAUDIT_CONFIG.logPath)) {
+        std::filesystem::create_directories(HIAUDIT_CONFIG.logPath);
+        std::filesystem::permissions(HIAUDIT_CONFIG.logPath,
+            std::filesystem::perms::owner_all | std::filesystem::perms::group_all | std::filesystem::perms::others_all,
+            std::filesystem::perm_options::replace);
     }
 
     std::lock_guard<std::mutex> lock(mutex_);
