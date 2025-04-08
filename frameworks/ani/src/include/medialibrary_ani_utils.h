@@ -313,6 +313,8 @@ public:
     static ani_status GetUriArrayFromAssets(ani_env *env, ani_object arg, std::vector<std::string> &array);
     static ani_status ToFileAssetAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
         ani_object &aniArray);
+    static ani_status ToFileAssetInfoAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
+        ani_object &aniArray);
     static ani_status ToFileAssetAniPtr(ani_env *env, std::unique_ptr<FetchResult<FileAsset>> fileAsset,
         ani_object &aniPtr);
 

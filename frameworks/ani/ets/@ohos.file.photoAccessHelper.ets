@@ -1146,6 +1146,7 @@ export namespace photoAccessHelper {
     getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset>>): void;
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
     getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
+    getFileAssetsInfo(options: FetchOptions): Array<FileAssetInfo>;
     getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): Promise<FetchResult<Album>>;
     stopCreateThumbnailTask(taskId: int): void;
     startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
@@ -1254,6 +1255,7 @@ export namespace photoAccessHelper {
     native applyChanges(mediaChangeRequest: MediaChangeRequest): void;
     native createAsset1(displayName: string): PhotoAsset;
     native getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
+    native getFileAssetsInfo(options: FetchOptions): Array<FileAssetInfo>;
     native getAssetsInner(options: FetchOptions): FetchResult<PhotoAsset>;
     native stopCreateThumbnailTask(taskId: int): void;
     native startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
@@ -1461,6 +1463,36 @@ export namespace photoAccessHelper {
     date_year: string;
     date_month: string;
     date_day: string;
+    pending: boolean;
+    date_added_ms: number;
+    date_modified_ms: number;
+    date_trashed_ms: number;
+    subtype: PhotoSubtype;
+  }
+
+  class FileAssetInfoHandle implements FileAssetInfo {
+    file_id: number;
+    uri: string = "";
+    media_type: PhotoType;
+    display_name: string = "";
+    size: number;
+    date_added: number;
+    date_modified: number;
+    duration: number;
+    width: number;
+    height: number;
+    date_taken: number;
+    orientation: number;
+    is_favorite: boolean;
+    title: string = "";
+    position: PositionType;
+    date_trashed: number;
+    hidden: boolean;
+    user_comment: string = "";
+    camera_shot_key: string = "";
+    date_year: string = "";
+    date_month: string = "";
+    date_day: string = "";
     pending: boolean;
     date_added_ms: number;
     date_modified_ms: number;
