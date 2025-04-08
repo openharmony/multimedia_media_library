@@ -39,6 +39,9 @@ public:
     void InitGalleryMergeTag();
     void InitGalleryMergeFace();
     void InitGalleryFace();
+    void InitTStoryAlbum();
+    void InitTStoryAlbumSuggestion();
+    void InitTVideoSemanticAnalysis();
     std::shared_ptr<NativeRdb::RdbStore> galleryStorePtr_;
 };
 
@@ -52,6 +55,9 @@ public:
     static const string CREATE_GALLERY_MERGE_TAG;
     static const string CREATE_GALLERY_MERGE_FACE;
     static const string CREATE_GALLERY_FACE;
+    static const string CREATE_T_STORY_ALBUM;
+    static const string CREATE_T_STORY_ALBUM_SUGGESTION;
+    static const string CREATE_T_VIDEO_SEMANTIC_ANALYSIS;
 };
 } // namespace Media
 } // namespace OHOS
