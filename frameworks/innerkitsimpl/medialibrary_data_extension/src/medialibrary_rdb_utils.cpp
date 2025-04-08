@@ -1986,7 +1986,7 @@ int32_t QueryAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdb
         MEDIA_COLUMN_COUNT_1, PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME
     };
-    
+
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     GetTrashAlbumHiddenPredicates(predicates);
 
@@ -2001,7 +2001,7 @@ int32_t QueryAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdb
 
 int32_t UpdateAlbumHiddenCountAndCover(std::shared_ptr<TransactionOperations> trans,
     ValuesBucket &values, PhotoAlbumSubType subType)
-{ 
+{
     CHECK_AND_RETURN_RET_LOG(!values.IsEmpty(), E_SUCCESS,
         "Failed to set update values when updating albums, album id");
 
@@ -2014,7 +2014,7 @@ int32_t UpdateAlbumHiddenCountAndCover(std::shared_ptr<TransactionOperations> tr
     return E_SUCCESS;
 }
 
-static int32_t HandleTrashAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+static int32_t HandleTrashAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     UpdateAlbumData &data)
 {
     ValuesBucket values;
@@ -2068,7 +2068,7 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibra
         data.hiddenCount = GetAlbumCount(albumResult, PhotoAlbumColumns::HIDDEN_COUNT);
         data.hiddenCover = GetAlbumCover(albumResult, PhotoAlbumColumns::HIDDEN_COVER);
         if (data.albumSubtype == PhotoAlbumSubType::TRASH) {
-            HandleTrashAlbumHiddenCountAndCover(rdbStore, data);
+            HandleTrashAlbumHiddenState(rdbStore, data);
             continue;
         }
         datas.push_back(data);
