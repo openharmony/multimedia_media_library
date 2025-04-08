@@ -18,6 +18,7 @@
 #include "payload_data/delete_object_data.h"
 #include "payload_data/get_device_info_data.h"
 #include "payload_data/get_device_prop_desc_data.h"
+#include "payload_data/get_device_prop_value_data.h"
 #include "payload_data/get_num_objects_data.h"
 #include "payload_data/get_object_data.h"
 #include "payload_data/get_object_handles_data.h"
@@ -139,6 +140,9 @@ std::shared_ptr<PayloadData> PacketPayloadFactory::CreatePayloadMore(std::shared
             break;
         case MTP_OPERATION_GET_DEVICE_PROP_DESC_CODE: // 0x1004 device_prop_desc
             payloadData = make_shared<GetDevicePropDescData>(context);
+            break;
+        case MTP_OPERATION_GET_DEVICE_PROP_VALUE_CODE:
+            payloadData = make_shared<GetDevicePropValueData>(context);
             break;
         case MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE:
             payloadData = make_shared<SetDevicePropValueData>(context);
