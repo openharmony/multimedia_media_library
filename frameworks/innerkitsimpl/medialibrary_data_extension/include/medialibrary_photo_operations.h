@@ -165,6 +165,8 @@ private:
     static int32_t SetVideoEnhancementAttr(MediaLibraryCommand &cmd);
     static int32_t DegenerateMovingPhoto(MediaLibraryCommand &cmd);
     static int32_t UpdateOwnerAlbumId(MediaLibraryCommand &cmd);
+    static int32_t DoRevertAfterAddFiltersFailed(const std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &path, const std::string &sourcePath);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, std::string &mimeType, const int32_t &fileType,
         std::string &oldFilePath);
