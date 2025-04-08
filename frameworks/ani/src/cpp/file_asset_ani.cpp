@@ -386,7 +386,8 @@ static ani_object HandleDateTransitionKey(ani_env *env, const string &key, const
 
     auto m = fileAssetPtr->GetMemberMap().at(key);
     if (m.index() == MEMBER_TYPE_INT64) {
-        MediaLibraryAniUtils::ToAniLongObject(env, get<int64_t>(m), aniResult);
+        double val = static_cast<double>(get<int64_t>(m));
+        MediaLibraryAniUtils::ToAniDoubleObject(env, val, aniResult);
     } else {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return aniResult;
@@ -538,7 +539,7 @@ ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
 
     ani_object aniResult = nullptr;
     if (DATE_TRANSITION_MAP.count(inputKey) != 0) {
-        ANI_ERR_LOG("key not in DATE_TRANSITION_MAP");
+        ANI_WARN_LOG("key not in DATE_TRANSITION_MAP");
         return HandleDateTransitionKey(env, DATE_TRANSITION_MAP.at(inputKey), fileAssetPtr);
     }
 
@@ -549,14 +550,15 @@ ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
     }
 
     if (IsSpecialKey(inputKey)) {
-        ANI_ERR_LOG("IsSpecialKey");
+        ANI_WARN_LOG("IsSpecialKey");
         return HandleGettingSpecialKey(env, inputKey, fileAssetPtr);
     }
     if (inputKey == PhotoColumn::PHOTO_DETAIL_TIME) {
+        ANI_WARN_LOG("inputKey == PHOTO_DETAIL_TIME");
         return HandleGettingDetailTimeKey(env, fileAssetPtr);
     }
     auto m = fileAssetPtr->GetMemberMap().at(inputKey);
-    ANI_INFO_LOG("FileAsset get value type: %{public}d", m.index());
+    ANI_INFO_LOG("FileAsset get value type: %{public}d", (int)m.index());
     if (m.index() == MEMBER_TYPE_STRING) {
         ani_string aniString {};
         MediaLibraryAniUtils::ToAniString(env, std::get<std::string>(m), aniString);
