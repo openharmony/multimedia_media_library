@@ -481,10 +481,6 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
     }
     data->SetOrientation(intTempMeta);
 
-    strTemp = resultMap.at(AV_KEY_TITLE);
-    if (!strTemp.empty()) {
-        data->SetFileTitle(strTemp);
-    }
     strTemp = resultMap.at(AV_KEY_GENRE);
     if (!strTemp.empty()) {
         std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
