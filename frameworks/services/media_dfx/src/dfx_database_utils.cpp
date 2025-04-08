@@ -232,11 +232,11 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
 
 int32_t DfxDatabaseUtils::QueryOperationRecordInfo(OperationRecordInfo &operationRecordInfo)
 {
-    const string addTotalCountQuerySql = "SELECT COUNT(*) FROM" + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
+    const string addTotalCountQuerySql = "SELECT COUNT(*) FROM " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
         "WHERE" + DFX_OPT_TYPE + "=" + OPT_ADD_VALUE;
-    const string delTotalCountQuerySql = "SELECT COUNT(*) FROM" + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
+    const string delTotalCountQuerySql = "SELECT COUNT(*) FROM " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
         "WHERE" + DFX_OPT_TYPE + "=" + OPT_DEL_VALUE;
-    const string updateTotalCountQuerySql = "SELECT COUNT(*) FROM" + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
+    const string updateTotalCountQuerySql = "SELECT COUNT(*) FROM " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
         "WHERE" + DFX_OPT_TYPE + "=" + OPT_UPDATE_VALUE;
 
     bool ret = QueryOperationResultSet(addTotalCountQuerySql, operationRecordInfo.addTotalCount);
