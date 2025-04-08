@@ -49,8 +49,6 @@ static int32_t IsPictureTempAndEdited(const string &photoId, bool &isTemp, bool 
 {
     MediaLibraryTracer tracer;
     tracer.Start("IsPictureTempAndEdited " + photoId);
-    CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(photoId), E_ERR,
-        "photoId is invalid");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "Failed to get rdbStore");
     NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
