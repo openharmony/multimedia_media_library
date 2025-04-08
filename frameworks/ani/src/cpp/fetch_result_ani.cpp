@@ -148,7 +148,7 @@ FetchFileResultAni* FetchFileResultAni::Unwrap(ani_env *env, ani_object fetchFil
     ani_long fetchFileResultHandleLong;
     auto status = env->Object_GetFieldByName_Long(fetchFileResultHandle,
         "nativeValue", &fetchFileResultHandleLong);
-    if (ANI_OK != status) {
+    if (ANI_OK != status || fetchFileResultHandleLong == 0) {
         ANI_ERR_LOG("GetAllPhotoAssetHandleObjects nullptr");
         return nullptr;
     }
@@ -262,6 +262,9 @@ ani_status FetchFileResultAni::Close(ani_env *env, [[maybe_unused]] ani_object f
     FetchFileResultAni* fetchFileResultAni = Unwrap(env, fetchFileResultHandle);
     if (fetchFileResultAni) {
         delete fetchFileResultAni;
+        if (ANI_OK != env->Object_SetFieldByName_Long(fetchFileResultHandle, "nativeValue", 0)) {
+            ANI_WARN_LOG("Set nativeValue failed");
+        }
     }
     return ANI_OK;
 }
