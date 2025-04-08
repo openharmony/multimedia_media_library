@@ -1967,5 +1967,55 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_007, Te
     auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
     EXPECT_NE((resultSet == nullptr), true);
 }
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, CheckCloudThumbnailDownloadFinish_test_001, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+
+    int64_t totalFileSize = 0;
+    dataManager->UploadDBFileInner(totalFileSize);
+
+    totalFileSize = -1;
+    dataManager->UploadDBFileInner(totalFileSize);
+
+    totalFileSize = 201;
+    dataManager->UploadDBFileInner(totalFileSize);
+
+    dataManager->thumbnailService_ = nullptr;
+    EXPECT_EQ(dataManager->CheckCloudThumbnailDownloadFinish(), E_THUMBNAIL_SERVICE_NULLPTR);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, AstcMthAndYearInsert_test_001, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    Uri uri("");
+    MediaLibraryCommand cmd(uri);
+    std::string whereClause = "";
+    std::vector<std::string> whereArgs = {"1", "2"};
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    cmd.SetOprnObject(OperationObject::MTH_AND_YEAR_ASTC);
+    vector<DataShare::DataShareValuesBucket> values;
+    DataShare::DataShareValuesBucket valuesBucket;
+    string relativePath = "Pictures/";
+    string displayName = "CreateAsset_Test_001.jpg";
+    MediaType mediaType = MEDIA_TYPE_IMAGE;
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    values.push_back(valuesBucket);
+    auto result = dataManager->BatchInsert(cmd, values);
+    EXPECT_EQ(result, -1);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateDateTakenWhenZero_test_001, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret =  dataManager->UpdateDateTakenWhenZero();
+    EXPECT_EQ(ret, E_OK);
+}
 } // namespace Media
 } // namespace OHOS
