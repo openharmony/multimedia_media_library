@@ -24,7 +24,7 @@
 #include "medialibrary_command.h"
 
 namespace OHOS::Media {
-enum ForegroundAnalysisOpType : int32_t {
+enum ForegroundAnalysisOpType : uint32_t {
     FOREGROUND_NOT_HANDLE = 0,
     OCR_AND_LABEL = 0X01,
     SEARCH_INDEX = 0X02
@@ -65,7 +65,7 @@ private:
     int64_t frontCvModified_ = 0L;
     int frontCvCount_ = 0;
     bool isInit_ = false;
-    int32_t opType_ = ForegroundAnalysisOpType::FOREGROUND_NOT_HANDLE;
+    uint32_t opType_ = ForegroundAnalysisOpType::FOREGROUND_NOT_HANDLE;
     std::vector<std::string> fileIds_;
     int32_t taskId_ = -1;
 };
