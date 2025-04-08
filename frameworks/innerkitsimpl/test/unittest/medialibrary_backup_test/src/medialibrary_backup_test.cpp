@@ -1455,10 +1455,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertCloudPhoto, TestSize
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
     FileInfo fileInfo;
     vector<FileInfo> fileInfos = {fileInfo};
-    upgrade -> mediaLibraryRdb_ = photosStorePtr;
-    int32_t ret = upgrade -> InsertCloudPhoto(sceneCode, fileInfos, sourceType);
+    upgrade->mediaLibraryRdb_ = photosStorePtr;
+    int32_t ret = upgrade->InsertCloudPhoto(sceneCode, fileInfos, sourceType);
     EXPECT_EQ(ret, E_OK);
-    upgrade -> mediaLibraryRdb_ = nullptr;
+    upgrade->mediaLibraryRdb_ = nullptr;
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_image, TestSize.Level0)
@@ -2250,75 +2250,75 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, Tes
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_from_cloud_test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_restore_from_cloud_test start");
-    int32_t countBefore = restoreService -> totalNumber_;
-    restoreService -> RestoreCloudFromGallery();
-    EXPECT_EQ((restoreService -> totalNumber_ - countBefore), 0);
+    int32_t countBefore = restoreService->totalNumber_;
+    restoreService->RestoreCloudFromGallery();
+    EXPECT_EQ((restoreService->totalNumber_ - countBefore), 0);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_cloud_infos_test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_query_cloud_infos_test start");
-    auto result = restoreService -> QueryCloudFileInfos(0);
+    auto result = restoreService->QueryCloudFileInfos(0);
     EXPECT_EQ(result.empty(), true);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_restore_mode_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_get_restore_mode_test_001 start");
-    restoreService -> restoreInfo_ = R"([{"type":"appTwinDataRestoreState", "detail":"2"}])";
+    restoreService->restoreInfo_ = R"([{"type":"appTwinDataRestoreState", "detail":"2"}])";
     std::string restoreExInfo;
-    restoreService -> BaseRestore::StartRestoreEx("", "", restoreExInfo);
-    EXPECT_EQ(restoreService -> restoreMode_, 2);
+    restoreService->BaseRestore::StartRestoreEx("", "", restoreExInfo);
+    EXPECT_EQ(restoreService->restoreMode_, 2);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_restore_mode_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_get_restore_mode_test_002 start");
-    restoreService -> restoreInfo_ = R"([{"type":"appTwinDataRestoreState", "detail":"5"}])";
+    restoreService->restoreInfo_ = R"([{"type":"appTwinDataRestoreState", "detail":"5"}])";
     std::string restoreExInfo;
-    restoreService -> BaseRestore::StartRestoreEx("", "", restoreExInfo);
-    EXPECT_EQ(restoreService -> restoreMode_, 0);
+    restoreService->BaseRestore::StartRestoreEx("", "", restoreExInfo);
+    EXPECT_EQ(restoreService->restoreMode_, 0);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_account_valid_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_get_account_valid_test_001 start");
-    restoreService -> sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
-    restoreService -> restoreInfo_ = R"([{"type":"dualAccountId", "detail":"oldId"}])";
-    (void)restoreService -> BaseRestore::GetAccountValid();
-    EXPECT_FALSE(restoreService -> isAccountValid_);
+    restoreService->sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
+    restoreService->restoreInfo_ = R"([{"type":"dualAccountId", "detail":"oldId"}])";
+    (void)restoreService->BaseRestore::GetAccountValid();
+    EXPECT_FALSE(restoreService->isAccountValid_);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_account_valid_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_get_account_valid_test_002 start");
-    restoreService -> sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
-    restoreService -> restoreInfo_ = R"([{"type":"test", "detail":"oldId"}])";
-    (void)restoreService -> BaseRestore::GetAccountValid();
-    EXPECT_FALSE(restoreService -> isAccountValid_);
+    restoreService->sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
+    restoreService->restoreInfo_ = R"([{"type":"test", "detail":"oldId"}])";
+    (void)restoreService->BaseRestore::GetAccountValid();
+    EXPECT_FALSE(restoreService->isAccountValid_);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_source_device_info_test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_get_source_device_info_test start");
-    restoreService -> restoreInfo_ = R"([{"type":"dualDeviceSoftName", "detail":"0"}])";
-    (void)restoreService -> BaseRestore::GetSourceDeviceInfo();
-    EXPECT_EQ(restoreService -> dualDeviceSoftName_, "0");
+    restoreService->restoreInfo_ = R"([{"type":"dualDeviceSoftName", "detail":"0"}])";
+    (void)restoreService->BaseRestore::GetSourceDeviceInfo();
+    EXPECT_EQ(restoreService->dualDeviceSoftName_, "0");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_is_restore_photo_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_is_restore_photo_test_001 start");
-    restoreService -> restoreInfo_ = R"([{"type":"backupInfo", "detail":"0"}])";
-    bool restorePhoto = restoreService -> BaseRestore::IsRestorePhoto();
+    restoreService->restoreInfo_ = R"([{"type":"backupInfo", "detail":"0"}])";
+    bool restorePhoto = restoreService->BaseRestore::IsRestorePhoto();
     EXPECT_FALSE(restorePhoto);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_is_restore_photo_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_is_restore_photo_test_002 start");
-    restoreService -> restoreInfo_ = R"([{"type":"backupInfo", "detail":"galleryData"}])";
-    bool restorePhoto = restoreService -> BaseRestore::IsRestorePhoto();
+    restoreService->restoreInfo_ = R"([{"type":"backupInfo", "detail":"galleryData"}])";
+    bool restorePhoto = restoreService->BaseRestore::IsRestorePhoto();
     EXPECT_TRUE(restorePhoto);
 }
 
@@ -2327,7 +2327,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_query_sql_test, TestSize.Level0
     MEDIA_INFO_LOG("medialib_backup_query_sql_test start");
     std::string sql = "";
     std::vector<std::string> selectionArgs = {""};
-    auto result = restoreService -> BaseRestore::QuerySql(sql, selectionArgs);
+    auto result = restoreService->BaseRestore::QuerySql(sql, selectionArgs);
     EXPECT_EQ(result, nullptr);
 }
 
@@ -2338,7 +2338,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_insert_date_taken_test, TestSiz
     int64_t dateModified = 1741351029532;
     fileInfo.dateModified = dateModified;
     NativeRdb::ValuesBucket values;
-    restoreService -> BaseRestore::SetValueFromMetaData(fileInfo, values);
+    restoreService->BaseRestore::SetValueFromMetaData(fileInfo, values);
     EXPECT_EQ(fileInfo.dateTaken, dateModified);
 }
 
@@ -2348,7 +2348,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_insert_values_test, T
     FileInfo fileInfo;
     fileInfo.displayName = TEST_FILE;
     std::vector<FileInfo> fileInfos = {fileInfo};
-    auto result = restoreService -> BaseRestore::GetCloudInsertValues(0, fileInfos, 0);
+    auto result = restoreService->BaseRestore::GetCloudInsertValues(0, fileInfos, 0);
     EXPECT_EQ(result.size(), 0);
 }
 
@@ -2359,7 +2359,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_insert_orientation_test, TestSi
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, 90);
     FileInfo fileInfo;
     fileInfo.fileType = MEDIA_TYPE_VIDEO;
-    restoreService -> BaseRestore::SetValueFromMetaData(fileInfo, values);
+    restoreService->BaseRestore::SetValueFromMetaData(fileInfo, values);
     int32_t orientation;
     ValueObject valueObject;
     values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject);
@@ -2372,11 +2372,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_set_cover_position_test, TestSi
     MEDIA_INFO_LOG("medialib_backup_set_cover_position_test start");
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
     int32_t orientation = 180;
-    data -> SetOrientation(orientation);
+    data->SetOrientation(orientation);
     FileInfo fileInfo;
     fileInfo.specialFileType = LIVE_PHOTO_TYPE;
     NativeRdb::ValuesBucket values;
-    restoreService -> BaseRestore::SetValueFromMetaData(fileInfo, values);
+    restoreService->BaseRestore::SetValueFromMetaData(fileInfo, values);
     int32_t coverPosition;
     ValueObject valueObject;
     values.GetObject(PhotoColumn::PHOTO_COVER_POSITION, valueObject);
@@ -2395,7 +2395,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_move_migrate_file_test, TestSiz
     int32_t fileMoveCount = 0;
     int32_t videoFileMoveCount = 0;
     int32_t sceneCode = 0;
-    restoreService -> BaseRestore::MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    restoreService->BaseRestore::MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
     EXPECT_TRUE(fileInfos[0].needVisible);
 }
 
@@ -2410,8 +2410,8 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_move_migrate_cloud_file_test, T
     int32_t fileMoveCount = 0;
     int32_t videoFileMoveCount = 0;
     int32_t sceneCode = 0;
-    restoreService -> BaseRestore::MoveMigrateCloudFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
-    EXPECT_EQ(restoreService -> migrateFileNumber_, 0);
+    restoreService->BaseRestore::MoveMigrateCloudFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    EXPECT_EQ(restoreService->migrateFileNumber_, 0);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_001, TestSize.Level0)
@@ -2422,7 +2422,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_0
     std::vector<FileInfo> fileInfos = {fileInfo};
     std::vector<std::string> failCloudIds;
     std::string fileType = DENTRY_INFO_ORIGIN;
-    int32_t ret = restoreService -> BaseRestore::BatchCreateDentryFile(fileInfos, failCloudIds, fileType);
+    int32_t ret = restoreService->BaseRestore::BatchCreateDentryFile(fileInfos, failCloudIds, fileType);
     EXPECT_NE(ret, E_OK);
 }
 
@@ -2434,7 +2434,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_0
     std::vector<FileInfo> fileInfos = {fileInfo};
     std::vector<std::string> failCloudIds;
     std::string fileType = DENTRY_INFO_LCD;
-    int32_t ret = restoreService -> BaseRestore::BatchCreateDentryFile(fileInfos, failCloudIds, fileType);
+    int32_t ret = restoreService->BaseRestore::BatchCreateDentryFile(fileInfos, failCloudIds, fileType);
     EXPECT_NE(ret, E_OK);
 }
 
@@ -2446,7 +2446,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_0
     std::vector<FileInfo> fileInfos = {fileInfo};
     std::vector<std::string> failCloudIds;
     std::string fileType = DENTRY_INFO_THM;
-    int32_t ret = restoreService -> BaseRestore::BatchCreateDentryFile(fileInfos, failCloudIds, fileType);
+    int32_t ret = restoreService->BaseRestore::BatchCreateDentryFile(fileInfos, failCloudIds, fileType);
     EXPECT_NE(ret, E_OK);
 }
 
@@ -2455,11 +2455,11 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_restore_lcd_and_thumb_from_clou
     MEDIA_INFO_LOG("medialib_backup_restore_lcd_and_thumb_from_cloud_test start");
     FileInfo fileInfo;
     int32_t type = TEST_MIGRATE_CLOUD_LCD_TYPE;
-    bool ret = restoreService -> BaseRestore::RestoreLcdAndThumbFromCloud(fileInfo, type, 0);
+    bool ret = restoreService->BaseRestore::RestoreLcdAndThumbFromCloud(fileInfo, type, 0);
     EXPECT_EQ(ret, false);
 
     fileInfo.localBigThumbPath = TEST_DIR_PATH;
-    ret = restoreService -> BaseRestore::RestoreLcdAndThumbFromCloud(fileInfo, type, 0);
+    ret = restoreService->BaseRestore::RestoreLcdAndThumbFromCloud(fileInfo, type, 0);
     EXPECT_EQ(ret, false);
 }
 
@@ -2471,7 +2471,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_001, Test
     std::vector<FileInfo> fileInfos = {fileInfoOrigin};
     std::vector<std::string> failCloudIds = {TEST_TRUE_UNIQUEID};
     std::string fileType = DENTRY_INFO_ORIGIN;
-    restoreService -> BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
+    restoreService->BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
     EXPECT_EQ(fileInfos.size(), 0);
 }
 
@@ -2483,7 +2483,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_002, Test
     std::vector<FileInfo> fileInfos = {fileInfoLcd};
     std::vector<std::string> failCloudIds = {TEST_TRUE_UNIQUEID};
     std::string fileType = DENTRY_INFO_LCD;
-    restoreService -> BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
+    restoreService->BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
     EXPECT_EQ(fileInfos.size(), 1);
 }
 
@@ -2495,7 +2495,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_003, Test
     std::vector<FileInfo> fileInfos = {fileInfoThm};
     std::vector<std::string> failCloudIds = {TEST_TRUE_UNIQUEID};
     std::string fileType = DENTRY_INFO_THM;
-    restoreService -> BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
+    restoreService->BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
     EXPECT_EQ(fileInfos.size(), 1);
 }
 
@@ -2507,7 +2507,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_004, Test
     std::vector<FileInfo> fileInfos = {fileInfoNotFail};
     std::vector<std::string> failCloudIds = {TEST_TRUE_UNIQUEID};
     std::string fileType = DENTRY_INFO_THM;
-    restoreService -> BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
+    restoreService->BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
     EXPECT_EQ(fileInfos.size(), 1);
 }
 
@@ -2518,7 +2518,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_set_visible_photo_test, TestSiz
     fileInfo.needVisible = true;
     fileInfo.needMove = true;
     std::vector<FileInfo> fileInfos = {fileInfo};
-    bool ret = restoreService -> BaseRestore::SetVisiblePhoto(fileInfos);
+    bool ret = restoreService->BaseRestore::SetVisiblePhoto(fileInfos);
     EXPECT_EQ(fileInfos.size(), 1);
 }
 
@@ -2530,7 +2530,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_insert_map_test, TestSize
     FileInfo fileInfo2;
     std::vector<FileInfo> fileInfos = {fileInfo1, fileInfo2};
     int64_t totalNum = 0;
-    restoreService -> BaseRestore::BatchInsertMap(fileInfos, totalNum);
+    restoreService->BaseRestore::BatchInsertMap(fileInfos, totalNum);
     EXPECT_EQ(totalNum, 0);
 }
 
@@ -2538,34 +2538,34 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_unique_id_test, TestSize.Le
 {
     MEDIA_INFO_LOG("medialib_backup_get_unique_id_test start");
     int32_t fileType = MediaType::MEDIA_TYPE_IMAGE;
-    int32_t uniqueId = restoreService -> BaseRestore::GetUniqueId(fileType);
-    EXPECT_EQ(uniqueId, restoreService -> imageNumber_ - 1);
+    int32_t uniqueId = restoreService->BaseRestore::GetUniqueId(fileType);
+    EXPECT_EQ(uniqueId, restoreService->imageNumber_ - 1);
 
     fileType = MediaType::MEDIA_TYPE_VIDEO;
-    uniqueId = restoreService -> BaseRestore::GetUniqueId(fileType);
-    EXPECT_EQ(uniqueId, restoreService -> videoNumber_ - 1);
+    uniqueId = restoreService->BaseRestore::GetUniqueId(fileType);
+    EXPECT_EQ(uniqueId, restoreService->videoNumber_ - 1);
 
     fileType = MediaType::MEDIA_TYPE_AUDIO;
-    uniqueId = restoreService -> BaseRestore::GetUniqueId(fileType);
-    EXPECT_EQ(uniqueId, restoreService -> audioNumber_ - 1);
+    uniqueId = restoreService->BaseRestore::GetUniqueId(fileType);
+    EXPECT_EQ(uniqueId, restoreService->audioNumber_ - 1);
 
     fileType = -1;
-    uniqueId = restoreService -> BaseRestore::GetUniqueId(fileType);
+    uniqueId = restoreService->BaseRestore::GetUniqueId(fileType);
     EXPECT_EQ(uniqueId, - 1);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_progress_info_test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_get_progress_info_test start");
-    std::string progressInfo = restoreService -> BaseRestore::GetProgressInfo();
+    std::string progressInfo = restoreService->BaseRestore::GetProgressInfo();
     EXPECT_FALSE(progressInfo.empty());
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_update_database_test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_update_database_test start");
-    restoreService -> BaseRestore::UpdateDatabase();
-    EXPECT_EQ(restoreService -> updateProcessStatus_, ProcessStatus::STOP);
+    restoreService->BaseRestore::UpdateDatabase();
+    EXPECT_EQ(restoreService->updateProcessStatus_, ProcessStatus::STOP);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_extra_check_for_clone_same_file_test, TestSize.Level0)
@@ -2576,7 +2576,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_extra_check_for_clone_same_file
     rowData.cleanFlag = 1;
     rowData.position = static_cast<int32_t>(PhotoPositionType::CLOUD);
     rowData.fileId = 1;
-    bool ret = restoreService -> BaseRestore::ExtraCheckForCloneSameFile(fileInfo, rowData);
+    bool ret = restoreService->BaseRestore::ExtraCheckForCloneSameFile(fileInfo, rowData);
     EXPECT_EQ(ret, false);
 }
 
@@ -2591,7 +2591,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_insert_value_test, TestSize
     fileInfo.hidden = 1;
     fileInfo.packageName = TEST_DIR_PATH;
     fileInfo.localMediaId = TEST_FALSE_MEDIAID;
-    auto values = restoreService -> GetInsertValue(fileInfo, newPath, 0);
+    auto values = restoreService->GetInsertValue(fileInfo, newPath, 0);
     std::string packageName;
     ValueObject valueObject;
     values.GetObject(PhotoColumn::MEDIA_PACKAGE_NAME, valueObject);
@@ -2599,7 +2599,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_insert_value_test, TestSize
     EXPECT_EQ(packageName, TEST_DIR_PATH);
 
     fileInfo.firstUpdateTime = 0;
-    values = restoreService -> GetInsertValue(fileInfo, newPath, 0);
+    values = restoreService->GetInsertValue(fileInfo, newPath, 0);
     int32_t dateAdded;
     values.GetObject(PhotoColumn::MEDIA_DATE_ADDED, valueObject);
     valueObject.GetInt(dateAdded);
