@@ -1291,5 +1291,144 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_update_succ, TestSize.Level
     EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(operationType, values, dataPredicates), E_OK);
     MEDIA_INFO_LOG("SetCoverUri_update_succ End");
 }
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_RenewDeletedPhotoAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_001::Start");
+    int32_t test_id = 10;
+    int32_t ret = -1;
+    NativeRdb::ValuesBucket values;
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>("test1");
+    ASSERT_NE(trans, nullptr);
+    ret = MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(test_id, values, trans);
+    EXPECT_NE(ret, -1);
+    MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_DeleteHighlightAlbums_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_DeleteHighlightAlbums_test_001::Start");
+    int32_t ret = -1;
+    NativeRdb::RdbPredicates predicates("test");
+    ret = MediaLibraryAlbumOperations::DeleteHighlightAlbums(predicates);
+    EXPECT_NE(ret, -1);
+    MEDIA_INFO_LOG("Maot_DeleteHighlightAlbums_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_QueryPhotoAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_QueryPhotoAlbum_test_001::Start");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    vector<string> columns;
+    EXPECT_NE(MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns), nullptr);
+    MEDIA_INFO_LOG("Maot_QueryPhotoAlbum_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_GetLPathFromSourcePath_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_GetLPathFromSourcePath_test_001::Start");
+    int32_t ret = -1;
+    std::string sourcePath = "/storage/emulated/0/Documents/File.txt";
+    std::string lPath = "test";
+    int32_t mediaType = 0;
+    ret = MediaLibraryAlbumOperations::GetLPathFromSourcePath(sourcePath, lPath, mediaType);
+    EXPECT_NE(ret, -1);
+    MEDIA_INFO_LOG("Maot_GetLPathFromSourcePath_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_RecoverAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_RecoverAlbum_test_001::Start");
+    bool isUserAlbum = false;
+    std::string assetId = "/storage/emulated/1/Documents/File.txt";
+    std::string lPath = "/storage/emulated/0/Documents/File.txt";
+    int64_t newAlbumId = 0;
+    MediaLibraryAlbumOperations::RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
+    EXPECT_EQ(isUserAlbum, false);
+    MEDIA_INFO_LOG("Maot_RecoverAlbum_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_001::Start");
+    OperationType opType = OperationType::HIGHLIGHT_ALBUM_NAME;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_NE(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_002::Start");
+    OperationType opType = OperationType::HIGHLIGHT_COVER_URI;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_NE(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_002 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_003::Start");
+    OperationType opType = OperationType::HIGHLIGHT_SUBTITLE;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_NE(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_003 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_004::Start");
+    OperationType opType = OperationType::GROUP_COVER_URI;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_NE(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_004 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_005::Start");
+    OperationType opType = OperationType::SET_LOCATION;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_005 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandlePhotoAlbumOperations_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_001::Start");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    int ret;
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    cmd.oprnType_ = OperationType::SET_LOCATION;
+    ret = MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(cmd);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_001 End");
+}
 } // namespace Media
 } // namespace OHOS
