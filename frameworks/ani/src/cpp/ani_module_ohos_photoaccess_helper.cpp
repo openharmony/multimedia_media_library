@@ -27,31 +27,38 @@
 
 using namespace OHOS::Media;
 
+static ani_status GlobalFunctionInit(ani_env *env)
+{
+    const char *namespaceName = "L@ohos/file/photoAccessHelper/photoAccessHelper;";
+    ani_namespace ns;
+    if (ANI_OK != env->FindNamespace(namespaceName, &ns)) {
+        ANI_ERR_LOG("Not found namespace: %{public}s", namespaceName);
+        return ANI_ERROR;
+    }
+
+    std::array staticMethods = {
+        ani_native_function {"getPhotoAccessHelper", nullptr, reinterpret_cast<void *>(MediaLibraryAni::Constructor)},
+    };
+
+    if (ANI_OK != env->Namespace_BindNativeFunctions(ns, staticMethods.data(), staticMethods.size())) {
+        ANI_ERR_LOG("Cannot bind native methods to namespace: %{public}s", namespaceName);
+        return ANI_ERROR;
+    };
+
+    ANI_INFO_LOG("GlobalFunctionInit ok");
+    return ANI_OK;
+}
+
 ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
 {
+    ANI_INFO_LOG("ANI_Constructor start");
     ani_env *env;
     if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &env)) {
         ANI_ERR_LOG("Unsupported %{public}d", ANI_VERSION_1);
         return ANI_ERROR;
     }
 
-    static const char *staticClassName = "L@ohos/file/photoAccessHelper/photoAccessHelper;";
-    ani_class staticCls;
-    if (ANI_OK != env->FindClass(staticClassName, &staticCls)) {
-        ANI_ERR_LOG("Not found %{public}s", staticClassName);
-        return ANI_ERROR;
-    }
-
-    std::array staticMethods = {
-        ani_native_function {"getPhotoAccessHelper", nullptr,
-            reinterpret_cast<void *>(MediaLibraryAni::Constructor)},
-    };
-
-    if (ANI_OK != env->Class_BindNativeMethods(staticCls, staticMethods.data(), staticMethods.size())) {
-        ANI_ERR_LOG("Cannot bind native methods to %{public}s", staticClassName);
-        return ANI_ERROR;
-    };
-
+    CHECK_STATUS_RET(GlobalFunctionInit(env), "GlobalFunctionInit fail");
     CHECK_STATUS_RET(MediaLibraryAni::PhotoAccessHelperInit(env), "PhotoAccessHelperInit fail");
     CHECK_STATUS_RET(PhotoAlbumAni::PhotoAccessInit(env), "PhotoAccessInit fail");
     CHECK_STATUS_RET(FileAssetAni::FileAssetAniInit(env), "FileAssetAniInit fail");
