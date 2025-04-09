@@ -3325,6 +3325,22 @@ static bool IsColumnExists(RdbStore &store, const std::string& tableName,
     return false;
 }
 
+static void CheckIfPhotoColumnExists(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
+{
+    std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
+    std::vector<NativeRdb::ValueObject> args;
+    auto resultSet = store.QuerySql(checkSql, args);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, false);
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string name;
+        resultSet->GetString(1, name);
+        if (photoColumnExists.find(name) != photoColumnExists.end()) {
+            photoColumnExists[name] = true;
+        }
+    }
+}
+
 static void AddCloudEnhanceColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking cloud enhancement column");
@@ -4319,14 +4335,15 @@ static void FixMdirtyTriggerToUploadDetailTime(RdbStore &store)
     MEDIA_INFO_LOG("End updating mdirty trigger to upload detail_time");
 }
 
-static void UpgradeFromAPI15(RdbStore &store)
+static void UpgradeFromAPI15(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
 {
     MEDIA_INFO_LOG("Start VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
     UpdateSourcePhotoAlbumTrigger(store);
     MEDIA_INFO_LOG("End VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
 
     MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
-    if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_IS_RECENT_SHOW)) {
+    if (photoColumnExists.find(PhotoColumn::PHOTO_IS_RECENT_SHOW) == photoColumnExists.end() ||
+        !photoColumnExists.at(PhotoColumn::PHOTO_IS_RECENT_SHOW)) {
         AddIsRecentShow(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
@@ -4336,7 +4353,8 @@ static void UpgradeFromAPI15(RdbStore &store)
     MEDIA_INFO_LOG("End VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH");
 
     MEDIA_INFO_LOG("Start VERSION_ADD_IS_AUTO");
-    if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_IS_AUTO)) {
+    if (photoColumnExists.find(PhotoColumn::PHOTO_IS_AUTO) == photoColumnExists.end() ||
+        !photoColumnExists.at(PhotoColumn::PHOTO_IS_AUTO)) {
         AddIsAutoColumns(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_IS_AUTO");
@@ -4346,7 +4364,8 @@ static void UpgradeFromAPI15(RdbStore &store)
     MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME");
 
     MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_SUFFIX_COLUMN");
-    if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_MEDIA_SUFFIX)) {
+    if (photoColumnExists.find(PhotoColumn::PHOTO_MEDIA_SUFFIX) == photoColumnExists.end() ||
+        !photoColumnExists.at(PhotoColumn::PHOTO_MEDIA_SUFFIX)) {
         AddMediaSuffixColumn(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_SUFFIX_COLUMN");
@@ -4358,10 +4377,11 @@ static void UpgradeFromAPI15(RdbStore &store)
     MEDIA_INFO_LOG("End VERSION_HIGHLIGHT_SUBTITLE");
 }
 
-static void UpgradeAPI18(RdbStore &store)
+static void UpgradeAPI18(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
 {
     MEDIA_INFO_LOG("Start VERSION_ADD_METARECOVERY");
-    if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_METADATA_FLAGS)) {
+    if (photoColumnExists.find(PhotoColumn::PHOTO_METADATA_FLAGS) == photoColumnExists.end() ||
+        !photoColumnExists.at(PhotoColumn::PHOTO_METADATA_FLAGS)) {
         AddMetaRecovery(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_METARECOVERY");
@@ -4373,13 +4393,38 @@ static void UpgradeAPI18(RdbStore &store)
         AddHighlightIndex(store);
     }
     MEDIA_INFO_LOG("End VERSION_ADD_HIGHLIGHT_TRIGGER");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID");
+    UpdateSearchStatusTriggerForOwnerAlbumId(store);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID");
+
+    MEDIA_INFO_LOG("Start VERSION_HIGHLIGHT_MOVING_PHOTO");
+    AddMovingPhotoRelatedData(store);
+    MEDIA_INFO_LOG("End VERSION_HIGHLIGHT_MOVING_PHOTO");
+
+    MEDIA_INFO_LOG("Start VERSION_CREATE_TAB_FACARD_PHOTOS");
+    TabFaCardPhotosTableEventHandler().OnCreate(store);
+    MEDIA_INFO_LOG("End VERSION_CREATE_TAB_FACARD_PHOTOS");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_FOREGROUND_ANALYSIS");
+    if (!IsColumnExists(store, USER_PHOTOGRAPHY_INFO_TABLE, FRONT_INDEX_LIMIT)) {
+        AddFrontAnalysisColumn(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_FOREGROUND_ANALYSIS");
 }
 
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
-        UpgradeFromAPI15(store);
-        UpgradeAPI18(store);        
+        unordered_map<string, bool> photoColumnExists = {
+            { PhotoColumn::PHOTO_IS_RECENT_SHOW, false },
+            { PhotoColumn::PHOTO_IS_AUTO, false },
+            { PhotoColumn::PHOTO_MEDIA_SUFFIX, false },
+            { PhotoColumn::PHOTO_METADATA_FLAGS, false },
+        };
+        CheckIfPhotoColumnExists(store, photoColumnExists);
+        UpgradeFromAPI15(store, photoColumnExists);
+        UpgradeAPI18(store, photoColumnExists);
     }
 }
 
