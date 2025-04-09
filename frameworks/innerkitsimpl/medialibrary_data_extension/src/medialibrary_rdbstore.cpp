@@ -3330,7 +3330,10 @@ static void CheckIfPhotoColumnExists(RdbStore &store, unordered_map<string, bool
     std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
     std::vector<NativeRdb::ValueObject> args;
     auto resultSet = store.QuerySql(checkSql, args);
-    CHECK_AND_RETURN_RET(resultSet != nullptr, false);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query %{private}s", checkSql.c_str());
+        return;
+    }
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string name;
