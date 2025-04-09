@@ -43,7 +43,7 @@ public:
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     static std::shared_ptr<NativeRdb::ResultSet> HandleForegroundAnalysisOperation(MediaLibraryCommand &cmd);
-    static int32_t GenerateAndSubmitForegroundAnalysis(const std::string &assetUri);
+    static int32_t GenerateAndSubmitForegroundAnalysis(const std::string &assetUri, MediaType mediaType);
 
 private:
     static int32_t InitForegroundAnalysisMeta(MediaLibraryCommand &cmd,
