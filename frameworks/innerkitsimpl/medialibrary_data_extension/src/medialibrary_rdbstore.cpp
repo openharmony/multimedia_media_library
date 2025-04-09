@@ -4319,60 +4319,67 @@ static void FixMdirtyTriggerToUploadDetailTime(RdbStore &store)
     MEDIA_INFO_LOG("End updating mdirty trigger to upload detail_time");
 }
 
+static void UpgradeFromAPI15(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
+    UpdateSourcePhotoAlbumTrigger(store);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
+    if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_IS_RECENT_SHOW)) {
+        AddIsRecentShow(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
+
+    MEDIA_INFO_LOG("Start VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH");
+    FixSourceAlbumCreateTriggersToUseLPath(store);
+    MEDIA_INFO_LOG("End VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_IS_AUTO");
+    if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_IS_AUTO)) {
+        AddIsAutoColumns(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_IS_AUTO");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME");
+    AddAlbumPluginBundleName(store);
+    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+    if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_MEDIA_SUFFIX)) {
+        AddMediaSuffixColumn(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+
+    MEDIA_INFO_LOG("Start VERSION_HIGHLIGHT_SUBTITLE");
+    if (!IsColumnExists(store, HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_USE_SUBTITLE)) {
+        AddHighlightUseSubtitle(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_HIGHLIGHT_SUBTITLE");
+}
+
+static void UpgradeAPI18(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start VERSION_ADD_METARECOVERY");
+    if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_METADATA_FLAGS)) {
+        AddMetaRecovery(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_METARECOVERY");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_HIGHLIGHT_TRIGGER");
+    if (!IsColumnExists(store, PhotoColumn::HIGHLIGHT_TABLE, PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER)) {
+        AddHighlightTriggerColumn(store);
+        AddHighlightInsertAndUpdateTrigger(store);
+        AddHighlightIndex(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_HIGHLIGHT_TRIGGER");
+}
+
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
-        MEDIA_INFO_LOG("Start VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
-        UpdateSourcePhotoAlbumTrigger(store);
-        MEDIA_INFO_LOG("End VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
-
-        MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
-        if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_IS_RECENT_SHOW)) {
-            AddIsRecentShow(store);
-        }
-        MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
-
-        MEDIA_INFO_LOG("Start VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH");
-        FixSourceAlbumCreateTriggersToUseLPath(store);
-        MEDIA_INFO_LOG("End VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH");
-
-        MEDIA_INFO_LOG("Start VERSION_ADD_IS_AUTO");
-        if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_IS_AUTO)) {
-            AddIsAutoColumns(store);
-        }
-        MEDIA_INFO_LOG("End VERSION_ADD_IS_AUTO");
-
-        MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME");
-        AddAlbumPluginBundleName(store);
-        MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME");
-
-        MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_SUFFIX_COLUMN");
-        if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_MEDIA_SUFFIX)) {
-            AddMediaSuffixColumn(store);
-        }
-        MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_SUFFIX_COLUMN");
-
-        MEDIA_INFO_LOG("Start VERSION_HIGHLIGHT_SUBTITLE");
-        if (!IsColumnExists(store, HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_USE_SUBTITLE)) {
-            AddHighlightUseSubtitle(store);
-        }
-        MEDIA_INFO_LOG("End VERSION_HIGHLIGHT_SUBTITLE");
-
-        MEDIA_INFO_LOG("Start VERSION_ADD_METARECOVERY");
-        if (!IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_METADATA_FLAGS)) {
-            AddMetaRecovery(store);
-        }
-        MEDIA_INFO_LOG("End VERSION_ADD_METARECOVERY");
-
-        MEDIA_INFO_LOG("Start VERSION_ADD_HIGHLIGHT_TRIGGER");
-        if (!IsColumnExists(store, PhotoColumn::HIGHLIGHT_TABLE, PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER)) {
-            AddHighlightTriggerColumn(store);
-            AddHighlightInsertAndUpdateTrigger(store);
-            AddHighlightIndex(store);
-        }
-        MEDIA_INFO_LOG("End VERSION_ADD_HIGHLIGHT_TRIGGER");
-
-        
+        UpgradeFromAPI15(store);
+        UpgradeAPI18(store);        
     }
 }
 
