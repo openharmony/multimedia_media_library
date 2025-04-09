@@ -983,7 +983,7 @@ static shared_ptr<ResultSet> QueryPortraitAlbumCover(const shared_ptr<MediaLibra
         "AND Photos.time_pending = 0 "
         "AND Photos.is_temp = 0 "
         "AND Photos.burst_cover_level = 1 "
-        "AND AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where AnalysisAlbum.group_tag " +
+        "AND AnalysisAlbum.album_id IN (SELECT album_id FROM AnalysisAlbum where AnalysisAlbum.group_tag "
         "IN (SELECT group_tag FROM AnalysisAlbum WHERE album_id = " +
         albumId +
         " LIMIT 1) )";
