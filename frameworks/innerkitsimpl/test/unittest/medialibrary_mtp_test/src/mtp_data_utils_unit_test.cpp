@@ -442,7 +442,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestS
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    int32_t res = mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    int32_t res = mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
 }
 
@@ -1150,7 +1150,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_008, TestSize.Level0)
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     DataShare::DataSharePredicates predicates;
     vector<string> columns;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
@@ -1161,13 +1161,13 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_008, TestSize.Level0)
     predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, "其他");
     ASSERT_NE(dataShareHelper_, nullptr);
     resultSet = dataShareHelper_->Query(uri, predicates, columns);
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     property = MTP_PROPERTY_DATE_MODIFIED_CODE;
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     property = MTP_PROPERTY_DATE_ADDED_CODE;
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     property = MTP_PROPERTY_PARENT_OBJECT_CODE;
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
 }
 
 /*
@@ -1188,7 +1188,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_009, TestSize.Level0)
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     DataShare::DataSharePredicates predicates;
     vector<string> columns;
     Uri uri(PAH_QUERY_PHOTO_ALBUM);
