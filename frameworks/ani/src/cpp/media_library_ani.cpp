@@ -445,6 +445,8 @@ bool InitUserFileClient(ani_env *env, [[maybe_unused]] ani_object context, bool 
 ani_object MediaLibraryAni::Constructor(ani_env *env, [[maybe_unused]] ani_class clazz,
     [[maybe_unused]] ani_object context)
 {
+    ANI_INFO_LOG("getPhotoAccessHelper start");
+
     ani_object result = nullptr;
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAcessHelperAniConstructor");
