@@ -715,7 +715,7 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
             case TYPE_INT64:
                 if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
                     std::string timeFormat = "%Y-%m-%d %H:%M:%S";
-                    outPropValue.outStrVal = Strftime(timeFormat, get<int64_t>(columnValue));
+                    outPropValue.outStrVal = Strftime(timeFormat, (get<int64_t>(columnValue) / MILLI_TO_SECOND));
                 } else {
                     outPropValue.outIntVal = static_cast<uint64_t>(get<int64_t>(columnValue));
                 }

@@ -569,8 +569,8 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
         outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
     }
     outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
-    outObjectInfo->dateCreated = fileAsset->GetDateAdded();
-    outObjectInfo->dateModified = fileAsset->GetDateModified();
+    outObjectInfo->dateCreated = fileAsset->GetDateAdded() / MILLI_TO_SECOND;
+    outObjectInfo->dateModified = fileAsset->GetDateModified() / MILLI_TO_SECOND;
     outObjectInfo->storageID = DEFAULT_STORAGE_ID;
     if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
         outObjectInfo->format = MTP_FORMAT_ASSOCIATION_CODE;
