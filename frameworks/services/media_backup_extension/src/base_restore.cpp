@@ -496,7 +496,6 @@ static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
 {
     if (fileInfo.userComment.empty()) {
         fileInfo.userComment = metadata->GetUserComment();
-        MEDIA_INFO_LOG("user comment is empty, reset to metadata value:%{public}s", metadata->GetUserComment().c_str());
     }
 
     bool hasUserComment = value.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
