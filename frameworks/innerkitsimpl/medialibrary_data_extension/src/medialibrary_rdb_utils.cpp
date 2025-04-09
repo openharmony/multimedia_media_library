@@ -586,6 +586,69 @@ static int32_t QueryAlbumVideoCount(const shared_ptr<MediaLibraryRdbStore> rdbSt
     return GetFileCount(fetchResult);
 }
 
+void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
+{
+    PhotoQueryFilter::Config config {};
+    config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
+    config.trashedConfig = PhotoQueryFilter::ConfigType::INCLUDE;
+    PhotoQueryFilter::ModifyPredicate(config, predicates);
+    MEDIA_DEBUG_INFO("Query hidden asset in trash album, predicates statement is %{public}s",
+        predicates.GetStatement().c_str());
+}
+
+int32_t QueryAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    UpdateAlbumData &data, ValuesBucket &values, PhotoAlbumSubType subType)
+{
+    const vector<string> columns = {
+        MEDIA_COLUMN_COUNT_1, PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME
+    };
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    GetTrashAlbumHiddenPredicates(predicates);
+
+    auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
+
+    int32_t newCount = SetCount(fileResult, data, values, true, subType);
+    data.newTotalCount = newCount;
+    SetCover(fileResult, data, values, true);
+    return E_SUCCESS;
+}
+
+int32_t UpdateAlbumHiddenCountAndCover(std::shared_ptr<TransactionOperations> trans,
+    ValuesBucket &values, PhotoAlbumSubType subType)
+{
+    CHECK_AND_RETURN_RET_LOG(!values.IsEmpty(), E_SUCCESS,
+        "Failed to set update values when updating albums");
+
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subType));
+    int32_t changedRows = 0;
+    err = trans->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "Failed to update album hidden count and cover!");
+    return E_SUCCESS;
+}
+
+static int32_t HandleTrashAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+    UpdateAlbumData &data)
+{
+    ValuesBucket values;
+    int32_t ret = QueryAlbumHiddenCountAndCover(rdbStore, data, values, PhotoAlbumSubType::TRASH);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to query trash album hidden count and cover!");
+
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    std::function<int(void)> transFunc = [&]()->int {
+        return UpdateAlbumHiddenCountAndCover(trans, values, PhotoAlbumSubType::TRASH);
+    }
+    ret = trans->RetryTrans(transFunc);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to retry trans");
+
+    data.hasChanged = true;
+    SendAlbumIdNotify(data);
+    return E_SUCCESS;
+}
+
 static int32_t QueryAlbumHiddenCount(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     int32_t albumId, PhotoAlbumSubType subtype)
 {
@@ -1968,65 +2031,6 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumInternal(const shared_ptr<MediaLibra
     }
     albumResult->Close();
     ForEachRow(rdbStore, datas, false, UpdateSysAlbumIfNeeded);
-}
-
-void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
-{
-    // get hidden_count in trash album
-    PhotoQueryFilter::Config config {};
-    config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
-    config.trashedConfig = PhotoQueryFilter::ConfigType::INCLUDE;
-    PhotoQueryFilter::ModifyPredicate(config, predicates);
-}
-
-int32_t QueryAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    UpdateAlbumData &data, ValuesBucket &values, PhotoAlbumSubType subType)
-{
-    const vector<string> columns = {
-        MEDIA_COLUMN_COUNT_1, PhotoColumn::MEDIA_ID,
-        PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME
-    };
-
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    GetTrashAlbumHiddenPredicates(predicates);
-
-    auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
-
-    int32_t newCount = SetCount(fileResult, data, values, true, subType);
-    data.newTotalCount = newCount;
-    SetCover(fileResult, data, values, true);
-    return E_SUCCESS;
-}
-
-int32_t UpdateAlbumHiddenCountAndCover(std::shared_ptr<TransactionOperations> trans,
-    ValuesBucket &values, PhotoAlbumSubType subType)
-{
-    CHECK_AND_RETURN_RET_LOG(!values.IsEmpty(), E_SUCCESS,
-        "Failed to set update values when updating albums, album id");
-
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subType));
-    int32_t changedRows = 0;
-    err = trans->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "Failed to update album hidden count and cover!");
-    data.hasChanged = true;
-    return E_SUCCESS;
-}
-
-static int32_t HandleTrashAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    UpdateAlbumData &data)
-{
-    ValuesBucket values;
-    int32_t ret = QueryAlbumHiddenCountAndCover(rdbStore, data, values, PhotoAlbumSubType::TRASH);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to query trash album hidden count and cover!");
-
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
-    ret = UpdateAlbumHiddenCountAndCover(trans, values, PhotoAlbumSubType::TRASH);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to update trash album hidden count and cover!");
-
-    SendAlbumIdNotify(data);
-    return E_SUCCESS;
 }
 
 void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
