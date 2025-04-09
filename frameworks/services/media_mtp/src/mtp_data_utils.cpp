@@ -48,6 +48,7 @@ static constexpr int32_t MOVING_PHOTO_TYPE = 3;
 static constexpr int32_t EDITED_MOVING_TYPE = 4;
 static constexpr int64_t MILLI_TO_SECOND = 1000;
 static const string PARENT = "parent";
+constexpr int32_t PARENT_ROOT_ID = 0;
 
 static const map<uint16_t, string> FormatMap = {
     { 0, MTP_FORMAT_ALL},
@@ -634,6 +635,11 @@ void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare
 
                 prop.currentValue->bin_.ui16 = format;
                 MEDIA_INFO_LOG("prop.currentValue->bin_.ui16 %{public}u", format);
+            } else if (column.compare(MEDIA_DATA_DB_SIZE) == 0 && GetInt32Val(PARENT, resultSet) != PARENT_ROOT_ID) {
+                string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+                struct stat statInfo;
+                CHECK_AND_RETURN_LOG(stat(filePath.c_str(), &statInfo) == 0, "GetOneRowPropList stat failed");
+                prop.currentValue->bin_.i64 = statInfo.st_size;
             } else {
                 SetProperty(column, resultSet, type, prop);
             }
@@ -644,12 +650,56 @@ void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare
     }
 }
 
+int32_t MtpDataUtils::GetPropValueForVideoOfMovingPhoto(const std::string &path,
+    const uint32_t property, PropertyValue &outPropValue)
+{
+    CHECK_AND_RETURN_RET_LOG(PropColumnMap.find(property) != PropColumnMap.end(), MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+        "Can not support this property");
+    std::string column = PropColumnMap.at(property);
+    if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
+        outPropValue.outStrVal = std::filesystem::path(path).filename().string();
+        return MTP_SUCCESS;
+    }
+    struct stat statInfo;
+    CHECK_AND_RETURN_RET_LOG(stat(path.c_str(), &statInfo) == 0, MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+        "GetPropValueForMovingMp4 stat failed");
+    if (column.compare(MEDIA_DATA_DB_SIZE) == 0) {
+        outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_size);
+        return MTP_SUCCESS;
+    }
+    if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
+        outPropValue.outStrVal = Strftime("%Y-%m-%d %H:%M:%S", statInfo.st_mtime);
+        return MTP_SUCCESS;
+    }
+    if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
+        outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_ctime);
+    }
+
+    return MTP_SUCCESS;
+}
+
 int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
-    const shared_ptr<DataShare::DataShareResultSet> &resultSet, PropertyValue &outPropValue)
+    const shared_ptr<DataShare::DataShareResultSet> &resultSet, PropertyValue &outPropValue, bool isVideoOfMovingPhoto)
 {
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "resultSet is nullptr");
 
     CHECK_AND_RETURN_RET(resultSet->GoToFirstRow() == 0, MTP_ERROR_INVALID_OBJECTHANDLE);
+    if (isVideoOfMovingPhoto && property != MTP_PROPERTY_PARENT_OBJECT_CODE) {
+        string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        string mp4FilePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
+        return GetPropValueForVideoOfMovingPhoto(mp4FilePath, property, outPropValue);
+    }
+
+    if (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        property == MTP_PROPERTY_OBJECT_SIZE_CODE) {
+        string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        struct stat statInfo;
+        CHECK_AND_RETURN_RET_LOG(stat(filePath.c_str(), &statInfo) == 0, MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+            "GetPropValueBySet stat failed");
+        outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_size);
+        return MTP_SUCCESS;
+    }
+
     if (PropColumnMap.find(property) != PropColumnMap.end()) {
         std::string column = PropColumnMap.at(property);
         ResultSetDataType type = ColumnTypeMap.at(column);
@@ -665,7 +715,7 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
             case TYPE_INT64:
                 if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
                     std::string timeFormat = "%Y-%m-%d %H:%M:%S";
-                    outPropValue.outStrVal = Strftime(timeFormat, get<int64_t>(columnValue));
+                    outPropValue.outStrVal = Strftime(timeFormat, (get<int64_t>(columnValue) / MILLI_TO_SECOND));
                 } else {
                     outPropValue.outIntVal = static_cast<uint64_t>(get<int64_t>(columnValue));
                 }
