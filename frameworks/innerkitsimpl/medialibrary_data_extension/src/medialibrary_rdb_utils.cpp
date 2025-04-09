@@ -592,7 +592,7 @@ void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
     config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
     config.trashedConfig = PhotoQueryFilter::ConfigType::INCLUDE;
     PhotoQueryFilter::ModifyPredicate(config, predicates);
-    MEDIA_DEBUG_INFO("Query hidden asset in trash album, predicates statement is %{public}s",
+    MEDIA_DEBUG_LOG("Query hidden asset in trash album, predicates statement is %{public}s",
         predicates.GetStatement().c_str());
 }
 
