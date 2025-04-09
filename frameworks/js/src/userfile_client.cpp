@@ -94,6 +94,7 @@ shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(napi_e
     bool isStageMode = false;
     napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode);
     if (status != napi_ok || !isStageMode) {
+        NAPI_INFO_LOG("status: %{public}d, isStageMode: %{public}d", status, static_cast<int32_t>(isStageMode));
         auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
         if (ability == nullptr) {
             NAPI_ERR_LOG("Failed to get native ability instance");
