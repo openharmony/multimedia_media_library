@@ -640,7 +640,7 @@ static int32_t HandleTrashAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore
     std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
     std::function<int(void)> transFunc = [&]()->int {
         return UpdateAlbumHiddenCountAndCover(trans, values, PhotoAlbumSubType::TRASH);
-    }
+    };
     ret = trans->RetryTrans(transFunc);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to retry trans");
 
