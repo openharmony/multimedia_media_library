@@ -620,12 +620,12 @@ int32_t UpdateAlbumHiddenCountAndCover(std::shared_ptr<TransactionOperations> tr
     ValuesBucket &values, PhotoAlbumSubType subType)
 {
     CHECK_AND_RETURN_RET_LOG(!values.IsEmpty(), E_SUCCESS,
-        "Failed to set update values when updating albums");
+        "album hidden count and cover not need to update, subtype: %{public}d", subType);
 
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subType));
     int32_t changedRows = 0;
-    err = trans->Update(changedRows, values, predicates);
+    int32_t err = trans->Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "Failed to update album hidden count and cover!");
     return E_SUCCESS;
 }
