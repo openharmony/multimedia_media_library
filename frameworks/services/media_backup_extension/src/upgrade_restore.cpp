@@ -530,7 +530,6 @@ void UpgradeRestore::RestoreBatchForCloud(int32_t offset)
     if (InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) != E_OK) {
         galleryFailedOffsets.push_back(offset);
     }
-    this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, infos);
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
 }
