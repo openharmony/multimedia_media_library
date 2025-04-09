@@ -370,8 +370,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_009, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    WaitStatus status;
-    auto ret = IThumbnailHelper::DoCreateLcd(opts, data, status);
+    auto ret = IThumbnailHelper::DoCreateLcd(opts, data);
     EXPECT_EQ(ret, false);
 }
 
@@ -507,8 +506,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_023, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    WaitStatus status;
-    auto res = IThumbnailHelper::DoCreateThumbnail(opts, data, status);
+    auto res = IThumbnailHelper::DoCreateThumbnail(opts, data);
     EXPECT_EQ(res, false);
 }
 
@@ -564,9 +562,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_029, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    WaitStatus status;
     data.path = "/storage/cloud/files/";
-    auto res = IThumbnailHelper::DoCreateAstcEx(opts, data, status);
+    auto res = IThumbnailHelper::DoCreateAstcEx(opts, data);
     EXPECT_EQ(res, false);
 }
 
@@ -574,8 +571,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_030, T
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    WaitStatus status;
-    auto res = IThumbnailHelper::DoCreateAstcEx(opts, data, status);
+    auto res = IThumbnailHelper::DoCreateAstcEx(opts, data);
     EXPECT_EQ(res, false);
 }
 
