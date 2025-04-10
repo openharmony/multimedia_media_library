@@ -10056,7 +10056,8 @@ Ace::UIContent *GetUIContent(napi_env env, napi_callback_info info,
     bool isStageMode = false;
     napi_status status = AbilityRuntime::IsStageContext(env, AsyncContext->argv[ARGS_ZERO], isStageMode);
     if (status != napi_ok || !isStageMode) {
-        NAPI_ERR_LOG("is not StageMode context");
+        NAPI_ERR_LOG("is not StageMode context, status: %{public}d, isStageMode: %{public}d",
+            status, static_cast<int32_t>(isStageMode));
         return nullptr;
     }
     auto context = AbilityRuntime::GetStageModeContext(env, AsyncContext->argv[ARGS_ZERO]);
