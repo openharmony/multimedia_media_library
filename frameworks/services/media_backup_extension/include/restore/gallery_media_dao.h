@@ -44,7 +44,7 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-        LEFT JOIN relative_album \
+            LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
@@ -64,7 +64,7 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-        LEFT JOIN relative_album \
+            LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
@@ -126,7 +126,7 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-        LEFT JOIN relative_album \
+            LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
@@ -187,7 +187,7 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-        LEFT JOIN relative_album \
+            LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
