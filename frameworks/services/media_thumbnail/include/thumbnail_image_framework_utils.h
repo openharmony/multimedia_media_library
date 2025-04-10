@@ -32,6 +32,7 @@ public:
     EXPORT static std::shared_ptr<Picture> CopyPictureSource(std::shared_ptr<Picture> picture);
     EXPORT static std::shared_ptr<PixelMap> CopyPixelMapSource(std::shared_ptr<PixelMap> pixelMap);
     EXPORT static int32_t GetPictureOrientation(std::shared_ptr<Picture> picture, int32_t &orientation);
+    EXPORT static bool IsSupportGenAstc();
 
 private:
     EXPORT static std::shared_ptr<PixelMap> CopyNormalPixelmap(std::shared_ptr<PixelMap> pixelMap);

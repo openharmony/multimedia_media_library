@@ -60,6 +60,8 @@ public:
     EXPORT int32_t CreateLcdPastDirtyDataFix(const std::string &fileId, const uint8_t quality = THUMBNAIL_MID);
     bool HasInvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateTaken = "");
+    EXPORT bool DeleteThumbnailDirAndAstc(const std::string &id, const std::string &tableName,
+        const std::string &path, const std::string &dateTaken);
     EXPORT void Init(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     EXPORT int32_t GetAgingDataSize(const int64_t &time, int &count);
