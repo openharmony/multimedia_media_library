@@ -840,7 +840,10 @@ static napi_value initDeleteRequest(napi_env env, MediaAssetChangeRequestAniCont
     napi_valuetype valueType = napi_undefined;
     CHECK_COND_WITH_MESSAGE(env, context.argc >= ARGS_THREE && context.argc <= ARGS_FOUR, "Failed to check args");
     napi_value func = context.argv[PARAM1];
-    CHECK_ARGS(env, napi_typeof(env, func, &valueType), JS_INNER_FAIL);
+    if (ANI_OK != napi_typeof(env, func, &valueType)) {
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return nullptr;
+    }
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_function, "Failed to check args");
     callback->SetFunc(func);
     RETURN_NAPI_TRUE(env);
