@@ -76,7 +76,7 @@ ani_status MediaLibraryAni::PhotoAccessHelperInit(ani_env *env)
         ani_native_function {"getAssetsSync", nullptr, reinterpret_cast<void *>(GetAssetsSync)},
         ani_native_function {"getFileAssetsInfo", nullptr, reinterpret_cast<void *>(GetFileAssetsInfo)},
         ani_native_function {"getAssetsInner", nullptr, reinterpret_cast<void *>(GetAssetsInner)},
-        ani_native_function {"stopCreateThumbnailTask", nullptr,
+        ani_native_function {"stopThumbnailCreationTask", nullptr,
             reinterpret_cast<void *>(PhotoAccessStopCreateThumbnailTask)},
         ani_native_function {"startCreateThumbnailTask", nullptr,
             reinterpret_cast<void *>(PhotoAccessStartCreateThumbnailTask)},
@@ -280,9 +280,9 @@ static ani_status ParseArgsStopCreateThumbnailTask(ani_env *env, ani_object obje
 }
 
 void MediaLibraryAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env,
-    [[maybe_unused]] ani_object object, ani_int taskId)
+    [[maybe_unused]] ani_object object, ani_double taskId)
 {
-    ANI_DEBUG_LOG("PhotoAccessStopCreateThumbnailTask with taskId: %{public}d", taskId);
+    ANI_DEBUG_LOG("PhotoAccessStopCreateThumbnailTask with taskId: %{public}d", static_cast<int32_t>(taskId));
     std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
 
     if (ParseArgsStopCreateThumbnailTask(env, object, asyncContext) != ANI_OK) {
@@ -290,7 +290,7 @@ void MediaLibraryAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_en
         return;
     }
 
-    int32_t requestId = taskId;
+    int32_t requestId = static_cast<int32_t>(taskId);
     if (requestId <= 0) {
         ANI_ERR_LOG("PhotoAccessStopCreateThumbnailTask with Invalid requestId: %{public}d", requestId);
         return;
