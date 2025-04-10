@@ -49,7 +49,7 @@ ani_status GlobalFunctionInit(ani_env *env)
     ANI_INFO_LOG("GlobalFunctionInit ok");
     return ANI_OK;
 }
-} // namespace OHOS::Media::Media
+} // namespace OHOS::Media::Ani
 
 ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
 {

@@ -349,6 +349,21 @@ public:
         DataShare::DataSharePredicates *predicate, FetchOptionType fetchOptType);
 
     template <class AniContext>
+    static bool ProcessPredicateItems(AniContext& context, const vector<DataShare::OperationItem>& items,
+        vector<DataShare::OperationItem>& operations, FetchOptionType fetchOptType);
+
+    template <class AniContext>
+    static bool HandleSpecialField(AniContext& context, const DataShare::OperationItem& item,
+        vector<DataShare::OperationItem>& operations, FetchOptionType fetchOptType);
+
+    template <class AniContext>
+    static bool HandleNetworkIdField(AniContext& context, const DataShare::OperationItem& item, const string& value);
+
+    template <class AniContext>
+    static bool HandleUriField(AniContext& context, const DataShare::OperationItem& item, const string& uriValue,
+        vector<DataShare::OperationItem>& operations, FetchOptionType fetchOptType);
+
+    template <class AniContext>
     static ani_status GetFetchOption(ani_env *env, ani_object fetchOptions, FetchOptionType fetchOptType,
         AniContext &context);
 
