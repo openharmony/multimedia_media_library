@@ -27,6 +27,7 @@
 
 #include "backup_zip_util.h"
 #include "media_log.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media {
 struct BackupHiAuditConfig {
@@ -65,7 +66,10 @@ BackupHiAudit& BackupHiAudit::GetInstance()
 void BackupHiAudit::Init()
 {
     if (!std::filesystem::exists(HIAUDIT_CONFIG.logPath)) {
-        std::filesystem::create_directories(HIAUDIT_CONFIG.logPath);
+        if (!MediaFileUtils::CreateDirectory(HIAUDIT_CONFIG.logPath)) {
+            MEDIA_ERR_LOG("Create hiaudit log dir  %{public}s failed", HIAUDIT_CONFIG.logPath.c_str());
+            return ;
+        }
         std::filesystem::permissions(HIAUDIT_CONFIG.logPath,
             std::filesystem::perms::owner_all | std::filesystem::perms::group_all | std::filesystem::perms::others_all,
             std::filesystem::perm_options::replace);
