@@ -74,6 +74,7 @@ void GetDevicePropValueData::SetValue(uint16_t type, std::shared_ptr<Property::V
 
 int GetDevicePropValueData::WriteValue(std::vector<uint8_t> &buffer, uint16_t type, const Property::Value &value)
 {
+    MEDIA_INFO_LOG("WriteValue   value type %{public}d", type);
     switch (type) {
         case MTP_TYPE_INT8_CODE:
         case MTP_TYPE_AINT8_CODE:
@@ -98,6 +99,14 @@ int GetDevicePropValueData::WriteValue(std::vector<uint8_t> &buffer, uint16_t ty
         case MTP_TYPE_UINT32_CODE:
         case MTP_TYPE_AUINT32_CODE:
             MtpPacketTool::PutUInt32(buffer, value.bin_.ui32);
+            break;
+        case MTP_TYPE_STRING_CODE:
+            MEDIA_INFO_LOG("value type MTP_TYPE_STRING_CODE");
+            if (value.str_ == nullptr) {
+                MtpPacketTool::PutUInt8(buffer, 0);
+            } else {
+                MtpPacketTool::PutString(buffer, *(value.str_));
+            }
             break;
         default: {
             MEDIA_ERR_LOG("value type not find");
