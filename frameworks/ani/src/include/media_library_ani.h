@@ -72,7 +72,7 @@ public:
         ani_object options);
     static std::mutex sUserFileClientMutex_;
     static void PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
-        ani_int taskId);
+        ani_double taskId);
     static ani_int PhotoAccessStartCreateThumbnailTask([[maybe_unused]] ani_env *env,
         [[maybe_unused]] ani_object object, ani_object predicate);
     static void OnThumbnailGenerated(ani_env *env, ani_object callback, void *context, void *data);
