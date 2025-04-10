@@ -633,7 +633,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level0)
     auto fileAsset = CreateImageAsset("Test_Hidden_Image_001.jpg");
     EXPECT_NE(fileAsset, nullptr);
     HideFileAsset(fileAsset, true);
-    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 3. Create another photo, and then hide it. The cover of hidden album should be updated.
     sleep(SLEEP_INTERVAL);
@@ -641,11 +641,11 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level0)
     auto fileAsset2 = CreateImageAsset("Test_Create_Image_002.jpg");
     EXPECT_NE(fileAsset2, nullptr);
     HideFileAsset(fileAsset2, true);
-    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(2, fileAsset2->GetUri(), 2, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 4. Un-hide the cover photo, the count & cover of hidden album should be updated.
     HideFileAsset(fileAsset2, false);
-    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 5. Un-hide all the photo, the count & cover of hidden album should be reset.
     HideFileAsset(fileAsset, false);
@@ -760,7 +760,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Hide a photo");
     HideFileAsset(fileAsset2, true);
     AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
-    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(1, fileAsset2->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 5. Un-hide a photo.
     MEDIA_INFO_LOG("Step: Un-hide a photo");
@@ -830,7 +830,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Hide a photo");
     HideFileAsset(fileAsset2, true);
     AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
-    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(1, fileAsset2->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 5. Un-hide a photo.
     MEDIA_INFO_LOG("Step: Un-hide a photo");
@@ -909,7 +909,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Hide a photo");
     HideFileAsset(fileAsset2, true);
     AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
-    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(1, fileAsset2->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 5. Un-hide a photo.
     MEDIA_INFO_LOG("Step: Un-hide a photo");
