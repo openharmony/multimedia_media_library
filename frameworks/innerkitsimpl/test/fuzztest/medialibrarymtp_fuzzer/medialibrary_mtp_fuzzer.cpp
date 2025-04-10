@@ -45,7 +45,10 @@
 #include "mtp_packet.h"
 #include "mtp_service.h"
 #include "mtp_storage_manager.h"
+#include "mtp_store_observer.h"
+#include "packet_payload_factory.h"
 #include "property.h"
+#include "ptp_album_handles.h"
 #include "close_session_data.h"
 #include "copy_object_data.h"
 #include "delete_object_data.h"
@@ -206,6 +209,16 @@ static inline MtpManager::MtpMode FuzzMtpMode(const uint8_t* data, size_t size)
     return MtpManager::MtpMode::PTP_MODE;
 }
 
+static inline Media::ResultSetDataType FuzzResultSetDataType(const uint8_t* data, size_t size)
+{
+    int32_t dataType = FuzzInt32(data, size);
+    if (dataType >= static_cast<int32_t>(Media::ResultSetDataType::TYPE_NULL) &&
+        dataType <= static_cast<int32_t>(Media::ResultSetDataType::TYPE_DOUBLE)) {
+        return static_cast<Media::ResultSetDataType>(dataType);
+    }
+    return Media::ResultSetDataType::TYPE_STRING;
+}
+
 static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t size)
 {
     MtpOperationContext context;
@@ -237,7 +250,6 @@ static MtpOperationContext FuzzMtpOperationContext(const uint8_t* data, size_t s
     context.depth = FuzzUInt32(data + offset, size);
     offset += sizeof(uint32_t);
     context.properStrValue = FuzzString(data, size);
-    offset += sizeof(uint32_t);
     context.properIntValue = FuzzInt64(data + offset, size);
     offset += sizeof(uint64_t);
     context.handles = make_shared<UInt32List>(FuzzVectorUInt32(data, size)),
@@ -354,6 +366,9 @@ static void SolveHandlesFormatDataTest(const uint8_t* data, size_t size)
     MediaType outMediaType = MEDIA_TYPE_FILE;
     string outExtension = FuzzString(data, size);
     MtpDataUtils::SolveHandlesFormatData(format, outExtension, outMediaType);
+
+    format = FuzzBool(data, size) ? MTP_FORMAT_UNDEFINED_CODE : FuzzUInt16(data, size);
+    MtpDataUtils::SolveHandlesFormatData(format, outExtension, outMediaType);
 }
 
 static void SolveSendObjectFormatDataTest(const uint8_t* data, size_t size)
@@ -371,6 +386,7 @@ static void SolveSetObjectPropValueDataTest(const uint8_t* data, size_t size)
         MEDIA_ERR_LOG("context is nullptr");
         return;
     }
+    context->property = MTP_PROPERTY_ALL_CODE;
     string outColName = FuzzString(data, size);
     variant<int64_t, string> outColVal;
     MtpDataUtils::SolveSetObjectPropValueData(context, outColName, outColVal);
@@ -393,6 +409,9 @@ static void GetPropListBySetTest(const uint8_t* data, size_t size)
     }
     const shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
+    MtpDataUtils::GetPropListBySet(context, resultSet, outProps);
+
+    context->property = FuzzBool(data, size) ? MTP_PROPERTY_ALL_CODE : FuzzInt32(data, size);
     MtpDataUtils::GetPropListBySet(context, resultSet, outProps);
 }
 
@@ -426,6 +445,13 @@ static void GetPropListTest(const uint8_t* data, size_t size)
     shared_ptr<UInt16List> properties = make_shared<UInt16List>(FuzzVectorUInt16(data, size));
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
     MtpDataUtils::GetPropList(context, resultSet, properties, outProps);
+}
+
+static void ReturnErrorTest(const uint8_t* data, size_t size)
+{
+    string errMsg = "";
+    ResultSetDataType type = FuzzResultSetDataType(data, size);
+    MtpDataUtils::ReturnError(errMsg, type);
 }
 
 static void GetFormatTest(const uint8_t* data, size_t size)
@@ -482,6 +508,7 @@ static void MtpDataUtilsTest(const uint8_t* data, size_t size)
     GetPropValueBySetTest(data, size);
     GetMediaTypeByNameTest(data, size);
     GetPropListTest(data, size);
+    ReturnErrorTest(data, size);
     GetFormatTest(data, size);
     SetOneDefaultlPropListTest(data, size);
 }
@@ -520,11 +547,58 @@ static void MtpErrorUtilsTest(const uint8_t* data, size_t size)
     MtpErrorUtils::SolveCloseFdError(mediaError);
 }
 
+static void MtpEventTest(const uint8_t* data, size_t size)
+{
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext(data, size));
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
+    string path = FuzzString(data, size);
+    uint32_t handle = FuzzUInt32(data, size);
+    string fsUuid = FuzzString(data, size);
+    mtpEvent->SendObjectAdded(path);
+    mtpEvent->SendObjectRemoved(path);
+    mtpEvent->SendObjectRemovedByHandle(handle);
+    mtpEvent->SendObjectInfoChanged(path);
+    mtpEvent->SendDevicePropertyChanged();
+    mtpEvent->SendStoreAdded(fsUuid);
+    mtpEvent->SendStoreRemoved(fsUuid);
+}
+
+static void MtpFileObserverTest(const uint8_t* data, size_t size)
+{
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext(data, size));
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    shared_ptr<MtpFileObserver> mtpFileObserver = make_shared<MtpFileObserver>();
+    string path = FuzzString(data, size);
+    string realPath = FuzzString(data, size);
+    mtpFileObserver->StartFileInotify();
+    mtpFileObserver->AddFileInotify(path, realPath, context);
+    mtpFileObserver->AddPathToWatchMap(path);
+    mtpFileObserver->StopFileInotify();
+}
+
 static void MtpManagerTest(const uint8_t* data, size_t size)
 {
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext(data, size));
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
     MtpManager::GetInstance().Init();
     MtpManager::GetInstance().StartMtpService(FuzzMtpMode(data, size));
     MtpManager::GetInstance().IsMtpMode();
+    string key = "persist.edm.mtp_server_disable";
+    string value = FuzzString(data, size);
+    MtpManager::GetInstance().OnMtpParamDisableChanged(key.c_str(), value.c_str(), context.get());
     MtpManager::GetInstance().StopMtpService();
 }
 
@@ -578,7 +652,7 @@ static void GetObjectInfoTest(const uint8_t* data, size_t size)
         return;
     }
     shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(FuzzObjectInfo(data, size));
-    context->handle = 0;
+    context->handle = 1;
     mtpMediaLib_->GetObjectInfo(context, objectInfo);
 }
 
@@ -593,6 +667,7 @@ static void GetFdTest(const uint8_t* data, size_t size)
     int32_t outFd = FuzzInt32(data, size);
     mtpMediaLib_->GetFd(context, outFd);
 }
+
 static void GetThumbTest(const uint8_t* data, size_t size)
 {
     mtpMediaLib_->Clear();
@@ -613,9 +688,16 @@ static void GetThumbTest(const uint8_t* data, size_t size)
         ".txt", FuzzUInt32(data + offset, size));
     mtpMediaLib_->GetThumb(context, outThumb);
 }
+
 static void SendObjectInfoTest(const uint8_t* data, size_t size)
 {
     mtpMediaLib_->Clear();
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext(data, size));
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
     const int32_t uInt32Count = 3;
     if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
         return;
@@ -627,7 +709,10 @@ static void SendObjectInfoTest(const uint8_t* data, size_t size)
     offset += sizeof(uint32_t);
     uint32_t outHandle = FuzzUInt32(data + offset, size);
 
-    mtpMediaLib_->SendObjectInfo(nullptr, outStorageID, outParent, outHandle);
+    mtpMediaLib_->SendObjectInfo(context, outStorageID, outParent, outHandle);
+
+    context->format = MTP_FORMAT_ASSOCIATION_CODE;
+    mtpMediaLib_->SendObjectInfo(context, outStorageID, outParent, outHandle);
 }
 
 static void MoveObjectTest(const uint8_t* data, size_t size)
@@ -722,7 +807,12 @@ static void GetObjectPropListTest(const uint8_t* data, size_t size)
         return;
     }
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
+    context->groupCode = 0;
+    mtpMediaLib_->GetObjectPropList(context, outProps);
 
+    context->property = FuzzUInt32(data, size);
+    context->depth = MTP_ALL_DEPTH;
+    context->handle = 0;
     mtpMediaLib_->GetObjectPropList(context, outProps);
 }
 
@@ -865,7 +955,17 @@ static void GetHandlesMapTest(const uint8_t* data, size_t size)
         return;
     }
     mtpMediaLib_->AddToHandlePathMap(FuzzString(data, size), FuzzUInt32(data, size));
+    context->handle = 0;
+    context->depth = MTP_ALL_DEPTH;
+    mtpMediaLib_->GetHandlesMap(context);
 
+    context->handle = MTP_ALL_DEPTH;
+    mtpMediaLib_->GetHandlesMap(context);
+
+    context->depth = DEFAULT_STORAGE_ID;
+    mtpMediaLib_->GetHandlesMap(context);
+
+    context->handle = MTP_ALL_HANDLE_ID;
     mtpMediaLib_->GetHandlesMap(context);
 }
 
@@ -963,7 +1063,6 @@ static void MtpMediaLibraryTest(const uint8_t* data, size_t size)
 // MtpMedialibraryManagerTest start
 static void PtpGetHandlesTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     const int32_t int32Count = 2;
     if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(uint32_t)) {
         return;
@@ -976,7 +1075,6 @@ static void PtpGetHandlesTest(const uint8_t* data, size_t size)
     offset += sizeof(int32_t);
     ptpMediaLib_->GetHandles(parentId, outHandle, mediaType);
 
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -994,7 +1092,6 @@ static void PtpGetHandlesTest(const uint8_t* data, size_t size)
 
 static void PtpGetObjectInfoTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1002,13 +1099,14 @@ static void PtpGetObjectInfoTest(const uint8_t* data, size_t size)
         return;
     }
     shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(FuzzObjectInfo(data, size));
+    ptpMediaLib_->GetObjectInfo(context, objectInfo);
 
+    context->handle = COMMON_PHOTOS_OFFSET;
     ptpMediaLib_->GetObjectInfo(context, objectInfo);
 }
 
 static void PtpGetFdTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = nullptr;
     bool condition = false;
     int fd = 0;
@@ -1021,7 +1119,6 @@ static void PtpGetFdTest(const uint8_t* data, size_t size)
 
 static void PtpGetThumbTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1035,7 +1132,6 @@ static void PtpGetThumbTest(const uint8_t* data, size_t size)
 
 static void PtpSendObjectInfoTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     const int32_t uInt32Count = 3;
     if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
         return;
@@ -1052,7 +1148,6 @@ static void PtpSendObjectInfoTest(const uint8_t* data, size_t size)
 
 static void PtpMoveObjectTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1064,7 +1159,6 @@ static void PtpMoveObjectTest(const uint8_t* data, size_t size)
 
 static void PtpCopyObjectTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1073,13 +1167,13 @@ static void PtpCopyObjectTest(const uint8_t* data, size_t size)
     }
 
     uint32_t outObjectHandle = FuzzUInt32(data, size);
+    context->handle = EDITED_PHOTOS_OFFSET;
     ptpMediaLib_->CopyObject(context, outObjectHandle);
     ptpMediaLib_->DeleteObject(context);
 }
 
 static void PtpSetObjectPropValueTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1091,7 +1185,6 @@ static void PtpSetObjectPropValueTest(const uint8_t* data, size_t size)
 
 static void PtpCloseFdTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1109,7 +1202,6 @@ static void PtpCloseFdTest(const uint8_t* data, size_t size)
 
 static void PtpGetObjectPropListTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1119,11 +1211,13 @@ static void PtpGetObjectPropListTest(const uint8_t* data, size_t size)
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
 
     ptpMediaLib_->GetObjectPropList(context, outProps);
+
+    context->parent = FuzzUInt32(data, size);
+    ptpMediaLib_->GetObjectPropList(context, outProps);
 }
 
 static void PtpGetObjectPropValueTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1138,7 +1232,6 @@ static void PtpGetObjectPropValueTest(const uint8_t* data, size_t size)
 
 static void PtpGetPictureThumbTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1151,7 +1244,6 @@ static void PtpGetPictureThumbTest(const uint8_t* data, size_t size)
 
 static void PtpGetVideoThumbTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1164,7 +1256,6 @@ static void PtpGetVideoThumbTest(const uint8_t* data, size_t size)
 
 static void PtpGetFdByOpenFileTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1177,16 +1268,20 @@ static void PtpGetFdByOpenFileTest(const uint8_t* data, size_t size)
 
 static void PtpSetObjectInfoTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
-
     const unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
-    shared_ptr<ObjectInfo> outObjectInfo = nullptr;
+    fileAsset->SetMediaType(MediaType::MEDIA_TYPE_ALBUM);
+    shared_ptr<ObjectInfo> outObjectInfo = make_shared<ObjectInfo>(FuzzObjectInfo(data, size));
+    ptpMediaLib_->SetObjectInfo(fileAsset, outObjectInfo);
+
+    fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
+    ptpMediaLib_->SetObjectInfo(fileAsset, outObjectInfo);
+
+    fileAsset->SetMediaType(MediaType::MEDIA_TYPE_VIDEO);
     ptpMediaLib_->SetObjectInfo(fileAsset, outObjectInfo);
 }
 
 static void PtpSetObjectTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1201,7 +1296,6 @@ static void PtpSetObjectTest(const uint8_t* data, size_t size)
 
 static void PtpCompressImageTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     unique_ptr<PixelMap> pixelMap = nullptr;
     vector<uint8_t> imageDdata  = FuzzVectorUInt8(data, size);
     ptpMediaLib_->CompressImage(pixelMap, imageDdata);
@@ -1209,7 +1303,6 @@ static void PtpCompressImageTest(const uint8_t* data, size_t size)
 
 static void PtpGetAlbumInfoTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1223,7 +1316,6 @@ static void PtpGetAlbumInfoTest(const uint8_t* data, size_t size)
 
 static void PtpGetPhotosInfoTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
         FuzzMtpOperationContext(data, size));
     if (context == nullptr) {
@@ -1237,7 +1329,6 @@ static void PtpGetPhotosInfoTest(const uint8_t* data, size_t size)
 
 static void PtpGetAlbumCloudTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     ptpMediaLib_->GetAlbumCloud();
     vector<string> ownerAlbumIds = FuzzVectorString(data, size);
     ptpMediaLib_->GetAlbumCloudDisplay(ownerAlbumIds);
@@ -1245,7 +1336,6 @@ static void PtpGetAlbumCloudTest(const uint8_t* data, size_t size)
 
 static void PtpHaveMovingPhotesHandleTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     const shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
     const int32_t uInt32Count = 2;
     if (data == nullptr || size < sizeof(uint32_t) * uInt32Count) {
@@ -1262,11 +1352,17 @@ static void PtpHaveMovingPhotesHandleTest(const uint8_t* data, size_t size)
 
 static void PtpGetThumbUriTest(const uint8_t* data, size_t size)
 {
-    ptpMediaLib_->Clear();
     const int32_t handle = FuzzInt32(data, size);
     const string thumbSizeValue = FuzzString(data, size);
     const string dataPath = FILE_PATH + "/" + FuzzString(data, size);
     ptpMediaLib_->GetThumbUri(handle, thumbSizeValue, dataPath);
+}
+
+static void DeleteCanceledObjectTest(const uint8_t* data, size_t size)
+{
+    uint32_t id = FuzzUInt32(data, size);
+    ptpMediaLib_->DeleteCanceledObject(id);
+    ptpMediaLib_->Clear();
 }
 
 static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
@@ -1293,6 +1389,27 @@ static void MtpMedialibraryManagerTest(const uint8_t* data, size_t size)
     PtpGetAlbumCloudTest(data, size);
     PtpHaveMovingPhotesHandleTest(data, size);
     PtpGetThumbUriTest(data, size);
+    DeleteCanceledObjectTest(data, size);
+}
+
+static void MtpMonitorTest(const uint8_t* data, size_t size)
+{
+    shared_ptr<MtpMonitor> mtpMonitor = make_shared<MtpMonitor>();
+    mtpMonitor->Start();
+    mtpMonitor->Stop();
+}
+
+static void MtpOperationTest(const uint8_t* data, size_t size)
+{
+    shared_ptr<MtpOperation> mtpOperation = make_shared<MtpOperation>();
+    mtpOperation->mtpContextPtr_->operationCode = FuzzInt32(data, size);
+    mtpOperation->Execute();
+    mtpOperation->Stop();
+    for (uint16_t code = MTP_OPERATION_GET_DEVICE_INFO_CODE; code < MTP_OPERATION_SKIP_CODE; code++) {
+        mtpOperation->mtpContextPtr_->operationCode = code;
+        mtpOperation->Execute();
+        mtpOperation->Stop();
+    }
 }
 
 // MtpOperationUtilsTest start
@@ -1862,6 +1979,46 @@ static void MtpPacketTest(const uint8_t* data, size_t size)
     mtpPacket->Reset();
 }
 
+static void MtpServiceTest(const uint8_t* data, size_t size)
+{
+    shared_ptr<MtpService> mtpService = make_shared<MtpService>();
+    mtpService->StartService();
+    mtpService->StopService();
+}
+
+static void MtpStoreObserverTest(const uint8_t* data, size_t size)
+{
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext(data, size));
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    EventFwk::CommonEventData eventData;
+    EventFwk::MatchingSkills matchingSkills;
+    EventFwk::CommonEventSubscribeInfo subscriberInfo(matchingSkills);
+    shared_ptr<MtpStoreObserver> mtpStoreObserver = make_shared<MtpStoreObserver>(subscriberInfo);
+    mtpStoreObserver->StartObserver();
+    mtpStoreObserver->AttachContext(context);
+    mtpStoreObserver->OnReceiveEvent(eventData);
+    mtpStoreObserver->StopObserver();
+}
+
+static void PacketPayloadFactoryTest(const uint8_t* data, size_t size)
+{
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>(
+        FuzzMtpOperationContext(data, size));
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("context is nullptr");
+        return;
+    }
+    shared_ptr<PacketPayloadFactory> packetPayloadFactory = make_shared<PacketPayloadFactory>();
+    uint16_t stage = FuzzUInt16(data, size);
+    for (uint16_t code = MTP_OPERATION_GET_DEVICE_INFO_CODE; code < MTP_OPERATION_SKIP_CODE; code++) {
+        packetPayloadFactory->CreatePayload(context, code, stage);
+    }
+}
+
 // PropertyTest start
 static void PropertySetFormEnumTest(const uint8_t* data, size_t size)
 {
@@ -2093,6 +2250,22 @@ static void PropertyTest(const uint8_t* data, size_t size)
     PropertyWriteFormDataTest(data, size);
 }
 
+static void PtpAlbumHandlesTest(const uint8_t* data, size_t size)
+{
+    shared_ptr<PtpAlbumHandles> ptpAlbumHandles = PtpAlbumHandles::GetInstance();
+    int32_t value = FuzzInt32(data, size);
+    ptpAlbumHandles->AddHandle(value);
+    ptpAlbumHandles->RemoveHandle(value);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
+    ptpAlbumHandles->AddAlbumHandles(resultSet);
+    ptpAlbumHandles->FindHandle(value);
+    std::set<int32_t> albumIds;
+    albumIds.insert(0);
+    ptpAlbumHandles->dataHandles_.push_back(FuzzInt32(data, size));
+    std::vector<int32_t> removeIds;
+    ptpAlbumHandles->UpdateHandle(albumIds, removeIds);
+}
+
 // PayloadDataTest start
 static void CloseSessionDataTest(const uint8_t* data, size_t size)
 {
@@ -2228,9 +2401,20 @@ static void GetDevicePropValueDataTest(const uint8_t* data, size_t size)
 
     Property::Value writeValue;
     getDevicePropValueData.WriteValue(buffer, type, writeValue);
+    getDevicePropValueData.WriteValue(buffer, MTP_TYPE_INT8_CODE, writeValue);
+    getDevicePropValueData.WriteValue(buffer, MTP_TYPE_UINT8_CODE, writeValue);
+    getDevicePropValueData.WriteValue(buffer, MTP_TYPE_INT16_CODE, writeValue);
+    getDevicePropValueData.WriteValue(buffer, MTP_TYPE_UINT16_CODE, writeValue);
+    getDevicePropValueData.WriteValue(buffer, MTP_TYPE_INT32_CODE, writeValue);
+    getDevicePropValueData.WriteValue(buffer, MTP_TYPE_UINT32_CODE, writeValue);
 
     getDevicePropValueData.Maker(outBuffer);
     getDevicePropValueData.CalculateSize();
+
+    int32_t readSize = buffer.size();
+    getDevicePropValueData.Parser(buffer, readSize);
+    getDevicePropValueData.context_ = context;
+    getDevicePropValueData.Parser(buffer, readSize);
 }
 
 static void GetNumObjectsDataTest(const uint8_t* data, size_t size)
@@ -2900,13 +3084,21 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::MtpDataUtilsTest(data, size);
     OHOS::MtpDriverTest(data, size);
     OHOS::MtpErrorUtilsTest(data, size);
+    OHOS::MtpEventTest(data, size);
+    OHOS::MtpFileObserverTest(data, size);
     OHOS::MtpManagerTest(data, size);
     OHOS::MtpMediaLibraryTest(data, size);
     OHOS::MtpMedialibraryManagerTest(data, size);
+    OHOS::MtpMonitorTest(data, size);
+    OHOS::MtpOperationTest(data, size);
     OHOS::MtpOperationUtilsTest(data, size);
     OHOS::MtpPacketToolTest(data, size);
     OHOS::MtpPacketTest(data, size);
+    OHOS::MtpServiceTest(data, size);
+    OHOS::MtpStoreObserverTest(data, size);
+    OHOS::PacketPayloadFactoryTest(data, size);
     OHOS::PropertyTest(data, size);
+    OHOS::PtpAlbumHandlesTest(data, size);
     OHOS::PayloadDataTest(data, size);
     return 0;
 }
