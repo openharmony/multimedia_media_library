@@ -2682,7 +2682,7 @@ static void TaskDataFileProccess(DeleteFilesTask *taskData)
         }
     }
     for (size_t i = 0; i < taskData->ids_.size(); i++) {
-        ThumbnailService::GetInstance()->HasInvalidateThumbnail(
+        ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(
             taskData->ids_[i], taskData->table_, taskData->paths_[i], taskData->dateTakens_[i]);
     }
     if (taskData->table_ == PhotoColumn::PHOTOS_TABLE) {

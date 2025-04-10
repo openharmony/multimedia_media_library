@@ -20,6 +20,7 @@
 
 #include "exif_metadata.h"
 #include "hdr_type.h"
+#include "image_source.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 
 #include "medialibrary_errno.h"
@@ -307,6 +308,11 @@ bool ThumbnailImageFrameWorkUtils::SetSbDynamicMetadata(sptr<SurfaceBuffer> &buf
     const std::vector<uint8_t> &dynamicMetadata)
 {
     return buffer->SetMetadata(ATTRKEY_HDR_DYNAMIC_METADATA, dynamicMetadata) == GSERROR_OK;
+}
+
+bool ThumbnailImageFrameWorkUtils::IsSupportGenAstc()
+{
+    return ImageSource::IsSupportGenAstc();
 }
 } // namespace Media
 } // namespace OHOS

@@ -157,6 +157,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/cloud_thumbnail_observer.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/ithumbnail_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_aging_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_file_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker_manager.cpp",

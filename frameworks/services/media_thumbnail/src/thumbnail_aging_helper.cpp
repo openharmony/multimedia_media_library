@@ -19,6 +19,7 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
+#include "thumbnail_file_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -97,7 +98,7 @@ int32_t ThumbnailAgingHelper::ClearLcdFromFileTable(ThumbRdbOpt &opts)
     }
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
-        if (ThumbnailUtils::DeleteThumbFile(infos[i], ThumbnailType::LCD)) {
+        if (ThumbnailFileUtils::DeleteThumbFile(infos[i], ThumbnailType::LCD)) {
             ThumbnailUtils::CleanThumbnailInfo(opts, false, true);
         }
     }

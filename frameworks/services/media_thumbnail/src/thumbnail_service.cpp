@@ -27,7 +27,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
-#include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_log.h"
@@ -36,6 +35,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
@@ -424,7 +424,7 @@ int32_t ThumbnailService::GenerateThumbnailBackground()
             .table = tableName
         };
 
-        if ((tableName == PhotoColumn::PHOTOS_TABLE) && ThumbnailUtils::IsSupportGenAstc()) {
+        if ((tableName == PhotoColumn::PHOTOS_TABLE) && ThumbnailImageFrameWorkUtils::IsSupportGenAstc()) {
             // CreateAstcBackground contains thumbnails created.
             err = ThumbnailGenerateHelper::CreateAstcBackground(opts);
             if (err != E_OK) {
@@ -524,19 +524,34 @@ bool ThumbnailService::HasInvalidateThumbnail(const std::string &id,
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
-        .path = path,
         .table = tableName,
         .row = id,
-        .dateTaken = dateTaken,
     };
-    ThumbnailData thumbnailData;
-    if (!ThumbnailUtils::DeleteOriginImage(opts)) {
-        MEDIA_ERR_LOG("failed to delete origin image");
+    ThumbnailData data;
+    data.path = path;
+    data.id = id;
+    data.dateTaken = dateTaken;
+    if (!ThumbnailUtils::DeleteAllThumbFilesAndAstc(opts, data)) {
+        MEDIA_ERR_LOG("Failed to delete thumbnail");
         return false;
     }
-    if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        return MediaLibraryPhotoOperations::HasDroppedThumbnailSize(id);
-    }
+    return true;
+}
+
+bool ThumbnailService::DeleteThumbnailDirAndAstc(const std::string &id,
+    const std::string &tableName, const std::string &path, const std::string &dateTaken)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = tableName,
+        .row = id,
+    };
+    ThumbnailData data;
+    data.path = path;
+    data.id = id;
+    data.dateTaken = dateTaken;
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data), false,
+        "Failed to delete thumbnail");
     return true;
 }
 
@@ -660,12 +675,9 @@ bool ThumbnailService::RegenerateThumbnailFromCloud(const string &id)
 void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken)
 {
     ThumbnailData data;
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .table = PhotoColumn::PHOTOS_TABLE,
-        .row = fileId,
-        .dateTaken = dateTaken
-    };
+    data.id = fileId;
+    data.dateTaken = dateTaken;
+    ThumbRdbOpt opts;
 
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::DeleteMonthAndYearAstc,
         opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
