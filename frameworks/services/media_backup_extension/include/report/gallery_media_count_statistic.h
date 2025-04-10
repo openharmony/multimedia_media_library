@@ -102,21 +102,12 @@ private:
             (-1 = ? OR 0 = ? AND is_hw_burst IN (1, 2) OR 1 = ? AND is_hw_burst = 1) \
         ;";
     const std::string SQL_GALLERY_MEDIA_QUERY_COUNT = "\
-        WITH album_v2 AS \
-        ( \
-            SELECT \
-                relativeBucketId, \
-                lPath \
-            FROM gallery_album \
-            WHERE COALESCE(relativeBucketId, '') <> '' \
-            GROUP BY relativeBucketId \
-        ) \
         SELECT COUNT(1) AS count \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
+        LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
@@ -256,8 +247,8 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN gallery_album AS album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
+        LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') = '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \

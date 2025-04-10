@@ -248,7 +248,7 @@ private:
     std::vector<PortraitAlbumDfx> portraitAlbumDfx_;
     PhotoAlbumClone photoAlbumClone_;
     PhotosClone photosClone_;
-    static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = -1;
+    static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = 0;
     bool hasCloneThumbnailDir_{false};
     bool isInitKvstoreSuccess_{false};
     std::shared_ptr<MediaLibraryKvStore> oldMonthKvStorePtr_ = nullptr;
