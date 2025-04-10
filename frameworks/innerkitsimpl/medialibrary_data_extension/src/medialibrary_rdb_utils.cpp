@@ -586,7 +586,7 @@ static int32_t QueryAlbumVideoCount(const shared_ptr<MediaLibraryRdbStore> rdbSt
     return GetFileCount(fetchResult);
 }
 
-void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
+static void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
 {
     PhotoQueryFilter::Config config {};
     config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
@@ -596,7 +596,7 @@ void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
         predicates.GetStatement().c_str());
 }
 
-int32_t QueryAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
+static int32_t QueryAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     UpdateAlbumData &data, ValuesBucket &values, PhotoAlbumSubType subType)
 {
     const vector<string> columns = {
@@ -616,7 +616,7 @@ int32_t QueryAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdb
     return E_SUCCESS;
 }
 
-int32_t UpdateAlbumHiddenCountAndCover(std::shared_ptr<TransactionOperations> trans,
+static int32_t UpdateAlbumHiddenCountAndCover(std::shared_ptr<TransactionOperations> trans,
     ValuesBucket &values, PhotoAlbumSubType subType)
 {
     CHECK_AND_RETURN_RET_LOG(!values.IsEmpty(), E_SUCCESS,
