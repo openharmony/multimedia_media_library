@@ -141,7 +141,9 @@ ani_object MediaAssetChangeRequestAni::Constructor(ani_env *env, [[maybe_unused]
     ani_object fileAssetAni)
 {
     FileAssetAni* fileAssetAniPtr = FileAssetAni::Unwrap(env, fileAssetAni);
+    CHECK_COND_WITH_RET_MESSAGE(env, fileAssetAniPtr != nullptr, nullptr, "fileAssetAniPtr is null");
     auto fileAssetPtr = fileAssetAniPtr->GetFileAssetInstance();
+    CHECK_COND_WITH_RET_MESSAGE(env, fileAssetPtr != nullptr, nullptr, "fileAssetPtr is null");
     CHECK_COND_WITH_RET_MESSAGE(env,
         fileAssetPtr->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER &&
             (fileAssetPtr->GetMediaType() == MEDIA_TYPE_IMAGE || fileAssetPtr->GetMediaType() == MEDIA_TYPE_VIDEO),
@@ -784,14 +786,14 @@ ani_object MediaAssetChangeRequestAni::CreateAssetRequestFromRealPath(ani_env *e
     emptyFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     FileAssetAni* fileAssetAni = FileAssetAni::CreateFileAsset(env, emptyFileAsset);
     ANI_CHECK_RETURN_RET_LOG(fileAssetAni != nullptr, nullptr, "context is null");
-    auto changeRequest = new MediaAssetChangeRequestAni(fileAssetAni);
+    auto changeRequest = std::make_unique<MediaAssetChangeRequestAni>(fileAssetAni);
     changeRequest->realPath_ = realPath;
     changeRequest->creationValuesBucket_.Put(MEDIA_DATA_DB_NAME, displayName);
     changeRequest->creationValuesBucket_.Put(ASSET_EXTENTION, MediaFileUtils::GetExtensionFromPath(displayName));
     changeRequest->creationValuesBucket_.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
     changeRequest->creationValuesBucket_.Put(PhotoColumn::MEDIA_TITLE, title);
     changeRequest->RecordChangeOperation(AssetChangeOperation::CREATE_FROM_URI);
-    return Wrap(env, changeRequest);
+    return Wrap(env, changeRequest.release());
 }
 
 ani_object MediaAssetChangeRequestAni::createImageAssetRequest(ani_env *env, ani_object context, ani_string fileUri)
@@ -1107,7 +1109,7 @@ ani_object MediaAssetChangeRequestAni::addResourceByPhotoProxy(ani_env *env, ani
         return nullptr;
     }
 
-    PhotoProxyAni* photoProxyAni = new PhotoProxyAni();
+    auto photoProxyAni = std::make_unique<PhotoProxyAni>();
     changeRequest->photoProxy_ = photoProxyAni->photoProxy_;
     changeRequest->addResourceMode_ = AddResourceMode::PHOTO_PROXY;
 

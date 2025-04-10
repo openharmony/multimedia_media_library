@@ -868,6 +868,10 @@ template <class AniContext>
 bool MediaLibraryAniUtils::HandleSpecialPredicate(AniContext &context,
     DataSharePredicates *predicate, FetchOptionType fetchOptType)
 {
+    if (predicate == nullptr) {
+        ANI_ERR_LOG("predicate is null");
+        return false;
+    }
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
     vector<OperationItem> operations;
@@ -880,9 +884,6 @@ bool MediaLibraryAniUtils::HandleSpecialPredicate(AniContext &context,
         if (HandleSpecialDateTypePredicate(item, operations, fetchOptType)) {
             continue;
         }
-        // change uri ->file id
-        // get networkid
-        // replace networkid with file id
         if (static_cast<string>(item.GetSingle(FIELD_IDX)) == DEVICE_DB_NETWORK_ID) {
             if (item.operation != DataShare::EQUAL_TO || static_cast<string>(item.GetSingle(VALUE_IDX)).empty()) {
                 ANI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
