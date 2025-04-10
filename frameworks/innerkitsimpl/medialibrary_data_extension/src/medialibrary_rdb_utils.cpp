@@ -1680,6 +1680,13 @@ static void GetUpdateAlbumDataInfo(shared_ptr<ResultSet> albumResult, std::vecto
     }
 }
 
+void PrintHighlightAlbumInfo(const PhotoAlbumSubType &subtype, const int32_t &albumId)
+{
+    if (subtype == PhotoAlbumSubType::HIGHLIGHT) {
+        MEDIA_INFO_LOG("The highlight album that needs to be updated is %{publlic}d", albumId);
+    }
+}
+
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const vector<string> &anaAlbumAlbumIds, const vector<string> &fileIds)
 {
@@ -1711,6 +1718,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<MediaLib
             } else if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
                 MEDIA_INFO_LOG("No need to update group photo");
             } else {
+                PrintHighlightAlbumInfo(subtype, data.albumId);
                 UpdateAnalysisAlbumIfNeeded(rdbStore, data, false, trans);
             }
             return err;
