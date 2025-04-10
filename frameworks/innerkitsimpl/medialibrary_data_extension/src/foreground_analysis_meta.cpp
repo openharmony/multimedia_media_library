@@ -221,7 +221,9 @@ void ForegroundAnalysisMeta::AppendAnalysisTypeOnWhereClause(int32_t type, std::
     }
     static const std::map<int32_t, std::string> FRONT_ANALYSIS_WHERE_CLAUSE_MAP = {
         { ANALYSIS_SEARCH_INDEX, VISION_TOTAL_TABLE + "." + STATUS + " = 0" + " AND (" + VISION_TOTAL_TABLE + "." +
-            OCR + " = 0 OR " + VISION_TOTAL_TABLE + "." + LABEL + " = 0)" },
+            OCR + " = 0 OR " + VISION_TOTAL_TABLE + "." + LABEL + " = 0) AND " + PhotoColumn::PHOTOS_TABLE +
+            "." + MediaColumn::MEDIA_TYPE + " IN (" + std::to_string(MediaType::MEDIA_TYPE_IMAGE) + "," +
+            std::to_string(MediaType::MEDIA_TYPE_VIDEO) + ") " },
     };
     std::string analysisTypeClause;
     auto it = FRONT_ANALYSIS_WHERE_CLAUSE_MAP.find(type);
@@ -244,7 +246,9 @@ int32_t ForegroundAnalysisMeta::QueryPendingIndexCount(MediaLibraryCommand &cmd,
     std::string onClause = SEARCH_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID + " = " + PhotoColumn::PHOTOS_TABLE + "." +
         MediaColumn::MEDIA_ID;
     std::string colmun = "COUNT(1)";
-    std::string whereClause = SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_PHOTO_STATUS + " in (0, 2)";
+    std::string whereClause = SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_PHOTO_STATUS + " in (0, 2) AND " +
+        PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_TYPE + " IN (" +
+        std::to_string(MediaType::MEDIA_TYPE_IMAGE) + "," + std::to_string(MediaType::MEDIA_TYPE_VIDEO) + ") ";
     std::string sql = "SELECT " + colmun + " FROM " + SEARCH_TOTAL_TABLE + " INNER JOIN " + PhotoColumn::PHOTOS_TABLE +
         " ON " + onClause + " WHERE " + whereClause;
     auto result = rdbStore->QuerySql(sql);
