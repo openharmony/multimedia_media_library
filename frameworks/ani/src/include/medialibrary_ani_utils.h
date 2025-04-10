@@ -36,18 +36,6 @@
 #include "photo_album_column.h"
 #include "rdb_store.h"
 
-#ifdef ANI_ASSERT
-#undef ANI_ASSERT
-#endif
-
-#define CHECK_ARGS_WITH_MESSAGE(env, cond, msg)                                                 \
-    do {                                                                                        \
-        if (!(cond)) {                                                                          \
-            AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__, msg);   \
-            return nullptr;                                                                     \
-        }                                                                                       \
-    } while (0)
-
 #define CHECK_COND_WITH_MESSAGE(env, cond, msg)                                                 \
     do {                                                                                        \
         if (!(cond)) {                                                                          \
@@ -62,16 +50,6 @@
             AniError::ThrowError(env, OHOS_INVALID_PARAM_CODE, __FUNCTION__, __LINE__, msg);    \
             return ret;                                                                         \
         }                                                                                       \
-    } while (0)
-
-#define ANI_ASSERT(env, cond, msg) CHECK_ARGS_WITH_MESSAGE(env, cond, msg)
-
-#define ASSERT_NULLPTR_CHECK(env, result)       \
-    do {                                        \
-        if ((result) == nullptr) {              \
-            GetUndefiend(env, &(result));       \
-            return result;                      \
-        }                                       \
     } while (0)
 
 #define CHECK_NULL_PTR_RETURN_UNDEFINED(env, ptr, ret, message)     \
@@ -90,6 +68,7 @@
             return;                                 \
         }                                           \
     } while (0)
+
 #define CHECK_IF_EQUAL(condition, errMsg, ...)      \
     do {                                            \
         if (!(condition)) {                         \
@@ -122,18 +101,6 @@
         }                                                           \
     } while (0)
 
-#define CHECK_ARGS_BASE(env, cond, err, retVal)                     \
-    do {                                                            \
-        if ((cond) != ANI_OK) {                                    \
-            AniError::ThrowError(env, err, __FUNCTION__, __LINE__); \
-            return retVal;                                          \
-        }                                                           \
-    } while (0)
-
-#define CHECK_ARGS(env, cond, err) CHECK_ARGS_BASE(env, cond, err, nullptr)
-
-#define CHECK_ARGS_THROW_INVALID_PARAM(env, cond) CHECK_ARGS(env, cond, OHOS_INVALID_PARAM_CODE)
-
 #define CHECK_ARGS_RET_VOID(env, cond, err)                         \
     do {                                                            \
         if ((cond) != ANI_OK) {                                     \
@@ -148,14 +115,6 @@
             AniError::ThrowError(env, err, __FUNCTION__, __LINE__); \
             return nullptr;                                         \
         }                                                           \
-    } while (0)
-
-#define RETURN_ANI_UNDEFINED(env)                                         \
-    do {                                                                  \
-        ani_ref result = nullptr;                                         \
-        ani_status __ret = ((env)->GetUndefined(&result));                \
-        CHECK_ARGS((env), __ret, JS_INNER_FAIL);                          \
-        return static_cast<ani_object>(result);                           \
     } while (0)
 
 namespace OHOS {
