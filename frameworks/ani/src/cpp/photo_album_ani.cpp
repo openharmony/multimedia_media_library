@@ -758,7 +758,7 @@ static void TrashAlbumExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &co
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
-        ANI_ERR_LOG("Trash album executed, changeRows: %{pubic}d.", changedRows);
+        ANI_ERR_LOG("Trash album executed, changeRows: %{public}d.", changedRows);
         return;
     }
     context->changedRows = changedRows;

@@ -27,7 +27,8 @@
 
 using namespace OHOS::Media;
 
-static ani_status GlobalFunctionInit(ani_env *env)
+namespace OHOS::Media::Ani {
+ani_status GlobalFunctionInit(ani_env *env)
 {
     const char *namespaceName = "L@ohos/file/photoAccessHelper/photoAccessHelper;";
     ani_namespace ns;
@@ -48,6 +49,7 @@ static ani_status GlobalFunctionInit(ani_env *env)
     ANI_INFO_LOG("GlobalFunctionInit ok");
     return ANI_OK;
 }
+} // namespace OHOS::Media::Media
 
 ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
 {
@@ -58,7 +60,7 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
         return ANI_ERROR;
     }
 
-    CHECK_STATUS_RET(GlobalFunctionInit(env), "GlobalFunctionInit fail");
+    CHECK_STATUS_RET(OHOS::Media::Ani::GlobalFunctionInit(env), "GlobalFunctionInit fail");
     CHECK_STATUS_RET(MediaLibraryAni::PhotoAccessHelperInit(env), "PhotoAccessHelperInit fail");
     CHECK_STATUS_RET(PhotoAlbumAni::PhotoAccessInit(env), "PhotoAccessInit fail");
     CHECK_STATUS_RET(FileAssetAni::FileAssetAniInit(env), "FileAssetAniInit fail");
