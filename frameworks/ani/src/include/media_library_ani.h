@@ -55,8 +55,7 @@ public:
 class MediaLibraryAni {
 public:
     static ani_status PhotoAccessHelperInit(ani_env *env);
-    static ani_object Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz,
-        [[maybe_unused]] ani_object context);
+    static ani_object Constructor([[maybe_unused]] ani_env *env, ani_object context);
     static MediaLibraryAni* Unwrap(ani_env *env, ani_object object);
 
     static ani_object GetPhotoAlbums(ani_env *env, ani_object object, ani_enum_item albumTypeItem,
