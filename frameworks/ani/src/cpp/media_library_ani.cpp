@@ -442,10 +442,13 @@ bool InitUserFileClient(ani_env *env, [[maybe_unused]] ani_object context, bool 
     return true;
 }
 
-ani_object MediaLibraryAni::Constructor(ani_env *env, [[maybe_unused]] ani_class clazz,
-    [[maybe_unused]] ani_object context)
+ani_object MediaLibraryAni::Constructor(ani_env *env, ani_object context)
 {
     ANI_INFO_LOG("getPhotoAccessHelper start");
+    if (context == nullptr) {
+        ANI_ERR_LOG("context is nullptr");
+        return nullptr;
+    }
 
     ani_object result = nullptr;
     MediaLibraryTracer tracer;

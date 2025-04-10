@@ -250,7 +250,7 @@ ani_object FetchFileResultAni::GetAllObjects(ani_env *env, [[maybe_unused]] ani_
         GetAllObjectFromFetchResult(aniContext);
         return GetAllObjectComplete(env, aniContext);
     } else {
-        ANI_ASSERT(env, false, "GetAllObject obj == nullptr");
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetAllObject obj == nullptr");
     }
     return nullobj;
 }
@@ -398,7 +398,7 @@ ani_object FetchFileResultAni::GetFirstObject(ani_env *env, [[maybe_unused]] ani
         GetFirstAsset(aniContext);
         return GetPositionObjectComplete(env, aniContext);
     } else {
-        ANI_ASSERT(env, false, "GetAllObject obj == nullptr");
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetFirstObject obj == nullptr");
     }
     return nullptr;
 }
@@ -446,7 +446,7 @@ ani_object FetchFileResultAni::GetNextObject(ani_env *env, [[maybe_unused]] ani_
         GetNextAsset(aniContext);
         return GetPositionObjectComplete(env, aniContext);
     } else {
-        ANI_ASSERT(env, false, "GetAllObject obj == nullptr");
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetNextObject obj == nullptr");
     }
     return nullptr;
 }

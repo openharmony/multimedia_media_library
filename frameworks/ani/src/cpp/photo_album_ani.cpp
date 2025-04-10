@@ -282,7 +282,10 @@ static ani_status ParseArgsGetPhotoAssets(ani_env *env, ani_object object, ani_o
 
     /* Parse the first argument */
     ani_status result = MediaLibraryAniUtils::GetFetchOption(env, fetchOptions, ASSET_FETCH_OPT, context);
-    CHECK_ARGS_BASE(env, result, JS_INNER_FAIL, result);
+    if (result != ANI_OK) {
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return result;
+    }
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     auto ret = GetPredicatesByAlbumTypes(photoAlbum, context->predicates, photoAlbum->GetHiddenOnly());
@@ -368,7 +371,10 @@ ani_object PhotoAlbumAni::PhotoAccessGetPhotoAssets(ani_env *env, ani_object obj
     tracer.Start("PhotoAccessGetPhotoAssets");
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
-    CHECK_ARGS(env, ParseArgsGetPhotoAssets(env, object, fetchOptions, context), JS_INNER_FAIL);
+    if (ANI_OK != ParseArgsGetPhotoAssets(env, object, fetchOptions, context)) {
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return nullptr;
+    }
     PhotoAccessGetPhotoAssetsExecute(env, context);
     return GetPhotoAssetsComplete(env, context);
 }
@@ -401,7 +407,10 @@ ani_object PhotoAlbumAni::PhotoAccessGetPhotoAssetsSync(ani_env *env, ani_object
     tracer.Start("PhotoAccessGetPhotoAssetsSync");
 
     unique_ptr<PhotoAlbumAniContext> context = make_unique<PhotoAlbumAniContext>();
-    CHECK_ARGS(env, ParseArgsGetPhotoAssets(env, object, fetchOptions, context), JS_INNER_FAIL);
+    if (ANI_OK != ParseArgsGetPhotoAssets(env, object, fetchOptions, context)) {
+        AniError::ThrowError(env, JS_INNER_FAIL);
+        return nullptr;
+    }
     return PhotoAccessGetPhotoAssetsExecuteSync(env, context);
 }
 
