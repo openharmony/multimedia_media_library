@@ -1148,7 +1148,7 @@ export namespace photoAccessHelper {
     getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     getFileAssetsInfo(options: FetchOptions): Array<FileAssetInfo>;
     getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): Promise<FetchResult<Album>>;
-    stopCreateThumbnailTask(taskId: int): void;
+    stopThumbnailCreationTask(taskId: number): void;
     startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
     getBurstAssets(burstKey: string, options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
     createAsset(displayName: string, callback: AsyncCallback<PhotoAsset | undefined>): void;
@@ -1257,7 +1257,7 @@ export namespace photoAccessHelper {
     native getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     native getFileAssetsInfo(options: FetchOptions): Array<FileAssetInfo>;
     native getAssetsInner(options: FetchOptions): FetchResult<PhotoAsset>;
-    native stopCreateThumbnailTask(taskId: int): void;
+    native stopThumbnailCreationTask(taskId: number): void;
     native startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
   }
 
