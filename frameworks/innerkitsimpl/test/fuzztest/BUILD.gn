@@ -16,6 +16,7 @@ import("//foundation/multimedia/media_library/media_library.gni")
 group("media_library_fuzztest") {
   testonly = true
   deps = [
+    "medialibraryappstateobserver_fuzzer:MediaLibraryAppstateObserverFuzzTest",
     "medialibraryappuripermissionoperations_fuzzer:MediaLibraryAppUriPermissionOperationsFuzzTest",
     "medialibraryappurisensitiveoperations_fuzzer:MediaLibraryAppUriSensitiveOperationsFuzzTest",
     "medialibrarycloudmediaassetmanager_fuzzer:MediaLibraryCloudMediaAssetManagerFuzzTest",
