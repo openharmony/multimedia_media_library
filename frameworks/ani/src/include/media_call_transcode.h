@@ -13,30 +13,27 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_PROXY_ANI_H
-#define FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_PROXY_ANI_H
+#ifndef MEDIA_CALL_TRANSCODE_H
+#define MEDIA_CALL_TRANSCODE_H
 
-#include <ani.h>
-#include "photo_proxy.h"
+#include "ani.h"
+#include <string>
 
 namespace OHOS {
 namespace Media {
-class PhotoProxyAni {
+class MediaCallTranscode {
 public:
-    PhotoProxyAni();
-    ~PhotoProxyAni();
-
-    static ani_status Init(ani_env *env);
-
-    sptr<PhotoProxy> photoProxy_;
-    static thread_local sptr<PhotoProxy> sPhotoProxy_;
+    MediaCallTranscode() = default;
+    ~MediaCallTranscode() = default;
+    static void CallTranscodeHandle(ani_env *env, int srcFd, int destFd,
+        ani_object &result, off_t &size, std::string requestId);
+    static void CallTranscodeRelease(const std::string &requestId);
+    using CallbackType = std::function<void(int, int, std::string)>;
+    static void RegisterCallback(const CallbackType &cb);
 private:
-    static ani_object PhotoProxyAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz);
-    static void PhotoProxyAniDestructor(ani_env *env, void *nativeObject, void *finalize_hint);
-
-    ani_env *env_;
-    ani_ref wrapper_;
+    static void TransCodeError(ani_env *env, ani_object &result, int srcFd, int destFd, const std::string& errorMsg);
 };
+
 } // namespace Media
 } // namespace OHOS
-#endif // FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_PROXY_ANI_H
+#endif // MEDIA_CALL_TRANSCODE_H

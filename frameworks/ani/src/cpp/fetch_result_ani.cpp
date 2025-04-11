@@ -13,18 +13,23 @@
  * limitations under the License.
  */
 
-#include "fetch_result_ani.h"
-
 #include <iostream>
 
+#include "fetch_result_ani.h"
+#include "media_log.h"
 #include "ani_class_name.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_ani_utils.h"
 
 namespace OHOS::Media {
-ani_status FetchFileResultAni::FetchFileResultInit(ani_env *env)
+ani_status FetchFileResultAni::UserFileMgrInit(ani_env *env)
 {
-    static const char *className = ANI_CLASS_FETCH_RESULT.c_str();
+    return ANI_OK;
+}
+
+ani_status FetchFileResultAni::PhotoAccessHelperInit(ani_env *env)
+{
+    static const char *className = PAH_ANI_CLASS_FETCH_RESULT_HANDLE.c_str();
     ani_class cls;
     auto status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
@@ -36,6 +41,7 @@ ani_status FetchFileResultAni::FetchFileResultInit(ani_env *env)
         ani_native_function {"getAllObjectsSync", nullptr, reinterpret_cast<void *>(GetAllObjects)},
         ani_native_function {"getFirstObjectSync", nullptr, reinterpret_cast<void *>(GetFirstObject)},
         ani_native_function {"getNextObjectSync", nullptr, reinterpret_cast<void *>(GetNextObject)},
+        ani_native_function {"getObjectByPositionSync", nullptr, reinterpret_cast<void *>(GetPositionObject)},
         ani_native_function {"getCount", nullptr, reinterpret_cast<void *>(GetCount)},
         ani_native_function {"close", nullptr, reinterpret_cast<void *>(Close)},
     };
@@ -45,7 +51,6 @@ ani_status FetchFileResultAni::FetchFileResultInit(ani_env *env)
         return status;
     };
 
-    ANI_INFO_LOG("FetchFileResultInit ok");
     return ANI_OK;
 }
 
@@ -115,29 +120,22 @@ void FetchFileResultAni::GetFetchResult(unique_ptr<FetchFileResultAni> &obj)
     }
 }
 
-ani_object FetchFileResultAni::FetchFileResultAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz)
+ani_object FetchFileResultAni::FetchFileResultAniConstructor(ani_env *env, ani_class clazz)
 {
     unique_ptr<FetchFileResultAni> obj = make_unique<FetchFileResultAni>();
     obj->propertyPtr = make_shared<FetchResultProperty>();
     GetFetchResult(obj);
     obj->propertyPtr->fetchResType_ = sFetchResType_;
 
-    ani_class cls;
-    if (ANI_OK != env->FindClass(ANI_CLASS_FETCH_RESULT.c_str(), &cls)) {
-        ANI_ERR_LOG("Failed to find class: %{public}s", ANI_CLASS_FETCH_RESULT.c_str());
-        ani_object nullobj = nullptr;
-        return nullobj;
-    }
-
     ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", nullptr, &ctor)) {
+    if (ANI_OK != env->Class_FindMethod(clazz, "<ctor>", nullptr, &ctor)) {
         ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
         ani_object nullobj = nullptr;
         return nullobj;
     }
 
     ani_object fetchResult;
-    if (ANI_OK !=env->Object_New(cls, ctor, &fetchResult, reinterpret_cast<ani_long>(obj.release()))) {
+    if (ANI_OK !=env->Object_New(clazz, ctor, &fetchResult, reinterpret_cast<ani_long>(obj.release()))) {
         ANI_ERR_LOG("New fetchResult Fail");
     }
     return fetchResult;
@@ -235,6 +233,7 @@ static ani_object GetAllObjectComplete(ani_env *env, std::unique_ptr<FetchFileRe
             break;
         default:
             ANI_ERR_LOG("unsupported FetchResType");
+            AniError::ThrowError(env, ERR_INVALID_OUTPUT, "Failed to obtain fileAsset array from DB");
     }
     return result;
 }
@@ -260,10 +259,11 @@ ani_status FetchFileResultAni::Close(ani_env *env, [[maybe_unused]] ani_object f
 {
     ANI_INFO_LOG("fetch result close");
     FetchFileResultAni* fetchFileResultAni = Unwrap(env, fetchFileResultHandle);
-    if (fetchFileResultAni) {
+    if (fetchFileResultAni != nullptr) {
         delete fetchFileResultAni;
         if (ANI_OK != env->Object_SetFieldByName_Long(fetchFileResultHandle, "nativeValue", 0)) {
-            ANI_WARN_LOG("Set nativeValue failed");
+            ANI_ERR_LOG("Object_SetFieldByName_Long failed");
+            return ANI_ERROR;
         }
     }
     return ANI_OK;
@@ -279,18 +279,23 @@ ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_p
     sFetchResType_ = fileResult->GetFetchResType();
     sFetchFileResult_ = move(fileResult);
     ani_object result = nullptr;
+    ani_class cls {};
     ANI_INFO_LOG("get FileAsset result type: %{public}d", sFetchFileResult_->GetResultNapiType());
     switch (sFetchFileResult_->GetResultNapiType()) {
         case ResultNapiType::TYPE_USERFILE_MGR: {
-            result = FetchFileResultAniConstructor(env, nullptr);
+            CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, UFM_ANI_CLASS_FETCH_RESULT_HANDLE, &cls) == ANI_OK,
+                nullptr, "Can't find class");
+            result = FetchFileResultAniConstructor(env, cls);
             break;
         }
         case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
-            result = FetchFileResultAniConstructor(env, nullptr);
+            CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, PAH_ANI_CLASS_FETCH_RESULT_HANDLE, &cls) == ANI_OK,
+                nullptr, "Can't find class");
+            result = FetchFileResultAniConstructor(env, cls);
             break;
         }
         default:
-            result = FetchFileResultAniConstructor(env, nullptr);
+            result = FetchFileResultAniConstructor(env, cls);
             break;
     }
     sFetchFileResult_ = nullptr;
@@ -307,18 +312,23 @@ ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_p
     sFetchResType_ = fileResult->GetFetchResType();
     sFetchPhotoAlbumResult_ = move(fileResult);
     ani_object result = nullptr;
+    ani_class cls {};
     ANI_INFO_LOG("get PhotoAlbum result type: %{public}d", sFetchPhotoAlbumResult_->GetResultNapiType());
     switch (sFetchPhotoAlbumResult_->GetResultNapiType()) {
         case ResultNapiType::TYPE_USERFILE_MGR: {
-            result = FetchFileResultAniConstructor(env, nullptr);
+            CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, UFM_ANI_CLASS_FETCH_RESULT_HANDLE, &cls) == ANI_OK,
+                nullptr, "Can't find class");
+            result = FetchFileResultAniConstructor(env, cls);
             break;
         }
         case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
-            result = FetchFileResultAniConstructor(env, nullptr);
+            CHECK_COND_RET(MediaLibraryAniUtils::FindClass(env, PAH_ANI_CLASS_FETCH_RESULT_HANDLE, &cls) == ANI_OK,
+                nullptr, "Can't find class");
+            result = FetchFileResultAniConstructor(env, cls);
             break;
         }
         default:
-            result = FetchFileResultAniConstructor(env, nullptr);
+            result = FetchFileResultAniConstructor(env, cls);
             break;
     }
     sFetchPhotoAlbumResult_ = nullptr;
@@ -382,7 +392,8 @@ static ani_object GetPositionObjectComplete(ani_env *env, std::unique_ptr<FetchF
     }
 
     if (etsAsset == nullptr) {
-        ANI_ERR_LOG("Failed to get file asset napi object");
+        ANI_ERR_LOG("Failed to get file asset object");
+        AniError::ThrowError(env, JS_INNER_FAIL, "System inner fail");
     }
     return etsAsset;
 }
@@ -447,6 +458,50 @@ ani_object FetchFileResultAni::GetNextObject(ani_env *env, [[maybe_unused]] ani_
         return GetPositionObjectComplete(env, aniContext);
     } else {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetNextObject obj == nullptr");
+    }
+    return nullptr;
+}
+
+static void GetObjectAtPosition(std::unique_ptr<FetchFileResultAniContext>& aniContest)
+{
+    auto propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
+    switch (propertyPtr->fetchResType_) {
+        case FetchResType::TYPE_FILE: {
+            aniContest->fileAsset = propertyPtr->fetchFileResult_->GetObjectAtPosition(aniContest->position);
+            break;
+        }
+        case FetchResType::TYPE_ALBUM: {
+            aniContest->albumAsset = propertyPtr->fetchAlbumResult_->GetObjectAtPosition(aniContest->position);
+            break;
+        }
+        case FetchResType::TYPE_PHOTOALBUM: {
+            aniContest->photoAlbum = propertyPtr->fetchPhotoAlbumResult_->GetObjectAtPosition(aniContest->position);
+            break;
+        }
+        case FetchResType::TYPE_SMARTALBUM: {
+            aniContest->smartAlbumAsset =
+                propertyPtr->fetchSmartAlbumResult_->GetObjectAtPosition(aniContest->position);
+            break;
+        }
+        default:
+            ANI_ERR_LOG("unsupported FetchResType");
+            break;
+    }
+}
+
+ani_object FetchFileResultAni::GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_double index)
+{
+    ani_object nullobj = nullptr;
+    auto aniContext = make_unique<FetchFileResultAniContext>();
+    aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
+    if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
+        aniContext->position = static_cast<int32_t>(index);
+        aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
+        CHECK_COND_RET(aniContext->objectPtr, nullobj, "propertyPtr is nullptr");
+        GetObjectAtPosition(aniContext);
+        return GetPositionObjectComplete(env, aniContext);
+    } else {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetPositionObject obj == nullptr");
     }
     return nullptr;
 }

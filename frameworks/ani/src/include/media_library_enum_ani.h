@@ -19,7 +19,7 @@
 #include <string>
 #include "ani.h"
 #include "userfile_manager_types.h"
-#include "media_asset_data_handler_capi.h"
+#include "media_asset_data_handler_ani.h"
 
 namespace OHOS {
 namespace Media {
