@@ -186,30 +186,28 @@ ani_object MediaAssetsChangeRequestAni::create([[maybe_unused]] ani_env *env, [[
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     vector<shared_ptr<FileAsset>> fileAssets = {fileAsset};
-    auto nativeMediaAssetsChangeRequestHandleImpl = new MediaAssetsChangeRequestAni(fileAssets);
-    if (nativeMediaAssetsChangeRequestHandleImpl == nullptr) {
-        ANI_ERR_LOG("aning nativeMediaAssetsChangeRequestHandleImpl is nullptr");
-        ani_object nullobj = nullptr;
-        return nullobj;
-    }
+    auto nativeMediaAssetsChangeRequestHandle = std::make_unique<MediaAssetsChangeRequestAni>(fileAssets);
 
     ani_class cls;
     if (ANI_OK != env->FindClass(ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str(), &cls)) {
-        ani_object nullobj = nullptr;
-        return nullobj;
+        ANI_ERR_LOG("Failed to find class: %s", ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str());
+        return nullptr;
     }
 
     ani_method ctor;
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
-        ani_object nullobj = nullptr;
-        return nullobj;
+        ANI_ERR_LOG("Failed to find MediaAssetsChangeRequest constructor method");
+        return nullptr;
     }
 
     ani_object context_object;
     if (ANI_OK != env->Object_New(cls, ctor, &context_object,
-        reinterpret_cast<ani_long>(nativeMediaAssetsChangeRequestHandleImpl))) {
-        ANI_ERR_LOG("New MediaAssetsChangeRequest Fail");
+        reinterpret_cast<ani_long>(nativeMediaAssetsChangeRequestHandle.get()))) {
+        ANI_ERR_LOG("Failed to create MediaAssetsChangeRequest object");
+        return nullptr;
     }
+
+    nativeMediaAssetsChangeRequestHandle.release();
     return context_object;
 }
 

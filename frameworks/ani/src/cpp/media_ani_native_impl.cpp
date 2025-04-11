@@ -428,12 +428,25 @@ std::unique_ptr<FileAsset> MediaAniNativeImpl::GetNextRowFileAsset(shared_ptr<Na
 void MediaAniNativeImpl::GetFileAssetField(int32_t index, string name, const shared_ptr<NativeRdb::ResultSet> resultSet,
     std::unique_ptr<FileAsset> &fileAsset)
 {
+    if (!fileAsset) {
+        ANI_ERR_LOG("fileAsset is null");
+        return;
+    }
+
     int status;
     int integerVal = 0;
     string stringVal = "";
     int64_t longVal = 0;
     double doubleVal = 0.0;
-    auto dataType = MediaLibraryAniUtils::GetTypeMap().at(name);
+
+    const auto& typeMap = MediaLibraryAniUtils::GetTypeMap();
+    auto it = typeMap.find(name);
+    if (it == typeMap.end()) {
+        ANI_ERR_LOG("Unknown field name: %{public}s", name.c_str());
+        return;
+    }
+    auto dataType = it->second;
+
     switch (dataType.first) {
         case TYPE_STRING:
             status = resultSet->GetString(index, stringVal);
@@ -453,7 +466,7 @@ void MediaAniNativeImpl::GetFileAssetField(int32_t index, string name, const sha
         case TYPE_DOUBLE:
             status = resultSet->GetDouble(index, doubleVal);
             ANI_DEBUG_LOG("GetFileAssetField TYPE_DOUBLE: status: %{public}d", status);
-            fileAsset ->GetMemberMap().emplace(name, doubleVal);
+            fileAsset->GetMemberMap().emplace(name, doubleVal);
             break;
         default:
             ANI_ERR_LOG("not match dataType %{public}d", dataType.first);
