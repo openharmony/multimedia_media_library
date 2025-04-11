@@ -29,7 +29,9 @@
 #include "medialibrary_astc_stat.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_rdbstore.h"
 #include "media_file_utils.h"
+#include "photo_album_column.h"
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "parameters.h"
@@ -772,6 +774,145 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_QueryFromPhotos_test_001, TestSize.Le
     DfxDatabaseUtils dfxDatabaseUtils;
     int32_t result = dfxDatabaseUtils.QueryFromPhotos(mediaType, position);
     EXPECT_EQ(result, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_QueryAlbumInfoBySubtype_test_001, TestSize.Level0)
+{
+    int32_t albumSubtype = 1;
+    DfxDatabaseUtils dfxDatabaseUtils;
+    EXPECT_EQ(dfxDatabaseUtils.QueryAlbumInfoBySubtype(albumSubtype).count, 0);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_QueryDirtyCloudPhoto_test_001, TestSize.Level0)
+{
+    vector<PhotoInfo> photoInfoList;
+    DfxDatabaseUtils dfxDatabaseUtils;
+    dfxDatabaseUtils.QueryDirtyCloudPhoto();
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, 1);
+    predicates.NotEqualTo(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t> (DirtyType::TYPE_SYNCED));
+    predicates.Limit(DIRTY_PHOTO_COUNT);
+    std::vector<std::string> columns = { MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_CLOUD_ID };
+    auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_QueryAnalysisVersion_test_001, TestSize.Level0)
+{
+    std::string table = "";
+    std::string column = "";
+    DfxDatabaseUtils dfxDatabaseUtils;
+    int32_t result = dfxDatabaseUtils.QueryAnalysisVersion(table, column);
+    EXPECT_EQ(result, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_QueryDouble_test_001, TestSize.Level0)
+{
+    NativeRdb::AbsRdbPredicates dirAbsPred(PhotoColumn::PHOTOS_TABLE);
+    dirAbsPred.EqualTo(MEDIA_DATA_DB_ID, to_string(0));
+    vector<string> columns = {};
+    std::string queryColumn = "queryColumn";
+    double value = 1;
+    DfxDatabaseUtils dfxDatabaseUtils;
+    int32_t result = dfxDatabaseUtils.QueryDouble(dirAbsPred, columns, queryColumn, value);
+    EXPECT_EQ(result, E_DB_FAIL);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_QueryLCDThumb_test_001, TestSize.Level0)
+{
+    DfxDatabaseUtils dfxDatabaseUtils;
+    int32_t result_1 = dfxDatabaseUtils.QueryLCDThumb(true);
+    EXPECT_EQ(result_1, 0);
+    int32_t result_2 = dfxDatabaseUtils.QueryLCDThumb(true);
+    EXPECT_EQ(result_2, 0);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_AddCommonBahavior_test_001, TestSize.Level0)
+{
+    int32_t type = 1;
+    string bundleName = "test";
+    DfxCollector dfxCollector;
+    dfxCollector.AddCommonBahavior(bundleName, type);
+    dfxCollector.AddCommonBahavior(bundleName, type);
+    EXPECT_EQ(dfxCollector.commonBehaviorMap_[bundleName].times, 2);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_CollectDeleteBehavior_test_001, TestSize.Level0)
+{
+    string bundleName = "medialib_dfx";
+    int32_t type = DfxType::TRASH_PHOTO;
+    int32_t size = 10;
+    DfxCollector dfxCollector;
+    dfxCollector.CollectDeleteBehavior(bundleName, type, size);
+    EXPECT_EQ(dfxCollector.deleteToTrashMap_[bundleName], 1);
+    type = DfxType::ALBUM_DELETE_ASSETS;
+    dfxCollector.CollectDeleteBehavior(bundleName, type, size);
+    EXPECT_EQ(dfxCollector.deleteToTrashMap_[bundleName], 1);
+    type = DfxType::ALBUM_REMOVE_PHOTOS;
+    dfxCollector.CollectDeleteBehavior(bundleName, type, size);
+    EXPECT_EQ(dfxCollector.deleteToTrashMap_[bundleName], 1);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_CollectAdaptationToMovingPhotoInfo_test_001, TestSize.Level0)
+{
+    string appName = "appName";
+    DfxCollector dfxCollector;
+    dfxCollector.CollectAdaptationToMovingPhotoInfo(appName, true);
+    auto result = dfxCollector.adaptationToMovingPhotoInfo_.adaptedAppPackages;
+    EXPECT_NE(result.find(appName), result.end());
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_CollectAdaptationToMovingPhotoInfo_test_002, TestSize.Level0)
+{
+    string appName = "medialib";
+    DfxCollector dfxCollector;
+    dfxCollector.CollectAdaptationToMovingPhotoInfo(appName, false);
+    auto result = dfxCollector.adaptationToMovingPhotoInfo_.unadaptedAppPackages;
+    EXPECT_NE(result.find(appName), result.end());
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_FlushCommonBehavior_test_001, TestSize.Level0)
+{
+    string bundleName = "medialib_dfx";
+    std::unordered_map<string, CommonBehavior> commonBehaviorMap;
+    CommonBehavior commonBehavior = { 0 };
+    commonBehaviorMap[bundleName] = commonBehavior;
+    DfxAnalyzer dfxAnalyzer;
+    dfxAnalyzer.FlushCommonBehavior(commonBehaviorMap);
+    EXPECT_EQ(commonBehaviorMap.empty(), false);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_FlushCommonBehavior_test_002, TestSize.Level0)
+{
+    string bundleName = "";
+    std::unordered_map<string, CommonBehavior> commonBehaviorMap;
+    CommonBehavior commonBehavior = { 0 };
+    commonBehaviorMap[bundleName] = commonBehavior;
+    DfxAnalyzer dfxAnalyzer;
+    dfxAnalyzer.FlushCommonBehavior(commonBehaviorMap);
+    EXPECT_EQ(commonBehaviorMap.empty(), false);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_FlushDeleteBehavior_test_001, TestSize.Level0)
+{
+    string bundleName = "medialib_dfx";
+    std::unordered_map<string, int32_t> deleteBehaviorMap;
+    deleteBehaviorMap[bundleName] = 0;
+    int32_t type = 1;
+    DfxAnalyzer dfxAnalyzer;
+    dfxAnalyzer.FlushDeleteBehavior(deleteBehaviorMap, type);
+    EXPECT_EQ(deleteBehaviorMap.empty(), false);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_FlushAdaptationToMovingPhoto_test_001, TestSize.Level0)
+{
+    string bundleName = "medialib_dfx";
+    AdaptationToMovingPhotoInfo newAdaptationInfo;
+    newAdaptationInfo.unadaptedAppPackages.emplace(bundleName);
+    DfxAnalyzer dfxAnalyzer;
+    dfxAnalyzer.FlushAdaptationToMovingPhoto(newAdaptationInfo);
+    EXPECT_EQ(newAdaptationInfo.unadaptedAppPackages.empty(), false);
 }
 } // namespace Media
 } // namespace OHOS

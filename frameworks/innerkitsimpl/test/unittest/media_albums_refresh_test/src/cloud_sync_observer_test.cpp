@@ -273,12 +273,10 @@ HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Sync_Prefix, TestSi
     infos.data_ = R"({"name": "John", "age": 30, "city": "New York"})";
     obs->OnChange(infos);
 
-    infos.data_ = R"({"taskType": 1, "syncId": "2", "syncType": 3, "syncType" : 4, "totalAssets" : 1, \
-"totalAlbums" : 1})";
+    infos.data_ = R"({"taskType": 1, "syncId": "2", "syncType": 3, "totalAssets": 1, "totalAlbums": 1})";
     obs->OnChange(infos);
 
-    infos.data_ = R"({"taskType": 0, "syncId": "2", "syncType": 3, "syncType" : 4, "totalAssets" : 1, \
-"totalAlbums" : 1})";
+    infos.data_ = R"({"taskType": 0, "syncId": "2", "syncType": 3, "totalAssets": 1, "totalAlbums": 1})";
     obs->OnChange(infos);
     MEDIA_INFO_LOG("end CloudSyncObsOnChange_Gallery_Sync_Prefix");
 }
@@ -355,7 +353,7 @@ HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Cloud_Uri_Prefix, T
 
 HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Download_Uri_Prefix, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start CloudSyncObsOnChange_Gallery_Cloud_Uri_Prefix");
+    MEDIA_INFO_LOG("start CloudSyncObsOnChange_Gallery_Download_Uri_Prefix");
     auto fileId1 =  CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
     ASSERT_GT(fileId1, 0);
 
@@ -374,7 +372,7 @@ HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Download_Uri_Prefix
         infos.changeType_ = type;
         obs->OnChange(infos);
     }
-    MEDIA_INFO_LOG("end CloudSyncObsOnChange_Gallery_Cloud_Uri_Prefix");
+    MEDIA_INFO_LOG("end CloudSyncObsOnChange_Gallery_Download_Uri_Prefix");
 }
 } // namespace Media
 } // namespace OHOS

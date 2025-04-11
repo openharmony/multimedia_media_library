@@ -466,7 +466,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level0)
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4)), true);
     free(buf);
@@ -513,7 +513,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_005, TestSize.Level0)
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
     free(buf);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());

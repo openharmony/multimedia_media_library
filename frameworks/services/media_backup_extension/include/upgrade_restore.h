@@ -118,7 +118,6 @@ private:
         const std::string &dbName);
     std::string CheckGalleryDbIntegrity();
     void RestorePhotoInner();
-    void PrcoessBurstPhotos();
     void AddToGalleryFailedOffsets(int32_t offset);
     void AddToExternalFailedOffsets(int32_t offset);
     void ProcessGalleryFailedOffsets();

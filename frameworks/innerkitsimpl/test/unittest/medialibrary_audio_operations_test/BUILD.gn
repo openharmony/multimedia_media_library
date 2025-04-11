@@ -30,6 +30,8 @@ ohos_unittest("medialibrary_audio_operations_test") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
   ]
 
+  cflags = [ "-fno-access-control" ]
+
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_audio_operations_test.cpp",

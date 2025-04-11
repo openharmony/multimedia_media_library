@@ -1728,5 +1728,27 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_019
     EXPECT_EQ(ret4, E_OK);
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_019");
 }
+
+HWTEST_F(MediaLibraryAudioOperationsTest, MediaLibraryAudioOperations_test_001, TestSize.Level0)
+{
+    OperationObject oprnObject = OperationObject::ALL_DEVICE;
+    OperationType oprnType = OperationType::ADD_IMAGE;
+    MediaLibraryApi api = MediaLibraryApi::API_END;
+    MediaLibraryCommand cmd(oprnObject, oprnType, api);
+    int32_t res = MediaLibraryAudioOperations::Create(cmd);
+    EXPECT_EQ(res, E_FAIL);
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, MediaLibraryAudioOperations_test_002, TestSize.Level0)
+{
+    MediaLibraryAudioOperations::MoveToMusic();
+
+    OperationObject oprnObject = OperationObject::ALL_DEVICE;
+    OperationType oprnType = OperationType::ADD_IMAGE;
+    MediaLibraryApi api = MediaLibraryApi::API_END;
+    MediaLibraryCommand cmd(oprnObject, oprnType, api);
+    int32_t res = MediaLibraryAudioOperations::Update(cmd);
+    EXPECT_EQ(res, E_FAIL);
+}
 } // namespace Media
 } // namespace OHOS

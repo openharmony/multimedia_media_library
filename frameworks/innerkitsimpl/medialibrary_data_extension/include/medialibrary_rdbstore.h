@@ -99,6 +99,7 @@ public:
     EXPORT static void RevertFixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateLocationKnowledgeIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddAlbumSubtypeAndNameIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddCloudEnhancementAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddPhotoDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store);
@@ -198,6 +199,13 @@ public:
         table_(table), deleteRows_(deleteRows), bundleName_(bundleName) {}
     virtual ~DeleteFilesTask() override = default;
 
+    void SetOtherInfos(const std::map<std::string, std::string> &displayNames,
+        const std::map<std::string, std::string> &albumNames, const std::map<std::string, std::string> &ownerAlbumIds)
+    {
+        displayNames_ = displayNames;
+        albumNames_ = albumNames;
+        ownerAlbumIds_ = ownerAlbumIds;
+    }
     std::vector<std::string> ids_;
     std::vector<std::string> paths_;
     std::vector<std::string> notifyUris_;
@@ -207,6 +215,9 @@ public:
     std::string table_;
     int32_t deleteRows_;
     std::string bundleName_;
+    std::map<std::string, std::string> displayNames_;
+    std::map<std::string, std::string> albumNames_;
+    std::map<std::string, std::string> ownerAlbumIds_;
 };
 
 } // namespace Media

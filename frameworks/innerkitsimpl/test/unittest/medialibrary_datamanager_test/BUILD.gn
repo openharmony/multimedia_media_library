@@ -29,6 +29,8 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
   ]
 
+  cflags = [ "-fno-access-control" ]
+
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",

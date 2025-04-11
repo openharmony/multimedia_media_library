@@ -45,6 +45,7 @@ ohos_unittest("media_library_helper_test") {
     "./src/media_file_utils_test.cpp",
     "./src/media_photo_asset_proxy_test.cpp",
     "./src/media_volume_test.cpp",
+    "./src/medialibrary_kvstore_manager_test.cpp",
     "./src/medialibrary_kvstore_test.cpp",
     "./src/medialibrary_kvstore_utils_test.cpp",
     "./src/moving_photo_file_utils_test.cpp",

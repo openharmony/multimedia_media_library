@@ -1373,5 +1373,649 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, RefreshPhotoAlbums_test, TestSize.Leve
     instance.RefreshPhotoAlbums(info);
     MEDIA_INFO_LOG("end RefreshPhotoAlbums_test");
 }
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_003, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(mediaLibraryDataManager, nullptr);
+    MediaLibraryCommand cmdOne(OperationObject::SMART_ALBUM, OperationType::CREATE);
+    int32_t ret = mediaLibraryDataManager->SolveInsertCmd(cmdOne);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    MediaLibraryCommand cmdTwo(OperationObject::SMART_ALBUM_MAP, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdTwo);
+    EXPECT_EQ(ret, E_SMARTALBUM_IS_NOT_EXISTED);
+    MediaLibraryCommand cmdThree(OperationObject::THUMBNAIL, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdThree);
+    EXPECT_EQ(ret, E_FAIL);
+    MediaLibraryCommand cmdFive(OperationObject::UNKNOWN_OBJECT, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdFive);
+    EXPECT_EQ(ret, E_FAIL);
+    MediaLibraryCommand cmdsix(OperationObject::APP_URI_PERMISSION_INNER, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdsix);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    MediaLibraryCommand cmdseven(OperationObject::MEDIA_APP_URI_PERMISSION, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdseven);
+    EXPECT_EQ(ret, -1);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmdSub_Test_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(mediaLibraryDataManager, nullptr);
+    MediaLibraryCommand cmdOne(OperationObject::SMART_ALBUM, OperationType::CREATE);
+    int32_t ret = mediaLibraryDataManager->SolveInsertCmd(cmdOne);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    MediaLibraryCommand cmdTwo(OperationObject::PAH_FORM_MAP, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdTwo);
+    EXPECT_EQ(ret, E_GET_PRAMS_FAIL);
+    MediaLibraryCommand cmdThree(OperationObject::TAB_FACARD_PHOTO, OperationType::CREATE);
+    ret = mediaLibraryDataManager->SolveInsertCmd(cmdThree);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_004, TestSize.Level0)
+{
+    Uri uri("");
+    vector<DataShare::DataShareValuesBucket> values;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(mediaLibraryDataManager, nullptr);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetOprnObject(OperationObject::ANALYSIS_PHOTO_MAP);
+    int32_t ret = mediaLibraryDataManager->BatchInsert(cmd, values);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_005, TestSize.Level0)
+{
+    Uri uri("");
+    vector<DataShare::DataShareValuesBucket> values;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(mediaLibraryDataManager, nullptr);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetOprnObject(OperationObject::ADD_ASSET_HIGHLIGHT_ALBUM);
+    int32_t ret = mediaLibraryDataManager->BatchInsert(cmd, values);
+    EXPECT_EQ(ret, E_DB_FAIL);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_006, TestSize.Level0)
+{
+    Uri uri("");
+    vector<DataShare::DataShareValuesBucket> values;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(mediaLibraryDataManager, nullptr);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetOprnObject(OperationObject::MEDIA_APP_URI_PERMISSION);
+    int32_t ret = mediaLibraryDataManager->BatchInsert(cmd, values);
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_007, TestSize.Level0)
+{
+    Uri uri("");
+    vector<DataShare::DataShareValuesBucket> values;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(mediaLibraryDataManager, nullptr);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetOprnObject(OperationObject::APP_URI_PERMISSION_INNER);
+    int32_t ret = mediaLibraryDataManager->BatchInsert(cmd, values);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_008, TestSize.Level0)
+{
+    Uri uri("");
+    vector<DataShare::DataShareValuesBucket> values;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(mediaLibraryDataManager, nullptr);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetOprnObject(OperationObject::MTH_AND_YEAR_ASTC);
+    int32_t ret = mediaLibraryDataManager->BatchInsert(cmd, values);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_009, TestSize.Level0)
+{
+    Uri uri("");
+    vector<DataShare::DataShareValuesBucket> values;
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(mediaLibraryDataManager, nullptr);
+    MediaLibraryCommand cmd(uri);
+    cmd.SetOprnObject(OperationObject::UNKNOWN_OBJECT);
+    int32_t ret = mediaLibraryDataManager->BatchInsert(cmd, values);
+    EXPECT_EQ(ret, E_INVALID_URI);
+}
+
+/**
+ * @tc.number    : DataManager_Delete_Dir_Test_003
+ * @tc.name      : test delete dir: exists trashed children
+ * @tc.desc      : 1.Create the parent dir to be deleted: delete_Dir_003
+ *                 2.Create dir in delete_Dir_003: delete_Dir_002/dir1
+ *                 3.Create file in dir1: delete_Dir_003/dir1/file3.txt
+ *                 4.Create dir in dir1: delete_Dir_002/dir1/dir2
+ *                 5.Create file in dir2: delete_Dir_003/dir1/dir2/file3.txt
+ *                 6.Trash file3.txt
+ *                 7.Trash dir1
+ *                 8.Trash delete_Dir_003
+ *                 9.Delete delete_Dir_003
+ */
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_003::Start");
+    shared_ptr<FileAsset> delete_Dir_003 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("delete_Dir_003", g_download, delete_Dir_003));
+    ASSERT_NE(delete_Dir_003, nullptr);
+    shared_ptr<FileAsset> dir1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir1", delete_Dir_003, dir1));
+    ASSERT_NE(dir1, nullptr);
+    shared_ptr<FileAsset> file2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file2.txt", dir1, file2));
+    shared_ptr<FileAsset> dir2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir2", dir1, dir2));
+    ASSERT_NE(dir2, nullptr);
+    shared_ptr<FileAsset> file3 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", dir2, file3));
+
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_003::trash start");
+    ASSERT_NE(file3, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(file3);
+    ASSERT_NE(dir1, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(dir1);
+    ASSERT_NE(delete_Dir_003, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(delete_Dir_003);
+
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_003::deleteUri: %s", deleteUri.c_str());
+    Uri deleteAssetUri(deleteUri);
+    DataShare::DataSharePredicates predicates;
+    ASSERT_NE(delete_Dir_003, nullptr);
+    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(delete_Dir_003->GetId()));
+    MediaLibraryCommand cmd(deleteAssetUri, Media::OperationType::DELETE);
+    cmd.SetOprnObject(OperationObject::HIGHLIGHT_DELETE);
+    int retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, {});
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_003->GetPath()), false);
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_003::delete end, retVal: %d", retVal);
+}
+
+/**
+ * @tc.number    : DataManager_Delete_Dir_Test_004
+ * @tc.name      : test delete dir: exists trashed children
+ * @tc.desc      : 1.Create the parent dir to be deleted: delete_Dir_004
+ *                 2.Create dir in delete_Dir_004: delete_Dir_002/dir1
+ *                 3.Create file in dir1: delete_Dir_004/dir1/file3.txt
+ *                 4.Create dir in dir1: delete_Dir_002/dir1/dir2
+ *                 5.Create file in dir2: delete_Dir_004/dir1/dir2/file3.txt
+ *                 6.Trash file3.txt
+ *                 7.Trash dir1
+ *                 8.Trash delete_Dir_004
+ *                 9.Delete delete_Dir_004
+ */
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_004::Start");
+    shared_ptr<FileAsset> delete_Dir_004 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("delete_Dir_004", g_download, delete_Dir_004));
+    ASSERT_NE(delete_Dir_004, nullptr);
+    shared_ptr<FileAsset> dir1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir1", delete_Dir_004, dir1));
+    ASSERT_NE(dir1, nullptr);
+    shared_ptr<FileAsset> file2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file2.txt", dir1, file2));
+    shared_ptr<FileAsset> dir2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir2", dir1, dir2));
+    ASSERT_NE(dir2, nullptr);
+    shared_ptr<FileAsset> file3 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", dir2, file3));
+
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_004::trash start");
+    ASSERT_NE(file3, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(file3);
+    ASSERT_NE(dir1, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(dir1);
+    ASSERT_NE(delete_Dir_004, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(delete_Dir_004);
+
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_004::deleteUri: %s", deleteUri.c_str());
+    Uri deleteAssetUri(deleteUri);
+    DataShare::DataSharePredicates predicates;
+    ASSERT_NE(delete_Dir_004, nullptr);
+    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(delete_Dir_004->GetId()));
+    MediaLibraryCommand cmd(deleteAssetUri, Media::OperationType::DELETE);
+    cmd.SetOprnObject(OperationObject::PHOTO_MAP);
+    int retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, {});
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_004->GetPath()), false);
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_004::delete end, retVal: %d", retVal);
+}
+
+/**
+ * @tc.number    : DataManager_Delete_Dir_Test_005
+ * @tc.name      : test delete dir: exists trashed children
+ * @tc.desc      : 1.Create the parent dir to be deleted: delete_Dir_005
+ *                 2.Create dir in delete_Dir_005: delete_Dir_002/dir1
+ *                 3.Create file in dir1: delete_Dir_005/dir1/file3.txt
+ *                 4.Create dir in dir1: delete_Dir_002/dir1/dir2
+ *                 5.Create file in dir2: delete_Dir_005/dir1/dir2/file3.txt
+ *                 6.Trash file3.txt
+ *                 7.Trash dir1
+ *                 8.Trash delete_Dir_005
+ *                 9.Delete delete_Dir_005
+ */
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_005::Start");
+    shared_ptr<FileAsset> delete_Dir_005 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("delete_Dir_005", g_download, delete_Dir_005));
+    ASSERT_NE(delete_Dir_005, nullptr);
+    shared_ptr<FileAsset> dir1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir1", delete_Dir_005, dir1));
+    ASSERT_NE(dir1, nullptr);
+    shared_ptr<FileAsset> file2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file2.txt", dir1, file2));
+    shared_ptr<FileAsset> dir2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir2", dir1, dir2));
+    ASSERT_NE(dir2, nullptr);
+    shared_ptr<FileAsset> file3 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", dir2, file3));
+
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_005::trash start");
+    ASSERT_NE(file3, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(file3);
+    ASSERT_NE(dir1, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(dir1);
+    ASSERT_NE(delete_Dir_005, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(delete_Dir_005);
+
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_005::deleteUri: %s", deleteUri.c_str());
+    Uri deleteAssetUri(deleteUri);
+    DataShare::DataSharePredicates predicates;
+    ASSERT_NE(delete_Dir_005, nullptr);
+    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(delete_Dir_005->GetId()));
+    MediaLibraryCommand cmd(deleteAssetUri, Media::OperationType::DELETE);
+    cmd.SetOprnObject(OperationObject::APP_URI_PERMISSION_INNER);
+    int retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, {});
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_005->GetPath()), false);
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_005::delete end, retVal: %d", retVal);
+}
+
+/**
+ * @tc.number    : DataManager_Delete_Dir_Test_006
+ * @tc.name      : test delete dir: exists trashed children
+ * @tc.desc      : 1.Create the parent dir to be deleted: delete_Dir_006
+ *                 2.Create dir in delete_Dir_006: delete_Dir_002/dir1
+ *                 3.Create file in dir1: delete_Dir_006/dir1/file3.txt
+ *                 4.Create dir in dir1: delete_Dir_002/dir1/dir2
+ *                 5.Create file in dir2: delete_Dir_006/dir1/dir2/file3.txt
+ *                 6.Trash file3.txt
+ *                 7.Trash dir1
+ *                 8.Trash delete_Dir_006
+ *                 9.Delete delete_Dir_006
+ */
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_006::Start");
+    shared_ptr<FileAsset> delete_Dir_006 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("delete_Dir_006", g_download, delete_Dir_006));
+    ASSERT_NE(delete_Dir_006, nullptr);
+    shared_ptr<FileAsset> dir1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir1", delete_Dir_006, dir1));
+    ASSERT_NE(dir1, nullptr);
+    shared_ptr<FileAsset> file2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file2.txt", dir1, file2));
+    shared_ptr<FileAsset> dir2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir2", dir1, dir2));
+    ASSERT_NE(dir2, nullptr);
+    shared_ptr<FileAsset> file3 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", dir2, file3));
+
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_006::trash start");
+    ASSERT_NE(file3, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(file3);
+    ASSERT_NE(dir1, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(dir1);
+    ASSERT_NE(delete_Dir_006, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(delete_Dir_006);
+
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_006::deleteUri: %s", deleteUri.c_str());
+    Uri deleteAssetUri(deleteUri);
+    DataShare::DataSharePredicates predicates;
+    ASSERT_NE(delete_Dir_006, nullptr);
+    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(delete_Dir_006->GetId()));
+    MediaLibraryCommand cmd(deleteAssetUri, Media::OperationType::DELETE);
+    cmd.SetOprnObject(OperationObject::APP_URI_PERMISSION_INNER);
+    int retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, {});
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_006->GetPath()), false);
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_006::delete end, retVal: %d", retVal);
+}
+
+/**
+ * @tc.number    : DataManager_Delete_Dir_Test_007
+ * @tc.name      : test delete dir: exists trashed children
+ * @tc.desc      : 1.Create the parent dir to be deleted: delete_Dir_007
+ *                 2.Create dir in delete_Dir_007: delete_Dir_002/dir1
+ *                 3.Create file in dir1: delete_Dir_007/dir1/file3.txt
+ *                 4.Create dir in dir1: delete_Dir_002/dir1/dir2
+ *                 5.Create file in dir2: delete_Dir_007/dir1/dir2/file3.txt
+ *                 6.Trash file3.txt
+ *                 7.Trash dir1
+ *                 8.Trash delete_Dir_007
+ *                 9.Delete delete_Dir_007
+ */
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_007::Start");
+    shared_ptr<FileAsset> delete_Dir_007 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("delete_Dir_007", g_download, delete_Dir_007));
+    ASSERT_NE(delete_Dir_007, nullptr);
+    shared_ptr<FileAsset> dir1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir1", delete_Dir_007, dir1));
+    ASSERT_NE(dir1, nullptr);
+    shared_ptr<FileAsset> file2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file2.txt", dir1, file2));
+    shared_ptr<FileAsset> dir2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir2", dir1, dir2));
+    ASSERT_NE(dir2, nullptr);
+    shared_ptr<FileAsset> file3 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", dir2, file3));
+
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_007::trash start");
+    ASSERT_NE(file3, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(file3);
+    ASSERT_NE(dir1, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(dir1);
+    ASSERT_NE(delete_Dir_007, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(delete_Dir_007);
+
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_007::deleteUri: %s", deleteUri.c_str());
+    Uri deleteAssetUri(deleteUri);
+    DataShare::DataSharePredicates predicates;
+    ASSERT_NE(delete_Dir_007, nullptr);
+    predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(delete_Dir_007->GetId()));
+    MediaLibraryCommand cmd(deleteAssetUri, Media::OperationType::DELETE);
+    cmd.SetOprnObject(OperationObject::PAH_FORM_MAP);
+    int retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, {});
+    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(delete_Dir_007->GetPath()), false);
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_007::delete end, retVal: %d", retVal);
+}
+
+/**
+ * @tc.number    : DataManager_Delete_Dir_Test_008
+ * @tc.name      : test delete dir: exists trashed children
+ * @tc.desc      : 1.Create the parent dir to be deleted: delete_Dir_008
+ *                 2.Create dir in delete_Dir_008: delete_Dir_002/dir1
+ *                 3.Create file in dir1: delete_Dir_008/dir1/file3.txt
+ *                 4.Create dir in dir1: delete_Dir_002/dir1/dir2
+ *                 5.Create file in dir2: delete_Dir_008/dir1/dir2/file3.txt
+ *                 6.Trash file3.txt
+ *                 7.Trash dir1
+ *                 8.Trash delete_Dir_008
+ *                 9.Delete delete_Dir_008
+ */
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_008::Start");
+    shared_ptr<FileAsset> delete_Dir_008 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("delete_Dir_008", g_download, delete_Dir_008));
+    ASSERT_NE(delete_Dir_008, nullptr);
+    shared_ptr<FileAsset> dir1 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir1", delete_Dir_008, dir1));
+    ASSERT_NE(dir1, nullptr);
+    shared_ptr<FileAsset> file2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file2.txt", dir1, file2));
+    shared_ptr<FileAsset> dir2 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateAlbum("dir2", dir1, dir2));
+    ASSERT_NE(dir2, nullptr);
+    shared_ptr<FileAsset> file3 = nullptr;
+    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("file3.txt", dir2, file3));
+
+    MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_008::trash start");
+    ASSERT_NE(file3, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(file3);
+    ASSERT_NE(dir1, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(dir1);
+    ASSERT_NE(delete_Dir_008, nullptr);
+    MediaLibraryUnitTestUtils::TrashFile(delete_Dir_008);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_002::Start");
+    shared_ptr<FileAsset> albumAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UpdateAlbumAsset_Test_002", g_pictures, albumAsset), true);
+    DataShare::DataSharePredicates predicates;
+    ASSERT_NE(albumAsset, nullptr);
+    string prefix = MEDIA_DATA_DB_ID + " = " + to_string(albumAsset->GetId());
+    predicates.SetWhereClause(prefix);
+    DataShare::DataShareValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, albumAsset->GetMediaType());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, albumAsset->GetUri());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_RELATIVE_PATH, albumAsset->GetRelativePath());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "U" + albumAsset->GetDisplayName());
+    MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_002::GetUri = %{public}s", albumAsset->GetUri().c_str());
+    Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_ALBUMOPRN, MEDIA_ALBUMOPRN_MODIFYALBUM));
+    MediaLibraryCommand cmd(updateAssetUri);
+    cmd.SetOprnObject(OperationObject::PAH_MULTISTAGES_CAPTURE);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
+    EXPECT_GE(retVal, 0);
+    MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_002::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_003::Start");
+    shared_ptr<FileAsset> albumAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UpdateAlbumAsset_Test_003", g_pictures, albumAsset), true);
+    DataShare::DataSharePredicates predicates;
+    ASSERT_NE(albumAsset, nullptr);
+    string prefix = MEDIA_DATA_DB_ID + " = " + to_string(albumAsset->GetId());
+    predicates.SetWhereClause(prefix);
+    DataShare::DataShareValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, albumAsset->GetMediaType());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, albumAsset->GetUri());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_RELATIVE_PATH, albumAsset->GetRelativePath());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "U" + albumAsset->GetDisplayName());
+    MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_003::GetUri = %{public}s", albumAsset->GetUri().c_str());
+    Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_ALBUMOPRN, MEDIA_ALBUMOPRN_MODIFYALBUM));
+    MediaLibraryCommand cmd(updateAssetUri);
+    cmd.SetOprnObject(OperationObject::PAH_BATCH_THUMBNAIL_OPERATE);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
+    EXPECT_NE(retVal, 0);
+    MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_003::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_004::Start");
+    shared_ptr<FileAsset> albumAsset = nullptr;
+    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("UpdateAlbumAsset_Test_004", g_pictures, albumAsset), true);
+    DataShare::DataSharePredicates predicates;
+    ASSERT_NE(albumAsset, nullptr);
+    string prefix = MEDIA_DATA_DB_ID + " = " + to_string(albumAsset->GetId());
+    predicates.SetWhereClause(prefix);
+    DataShare::DataShareValuesBucket valuesBucketUpdate;
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, albumAsset->GetMediaType());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, albumAsset->GetUri());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_RELATIVE_PATH, albumAsset->GetRelativePath());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "U" + albumAsset->GetDisplayName());
+    MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_003::GetUri = %{public}s", albumAsset->GetUri().c_str());
+    Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_ALBUMOPRN, MEDIA_ALBUMOPRN_MODIFYALBUM));
+    MediaLibraryCommand cmd(updateAssetUri);
+    cmd.SetOprnObject(OperationObject::ANALYSIS_PHOTO_MAP);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_004::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryGeoAssets_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_OBJ));
+    int errCode = 0;
+    MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
+    cmd.SetOprnObject(OperationObject::ANALYSIS_ADDRESS_ASSETS);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_NE((resultSet == nullptr), true);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_OBJ));
+    int errCode = 0;
+    MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
+    cmd.SetOprnObject(OperationObject::MEDIA_VOLUME);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_NE((resultSet == nullptr), true);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_OBJ));
+    int errCode = 0;
+    MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
+    cmd.SetOprnObject(OperationObject::INDEX_CONSTRUCTION_STATUS);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_NE((resultSet == nullptr), true);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_OBJ));
+    int errCode = 0;
+    MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
+    cmd.SetOprnObject(OperationObject::PHOTO_ALBUM);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_NE((resultSet == nullptr), true);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_OBJ));
+    int errCode = 0;
+    MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
+    cmd.SetOprnObject(OperationObject::ANALYSIS_PHOTO_MAP);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_OBJ));
+    int errCode = 0;
+    MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
+    cmd.SetOprnObject(OperationObject::PAH_MULTISTAGES_CAPTURE);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_OBJ));
+    int errCode = 0;
+    MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
+    cmd.SetOprnObject(OperationObject::ANALYSIS_ADDRESS_ASSETS_ACTIVE);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_NE((resultSet == nullptr), true);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_OBJ));
+    int errCode = 0;
+    MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
+    cmd.SetOprnObject(OperationObject::TAB_OLD_PHOTO);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    EXPECT_NE((resultSet == nullptr), true);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, CheckCloudThumbnailDownloadFinish_test_001, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+
+    int64_t totalFileSize = 0;
+    dataManager->UploadDBFileInner(totalFileSize);
+
+    totalFileSize = -1;
+    dataManager->UploadDBFileInner(totalFileSize);
+
+    totalFileSize = 201;
+    dataManager->UploadDBFileInner(totalFileSize);
+
+    dataManager->thumbnailService_ = nullptr;
+    EXPECT_EQ(dataManager->CheckCloudThumbnailDownloadFinish(), E_THUMBNAIL_SERVICE_NULLPTR);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, AstcMthAndYearInsert_test_001, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    Uri uri("");
+    MediaLibraryCommand cmd(uri);
+    std::string whereClause = "";
+    std::vector<std::string> whereArgs = {"1", "2"};
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    cmd.SetOprnObject(OperationObject::MTH_AND_YEAR_ASTC);
+    vector<DataShare::DataShareValuesBucket> values;
+    DataShare::DataShareValuesBucket valuesBucket;
+    string relativePath = "Pictures/";
+    string displayName = "CreateAsset_Test_001.jpg";
+    MediaType mediaType = MEDIA_TYPE_IMAGE;
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    values.push_back(valuesBucket);
+    auto result = dataManager->BatchInsert(cmd, values);
+    EXPECT_EQ(result, -1);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateDateTakenWhenZero_test_001, TestSize.Level0)
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    int32_t ret =  dataManager->UpdateDateTakenWhenZero();
+    EXPECT_EQ(ret, E_OK);
+}
 } // namespace Media
 } // namespace OHOS
