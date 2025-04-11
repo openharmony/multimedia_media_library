@@ -22,9 +22,13 @@ ohos_fuzztest("MediaLibraryRefreshManagerFuzzTest") {
     "./include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/include",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
   ]
 
-  sources = [ "src/medialibraryrefreshmanager.cpp" ]
+  sources = [ "src/medialibraryrefreshmanager.cpp",
+              "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_worker.cpp",
+              "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_notify.cpp",
+              "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/cloud_album_handler.cpp"]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
