@@ -505,6 +505,16 @@ static void SetCover(const shared_ptr<ResultSet> &fileResult, const UpdateAlbumD
     }
 }
 
+static void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
+{
+    PhotoQueryFilter::Config config {};
+    config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
+    config.trashedConfig = PhotoQueryFilter::ConfigType::INCLUDE;
+    PhotoQueryFilter::ModifyPredicate(config, predicates);
+    MEDIA_DEBUG_LOG("Query hidden asset in trash album, predicates statement is %{public}s",
+        predicates.GetStatement().c_str());
+}
+
 static void GetAlbumCountAndCoverPredicates(PhotoAlbumSubType subtype, const int32_t albumId,
     NativeRdb::RdbPredicates &predicates, const bool hiddenState, const bool isUpdateAlbum = false)
 {
@@ -588,16 +598,6 @@ static int32_t QueryAlbumVideoCount(const shared_ptr<MediaLibraryRdbStore> rdbSt
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
     CHECK_AND_RETURN_RET(fetchResult != nullptr, E_HAS_DB_ERROR);
     return GetFileCount(fetchResult);
-}
-
-static void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
-{
-    PhotoQueryFilter::Config config {};
-    config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
-    config.trashedConfig = PhotoQueryFilter::ConfigType::INCLUDE;
-    PhotoQueryFilter::ModifyPredicate(config, predicates);
-    MEDIA_DEBUG_LOG("Query hidden asset in trash album, predicates statement is %{public}s",
-        predicates.GetStatement().c_str());
 }
 
 static int32_t QueryAlbumHiddenCount(const shared_ptr<MediaLibraryRdbStore> rdbStore,
