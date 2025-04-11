@@ -76,7 +76,6 @@ ani_status PhotoAlbumAni::PhotoAccessInit(ani_env *env)
         return ANI_ERROR;
     }
 
-    ANI_INFO_LOG("PhotoAccessInit ok");
     return ANI_OK;
 }
 
@@ -485,7 +484,7 @@ void PhotoAlbumAni::PhotoAccessHelperCommitModify(ani_env *env, ani_object objec
 
 static ani_status GetAssetsIdArray(ani_env *env, ani_object photoAssets, std::vector<string> &assetsArray)
 {
-    ani_boolean isArray = MediaLibraryAniUtils::isArray(env, photoAssets);
+    ani_boolean isArray = MediaLibraryAniUtils::IsArray(env, photoAssets);
     if (isArray == ANI_FALSE) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array type");
         return ANI_INVALID_ARGS;
@@ -767,7 +766,7 @@ static void TrashAlbumExecute(ani_env *env, unique_ptr<PhotoAlbumAniContext> &co
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
-        ANI_ERR_LOG("Trash album executed, changeRows: %{pubic}d.", changedRows);
+        ANI_ERR_LOG("Trash album executed, changeRows: %{public}d.", changedRows);
         return;
     }
     context->changedRows = changedRows;

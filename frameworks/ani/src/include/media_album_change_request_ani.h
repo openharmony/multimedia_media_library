@@ -66,8 +66,8 @@ public:
     MediaAlbumChangeRequestAni() = default;
     ~MediaAlbumChangeRequestAni() = default;
     static MediaAlbumChangeRequestAni* Unwrap(ani_env *env, ani_object mediaAlbumChangeRequestHandle);
-    static ani_status MediaAlbumChangeRequestInit(ani_env *env);
-    static ani_object Constructor(ani_env *env, [[maybe_unused]] ani_class clazz, ani_object albumHandle);
+    static ani_status Init(ani_env *env);
+    static ani_status Constructor(ani_env *env, ani_object object, ani_object albumHandle);
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
     std::shared_ptr<PhotoAlbum> GetTargetPhotoAlbumInstance() const;
     std::shared_ptr<PhotoAlbum> GetReferencePhotoAlbumInstance() const;
@@ -92,9 +92,9 @@ public:
     static ani_status SetDisplayLevel(ani_env *env, ani_object object, ani_int displayLevel);
     static ani_status SetCoverUri(ani_env *env, ani_object object, ani_string coverUri);
     static ani_status SetIsMe(ani_env *env, ani_object object);
-    static ani_status DeleteAlbums(ani_env *env, ani_object context, ani_object arrayAlbum);
+    static ani_status DeleteAlbums(ani_env *env, ani_class clazz, ani_object context, ani_object arrayAlbum);
     static ani_status DeleteAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
-    ani_status ApplyChanges(ani_env *env, ani_object object) override;
+    ani_status ApplyChanges(ani_env *env) override;
     bool CheckChangeOperations(ani_env *env);
 
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> GetMoveMap() const;

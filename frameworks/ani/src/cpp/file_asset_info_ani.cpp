@@ -26,8 +26,8 @@ namespace Media {
 ani_object FileAssetInfo::ToFileAssetInfoObject(ani_env *env, std::unique_ptr<FileAsset> fileAsset)
 {
     ani_class cls;
-    if (ANI_OK != env->FindClass(ANI_CLASS_FILE_ASSET_INFO.c_str(), &cls)) {
-        ANI_ERR_LOG("Failed to find class: %{public}s", ANI_CLASS_FILE_ASSET_INFO.c_str());
+    if (ANI_OK != env->FindClass(PAH_ANI_CLASS_FILE_ASSET_INFO.c_str(), &cls)) {
+        ANI_ERR_LOG("Failed to find class: %{public}s", PAH_ANI_CLASS_FILE_ASSET_INFO.c_str());
         return nullptr;
     }
 
