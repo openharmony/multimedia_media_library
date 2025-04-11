@@ -309,7 +309,7 @@ bool MediaLibraryAppUriPermissionOperations::CanOverride(int &permissionTypePara
         permissionTypeParam, permissionTypeDB);
     // Equal permissions do not need to be overridden
     if (permissionTypeParam == permissionTypeDB) {
-        return true;
+        return false;
     }
     // temporary permission can't override persist permission
     if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
