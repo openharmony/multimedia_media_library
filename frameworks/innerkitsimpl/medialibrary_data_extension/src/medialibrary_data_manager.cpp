@@ -465,6 +465,21 @@ void CreateOperationAlbumUpdateTrigger(const shared_ptr<MediaLibraryRdbStore>& s
     MEDIA_INFO_LOG("end create operation_album_update_trigger");
 }
 
+void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
+        MEDIA_INFO_LOG("Start VERSION_ANALYZE_PHOTOS");
+        MediaLibraryRdbUtils::AnalyzePhotosData();
+        MEDIA_INFO_LOG("End VERSION_ANALYZE_PHOTOS");
+
+        MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+        FillMediaSuffixForHistoryData(rdbStore);
+        MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+
+        rdbStore->SetOldVersion(VERSION_FIX_DB_UPGRADE_FROM_API15);
+    }
+}
+
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
@@ -516,6 +531,14 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         MediaLibraryRdbStore::UpdateMdirtyTriggerForTdirty(rdbStore);
         rdbStore->SetOldVersion(VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY);
     }
+
+    if (oldVersion < VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX) {
+        MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(rdbStore);
+        rdbStore->SetOldVersion(VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX);
+    }
+
+    HandleUpgradeRdbAsyncPart2(rdbStore, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 void HandleUpgradeRdbAsyncExtension(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)

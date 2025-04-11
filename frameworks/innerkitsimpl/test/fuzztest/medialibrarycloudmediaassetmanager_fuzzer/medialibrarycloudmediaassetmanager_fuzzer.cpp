@@ -279,12 +279,19 @@ static void CloudMediaAssetDownloadOperationFuzzer(const uint8_t *data, size_t s
 
 static void CloudMediaAssetDownloadCallbackFuzzer(const uint8_t *data, size_t size)
 {
+    const int32_t int32Count = 3;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
     operation->taskStatus_ = CloudMediaAssetTaskStatus::DOWNLOADING;
     DownloadProgressObj downloadProgressObj;
-    downloadProgressObj.downloadId = FuzzInt32(data, size);
-    downloadProgressObj.downloadErrorType = FuzzDownloadErrorType(data, size);
-    downloadProgressObj.path = FuzzString(data, size);
+    int32_t offset = 0;
+    downloadProgressObj.downloadId = FuzzInt32(data + offset, size);
+    offset += sizeof(int32_t);
+    downloadProgressObj.downloadErrorType = FuzzDownloadErrorType(data + offset, size);
+    offset += sizeof(int32_t);
+    downloadProgressObj.path = FuzzString(data + offset, size);
     operation->HandleSuccessCallback(downloadProgressObj);
     operation->HandleFailedCallback(downloadProgressObj);
     operation->HandleStoppedCallback(downloadProgressObj);

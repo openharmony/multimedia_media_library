@@ -47,6 +47,7 @@ int32_t GalleryDbUpgrade::OnUpgrade(NativeRdb::RdbStore &store)
     this->AddIndexOfGalleryAlbum(store);
     this->AddIndexOfAlbumPlugin(store);
     this->AddStoryChosenOfGalleryMedia(store);
+    this->CreateRelativeAlbumOfGalleryAlbum(store);
     return NativeRdb::E_OK;
 }
 
@@ -159,6 +160,24 @@ int32_t GalleryDbUpgrade::AddIndexOfAlbumPlugin(NativeRdb::RdbStore &store)
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Media_Restore: GalleryDbUpgrade::AddStoryChosenOfGalleryMedia failed,"
          "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
     MEDIA_INFO_LOG("Media_Restore: GalleryDbUpgrade::AddStoryChosenOfGalleryMedia success");
+    return ret;
+}
+
+/**
+ * @brief Create relative_album table in gallery.db.
+ */
+int32_t GalleryDbUpgrade::CreateRelativeAlbumOfGalleryAlbum(NativeRdb::RdbStore &store)
+{
+    std::string sql = this->CREATE_RELATE_ALBUM_TBL_SQL;
+    int32_t ret = store.ExecuteSql(sql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Add RelativeAlbum Of Gallery Album failed,"
+        "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+
+    std::string insertSql = this->INSERT_RELATE_ALBUM_TBL_SQL;
+    ret = store.ExecuteSql(insertSql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Create RelativeAlbum Of Gallery Album failed,"
+        "ret=%{public}d, sql=%{public}s", ret, sql.c_str());
+    MEDIA_INFO_LOG("Create Relative Album Of Gallery Album success");
     return ret;
 }
 }  // namespace DataTransfer

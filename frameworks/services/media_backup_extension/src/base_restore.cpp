@@ -496,7 +496,6 @@ static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
 {
     if (fileInfo.userComment.empty()) {
         fileInfo.userComment = metadata->GetUserComment();
-        MEDIA_INFO_LOG("user comment is empty, reset to metadata value:%{public}s", metadata->GetUserComment().c_str());
     }
 
     bool hasUserComment = value.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
@@ -1829,6 +1828,14 @@ std::string BaseRestore::GetUpgradeEnhance()
 bool BaseRestore::IsCloudRestoreSatisfied()
 {
     return isAccountValid_ && isSyncSwitchOn_;
+}
+
+void BaseRestore::ProcessBurstPhotos()
+{
+    int64_t startProcess = MediaFileUtils::UTCTimeMilliSeconds();
+    BackupDatabaseUtils::UpdateBurstPhotos(mediaLibraryRdb_);
+    int64_t endProcess = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("process burst photos end, cost: %{public}" PRId64, endProcess - startProcess);
 }
 } // namespace Media
 } // namespace OHOS

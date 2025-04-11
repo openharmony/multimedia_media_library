@@ -572,5 +572,19 @@ int32_t DfxReporter::ReportCustomRestoreFusion(const CustomRestoreDfxDataPoint& 
     return ret;
 }
 
+int32_t DfxReporter::ReportPhotoError(const PhotoErrorCount& reportData)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_PHOTO_ERROR_STATISTIC",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "PHOTO_ERROR_TYPE", reportData.photoErrorTypes,
+        "PHOTO_ERROR_COUNT", reportData.photoErrorCounts);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report ReportPhotoError error: %{public}d", ret);
+    }
+    return ret;
+}
+
 } // namespace Media
 } // namespace OHOS

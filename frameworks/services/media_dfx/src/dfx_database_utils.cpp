@@ -18,12 +18,15 @@
 
 #include "dfx_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_log.h"
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "photo_album_column.h"
+#include "photo_file_utils.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -34,6 +37,7 @@ const std::string DFX_OPT_TYPE = "opt_type";
 const std::string OPT_ADD_VALUE = "1";
 const std::string OPT_DEL_VALUE = "2";
 const std::string OPT_UPDATE_VALUE = "3";
+const int32_t BATCH_QUERY_NUMBER = 200;
 
 int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, int32_t position)
 {
@@ -232,12 +236,12 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
 
 int32_t DfxDatabaseUtils::QueryOperationRecordInfo(OperationRecordInfo &operationRecordInfo)
 {
-    const string addTotalCountQuerySql = "SELECT COUNT(*) FROM" + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
-        "WHERE" + DFX_OPT_TYPE + "=" + OPT_ADD_VALUE;
-    const string delTotalCountQuerySql = "SELECT COUNT(*) FROM" + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
-        "WHERE" + DFX_OPT_TYPE + "=" + OPT_DEL_VALUE;
-    const string updateTotalCountQuerySql = "SELECT COUNT(*) FROM" + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
-        "WHERE" + DFX_OPT_TYPE + "=" + OPT_UPDATE_VALUE;
+    const string addTotalCountQuerySql = "SELECT COUNT(*) FROM " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
+        " WHERE " + DFX_OPT_TYPE + " = " + OPT_ADD_VALUE;
+    const string delTotalCountQuerySql = "SELECT COUNT(*) FROM " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
+        " WHERE " + DFX_OPT_TYPE + " = " + OPT_DEL_VALUE;
+    const string updateTotalCountQuerySql = "SELECT COUNT(*) FROM " + PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE +
+        " WHERE " + DFX_OPT_TYPE + " = " + OPT_UPDATE_VALUE;
 
     bool ret = QueryOperationResultSet(addTotalCountQuerySql, operationRecordInfo.addTotalCount);
     ret = QueryOperationResultSet(delTotalCountQuerySql, operationRecordInfo.delTotalCount) && ret;
@@ -390,6 +394,52 @@ int32_t DfxDatabaseUtils::QueryLCDThumb(bool isLocal)
     }
 
     return count;
+}
+
+static shared_ptr<NativeRdb::ResultSet> QueryPhotoFilePath(
+    const shared_ptr<MediaLibraryRdbStore> rdbStore, int offset)
+{
+    string querySql = "SELECT " + MediaColumn::MEDIA_FILE_PATH + " FROM " + PhotoColumn::PHOTOS_TABLE +
+        " WHERE " + PhotoColumn::PHOTO_POSITION + " = 1" +
+        " LIMIT " + std::to_string(offset) + ", " + std::to_string(BATCH_QUERY_NUMBER);
+    return rdbStore->QuerySql(querySql);
+}
+
+int32_t DfxDatabaseUtils::QueryPhotoErrorCount()
+{
+    MEDIA_DEBUG_LOG("QueryPhotoErrorCount start");
+    MediaLibraryTracer tracer;
+    tracer.Start("QueryPhotoErrorCount");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_OK, "rdbStore is nullptr");
+    std::string querySql = "SELECT count(1) as count FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+        PhotoColumn::PHOTO_POSITION + " = 1";
+    shared_ptr<NativeRdb::ResultSet> resultCount = rdbStore->QuerySql(querySql);
+    CHECK_AND_RETURN_RET_LOG(resultCount != nullptr, E_OK, "Failed to query resultCount");
+    int32_t count = 0;
+    if (resultCount->GoToNextRow() == NativeRdb::E_OK) {
+        count = GetInt32Val("count", resultCount);
+    }
+    resultCount->Close();
+    CHECK_AND_RETURN_RET_LOG(count > 0, E_OK, "Failed to get count");
+    int32_t photoCount = 0;
+    for (int32_t offset = 0; offset < count; offset += BATCH_QUERY_NUMBER) {
+        auto resultSet = QueryPhotoFilePath(rdbStore, offset);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+            if (!PhotoFileUtils::IsThumbnailExists(filePath)) {
+                MEDIA_ERR_LOG("Invali date thumbnail, file path: %{private}s", filePath.c_str());
+                continue;
+            }
+            if (!MediaFileUtils::IsFileExists(filePath)) {
+                MEDIA_ERR_LOG("File not exists, file path: %{private}s", filePath.c_str());
+                photoCount++;
+            }
+        }
+        resultSet->Close();
+    }
+    return photoCount;
 }
 
 int32_t DfxDatabaseUtils::QueryTotalCloudThumb(int32_t& totalDownload)

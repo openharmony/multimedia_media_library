@@ -169,6 +169,11 @@ MEDIALIB_BACKUP_RESTORE_RESULT:
   FAILED_COUNT: { type: INT32, desc: Number of assets that fail to be migrated }
   SUCCESS_COUNT: { type: INT32, desc: Number of Successfully Migrated Assets }
 
+MEDIALIB_PHOTO_ERROR_STATISTIC:
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: Statistics on user image faults report abnormal scenarios and numbers, preserve: true}
+  PHOTO_ERROR_TYPE: {type: INT32, arrsize: 5, desc: User image fault type}
+  PHOTO_ERROR_COUNT: {type: INT32, arrsize: 5, desc: Number of user image fault types}
+
 MEDIALIB_CUSTOM_RESTORE:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the data transfer result after Upgrade Restore task, preserve: true }
   CUSTOM_RESTORE_PACKAGE_NAME: { type: STRING, desc: custorm restore package name }

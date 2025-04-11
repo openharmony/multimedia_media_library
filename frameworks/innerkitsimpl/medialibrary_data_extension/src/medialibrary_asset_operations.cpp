@@ -113,6 +113,9 @@ struct DeletedFilesParams {
     vector<string> dateTakens;
     vector<int32_t> subTypes;
     vector<int32_t> isTemps;
+    map<string, string> displayNames;
+    map<string, string> albumNames;
+    map<string, string> ownerAlbumIds;
 };
 
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
@@ -2707,8 +2710,9 @@ static void DeleteFiles(AsyncTaskData *data)
     MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
         rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
 
+    DeleteBehaviorData dataInfo {taskData->displayNames_, taskData->albumNames_, taskData->ownerAlbumIds_};
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
-        taskData->notifyUris_, taskData->bundleName_);
+        taskData->notifyUris_, taskData->bundleName_, dataInfo);
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_LOG(watch != nullptr, "Can not get MediaLibraryNotify Instance");
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
@@ -2754,6 +2758,13 @@ void HandlePhotosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, De
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32)));
         filesParams.isTemps.push_back(
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_IS_TEMP, resultSet, TYPE_INT32)));
+        filesParams.displayNames.insert({
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))),
+            get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_NAME, resultSet, TYPE_STRING))});
+        filesParams.ownerAlbumIds.insert({
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))),
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet,
+                TYPE_INT32)))});
     }
 }
 
@@ -2768,6 +2779,8 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates, DeletedFilesParams &f
 
     if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
+        columns.push_back(MediaColumn::MEDIA_NAME);
+        columns.push_back(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
     }
 
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
@@ -3016,6 +3029,33 @@ static inline int32_t DeleteDbByIds(const string &table, vector<string> &ids, co
     return MediaLibraryRdbStore::Delete(predicates);
 }
 
+static void GetAlbumNamesById(DeletedFilesParams &filesParams)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumNamesById");
+    CHECK_AND_RETURN_LOG(!filesParams.ownerAlbumIds.empty(), "ownerAlbumIds is empty");
+    vector<string> ownerAlbumIdList;
+    set<string> albumIdSet;
+    for (const auto &fileId : filesParams.ownerAlbumIds) {
+        albumIdSet.insert(fileId.second);
+    }
+    ownerAlbumIdList.assign(albumIdSet.begin(), albumIdSet.end());
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(uniStore != nullptr, "rdbstore is nullptr");
+    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PAH_ALBUM, OperationType::QUERY);
+    queryAlbumMapCmd.GetAbsRdbPredicates()->In(PhotoAlbumColumns::ALBUM_ID, ownerAlbumIdList);
+    auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_NAME});
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query resultSet");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        filesParams.albumNames.insert({
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet,
+                TYPE_INT32))),
+            get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_NAME, resultSet,
+                TYPE_STRING))});
+    }
+    resultSet->Close();
+}
+
 /**
  * @brief Delete files permanently from system.
  *
@@ -3043,6 +3083,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     DeletedFilesParams fileParams;
     int32_t deletedRows = 0;
     GetIdsAndPaths(predicates, fileParams);
+    GetAlbumNamesById(fileParams);
     CHECK_AND_RETURN_RET_LOG(!fileParams.ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
 
     // notify deferred processing session to remove image
@@ -3068,8 +3109,9 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     auto *taskData = new (nothrow) DeleteFilesTask(fileParams.ids, fileParams.paths, notifyUris,
         fileParams.dateTakens, fileParams.subTypes,
         predicates.GetTableName(), deletedRows, bundleName);
-    taskData->isTemps_.swap(fileParams.isTemps);
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to alloc async data for Delete From Disk!");
+    taskData->SetOtherInfos(fileParams.displayNames, fileParams.albumNames, fileParams.ownerAlbumIds);
+    taskData->isTemps_.swap(fileParams.isTemps);
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     CHECK_AND_RETURN_RET_LOG(deleteFilesTask != nullptr, E_ERR, "Failed to create async task for deleting files.");
     asyncWorker->AddTask(deleteFilesTask, true);
@@ -3157,14 +3199,20 @@ int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<Fil
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_HAS_FS_ERROR, "watch is nullptr");
     string notifyDeleteUri =
-        MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
+        MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
             MediaFileUtils::GetExtraUri(displayName, filePath));
     watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
     std::vector<std::string> notifyDeleteUris;
     notifyDeleteUris.push_back(notifyDeleteUri);
     auto dfxManager = DfxManager::GetInstance();
     if (dfxManager != nullptr) {
-        dfxManager->HandleDeleteBehavior(DfxType::DELETE_LOCAL_ASSETS_PERMANENTLY, deleteRows, notifyDeleteUris);
+        DeletedFilesParams fileParams;
+        fileParams.ownerAlbumIds.insert({to_string(fileId), to_string(fileAsset->GetOwnerAlbumId())});
+        GetAlbumNamesById(fileParams);
+        DeleteBehaviorData dataInfo {{{to_string(fileId), displayName}},
+            fileParams.albumNames, fileParams.ownerAlbumIds };
+        dfxManager->HandleDeleteBehavior(DfxType::DELETE_LOCAL_ASSETS_PERMANENTLY, deleteRows,
+            notifyDeleteUris, "", dataInfo);
     }
     MediaLibraryPhotoOperations::DeleteRevertMessage(filePath);
     return E_OK;

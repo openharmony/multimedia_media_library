@@ -1454,7 +1454,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_068, Te
     ASSERT_NE(context, nullptr);
     std::shared_ptr<MtpOperationUtils> mtpOperationUtils = std::make_shared<MtpOperationUtils>(context);
     ASSERT_NE(mtpOperationUtils, nullptr);
-    std::string property = "persist.device.name";
+    std::string property = "const.product.name";
     std::string defValue = "";
     std::string res = mtpOperationUtils->GetPropertyInner(property, defValue);
     std::string propertyInner = OHOS::system::GetParameter(property, defValue);

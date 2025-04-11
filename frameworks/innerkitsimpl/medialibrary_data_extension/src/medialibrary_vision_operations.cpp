@@ -263,8 +263,14 @@ int32_t MediaLibraryVisionOperations::InitForegroundAnalysisMeta(MediaLibraryCom
     return E_OK;
 }
 
-int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis(const std::string &assetUri)
+int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis(const std::string &assetUri,
+    MediaType mediaType)
 {
+    int errCode = E_OK;
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        MEDIA_INFO_LOG("ignore media type:%{public}d", mediaType);
+        return errCode;
+    }
     std::string uriStr = PAH_QUERY_ANA_FOREGROUND;
     MediaFileUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TYPE,
         std::to_string(AnalysisType::ANALYSIS_SEARCH_INDEX));
@@ -280,7 +286,6 @@ int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis(const 
         predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
     }
     std::vector<string> columns;
-    int errCode = E_OK;
     MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
     return errCode;
 }
