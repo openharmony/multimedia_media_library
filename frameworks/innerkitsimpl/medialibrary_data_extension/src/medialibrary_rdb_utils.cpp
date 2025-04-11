@@ -505,7 +505,7 @@ static void SetCover(const shared_ptr<ResultSet> &fileResult, const UpdateAlbumD
     }
 }
 
-static void GetAlbumPredicates(PhotoAlbumSubType subtype, const int32_t albumId,
+static void GetAlbumCountAndCoverPredicates(PhotoAlbumSubType subtype, const int32_t albumId,
     NativeRdb::RdbPredicates &predicates, const bool hiddenState, const bool isUpdateAlbum = false)
 {
     static const string QUERY_ASSETS_FROM_ANALYSIS_ALBUM =
@@ -536,6 +536,10 @@ static void GetAlbumPredicates(PhotoAlbumSubType subtype, const int32_t albumId,
     } else if (isSourceAlbum) {
         PhotoAlbumColumns::GetSourceAlbumPredicates(albumId, predicates, hiddenState);
     } else if (isSystemAlbum) {
+        if (hiddenState && subtype == PhotoAlbumSubType::TRASH) {
+            GetTrashAlbumHiddenPredicates(predicates);
+            return;
+        }
         PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates, hiddenState);
     } else {
         MEDIA_ERR_LOG("Invalid album subtype %{public}d, will return nothing", subtype);
@@ -567,7 +571,7 @@ static int32_t QueryAlbumCount(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 {
     const vector<string> columns = { MEDIA_COLUMN_COUNT_1 };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    GetAlbumPredicates(subtype, albumId, predicates, false);
+    GetAlbumCountAndCoverPredicates(subtype, albumId, predicates, false);
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
     CHECK_AND_RETURN_RET(fetchResult != nullptr, E_HAS_DB_ERROR);
     return GetFileCount(fetchResult);
@@ -578,7 +582,7 @@ static int32_t QueryAlbumVideoCount(const shared_ptr<MediaLibraryRdbStore> rdbSt
 {
     const vector<string> columns = { MEDIA_COLUMN_COUNT_1 };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    GetAlbumPredicates(subtype, albumId, predicates, false);
+    GetAlbumCountAndCoverPredicates(subtype, albumId, predicates, false);
     predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
@@ -596,69 +600,12 @@ static void GetTrashAlbumHiddenPredicates(RdbPredicates &predicates)
         predicates.GetStatement().c_str());
 }
 
-static int32_t QueryAlbumHiddenCountAndCover(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    UpdateAlbumData &data, ValuesBucket &values, PhotoAlbumSubType subType)
-{
-    const vector<string> columns = {
-        MEDIA_COLUMN_COUNT_1, PhotoColumn::MEDIA_ID,
-        PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME
-    };
-
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    GetTrashAlbumHiddenPredicates(predicates);
-
-    auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
-
-    int32_t newCount = SetCount(fileResult, data, values, true, subType);
-    data.newTotalCount = newCount;
-    SetCover(fileResult, data, values, true);
-    return E_SUCCESS;
-}
-
-static int32_t UpdateAlbumHiddenCountAndCover(std::shared_ptr<TransactionOperations> trans,
-    ValuesBucket &values, PhotoAlbumSubType subType)
-{
-    CHECK_AND_RETURN_RET_LOG(!values.IsEmpty(), E_SUCCESS,
-        "album hidden count and cover not need to update, subtype: %{public}d", subType);
-
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subType));
-    int32_t changedRows = 0;
-    int32_t err = trans->Update(changedRows, values, predicates);
-    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, err, "Failed to update album hidden count and cover!");
-    return E_SUCCESS;
-}
-
-static int32_t HandleTrashAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    UpdateAlbumData &data)
-{
-    ValuesBucket values;
-    int32_t ret = QueryAlbumHiddenCountAndCover(rdbStore, data, values, PhotoAlbumSubType::TRASH);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to query trash album hidden count and cover!");
-
-    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
-    std::function<int(void)> transFunc = [&]()->int {
-        return UpdateAlbumHiddenCountAndCover(trans, values, PhotoAlbumSubType::TRASH);
-    };
-    ret = trans->RetryTrans(transFunc);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "Failed to retry trans");
-
-    data.hasChanged = true;
-    SendAlbumIdNotify(data);
-    return E_SUCCESS;
-}
-
 static int32_t QueryAlbumHiddenCount(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     int32_t albumId, PhotoAlbumSubType subtype)
 {
     const vector<string> columns = { MEDIA_COLUMN_COUNT_1 };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    if (subtype == PhotoAlbumSubType::TRASH) {
-        GetTrashAlbumHiddenPredicates(predicates);
-    } else {
-        GetAlbumPredicates(subtype, albumId, predicates, true);
-    }
+    GetAlbumCountAndCoverPredicates(subtype, albumId, predicates, true);
     auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
     CHECK_AND_RETURN_RET(fetchResult != nullptr, E_HAS_DB_ERROR);
     return GetFileCount(fetchResult);
@@ -694,7 +641,7 @@ static int32_t SetAlbumCoverUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         PhotoColumn::MEDIA_NAME
     };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    GetAlbumPredicates(subtype, albumId, predicates, false);
+    GetAlbumCountAndCoverPredicates(subtype, albumId, predicates, false);
     if (subtype == PhotoAlbumSubType::HIDDEN) {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
     } else if (subtype == PhotoAlbumSubType::VIDEO || subtype == PhotoAlbumSubType::IMAGE) {
@@ -725,11 +672,7 @@ static int32_t SetAlbumCoverHiddenUri(const shared_ptr<MediaLibraryRdbStore> rdb
         PhotoColumn::MEDIA_NAME
     };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    if (subtype == PhotoAlbumSubType::TRASH) {
-        GetTrashAlbumHiddenPredicates(predicates);
-    } else {
-        GetAlbumPredicates(subtype, albumId, predicates, true);
-    }
+    GetAlbumCountAndCoverPredicates(subtype, albumId, predicates, true);
     predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
     predicates.Limit(1);
 
@@ -1122,7 +1065,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME
     };
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    GetAlbumPredicates(subtype, data.albumId, predicates, hiddenState, true);
+    GetAlbumCountAndCoverPredicates(subtype, data.albumId, predicates, hiddenState, true);
     if (subtype == PhotoAlbumSubType::HIDDEN || hiddenState) {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
     } else if (subtype == PhotoAlbumSubType::VIDEO || subtype == PhotoAlbumSubType::IMAGE) {
@@ -1146,7 +1089,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
         subtype > PhotoAlbumSubType::ANALYSIS_END)) {
         predicates.Clear();
-        GetAlbumPredicates(subtype, data.albumId, predicates, hiddenState, true);
+        GetAlbumCountAndCoverPredicates(subtype, data.albumId, predicates, hiddenState, true);
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
         string queryCondition = predicates.GetWhereClause();
         if (queryCondition.empty()) {
@@ -2071,10 +2014,6 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<MediaLibra
         data.albumSubtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
         data.hiddenCount = GetAlbumCount(albumResult, PhotoAlbumColumns::HIDDEN_COUNT);
         data.hiddenCover = GetAlbumCover(albumResult, PhotoAlbumColumns::HIDDEN_COVER);
-        if (data.albumSubtype == PhotoAlbumSubType::TRASH) {
-            HandleTrashAlbumHiddenState(rdbStore, data);
-            continue;
-        }
         datas.push_back(data);
     }
     albumResult->Close();
