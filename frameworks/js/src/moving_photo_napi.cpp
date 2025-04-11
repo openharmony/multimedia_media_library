@@ -27,7 +27,6 @@
 #include "medialibrary_napi_utils.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
-#include "media_call_transcode.h"
 
 using namespace std;
 
@@ -36,11 +35,6 @@ namespace Media {
 
 static const string MOVING_PHOTO_NAPI_CLASS = "MovingPhoto";
 thread_local napi_ref MovingPhotoNapi::constructor_ = nullptr;
-static std::function<void(int, int, std::string)> callback_;
-static SafeMap<std::string, bool> isMovingPhotoTranscoderMap;
-static SafeMap<std::string, MovingPhotoAsyncContext *> requestContentCompleteResult;
-static std::mutex isMovingPhotoTranscoderMapMutex;
-static std::mutex requestContentCompleteResultMutex;
 napi_value MovingPhotoNapi::Init(napi_env env, napi_value exports)
 {
     NapiClassInfo info = {
@@ -107,36 +101,6 @@ SourceMode MovingPhotoNapi::GetSourceMode()
 void MovingPhotoNapi::SetSourceMode(SourceMode sourceMode)
 {
     sourceMode_ = sourceMode;
-}
-
-CompatibleMode MovingPhotoNapi::GetCompatibleMode()
-{
-    return compatibleMode_;
-}
-
-void MovingPhotoNapi::SetCompatibleMode(const CompatibleMode compatibleMode)
-{
-    compatibleMode_ = compatibleMode;
-}
-
-void MovingPhotoNapi::SetMovingPhotoCallback(const std::function<void(int, int, std::string)> callback)
-{
-    callback_ = callback;
-}
-
-std::function<void(int, int, std::string)> MovingPhotoNapi::GetMovingPhotoCallback()
-{
-    return callback_;
-}
-
-std::string MovingPhotoNapi::GetRequestId()
-{
-    return requestId_;
-}
-
-void MovingPhotoNapi::SetRequestId(const std::string requestId)
-{
-    requestId_ = requestId;
 }
 
 static int32_t OpenReadOnlyVideo(const std::string& videoUri, bool isMediaLibUri)
@@ -299,7 +263,7 @@ static bool HandleFd(int32_t& fd)
     return true;
 }
 
-static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* context)
+static int32_t RequestContentToSandbox(MovingPhotoAsyncContext* context)
 {
     string movingPhotoUri = context->movingPhotoUri;
     if (context->sourceMode == SourceMode::ORIGINAL_MODE) {
@@ -314,14 +278,8 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
     if (!context->destVideoUri.empty()) {
         int32_t videoFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false);
         CHECK_COND_RET(HandleFd(videoFd), videoFd, "Open source video file failed");
-        if (context->compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
-            NAPI_DEBUG_LOG("movingPhoto CompatibleMode  COMPATIBLE_FORMAT_MODE");
-            int32_t ret = MovingPhotoNapi::DoMovingPhotoTranscode(env, videoFd, context);
-            CHECK_COND_RET(ret == E_OK, ret, "moving video transcode failed");
-        } else {
-            int32_t ret = WriteToSandboxUri(videoFd, context->destVideoUri);
-            CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
-        }
+        int32_t ret = WriteToSandboxUri(videoFd, context->destVideoUri);
+        CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
     }
     if (!context->destLivePhotoUri.empty()) {
         int32_t livePhotoFd = MovingPhotoNapi::OpenReadOnlyLivePhoto(movingPhotoUri);
@@ -329,12 +287,7 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
         int32_t ret = WriteToSandboxUri(livePhotoFd, context->destLivePhotoUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
     }
-    if (!context->destMetadataUri.empty()) {
-        int32_t extraDataFd = MovingPhotoNapi::OpenReadOnlyMetadata(movingPhotoUri);
-        CHECK_COND_RET(HandleFd(extraDataFd), extraDataFd, "Open moving photo metadata failed");
-        int32_t ret = WriteToSandboxUri(extraDataFd, context->destMetadataUri);
-        CHECK_COND_RET(ret == E_OK, ret, "Write metadata to sandbox failed");
-    }
+
     return E_OK;
 }
 
@@ -369,85 +322,45 @@ static int32_t AcquireFdForArrayBuffer(MovingPhotoAsyncContext* context)
     }
 }
 
-int32_t MovingPhotoNapi::GetFdFromUri(const std::string &uri)
-{
-    AppFileService::ModuleFileUri::FileUri destUri(uri);
-    string destPath = destUri.GetRealPath();
-    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
-        NAPI_ERR_LOG("Create empty dest file in sandbox failed, path:%{private}s", destPath.c_str());
-        return E_ERR;
-    }
-    return MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
-}
-
-static int32_t ArrayBufferToTranscode(napi_env env, MovingPhotoAsyncContext* context, int32_t fd)
-{
-    if (context == nullptr) {
-        NAPI_INFO_LOG("context is null");
-        return E_ERR;
-    }
-    {
-        std::lock_guard<std::mutex> lockMutex(requestContentCompleteResultMutex);
-        requestContentCompleteResult.Insert(context->requestId, context);
-    }
-    std::string uri = context->movingPhotoUri;
-    NAPI_DEBUG_LOG("uri %{public}s", uri.c_str());
-    auto abilityContext = AbilityRuntime::Context::GetApplicationContext();
-    if (abilityContext == nullptr) {
-        NAPI_INFO_LOG("abilityContext is null");
-        return E_ERR;
-    }
-    string cachePath = abilityContext->GetCacheDir();
-    string destUri = cachePath + "/" +context->requestId + ".mp4";
-    NAPI_DEBUG_LOG("destUri:%{public}s", destUri.c_str());
-    int destFd = MovingPhotoNapi::GetFdFromUri(destUri);
-    if (destFd < 0) {
-        context->error = destFd;
-        NAPI_ERR_LOG("get destFd fail");
-        return E_ERR;
-    }
-    napi_value resultNapiValue = nullptr;
-    struct stat statSrc;
-    UniqueFd uniqueFd(fd);
-    UniqueFd uniqueDestFd(destFd);
-    if (fstat(uniqueFd.Get(), &statSrc) == E_ERR) {
-        napi_get_boolean(env, false, &resultNapiValue);
-        NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
-        return E_ERR;
-    }
-    MediaCallTranscode::RegisterCallback(context->callback);
-    bool result = MediaCallTranscode::DoTranscode(uniqueFd.Get(), uniqueDestFd.Get(), statSrc.st_size,
-        context->requestId);
-    if (!result) {
-        NAPI_INFO_LOG("DoTranscode fail");
-        return E_GET_PRAMS_FAIL;
-    }
-    {
-        std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
-        isMovingPhotoTranscoderMap.Insert(context->requestId, true);
-    }
-    return E_OK;
-}
-
 static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext* context)
 {
-    if (context == nullptr) {
-        NAPI_INFO_LOG("context is null");
-        return E_ERR;
-    }
     int32_t fd = AcquireFdForArrayBuffer(context);
     if (fd < 0) {
         return fd;
     }
-    if (context->resourceType == ResourceType::VIDEO_RESOURCE &&
-        context->compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
-        {
-            std::lock_guard<std::mutex> lockMutex(requestContentCompleteResultMutex);
-            requestContentCompleteResult.Insert(context->requestId, context);
-        }
-        return ArrayBufferToTranscode(env, context, fd);
+    UniqueFd uniqueFd(fd);
+
+    off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
+    if (fileLen < 0) {
+        NAPI_ERR_LOG("Failed to get file length, error: %{public}d", errno);
+        return E_HAS_FS_ERROR;
     }
-    MovingPhotoNapi::SubRequestContent(fd, context);
+
+    off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
+    if (ret < 0) {
+        NAPI_ERR_LOG("Failed to reset file offset, error: %{public}d", errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    size_t fileSize = static_cast<size_t>(fileLen);
+
+    context->arrayBufferData = malloc(fileSize);
+    if (!context->arrayBufferData) {
+        NAPI_ERR_LOG("Failed to malloc array buffer data, moving photo uri is %{public}s, resource type is %{public}d",
+            context->movingPhotoUri.c_str(), static_cast<int32_t>(context->resourceType));
+        return E_HAS_FS_ERROR;
+    }
+
+    size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), context->arrayBufferData, fileSize));
+    if (readBytes != fileSize) {
+        NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
+            "error: %{public}d", readBytes, fileSize, errno);
+        free(context->arrayBufferData);
+        context->arrayBufferData = nullptr;
+        return E_HAS_FS_ERROR;
+    }
+
+    context->arrayBufferLength = fileSize;
     return E_OK;
 }
 
@@ -468,9 +381,6 @@ static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const na
     CHECK_COND(env, thisArg != nullptr, JS_INNER_FAIL);
     context->movingPhotoUri = thisArg->GetUri();
     context->sourceMode = thisArg->GetSourceMode();
-    context->compatibleMode = thisArg->GetCompatibleMode();
-    context->callback = thisArg->GetMovingPhotoCallback();
-    context->requestId = thisArg->GetRequestId();
 
     int32_t resourceType = 0;
     if (argc == ARGS_ONE) {
@@ -501,12 +411,9 @@ static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const na
             } else if (resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE)) {
                 CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[ARGS_ONE],
                     context->destVideoUri), JS_INNER_FAIL);
-            } else if (resourceType == static_cast<int32_t>(ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE)) {
-                CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[ARGS_ONE],
-                    context->destLivePhotoUri), JS_INNER_FAIL);
             } else {
                 CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[ARGS_ONE],
-                    context->destMetadataUri), JS_INNER_FAIL);
+                    context->destLivePhotoUri), JS_INNER_FAIL);
             }
             context->resourceType = static_cast<ResourceType>(resourceType);
         } else {
@@ -523,7 +430,7 @@ static void RequestContentExecute(napi_env env, void *data)
     int32_t ret;
     switch (context->requestContentMode) {
         case MovingPhotoAsyncContext::WRITE_TO_SANDBOX:
-            ret = RequestContentToSandbox(env, context);
+            ret = RequestContentToSandbox(context);
             break;
         case MovingPhotoAsyncContext::WRITE_TO_ARRAY_BUFFER:
             ret = RequestContentToArrayBuffer(env, context);
@@ -543,16 +450,7 @@ static void RequestContentComplete(napi_env env, napi_status status, void *data)
 {
     MovingPhotoAsyncContext *context = static_cast<MovingPhotoAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    bool isTranscoder = false;
-    {
-        std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
-        isMovingPhotoTranscoderMap.Find(context->requestId, isTranscoder);
-    }
-    if (isTranscoder) {
-        std::lock_guard<std::mutex> lockMutex(requestContentCompleteResultMutex);
-        requestContentCompleteResult.EnsureInsert(context->requestId, context);
-        return;
-    }
+
     napi_value outBuffer = nullptr;
     if (context->error == E_OK && context->requestContentMode == MovingPhotoAsyncContext::WRITE_TO_ARRAY_BUFFER) {
         napi_status status = napi_create_external_arraybuffer(
@@ -607,8 +505,8 @@ napi_value MovingPhotoNapi::JSRequestContent(napi_env env, napi_callback_info in
         RequestContentExecute, RequestContentComplete);
 }
 
-napi_value MovingPhotoNapi::NewMovingPhotoNapi(napi_env env, const string& photoUri, SourceMode sourceMode,
-    MovingPhotoParam movingPhotoParam, const std::function<void(int, int, std::string)> callbacks)
+napi_value MovingPhotoNapi::NewMovingPhotoNapi(napi_env env, const string& photoUri,
+    SourceMode sourceMode)
 {
     napi_value constructor = nullptr;
     napi_value instance = nullptr;
@@ -629,9 +527,6 @@ napi_value MovingPhotoNapi::NewMovingPhotoNapi(napi_env env, const string& photo
     CHECK_COND_RET(status == napi_ok, nullptr, "Failed to unwarp instance of MovingPhotoNapi");
     CHECK_COND_RET(movingPhotoNapi != nullptr, nullptr, "movingPhotoNapi is nullptr");
     movingPhotoNapi->SetSourceMode(sourceMode);
-    movingPhotoNapi->SetRequestId(movingPhotoParam.requestId);
-    movingPhotoNapi->SetCompatibleMode(movingPhotoParam.compatibleMode);
-    movingPhotoNapi->SetMovingPhotoCallback(callbacks);
     return instance;
 }
 
@@ -654,209 +549,6 @@ napi_value MovingPhotoNapi::JSGetUri(napi_env env, napi_callback_info info)
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetUri().c_str(), NAPI_AUTO_LENGTH, &jsResult), JS_INNER_FAIL);
     return jsResult;
-}
-
-int32_t MovingPhotoNapi::DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, MovingPhotoAsyncContext* context)
-{
-    if (context == nullptr) {
-        NAPI_INFO_LOG("context is null");
-        return E_ERR;
-    }
-    if (videoFd == -1) {
-        NAPI_INFO_LOG("videoFd is null");
-        return E_ERR;
-    }
-    UniqueFd uniqueVideoFd(videoFd);
-    struct stat statSrc;
-    if (fstat(uniqueVideoFd.Get(), &statSrc) == E_ERR) {
-        NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
-        return E_HAS_FS_ERROR;
-    }
-    AppFileService::ModuleFileUri::FileUri fileUri(context->destVideoUri);
-    string destPath = fileUri.GetRealPath();
-    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
-        NAPI_ERR_LOG("Create empty dest file in sandbox failed, path:%{private}s", destPath.c_str());
-        return E_HAS_FS_ERROR;
-    }
-    int32_t destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
-    if (destFd < 0) {
-        close(destFd);
-        NAPI_ERR_LOG("Open dest file failed, error: %{public}d", errno);
-        return E_HAS_FS_ERROR;
-    }
-    UniqueFd uniqueDestFd(destFd);
-    MediaCallTranscode::RegisterCallback(context->callback);
-    bool result = MediaCallTranscode::DoTranscode(uniqueVideoFd.Get(), uniqueDestFd.Get(), statSrc.st_size,
-        context->requestId);
-    if (!result) {
-        NAPI_ERR_LOG("DoTranscode fail");
-        return E_GET_PRAMS_FAIL;
-    }
-    {
-        std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
-        isMovingPhotoTranscoderMap.Insert(context->requestId, true);
-    }
-    return E_OK;
-}
-
-static void DeleteProcessHandlerSafe(ProgressHandler *handler, napi_env env)
-{
-    if (handler == nullptr) {
-        return;
-    }
-    NAPI_DEBUG_LOG("[ProgressHandler delete] %{public}p.", handler);
-    if (handler->progressRef != nullptr && env != nullptr) {
-        napi_delete_reference(env, handler->progressRef);
-        handler->progressRef = nullptr;
-    }
-    delete handler;
-    handler = nullptr;
-}
-
-void CallMovingProgressCallback(napi_env env, ProgressHandler &progressHandler, int32_t process)
-{
-    napi_value result;
-    napi_status status = napi_create_int32(env, process, &result);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("OnProgress napi_create_int32 fail");
-    }
-    napi_value callback;
-    status = napi_get_reference_value(env, progressHandler.progressRef, &callback);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("OnProgress napi_get_reference_value fail, napi status: %{public}d",
-            static_cast<int>(status));
-        DeleteProcessHandlerSafe(&progressHandler, env);
-        return;
-    }
-    napi_value jsOnProgress;
-    status = napi_get_named_property(env, callback, ON_PROGRESS_FUNC, &jsOnProgress);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("jsOnProgress napi_get_named_property fail, napi status: %{public}d",
-            static_cast<int>(status));
-        DeleteProcessHandlerSafe(&progressHandler, env);
-        return;
-    }
-    napi_value argv[1];
-    size_t argc = ARGS_ONE;
-    argv[PARAM0] = result;
-    napi_value promise;
-    status = napi_call_function(env, nullptr, jsOnProgress, argc, argv, &promise);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("call js function failed %{public}d", static_cast<int32_t>(status));
-        NapiError::ThrowError(env, JS_INNER_FAIL, "calling onDataPrepared failed");
-    }
-    NAPI_DEBUG_LOG("CallProgressCallback process %{public}d", process);
-}
-
-void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
-{
-    UniqueFd uniqueFd(fd);
-    off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
-    if (fileLen < 0) {
-        NAPI_ERR_LOG("Failed to get file length, error: %{public}d", errno);
-        context->error = E_HAS_FS_ERROR;
-        return;
-    }
-
-    off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
-    if (ret < 0) {
-        NAPI_ERR_LOG("Failed to reset file offset, error: %{public}d", errno);
-        context->error = E_HAS_FS_ERROR;
-        return;
-    }
-
-    size_t fileSize = static_cast<size_t>(fileLen);
-    context->arrayBufferData = malloc(fileSize);
-    if (!context->arrayBufferData) {
-        NAPI_ERR_LOG("Failed to malloc array buffer data, moving photo uri is %{public}s, resource type is %{public}d",
-            context->movingPhotoUri.c_str(), static_cast<int32_t>(context->resourceType));
-        context->error = E_HAS_FS_ERROR;
-        return;
-    }
-    size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), context->arrayBufferData, fileSize));
-    if (readBytes != fileSize) {
-        NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
-            "error: %{public}d", readBytes, fileSize, errno);
-        free(context->arrayBufferData);
-        context->arrayBufferData = nullptr;
-        context->error = E_HAS_FS_ERROR;
-        return;
-    }
-    context->arrayBufferLength = fileSize;
-    return;
-}
-
-void CallArrayBufferRequestContentComplete(napi_env env, MovingPhotoAsyncContext* context)
-{
-    auto abilityContext = AbilityRuntime::Context::GetApplicationContext();
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    CHECK_NULL_PTR_RETURN_VOID(abilityContext, "Async abilityContext is null");
-    string cachePath = abilityContext->GetCacheDir();
-    string destUri = cachePath + "/" +context->requestId + ".mp4";
-    NAPI_INFO_LOG("CallArrayBufferRequestContentComplete start destUri:%{public}s", destUri.c_str());
-    int fd = MovingPhotoNapi::GetFdFromUri(destUri);
-    if (fd < 0) {
-        NAPI_ERR_LOG("get fd fail");
-        context->error = fd;
-        return;
-    }
-    UniqueFd uniqueFd(fd);
-    MovingPhotoNapi::SubRequestContent(uniqueFd.Get(), context);
-    if (!MediaFileUtils::DeleteFile(destUri)) {
-        NAPI_WARN_LOG("remove fail, errno:%{public}d", errno);
-    }
-    return;
-}
-
-void MovingPhotoNapi::OnProgress(napi_env env, napi_value cb, void *context, void *data)
-{
-    ProgressHandler *progressHandler = reinterpret_cast<ProgressHandler *>(data);
-    if (progressHandler == nullptr) {
-        NAPI_ERR_LOG("progressHandler handler is nullptr");
-        DeleteProcessHandlerSafe(progressHandler, env);
-        return;
-    }
-    int32_t process = progressHandler->retProgressValue.progress;
-    int32_t type = progressHandler->retProgressValue.type;
-    if ((type == INFO_TYPE_TRANSCODER_COMPLETED) || type == INFO_TYPE_ERROR) {
-        bool isTranscoder;
-        {
-            std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
-            if (isMovingPhotoTranscoderMap.Find(progressHandler->requestId, isTranscoder)) {
-                isMovingPhotoTranscoderMap.Erase(progressHandler->requestId);
-            }
-        }
-        MovingPhotoAsyncContext* context;
-        {
-            std::lock_guard<std::mutex> lockMutex(requestContentCompleteResultMutex);
-            if (!requestContentCompleteResult.Find(progressHandler->requestId, context)) {
-                NAPI_ERR_LOG("find context fail requestId:%{public}s", progressHandler->requestId.c_str());
-                return;
-            }
-            requestContentCompleteResult.Erase(progressHandler->requestId);
-        }
-        CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
-        if (type == INFO_TYPE_ERROR) {
-            context->error = JS_INNER_FAIL;
-        }
-        NAPI_INFO_LOG("OnProgress INFO_TYPE_TRANSCODER_COMPLETED type:%{public}d, process:%{public}d", type, process);
-        napi_status status = napi_ok;
-        switch (context->requestContentMode) {
-            case MovingPhotoAsyncContext::WRITE_TO_SANDBOX:
-                RequestContentComplete(env, status, context);
-                return;
-            case MovingPhotoAsyncContext::WRITE_TO_ARRAY_BUFFER:
-                CallArrayBufferRequestContentComplete(env, context);
-                RequestContentComplete(env, status, context);
-                return;
-            default:
-                NAPI_ERR_LOG("Request content mode: %{public}d", static_cast<int32_t>(context->requestContentMode));
-                context->error = OHOS_INVALID_PARAM_CODE;
-                return;
-        }
-    }
-    CHECK_NULL_PTR_RETURN_VOID(progressHandler->progressRef, "Onprogress callback is null");
-    CallMovingProgressCallback(env, *progressHandler, process);
 }
 } // namespace Media
 } // namespace OHOS
