@@ -39,6 +39,7 @@
 #include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
@@ -143,6 +144,21 @@ std::string MediaLibraryPhotoOperations::lastPhotoId_ = "default";
 
 const std::vector<std::string> CAMERA_BUNDLE_NAMES = {
     "com.huawei.hmos.camera"
+};
+
+struct DeleteBehaviorParams {
+    map<string, string> displayNames;
+    map<string, string> albumNames;
+    map<string, string> ownerAlbumIds;
+};
+
+class DeleteBehaviorTaskData : public AsyncTaskData {
+public:
+    DeleteBehaviorTaskData() = default;
+    ~DeleteBehaviorTaskData() override = default;
+
+    vector<string> notifyUris_;
+    int32_t updatedRows_;
 };
 
 int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
@@ -909,6 +925,74 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
     }).detach();
 }
 
+static void GetAlbumNamesById(DeleteBehaviorParams &filesParams)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAlbumNamesById");
+    CHECK_AND_RETURN_LOG(!filesParams.ownerAlbumIds.empty(), "ownerAlbumIds is empty");
+    vector<string> albumIdList;
+    set<string> albumIdSet;
+    for (const auto &fileId : filesParams.ownerAlbumIds) {
+        albumIdSet.insert(fileId.second);
+    }
+    albumIdList.assign(albumIdSet.begin(), albumIdSet.end());
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(uniStore != nullptr, "rdbstore is nullptr");
+    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PAH_ALBUM, OperationType::QUERY);
+    queryAlbumMapCmd.GetAbsRdbPredicates()->In(PhotoAlbumColumns::ALBUM_ID, albumIdList);
+    auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_NAME});
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query resultSet");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        filesParams.albumNames.insert({
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet,
+                TYPE_INT32))),
+            get<string>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_NAME, resultSet,
+                TYPE_STRING))});
+    }
+    resultSet->Close();
+}
+
+static void GetFilesParams(const vector<string> &notifyUris, DeleteBehaviorParams &filesParams)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetFilesParams");
+    vector<string> photoIdList;
+    for (const auto &uri : notifyUris) {
+        photoIdList.push_back(MediaFileUri::GetPhotoId(uri));
+    }
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(uniStore != nullptr, "rdbstore is nullptr");
+    MediaLibraryCommand queryAlbumMapCmd(OperationObject::PAH_PHOTO, OperationType::QUERY);
+    queryAlbumMapCmd.GetAbsRdbPredicates()->In(MediaColumn::MEDIA_ID, photoIdList);
+    auto resultSet = uniStore->Query(queryAlbumMapCmd, {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_NAME,
+        PhotoColumn::PHOTO_OWNER_ALBUM_ID});
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query resultSet");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        filesParams.displayNames.insert({
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))),
+            get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_NAME, resultSet, TYPE_STRING))});
+        filesParams.ownerAlbumIds.insert({
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))),
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet,
+                TYPE_INT32)))});
+    }
+    resultSet->Close();
+}
+
+static void DeleteBehaviorAsync(AsyncTaskData *data)
+{
+    MEDIA_DEBUG_LOG("DeleteBehaviorAsync start.");
+    CHECK_AND_RETURN_LOG(data != nullptr, "task data is nullptr");
+    auto *taskData = static_cast<DeleteBehaviorTaskData *>(data);
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is nullptr");
+    DeleteBehaviorParams filesParams;
+    GetFilesParams(taskData->notifyUris_, filesParams);
+    GetAlbumNamesById(filesParams);
+    DeleteBehaviorData dataInfo {filesParams.displayNames, filesParams.albumNames, filesParams.ownerAlbumIds};
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::TRASH_PHOTO,
+        taskData->updatedRows_, taskData->notifyUris_, "", dataInfo);
+}
+
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -940,7 +1024,15 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     CHECK_AND_WARN_LOG(static_cast<size_t>(updatedRows) == notifyUris.size(),
         "Try to notify %{public}zu items, but only %{public}d items updated.", notifyUris.size(), updatedRows);
     TrashPhotosSendNotify(notifyUris, albumData);
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::TRASH_PHOTO, updatedRows, notifyUris);
+
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, updatedRows, "Failed to get async worker instance!");
+    auto *taskData = new (std::nothrow) DeleteBehaviorTaskData();
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, updatedRows, "Failed to alloc async data!");
+    taskData->notifyUris_ = move(notifyUris);
+    taskData->updatedRows_ = updatedRows;
+    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(DeleteBehaviorAsync, taskData);
+    asyncWorker->AddTask(asyncTask, false);
     return updatedRows;
 }
 

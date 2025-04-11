@@ -29,17 +29,25 @@
 namespace OHOS {
 namespace Media {
 
+struct DeleteBehaviorData {
+    std::map<std::string, std::string> displayNames;
+    std::map<std::string, std::string> albumNames;
+    std::map<std::string, std::string> ownerAlbumIds;
+};
+
 class DeleteBehaviorTask : public DfxData {
 public:
     DeleteBehaviorTask(std::string id, int32_t type, int32_t size, std::vector<std::string> &uris,
-        std::shared_ptr<DfxReporter> dfxReporter) : id_(id), type_(type),  size_(size), uris_(uris),
-        dfxReporter_(dfxReporter) {}
+        std::shared_ptr<DfxReporter> dfxReporter,
+        const DeleteBehaviorData &deleteBehaviorData = {}) : id_(id), type_(type),  size_(size), uris_(uris),
+        dfxReporter_(dfxReporter), deleteBehaviorData_(deleteBehaviorData) {}
     virtual ~DeleteBehaviorTask() override = default;
     std::string id_;
     int32_t type_;
     int32_t size_;
     std::vector<std::string> uris_;
     std::shared_ptr<DfxReporter> dfxReporter_;
+    DeleteBehaviorData deleteBehaviorData_;
 };
 
 class StatisticData : public DfxData {
@@ -62,10 +70,12 @@ public:
     int64_t HandleMiddleReport();
     int64_t HandleOneDayReport();
     void HandleCommonBehavior(std::string bundleName, int32_t type);
-    void HandleDeleteBehavior(int32_t type, int32_t size, std::vector<std::string> &uris, std::string bundleName = "");
+    void HandleDeleteBehavior(int32_t type, int32_t size, std::vector<std::string> &uris, std::string bundleName = "",
+        const DeleteBehaviorData &deleteBehaviorData = {});
     void HandleDeleteBehaviors();
     void HandleNoPermmison(int32_t type, int32_t object, int32_t error);
     void HandleHalfDayMissions();
+    void HandleTwoDayMissions();
     void HandleAdaptationToMovingPhoto(const std::string &appName, bool adapted);
     void IsDirectoryExist(const std::string &dirName);
     void CheckStatus();

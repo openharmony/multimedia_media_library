@@ -41,6 +41,7 @@ public:
     EXPORT static int32_t QueryASTCThumb(bool isLocal);
     EXPORT static int32_t QueryLCDThumb(bool isLocal);
     EXPORT static int32_t QueryOperationRecordInfo(OperationRecordInfo &operationRecordInfo);
+    EXPORT static int32_t QueryPhotoErrorCount();
 
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,
