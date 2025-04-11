@@ -153,14 +153,14 @@ private:
     DataShare::DataShareValuesBucket creationValuesBucket_;
     std::vector<AssetChangeOperation> assetChangeOperations_;
     std::string realPath_;
-    void* dataBuffer_;
-    size_t dataBufferSize_;
-    AddResourceMode addResourceMode_;
+    void* dataBuffer_ = nullptr;
+    size_t dataBufferSize_ = 0;
+    AddResourceMode addResourceMode_ = AddResourceMode::DATA_BUFFER;
     std::string movingPhotoVideoRealPath_;
     std::string cacheMovingPhotoVideoName_;
-    void* movingPhotoVideoDataBuffer_;
-    size_t movingPhotoVideoBufferSize_;
-    AddResourceMode movingPhotoVideoResourceMode_;
+    void* movingPhotoVideoDataBuffer_ = nullptr;
+    size_t movingPhotoVideoBufferSize_ = 0;
+    AddResourceMode movingPhotoVideoResourceMode_ = AddResourceMode::DATA_BUFFER;
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
 };
 

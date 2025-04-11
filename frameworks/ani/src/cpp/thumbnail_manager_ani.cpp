@@ -49,17 +49,27 @@ namespace Media {
 
 static int OpenThumbnail(const string &path, ThumbnailType type)
 {
-    if (!path.empty()) {
-        string sandboxPath = GetSandboxPath(path, type);
-        int fd = -1;
-        if (!sandboxPath.empty()) {
-            fd = open(sandboxPath.c_str(), O_RDONLY);
-        }
-        if (fd > 0) {
-            return fd;
-        }
+    if (path.empty()) {
+        return E_ERR;
     }
-    return E_ERR;
+
+    string sandboxPath = GetSandboxPath(path, type);
+    if (sandboxPath.empty()) {
+        return E_ERR;
+    }
+
+    char realPath[PATH_MAX] = {0};
+    if (realpath(sandboxPath.c_str(), realPath) == nullptr) {
+        MEDIA_ERR_LOG("Failed to canonicalize path: %s", sandboxPath.c_str());
+        return E_ERR;
+    }
+
+    int fd = open(realPath, O_RDONLY);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("Failed to open %s", realPath);
+        return E_ERR;
+    }
+    return fd;
 }
 
 static int32_t GetPixelMapFromServer(const string &uriStr, const Size &size, const string &path)
