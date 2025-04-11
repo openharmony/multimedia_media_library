@@ -16,6 +16,7 @@
 #include "dfx_utils.h"
 
 #include <chrono>
+#include <codecvt>
 #include <iomanip>
 #include <sstream>
 
@@ -198,5 +199,48 @@ string DfxUtils::GetSafeAlbumName(const string& albumName)
     return safeAlbumName;
 }
 
+string DfxUtils::GetSafeAlbumNameWhenChinese(const string &albumName)
+{
+    CHECK_AND_RETURN_RET_LOG(!albumName.empty(), "", "input albumName is empty");
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+    std::u16string wideStr = converter.from_bytes(albumName);
+    uint32_t length = wideStr.size();
+    std::u16string safeAlbumName;
+    if (length <= GARBLE_SMALL) {
+        safeAlbumName = wideStr.substr(length - GARBLE_LAST_ONE);
+    } else if (length > GARBLE_LARGE) {
+        safeAlbumName = wideStr.substr(GARBLE_LARGE);
+    } else {
+        safeAlbumName = wideStr.substr(length - GARBLE_LAST_TWO);
+    }
+    return GARBLE + converter.to_bytes(safeAlbumName);
+}
+
+string DfxUtils::GetSafeDiaplayNameWhenChinese(const string &displayName)
+{
+    CHECK_AND_RETURN_RET_LOG(!displayName.empty(), "", "input displayName is empty");
+    string extension;
+    size_t splitIndex = displayName.find_last_of(DOT);
+    if (splitIndex == string::npos) {
+        extension = "";
+    } else {
+        extension = displayName.substr(splitIndex);
+    }
+    string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
+    CHECK_AND_RETURN_RET_LOG(!title.empty(), "", "input title is empty");
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+    std::u16string wideStr = converter.from_bytes(title);
+    uint32_t length = wideStr.size();
+    std::u16string safeTitle;
+    if (length <= GARBLE_SMALL) {
+        safeTitle = wideStr.substr(length - GARBLE_LAST_ONE);
+    } else if (length > GARBLE_LARGE) {
+        safeTitle = wideStr.substr(GARBLE_LARGE);
+    } else {
+        safeTitle = wideStr.substr(length - GARBLE_LAST_TWO);
+    }
+
+    return GARBLE + converter.to_bytes(safeTitle) + extension;
+}
 } // namespace Media
 } // namespace OHOS
