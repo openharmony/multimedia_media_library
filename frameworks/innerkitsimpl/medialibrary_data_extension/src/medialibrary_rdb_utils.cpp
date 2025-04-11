@@ -1491,9 +1491,8 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
         predicatesPhotos.And()->In(MediaColumn::MEDIA_ID, fileAssetsIds);
         ValuesBucket values;
         values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
-        int32_t updateRow = -1;
-        int ret = rdbStore->Update(updateRow, values, predicatesPhotos);
-        CHECK_AND_CONTINUE_ERR_LOG(ret == NativeRdb::E_OK,
+        int changedRows = rdbStore->UpdateWithDateTime(values, predicatesPhotos);
+        CHECK_AND_CONTINUE_ERR_LOG(changedRows >= 0,
             "Update failed on trashed, album id is: %{public}s", albumId.c_str());
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
             to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
