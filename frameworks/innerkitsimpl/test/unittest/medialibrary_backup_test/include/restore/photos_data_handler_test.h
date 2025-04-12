@@ -19,7 +19,7 @@
 #include "gtest/gtest.h"
 
 namespace OHOS::Media {
-class PhotoAlbumCloneTest : public testing::Test {
+class PhotosDataHandlerTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
