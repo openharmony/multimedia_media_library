@@ -27,7 +27,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_notify.h"
-#include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -40,6 +39,7 @@
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
+#include "thumbnail_file_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
@@ -50,15 +50,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
-void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data)
-{
-    std::string photoId = opts.row.empty() ? data.id : opts.row;
-    std::string tmpPath = opts.path.empty() ? data.path : opts.path;
-    if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::StoreThumbnailSize(photoId, tmpPath);
-    }
-}
 
 void IThumbnailHelper::CloudSyncOnGenerationComplete(std::shared_ptr<ThumbnailTaskData> &data)
 {
@@ -136,9 +127,11 @@ void IThumbnailHelper::DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData>
         MEDIA_ERR_LOG("DeleteMonthAndYearAstc failed, data is null");
         return;
     }
-    if (!ThumbnailUtils::DoDeleteMonthAndYearAstc(data->opts_)) {
+    MEDIA_INFO_LOG("Start DeleteMonthAndYearAstc, id: %{public}s, dateKey:%{public}s",
+        data->thumbnailData_.id.c_str(), data->thumbnailData_.dateTaken.c_str());
+    if (!ThumbnailFileUtils::DeleteMonthAndYearAstc(data->thumbnailData_)) {
         MEDIA_ERR_LOG("DeleteMonthAndYearAstc failed, key is %{public}s and %{public}s",
-            data->opts_.row.c_str(), data->opts_.dateTaken.c_str());
+            data->thumbnailData_.id.c_str(), data->thumbnailData_.dateTaken.c_str());
     }
 }
 
@@ -225,7 +218,7 @@ static bool WaitFor(const shared_ptr<ThumbnailSyncStatus> &thumbnailWait, int wa
 
 WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type, const string &dateModified)
 {
-    id_ = id + ThumbnailUtils::GetThumbnailSuffix(type);
+    id_ = id + ThumbnailFileUtils::GetThumbnailSuffix(type);
     dateModified_ = dateModified;
     unique_lock<shared_mutex> writeLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
@@ -333,7 +326,7 @@ bool ThumbnailWait::TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType ty
 {
     ThumbnailType idType = (type == ThumbnailType::LCD || type == ThumbnailType::LCD_EX) ?
         ThumbnailType::LCD : ThumbnailType::THUMB;
-    id_ = data.id + ThumbnailUtils::GetThumbnailSuffix(idType);
+    id_ = data.id + ThumbnailFileUtils::GetThumbnailSuffix(idType);
     MEDIA_INFO_LOG("Save current pixelMap, path: %{public}s, type: %{public}d",
         DfxUtils::GetSafePath(data.path).c_str(), type);
     unique_lock<shared_mutex> writeLck(mutex_);
@@ -371,7 +364,7 @@ bool ThumbnailWait::TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType ty
 
 bool ThumbnailWait::TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, const string &tempOutputPath)
 {
-    id_ = data.id + ThumbnailUtils::GetThumbnailSuffix(ThumbnailType::LCD);
+    id_ = data.id + ThumbnailFileUtils::GetThumbnailSuffix(ThumbnailType::LCD);
     MEDIA_INFO_LOG("Save current picture, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     unique_lock<shared_mutex> writeLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
@@ -505,7 +498,7 @@ void ThumbnailWait::Notify()
 
 bool ThumbnailSyncStatus::CheckSavedFileMap(const string &id, ThumbnailType type, const string &dateModified)
 {
-    std::string saveId = id + ThumbnailUtils::GetThumbnailSuffix(type);
+    std::string saveId = id + ThumbnailFileUtils::GetThumbnailSuffix(type);
     auto iter = latestSavedFileMap_.find(id);
     if (iter != latestSavedFileMap_.end() && (iter->second > dateModified)) {
         return false;
@@ -515,7 +508,7 @@ bool ThumbnailSyncStatus::CheckSavedFileMap(const string &id, ThumbnailType type
 
 bool ThumbnailSyncStatus::UpdateSavedFileMap(const string &id, ThumbnailType type, const string &dateModified)
 {
-    std::string saveId = id + ThumbnailUtils::GetThumbnailSuffix(type);
+    std::string saveId = id + ThumbnailFileUtils::GetThumbnailSuffix(type);
     auto iter = latestSavedFileMap_.find(id);
     if (iter != latestSavedFileMap_.end()) {
         if (iter->second > dateModified) {
@@ -630,7 +623,7 @@ void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
         return;
     }
     if (data.isNeedStoreSize) {
-        StoreThumbnailSize(opts, data);
+        ThumbnailUtils::StoreThumbnailSize(opts, data);
     }
     data.isNeedStoreSize = true;
     int err = 0;
@@ -999,11 +992,14 @@ bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailD
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return false;
     }
+    CHECK_AND_RETURN_RET_LOG(changedRows != 0, false, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
+        data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
     return true;
 }
 
 int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
+    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
     ValuesBucket values;
     int changedRows;
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
@@ -1019,11 +1015,13 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     }
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
-    StoreThumbnailSize(opts, data);
+    ThumbnailUtils::StoreThumbnailSize(opts, data);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return E_ERR;
     }
+    CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
+        data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
     return E_OK;
 }
 
@@ -1081,7 +1079,7 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
         return true;
     }
 
-    if (ThumbnailUtils::IsSupportGenAstc() && !GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
+    if (ThumbnailImageFrameWorkUtils::IsSupportGenAstc() && !GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
         return false;
     }
 
