@@ -28,22 +28,14 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryTableAssetAlbumOperations::Que
     const NativeRdb::RdbPredicates &rdbPredicate, const std::vector<std::string> &columns)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbstore is nullptr");
-        return nullptr;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, nullptr, "rdbstore is nullptr");
     return rdbStore->QueryWithFilter(rdbPredicate, columns);
 }
 
 int32_t MediaLibraryTableAssetAlbumOperations::Delete(NativeRdb::RdbPredicates &rdbPredicate)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbstore is nullptr");
-        return E_HAS_DB_ERROR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbstore is nullptr");
     return rdbStore->Delete(rdbPredicate);
 }
 
@@ -72,10 +64,7 @@ int32_t MediaLibraryTableAssetAlbumOperations::OprnTableOversizeChecker(void)
         }
         if (rowCount > OPRN_TABLE_OVERSIZE_LIMIT) {
             int ret = rdbStore->ExecuteSql(DELETE_FROM_OPERATION_TABLE);
-            if (ret != NativeRdb::E_OK) {
-                MEDIA_ERR_LOG("Query not match data fails");
-                return E_HAS_DB_ERROR;
-            }
+            CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "Query not match data fails");
             MEDIA_INFO_LOG("oprn table aging delete");
         }
         lastcheckTime = MediaFileUtils::UTCTimeMilliSeconds();

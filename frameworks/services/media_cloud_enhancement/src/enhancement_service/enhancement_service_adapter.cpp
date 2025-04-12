@@ -660,17 +660,14 @@ int32_t EnhancementServiceAdapter::GetPendingTasks(vector<std::string> &taskIdLi
 void EnhancementServiceAdapter::DeletePendingTasks(Pending_Task* taskIdList, uint32_t size)
 {
     int32_t ret = LoadEnhancementService();
-    if (ret != E_OK) {
-        return;
-    }
+    CHECK_AND_RETURN(ret == E_OK);
+
     if (clientGetPendingTask == nullptr) {
         clientDeletePendingTask = (ClientDeletePendingTask)dynamicLoader_->GetFunction(MEDIA_CLOUD_ENHANCE_LIB_SO,
             "MediaEnhance_DeletePendingTasks");
     }
-    if (clientDeletePendingTask == nullptr) {
-        MEDIA_ERR_LOG("MediaEnhance_DeletePendingTasks dlsym failed. error:%{public}s", dlerror());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(clientDeletePendingTask != nullptr,
+        "MediaEnhance_DeletePendingTasks dlsym failed. error:%{public}s", dlerror());
     clientDeletePendingTask(taskIdList, size);
 }
 #endif
