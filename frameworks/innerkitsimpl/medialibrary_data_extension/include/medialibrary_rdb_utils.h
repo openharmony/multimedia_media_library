@@ -125,6 +125,7 @@ public:
     EXPORT static void UpdateSystemAlbumExcludeSource(bool shouldNotify = false);
     EXPORT static int32_t UpdateHighlightPlayInfo(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::string &albumId);
+    EXPORT static void UpdateShootingModeAlbum(const std::shared_ptr<MediaLibraryRdbStore> rdbStore);
     static bool AnalyzePhotosData();
 
 private:
