@@ -26,21 +26,16 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void MediaLibraryCommonUtilsTest::SetUpTestCase(void) {}
 
-void MediaLibraryCommonUtilsTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MediaLibraryCommonUtilsTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void MediaLibraryCommonUtilsTest::SetUp() {}
 
 void MediaLibraryCommonUtilsTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GenKeySHA256_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GenKeySHA256_test_001, TestSize.Level1)
 {
     vector<uint8_t> input;
     string key = "";
@@ -48,7 +43,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GenKeySHA256_test_001, TestSize.L
     EXPECT_EQ(ret, -EINVAL);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GenKeySHA256_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GenKeySHA256_test_002, TestSize.Level1)
 {
     string input = "";
     string key = "";
@@ -56,7 +51,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GenKeySHA256_test_002, TestSize.L
     EXPECT_EQ(ret, -EINVAL);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckWhereClause_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckWhereClause_test_001, TestSize.Level1)
 {
     string whereClause = "";
     bool ret = MediaLibraryCommonUtils::CheckWhereClause(whereClause);
@@ -69,7 +64,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckWhereClause_test_001, TestSi
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_AppendSelections_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_AppendSelections_test_001, TestSize.Level1)
 {
     string selections = "";
     MediaLibraryCommonUtils::AppendSelections(selections);
@@ -78,7 +73,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_AppendSelections_test_001, TestSi
     EXPECT_EQ(selections, "(AppendSelections)");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Char2Hex_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Char2Hex_test_001, TestSize.Level1)
 {
     unsigned char hash[64] = "";
     size_t len = 2;
@@ -87,7 +82,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Char2Hex_test_001, TestSize.Level
     EXPECT_NE(hexStr, "");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GenKey_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GenKey_test_001, TestSize.Level1)
 {
     unsigned char hash[64] = "";
     size_t len = 0;
@@ -99,7 +94,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GenKey_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckIllegalCharacter_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckIllegalCharacter_test_001, TestSize.Level1)
 {
     string strCondition = "";
     bool ret = MediaLibraryCommonUtils::CheckIllegalCharacter(strCondition);
@@ -109,7 +104,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckIllegalCharacter_test_001, T
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckKeyWord_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckKeyWord_test_001, TestSize.Level1)
 {
     string strCondition = "";
     bool ret = MediaLibraryCommonUtils::CheckKeyWord(strCondition);
@@ -119,7 +114,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckKeyWord_test_001, TestSize.L
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_SeprateSelection_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_SeprateSelection_test_001, TestSize.Level1)
 {
     string strCondition = "SeprateSelection";
     vector<string> sepratedStr;
@@ -127,7 +122,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_SeprateSelection_test_001, TestSi
     EXPECT_NE(sepratedStr.size(), 0);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckExpressValidation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckExpressValidation_test_001, TestSize.Level1)
 {
     vector<string> sepratedStr;
     bool ret = MediaLibraryCommonUtils::CheckExpressValidation(sepratedStr);
@@ -140,7 +135,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckExpressValidation_test_001, 
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckExpressValidation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckExpressValidation_test_002, TestSize.Level1)
 {
     vector<string> sepratedStr;
     sepratedStr.push_back("parent");
@@ -154,7 +149,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckExpressValidation_test_002, 
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckWhiteList_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckWhiteList_test_001, TestSize.Level1)
 {
     string express = "";
     bool ret = MediaLibraryCommonUtils::CheckWhiteList(express);
@@ -164,7 +159,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckWhiteList_test_001, TestSize
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_ExtractKeyWord_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_ExtractKeyWord_test_001, TestSize.Level1)
 {
     string str = "";
     MediaLibraryCommonUtils::ExtractKeyWord(str);
@@ -179,7 +174,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_ExtractKeyWord_test_001, TestSize
     EXPECT_EQ(str, "date_added");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_RemoveSpecialCondition_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_RemoveSpecialCondition_test_001, TestSize.Level1)
 {
     string hacker = "";
     MediaLibraryCommonUtils::RemoveSpecialCondition(hacker);
@@ -188,7 +183,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_RemoveSpecialCondition_test_001, 
     EXPECT_EQ(hacker, "RemoveSpecialCondition ");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_RemoveSpecialCondition_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_RemoveSpecialCondition_test_002, TestSize.Level1)
 {
     string hacker = "";
     string pattern = "?";

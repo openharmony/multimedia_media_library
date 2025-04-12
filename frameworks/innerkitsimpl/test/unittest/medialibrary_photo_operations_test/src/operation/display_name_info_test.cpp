@@ -55,7 +55,7 @@ std::string DisplayNameInfoTest::GetTestTitle(int32_t length)
     return title;
 }
 
-HWTEST_F(DisplayNameInfoTest, displayname_distinguish_non_burst_photo, TestSize.Level0)
+HWTEST_F(DisplayNameInfoTest, displayname_distinguish_non_burst_photo, TestSize.Level1)
 {
     PhotoAssetInfo photoAssetInfo;
     // Pattern: IMG_3025.jpg
@@ -72,7 +72,7 @@ HWTEST_F(DisplayNameInfoTest, displayname_distinguish_non_burst_photo, TestSize.
     }
 }
 
-HWTEST_F(DisplayNameInfoTest, displayname_distinguish_burst_photo_without_index, TestSize.Level0)
+HWTEST_F(DisplayNameInfoTest, displayname_distinguish_burst_photo_without_index, TestSize.Level1)
 {
     PhotoAssetInfo photoAssetInfo;
     // Pattern: IMG_20240222_135017_BURST004.jpg
@@ -93,7 +93,7 @@ HWTEST_F(DisplayNameInfoTest, displayname_distinguish_burst_photo_without_index,
     }
 }
 
-HWTEST_F(DisplayNameInfoTest, displayname_distinguish_burst_photo_with_index, TestSize.Level0)
+HWTEST_F(DisplayNameInfoTest, displayname_distinguish_burst_photo_with_index, TestSize.Level1)
 {
     PhotoAssetInfo photoAssetInfo;
     // Pattern: IMG_20240222_135017_9_BURST004.jpg
@@ -115,7 +115,7 @@ HWTEST_F(DisplayNameInfoTest, displayname_distinguish_burst_photo_with_index, Te
     }
 }
 
-HWTEST_F(DisplayNameInfoTest, displayname_max_length_limit_255, TestSize.Level0)
+HWTEST_F(DisplayNameInfoTest, displayname_max_length_limit_255, TestSize.Level1)
 {
     PhotoAssetInfo photoAssetInfo;
     // Pattern: IMG_3025.jpg
@@ -131,7 +131,7 @@ HWTEST_F(DisplayNameInfoTest, displayname_max_length_limit_255, TestSize.Level0)
     EXPECT_EQ(displayName, expectedDisplayName);
 }
 
-HWTEST_F(DisplayNameInfoTest, displayname_max_length_limit_255_with_index, TestSize.Level0)
+HWTEST_F(DisplayNameInfoTest, displayname_max_length_limit_255_with_index, TestSize.Level1)
 {
     PhotoAssetInfo photoAssetInfo;
     // Pattern: IMG_3025.jpg

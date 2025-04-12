@@ -45,7 +45,7 @@ void MtpPacketToolsTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: Put UInt/Int
  */
-HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_001, TestSize.Level0)
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_001, TestSize.Level1)
 {
     std::vector<uint8_t> outBuffer;
     uint64_t testValue = 0x123456789ABCDEF0;
@@ -64,7 +64,7 @@ HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_001, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: Get UInt/Int
  */
-HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_002, TestSize.Level0)
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_002, TestSize.Level1)
 {
     std::vector<uint8_t> buffer = {
     0x01, 0x02, 0x03, 0x04,
@@ -90,7 +90,7 @@ HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_002, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetAUInt16
  */
-HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_003, TestSize.Level0)
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_003, TestSize.Level1)
 {
     std::vector<uint8_t> buffer = {
     0x01, 0x02, 0x03, 0x04,
@@ -112,7 +112,7 @@ HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_003, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetAUInt16
  */
-HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_004, TestSize.Level0)
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_004, TestSize.Level1)
 {
     std::vector<uint8_t> buffer = {
     0x01, 0x02, 0x03, 0x04,
@@ -132,7 +132,7 @@ HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_004, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: Get*Name
  */
-HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_005, TestSize.Level0)
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_005, TestSize.Level1)
 {
     uint16_t testValue = 0x0001;
     int testValue_2 = 0x0002;
@@ -153,7 +153,7 @@ HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_005, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: Int/UINT*ToString
  */
-HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_006, TestSize.Level0)
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_006, TestSize.Level1)
 {
     int8_t testValue = 1;
     uint8_t testValue_2 = 2;
@@ -187,7 +187,7 @@ HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_006, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetIndentBlank&&DumpPacket
  */
-HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_007, TestSize.Level0)
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_007, TestSize.Level1)
 {
     OHOS::system::SetParameter("multimedia.medialibrary.mtp_show_dump", "false");
     std::vector<uint8_t> outbuffer = {
@@ -207,7 +207,7 @@ HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_007, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetIndentBlank&&DumpPacket
  */
-HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_008, TestSize.Level0)
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_008, TestSize.Level1)
 {
     OHOS::system::SetParameter("multimedia.medialibrary.mtp_show_dump", "true");
     std::vector<uint8_t> outbuffer = {
@@ -227,7 +227,7 @@ HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_008, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetIndentBlank&&DumpPacket
  */
-HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_009, TestSize.Level0)
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_009, TestSize.Level1)
 {
     OHOS::system::SetParameter("multimedia.medialibrary.mtp_show_dump", "true");
     std::vector<uint8_t> outbuffer = {

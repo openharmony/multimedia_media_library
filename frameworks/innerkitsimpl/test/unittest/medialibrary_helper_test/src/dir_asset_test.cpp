@@ -45,7 +45,7 @@ const std::string DIR_ALL_IMAGE_CONTAINER_TYPE = "." + IMAGE_CONTAINER_TYPE_BMP 
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, DirAsset_SetGet_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, DirAsset_SetGet_Test_001, TestSize.Level1)
 {
     DirAsset dirAsset;
 

@@ -150,7 +150,7 @@ int32_t GetAlbumCountByCondition(shared_ptr<NativeRdb::RdbStore> rdbStore, const
     return result;
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_001, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_restore_albums_test_001 start");
     ClearHighlightData();
@@ -173,7 +173,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_albums_test_
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_001, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_restore_maps_test_001 start");
     ClearHighlightData();
@@ -204,7 +204,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_restore_maps_test_00
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_001, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_values_test_001 start");
     ClearHighlightData();
@@ -234,7 +234,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_values_test_0
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_001, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_001 start");
     ClearHighlightData();
@@ -265,7 +265,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_002, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_002 start");
     ClearHighlightData();
@@ -294,7 +294,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_003, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_003 start");
     ClearHighlightData();
@@ -323,7 +323,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_004, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_004 start");
     ClearHighlightData();
@@ -354,7 +354,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_005, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_update_albums_test_005 start");
     ClearHighlightData();
@@ -384,7 +384,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_update_albums_test_0
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_album_id_test_001, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_album_id_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_album_id_test_001 start");
     ClearHighlightData();
@@ -397,7 +397,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_al
     EXPECT_EQ(newId, testInfo.highlightIdNew.value());
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_id_test_001, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_id_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_photo_id_test_001 start");
     ClearHighlightData();
@@ -406,7 +406,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_ph
     EXPECT_EQ(newId, 2);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_uri_test_001, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_photo_uri_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_get_new_highlight_photo_uri_test_001 start");
     ClearHighlightData();
@@ -415,7 +415,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_get_new_highlight_ph
     EXPECT_EQ(newUri, "photouri");
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_is_clone_highlight_test_001, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_is_clone_highlight_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_is_clone_highlight_test_001 start");
     ClearHighlightData();
@@ -424,7 +424,7 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_is_clone_highlight_t
     EXPECT_EQ(isClone, false);
 }
 
-HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_deduplicate_test_001, TestSize.Level0)
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_deduplicate_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("clone_restore_highlight_deduplicate_test_001 start");
     ClearHighlightData();

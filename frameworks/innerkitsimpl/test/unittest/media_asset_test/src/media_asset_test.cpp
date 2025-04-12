@@ -29,14 +29,9 @@ namespace Media {
 using namespace std;
 using namespace testing::ext;
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void MediaAssetTest::SetUpTestCase(void) {}
 
-void MediaAssetTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MediaAssetTest::TearDownTestCase(void) {}
 
 void MediaAssetTest::SetUp(void) {}
 
@@ -49,7 +44,7 @@ void MediaAssetTest::FreeCharPointer(const char *freeCharPointer)
     }
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetUri_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetUri_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -61,7 +56,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetUri_test_001, TestSize.Level0)
     FreeCharPointer(uri);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetUri_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetUri_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -71,7 +66,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetUri_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDisplayName_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDisplayName_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -83,7 +78,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDisplayName_test_001, TestSize.Level0)
     FreeCharPointer(displayName);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDisplayName_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDisplayName_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -93,7 +88,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDisplayName_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetSize_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetSize_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -104,7 +99,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetSize_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetSize_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetSize_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -117,7 +112,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetSize_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateModifiedMs_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateModifiedMs_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -128,7 +123,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateModifiedMs_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateModifiedMs_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateModifiedMs_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -141,7 +136,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateModifiedMs_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetWidth_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetWidth_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -152,7 +147,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetWidth_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetWidth_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetWidth_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -165,7 +160,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetWidth_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetHeight_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetHeight_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -176,7 +171,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetHeight_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetHeight_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetHeight_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -189,7 +184,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetHeight_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetOrientation_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetOrientation_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -200,7 +195,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetOrientation_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetOrientation_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetOrientation_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -213,7 +208,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetOrientation_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_Release_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_Release_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -229,7 +224,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_Release_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetMediaType_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetMediaType_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
@@ -241,7 +236,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetMediaType_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetMediaType_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetMediaType_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -254,7 +249,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetMediaType_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetMediaSubType_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetMediaSubType_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -265,7 +260,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetMediaSubType_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetMediaSubType_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetMediaSubType_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -275,7 +270,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetMediaSubType_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateAdded_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateAdded_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -286,7 +281,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateAdded_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateAdded_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateAdded_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -299,7 +294,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateAdded_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateModified_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateModified_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -310,7 +305,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateModified_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateModified_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateModified_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -323,7 +318,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateModified_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateTaken_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateTaken_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -334,7 +329,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateTaken_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateTaken_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateTaken_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -347,7 +342,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateTaken_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateAddedMs_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateAddedMs_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -358,7 +353,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateAddedMs_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDateAddedMs_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDateAddedMs_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -371,7 +366,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDateAddedMs_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDuration_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDuration_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -382,7 +377,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDuration_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetDuration_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetDuration_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -395,7 +390,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetDuration_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_IsFavorite_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_IsFavorite_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -406,7 +401,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_IsFavorite_test_001, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_IsFavorite_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_IsFavorite_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -419,7 +414,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_IsFavorite_test_002, TestSize.Level0)
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetTitle_test_001, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetTitle_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
@@ -431,7 +426,7 @@ HWTEST_F(MediaAssetTest, mediaAsset_GetTitle_test_001, TestSize.Level0)
     FreeCharPointer(title);
 }
 
-HWTEST_F(MediaAssetTest, mediaAsset_GetTitle_test_002, TestSize.Level0)
+HWTEST_F(MediaAssetTest, mediaAsset_GetTitle_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);

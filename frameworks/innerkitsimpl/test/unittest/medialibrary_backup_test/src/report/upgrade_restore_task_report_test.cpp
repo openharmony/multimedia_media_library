@@ -31,7 +31,6 @@ using namespace testing::ext;
 using namespace std;
 namespace OHOS::Media {
  
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const int32_t EXPECTED_COUNT_0 = 0;
 const int32_t EXPECTED_COUNT_1 = 1;
   
@@ -42,7 +41,6 @@ void UpgradeRestoreTaskReportTest::SetUpTestCase(void)
   
 void UpgradeRestoreTaskReportTest::TearDownTestCase(void)
 {
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("TearDownTestCase");
 }
   

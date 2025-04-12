@@ -95,7 +95,7 @@ void PhotoAlbumCopyMetaDataOperationTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(PhotoAlbumCopyMetaDataOperationTest, CopyAlbumMetaData_Test, TestSize.Level0)
+HWTEST_F(PhotoAlbumCopyMetaDataOperationTest, CopyAlbumMetaData_Test, TestSize.Level1)
 {
     NativeRdb::ValuesBucket values;
     int32_t newAlbumId = PhotoAlbumCopyMetaDataOperation()

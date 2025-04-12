@@ -73,8 +73,6 @@ namespace Media {
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void CleanTestTables()
 {
     vector<string> dropTableList = {
@@ -209,7 +207,6 @@ void MediaLibraryAppUriPermissionOperationsTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 
@@ -255,7 +252,7 @@ int TestInsert(DataShareValuesBucket &dataShareValue)
 /**
  * insert a new persist read data.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -278,7 +275,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 /**
  * insert a new temporary read data.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -302,7 +299,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 /**
  * insert a repeat persist read data, and the origin data is temporary read.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_003");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -334,7 +331,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 /**
  * insert a repeat temporary read data, and the origin data is persist read.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_004");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -373,7 +370,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 /**
  * insert a repeat persist read data, and the origin data is persist read, too.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_005");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -413,7 +410,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 /**
  * insert a new data, but this data lacks the fileId.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_006");
 
@@ -440,7 +437,7 @@ int TestDelete(OHOS::DataShare::DataSharePredicates &dataSharePredicate)
 /**
  * cancel a data.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_007");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -482,7 +479,7 @@ int TestBatchInsert(std::vector<DataShare::DataShareValuesBucket> &dataShareValu
 /**
  * batch insert two new temporary read data.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_008");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -512,7 +509,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 /**
  * batch insert two repeat persist read data, and the two origin data is temporary read.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_009");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -555,7 +552,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
 /**
  * batch insert two repeat persist read data, and the two origin data is persist read, too.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_010");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -600,7 +597,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
  * The first data is repeat data, and the permission of origin data is persist read.
  * The second data is new.
  */
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_011");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -638,7 +635,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_011");
 }
 
-HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, medialibrary_grant_permission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, medialibrary_grant_permission_test_001, TestSize.Level1)
 {
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
     for (int i = 0; i < 2; ++i) {

@@ -150,7 +150,7 @@ string GetFilePath(int fileId)
 }
 
 static int32_t fileId = 0;
-HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MetaRecovery_Backup_001::Start");
     // open
@@ -192,7 +192,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_001, TestSize.Lev
     MEDIA_INFO_LOG("MetaRecovery_Backup_001::End");
 }
 
-HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_002, TestSize.Level0)
+HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MetaRecovery_Backup_002::Start");
     MediaLibraryMetaRecovery::GetInstance().InterruptRecovery();
@@ -213,7 +213,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_Backup_002, TestSize.Lev
     MEDIA_INFO_LOG("MetaRecovery_Backup_002::End");
 }
 
-HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_WriteSingleMetaDataById_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_WriteSingleMetaDataById_Test_001, TestSize.Level1)
 {
     auto ret = MediaLibraryMetaRecovery::GetInstance().WriteSingleMetaDataById(-1);
     EXPECT_EQ(ret, E_OK);
@@ -227,7 +227,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_WriteSingleMetaDataById_
     remove(metaPath.c_str());
 }
 
-HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_DeleteMetaDataByPath_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_DeleteMetaDataByPath_Test_001, TestSize.Level1)
 {
     int ret = E_OK;
     string photoPath = "/storage/cloud/files/Photo/test_file.jpg";
@@ -241,7 +241,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_DeleteMetaDataByPath_Tes
     EXPECT_EQ(ret, E_INVALID_PATH);
 }
 
-HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_SetRdbRebuiltStatus_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_SetRdbRebuiltStatus_Test_001, TestSize.Level1)
 {
     int32_t ret = MediaLibraryMetaRecovery::GetInstance().SetRdbRebuiltStatus(true);
     EXPECT_EQ(ret, E_OK);
@@ -251,7 +251,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_SetRdbRebuiltStatus_Test
     EXPECT_EQ(MediaLibraryMetaRecovery::GetInstance().rdbRebuilt_, false);
 }
 
-HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_StartAsyncRecovery_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_StartAsyncRecovery_Test_001, TestSize.Level1)
 {
     int32_t ret;
 
@@ -279,7 +279,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_StartAsyncRecovery_Test_
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_AlbumRecovery_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_AlbumRecovery_Test_001, TestSize.Level1)
 {
     int ret = E_OK;
     const string albumMetaPath = "/storage/cloud/files/not_exist_file";
@@ -291,7 +291,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_AlbumRecovery_Test_001, 
     EXPECT_NE(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_PhotoRecovery_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_PhotoRecovery_Test_001, TestSize.Level1)
 {
     int ret = E_OK;
     string photoMetaPath = "/storage/cloud/files/test_file";
@@ -313,7 +313,7 @@ HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_PhotoRecovery_Test_001, 
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_ScanMetaDir_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMetaRecoveryUnitTest, MetaRecovery_ScanMetaDir_Test_001, TestSize.Level1)
 {
     int ret = E_OK;
     string photoMetaPath = "/storage/cloud/files/test_file";

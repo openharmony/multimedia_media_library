@@ -27,20 +27,17 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void MediaLibraryManagerUtilsTest::SetUpTestCase(void) {}
 
-void MediaLibraryManagerUtilsTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MediaLibraryManagerUtilsTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void MediaLibraryManagerUtilsTest::SetUp() {}
 
 void MediaLibraryManagerUtilsTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryManagerUtilsTest, medialib_IsNumber_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_IsNumber_test_001, TestSize.Level1)
 {
     string srt = "";
     bool ret = MediaLibraryDataManagerUtils::IsNumber(srt);
@@ -53,7 +50,7 @@ HWTEST_F(MediaLibraryManagerUtilsTest, medialib_IsNumber_test_001, TestSize.Leve
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetOperationType_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetOperationType_test_001, TestSize.Level1)
 {
     string uri = "medialib_GetOperationType_test_001/test";
     string ret = MediaLibraryDataManagerUtils::GetOperationType(uri);
@@ -63,7 +60,7 @@ HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetOperationType_test_001, TestS
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetDisPlayNameFromPath_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetDisPlayNameFromPath_test_001, TestSize.Level1)
 {
     string path = "medialib_GetDisPlayNameFromPath_test_001/test";
     string ret = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(path);
@@ -73,7 +70,7 @@ HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetDisPlayNameFromPath_test_001,
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryManagerUtilsTest, medialib_ObtionCondition_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_ObtionCondition_test_001, TestSize.Level1)
 {
     std::vector<string> whereArgs;
     whereArgs.push_back("medialib_ObtionCondition_test_001");

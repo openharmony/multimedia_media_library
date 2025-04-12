@@ -47,7 +47,7 @@ void MtpSubcriberUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: Subscribe
  */
-HWTEST_F(MtpSubcriberUnitTest, medialibrary_parser_test_001, TestSize.Level0)
+HWTEST_F(MtpSubcriberUnitTest, medialibrary_parser_test_001, TestSize.Level1)
 {
     EventFwk::MatchingSkills matchingSkills;
     matchingSkills.AddEvent("SomeEvent");
@@ -66,7 +66,7 @@ HWTEST_F(MtpSubcriberUnitTest, medialibrary_parser_test_001, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: OnReceiveEvent
  */
-HWTEST_F(MtpSubcriberUnitTest, medialibrary_parser_test_002, TestSize.Level0)
+HWTEST_F(MtpSubcriberUnitTest, medialibrary_parser_test_002, TestSize.Level1)
 {
     EventFwk::MatchingSkills matchingSkills;
     matchingSkills.AddEvent("SomeEvent");

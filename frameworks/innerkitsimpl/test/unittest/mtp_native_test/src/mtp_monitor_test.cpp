@@ -19,13 +19,13 @@ using namespace std;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-HWTEST_F(MtpNativeTest, mtp_monitor_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_monitor_test_001, TestSize.Level1)
 {
     MtpMonitor mtpMonitor;
     EXPECT_EQ(mtpMonitor.interruptFlag, false);
 }
 
-HWTEST_F(MtpNativeTest, mtp_monitor_test_002, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_monitor_test_002, TestSize.Level1)
 {
     MtpMonitor mtpMonitor;
     mtpMonitor.Stop();

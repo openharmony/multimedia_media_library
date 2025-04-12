@@ -28,7 +28,6 @@
 using namespace testing::ext;
 
 namespace OHOS::Media {
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static constexpr int32_t OLD_ALBUM_ID = 1;
 static constexpr int32_t NEW_ALBUM_ID = 2;
 
@@ -39,7 +38,6 @@ void PhotoAlbumMergeOperationTest::SetUpTestCase(void)
 
 void PhotoAlbumMergeOperationTest::TearDownTestCase(void)
 {
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("TearDownTestCase");
 }
 

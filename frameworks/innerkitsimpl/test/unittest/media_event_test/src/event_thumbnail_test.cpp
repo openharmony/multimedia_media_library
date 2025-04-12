@@ -31,7 +31,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 class ConfigTestOpenCall : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
@@ -68,7 +68,6 @@ void EventThumbnailTest::SetUpTestCase(void)
 void EventThumbnailTest::TearDownTestCase(void)
 {
     MediaLibraryUnitTestUtils::StopUnistore();
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case
@@ -76,7 +75,7 @@ void EventThumbnailTest::SetUp() {}
 
 void EventThumbnailTest::TearDown(void) {}
 
-HWTEST_F(EventThumbnailTest, medialib_event_GetThumbnail_test_001, TestSize.Level0)
+HWTEST_F(EventThumbnailTest, medialib_event_GetThumbnail_test_001, TestSize.Level1)
 {
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     string uri = "";
@@ -85,7 +84,7 @@ HWTEST_F(EventThumbnailTest, medialib_event_GetThumbnail_test_001, TestSize.Leve
     serverTest->ReleaseService();
 }
 
-HWTEST_F(EventThumbnailTest, medialib_event_UpdateLcdInfo_test_001, TestSize.Level0)
+HWTEST_F(EventThumbnailTest, medialib_event_UpdateLcdInfo_test_001, TestSize.Level1)
 {
     string row = "medialib_UpdateLcdInfo_test_001";
     string table = "medialib_UpdateLcdInfo_test_001";
@@ -100,7 +99,7 @@ HWTEST_F(EventThumbnailTest, medialib_event_UpdateLcdInfo_test_001, TestSize.Lev
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(EventThumbnailTest, medialib_event_UpdateVisitTime_test_001, TestSize.Level0)
+HWTEST_F(EventThumbnailTest, medialib_event_UpdateVisitTime_test_001, TestSize.Level1)
 {
     ThumbRdbOpt opts = {
         .store = storePtr,
