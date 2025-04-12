@@ -347,9 +347,7 @@ void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb:
     std::string updateSql = "UPDATE tab_analysis_face_tag SET count = (SELECT count(1) from tab_analysis_image_face \
         WHERE tab_analysis_image_face.tag_id = tab_analysis_face_tag.tag_id)";
     int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
-    if (errCode < 0) {
-        MEDIA_ERR_LOG("execute update analysis face tag count failed, ret=%{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis face tag count failed, ret=%{public}d", errCode);
 }
 
 void BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,

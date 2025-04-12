@@ -586,9 +586,8 @@ bool MediaFileUtils::CopyDirAndDelSrc(const std::string &srcPath, const std::str
     }
     struct dirent* entry;
     while ((entry = readdir(srcDir))!= nullptr) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
+        bool cond = (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0);
+        CHECK_AND_CONTINUE(!cond);
         string srcSubPath = srcPath + SLASH_STR + (entry->d_name);
         string destSubPath = destPath + SLASH_STR + (entry->d_name);
         if (entry->d_type == DT_DIR) {
@@ -944,16 +943,10 @@ int32_t MediaFileUtils::CheckTitle(const string &title)
 
 int32_t MediaFileUtils::CheckTitleCompatible(const string& title)
 {
-    if (title.empty()) {
-        MEDIA_ERR_LOG("Title is empty.");
-        return -EINVAL;
-    }
-    
+    CHECK_AND_RETURN_RET_LOG(!title.empty(), -EINVAL, "Title is empty.");
     static const string titleRegexCheck = R"([\.\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(title, titleRegexCheck)) {
-        MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
-        return -EINVAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(!RegexCheck(title, titleRegexCheck), -EINVAL,
+        "Failed to check title regex: %{private}s", title.c_str());
     return E_OK;
 }
 
@@ -1148,16 +1141,12 @@ int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
 int32_t MediaFileUtils::CheckHighlightSubtitle(const string &highlightSubtitle)
 {
     size_t size = highlightSubtitle.length();
-    if (size > DISPLAYNAME_MAX) {
-        MEDIA_ERR_LOG("Highlight subtitle string size check failed: size is %{public}zu", highlightSubtitle.length());
-        return -ENAMETOOLONG;
-    }
+    CHECK_AND_RETURN_RET_LOG(size <= DISPLAYNAME_MAX, -ENAMETOOLONG,
+        "Highlight subtitle string size check failed: size is %{public}zu", highlightSubtitle.length());
 
     static const string ALBUM_NAME_REGEX = R"([\.\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(highlightSubtitle, ALBUM_NAME_REGEX)) {
-        MEDIA_ERR_LOG("Failed to check album name regex: %{private}s", highlightSubtitle.c_str());
-        return -EINVAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(!RegexCheck(highlightSubtitle, ALBUM_NAME_REGEX), -EINVAL,
+        "Failed to check album name regex: %{private}s", highlightSubtitle.c_str());
     return E_OK;
 }
 
@@ -1247,13 +1236,10 @@ string MediaFileUtils::StrCreateTimeSafely(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";
     struct tm localTm;
-    if (localtime_noenv_r(&time, &localTm) == nullptr) {
-        MEDIA_ERR_LOG("localtime_noenv_r error: %{public}d", errno);
-        return strTime;
-    }
-    if (strftime(strTime, sizeof(strTime), format.c_str(), &localTm) == 0) {
-        MEDIA_ERR_LOG("strftime error: %{public}d", errno);
-    }
+    CHECK_AND_RETURN_RET_LOG(localtime_noenv_r(&time, &localTm) != nullptr, strTime,
+        "localtime_noenv_r error: %{public}d", errno);
+    CHECK_AND_PRINT_LOG(strftime(strTime, sizeof(strTime), format.c_str(), &localTm) != 0,
+        "strftime error: %{public}d", errno);
     return strTime;
 }
 
@@ -1265,9 +1251,7 @@ std::string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, in
 
     if (localtime_noenv_r(&times, &localTm) == nullptr) {
         MEDIA_ERR_LOG("localtime_noenv_r error: %{public}d", errno);
-        if (time < 0) {
-            MEDIA_ERR_LOG("Time value is negative: %{public}lld", static_cast<long long>(time));
-        }
+        CHECK_AND_PRINT_LOG(time >= 0, "Time value is negative: %{public}lld", static_cast<long long>(time));
         return strTime;
     }
 
@@ -1535,11 +1519,8 @@ int32_t MediaFileUtils::OpenAsset(const string &filePath, const string &mode)
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
         return E_INVALID_PATH;
     }
-    if (absFilePath.empty()) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{private}s %{public}d",
-                      filePath.c_str(), errno);
-        return E_INVALID_PATH;
-    }
+    CHECK_AND_RETURN_RET_LOG(!absFilePath.empty(), E_INVALID_PATH,
+        "Failed to obtain the canonical path for source path %{private}s %{public}d", filePath.c_str(), errno);
 
     MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     return open(absFilePath.c_str(), flags);

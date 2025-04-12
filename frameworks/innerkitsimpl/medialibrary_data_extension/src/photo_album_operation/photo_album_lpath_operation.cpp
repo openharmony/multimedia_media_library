@@ -134,9 +134,7 @@ PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanDuplicatePhotoAlbums()
             total,
             ret,
             albumInfo.ToString().c_str());
-        if (!this->isContinue_.load()) {
-            break;
-        }
+        CHECK_AND_BREAK(this->isContinue_.load());
     }
     this->albumAffectedCount_ += index;
     return *this;
@@ -191,9 +189,7 @@ PhotoAlbumLPathOperation &PhotoAlbumLPathOperation::CleanEmptylPathPhotoAlbums()
             total,
             ret,
             subAlbumInfo.ToString().c_str());
-        if (!this->isContinue_.load()) {
-            break;
-        }
+        CHECK_AND_BREAK(this->isContinue_.load());
     }
     this->albumAffectedCount_ += index;
     return *this;
