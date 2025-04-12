@@ -43,7 +43,7 @@ void MtpMonitorTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: mtpMonitor
  */
-HWTEST_F(MtpMonitorTest, mtp_monitor_test_001, TestSize.Level0)
+HWTEST_F(MtpMonitorTest, mtp_monitor_test_001, TestSize.Level1)
 {
     std::shared_ptr<MtpMonitor> mtpMonitor = make_shared<MtpMonitor>();
     ASSERT_NE(mtpMonitor, nullptr);

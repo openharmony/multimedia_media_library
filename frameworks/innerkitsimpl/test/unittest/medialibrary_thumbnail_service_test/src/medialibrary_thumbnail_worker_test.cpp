@@ -69,7 +69,7 @@ static void ThumbnailTestTask(std::shared_ptr<ThumbnailTaskData> &data)
  * @tc.name      : add task test
  * @tc.desc      : add task to thread pool
  */
-HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_AddThumbnailGenerateTask_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_AddThumbnailGenerateTask_test_001, TestSize.Level1)
 {
     if (foregroundWorkerPtr_ == nullptr) {
         return;
@@ -90,7 +90,7 @@ HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_AddThumbnailGenerateTa
  * @tc.name      : release task test
  * @tc.desc      : release task in thread pool
  */
-HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_ReleaseTaskQueue_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_ReleaseTaskQueue_test_001, TestSize.Level1)
 {
     if (backgroundWorkerPtr_ == nullptr) {
         return;
@@ -107,7 +107,7 @@ HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_ReleaseTaskQueue_test_
  * @tc.name      : ignore task test
  * @tc.desc      : ignore task from thread pool by requestId
  */
-HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_IgnoreTaskByRequestId_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_IgnoreTaskByRequestId_test_001, TestSize.Level1)
 {
     if (foregroundWorkerPtr_ == nullptr) {
         return;

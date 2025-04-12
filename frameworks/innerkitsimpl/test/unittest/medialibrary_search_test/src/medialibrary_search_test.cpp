@@ -67,7 +67,7 @@ void MediaLibrarySearchTest::SetUp(void)
 
 void MediaLibrarySearchTest::TearDown(void) {}
 
-HWTEST_F(MediaLibrarySearchTest, Search_InsertSearchIndex_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySearchTest, Search_InsertSearchIndex_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Search_InsertSearchIndex_Test_001::Start");
     Uri searchUri(URI_SEARCH_INDEX);
@@ -87,7 +87,7 @@ HWTEST_F(MediaLibrarySearchTest, Search_InsertSearchIndex_Test_001, TestSize.Lev
     MEDIA_INFO_LOG("Search_InsertSearchIndex_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibrarySearchTest, Search_InsertSearchIndex_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySearchTest, Search_InsertSearchIndex_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Search_InsertSearchIndex_Test_002::Start");
     Uri searchUri(URI_SEARCH_INDEX);
@@ -111,7 +111,7 @@ HWTEST_F(MediaLibrarySearchTest, Search_InsertSearchIndex_Test_002, TestSize.Lev
         retVal, retVal2);
 }
 
-HWTEST_F(MediaLibrarySearchTest, Search_UpdateSearchIndex_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySearchTest, Search_UpdateSearchIndex_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Search_UpdateSearchIndex_Test_001::Start");
     Uri searchUri(URI_SEARCH_INDEX);
@@ -160,7 +160,7 @@ HWTEST_F(MediaLibrarySearchTest, Search_UpdateSearchIndex_Test_001, TestSize.Lev
     MEDIA_INFO_LOG("Search_UpdateSearchIndex_Test_001::displayName = %{public}s. End", displayName.c_str());
 }
 
-HWTEST_F(MediaLibrarySearchTest, Search_DeleteSearch_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySearchTest, Search_DeleteSearch_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Search_DeleteSearch_Test_001::Start");
     Uri searchUri(URI_SEARCH_INDEX);

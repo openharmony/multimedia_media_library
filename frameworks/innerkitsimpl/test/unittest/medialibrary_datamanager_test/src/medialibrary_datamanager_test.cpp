@@ -91,7 +91,7 @@ string ReturnUri(string UriType, string MainUri, string SubUri = "")
     }
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAsset_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAsset_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_CreateAsset_Test_001::Start");
     Uri createAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_FILEOPRN, MEDIA_FILEOPRN_CREATEASSET));
@@ -108,7 +108,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAsset_Test_001, Test
     MEDIA_INFO_LOG("DataManager_CreateAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CloseAsset_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CloseAsset_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_CloseAsset_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
@@ -122,7 +122,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CloseAsset_Test_001, TestS
     MEDIA_INFO_LOG("DataManager_CloseAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAlbum_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAlbum_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_CreateAlbum_Test_001::Start");
     Uri createAlbumUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_ALBUMOPRN, MEDIA_ALBUMOPRN_CREATEALBUM));
@@ -136,7 +136,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAlbum_Test_001, Test
     MEDIA_INFO_LOG("DataManager_CreateAlbum_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateDir_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateDir_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_CreateDir_Test_001::Start");
     Uri createDirUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_DIROPRN, MEDIA_DIROPRN_FMS_CREATEDIR));
@@ -149,7 +149,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateDir_Test_001, TestSi
     MEDIA_INFO_LOG("DataManager_CreateDir_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashDir_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashDir_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashDir_Test_001::Start");
     shared_ptr<FileAsset> albumAsset = nullptr;
@@ -163,7 +163,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashDir_Test_001, TestSiz
     MEDIA_INFO_LOG("DataManager_TrashDir_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Favorite_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Favorite_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Favorite_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
@@ -184,7 +184,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Favorite_Test_001, TestSiz
     MEDIA_INFO_LOG("DataManager_Favorite_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Trash_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Trash_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Trash_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
@@ -205,7 +205,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Trash_Test_001, TestSize.L
     MEDIA_INFO_LOG("DataManager_Trash_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DeleteAsset_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DeleteAsset_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_DeleteAsset_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
@@ -219,7 +219,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DeleteAsset_Test_001, Test
     MEDIA_INFO_LOG("DataManager_DeleteAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryDirTable_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryDirTable_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
     vector<string> columns;
@@ -233,7 +233,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryDirTable_Test_001, Te
     EXPECT_NE((resultSet == nullptr), true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryAlbum_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryAlbum_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryAlbum_Test_001::Start");
     vector<string> columns;
@@ -247,7 +247,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryAlbum_Test_001, TestS
     EXPECT_NE((resultSet == nullptr), true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryVolume_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryVolume_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryVolume_Test_001::Start");
     vector<string> columns;
@@ -261,7 +261,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryVolume_Test_001, Test
     EXPECT_NE((resultSet == nullptr), true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryFiles_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryFiles_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryFiles_Test_001::Start");
     vector<string> columns;
@@ -275,7 +275,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryFiles_Test_001, TestS
     EXPECT_NE((resultSet == nullptr), true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateFileAsset_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateFileAsset_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_UpdateFileAsset_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
@@ -296,7 +296,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateFileAsset_Test_001, 
     MEDIA_INFO_LOG("DataManager_UpdateFileAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_001::Start");
     shared_ptr<FileAsset> albumAsset = nullptr;
@@ -317,7 +317,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001,
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
@@ -374,7 +374,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Leve
  *                 3.trash file1
  *                 4.recovery file1
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_001::Start");
     shared_ptr<FileAsset> trashRecovery_File_001 = nullptr;
@@ -398,7 +398,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_00
  *                 4.recreate file1
  *                 5.recovery file1
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_002::Start");
     shared_ptr<FileAsset> trashRecovery_File_002 = nullptr;
@@ -424,7 +424,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_00
  *                 4.trash parent dir trashRecovery_File_003
  *                 5.recovery file1
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_003::Start");
     shared_ptr<FileAsset> trashRecovery_File_003 = nullptr;
@@ -452,7 +452,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_00
  *                 6.recreate file1
  *                 7.recovery file1
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_004::Start");
     shared_ptr<FileAsset> trashRecovery_File_004 = nullptr;
@@ -482,7 +482,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_00
  *                 4.rename parent dir trashRecovery_Dir_005
  *                 5.recovery dir1
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_005::Start");
     shared_ptr<FileAsset> trashRecovery_File_005 = nullptr;
@@ -505,7 +505,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_00
  *                 3.trash trashRecovery_Dir_001
  *                 4.recovery trashRecovery_Dir_001
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_001::Start");
     shared_ptr<FileAsset> trashRecovery_Dir_001 = nullptr;
@@ -531,7 +531,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_001
  *                 4.recreate trashRecovery_Dir_002
  *                 5.recovery trashRecovery_Dir_002
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_002::Start");
     shared_ptr<FileAsset> trashRecovery_Dir_002 = nullptr;
@@ -560,7 +560,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_002
  *                 5.trash parent dir trashRecovery_Dir_003
  *                 6.recovery dir1
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_003::Start");
     shared_ptr<FileAsset> trashRecovery_Dir_003 = nullptr;
@@ -593,7 +593,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_003
  *                 7.recreate dir1
  *                 8.recovery dir1
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_004::Start");
     shared_ptr<FileAsset> trashRecovery_Dir_004 = nullptr;
@@ -627,7 +627,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_004
  *                 5.rename parent dir trashRecovery_Dir_005
  *                 6.recovery dir1
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_005::Start");
     shared_ptr<FileAsset> trashRecovery_Dir_005 = nullptr;
@@ -656,7 +656,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_005
  *                 5.Create file3 in dir2: delete_Dir_001/dir1/dir2/file3.txt
  *                 6.Delete delete_Dir_001
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_001::Start");
     shared_ptr<FileAsset> delete_Dir_001 = nullptr;
@@ -694,7 +694,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_001, TestS
  *                 8.Trash delete_Dir_002
  *                 9.Delete delete_Dir_002
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::Start");
     shared_ptr<FileAsset> delete_Dir_002 = nullptr;
@@ -724,7 +724,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_002, TestS
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_002::delete end, retVal: %d", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_001::Start");
     shared_ptr<FileAsset> UriPermission001 = nullptr;
@@ -750,7 +750,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_001, Te
     EXPECT_EQ(count, 0);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_002::Start");
     Uri addPermission(ReturnUri(MEDIALIBRARY_BUNDLEPERM_URI, BUNDLE_PERMISSION_INSERT));
@@ -761,7 +761,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_002, Te
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_002::ret: %d", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_003::Start");
     Uri addPermission(ReturnUri(MEDIALIBRARY_BUNDLEPERM_URI, BUNDLE_PERMISSION_INSERT));
@@ -773,7 +773,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_003, Te
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_003::ret: %d", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_005::Start");
     int32_t fileId = 1;
@@ -807,7 +807,7 @@ string GetFileMediaTypeUri(int32_t mediaType, const string &networkId)
     }
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_003::Start");
     shared_ptr<FileAsset> file = nullptr;
@@ -828,7 +828,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     }
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_004::Start");
     shared_ptr<FileAsset> file = nullptr;
@@ -848,7 +848,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
         mode.c_str(), inputMode.c_str(), ret);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetDirQuerySetMap_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetDirQuerySetMap_Test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     mediaLibraryDataManager->GetDirQuerySetMap();
@@ -858,7 +858,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetDirQuerySetMap_Test_001
     EXPECT_EQ(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateThumbnailAsync_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateThumbnailAsync_Test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     string uri = "";
@@ -869,14 +869,14 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateThumbnailAsync_Test_
     EXPECT_NE(mediaLibraryDataManager->thumbnailService_, nullptr);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoTrashAging_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoTrashAging_Test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     int32_t ret = mediaLibraryDataManager->DoTrashAging();
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoAging_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoAging_Test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     int32_t ret = mediaLibraryDataManager->DoAging();
@@ -888,7 +888,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoAging_Test_001, TestSize
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     MediaLibraryCommand cmdOne(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
@@ -911,7 +911,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_001, T
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_002, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     MediaLibraryCommand cmdOne(OperationObject::SMART_ALBUM, OperationType::CREATE);
@@ -931,7 +931,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_002, T
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SetCmdBundleAndDevice_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SetCmdBundleAndDevice_Test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     MediaLibraryCommand cmd(Uri(MEDIALIBRARY_BUNDLEPERM_URI), OperationType::QUERY);
@@ -939,7 +939,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SetCmdBundleAndDevice_Test
     EXPECT_EQ(ret, E_GET_CLIENTBUNDLE_FAIL);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetThumbnail_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetThumbnail_Test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     string uri = "GetThumbnail";
@@ -951,7 +951,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetThumbnail_Test_001, Tes
     EXPECT_LT(ret, 0);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_001, TestSize.Level2)
 {
     Uri uri("");
     vector<DataShare::DataShareValuesBucket> values;
@@ -961,7 +961,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_001, Test
     EXPECT_EQ(ret, E_INVALID_URI);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_002, TestSize.Level2)
 {
     Uri uri(UFM_PHOTO_ALBUM_ADD_ASSET);
     vector<DataShare::DataShareValuesBucket> values;
@@ -971,7 +971,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_002, Test
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_003, TestSize.Level2)
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     vector<DataShare::DataShareValuesBucket> values;
@@ -981,7 +981,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_003, Test
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryRdb_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryRdb_Test_001, TestSize.Level2)
 {
     Uri uri("");
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
@@ -993,7 +993,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryRdb_Test_001, TestSiz
     EXPECT_NE(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetType_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetType_Test_001, TestSize.Level2)
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
@@ -1001,7 +1001,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetType_Test_001, TestSize
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NotifyChange_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NotifyChange_Test_001, TestSize.Level2)
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
@@ -1009,7 +1009,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NotifyChange_Test_001, Tes
     EXPECT_EQ(mediaLibraryDataManager->extension_, nullptr);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnailBackground_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnailBackground_Test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     int32_t ret = mediaLibraryDataManager->GenerateThumbnailBackground();
@@ -1079,7 +1079,7 @@ void CheckResult(const shared_ptr<DataShare::DataShareResultSet> &resultSet, int
     }
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_001 Start");
     MEDIA_INFO_LOG("Clear analysis table");
@@ -1104,7 +1104,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_
     MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_001 End");
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_002 Start");
     MEDIA_INFO_LOG("Clear analysis table");
@@ -1125,7 +1125,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_
     MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_002 End");
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     mediaLibraryDataManager->refCnt_.store(0);
@@ -1133,7 +1133,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, T
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_2, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_2, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     mediaLibraryDataManager->refCnt_.store(1);
@@ -1142,7 +1142,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_2,
     EXPECT_EQ(ret, E_THUMBNAIL_SERVICE_NULLPTR);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_3, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_3, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     mediaLibraryDataManager->refCnt_.store(1);
@@ -1151,14 +1151,14 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001_3,
     EXPECT_EQ(ret, mediaLibraryDataManager->thumbnailService_->GenerateThumbnailBackground());
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_new_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_new_002, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     auto ret = mediaLibraryDataManager->UpgradeThumbnailBackground(false);
     EXPECT_EQ(ret<=0, true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, RestoreThumbnailDualFrame_new_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, RestoreThumbnailDualFrame_new_003, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     auto ret = mediaLibraryDataManager->RestoreThumbnailDualFrame();
@@ -1166,7 +1166,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, RestoreThumbnailDualFrame_new_003, Tes
     EXPECT_EQ(ret<=0, true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     auto ret = mediaLibraryDataManager->GenerateHighlightThumbnailBackground();
@@ -1256,7 +1256,7 @@ void ValidBurstValue(BurstResult &exResult)
     }
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_001");
     struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST001_COVER",
@@ -1291,7 +1291,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_0
     MEDIA_INFO_LOG("end UpdateBurstFromGallery_test_001");
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_002");
     struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST001_cover",
@@ -1313,7 +1313,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_0
     ValidBurstValue(burstCover);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start UpdateBurstFromGallery_test_function_003");
     struct BurstResult burstCover = {-1, "IMG_12345678_123456_BURST_cover",
@@ -1333,7 +1333,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_function_0
     ValidBurstValue(burstCover);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_001, TestSize.Level2)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
     EXPECT_NE(dataManager, nullptr);
@@ -1342,7 +1342,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_001, TestS
     EXPECT_EQ(result, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_002, TestSize.Level2)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
     EXPECT_NE(dataManager, nullptr);
@@ -1351,7 +1351,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateBurstFromGallery_test_002, TestS
     EXPECT_EQ(result, E_OK);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, PhotoDayMonthYearOperation_test, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, PhotoDayMonthYearOperation_test, TestSize.Level2)
 {
     auto dataManager = MediaLibraryDataManager::GetInstance();
     EXPECT_NE(dataManager, nullptr);
@@ -1362,7 +1362,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, PhotoDayMonthYearOperation_test, TestS
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, RefreshPhotoAlbums_test, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, RefreshPhotoAlbums_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start RefreshPhotoAlbums_test");
     AlbumsRefreshManager &instance =  AlbumsRefreshManager::GetInstance();
@@ -1374,7 +1374,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, RefreshPhotoAlbums_test, TestSize.Leve
     MEDIA_INFO_LOG("end RefreshPhotoAlbums_test");
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_003, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     ASSERT_NE(mediaLibraryDataManager, nullptr);
@@ -1398,7 +1398,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_003, T
     EXPECT_EQ(ret, -1);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmdSub_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmdSub_Test_001, TestSize.Level2)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     ASSERT_NE(mediaLibraryDataManager, nullptr);
@@ -1413,7 +1413,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmdSub_Test_001
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_004, TestSize.Level2)
 {
     Uri uri("");
     vector<DataShare::DataShareValuesBucket> values;
@@ -1425,7 +1425,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_004, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_005, TestSize.Level2)
 {
     Uri uri("");
     vector<DataShare::DataShareValuesBucket> values;
@@ -1437,7 +1437,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_005, Test
     EXPECT_EQ(ret, E_DB_FAIL);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_006, TestSize.Level2)
 {
     Uri uri("");
     vector<DataShare::DataShareValuesBucket> values;
@@ -1449,7 +1449,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_006, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_007, TestSize.Level2)
 {
     Uri uri("");
     vector<DataShare::DataShareValuesBucket> values;
@@ -1461,7 +1461,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_007, Test
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_008, TestSize.Level2)
 {
     Uri uri("");
     vector<DataShare::DataShareValuesBucket> values;
@@ -1473,7 +1473,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_008, Test
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_009, TestSize.Level2)
 {
     Uri uri("");
     vector<DataShare::DataShareValuesBucket> values;
@@ -1498,7 +1498,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_BatchInsert_Test_009, Test
  *                 8.Trash delete_Dir_003
  *                 9.Delete delete_Dir_003
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_003::Start");
     shared_ptr<FileAsset> delete_Dir_003 = nullptr;
@@ -1549,7 +1549,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_003, TestS
  *                 8.Trash delete_Dir_004
  *                 9.Delete delete_Dir_004
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_004::Start");
     shared_ptr<FileAsset> delete_Dir_004 = nullptr;
@@ -1600,7 +1600,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_004, TestS
  *                 8.Trash delete_Dir_005
  *                 9.Delete delete_Dir_005
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_005::Start");
     shared_ptr<FileAsset> delete_Dir_005 = nullptr;
@@ -1651,7 +1651,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_005, TestS
  *                 8.Trash delete_Dir_006
  *                 9.Delete delete_Dir_006
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_006::Start");
     shared_ptr<FileAsset> delete_Dir_006 = nullptr;
@@ -1702,7 +1702,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_006, TestS
  *                 8.Trash delete_Dir_007
  *                 9.Delete delete_Dir_007
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_007::Start");
     shared_ptr<FileAsset> delete_Dir_007 = nullptr;
@@ -1753,7 +1753,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_007, TestS
  *                 8.Trash delete_Dir_008
  *                 9.Delete delete_Dir_008
  */
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_Delete_Dir_Test_008::Start");
     shared_ptr<FileAsset> delete_Dir_008 = nullptr;
@@ -1779,7 +1779,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Delete_Dir_Test_008, TestS
     MediaLibraryUnitTestUtils::TrashFile(delete_Dir_008);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_002::Start");
     shared_ptr<FileAsset> albumAsset = nullptr;
@@ -1802,7 +1802,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_002,
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_002::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_003::Start");
     shared_ptr<FileAsset> albumAsset = nullptr;
@@ -1825,7 +1825,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_003,
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_003::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_004::Start");
     shared_ptr<FileAsset> albumAsset = nullptr;
@@ -1848,7 +1848,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_004,
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_004::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryGeoAssets_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryGeoAssets_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
     vector<string> columns;
@@ -1863,7 +1863,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryGeoAssets_Test_001, T
     EXPECT_NE((resultSet == nullptr), true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
     vector<string> columns;
@@ -1878,7 +1878,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_001, Te
     EXPECT_NE((resultSet == nullptr), true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
     vector<string> columns;
@@ -1893,7 +1893,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_002, Te
     EXPECT_NE((resultSet == nullptr), true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
     vector<string> columns;
@@ -1908,7 +1908,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_003, Te
     EXPECT_NE((resultSet == nullptr), true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
     vector<string> columns;
@@ -1923,7 +1923,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_004, Te
     EXPECT_EQ(resultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
     vector<string> columns;
@@ -1938,7 +1938,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_005, Te
     EXPECT_EQ(resultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
     vector<string> columns;
@@ -1953,7 +1953,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_006, Te
     EXPECT_NE((resultSet == nullptr), true);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryInternal_Test_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("DataManager_QueryDirTable_Test_001::Start");
     vector<string> columns;

@@ -50,7 +50,7 @@ void DatabaseDataMockTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(DatabaseDataMockTest, CSVFileReader, TestSize.Level0)
+HWTEST_F(DatabaseDataMockTest, CSVFileReader, TestSize.Level1)
 {
     std::string csvFileFolder = "/data/test/cloudsync/";
     std::string csvFileName = "database_mock-photos.csv";
@@ -79,7 +79,7 @@ HWTEST_F(DatabaseDataMockTest, CSVFileReader, TestSize.Level0)
     EXPECT_TRUE(hasValue);
 }
 
-HWTEST_F(DatabaseDataMockTest, DATABASE, TestSize.Level0)
+HWTEST_F(DatabaseDataMockTest, DATABASE, TestSize.Level1)
 {
     int32_t errorCode = 0;
     std::shared_ptr<NativeRdb::RdbStore> rdbStore = MediaLibraryDatabase().GetRdbStore(errorCode);
@@ -114,7 +114,7 @@ void DatabaseDataMockTest::CheckPhotoAlbum()
     EXPECT_EQ(targetAlbumPo.lpath, lPath);
 }
 
-HWTEST_F(DatabaseDataMockTest, DATABASE_DATA_MOCK, TestSize.Level0)
+HWTEST_F(DatabaseDataMockTest, DATABASE_DATA_MOCK, TestSize.Level1)
 {
     // Get RdbStore
     int32_t errorCode = 0;

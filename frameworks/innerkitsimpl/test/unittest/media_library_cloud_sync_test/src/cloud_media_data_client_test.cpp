@@ -60,7 +60,7 @@ void CloudMediaDataClientTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(CloudMediaDataClientTest, FinishCheck, TestSize.Level0)
+HWTEST_F(CloudMediaDataClientTest, FinishCheck, TestSize.Level1)
 {
     CloudMediaDataClient cloudMediaDataClient;
     int32_t ret = cloudMediaDataClient.FinishCheck();

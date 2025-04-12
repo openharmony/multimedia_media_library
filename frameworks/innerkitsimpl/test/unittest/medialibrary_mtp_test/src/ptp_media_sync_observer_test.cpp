@@ -64,7 +64,7 @@ void PtpMediaSyncObserverUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: SendEventPackets SendEventPacketAlbum
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_001, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_001, TestSize.Level1)
 {
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
@@ -83,7 +83,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_001, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: GetHandlesFromPhotosInfoBurstKeys
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_002, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_002, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
@@ -103,7 +103,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_002, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: GetAllDeleteHandles
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_003, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_003, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
@@ -122,7 +122,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_003, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: AddPhotoHandle
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_004, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_004, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
@@ -141,7 +141,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_004, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: GetAddEditPhotoHandles
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_005, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_005, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
@@ -160,7 +160,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_005, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: GetAddEditAlbumHandle
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_006, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_006, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
@@ -177,7 +177,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_006, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: SendPhotoRemoveEvent
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_007, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_007, TestSize.Level1)
 {
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
@@ -198,7 +198,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_007, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: SendPhotoEvent
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_008, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_008, TestSize.Level1)
 {
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
@@ -220,7 +220,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_008, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: SendPhotoEvent GetOwnerAlbumIdList
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_009, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_009, TestSize.Level1)
 {
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
@@ -241,7 +241,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_009, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: SendEventToPTP
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_010, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_010, TestSize.Level1)
 {
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
@@ -267,7 +267,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_010, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: ParseNotifyData
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_011, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_011, TestSize.Level1)
 {
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
@@ -287,7 +287,7 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_011, TestSize.Lev
  * EnvConditions: NA
  * CaseDescription: OnChange
  */
-HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_014, TestSize.Level0)
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_014, TestSize.Level1)
 {
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);

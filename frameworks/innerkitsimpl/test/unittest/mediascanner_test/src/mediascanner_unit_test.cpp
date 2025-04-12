@@ -31,8 +31,6 @@ namespace {
     shared_ptr<MediaScannerManager> mediaScannerManager = nullptr;
 } // namespace
 
-constexpr int32_t WAIT_TIME = 3;
-
 void MediaScannerUnitTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
@@ -40,10 +38,7 @@ void MediaScannerUnitTest::SetUpTestCase(void)
     mediaScannerManager = MediaScannerManager::GetInstance();
 }
 
-void MediaScannerUnitTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(WAIT_TIME));
-}
+void MediaScannerUnitTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void MediaScannerUnitTest::SetUp()
@@ -59,7 +54,7 @@ void MediaScannerUnitTest::TearDown(void) {}
  * @tc.name      : scan root dir
  * @tc.desc      : scan root dir with six dirs
  */
-HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_test_001, TestSize.Level1)
 {
     if (mediaScannerManager == nullptr) {
         MEDIA_ERR_LOG("MediaScannerManager invalid");
@@ -82,7 +77,7 @@ HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_test_001, TestSize.Level0)
  * @tc.desc      : 1.create jpg file Scanner_Image1.jpg
  *                 2.scan this file
  */
-HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_001, TestSize.Level1)
 {
     if (mediaScannerManager == nullptr) {
         MEDIA_ERR_LOG("MediaScannerManager invalid");
@@ -108,7 +103,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_001, TestSize.Level0)
  * @tc.desc      : 1.create png file Scanner_Image2.png
  *                 2.scan this file
  */
-HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_002, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_002, TestSize.Level1)
 {
     if (mediaScannerManager == nullptr) {
         MEDIA_ERR_LOG("MediaScannerManager invalid");
@@ -134,7 +129,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_002, TestSize.Level0)
  * @tc.desc      : 1.create jpeg file Scanner_Image3.jpeg
  *                 2.scan this file
  */
-HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_003, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_003, TestSize.Level1)
 {
     if (mediaScannerManager == nullptr) {
         MEDIA_ERR_LOG("MediaScannerManager invalid");
@@ -160,7 +155,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanImage_Test_003, TestSize.Level0)
  * @tc.desc      : 1.create text file Scanner_Text1.txt
  *                 2.scan this text file
  */
-HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanTextFile_Test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanTextFile_Test_001, TestSize.Level1)
 {
     if (mediaScannerManager == nullptr) {
         MEDIA_ERR_LOG("MediaScannerManager invalid");
@@ -187,7 +182,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanTextFile_Test_001, TestSize.Leve
  *                 2.scan this hidden file
  *                 3.expect return error
  */
-HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanHiddenFile_Test_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanHiddenFile_Test_001, TestSize.Level1)
 {
     if (mediaScannerManager == nullptr) {
         MEDIA_ERR_LOG("MediaScannerManager invalid");
@@ -212,7 +207,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanHiddenFile_Test_001, TestSize.Le
  * @tc.name      : scan dir with uncanonical path
  * @tc.desc      : 1.pass dir's uncanonical path
  */
-HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_CanonicalPathtest_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_CanonicalPathtest_001, TestSize.Level1)
 {
     if (mediaScannerManager == nullptr) {
         MEDIA_ERR_LOG("MediaScannerManager invalid");
@@ -237,7 +232,7 @@ HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanDir_CanonicalPathtest_001, Test
  * @tc.desc      : 1.create file
  *                 2.pass file's uncanonical path
  */
-HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_001, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_001, TestSize.Level1)
 {
     if (mediaScannerManager == nullptr) {
         MEDIA_ERR_LOG("MediaScannerManager invalid");
@@ -263,7 +258,7 @@ HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_001, Tes
  * @tc.desc      : 1.create file
  *                 2.pass file's uncanonical path
  */
-HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_002, TestSize.Level0)
+HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_002, TestSize.Level1)
 {
     if (mediaScannerManager == nullptr) {
         MEDIA_ERR_LOG("MediaScannerManager invalid");

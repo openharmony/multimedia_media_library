@@ -25,7 +25,6 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const std::string TEST_PATH_DATA = "/storage/media/local/files/Docs/Desktop";
 const std::shared_ptr<MtpStorageManager> mtpStorageManager_ = MtpStorageManager::GetInstance();
 
@@ -34,10 +33,7 @@ void MtpStorageManagerUnitTest::SetUpTestCase(void)
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
 }
 
-void MtpStorageManagerUnitTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MtpStorageManagerUnitTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void MtpStorageManagerUnitTest::SetUp() {}
@@ -51,7 +47,7 @@ void MtpStorageManagerUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: GetTotalSize
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_01, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_01, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -68,7 +64,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_01, Tes
  * EnvConditions: NA
  * CaseDescription: GetTotalSize
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_02, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_02, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -85,7 +81,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_02, Tes
  * EnvConditions: NA
  * CaseDescription: GetFreeSize
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_03, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_03, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -102,7 +98,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_03, Tes
  * EnvConditions: NA
  * CaseDescription: GetFreeSize
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_04, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_04, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -119,7 +115,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_04, Tes
  * EnvConditions: NA
  * CaseDescription: AddStorage
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_05, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_05, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -137,7 +133,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_05, Tes
  * EnvConditions: NA
  * CaseDescription: RemoveStorage GetStorage
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_06, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_06, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -158,7 +154,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_06, Tes
  * EnvConditions: NA
  * CaseDescription: HasStorage
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_07, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_07, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -176,7 +172,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_07, Tes
  * EnvConditions: NA
  * CaseDescription: HasStorage ClearStorages
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_08, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_08, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -196,7 +192,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_08, Tes
  * EnvConditions: NA
  * CaseDescription: HasStorage
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_09, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_09, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -214,7 +210,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_09, Tes
  * EnvConditions: NA
  * CaseDescription: GetStorages
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_10, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_10, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -231,7 +227,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_10, Tes
  * EnvConditions: NA
  * CaseDescription: GetStorageDescription
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_11, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_11, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -249,7 +245,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_11, Tes
  * EnvConditions: NA
  * CaseDescription: GetStorageDescription
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_12, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_12, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();
@@ -267,7 +263,7 @@ HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_12, Tes
  * EnvConditions: NA
  * CaseDescription: GetStorageDescription
  */
-HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_13, TestSize.Level0)
+HWTEST_F(MtpStorageManagerUnitTest, medialibrary_PTP_message_testlevel_0_13, TestSize.Level1)
 {
     ASSERT_NE(mtpStorageManager_, nullptr);
     mtpStorageManager_->ClearStorages();

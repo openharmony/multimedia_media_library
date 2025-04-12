@@ -134,7 +134,7 @@ void MediaLibraryThumbnailServiceTest::TearDown(void)
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -154,7 +154,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestS
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetKeyFrameThumbnail_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetKeyFrameThumbnail_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -170,7 +170,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetKeyFrameThumbnail_test_00
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdAging_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdAging_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -185,7 +185,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdAging_test_001, TestSize.
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -203,7 +203,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InterruptBgworker_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InterruptBgworker_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -217,7 +217,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InterruptBgworker_test_001, 
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_StopAllWorker_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_StopAllWorker_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -231,7 +231,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_StopAllWorker_test_001, Test
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -243,7 +243,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_00
     serverTest.ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -259,7 +259,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CancelAstcBatchTask_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CancelAstcBatchTask_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -276,7 +276,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CancelAstcBatchTask_test_001
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_001, TestSize.Level1)
 {
     std::shared_ptr<ThumbnailTaskData> data;
     IThumbnailHelper::CreateLcdAndThumbnail(data);
@@ -288,7 +288,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_001, T
     EXPECT_EQ(requestId, dataValue->requestId_);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_002, TestSize.Level1)
 {
     std::shared_ptr<ThumbnailTaskData> data;
     IThumbnailHelper::CreateLcd(data);
@@ -300,7 +300,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_002, T
     EXPECT_EQ(requestId, dataValue->requestId_);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_003, TestSize.Level1)
 {
     std::shared_ptr<ThumbnailTaskData> data;
     IThumbnailHelper::CreateThumbnail(data);
@@ -312,7 +312,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_003, T
     EXPECT_EQ(requestId, dataValue->requestId_);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_004, TestSize.Level1)
 {
     std::shared_ptr<ThumbnailTaskData> data;
     IThumbnailHelper::CreateAstc(data);
@@ -324,7 +324,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_004, T
     EXPECT_EQ(requestId, dataValue->requestId_);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_005, TestSize.Level1)
 {
     std::shared_ptr<ThumbnailTaskData> data;
     IThumbnailHelper::CreateAstcEx(data);
@@ -336,7 +336,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_005, T
     EXPECT_EQ(requestId, dataValue->requestId_);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_006, TestSize.Level1)
 {
     std::shared_ptr<ThumbnailTaskData> data;
     IThumbnailHelper::DeleteMonthAndYearAstc(data);
@@ -348,7 +348,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_006, T
     EXPECT_EQ(requestId, dataValue->requestId_);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_007, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -358,7 +358,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_007, T
     EXPECT_EQ(res, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_008, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -366,7 +366,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_008, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_009, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -375,7 +375,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_009, T
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_010, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -385,7 +385,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_010, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_011, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -394,7 +394,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_011, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_012, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -402,7 +402,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_012, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_013, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -412,7 +412,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_013, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_014, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -421,7 +421,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_014, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_015, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -432,7 +432,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_015, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_016, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -443,7 +443,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_016, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_017, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -454,7 +454,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_017, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_018, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_018, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -466,7 +466,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_018, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_019, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -478,7 +478,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_019, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_020, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_020, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -487,7 +487,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_020, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_021, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_021, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -495,7 +495,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_021, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_022, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_022, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::LCD;
@@ -503,7 +503,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_022, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_023, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_023, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -512,7 +512,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_023, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_024, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_024, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -521,7 +521,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_024, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_025, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_025, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -529,7 +529,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_025, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_026, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_026, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -539,7 +539,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_026, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_027, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_027, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -549,7 +549,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_027, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_028, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_028, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -560,7 +560,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_028, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_029, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_029, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -570,7 +570,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_029, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_030, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_030, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -579,7 +579,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_030, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_031, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_031, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -589,14 +589,14 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_031, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_032, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_032, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     auto res = IThumbnailHelper::IsPureCloudImage(opts);
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_033, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_033, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.row = "a";
@@ -604,7 +604,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_033, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_034, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_034, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.table = "b";
@@ -612,7 +612,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_034, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_035, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_035, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.row = "a";
@@ -621,7 +621,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_035, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_036, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_036, TestSize.Level1)
 {
     std::shared_ptr<ThumbnailTaskData> data;
     IThumbnailHelper::UpdateAstcDateTaken(data);
@@ -633,7 +633,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_036, T
     EXPECT_EQ(requestId, dataValue->requestId_);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_005, TestSize.Level1)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     ThumbnailData data;
@@ -643,7 +643,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_005, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_006, TestSize.Level1)
 {
     ThumbnailData data;
     Size desiredSize;
@@ -651,7 +651,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_006, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_007, TestSize.Level1)
 {
     string path = "";
     string suffix;
@@ -660,7 +660,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_007, Te
     EXPECT_EQ(res, 0);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_008, TestSize.Level1)
 {
     ThumbnailData data;
     data.thumbnail.push_back(0x12);
@@ -671,7 +671,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_008, Te
     EXPECT_EQ(res<0, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_009, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::MTH;
@@ -679,7 +679,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_009, Te
     EXPECT_EQ(res, -223);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_010, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::MTH_ASTC;
@@ -694,7 +694,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_010, Te
     EXPECT_EQ(res2, -1);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_011, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::THUMB;
@@ -714,7 +714,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_011, Te
     EXPECT_EQ(res5, -2302);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_012, TestSize.Level1)
 {
     ThumbnailData data;
     data.thumbnail.push_back(0x12);
@@ -725,7 +725,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_012, Te
     EXPECT_EQ(res<0, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_013, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::THUMB;
@@ -733,7 +733,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_013, Te
     EXPECT_EQ(res, -1);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, TestSize.Level1)
 {
     ThumbnailData data;
     data.id = "a";
@@ -749,7 +749,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, Te
     EXPECT_EQ(res3, -1);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbRdbOpt opts = {
@@ -762,7 +762,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, Te
     EXPECT_EQ(res, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_017, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -771,7 +771,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_017, Te
     EXPECT_EQ(res, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_019, TestSize.Level1)
 {
     ThumbnailData data;
     std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
@@ -784,7 +784,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_019, Te
     EXPECT_EQ(res2, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_020, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_020, TestSize.Level1)
 {
     NativeRdb::ValuesBucket values;
     Size size;
@@ -800,7 +800,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_020, Te
     EXPECT_NE(size.height, size2.height);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_022, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_022, TestSize.Level1)
 {
     string path = "";
     string suffix;
@@ -810,7 +810,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_022, Te
     EXPECT_EQ(res, 0);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_001, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailType thumbType = ThumbnailType::LCD;
@@ -818,33 +818,33 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_001, T
     EXPECT_EQ(res, -2302);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_002, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
     EXPECT_NE(res, 0);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     auto res = ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
     EXPECT_EQ(res, -1);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, TestSize.Level1)
 {
     auto res = serverTest->UpgradeThumbnailBackground(false);
     EXPECT_EQ(res  <= 0, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_001, TestSize.Level1)
 {
     auto res = serverTest->GenerateHighlightThumbnailBackground();
     EXPECT_EQ(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_002, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
@@ -853,20 +853,20 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_
     EXPECT_EQ(res < 0, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, GenerateHighlightThumbnailBackground_test_003, TestSize.Level1)
 {
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     auto res = serverTest->GenerateHighlightThumbnailBackground();
     EXPECT_EQ(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, LocalThumbnailGeneration_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, LocalThumbnailGeneration_test_001, TestSize.Level1)
 {
     auto res = serverTest->LocalThumbnailGeneration();
     EXPECT_EQ(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, TestSize.Level1)
 {
     ThumbnailData data;
     std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
@@ -882,7 +882,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, Tes
     EXPECT_EQ(res2, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbRdbOpt opts;
@@ -890,7 +890,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, Tes
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_026, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_026, TestSize.Level1)
 {
     ThumbnailData data;
     std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
@@ -900,7 +900,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_026, Tes
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_027, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_027, TestSize.Level1)
 {
     ThumbnailData data;
     std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
@@ -910,7 +910,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_027, Tes
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_028, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_028, TestSize.Level1)
 {
     auto res = ThumbnailUtils::CheckCloudThumbnailDownloadFinish(storePtr);
     EXPECT_EQ(res, false);
@@ -923,7 +923,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_028, Tes
     EXPECT_EQ(res2, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_029, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_029, TestSize.Level1)
 {
     const string dbPath = "/data/test/medialibrary_thumbnail_service_test_db";
     NativeRdb::RdbStoreConfig config(dbPath);
@@ -936,7 +936,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_029, Tes
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_032, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_032, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbRdbOpt opts;
@@ -945,7 +945,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_032, Tes
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_005, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -953,7 +953,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_005, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -963,7 +963,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_006, T
     EXPECT_NE(res, E_ERR);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_007, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -975,7 +975,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_007, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_008, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -984,7 +984,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_008, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_009, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     NativeRdb::RdbPredicates predicate{PhotoColumn::PHOTOS_TABLE};
@@ -993,7 +993,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_009, T
     EXPECT_EQ(res, E_ERR);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_010, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -1003,7 +1003,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_010, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_011, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -1013,7 +1013,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_011, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_012, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -1025,7 +1025,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_012, T
     EXPECT_EQ(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_013, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -1033,7 +1033,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_013, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_037, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_037, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -1043,7 +1043,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_037, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_038, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_038, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -1053,7 +1053,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_038, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_039, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_039, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -1064,7 +1064,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_039, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_040, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_040, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -1074,7 +1074,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_040, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_041, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_041, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -1092,7 +1092,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_041, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_042, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_042, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -1104,7 +1104,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_042, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_043, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_043, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -1115,7 +1115,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_043, T
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, GetThumbFd_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, GetThumbFd_test_001, TestSize.Level1)
 {
     string path = " ";
     string table = PhotoColumn::PHOTOS_TABLE;
@@ -1128,7 +1128,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GetThumbFd_test_001, TestSize.Level0)
     EXPECT_EQ(res < 0, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, GetKeyFrameThumbFd_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, GetKeyFrameThumbFd_test_001, TestSize.Level1)
 {
     string path = " ";
     string table = PhotoColumn::PHOTOS_TABLE;
@@ -1143,7 +1143,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GetKeyFrameThumbFd_test_001, TestSize
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, GetAgingDataSize_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, GetAgingDataSize_test_001, TestSize.Level1)
 {
     int64_t time = -100;
     int count = 0;
@@ -1152,7 +1152,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, GetAgingDataSize_test_001, TestSize.L
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, CreateAstcCloudDownload_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, CreateAstcCloudDownload_test_001, TestSize.Level1)
 {
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     string id = "invalidId";
@@ -1161,7 +1161,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, CreateAstcCloudDownload_test_001, Tes
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_031, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_031, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbRdbOpt opts;
@@ -1171,7 +1171,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_031, Tes
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_033, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_033, TestSize.Level1)
 {
     ThumbnailData data;
     Size desiredSize;
@@ -1179,14 +1179,14 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_033, Tes
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_034, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_034, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     auto res = ThumbnailUtils::QueryThumbnailSet(opts);
     EXPECT_EQ(res, nullptr);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_035, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_035, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     int outLcdCount = 0;
@@ -1195,7 +1195,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_035, Tes
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAsync_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAsync_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -1208,14 +1208,14 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAs
     serverTest.ReleaseService();
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_014, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     auto res = ThumbnailGenerateHelper::CreateAstcMthAndYear(opts);
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcMthAndYear_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcMthAndYear_Test_001, TestSize.Level1)
 {
     ThumbnailService serverTest;
     string id = "invalid";
@@ -1223,7 +1223,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcMthAndYear_Test_00
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_015, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     auto res = ThumbnailGenerateHelper::CheckLcdSizeAndUpdateStatus(opts);
@@ -1233,7 +1233,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_015, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_016, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     int outLcdCount;
@@ -1241,7 +1241,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_016, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_017, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     vector<ThumbnailData> infos;
@@ -1249,7 +1249,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_017, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_018, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_018, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     const int64_t time = 0;
@@ -1258,7 +1258,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_018, T
     EXPECT_NE(res, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_031, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_031, TestSize.Level1)
 {
     ThumbnailData data;
     ThumbRdbOpt opts;
@@ -1268,7 +1268,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_031, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_036, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_036, TestSize.Level1)
 {
     int64_t time = 0;
     bool before = false;
@@ -1292,7 +1292,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_036, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_037, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_037, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     int outLcdCount = 0;
@@ -1301,7 +1301,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_037, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_038, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_038, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     int outLcdCount = 0;
@@ -1316,7 +1316,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_038, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_039, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_039, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     vector<ThumbnailData> infos;
@@ -1325,7 +1325,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_039, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_040, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_040, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     vector<ThumbnailData> infos;
@@ -1334,7 +1334,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_040, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_041, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_041, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     vector<ThumbnailData> infos;
@@ -1344,7 +1344,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_041, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_042, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_042, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     vector<ThumbnailData> infos;
@@ -1354,7 +1354,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_042, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_043, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_043, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     vector<ThumbnailData> infos;
@@ -1363,7 +1363,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_043, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_044, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_044, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -1383,7 +1383,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_044, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
@@ -1392,7 +1392,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_046, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_046, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     opts.store = storePtr;
@@ -1402,7 +1402,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_046, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_047, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_047, TestSize.Level1)
 {
     ThumbRdbOpt opts;
     bool withThumb = false;
@@ -1416,14 +1416,14 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_047, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_048, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_048, TestSize.Level1)
 {
     string path = "";
     auto res = ThumbnailUtils::SetSource(nullptr, path);
     EXPECT_EQ(res, E_ERR);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_049, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_049, TestSize.Level1)
 {
     uint8_t Value = 1;
     vector<uint8_t> data;

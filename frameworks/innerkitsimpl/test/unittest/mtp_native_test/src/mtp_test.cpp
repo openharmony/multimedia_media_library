@@ -24,7 +24,7 @@ using namespace std;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-HWTEST_F(MtpNativeTest, mtp_packet_tools_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_packet_tools_test_001, TestSize.Level1)
 {
     MtpPacketTool::GetUInt16(0, 0);
     uint8_t numFirst = 0;
@@ -71,7 +71,7 @@ HWTEST_F(MtpNativeTest, mtp_packet_tools_test_001, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MtpNativeTest, mtp_packet_tools_test_002, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_packet_tools_test_002, TestSize.Level1)
 {
     vector<uint8_t> outBuffer;
     int8_t value = 0;
@@ -119,7 +119,7 @@ HWTEST_F(MtpNativeTest, mtp_packet_tools_test_002, TestSize.Level0)
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MtpNativeTest, mtp_packet_tools_test_003, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_packet_tools_test_003, TestSize.Level1)
 {
     vector<uint8_t> buffer;
     buffer.push_back(0);
@@ -136,7 +136,7 @@ HWTEST_F(MtpNativeTest, mtp_packet_tools_test_003, TestSize.Level0)
     MtpPacketTool::GetString(buffer, offsetTest);
 }
 
-HWTEST_F(MtpNativeTest, mtp_packet_tools_test_004, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_packet_tools_test_004, TestSize.Level1)
 {
     string value = "tools";
     auto ret = MtpPacketTool::StrToString(value);
@@ -180,7 +180,7 @@ HWTEST_F(MtpNativeTest, mtp_packet_tools_test_004, TestSize.Level0)
     MtpPacketTool::GetObjectPropTypeByPropCode(propCode);
 }
 
-HWTEST_F(MtpNativeTest, mtp_Property_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_Property_test_001, TestSize.Level1)
 {
     Property propertyOne(0, MTP_TYPE_INT8_CODE, true, 0);
     propertyOne.SetFormRange(0, 0, 0);
@@ -224,7 +224,7 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_001, TestSize.Level0)
     property.IsArrayType();
 }
 
-HWTEST_F(MtpNativeTest, mtp_Property_test_002, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_Property_test_002, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_INT128_CODE);
@@ -240,7 +240,7 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_002, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MtpNativeTest, mtp_Property_test_003, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_Property_test_003, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_UINT8_CODE);
@@ -257,7 +257,7 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_003, TestSize.Level0)
     EXPECT_NE(ret, true);
 }
 
-HWTEST_F(MtpNativeTest, mtp_Property_test_004, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_Property_test_004, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_AINT8_CODE);
@@ -298,7 +298,7 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_004, TestSize.Level0)
     value->BinToString(MTP_TYPE_STRING_CODE, outStr);
 }
 
-HWTEST_F(MtpNativeTest, mtp_Property_test_005, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_Property_test_005, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_AINT8_CODE);
@@ -350,7 +350,7 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_005, TestSize.Level0)
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MtpNativeTest, mtp_Property_test_006, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_Property_test_006, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_INT64_CODE);
@@ -399,7 +399,7 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_006, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MtpNativeTest, mtp_Property_test_007, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_Property_test_007, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property  property(propCode, MTP_TYPE_INT32_CODE);
@@ -421,7 +421,7 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_007, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MtpNativeTest, mtp_Property_test_008, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_Property_test_008, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property propertyOne(propCode, MTP_TYPE_UNDEFINED_CODE);
@@ -443,7 +443,7 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_008, TestSize.Level0)
     propertyOne.DumpValue(indent, valueTest, name);
 }
 
-HWTEST_F(MtpNativeTest, mtp_Property_test_009, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_Property_test_009, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_UINT8_CODE);
@@ -465,7 +465,7 @@ HWTEST_F(MtpNativeTest, mtp_Property_test_009, TestSize.Level0)
     property.WriteFormData(buffer);
 }
 
-HWTEST_F(MtpNativeTest, mtp_operation_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_test_001, TestSize.Level1)
 {
     MtpOperation mtpOperation;
     mtpOperation.Init();
@@ -517,7 +517,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_test_001, TestSize.Level0)
     EXPECT_EQ(ret, MTP_OK_CODE);
 }
 
-HWTEST_F(MtpNativeTest, mtp_operation_test_002, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_test_002, TestSize.Level1)
 {
     MtpOperation mtpOperation;
     mtpOperation.Init();
@@ -569,7 +569,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_test_002, TestSize.Level0)
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MtpNativeTest, mtp_operation_test_003, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_test_003, TestSize.Level1)
 {
     MtpOperation mtpOperation;
     mtpOperation.Init();
@@ -595,7 +595,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_test_003, TestSize.Level0)
     mtpOperation.DealRequest(operationCode, errorCode);
 }
 
-HWTEST_F(MtpNativeTest, mtp_packet_002, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_packet_002, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     int TEST_UID = 5003;
@@ -615,7 +615,7 @@ HWTEST_F(MtpNativeTest, mtp_packet_002, TestSize.Level0)
     MtpErrorUtils::SolveCloseFdError(E_SUCCESS);
 }
 
-HWTEST_F(MtpNativeTest, mtp_packet_003, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_packet_003, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     shared_ptr<MtpPacket> mtpPacket = make_shared<MtpPacket>(context);

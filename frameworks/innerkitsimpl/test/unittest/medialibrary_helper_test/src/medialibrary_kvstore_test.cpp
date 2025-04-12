@@ -45,7 +45,7 @@ void MedialibraryKvstoreTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: Init
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_001, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_001, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -63,7 +63,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_001, TestSize.L
  * EnvConditions: NA
  * CaseDescription: Insert
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_002, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_002, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -82,7 +82,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_002, TestSize.L
  * EnvConditions: NA
  * CaseDescription: Delete
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_003, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_003, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -104,7 +104,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_003, TestSize.L
  * EnvConditions: NA
  * CaseDescription: GetCount
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_004, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_004, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -123,7 +123,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_004, TestSize.L
  * EnvConditions: NA
  * CaseDescription: Query
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_006, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_006, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -143,7 +143,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_006, TestSize.L
  * EnvConditions: NA
  * CaseDescription: BatchQuery
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_007, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_007, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -169,7 +169,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_007, TestSize.L
  * EnvConditions: NA
  * CaseDescription: BatchQuery
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_008, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_008, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -191,7 +191,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_008, TestSize.L
  * EnvConditions: NA
  * CaseDescription: RebuildKvStore
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_009, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_009, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -210,7 +210,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_009, TestSize.L
  * EnvConditions: NA
  * CaseDescription: GetKvStoreOption
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_012, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_012, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -230,7 +230,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_012, TestSize.L
  * EnvConditions: NA
  * CaseDescription: BatchInsert
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_013, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_013, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -249,7 +249,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_013, TestSize.L
  * EnvConditions: NA
  * CaseDescription: BatchInsert
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_014, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_014, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -268,7 +268,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_014, TestSize.L
  * EnvConditions: NA
  * CaseDescription: BatchInsert
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_015, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_015, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -293,7 +293,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_015, TestSize.L
  * EnvConditions: NA
  * CaseDescription: InitSingleKvstore
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_016, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_016, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -311,7 +311,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_016, TestSize.L
  * EnvConditions: NA
  * CaseDescription: InitSingleKvstore
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_017, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_017, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -329,7 +329,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_017, TestSize.L
  * EnvConditions: NA
  * CaseDescription: PutAllValueToNewKvStore
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_018, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_018, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -348,7 +348,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_018, TestSize.L
  * EnvConditions: NA
  * CaseDescription: PutAllValueToNewKvStore
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_019, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_019, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);
@@ -367,7 +367,7 @@ HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_019, TestSize.L
  * EnvConditions: NA
  * CaseDescription: PutAllValueToNewKvStore
  */
-HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_020, TestSize.Level0)
+HWTEST_F(MedialibraryKvstoreTest, medialibrary_kvstore_testlevel_020, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryKvStore> medialibraryKvstore = std::make_shared<MediaLibraryKvStore>();
     ASSERT_NE(medialibraryKvstore, nullptr);

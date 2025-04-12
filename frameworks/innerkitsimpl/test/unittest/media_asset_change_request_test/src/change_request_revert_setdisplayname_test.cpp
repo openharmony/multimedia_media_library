@@ -97,7 +97,7 @@ const std::string INSERT_VIDEO_PHOTO_AEERT =
 const std::string DELETE_DATA = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = 1";
 
 static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void InitTables()
 {
     std::vector<std::string> createTableSqlList = { PhotoColumn::CREATE_PHOTO_TABLE };
@@ -173,7 +173,6 @@ void ChangeRequestRevertSetDisplayNameTest::TearDownTestCase()
     CleanAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("SetDisplayNameTest Clean is finish");
 }
 
@@ -454,7 +453,7 @@ int32_t SetPendingOnly(int32_t pendingTime, int32_t fileId)
  * @tc.desc:  photoasset SetDisplayName after editdata, can revert, expect revert success
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestRevertSetDisplayNameTest, Revert_SetDisplayName_PhotoAsset_001, TestSize.Level0)
+HWTEST_F(ChangeRequestRevertSetDisplayNameTest, Revert_SetDisplayName_PhotoAsset_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd Revert_SetDisplayName_PhotoAsset_001");
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, OLD_PHOTO_AEERT_DISPLAY_NAME);
@@ -493,7 +492,7 @@ HWTEST_F(ChangeRequestRevertSetDisplayNameTest, Revert_SetDisplayName_PhotoAsset
  * @tc.desc:  moving photoasset SetDisplayName when addresource, can revert, expect revert success
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestRevertSetDisplayNameTest, Revert_SetDisplayName_PhotoAsset_002, TestSize.Level0)
+HWTEST_F(ChangeRequestRevertSetDisplayNameTest, Revert_SetDisplayName_PhotoAsset_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd Revert_SetDisplayName_PhotoAsset_002");
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, OLD_MOVING_PHOTO_AEERT_DISPLAY_NAME, true);
@@ -544,7 +543,7 @@ HWTEST_F(ChangeRequestRevertSetDisplayNameTest, Revert_SetDisplayName_PhotoAsset
  * @tc.desc:  vedio SetDisplayName when addresource, can revert, expect revert success
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestRevertSetDisplayNameTest, Revert_SetDisplayName_PhotoAsset_003, TestSize.Level0)
+HWTEST_F(ChangeRequestRevertSetDisplayNameTest, Revert_SetDisplayName_PhotoAsset_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd Revert_SetDisplayName_PhotoAsset_003");
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_VIDEO, OLD_VIDEO_AEERT_DISPLAY_NAME, true);

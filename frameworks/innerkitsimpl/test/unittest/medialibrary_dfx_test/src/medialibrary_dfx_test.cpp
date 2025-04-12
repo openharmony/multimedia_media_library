@@ -43,17 +43,13 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
 
 void MediaLibraryDfxTest::SetUpTestCase(void)
 {
     DfxManager::GetInstance();
 }
-void MediaLibraryDfxTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MediaLibraryDfxTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void MediaLibraryDfxTest::SetUp()

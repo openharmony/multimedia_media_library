@@ -33,7 +33,7 @@ namespace Media {
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, SmartAlbumAsset_SetGet_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, SmartAlbumAsset_SetGet_Test_001, TestSize.Level1)
 {
     SmartAlbumAsset smartAlbumAsset;
 

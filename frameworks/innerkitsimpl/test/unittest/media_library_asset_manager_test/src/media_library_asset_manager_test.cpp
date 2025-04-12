@@ -50,7 +50,6 @@ namespace OHOS {
 namespace Media {
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 std::unique_ptr<FileAsset> GetFile(int mediaTypeId);
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void ClearFile();
 void ClearAllFile();
 void CreateDataHelper(int32_t systemAbilityId);
@@ -118,7 +117,6 @@ void MediaLibraryAssetManagerTest::TearDownTestCase(void)
     sleep(CLEAN_TIME);
     ClearAllFile();
     MEDIA_INFO_LOG("TearDownTestCase end");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 // SetUp:Execute before each test case
 void MediaLibraryAssetManagerTest::SetUp(void)
@@ -242,7 +240,7 @@ void CallbackFuncitonOnMovingPhotoDataPrepared(MediaLibrary_ErrorCode result, Me
  * @tc.name      : copy src image to dest image to see if error occurs
  * @tc.desc      : compare with src image to see if equals
  */
-HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_001::Start");
     string srcDisplayName = "request_image_src_1.jpg";
@@ -290,7 +288,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSi
  * @tc.name      : copy src image to dest image to see if error occurs
  * @tc.desc      : compare with src image to see if equals
  */
-HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_002::Start");
     string srcDisplayName = "request_image_src_2.jpg";
@@ -338,7 +336,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSi
  * @tc.name      : copy src video to dest video to see if error occurs
  * @tc.desc      : compare with src video to see if equals
  */
-HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_003::Start");
     string srcDisplayName = "request_video_src_1.mp4";
@@ -386,7 +384,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSi
  * @tc.name      : input uri is null to see if error occurs and
  * @tc.desc      : compare requestId with null to see if equals
  */
-HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_004::Start");
     string destDisplayName = "request_image_dest_3.jpg";
@@ -410,7 +408,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_004, TestSi
  * @tc.name      : create video again to see if error occurs
  * @tc.desc      : compare with src image to see if equals
  */
-HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_005::Start");
     string srcDisplayName = "request_video_src_2.mp4";
@@ -458,7 +456,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSi
  * @tc.name      : create video again to see if error occurs
  * @tc.desc      : call request image function see if requestId = NULL
  */
-HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_006::Start");
     string srcDisplayName = "request_video_src_3.mp4";
@@ -493,7 +491,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_006, TestSi
  * @tc.name      : request image by ML_HIGH_QUALITY_MODE, then cancel request
  * @tc.desc      : call request image function see if requestId = NULL
  */
-HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_007::Start");
     string srcDisplayName = "request_video_src_4.jpg";
@@ -528,9 +526,8 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_007, TestSi
  * @tc.name      : request image by ML_HIGH_QUALITY_MODE, then request image
  * @tc.desc      : call request image function and verify the correct return code and image source
  */
-HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSize.Level1)
 {
-    MEDIA_INFO_LOG("MediaLibraryAssetManager_test_008::Start");
     string srcDisplayName = "request_video_src_4.jpg";
     string destDisplayName = "request_video_dest_4.jpg";
     string srcuri = mediaLibraryManager->CreateAsset(srcDisplayName);
@@ -538,9 +535,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSi
     int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
     ASSERT_NE(srcFd <= 0, true);
     int32_t resWrite = write(srcFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
+    ASSERT_NE(resWrite, -1);
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
@@ -587,7 +582,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_008, TestSi
  * @tc.name      : request moving photo by ML_HIGH_QUALITY_MODE, then request moving photo
  * @tc.desc      : call request moving photo function and verify the correct return code and moving photo source
  */
-HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_009::Start");
     string srcDisplayName = "request_video_src_4.jpg";
@@ -597,9 +592,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_009, TestSi
     int32_t srcFd = mediaLibraryManager->OpenAsset(srcuri, MEDIA_FILEMODE_READWRITE);
     ASSERT_NE(srcFd <= 0, true);
     int32_t resWrite = write(srcFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
+    ASSERT_NE(resWrite, -1);
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
     string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
@@ -637,8 +630,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_009, TestSi
     fileAsset_->SetDisplayName(displayName);
     ret = OH_MediaAssetManager_RequestMovingPhoto(manager, mediaAsset, requestOptions, &requestID, callback);
     EXPECT_EQ(ret, MEDIA_LIBRARY_PARAMETER_ERROR);
-    ret = OH_MediaAssetManager_Release(manager);
-    EXPECT_EQ(ret, MEDIA_LIBRARY_OK);
+    EXPECT_EQ(OH_MediaAssetManager_Release(manager), MEDIA_LIBRARY_OK);
 }
 } // namespace Media
 } // namespace OHOS

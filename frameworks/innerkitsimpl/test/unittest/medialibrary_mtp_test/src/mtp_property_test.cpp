@@ -23,7 +23,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_001, testing::ext::TestSize.Level1)
 {
     Property propertyOne(0, MTP_TYPE_INT8_CODE, true, 1);
     propertyOne.SetFormRange(0, 0, 0);
@@ -67,7 +67,7 @@ HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_001, testing::ext::TestSize.Level
     property.IsArrayType();
 }
 
-HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_002, TestSize.Level0)
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_002, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_INT128_CODE);
@@ -83,7 +83,7 @@ HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_002, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_003, TestSize.Level0)
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_003, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_UINT8_CODE);
@@ -100,7 +100,7 @@ HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_003, TestSize.Level0)
     EXPECT_NE(ret, true);
 }
 
-HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_004, TestSize.Level0)
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_004, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_AINT8_CODE);
@@ -141,7 +141,7 @@ HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_004, TestSize.Level0)
     value->BinToString(MTP_TYPE_STRING_CODE, outStr);
 }
 
-HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_005, TestSize.Level0)
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_005, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_AINT8_CODE);
@@ -193,7 +193,7 @@ HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_005, TestSize.Level0)
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_006, TestSize.Level0)
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_006, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_INT64_CODE);
@@ -242,7 +242,7 @@ HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_006, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_007, TestSize.Level0)
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_007, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property  property(propCode, MTP_TYPE_INT32_CODE);
@@ -264,7 +264,7 @@ HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_007, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_008, TestSize.Level0)
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_008, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property propertyOne(propCode, MTP_TYPE_UNDEFINED_CODE);
@@ -286,7 +286,7 @@ HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_008, TestSize.Level0)
     propertyOne.DumpValue(indent, valueTest, name);
 }
 
-HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_009, TestSize.Level0)
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_009, TestSize.Level1)
 {
     uint16_t propCode = 0;
     Property property(propCode, MTP_TYPE_UINT8_CODE);

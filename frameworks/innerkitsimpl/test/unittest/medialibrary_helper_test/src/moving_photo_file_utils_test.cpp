@@ -102,7 +102,7 @@ static bool CompareIfContentEquals(const unsigned char originArray[], const stri
     return true;
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_001, TestSize.Level1)
 {
     string dirPath = "/data/test/ConvertToMovingPhoto_001";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -117,7 +117,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_0
     EXPECT_EQ(CompareIfContentEquals(FILE_TEST_EXTRA_DATA, extraDataPath, sizeof(FILE_TEST_EXTRA_DATA)), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_002, TestSize.Level1)
 {
     string dirPath = "/data/test/ConvertToMovingPhoto_002";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -132,7 +132,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_0
     EXPECT_EQ(CompareIfContentEquals(FILE_TEST_EXTRA_DATA, extraDataPath, sizeof(FILE_TEST_EXTRA_DATA)), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetCoverPosition_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetCoverPosition_001, TestSize.Level1)
 {
     string dirPath = "/data/test/GetCoverPosition_001";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -142,7 +142,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetCoverPosition_001, 
     EXPECT_LT(MovingPhotoFileUtils::GetCoverPosition(videoPath, 0, coverPosition), E_OK);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_001, TestSize.Level1)
 {
     string tag = "v3_f31_c";
     uint32_t version;
@@ -155,7 +155,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_
     EXPECT_EQ(hasCinemagraphInfo, true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_002, TestSize.Level1)
 {
     string tag = "v2_f30";
     uint32_t version;
@@ -168,7 +168,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_
     EXPECT_EQ(hasCinemagraphInfo, false);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_003, TestSize.Level1)
 {
     string tag = "V2_F29_C";
     uint32_t version;
@@ -181,7 +181,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_
     EXPECT_EQ(hasCinemagraphInfo, true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_004, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_004, TestSize.Level1)
 {
     string tag = "V3_F33";
     uint32_t version;
@@ -194,7 +194,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_
     EXPECT_EQ(hasCinemagraphInfo, false);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_005, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_005, TestSize.Level1)
 {
     string tag = "";
     uint32_t version;
@@ -212,7 +212,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_
     EXPECT_LT(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_006, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_006, TestSize.Level1)
 {
     string dirPath = "/data/test/GetVersionAndFrameNum_006";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -230,7 +230,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_
     EXPECT_EQ(hasCinemagraphInfo, false);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_007, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_007, TestSize.Level1)
 {
     string dirPath = "/data/test/GetVersionAndFrameNum_007";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -248,48 +248,48 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_
     EXPECT_EQ(hasCinemagraphInfo, false);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoVideoPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoVideoPath_001, TestSize.Level1)
 {
     string imagePath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
     string videoPath = "/storage/cloud/files/Photo/1/IMG_123435213_231.mp4";
     EXPECT_EQ(MovingPhotoFileUtils::GetMovingPhotoVideoPath(imagePath), videoPath);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoVideoPath_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoVideoPath_002, TestSize.Level1)
 {
     string imagePath = "/storage/cloud/files/.hiddenTest/IMG_123435213_231";
     EXPECT_EQ(MovingPhotoFileUtils::GetMovingPhotoVideoPath(imagePath), "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoExtraDataDir_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoExtraDataDir_001, TestSize.Level1)
 {
     string imagePath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
     string extraDataDir = "/storage/cloud/files/.editData/Photo/1/IMG_123435213_231.jpg";
     EXPECT_EQ(MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(imagePath), extraDataDir);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoExtraDataPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoExtraDataPath_001, TestSize.Level1)
 {
     string imagePath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
     string extraDataPath = "/storage/cloud/files/.editData/Photo/1/IMG_123435213_231.jpg/extraData";
     EXPECT_EQ(MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(imagePath), extraDataPath);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLivePhotoCacheDir_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLivePhotoCacheDir_001, TestSize.Level1)
 {
     string imagePath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
     string extraDataDir = "/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg";
     EXPECT_EQ(MovingPhotoFileUtils::GetLivePhotoCacheDir(imagePath), extraDataDir);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLivePhotoCachePath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetLivePhotoCachePath_001, TestSize.Level1)
 {
     string imagePath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
     string extraDataPath = "/storage/cloud/files/.cache/Photo/1/IMG_123435213_231.jpg/livePhoto.jpg";
     EXPECT_EQ(MovingPhotoFileUtils::GetLivePhotoCachePath(imagePath), extraDataPath);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_001, TestSize.Level1)
 {
     string dirPath = "/storage/cloud/files/Photo/1";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -302,7 +302,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_001, T
     EXPECT_EQ(fileSize, MIN_STANDARD_SIZE);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_002, TestSize.Level1)
 {
     string dirPath = "/storage/cloud/files/Photo/1";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -323,7 +323,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_002, T
     EXPECT_EQ(fileSize, sizeof(FILE_TEST_EXTRA_DATA));
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_001, TestSize.Level1)
 {
     string dirPath = "/storage/cloud/files/Photo/1";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -335,7 +335,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_001, Tes
     close(fd);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsLivePhoto_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsLivePhoto_001, TestSize.Level1)
 {
     string dirPath = "/storage/cloud/files/Photo/15";
     string livePhotDir = MovingPhotoFileUtils::GetLivePhotoCacheDir(dirPath);
@@ -347,7 +347,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsLivePhoto_001, TestS
     EXPECT_EQ(MediaFileUtils::DeleteFile(livePhotoPath), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_001, TestSize.Level1)
 {
     string movingPhotoImagepath = "/storage/cloud/files/Photo/10/IMG_123435213_987.jpg";
     string sourceLivePhotoPath;
@@ -355,7 +355,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePho
     EXPECT_EQ(sourceLivePhotoPath, "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_002, TestSize.Level1)
 {
     string movingPhotoImagepath = "/storage/cloud/files/Photo/50/IMG_123435213_1023.jpg";
     string sourceLivePhotoPath;
@@ -367,7 +367,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePho
     EXPECT_EQ(MediaFileUtils::DeleteFile(result), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceMovingPhotoImagePath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceMovingPhotoImagePath_001, TestSize.Level1)
 {
     string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
     EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(movingPhotoImagepath),
@@ -381,7 +381,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceMovingPhotoIm
     EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoImagePath("/storage/cloud/data/invalid.jpg"), "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceMovingPhotoVideoPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceMovingPhotoVideoPath_001, TestSize.Level1)
 {
     string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
     EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(movingPhotoImagepath),
@@ -395,7 +395,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceMovingPhotoVi
     EXPECT_EQ(MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath("/storage/cloud/test/invalid.jpg"), "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceLivePhotoCachePath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceLivePhotoCachePath_001, TestSize.Level1)
 {
     string movingPhotoImagepath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
     EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath(movingPhotoImagepath),
@@ -409,7 +409,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceLivePhotoCach
     EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath("/storage/cloud/data/invalid.jpg"), "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsMovingPhoto_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsMovingPhoto_001, TestSize.Level1)
 {
     EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(0, 0, 0), false);
     EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(0, 0, 4), false);
@@ -424,7 +424,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsMovingPhoto_001, Tes
     EXPECT_EQ(MovingPhotoFileUtils::IsMovingPhoto(3, 0, 3), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsGraffiti_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsGraffiti_001, TestSize.Level1)
 {
     EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(0, 0), false);
     EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(0, 1), false);
@@ -433,7 +433,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_IsGraffiti_001, TestSi
     EXPECT_EQ(MovingPhotoFileUtils::IsGraffiti(0, 3), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoSize_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoSize_001, TestSize.Level1)
 {
     size_t result = MovingPhotoFileUtils::GetMovingPhotoSize("");
     EXPECT_EQ(result, 0);
@@ -441,7 +441,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetMovingPhotoSize_001
     EXPECT_EQ(result, 0);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_003, TestSize.Level1)
 {
     string dirPath = "/storage/cloud/files/Photo/1";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -456,7 +456,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_003, T
     EXPECT_EQ(fileSize, MIN_STANDARD_SIZE);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_004, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_004, TestSize.Level1)
 {
     string dirPath = "/storage/cloud/files/Photo/1";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -480,7 +480,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetExtraDataLen_004, T
     EXPECT_EQ(MovingPhotoFileUtils::GetExtraDataLen(imagePath, videoPath, 0, 0, fileSize), E_HAS_FS_ERROR);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_002, TestSize.Level1)
 {
     string dirPath = "/storage/cloud/files/Photo/1";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -495,7 +495,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_002, Tes
     close(fd);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_003, TestSize.Level1)
 {
     string dirPath = "";
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
@@ -506,7 +506,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetFrameIndex_003, Tes
     close(fd);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePhoto_003, TestSize.Level1)
 {
     string movingPhotoImagepath = "/123/456/789/IMG_123435213_987.jpg";
     string sourceLivePhotoPath;
@@ -518,7 +518,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToSourceLivePho
     EXPECT_EQ(sourceLivePhotoPath, "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_003, TestSize.Level1)
 {
     string dirPath = "/data/test/ConvertToMovingPhoto_002";
     string livePhotoPath = dirPath + "/" + "livePhotoSamePath.jpg";
@@ -546,7 +546,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_0
     EXPECT_EQ(CompareIfContentEquals(FILE_TEST_EXTRA_DATA, extraDataPath, sizeof(FILE_TEST_EXTRA_DATA)), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetCoverPosition_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetCoverPosition_002, TestSize.Level1)
 {
     std::string videoPath = "";
     uint32_t frameIndex = 0;
@@ -560,7 +560,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetCoverPosition_002, 
     EXPECT_EQ(MovingPhotoFileUtils::GetCoverPosition(videoPath, frameIndex, coverPosition, scene), E_AVMETADATA);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_008, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_008, TestSize.Level1)
 {
     string tag = "";
     uint32_t version = 0;
@@ -576,7 +576,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_
         version, frameIndex, hasCinemagraphInfo), E_OK);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_009, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_009, TestSize.Level1)
 {
     string testFile = "/data/test/version_tag.dat";
     unsigned char tagData[10] = "v1_f2_c";
@@ -600,7 +600,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetVersionAndFrameNum_
     EXPECT_EQ(MediaFileUtils::DeleteFile(testFile), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceLivePhotoCachePath_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceLivePhotoCachePath_002, TestSize.Level1)
 {
     string imagePath = "";
     int32_t userId = 1;

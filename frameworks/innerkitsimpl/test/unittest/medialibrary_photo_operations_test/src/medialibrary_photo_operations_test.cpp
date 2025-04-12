@@ -914,7 +914,7 @@ const string CHAR256_CHINESE =
     "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中"
     "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中";
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_001");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -936,7 +936,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_002");
     string defaultRelativePath = "Pictures/1/";
@@ -959,7 +959,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_003");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -976,7 +976,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_004");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -993,7 +993,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_005");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1015,7 +1015,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_006");
     TestPhotoCreateWithExtApi10("", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
@@ -1031,7 +1031,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_006, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_006");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api9_test_001");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1058,7 +1058,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_001, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api9_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api9_test_002");
     string defaultRelativePath = "Pictures/1/";
@@ -1086,7 +1086,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_002, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api9_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start photo_oprn_create_api9_test_003");
     string defaultDisplayName = "photo.jpg";
@@ -1111,7 +1111,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_003, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api9_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api9_test_004");
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1164,7 +1164,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_004, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api9_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_delete_api10_test_001");
 
@@ -1194,7 +1194,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_001");
 
@@ -1216,7 +1216,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_001, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_002");
 
@@ -1245,7 +1245,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_002, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_003");
 
@@ -1272,7 +1272,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestSize.Level2)
 {
     // Hidden time test 1
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_004");
@@ -1318,7 +1318,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestSize.Level2)
 {
     // Last visit time test
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_005");
@@ -1365,7 +1365,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestSize.Level2)
 {
     // Hidden time test 2
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_006");
@@ -1419,7 +1419,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_006");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_007, TestSize.Level2)
 {
     // location album test
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_007");
@@ -1464,7 +1464,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_007, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_007");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_001");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1477,7 +1477,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_002");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1517,7 +1517,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_002, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_003");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1539,7 +1539,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_003, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_004");
     int32_t fileId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1561,7 +1561,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_005");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1600,7 +1600,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_005, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_006");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1618,7 +1618,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_006");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_007");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
@@ -1642,7 +1642,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_007");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_008");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
@@ -1666,7 +1666,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_008, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_008");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_009, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_009");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1686,7 +1686,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_009, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_009");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_010, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_010");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1709,7 +1709,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_010, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_010");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_011, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_011");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1732,7 +1732,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_011, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_011");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_012, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_012");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1755,7 +1755,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_012, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_012");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_013, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_013");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1780,7 +1780,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_013, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_013");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_014, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_014");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1800,7 +1800,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_014, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_014");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_015, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_015");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1822,7 +1822,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_015, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_015");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_016, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_016");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1845,7 +1845,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_016, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_016");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_017, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_017");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -1866,7 +1866,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_017, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_017");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_018, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_018, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_018");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg", true);
@@ -1890,7 +1890,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_018, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_018");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_019, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_019");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg", true);
@@ -1911,7 +1911,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_019, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_019");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api9_test_001");
     string displayName = "photo.jpg";
@@ -1935,7 +1935,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_001, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api9_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api9_test_002");
     string relativePath = "Pictures/1/";
@@ -1976,7 +1976,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_002, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api9_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start photo_oprn_update_api9_test_003");
     string relativePath = "Pictures/1/";
@@ -2011,7 +2011,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_003, TestS
 }
 
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api9_test_004");
     string relativePath = "Pictures/1/";
@@ -2025,7 +2025,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_004, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api9_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api9_test_005");
     string displayName = "photo.jpg";
@@ -2049,7 +2049,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_005, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api9_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_001");
 
@@ -2065,7 +2065,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_002, TestSize.Level2)
 {
     // test function MediaLibraryPhotoOperations::RequestEditData
     MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_002");
@@ -2090,7 +2090,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_002, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_003, TestSize.Level2)
 {
     // test function MediaLibraryPhotoOperations::RequestEditSource
     MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_003");
@@ -2113,7 +2113,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_003, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_004, TestSize.Level2)
 {
     // test function MediaLibraryPhotoOperations::CommitEditOpen
     MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_004");
@@ -2138,7 +2138,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_004, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_close_api10_test_001");
 
@@ -2157,7 +2157,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_close_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, TestSize.Level2)
 {
     // common api10 create -> open -> write -> close
     MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_001");
@@ -2195,7 +2195,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_002, TestSize.Level2)
 {
     // common api10 create -> setPending(true) -> open -> write -> close -> setPending(false)
     MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_002");
@@ -2246,7 +2246,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_002, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_003, TestSize.Level2)
 {
     // common api10 create -> open -> setPending(true) -> write -> setPending(false) -> close
     MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_003");
@@ -2297,7 +2297,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_003, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api9_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api9_test_001, TestSize.Level2)
 {
     // common api9 create -> open -> write -> close
     MEDIA_INFO_LOG("start tdd photo_oprn_pending_api9_test_001");
@@ -2336,7 +2336,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api9_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api9_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_commit_edit_insert_test_001");
 
@@ -2374,7 +2374,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_001
     MEDIA_INFO_LOG("end tdd photo_oprn_commit_edit_insert_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_commit_edit_insert_test_002");
 
@@ -2392,7 +2392,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_002
     MEDIA_INFO_LOG("end tdd photo_oprn_commit_edit_insert_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_revert_edit_insert_test_001");
 
@@ -2421,7 +2421,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_001
     MEDIA_INFO_LOG("end tdd photo_oprn_revert_edit_insert_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_revert_edit_insert_test_002");
 
@@ -2460,7 +2460,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_002
     MEDIA_INFO_LOG("end tdd photo_oprn_revert_edit_insert_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_edit_record_test_001");
 
@@ -2513,7 +2513,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     MEDIA_INFO_LOG("end tdd photo_edit_record_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_edit_record_test_002");
 
@@ -2559,7 +2559,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_002, TestSize.L
     MEDIA_INFO_LOG("end tdd photo_edit_record_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd multistages_capture_test_001");
 
@@ -2594,7 +2594,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_001, TestSize
     MEDIA_INFO_LOG("end tdd multistages_capture_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd multistages_capture_test_002");
 
@@ -2637,7 +2637,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_002, TestSize
     MEDIA_INFO_LOG("end tdd multistages_capture_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_open_cache_test_001");
 
@@ -2655,7 +2655,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_001, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_open_cache_test_002");
 
@@ -2678,7 +2678,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_002, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_open_cache_test_003");
 
@@ -2695,7 +2695,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_003, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_001");
 
@@ -2727,7 +2727,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_001, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_002");
 
@@ -2759,7 +2759,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_002, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_003");
 
@@ -2791,7 +2791,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_004");
 
@@ -2833,7 +2833,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_004, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_005");
 
@@ -2862,7 +2862,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_005, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_001");
 
@@ -2897,7 +2897,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_001, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_002");
 
@@ -2932,7 +2932,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_002, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_003");
 
@@ -2964,7 +2964,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_004");
 
@@ -2997,7 +2997,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_004, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_005");
 
@@ -3020,7 +3020,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_005, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_006");
 
@@ -3038,7 +3038,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_006, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_006");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_delete_cache_test_001");
 
@@ -3067,7 +3067,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_cache_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_delete_cache_test_002");
 
@@ -3096,7 +3096,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_batch_update_user_comment_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_batch_update_user_comment_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_batch_update_user_comment_test_001");
     int32_t fileId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -3153,11 +3153,8 @@ bool CompareFile(const unsigned char originArray[], off_t originSize,
     return isEqual;
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("start tdd photo_oprn_convert_live_photo_test_001");
-
-    // create live photo
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
     ValuesBucket values;
     values.PutString(ASSET_EXTENTION, "jpg");
@@ -3169,18 +3166,14 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001
     MediaLibraryPhotoOperations::Create(cmd);
     int32_t fileId = QueryPhotoIdByDisplayName("live_photo.jpg");
     ASSERT_GE(fileId, 0);
-
     MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
     string fileUriStr = fileUri.ToString();
     Uri uri(fileUriStr);
     MediaLibraryCommand openImageCmd(uri, Media::OperationType::OPEN);
     int32_t imageFd = MediaLibraryPhotoOperations::Open(openImageCmd, "w");
     ASSERT_GE(imageFd, 0);
-    int32_t resWrite = write(imageFd, FILE_TEST_JPG, sizeof(FILE_TEST_JPG));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
-
+    ASSERT_NE(write(imageFd, FILE_TEST_JPG, sizeof(FILE_TEST_JPG)), -1);
+    
     string videoUriStr = fileUriStr;
     MediaFileUtils::UriAppendKeyValue(videoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
     Uri videoUri(videoUriStr);
@@ -3188,18 +3181,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001
     videoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t videoFd = MediaLibraryDataManager::GetInstance()->OpenFile(videoCmd, "w");
     ASSERT_GE(videoFd, 0);
-    resWrite = write(videoFd, FILE_TEST_MP4, sizeof(FILE_TEST_MP4));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
-
+    ASSERT_NE(write(videoFd, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), -1);
     MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
     ValuesBucket closeValues;
     closeValues.PutString(MEDIA_DATA_DB_URI, fileUriStr);
     closeCmd.SetValueBucket(closeValues);
     MediaLibraryPhotoOperations::Close(closeCmd);
-
-    // read live photo video
     string livePhotoUriStr = fileUriStr;
     MediaFileUtils::UriAppendKeyValue(livePhotoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
     Uri livePhotoUri(livePhotoUriStr);
@@ -3212,15 +3199,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
     EXPECT_NE((buf == nullptr), true);
     read(livePhotoFd, buf, destLen);
-
-    bool result = CompareFile(FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO), buf, destLen);
+    EXPECT_EQ(CompareFile(FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO), buf, destLen), true);
     free(buf);
     close(livePhotoFd);
-    EXPECT_EQ(result, true);
-    MEDIA_INFO_LOG("end tdd photo_oprn_convert_live_photo_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_store_thumbnail_size_test_001");
 
@@ -3264,7 +3248,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_0
     MEDIA_INFO_LOG("end tdd photo_oprn_store_thumbnail_size_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_drop_thumbnail_size_test_001");
 
@@ -3288,7 +3272,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_00
     MEDIA_INFO_LOG("end tdd photo_oprn_drop_thumbnail_size_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_empty_columns, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_empty_columns, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_scan_movingphoto_empty_columns");
     MediaLibraryCommand cmd(OperationObject::PAH_MOVING_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
@@ -3298,7 +3282,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_empty_colu
     MEDIA_INFO_LOG("end tdd photo_oprn_scan_movingphoto_empty_columns");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_normal_columns, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_normal_columns, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_scan_movingphoto_normal_columns");
     MediaLibraryCommand cmd(OperationObject::PAH_MOVING_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
@@ -3309,7 +3293,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_normal_col
     MEDIA_INFO_LOG("end tdd photo_oprn_scan_movingphoto_normal_columns");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_bucket, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_bucket, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_empty_bucket");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
@@ -3321,7 +3305,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_bucket, T
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_empty_bucket");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_file, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_empty_file");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
@@ -3334,7 +3318,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_file, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_empty_file");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_normal_file, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_normal_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_normal_file");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
@@ -3356,7 +3340,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_normal_file, Te
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_normal_file");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_effect_mode, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_effect_mode, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_effect_mode");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
@@ -3370,7 +3354,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_effect_mode, Te
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_effect_mode");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_illegal_mode, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_illegal_mode, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_illegal_mode");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -3388,7 +3372,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_illegal_mode, T
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_illegal_mode");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd clone_single_asset_001");
 
@@ -3423,7 +3407,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_001, TestSize.Level
     MEDIA_INFO_LOG("end tdd clone_single_asset_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd clone_single_asset_002");
     
@@ -3464,7 +3448,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level
 }
 
 // 多线程访问clone接口tdd测试
-HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd clone_single_asset_003");
 
@@ -3511,7 +3495,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_003, TestSize.Level
     MEDIA_INFO_LOG("end tdd clone_single_asset_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd picture_date_test_001");
     EXPECT_NE(s_pictureDataOperations, nullptr);
@@ -3546,7 +3530,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0
     MEDIA_INFO_LOG("end tdd picture_date_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_001, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3566,7 +3550,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_001, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_002, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3587,7 +3571,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_002, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_003, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3610,7 +3594,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_003, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_004, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3631,7 +3615,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_004, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_005, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3652,7 +3636,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_005, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_006, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3673,7 +3657,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_006, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_007, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3695,7 +3679,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_007, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_008, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3719,7 +3703,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_008, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_09, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_09, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3741,7 +3725,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_09, TestS
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, getAllDuplicateAssets_test, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, getAllDuplicateAssets_test, TestSize.Level2)
 {
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
     EXPECT_GE(fileId1, 0);
@@ -3760,7 +3744,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, getAllDuplicateAssets_test, TestSize.L
     EXPECT_NE(resultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestSize.Level2)
 {
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
     EXPECT_GE(fileId1, 0);
@@ -3779,7 +3763,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestS
     EXPECT_NE(resultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_metadata_test, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_metadata_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_read_moving_photo_metadata_test");
 

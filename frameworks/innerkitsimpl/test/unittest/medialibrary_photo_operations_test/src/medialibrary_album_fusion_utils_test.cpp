@@ -192,7 +192,7 @@ void MediaLibraryAlbumFusionUtilsTest::SetUp()
 void MediaLibraryAlbumFusionUtilsTest::TearDown()
 {}
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_001, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     MediaLibraryAlbumFusionUtils::RemoveMisAddedHiddenData(upgradeStore);
@@ -200,7 +200,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_001, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_002, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     MediaLibraryAlbumFusionUtils::HandleMatchedDataFusion(upgradeStore);
@@ -208,7 +208,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_002, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_003, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     std::multimap<int32_t, vector<int32_t>> notMatchedMap;
@@ -218,7 +218,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_003, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_004, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     string displayName = "test.jpg";
@@ -245,7 +245,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_004, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_005, TestSize.Level1)
 {
     string displayName = "test.jpg";
     int32_t fileId = CreatePhotoApi10(IAMGE_TYPE, displayName);
@@ -254,7 +254,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_005, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_006, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     MediaLibraryAlbumFusionUtils::HandleNoOwnerData(upgradeStore);
@@ -262,7 +262,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_006, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_007, TestSize.Level1)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(rdbStore, nullptr);
@@ -271,7 +271,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_007, TestSize.L
     MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_008, TestSize.Level1)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     ASSERT_NE(rdbStore, nullptr);
@@ -280,7 +280,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_008, TestSize.L
     MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData();
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_009, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     vector<int32_t> restOwnerAlbumIds;
@@ -297,7 +297,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_009, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_010, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     vector<int32_t> restOwnerAlbumIds;
@@ -314,7 +314,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_010, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_011, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     std::multimap<int32_t, vector<int32_t>> notMatchedMap;
@@ -326,7 +326,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_011, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_012, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     int32_t assetId = NUM_ZERO;
@@ -364,7 +364,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_012, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_013, TestSize.Level1)
 {
     std::multimap<int32_t, vector<int32_t>> notMathedMap;
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
@@ -381,7 +381,7 @@ HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_013, TestSize.L
     ASSERT_NE(rdbStorePtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumFusionUtilsTest, AlbumFusionUtils_test_014, TestSize.Level1)
 {
     std::shared_ptr<MediaLibraryRdbStore> upgradeStore = nullptr;
     int32_t newAlbumId = NUM_INVALID;

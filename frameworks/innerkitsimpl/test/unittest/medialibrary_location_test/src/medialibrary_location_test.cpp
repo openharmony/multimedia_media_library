@@ -79,7 +79,7 @@ void MediaLibraryLocationTest::SetUp(void)
 
 void MediaLibraryLocationTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_001::Start");
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
@@ -103,7 +103,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_001, TestSiz
     MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_002::Start");
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
@@ -132,7 +132,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSiz
         retVal1, retVal2);
 }
 
-HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoKnowledge_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoKnowledge_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Location_UpdateGeoKnowledge_Test_001::Start");
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
@@ -175,7 +175,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoKnowledge_Test_001, TestSiz
         adminArea.c_str(), locality.c_str());
 }
 
-HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoKnowledge_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoKnowledge_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Location_DeleteGeoKnowledge_Test_001::Start");
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
@@ -199,7 +199,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoKnowledge_Test_001, TestSiz
     MEDIA_INFO_LOG("Location_DeleteOcr_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoDictionary_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoDictionary_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Location_InsertGeoDictionary_Test_001::Start");
     Uri geoKnowDictionaryUri(URI_GEO_DICTIONARY);
@@ -213,7 +213,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoDictionary_Test_001, TestSi
     MEDIA_INFO_LOG("Location_InsertGeoDictionary_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoDictionary_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoDictionary_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Location_InsertGeoDictionary_Test_002::Start");
     Uri geoKnowDictionaryUri(URI_GEO_DICTIONARY);
@@ -230,7 +230,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoDictionary_Test_002, TestSi
         retVal1, retVal2);
 }
 
-HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoDictionary_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoDictionary_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Location_UpdateGeoDictionary_Test_001::Start");
     Uri geoKnowDictionaryUri(URI_GEO_DICTIONARY);
@@ -265,7 +265,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoDictionary_Test_001, TestSi
     MEDIA_INFO_LOG("Location_UpdateGeoDictionary_Test_001::cityName = %{public}s. End", cityName.c_str());
 }
 
-HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoDictionary_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoDictionary_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Location_DeleteGeoDictionary_Test_001::Start");
     Uri geoKnowDictionaryUri(URI_GEO_DICTIONARY);
@@ -368,7 +368,7 @@ int32_t InsertGeoKnowledge(double_t latitude, double_t longitude, const string &
     return retVal;
 }
 
-HWTEST_F(MediaLibraryLocationTest, Location_QueryGeo_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryLocationTest, Location_QueryGeo_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Location_QueryGeo_Test_001::Start");
     double_t latitude = 22.5142917630556;

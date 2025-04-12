@@ -30,7 +30,6 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const uint32_t MAX_SIZE = 200001;
 
 void MtpUnitTest::SetUpTestCase(void)
@@ -38,10 +37,7 @@ void MtpUnitTest::SetUpTestCase(void)
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
 }
 
-void MtpUnitTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MtpUnitTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void MtpUnitTest::SetUp() {}
@@ -55,7 +51,7 @@ void MtpUnitTest::TearDown(void) {}
 * EnvConditions: NA
 * CaseDescription: Parser
 */
-HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_001, TestSize.Level0)
+HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_001, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -77,7 +73,7 @@ HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_001, TestSize.Level0)
 * EnvConditions: NA
 * CaseDescription: ResetOperation
 */
-HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_002, TestSize.Level0)
+HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_002, TestSize.Level1)
 {
     std::shared_ptr<MtpOperation> mtpOperation = std::make_shared<MtpOperation>();
     ASSERT_NE(mtpOperation, nullptr);
@@ -101,7 +97,7 @@ HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_002, TestSize.Level0)
 * EnvConditions: NA
 * CaseDescription: Init
 */
-HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_003, TestSize.Level0)
+HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_003, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -133,7 +129,7 @@ HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_003, TestSize.Level0)
 * EnvConditions: NA
 * CaseDescription: Init
 */
-HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_004, TestSize.Level0)
+HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_004, TestSize.Level1)
 {
     std::shared_ptr<MtpService> mtpService = std::make_shared<MtpService>();
     ASSERT_NE(mtpService, nullptr);

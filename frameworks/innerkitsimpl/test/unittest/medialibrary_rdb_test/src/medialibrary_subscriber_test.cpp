@@ -30,13 +30,13 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t SLEEP_TIME = 1;
 static constexpr int32_t EVENTTYPE = 7;
-HWTEST_F(MediaLibraryRdbTest, medialib_Subscribe_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Subscribe_test_001, TestSize.Level1)
 {
     bool ret = MedialibrarySubscriber::Subscribe();
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_001, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -49,7 +49,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_001, TestSize.Level0)
     medialibrarySubscriber.AbortCommonEvent();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_002, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -62,7 +62,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_002, TestSize.Level0)
     medialibrarySubscriber.AbortCommonEvent();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_003, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -75,7 +75,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_003, TestSize.Level0)
     medialibrarySubscriber.AbortCommonEvent();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_004, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -88,7 +88,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_004, TestSize.Level0)
     medialibrarySubscriber.AbortCommonEvent();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -104,7 +104,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
     sleep(SLEEP_TIME);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::StartProcess();
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false); // no moving photo to process
@@ -112,7 +112,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.L
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_QueryThumbAstc_test, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_QueryThumbAstc_test, TestSize.Level1)
 {
     int count = 0;
     shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
@@ -124,7 +124,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_QueryThumbAstc_test, TestSize.Level0)
     MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(count);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_UpdateBackgroundOperationStatus_test, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateBackgroundOperationStatus_test, TestSize.Level1)
 {
     shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
     EXPECT_NE(medialibrarySubscriberPtr, nullptr);
