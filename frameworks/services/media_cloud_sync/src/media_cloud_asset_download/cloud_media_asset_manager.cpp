@@ -273,19 +273,18 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
                 ret, static_cast<int32_t>(fileIds.size()));
             break;
         }
-        bool deleteFlag = true;
+
+        ret = DeleteBatchCloudFile(fileIds);
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "DeleteBatchCloudFile failed!");
         for (size_t i = 0; i < fileIds.size(); i++) {
             if (DeleteEditdata(paths[i]) != E_OK || !ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(
                 fileIds[i], PhotoColumn::PHOTOS_TABLE, paths[i], dateTakens[i])) {
                 MEDIA_ERR_LOG("Delete error, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
-                deleteFlag = false;
-                break;
+                continue;
             }
             MEDIA_INFO_LOG("Detele cloud file, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
         }
-        CHECK_AND_BREAK_ERR_LOG(deleteFlag, "DeleteEditdata or InvalidateThumbnail failed!");
-        ret = DeleteBatchCloudFile(fileIds);
-        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "DeleteBatchCloudFile failed!");
+        
         fileIds.clear();
         paths.clear();
         dateTakens.clear();
@@ -395,7 +394,7 @@ int32_t CloudMediaAssetManager::UpdateCloudMeidaAssets()
     if (cycleNumber > 0) {
         MEDIA_INFO_LOG("begin to refresh all albums.");
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateCloudMeidaAssets failed. rdbStore is null.");
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_OK, "UpdateAllAlbums failed. rdbStore is null.");
         MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
         return E_OK;
     }
