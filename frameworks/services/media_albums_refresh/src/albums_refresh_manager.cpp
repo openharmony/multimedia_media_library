@@ -474,6 +474,7 @@ void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<M
 
     if (info.taskType == TIME_END_SYNC) {
         HandleAllRefreshAlbums(rdbStore, info);
+        MediaLibraryRdbUtils::UpdateShootingModeAlbum(rdbStore);
         MEDIA_INFO_LOG("refresh all albums from RefreshAlbums Table end, cost: %{public}ld",
             (long)(MediaFileUtils::UTCTimeMilliSeconds() - start));
         return;
