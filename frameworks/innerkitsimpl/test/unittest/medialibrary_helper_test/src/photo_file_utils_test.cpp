@@ -25,7 +25,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataDir_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataDir_001, TestSize.Level1)
 {
     string photoPath = "/storage/cloud/files/Photo/1/IMG_123435213_124.jpg";
     EXPECT_EQ(PhotoFileUtils::GetEditDataDir(photoPath),
@@ -38,7 +38,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataDir_001, TestSize
         "/storage/cloud/101/files/.editData/Photo/1/IMG_123435213_124.jpg");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataDir_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataDir_002, TestSize.Level1)
 {
     string photoPath = "/storage/data/test_invalid.jpg";
     EXPECT_EQ(PhotoFileUtils::GetEditDataDir(photoPath), "");
@@ -47,7 +47,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataDir_002, TestSize
     EXPECT_EQ(PhotoFileUtils::GetEditDataDir(photoPath, 101), "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_001, TestSize.Level1)
 {
     string photoPath = "/storage/cloud/files/Photo/1/IMG_123435213_124.jpg";
     EXPECT_EQ(PhotoFileUtils::GetEditDataPath(photoPath),
@@ -60,7 +60,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_001, TestSiz
         "/storage/cloud/101/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_002, TestSize.Level1)
 {
     string photoPath = "/storage/data/test_invalid.jpg";
     EXPECT_EQ(PhotoFileUtils::GetEditDataPath(photoPath), "");
@@ -69,7 +69,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_002, TestSiz
     EXPECT_EQ(PhotoFileUtils::GetEditDataPath(photoPath, 101), "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_001, TestSize.Level1)
 {
     string photoPath = "/storage/cloud/files/Photo/1/IMG_123435213_124.jpg";
     EXPECT_EQ(PhotoFileUtils::GetEditDataCameraPath(photoPath),
@@ -82,7 +82,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_001, T
         "/storage/cloud/101/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata_camera");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_002, TestSize.Level1)
 {
     string photoPath = "/storage/cloud/data/test_invalid.jpg";
     EXPECT_EQ(PhotoFileUtils::GetEditDataCameraPath(photoPath), "");
@@ -91,7 +91,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_002, T
     EXPECT_EQ(PhotoFileUtils::GetEditDataCameraPath(photoPath, 101), "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_001, TestSize.Level1)
 {
     string photoPath = "/storage/cloud/files/Photo/1/IMG_123435213_124.jpg";
     EXPECT_EQ(PhotoFileUtils::GetEditDataSourcePath(photoPath),
@@ -104,7 +104,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_001, T
         "/storage/cloud/101/files/.editData/Photo/1/IMG_123435213_124.jpg/source.jpg");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_002, TestSize.Level1)
 {
     string photoPath = "/storage/cloud/files/Photo/1/IMG_123435213_124.JPG";
     EXPECT_EQ(PhotoFileUtils::GetEditDataSourcePath(photoPath),
@@ -117,7 +117,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_002, T
         "/storage/cloud/101/files/.editData/Photo/1/IMG_123435213_124.JPG/source.jpg");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_003, TestSize.Level1)
 {
     string photoPath = "/storage/cloud/invalid/invalid.jpg";
     EXPECT_EQ(PhotoFileUtils::GetEditDataSourcePath(photoPath), "");
@@ -126,14 +126,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataSourcePath_003, T
     EXPECT_EQ(PhotoFileUtils::GetEditDataSourcePath(photoPath, 101), "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasEditData_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasEditData_001, TestSize.Level1)
 {
     EXPECT_EQ(PhotoFileUtils::HasEditData(0), false);
     EXPECT_EQ(PhotoFileUtils::HasEditData(-1), false);
     EXPECT_EQ(PhotoFileUtils::HasEditData(1732767140000), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasSource_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasSource_001, TestSize.Level1)
 {
     EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 0), false);
     EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 10), false);
@@ -147,7 +147,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasSource_001, TestSize.Leve
     EXPECT_EQ(PhotoFileUtils::HasSource(false, 1732767140333, 2), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailExists_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailExists_001, TestSize.Level1)
 {
     string photoPath = "/storage/cloud/files/Photo/1/IMG_123456123_001.jpg";
     EXPECT_EQ(PhotoFileUtils::IsThumbnailExists(photoPath), false);
@@ -159,7 +159,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailExists_001, TestS
     EXPECT_EQ(PhotoFileUtils::IsThumbnailExists(photoPath), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_001, TestSize.Level1)
 {
     EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/Photo/1/"), true);
     string photoPath = "/storage/cloud/files/Photo/1/IMG_123456789_123.jpg";
@@ -176,7 +176,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_001, TestS
     EXPECT_EQ(MediaFileUtils::DeleteDir("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg"), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_003, TestSize.Level1)
 {
     string photoPath = "";
     EXPECT_EQ(PhotoFileUtils::GetEditDataPath(photoPath), "");
@@ -192,7 +192,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataPath_003, TestSiz
         "/storage/cloud/101/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_003, TestSize.Level1)
 {
     string photoPath = "";
     EXPECT_EQ(PhotoFileUtils::GetEditDataCameraPath(photoPath), "");
@@ -208,7 +208,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetEditDataCameraPath_003, T
         "/storage/cloud/101/files/.editData/Photo/1/IMG_123435213_124.jpg/editdata_camera");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasSource_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasSource_002, TestSize.Level1)
 {
     EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 0), false);
     EXPECT_EQ(PhotoFileUtils::HasSource(false, 0, 10), false);
@@ -233,7 +233,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_HasSource_002, TestSize.Leve
     EXPECT_EQ(PhotoFileUtils::HasSource(false, 1, 2), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetMetaPathFromOrignalPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetMetaPathFromOrignalPath_001, TestSize.Level1)
 {
     string photoPath = "";
     string metaPath = "";
@@ -246,7 +246,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetMetaPathFromOrignalPath_0
     EXPECT_EQ(PhotoFileUtils::GetMetaPathFromOrignalPath(photoPath, metaPath), 0);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetMetaDataRealPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetMetaDataRealPath_001, TestSize.Level1)
 {
     string photoPath = "";
     int32_t userId = 0;
@@ -267,7 +267,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetMetaDataRealPath_001, Tes
         "/storage/cloud/1/files/.meta/Photo/1/IMG_123435213_124.jpg.json");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_002, TestSize.Level1)
 {
     EXPECT_EQ(MediaFileUtils::CreateDirectory("/storage/cloud/files/Photo/1/"), true);
     string photoPath = "";

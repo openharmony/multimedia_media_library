@@ -199,7 +199,7 @@ void MediaLibraryBackupCloneTest::SetUp() {}
 
 void MediaLibraryBackupCloneTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_column_status_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_column_status_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_restore_test_001");
     ClearData();
@@ -212,7 +212,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_colu
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_column_status_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_column_status_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_table_column_status_test_002");
     ClearData();
@@ -239,7 +239,7 @@ int32_t GetAlbumCountByCondition(shared_ptr<NativeRdb::RdbStore> rdbStore, const
     return result;
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_album_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_album_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_album_test_002 start");
     ClearData();
@@ -346,7 +346,7 @@ int32_t GetAlbumOrMapTotalCount(shared_ptr<NativeRdb::RdbStore> rdbStore,
     return totalCount;
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_column_status_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_column_status_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_table_column_status_test_003");
     ClearData();
@@ -359,7 +359,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_colu
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_audio_test_001 start");
     ClearData();
@@ -383,7 +383,7 @@ void PrepareFileInfos(const string &tableName, vector<FileInfo> &fileInfos)
     }
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_audio_test_002 start");
     int32_t count = 3;
@@ -398,7 +398,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_audio_test_003 start");
     int32_t audioCountBefore = GetCountByWhereClause(AudioColumn::AUDIOS_TABLE, g_rdbStore->GetRaw());
@@ -413,7 +413,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_is_file_valid_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_is_file_valid_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_is_file_valid_test_001 start");
     EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_DB_PATH, CLONE_RESTORE_ID), E_OK);
@@ -428,7 +428,7 @@ void ClearRestoreExInfo()
     restoreService->failedFilesMap_.clear();
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_001 start");
     RestoreInfo info;
@@ -443,7 +443,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
     EXPECT_NE(restoreExInfo, EMPTY_STR); // upgrade is now supported
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_002 start");
     RestoreInfo info;
@@ -458,7 +458,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
     EXPECT_NE(restoreExInfo, EMPTY_STR); // dual clone is now supported
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_003 start");
     RestoreInfo info;
@@ -473,7 +473,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
     EXPECT_NE(restoreExInfo, EMPTY_STR); // single clone is now supported
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_get_backup_info_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_get_backup_info_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_get_backup_info_001 start");
     string backupInfo = INVALID_STR;
@@ -482,7 +482,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_get_backup_inf
     EXPECT_EQ(backupInfo, EMPTY_STR); // upgrade is not supported
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_get_restore_ex_info_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_get_restore_ex_info_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_base_get_restore_ex_info_001 start");
     ClearRestoreExInfo();
@@ -494,7 +494,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_get_restore_ex_in
     EXPECT_EQ(jsonObject.is_discarded(), false);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_set_error_code_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_set_error_code_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_base_set_error_code_001 start");
     ClearRestoreExInfo();
@@ -504,7 +504,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_set_error_code_00
     EXPECT_GT(restoreService->errorInfo_.size(), 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_set_error_code_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_set_error_code_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_base_set_error_code_002 start");
     ClearRestoreExInfo();
@@ -514,7 +514,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_set_error_code_00
     EXPECT_EQ(restoreService->errorInfo_.size(), 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_update_failed_files_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_update_failed_files_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_base_update_failed_files_001 start");
     ClearRestoreExInfo();
@@ -535,7 +535,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_update_failed_fil
     EXPECT_GT(restoreService->failedFilesMap_.count(STAT_TYPE_AUDIO), 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_base_get_backup_info_001 start");
     string backupInfo = restoreService->GetBackupInfo();
@@ -546,7 +546,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_
     EXPECT_EQ(jsonObject.is_discarded(), false);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_get_failed_files_str_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_get_failed_files_str_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_file_get_failed_files_str_001 start");
     FileInfo fileInfo;
@@ -563,7 +563,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_get_failed_files_
 /**
  * @brief BurstKeyGenerator should give the same uuid for diffirent FileInfo in one Bucket
  */
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_001 start");
     BurstKeyGenerator burstKeyGenerator;
@@ -600,7 +600,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
 /**
  * @brief BurstKeyGenerator should give the different uuid for same FileInfo in Recycle Bin
  */
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_002 start");
     BurstKeyGenerator burstKeyGenerator;
@@ -629,7 +629,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
 /**
  * @brief BurstKeyGenerator should give the different uuid for same FileInfo in different Bucket
  */
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_003 start");
     BurstKeyGenerator burstKeyGenerator;
@@ -655,7 +655,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_003 end");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_portrait_album_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_portrait_album_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_album_test_001");
 
@@ -705,7 +705,7 @@ void MediaLibraryBackupCloneTest::VerifyPortraitAlbumRestore(const std::shared_p
     EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_portrait_clustering_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_portrait_clustering_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_portrait_clustering_test_001");
 
@@ -756,7 +756,7 @@ void MediaLibraryBackupCloneTest::VerifyPortraitClusteringRestore(const std::sha
     EXPECT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_image_face_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_image_face_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_image_face_test_001");
 
@@ -835,7 +835,7 @@ static std::string GetPhoneName()
     return phoneName;
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_restore_OthersCloneRestore_001");
 
@@ -844,7 +844,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersClo
     EXPECT_EQ(othersClone->clonePhoneName_, "");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_OthersCloneRestore_002");
 
@@ -853,7 +853,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersClo
     EXPECT_EQ(othersClone->clonePhoneName_, GetPhoneName());
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_OthersCloneRestore_003");
 
@@ -864,7 +864,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersClo
     EXPECT_EQ(othersClone->clonePhoneName_, "test");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersCloneRestore_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_OthersCloneRestore_004");
 
@@ -875,7 +875,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_OthersClo
     EXPECT_EQ(othersClone->clonePhoneName_, GetPhoneName());
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneDbInfos_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneDbInfos_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetCloneDbInfos_001");
 
@@ -886,7 +886,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneD
     EXPECT_TRUE(vec.empty());
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneDbInfos_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneDbInfos_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetCloneDbInfos_002");
 
@@ -911,7 +911,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetCloneD
     store->ExecuteSql("DROP TABLE IF EXISTS mediaInfo");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_Init_001");
 
@@ -920,7 +920,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_001,
     EXPECT_NE(othersClone->Init("/data/photo", "/data/test", true), E_OK);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_Init_002");
 
@@ -938,7 +938,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_002,
     EXPECT_NE(othersClone->Init("/data/photo", "/data/test", true), E_OK);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_Init_003");
 
@@ -957,7 +957,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_Init_003,
     EXPECT_EQ(othersClone->Init("/data/photo", "/data/test", true), E_OK);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetInsertValue_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetInsertValue_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetInsertValue_001");
 
@@ -975,7 +975,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetInsert
     EXPECT_EQ(modified, 1);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetInsertValue_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetInsertValue_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetInsertValue_002");
 
@@ -991,7 +991,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetInsert
     EXPECT_EQ(modified, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_001");
 
@@ -1002,7 +1002,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileIn
     EXPECT_EQ(othersClone->photoInfos_[0].filePath, "filePath/test.gif");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_002");
 
@@ -1013,7 +1013,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileIn
     EXPECT_EQ(othersClone->photoInfos_[0].filePath, "filePath/test.mp4");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_003");
 
@@ -1024,7 +1024,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileIn
     EXPECT_EQ(othersClone->audioInfos_[0].filePath, "filePath/test.mp3");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_004");
 
@@ -1035,7 +1035,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileIn
     EXPECT_EQ(othersClone->photoInfos_[0].filePath, "filePath/test.ief");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_005");
 
@@ -1046,7 +1046,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileIn
     EXPECT_TRUE(othersClone->photoInfos_.empty());
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_006, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_006");
 
@@ -1057,7 +1057,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileIn
     EXPECT_EQ(othersClone->photoInfos_[0].isBurst, static_cast<int32_t>(BurstCoverLevelType::COVER));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_007, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_007");
 
@@ -1068,7 +1068,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileIn
     EXPECT_EQ(othersClone->photoInfos_[0].isBurst, static_cast<int32_t>(BurstCoverLevelType::MEMBER));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_001");
 
@@ -1087,7 +1087,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     EXPECT_EQ(fileInfo.dateTaken, 1000);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_002");
 
@@ -1106,7 +1106,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     EXPECT_EQ(fileInfo.dateTaken, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_003");
 
@@ -1125,7 +1125,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     EXPECT_EQ(fileInfo.dateTaken, 1000);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_004");
 
@@ -1147,7 +1147,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     EXPECT_EQ(fileInfo.dateTaken, 1000);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_005");
 
@@ -1167,7 +1167,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     EXPECT_EQ(fileInfo.dateTaken, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_006, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_006");
 
@@ -1187,7 +1187,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     EXPECT_EQ(fileInfo.dateTaken, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_007, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_007");
 
@@ -1201,7 +1201,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     EXPECT_EQ(fileInfo.dateTaken, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_008, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_008");
 
@@ -1220,7 +1220,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     EXPECT_EQ(fileInfo.dateTaken, 15000000000);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_009, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_009, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_009");
 
@@ -1236,7 +1236,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFil
     EXPECT_EQ(fileInfo.dateTaken, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfilesInCurrentDir_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfilesInCurrentDir_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetAllfilesInCurrentDir_001");
 
@@ -1247,7 +1247,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfil
     EXPECT_EQ(err, ERR_NOT_ACCESSIBLE);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfilesInCurrentDir_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfilesInCurrentDir_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_GetAllfilesInCurrentDir_002");
 
@@ -1258,7 +1258,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_GetAllfil
     EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestorePhoto_001");
 
@@ -1268,7 +1268,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePh
     EXPECT_EQ(othersClone->totalNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestorePhoto_002");
 
@@ -1281,7 +1281,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePh
     EXPECT_EQ(othersClone->totalNumber_, 1);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestorePhoto_003");
 
@@ -1296,7 +1296,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePh
     EXPECT_EQ(othersClone->totalNumber_, 200);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePhoto_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestorePhoto_004");
 
@@ -1309,7 +1309,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestorePh
     EXPECT_EQ(othersClone->totalNumber_, 1);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPhoto_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPhoto_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_InsertPhoto_001");
 
@@ -1320,7 +1320,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPho
     EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPhoto_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPhoto_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_InsertPhoto_002");
 
@@ -1344,7 +1344,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_InsertPho
     EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAudio_001");
 
@@ -1354,7 +1354,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAu
     EXPECT_EQ(othersClone->audioTotalNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAudio_002");
 
@@ -1364,7 +1364,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAu
     EXPECT_EQ(othersClone->audioTotalNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAudio_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAudio_003");
 
@@ -1376,7 +1376,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAu
     EXPECT_EQ(othersClone->audioTotalNumber_, 1);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAlbum_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAlbum_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAlbum_001");
 
@@ -1388,7 +1388,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
     EXPECT_TRUE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAlbum_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAlbum_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_RestoreAlbum_002");
 
@@ -1402,7 +1402,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_RestoreAl
     EXPECT_TRUE(othersClone->photoAlbumDao_.mediaLibraryRdb_ == nullptr);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFileForDualClone_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFileForDualClone_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HasSameFileForDualClone_001");
 
@@ -1424,7 +1424,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
     EXPECT_FALSE(othersClone->HasSameFileForDualClone(fileInfo));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFileForDualClone_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFileForDualClone_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HasSameFileForDualClone_002");
 
@@ -1454,7 +1454,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HasSameFi
     store->ExecuteSql("DROP TABLE IF EXISTS Photos");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlbumInfo_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlbumInfo_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpdateAlbumInfo_001");
 
@@ -1466,7 +1466,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlb
     EXPECT_EQ(fileInfo.bundleName, "");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlbumInfo_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlbumInfo_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpdateAlbumInfo_002");
 
@@ -1482,7 +1482,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpdateAlb
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_NeedBatchQueryPhotoForPortrait_001,
-    TestSize.Level0)
+    TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_NeedBatchQueryPhotoForPortrait_001");
 
@@ -1493,7 +1493,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_NeedBatch
     EXPECT_TRUE(othersClone->NeedBatchQueryPhotoForPortrait(fileInfos, needQueryMap));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleRestData_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleRestData_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleRestData_001");
 
@@ -1503,7 +1503,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleRes
     EXPECT_EQ(othersClone->otherProcessStatus_, ProcessStatus::STOP);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_ParseResultSet_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_ParseResultSet_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_ParseResultSet_001");
 
@@ -1515,7 +1515,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_ParseResu
     EXPECT_TRUE(othersClone->ParseResultSet(resultSet, fileInfo, dbName));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_ParseResultSetForAudio_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_ParseResultSetForAudio_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_ParseResultSetForAudio_001");
 
@@ -1526,7 +1526,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_ParseResu
     EXPECT_TRUE(othersClone->ParseResultSetForAudio(resultSet, fileInfo));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_CloneInfoPushBack_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_CloneInfoPushBack_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_CloneInfoPushBack_001");
 
@@ -1539,7 +1539,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_CloneInfo
     EXPECT_EQ(pushInfos[0].displayName, "test.jpg");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_CloneInfoPushBack_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_CloneInfoPushBack_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_CloneInfoPushBack_002");
 
@@ -1551,7 +1551,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_CloneInfo
     EXPECT_TRUE(pushInfos.empty());
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_001");
 
@@ -1565,7 +1565,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
     EXPECT_TRUE(mediaDbInfo.empty());
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_002");
 
@@ -1588,7 +1588,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
     EXPECT_TRUE(mediaDbInfo.empty());
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_003");
 
@@ -1618,7 +1618,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
     store->ExecuteSql("DROP TABLE IF EXISTS mediaInfo");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSelectBatch_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleSelectBatch_004");
 
@@ -1648,7 +1648,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleSel
     store->ExecuteSql("DROP TABLE IF EXISTS mediaInfo");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleInsertBatch_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleInsertBatch_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleInsertBatch_001");
 
@@ -1662,7 +1662,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleIns
     EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleInsertBatch_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleInsertBatch_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_HandleInsertBatch_002");
 
@@ -1677,7 +1677,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_HandleIns
     EXPECT_EQ(othersClone->migrateDatabaseNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_service_start_rebackup_001 start");
 
@@ -1687,7 +1687,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_backup_0
     instance.StartBackup(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thumbnail_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thumbnail_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_thumbnail_test_001");
     restoreService->hasCloneThumbnailDir_ = false;
@@ -1716,7 +1716,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thu
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thumbnail_dir_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thumbnail_dir_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_thumbnail_dir_test_001");
     FileInfo testFileInfo;
@@ -1735,7 +1735,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_thu
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_astc_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_astc_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_astc_test_001");
     FileInfo testFileInfo;
@@ -1759,7 +1759,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_ast
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_astc_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_astc_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_astc_test_002");
     FileInfo testFileInfo;
@@ -1798,7 +1798,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_ast
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_astc_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_astc_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_move_astc_test_003");
     FileInfo testFileInfo;
@@ -1849,7 +1849,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_move_ast
     MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_move_astc_test_003");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_001");
 
@@ -1904,7 +1904,7 @@ void MediaLibraryBackupCloneTest::VerifyGeoDictionaryRestore(const std::shared_p
     resultSet->Close();
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_002");
 
@@ -1935,7 +1935,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dict
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_003");
 
@@ -1962,7 +1962,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dict
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_004");
 
@@ -1982,7 +1982,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dict
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dictionary_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_geo_dictionary_test_005");
 
@@ -2006,7 +2006,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_geo_dict
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_001");
 
@@ -2084,7 +2084,7 @@ void MediaLibraryBackupCloneTest::VerifyClassifyVideoRestore(const std::shared_p
     resultSet->Close();
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_002");
 
@@ -2122,7 +2122,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_003");
 
@@ -2153,7 +2153,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_004");
 
@@ -2187,7 +2187,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_classify_test_005");
 
@@ -2210,7 +2210,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_classify
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_dirty_count_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_dirty_count_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_dirty_count_test");
     PhotosDao photosDao_;
@@ -2219,7 +2219,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_dirty_count_
     EXPECT_EQ(count, EXPECTED_COUNT_0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_dirty_files_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_dirty_files_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_dirty_files_test");
     PhotosDao photosDao_;
@@ -2228,7 +2228,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_dirty_files_
     EXPECT_EQ(result.size(), EXPECTED_COUNT_0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_handle_dirty_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_handle_dirty_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_handle_dirty_test");
     PhotosDataHandler photosDataHandler_;
@@ -2237,7 +2237,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_handle_dirty_tes
     EXPECT_EQ(photosDataHandler_.dirtyFileCleanNumber_, EXPECTED_COUNT_0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_clean_dirty_files_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_clean_dirty_files_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_clean_dirty_files_test");
     std::vector<PhotosDao::PhotosRowData> dirtyFiles;
@@ -2247,7 +2247,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_clean_dirty_file
     EXPECT_EQ(count, EXPECTED_COUNT_0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_delete_db_dirty_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_delete_db_dirty_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_delete_db_dirty_test");
     PhotosDataHandler photosDataHandler_;
@@ -2256,7 +2256,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_delete_db_dirty_
     EXPECT_EQ(count, EXPECTED_COUNT_0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_001");
     BackupRestoreService backupRestoreService;
@@ -2266,7 +2266,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_
     EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, UPGRADE_RESTORE_ID);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_002");
     BackupRestoreService backupRestoreService;
@@ -2276,7 +2276,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_
     EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, DUAL_FRAME_CLONE_RESTORE_ID);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_003");
     BackupRestoreService backupRestoreService;
@@ -2286,7 +2286,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_
     EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, I_PHONE_CLONE_RESTORE);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_004");
     BackupRestoreService backupRestoreService;
@@ -2296,7 +2296,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_
     EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, OTHERS_PHONE_CLONE_RESTORE);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_005");
     BackupRestoreService backupRestoreService;
@@ -2306,7 +2306,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_
     EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, LITE_PHONE_CLONE_RESTORE);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_006");
     BackupRestoreService backupRestoreService;
@@ -2316,7 +2316,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_
     EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, CLONE_RESTORE_ID);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_backup_info_test");
     BackupRestoreService backupRestoreService;
@@ -2325,7 +2325,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_
     EXPECT_EQ(backupInfo, "");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_account_valid_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_account_valid_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_account_valid_test");
     restoreService->restoreInfo_ = R"([{"type":"singleAccountId", "detail":"test"}])";
@@ -2333,7 +2333,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_account_vali
     EXPECT_FALSE(restoreService->isAccountValid_);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_photo_test");
     restoreService->RestorePhoto();
@@ -2341,7 +2341,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_te
     EXPECT_EQ(restoreService->totalNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_file_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_file_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_move_migrate_file_test");
     FileInfo fileInfo;
@@ -2356,7 +2356,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_fil
     EXPECT_TRUE(fileInfos[0].needVisible);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_cloud_file_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_cloud_file_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_move_migrate_cloud_file_test");
     FileInfo fileInfo;
@@ -2371,7 +2371,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_migrate_clo
     EXPECT_EQ(restoreService->migrateFileNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_cloud_photo_file_exist_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_cloud_photo_file_exist_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_cloud_photo_file_exist_test");
     FileInfo fileInfo;
@@ -2380,7 +2380,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_cloud_photo_
     EXPECT_FALSE(resultExistFlag.isLcdExist);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_cloud_photo_files_verify_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_cloud_photo_files_verify_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_cloud_photo_files_verify_test");
     FileInfo fileInfo1;
@@ -2400,7 +2400,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_cloud_photo_file
     EXPECT_EQ(LCDNotFound.size(), fileInfos.size());
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_photo_test");
     FileInfo fileInfo;
@@ -2410,7 +2410,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_tes
     EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_cloud_photo_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_cloud_photo_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_cloud_photo_test");
     FileInfo fileInfo;
@@ -2419,7 +2419,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_cloud_pho
     EXPECT_EQ(restoreService->migrateCloudSuccessNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_batch_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_batch_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_photo_batch_test");
     restoreService->RestorePhotoBatch(0, 0);
@@ -2428,7 +2428,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_ba
     EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_for_cloud_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_for_cloud_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_batch_for_cloud_test");
     restoreService->RestoreBatchForCloud(0, 0);
@@ -2437,7 +2437,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_fo
     EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_asset_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_asset_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_move_asset_test_001");
     FileInfo fileInfo;
@@ -2447,7 +2447,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_asset_test_
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_asset_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_asset_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_move_asset_test_002");
     FileInfo fileInfo;
@@ -2457,7 +2457,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_move_asset_test_
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_insert_value_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_insert_value_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_thumbnail_insert_value_test_001");
     FileInfo fileInfo;
@@ -2471,7 +2471,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_in
     EXPECT_EQ(lcdVisitTime, RESTORE_LCD_VISIT_TIME_NO_LCD);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_insert_value_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_insert_value_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_thumbnail_insert_value_test_002");
     FileInfo fileInfo;
@@ -2486,7 +2486,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_in
     EXPECT_EQ(thumbnailReady, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_insert_value_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_insert_value_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_thumbnail_insert_value_test_003");
     FileInfo fileInfo;
@@ -2502,14 +2502,14 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_thumbnail_in
     EXPECT_EQ(thumbnailReady, RESTORE_THUMBNAIL_READY_NO_THUMBNAIL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_gallery_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_gallery_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_gallery_test");
     restoreService->RestoreGallery();
     EXPECT_EQ(restoreService->isSyncSwitchOn_, false);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prepare_cloud_path_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prepare_cloud_path_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_prepare_cloud_path_test");
     FileInfo fileInfo1;
@@ -2527,14 +2527,14 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_prepare_cloud_pa
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_music_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_music_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_music_test");
     restoreService->RestoreMusic();
     EXPECT_EQ(restoreService->audioTotalNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_audio_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_audio_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_audio_test");
     restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
@@ -2546,7 +2546,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_audio_tes
     restoreService->mediaLibraryRdb_ = nullptr;
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_batch_test");
     restoreService->RestorePhotoBatch(0, 0);
@@ -2554,7 +2554,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_batch_te
     EXPECT_EQ(restoreService->migrateDatabaseNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_related_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_related_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_photo_related_test");
     FileInfo fileInfo;
@@ -2563,7 +2563,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_rel
     EXPECT_EQ(restoreService->migrateDatabaseMapNumber_, 0);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_batch_update_file_info_data_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_batch_update_file_info_data_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_batch_update_file_info_data_test");
     FileInfo fileInfo1, fileInfo2;
@@ -2581,7 +2581,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_batch_update_fil
     EXPECT_EQ(restoreService->CheckThumbReady(fileInfos[0], resultExistFlag), RESTORE_THUMBNAIL_READY_FAIL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_001");
     FileInfo fileInfo;
@@ -2593,7 +2593,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_ALL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_002");
     FileInfo fileInfo;
@@ -2605,7 +2605,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_LCD);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_003");
     FileInfo fileInfo;
@@ -2617,7 +2617,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_THUMB);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_004");
     FileInfo fileInfo;
@@ -2629,7 +2629,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_ALL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_005");
     FileInfo fileInfo;
@@ -2641,7 +2641,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_ALL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_006");
     FileInfo fileInfo;
@@ -2653,7 +2653,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_LCD);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_007");
     FileInfo fileInfo;
@@ -2665,7 +2665,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_THUMB);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_status_test_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_check_thumb_status_test_008");
     FileInfo fileInfo;
@@ -2677,7 +2677,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_thumb_stat
     EXPECT_EQ(ret, RESTORE_THUMBNAIL_STATUS_NOT_ALL);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_start_backup_test");
     bool ret = restoreService->BackupKvStore();
@@ -2685,7 +2685,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_start_backup_tes
     EXPECT_EQ(ret, MediaFileUtils::IsFileExists(CLONE_KVDB_BACKUP_DIR));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test1, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test1, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test1 start");
     ClearData();
@@ -2702,7 +2702,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test1 end");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test2, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test2, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test2 start");
     ClearData();
@@ -2720,7 +2720,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test2 end");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test3, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clone_test3, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test3 start");
     ClearData();

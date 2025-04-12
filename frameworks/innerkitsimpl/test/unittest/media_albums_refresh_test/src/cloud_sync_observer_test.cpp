@@ -232,7 +232,7 @@ void CloudSyncObserverTest::SetUp()
 
 void CloudSyncObserverTest::TearDown() {}
 
-HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Ordinary_Uri, TestSize.Level0)
+HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Ordinary_Uri, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start CloudSyncObsOnChange_Ordinary_Uri");
     auto fileId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -251,7 +251,7 @@ HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Ordinary_Uri, TestSize.Leve
     MEDIA_INFO_LOG("end CloudSyncObsOnChange_Ordinary_Uri");
 }
 
-HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Sync_Prefix, TestSize.Level0)
+HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Sync_Prefix, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start CloudSyncObsOnChange_Gallery_Sync_Prefix");
     auto fileId1 =  CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -281,7 +281,7 @@ HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Sync_Prefix, TestSi
     MEDIA_INFO_LOG("end CloudSyncObsOnChange_Gallery_Sync_Prefix");
 }
 
-HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Cloud_Photo_Prefix, TestSize.Level0)
+HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Cloud_Photo_Prefix, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start  CloudSyncObsOnChange_Cloud_Photo_Prefix");
     auto fileId1 =  CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -302,7 +302,7 @@ HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Cloud_Photo_Prefix, TestSiz
     MEDIA_INFO_LOG("end CloudSyncObsOnChange_Cloud_Photo_Prefix");
 }
 
-HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Album_GalleryUri_Prefix, TestSize.Level0)
+HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Album_GalleryUri_Prefix, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start  CloudSyncObsOnChange_Album_GalleryUri_Prefix");
     auto fileId1 =  CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -326,7 +326,7 @@ HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Album_GalleryUri_Prefix, Te
     MEDIA_INFO_LOG("end  CloudSyncObsOnChange_Album_GalleryUri_Prefix");
 }
 
-HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Cloud_Uri_Prefix, TestSize.Level0)
+HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Cloud_Uri_Prefix, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start CloudSyncObsOnChange_Gallery_Cloud_Uri_Prefix");
     auto fileId1 =  CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -351,7 +351,7 @@ HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Cloud_Uri_Prefix, T
     MEDIA_INFO_LOG("end CloudSyncObsOnChange_Gallery_Cloud_Uri_Prefix");
 }
 
-HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Download_Uri_Prefix, TestSize.Level0)
+HWTEST_F(CloudSyncObserverTest, CloudSyncObsOnChange_Gallery_Download_Uri_Prefix, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start CloudSyncObsOnChange_Gallery_Download_Uri_Prefix");
     auto fileId1 =  CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");

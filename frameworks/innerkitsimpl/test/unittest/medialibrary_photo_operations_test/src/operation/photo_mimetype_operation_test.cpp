@@ -146,7 +146,7 @@ void PhotoMimetypeOperationTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(PhotoMimetypeOperationTest, update_invalid_mimetype_test_001, TestSize.Level0)
+HWTEST_F(PhotoMimetypeOperationTest, update_invalid_mimetype_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("update_invalid_mimetype_test_001 Start");
     int32_t ret = InsertCloudAssetINDb("test1", ".jpg");
@@ -163,7 +163,7 @@ HWTEST_F(PhotoMimetypeOperationTest, update_invalid_mimetype_test_001, TestSize.
     MEDIA_INFO_LOG("update_invalid_mimetype_test_001 End");
 }
 
-HWTEST_F(PhotoMimetypeOperationTest, update_invalid_mimetype_test_002, TestSize.Level0)
+HWTEST_F(PhotoMimetypeOperationTest, update_invalid_mimetype_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("update_invalid_mimetype_test_002 Start");
     int32_t ret = InsertCloudAssetINDb("test1", ".jpg");

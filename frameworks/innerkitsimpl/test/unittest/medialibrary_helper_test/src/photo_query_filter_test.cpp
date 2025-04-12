@@ -36,7 +36,7 @@ void PhotoQueryFilterTest::TearDown(void) {}
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_001, TestSize.Level0)
+HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_001, TestSize.Level1)
 {
     PhotoQueryFilter::Option option = PhotoQueryFilter::Option::FILTER_HIDDEN;
     PhotoQueryFilter::GetSqlWhereClause(option);
@@ -57,7 +57,7 @@ HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_001, TestSize.Level0)
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_002, TestSize.Level0)
+HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_002, TestSize.Level1)
 {
     PhotoQueryFilter::Config config;
     config.syncStatusConfig = PhotoQueryFilter::ConfigType::IGNORE;
@@ -79,7 +79,7 @@ HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_002, TestSize.Level0)
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_003, TestSize.Level0)
+HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_003, TestSize.Level1)
 {
     PhotoQueryFilter::Config config;
     config.syncStatusConfig = PhotoQueryFilter::ConfigType::IGNORE;
@@ -101,7 +101,7 @@ HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_003, TestSize.Level0)
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_004, TestSize.Level0)
+HWTEST_F(PhotoQueryFilterTest, PhotoQueryFilter_Test_004, TestSize.Level1)
 {
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     PhotoQueryFilter::ModifyPredicate(PhotoQueryFilter::Option::FILTER_HIDDEN, predicates);

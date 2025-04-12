@@ -30,8 +30,6 @@ using namespace testing::ext;
 using namespace std;
 namespace OHOS::Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void UpgradeRestoreGalleryMediaTaskTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("SetUpTestCase");
@@ -39,7 +37,6 @@ void UpgradeRestoreGalleryMediaTaskTest::SetUpTestCase(void)
 
 void UpgradeRestoreGalleryMediaTaskTest::TearDownTestCase(void)
 {
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("TearDownTestCase");
 }
 

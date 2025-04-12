@@ -72,7 +72,6 @@ using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
 using ExceptBoolFunction = void (*) (bool);
 using ExceptStringFunction = void (*) (const string&);
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 namespace {
 void CleanTestTables()
@@ -716,7 +715,6 @@ void MediaLibraryAudioOperationsTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 
@@ -740,7 +738,7 @@ const string CHAR256_CHINESE =
     "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中"
     "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中";
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_001");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
@@ -762,7 +760,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_002");
     TestAudioCreateParamsApi10("", MediaType::MEDIA_TYPE_AUDIO, E_INVALID_DISPLAY_NAME);
@@ -784,7 +782,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_002, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_003");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
@@ -806,7 +804,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_004");
     TestAudioCreateWithExtApi10("", MediaType::MEDIA_TYPE_AUDIO, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
@@ -819,7 +817,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_004, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_005");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
@@ -841,7 +839,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_005, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_delete_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_delete_api10_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_delete_api10_test_001");
 
@@ -871,7 +869,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_delete_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_delete_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_create_api9_test_001");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
@@ -895,7 +893,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_001, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api9_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_create_api9_test_002");
     string defaultRelativePath = "Audios/1/";
@@ -923,7 +921,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_002, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api9_test_002");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start audio_oprn_create_api9_test_003");
     string defaultDisplayName = "audio.mp3";
@@ -946,7 +944,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api9_test_003, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api9_test_003");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_query_api10_test_001");
 
@@ -968,7 +966,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_001, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_query_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_query_api10_test_002");
 
@@ -997,7 +995,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_002, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_query_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_query_api10_test_003");
 
@@ -1024,7 +1022,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_query_api10_test_003, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_query_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_001");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
@@ -1037,7 +1035,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_002");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
@@ -1077,7 +1075,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_002, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_003");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
@@ -1099,7 +1097,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_003, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_004");
     int32_t fileId1 = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
@@ -1121,7 +1119,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_004, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_005");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
@@ -1160,7 +1158,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_005, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api10_test_006");
     int32_t fileId = CreateAudioApi10(MediaType::MEDIA_TYPE_AUDIO, "audio.mp3");
@@ -1173,7 +1171,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api10_test_006, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api10_test_006");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_001");
     string displayName = "audio.mp3";
@@ -1197,7 +1195,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_001, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api9_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_002");
     string relativePath = "Audios/1/";
@@ -1238,7 +1236,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_002, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api9_test_002");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start audio_oprn_update_api9_test_003");
     string relativePath = "Audios/1/";
@@ -1273,7 +1271,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_003, TestS
 }
 
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_004");
     string relativePath = "Audios/1/";
@@ -1287,7 +1285,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_004, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api9_test_004");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_update_api9_test_005");
     string displayName = "audio.mp3";
@@ -1311,7 +1309,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_update_api9_test_005, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_update_api9_test_005");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_open_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_open_api10_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_open_api10_test_001");
 
@@ -1327,7 +1325,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_open_api10_test_001, TestSi
     MEDIA_INFO_LOG("end tdd audio_oprn_open_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_close_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_close_api10_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_close_api10_test_001");
 
@@ -1346,7 +1344,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_close_api10_test_001, TestS
     MEDIA_INFO_LOG("end tdd audio_oprn_close_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_001, TestSize.Level1)
 {
     // common api10 create -> open -> write -> close
     MEDIA_INFO_LOG("start tdd audio_oprn_pending_api10_test_001");
@@ -1384,7 +1382,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_001, Tes
     MEDIA_INFO_LOG("end tdd audio_oprn_pending_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_002, TestSize.Level1)
 {
     // common api10 create -> setPending(true) -> open -> write -> close -> setPending(false)
     MEDIA_INFO_LOG("start tdd audio_oprn_pending_api10_test_002");
@@ -1432,7 +1430,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_002, Tes
     MEDIA_INFO_LOG("end tdd audio_oprn_pending_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_003, TestSize.Level1)
 {
     // common api10 create -> open -> setPending(true) -> write -> setPending(false) -> close
     MEDIA_INFO_LOG("start tdd audio_oprn_pending_api10_test_003");
@@ -1480,7 +1478,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_003, Tes
     MEDIA_INFO_LOG("end tdd audio_oprn_pending_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api9_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api9_test_001, TestSize.Level1)
 {
     // common api9 create -> open -> write -> close
     MEDIA_INFO_LOG("start tdd audio_oprn_pending_api9_test_001");
@@ -1519,7 +1517,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api9_test_001, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_pending_api9_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_001");
     AbsPredicates predicates;
@@ -1533,7 +1531,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_001
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_001");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_002");
     string uri;
@@ -1545,7 +1543,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_002
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_002");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_003");
     string uri = "a";
@@ -1557,7 +1555,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_003
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_003");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_004");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1567,7 +1565,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_004
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_004");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_005");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1579,7 +1577,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_005
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_005");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_006");
     FileAsset fileAsset;
@@ -1589,7 +1587,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_006
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_006");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_007");
     FileAsset fileAsset;
@@ -1598,7 +1596,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_007
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_007");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_008");
     FileAsset fileAsset;
@@ -1608,7 +1606,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_008
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_008");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_009");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1619,7 +1617,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_009
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_009");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_010");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1631,7 +1629,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_010
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_010");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_011");
     string filePath;
@@ -1642,7 +1640,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_011
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_011");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_012, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_012");
     shared_ptr<FileAsset> fileAsset;
@@ -1654,7 +1652,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_012
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_012");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_013, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_013");
     shared_ptr<FileAsset> fileAsset;
@@ -1664,7 +1662,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_013
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_013");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_014, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_014");
     string path;
@@ -1673,7 +1671,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_014
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_014");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_015, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_015");
     string path = ROOT_MEDIA_DIR;
@@ -1682,7 +1680,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_015
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_015");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_016, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_016");
     string path;
@@ -1691,7 +1689,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_016
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_016");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_017, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_017");
     string path;
@@ -1700,7 +1698,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_017
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_017");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_018, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_018, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_018");
     string path;
@@ -1709,7 +1707,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_018
     MEDIA_INFO_LOG("end tdd medialibrary_asset_operations_test_018");
 }
 
-HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryAudioOperationsTest, medialibrary_asset_operations_test_019, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd medialibrary_asset_operations_test_019");
     string uri;

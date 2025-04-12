@@ -38,7 +38,7 @@ using namespace testing::ext;
 
 static shared_ptr<MediaLibraryRdbStore> rdbStore;
 static std::atomic<int> num{ 0 };
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 static constexpr int64_t SEC_TO_MSEC = 1e3;
 
 int32_t ExecSqls(const vector<string> &sqls)
@@ -199,7 +199,6 @@ void BackgroundCloudFileProcessorTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest TearDownTestCase");
     ClearTables();
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void BackgroundCloudFileProcessorTest::SetUp()
@@ -214,7 +213,7 @@ void BackgroundCloudFileProcessorTest::TearDown()
 }
 
 // Scenario6: Test how many images can be downloaded in one minute
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_006, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_006 Start");
     PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
@@ -226,7 +225,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 }
 
 // Scenario8: Test how many image can be updated in one minute
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_008, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_008 Start");
     PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::CLOUD));
@@ -240,7 +239,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
 }
 
 // Scenario9: Test how many video can be updated in one minute
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_009, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_009 Start");
     PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::CLOUD));
@@ -253,7 +252,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     MEDIA_INFO_LOG("background_cloud_file_processor_test_009 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_010, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_010 Start");
     PreparePhotos(10, MEDIA_TYPE_IMAGE, static_cast<int32_t>(PhotoPositionType::LOCAL));
@@ -266,7 +265,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     MEDIA_INFO_LOG("background_cloud_file_processor_test_010 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_011, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("background_cloud_file_processor_test_011 Start");
     PreparePhotos(10, MEDIA_TYPE_VIDEO, static_cast<int32_t>(PhotoPositionType::LOCAL));
@@ -279,7 +278,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     MEDIA_INFO_LOG("background_cloud_file_processor_test_011 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_SetDownloadLatestFinished_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_SetDownloadLatestFinished_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("BCFPT_SetDownloadLatestFinished_Test_001 Start");
     bool downloadLatestFinished = true;
@@ -291,7 +290,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_SetDownloadLatestFinished_Test_
     MEDIA_INFO_LOG("BCFPT_SetDownloadLatestFinished_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetDownloadLatestFinished_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetDownloadLatestFinished_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("BCFPT_GetDownloadLatestFinished_Test_001 Start");
     bool downloadLatestFinished;
@@ -300,7 +299,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetDownloadLatestFinished_Test_
     MEDIA_INFO_LOG("BCFPT_GetDownloadLatestFinished_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_SetGetLastDownloadMilliSecond_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_SetGetLastDownloadMilliSecond_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("BCFPT_SetLastDownloadMilliSecond_Test_001 Start");
     int64_t lastDownloadMilliSecond = 100;
@@ -310,7 +309,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_SetGetLastDownloadMilliSecond_T
     MEDIA_INFO_LOG("BCFPT_SetLastDownloadMilliSecond_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_DownloadCnt_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_DownloadCnt_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_DownloadCnt_Test_001 Start");
     std::string uri = "test";
@@ -324,7 +323,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_DownloadCnt_Test_001, TestSize.
     MEDIA_INFO_LOG("Bcfpt_DownloadCnt_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetStorageFreeRatio_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetStorageFreeRatio_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_GetStorageFreeRatio_Test_001 Start");
     double freeRatio = 1024;
@@ -334,7 +333,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetStorageFreeRatio_Test_001, T
     MEDIA_INFO_LOG("Bcfpt_GetStorageFreeRatio_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_QueryCloudFiles_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_QueryCloudFiles_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_GetStorageFreeRatio_Test_001 Start");
     double freeRatio = 0.5;
@@ -347,7 +346,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_QueryCloudFiles_Test_001, TestS
     MEDIA_INFO_LOG("Bcfpt_GetStorageFreeRatio_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_CheckAndUpdateDownloadCnt_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_CheckAndUpdateDownloadCnt_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_CheckAndUpdateDownloadCnt_Test_001 Start");
     std::string uri = "testuri";
@@ -359,7 +358,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_CheckAndUpdateDownloadCnt_Test_
     MEDIA_INFO_LOG("Bcfpt_CheckAndUpdateDownloadCnt_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetDownloadNum_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetDownloadNum_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_CheckAndUpdateDownloadCnt_Test_001 Start");
     int64_t downloadNum = 0;
@@ -374,7 +373,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_GetDownloadNum_Test_001, TestSi
     MEDIA_INFO_LOG("Bcfpt_CheckAndUpdateDownloadCnt_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateAbnormalDayMonthYearExecutor_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateAbnormalDayMonthYearExecutor_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_UpdateAbnormalDayMonthYearExecutor_Test_001 Start");
     BackgroundCloudFileProcessor::DownloadLatestFinished();
@@ -391,7 +390,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateAbnormalDayMonthYearExecu
     MEDIA_INFO_LOG("Bcfpt_UpdateAbnormalDayMonthYearExecutor_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_removeFinishedResult_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_removeFinishedResult_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_removeFinishedResult_Test_001 Start");
     std::vector<std::string> downloadingPaths = { "file1", "file2", "file3" };
@@ -404,7 +403,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_removeFinishedResult_Test_001, 
     MEDIA_INFO_LOG("Bcfpt_removeFinishedResult_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_AddDownloadTask_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_AddDownloadTask_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_AddDownloadTask_Test_001 Start");
     BackgroundCloudFileProcessor::DownloadFiles downloadFiles;
@@ -416,7 +415,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_AddDownloadTask_Test_001, TestS
     MEDIA_INFO_LOG("Bcfpt_AddDownloadTask_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_DownloadCloudFilesExecutor_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_DownloadCloudFilesExecutor_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_DownloadCloudFilesExecutor_Test_001 Start");
     BackgroundCloudFileProcessor::DownloadFiles downloadFiles;
@@ -429,7 +428,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_DownloadCloudFilesExecutor_Test
     MEDIA_INFO_LOG("Bcfpt_DownloadCloudFilesExecutor_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_QueryUpdateData_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_QueryUpdateData_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_QueryUpdateData_Test_001 Start");
     BackgroundCloudFileProcessor::downloadId_ = 30;
@@ -440,7 +439,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_QueryUpdateData_Test_001, TestS
     MEDIA_INFO_LOG("Bcfpt_QueryUpdateData_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateCurrentOffset_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateCurrentOffset_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_UpdateCurrentOffset_Test_001 Start");
     bool isCloud = true;
@@ -451,7 +450,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateCurrentOffset_Test_001, T
     MEDIA_INFO_LOG("Bcfpt_UpdateCurrentOffset_Test_001 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateCurrentOffset_Test_002, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateCurrentOffset_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_UpdateCurrentOffset_Test_002 Start");
     bool isCloud = true;
@@ -462,7 +461,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_UpdateCurrentOffset_Test_002, T
     MEDIA_INFO_LOG("Bcfpt_UpdateCurrentOffset_Test_002 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_StopUpdateData_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_StopUpdateData_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_UpdateCurrentOffset_Test_002 Start");
     BackgroundCloudFileProcessor::isUpdating_ = true;
@@ -471,7 +470,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_StopUpdateData_Test_001, TestSi
     MEDIA_INFO_LOG("Bcfpt_UpdateCurrentOffset_Test_002 End");
 }
 
-HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_StartTimerStopTimer_Test_001, TestSize.Level0)
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_StartTimerStopTimer_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Bcfpt_StartTimerStopTimer_Test_001 Start");
     BackgroundCloudFileProcessor::isUpdating_ = false;

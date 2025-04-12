@@ -52,7 +52,7 @@ void HiAuditTest::SetUp(void)
 
 void HiAuditTest::TearDown(void) {}
 
-HWTEST_F(HiAuditTest, HiAuditTest_DirectoryExists_test_001, TestSize.Level0)
+HWTEST_F(HiAuditTest, HiAuditTest_DirectoryExists_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("HiAuditTest_DirectoryExists_test_001 begin");
     // Create a Log Directory
@@ -75,7 +75,7 @@ HWTEST_F(HiAuditTest, HiAuditTest_DirectoryExists_test_001, TestSize.Level0)
     MEDIA_INFO_LOG("HiAuditTest_DirectoryExists_test_001 end");
 }
 
-HWTEST_F(HiAuditTest, HiAuditTest_DirectoryNotExists_test_002, TestSize.Level0)
+HWTEST_F(HiAuditTest, HiAuditTest_DirectoryNotExists_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("HiAuditTest_DirectoryNotExists_test_002 begin");
     // Obtain the HiAudit Instance

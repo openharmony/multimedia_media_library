@@ -50,7 +50,7 @@ void MtpErrorUtilsUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: mtp_error_utils.cpp test
  */
-HWTEST_F(MtpErrorUtilsUnitTest, mtp_packet_001, TestSize.Level0)
+HWTEST_F(MtpErrorUtilsUnitTest, mtp_packet_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     shared_ptr<MtpPacket> mtpPacket = make_shared<MtpPacket>(context);

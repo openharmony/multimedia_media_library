@@ -30,13 +30,8 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void MtpOperationUtilsUnitTest::SetUpTestCase(void) {}
-void MtpOperationUtilsUnitTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MtpOperationUtilsUnitTest::TearDownTestCase(void) {}
 void MtpOperationUtilsUnitTest::SetUp() {}
 void MtpOperationUtilsUnitTest::TearDown(void) {}
 
@@ -48,7 +43,7 @@ void MtpOperationUtilsUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: GetNumObjects
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_001, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_001, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -67,7 +62,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_001, Te
  * EnvConditions: NA
  * CaseDescription: GetNumObjects
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_002, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_002, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -88,7 +83,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_002, Te
  * EnvConditions: NA
  * CaseDescription: HasStorage
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_003, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_003, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -107,7 +102,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_003, Te
  * EnvConditions: NA
  * CaseDescription: HasStorage
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_004, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_004, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -128,7 +123,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_004, Te
  * EnvConditions: NA
  * CaseDescription: HasStorage
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_005, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_005, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -150,7 +145,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_005, Te
  * EnvConditions: NA
  * CaseDescription: GetObjectPropDesc
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_006, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_006, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -171,7 +166,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_006, Te
  * EnvConditions: NA
  * CaseDescription: GetObjectPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_007, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_007, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -192,7 +187,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_007, Te
  * EnvConditions: NA
  * CaseDescription: DoSetObjectPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_008, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_008, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -211,7 +206,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_008, Te
  * EnvConditions: NA
  * CaseDescription: DoSetObjectPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_009, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_009, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -232,7 +227,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_009, Te
  * EnvConditions: NA
  * CaseDescription: GetObjectPropList
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_010, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_010, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -253,7 +248,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_010, Te
  * EnvConditions: NA
  * CaseDescription: SetObjectReferences
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_011, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_011, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -272,7 +267,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_011, Te
  * EnvConditions: NA
  * CaseDescription: RecevieSendObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_012, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_012, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -292,7 +287,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_012, Te
  * EnvConditions: NA
  * CaseDescription: RecevieSendObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_013, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_013, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -314,7 +309,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_013, Te
  * EnvConditions: NA
  * CaseDescription: RecevieSendObject PreDealFd
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_014, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_014, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -339,7 +334,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_014, Te
  * EnvConditions: NA
  * CaseDescription: PreDealFd
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_015, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_015, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -364,7 +359,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_015, Te
  * EnvConditions: NA
  * CaseDescription: SendObjectInfo
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_017, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_017, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -384,7 +379,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_017, Te
  * EnvConditions: NA
  * CaseDescription: GetPartialObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_018, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_018, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -403,7 +398,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_018, Te
  * EnvConditions: NA
  * CaseDescription: GetObjectPropsSupported
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_019, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_019, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -422,7 +417,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_019, Te
  * EnvConditions: NA
  * CaseDescription: DeleteObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_020, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_020, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -442,7 +437,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_020, Te
  * EnvConditions: NA
  * CaseDescription: MoveObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_021, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_021, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -462,7 +457,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_021, Te
  * EnvConditions: NA
  * CaseDescription: CopyObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_022, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_022, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -482,7 +477,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_022, Te
  * EnvConditions: NA
  * CaseDescription: GetStorageIDs
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_023, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_023, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -503,7 +498,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_023, Te
  * EnvConditions: NA
  * CaseDescription: GetStorageIDs
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_024, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_024, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -526,7 +521,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_024, Te
  * EnvConditions: NA
  * CaseDescription: GetStorageIDs
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_025, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_025, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -549,7 +544,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_025, Te
  * EnvConditions: NA
  * CaseDescription: GetStorageInfo
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_026, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_026, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -572,7 +567,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_026, Te
  * EnvConditions: NA
  * CaseDescription: GetStorageInfo
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_027, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_027, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -596,7 +591,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_027, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_028, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_028, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -616,7 +611,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_028, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_029, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_029, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -636,7 +631,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_029, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_030, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_030, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -656,7 +651,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_030, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_031, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_031, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -676,7 +671,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_031, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_032, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_032, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -696,7 +691,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_032, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_033, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_033, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -716,7 +711,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_033, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_034, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_034, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -736,7 +731,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_034, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_035, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_035, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -756,7 +751,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_035, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_036, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_036, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -776,7 +771,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_036, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_037, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_037, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -796,7 +791,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_037, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_038, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_038, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -816,7 +811,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_038, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_039, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_039, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -836,7 +831,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_039, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_040, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_040, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -856,7 +851,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_040, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_041, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_041, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -876,7 +871,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_041, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_042, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_042, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -896,7 +891,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_042, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_043, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_043, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -916,7 +911,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_043, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_044, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_044, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -936,7 +931,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_044, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_045, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_045, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -956,7 +951,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_045, Te
  * EnvConditions: NA
  * CaseDescription: GetPropDesc
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_046, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_046, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -979,7 +974,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_046, Te
  * EnvConditions: NA
  * CaseDescription: GetPropDesc
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_047, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_047, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1002,7 +997,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_047, Te
  * EnvConditions: NA
  * CaseDescription: GetPropDesc
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_048, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_048, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1025,7 +1020,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_048, Te
  * EnvConditions: NA
  * CaseDescription: GetPropDesc
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_049, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_049, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1048,7 +1043,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_049, Te
  * EnvConditions: NA
  * CaseDescription: GetPropDesc
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_050, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_050, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1071,7 +1066,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_050, Te
  * EnvConditions: NA
  * CaseDescription: GetPropDesc
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_051, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_051, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1094,7 +1089,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_051, Te
  * EnvConditions: NA
  * CaseDescription: GetPropDesc
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_052, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_052, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1117,7 +1112,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_052, Te
  * EnvConditions: NA
  * CaseDescription: GetPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_053, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_053, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1140,7 +1135,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_053, Te
  * EnvConditions: NA
  * CaseDescription: GetPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_054, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_054, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1163,7 +1158,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_054, Te
  * EnvConditions: NA
  * CaseDescription: GetPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_055, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_055, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1186,7 +1181,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_055, Te
  * EnvConditions: NA
  * CaseDescription: GetPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_056, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_056, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1209,7 +1204,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_056, Te
  * EnvConditions: NA
  * CaseDescription: GetPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_057, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_057, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1232,7 +1227,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_057, Te
  * EnvConditions: NA
  * CaseDescription: GetPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_058, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_058, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1255,7 +1250,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_058, Te
  * EnvConditions: NA
  * CaseDescription: GetPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_059, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_059, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1278,7 +1273,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_059, Te
  * EnvConditions: NA
  * CaseDescription: ObjectEvent
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_060, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_060, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1299,7 +1294,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_060, Te
  * EnvConditions: NA
  * CaseDescription: GetPathByHandle
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_061, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_061, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1321,7 +1316,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_061, Te
  * EnvConditions: NA
  * CaseDescription: GetPathByHandle
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_062, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_062, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1343,7 +1338,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_062, Te
  * EnvConditions: NA
  * CaseDescription: GetPathByHandle
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_063, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_063, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1365,7 +1360,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_063, Te
  * EnvConditions: NA
  * CaseDescription: GetHandleByPaths
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_064, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_064, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1386,7 +1381,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_064, Te
  * EnvConditions: NA
  * CaseDescription: GetHandleByPaths
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_065, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_065, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1407,7 +1402,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_065, Te
  * EnvConditions: NA
  * CaseDescription: GetHandleByPaths
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_066, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_066, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1428,7 +1423,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_066, Te
  * EnvConditions: NA
  * CaseDescription: GetBatteryLevel
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_067, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_067, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1447,7 +1442,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_067, Te
  * EnvConditions: NA
  * CaseDescription: GetPropertyInner
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_068, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_068, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1469,7 +1464,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_068, Te
  * EnvConditions: NA
  * CaseDescription: SetPropertyInner
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_069, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_069, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1490,7 +1485,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_069, Te
  * EnvConditions: NA
  * CaseDescription: CheckErrorCode
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_070, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_070, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1510,7 +1505,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_070, Te
  * EnvConditions: NA
  * CaseDescription: GetPathByHandle
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_071, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_071, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1532,7 +1527,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_071, Te
  * EnvConditions: NA
  * CaseDescription: GetHandleByPaths
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_072, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_072, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1553,7 +1548,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_072, Te
  * EnvConditions: NA
  * CaseDescription: TryAddExternalStorage
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_073, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_073, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1574,7 +1569,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_073, Te
  * EnvConditions: NA
  * CaseDescription: TryAddExternalStorage
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_074, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_074, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1595,7 +1590,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_074, Te
  * EnvConditions: NA
  * CaseDescription: TryRemoveExternalStorage
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_075, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_075, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1616,7 +1611,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_075, Te
  * EnvConditions: NA
  * CaseDescription: TryRemoveExternalStorage
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_076, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_076, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1637,7 +1632,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_076, Te
  * EnvConditions: NA
  * CaseDescription: GetStorageIDs
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_077, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_077, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1660,7 +1655,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_077, Te
  * EnvConditions: NA
  * CaseDescription: CopyObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_078, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_078, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -1680,7 +1675,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_078, Te
  * EnvConditions: NA
  * CaseDescription: MoveObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_079, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_079, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -1700,7 +1695,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_079, Te
  * EnvConditions: NA
  * CaseDescription: DeleteObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_080, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_080, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -1720,7 +1715,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_080, Te
  * EnvConditions: NA
  * CaseDescription: GetThumb
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_081, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_081, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -1740,7 +1735,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_081, Te
  * EnvConditions: NA
  * CaseDescription: PreDealFd
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_082, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_082, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1762,7 +1757,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_082, Te
  * EnvConditions: NA
  * CaseDescription: PreDealFd
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_083, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_083, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1784,7 +1779,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_083, Te
  * EnvConditions: NA
  * CaseDescription: RecevieSendObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_084, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_084, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1805,7 +1800,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_084, Te
  * EnvConditions: NA
  * CaseDescription: RecevieSendObject
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_085, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_085, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1826,7 +1821,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_085, Te
  * EnvConditions: NA
  * CaseDescription: GetObjectPropList
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_086, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_086, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;
@@ -1847,7 +1842,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_086, Te
  * EnvConditions: NA
  * CaseDescription: DoSetObjectPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_087, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_087, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
@@ -1866,7 +1861,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_087, Te
  * EnvConditions: NA
  * CaseDescription: GetObjectPropValue
  */
-HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_088, TestSize.Level0)
+HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_088, TestSize.Level1)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::PTP_MODE;
     std::shared_ptr<MtpOperationContext> context = nullptr;

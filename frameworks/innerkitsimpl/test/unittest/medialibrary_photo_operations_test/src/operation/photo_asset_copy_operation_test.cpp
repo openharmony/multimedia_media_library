@@ -46,7 +46,7 @@ void PhotoAssetCopyOperationTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(PhotoAssetCopyOperationTest, subtype_is_not_burst, TestSize.Level0)
+HWTEST_F(PhotoAssetCopyOperationTest, subtype_is_not_burst, TestSize.Level1)
 {
     PhotoAssetInfo photoAssetInfo;
     // Pattern: IMG_3025.jpg

@@ -19,7 +19,7 @@ using namespace std;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-HWTEST_F(MtpNativeTest, mtp_SolveHandlesFormatData_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_SolveHandlesFormatData_test_001, TestSize.Level1)
 {
     uint16_t format = 12287U;
     MediaType outMediaType = MEDIA_TYPE_FILE;
@@ -34,7 +34,7 @@ HWTEST_F(MtpNativeTest, mtp_SolveHandlesFormatData_test_001, TestSize.Level0)
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MtpNativeTest, mtp_SolveSendObjectFormatData_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_SolveSendObjectFormatData_test_001, TestSize.Level1)
 {
     uint16_t format = 12287U;
     MediaType outMediaType = MEDIA_TYPE_FILE;
@@ -45,7 +45,7 @@ HWTEST_F(MtpNativeTest, mtp_SolveSendObjectFormatData_test_001, TestSize.Level0)
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MtpNativeTest, mtp_SolveSetObjectPropValueData_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_SolveSetObjectPropValueData_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->property = 56326U;
@@ -55,7 +55,7 @@ HWTEST_F(MtpNativeTest, mtp_SolveSetObjectPropValueData_test_001, TestSize.Level
     EXPECT_EQ(ret, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
 }
 
-HWTEST_F(MtpNativeTest, mtp_SolveSetObjectPropValueData_test_002, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_SolveSetObjectPropValueData_test_002, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
@@ -66,7 +66,7 @@ HWTEST_F(MtpNativeTest, mtp_SolveSetObjectPropValueData_test_002, TestSize.Level
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MtpNativeTest, mtp_SolveSetObjectPropValueData_test_003, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_SolveSetObjectPropValueData_test_003, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
@@ -77,7 +77,7 @@ HWTEST_F(MtpNativeTest, mtp_SolveSetObjectPropValueData_test_003, TestSize.Level
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MtpNativeTest, mtp_GetMediaTypeByformat_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_GetMediaTypeByformat_test_001, TestSize.Level1)
 {
     uint16_t format = 12287U;
     MediaType outMediaType = MEDIA_TYPE_FILE;
@@ -96,7 +96,7 @@ HWTEST_F(MtpNativeTest, mtp_GetMediaTypeByformat_test_001, TestSize.Level0)
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MtpNativeTest, mtp_GetPropValueBySet_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_GetPropValueBySet_test_001, TestSize.Level1)
 {
     uint32_t property = MTP_PROPERTY_ALL_CODE;
     PropertyValue outPropValue;
@@ -105,7 +105,7 @@ HWTEST_F(MtpNativeTest, mtp_GetPropValueBySet_test_001, TestSize.Level0)
     EXPECT_EQ(ret, MTP_ERROR_INVALID_OBJECTHANDLE);
 }
 
-HWTEST_F(MtpNativeTest, mtp_GetMediaTypeByName_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_GetMediaTypeByName_test_001, TestSize.Level1)
 {
     string displayName = "GetMediaTypeByName";
     MediaType outMediaType = MEDIA_TYPE_FILE;
@@ -119,7 +119,7 @@ HWTEST_F(MtpNativeTest, mtp_GetMediaTypeByName_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MtpNativeTest, mtp_GetPropList_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_GetPropList_test_001, TestSize.Level1)
 {
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
     shared_ptr<UInt16List> properties = make_shared<UInt16List>();
@@ -128,7 +128,7 @@ HWTEST_F(MtpNativeTest, mtp_GetPropList_test_001, TestSize.Level0)
     EXPECT_EQ(ret, MTP_INVALID_OBJECTPROPCODE_CODE);
 }
 
-HWTEST_F(MtpNativeTest, mtp_GetFormat_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_GetFormat_test_001, TestSize.Level1)
 {
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShareResultSet>();
     uint16_t outFormat = 0;
@@ -143,7 +143,7 @@ HWTEST_F(MtpNativeTest, mtp_GetFormat_test_001, TestSize.Level0)
     MtpDataUtils::GetOneRowPropList(handle, resultSet, properties, outProps);
 }
 
-HWTEST_F(MtpNativeTest, mtp_SetOneDefaultlPropList_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_SetOneDefaultlPropList_test_001, TestSize.Level1)
 {
     shared_ptr<vector<Property>> outProps = make_shared<vector<Property>>();
     MtpDataUtils::SetOneDefaultlPropList(0, MTP_PROPERTY_PROTECTION_STATUS_CODE, outProps);

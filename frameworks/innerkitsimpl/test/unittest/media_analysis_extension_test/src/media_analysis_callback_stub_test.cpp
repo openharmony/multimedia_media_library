@@ -26,8 +26,6 @@ namespace Media {
 using namespace testing::ext;
 using namespace std;
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void MediaAnalysisCallbackStubTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("MediaAnalysisCallbackStubTest SetUpTestCase");
@@ -36,7 +34,6 @@ void MediaAnalysisCallbackStubTest::SetUpTestCase()
 void MediaAnalysisCallbackStubTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("MediaAnalysisCallbackStubTest TearDownTestCase");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaAnalysisCallbackStubTest::SetUp()

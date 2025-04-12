@@ -35,7 +35,7 @@ void MediaLibraryKvstoreManagerTest::TearDown(void) {}
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryKvstoreManagerTest, MediaLibraryKvstoreManager_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryKvstoreManagerTest, MediaLibraryKvstoreManager_Test_001, TestSize.Level1)
 {
     MediaLibraryKvStoreManager mediaLibraryKvStoreManager = MediaLibraryKvStoreManager::GetInstance();
     shared_ptr<MediaLibraryKvStore> mediaLibraryKvStore = make_shared<MediaLibraryKvStore>();
@@ -67,7 +67,7 @@ HWTEST_F(MediaLibraryKvstoreManagerTest, MediaLibraryKvstoreManager_Test_001, Te
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryKvstoreManagerTest, MediaLibraryKvstoreManager_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryKvstoreManagerTest, MediaLibraryKvstoreManager_Test_002, TestSize.Level1)
 {
     MediaLibraryKvStoreManager mediaLibraryKvStoreManager = MediaLibraryKvStoreManager::GetInstance();
     KvStoreRoleType roleType = KvStoreRoleType::VISITOR;

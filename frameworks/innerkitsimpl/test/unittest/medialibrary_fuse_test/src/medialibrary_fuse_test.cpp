@@ -375,7 +375,7 @@ bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, co
     return true;
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -392,7 +392,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_001, TestSize.Level0)
     EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -410,7 +410,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_002, TestSize.Level0)
     EXPECT_EQ(err, E_ERR);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_003");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -435,7 +435,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_003, TestSize.Level0)
     EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_004");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -461,7 +461,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_004, TestSize.Level0)
     EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_005");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -487,7 +487,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level0)
     EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_close_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -516,7 +516,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level0
     EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_close_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -534,7 +534,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_002, TestSize.Level0
 }
 
 // Test database operation failures
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_PrepareUniqueNumberTable_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_PrepareUniqueNumberTable_test_001, TestSize.Level1)
 {
     // Test when g_rdbStore is nullptr
     g_rdbStore = nullptr;
@@ -547,7 +547,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_PrepareUniqueNumberTable_test_001, T
 }
  
 // Test different media types
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CreatePhoto_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CreatePhoto_test_001, TestSize.Level1)
 {
     // Test video creation
     int32_t videoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "video.mp4");
@@ -559,7 +559,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CreatePhoto_test_001, TestSize.Level
 }
  
 // Test permission combinations
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Permission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Permission_test_001, TestSize.Level1)
 {
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
     EXPECT_GE(photoId, E_OK);
@@ -585,7 +585,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Permission_test_001, TestSize.Level0
 }
  
 // Test invalid paths
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_InvalidPath_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_InvalidPath_test_001, TestSize.Level1)
 {
     int fd = -1;
  
@@ -599,7 +599,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_InvalidPath_test_001, TestSize.Level
 }
 
 // Test system device model
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CheckDevice_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CheckDevice_test_001, TestSize.Level1)
 {
     bool isLinux = MediaFuseManager::GetInstance().CheckDeviceInLinux();
 
