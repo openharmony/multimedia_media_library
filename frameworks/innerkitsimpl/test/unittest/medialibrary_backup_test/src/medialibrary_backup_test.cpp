@@ -37,6 +37,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "vision_db_sqls.h"
+#include "geo_knowledge_restore.h"
 #undef private
 #undef protected
 #include "mimetype_utils.h"
@@ -2606,5 +2607,102 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_insert_value_test, TestSize
     EXPECT_EQ(dateAdded, 1);
 }
 
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test1, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test1 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+
+    NativeRdb::ValuesBucket valuesBucket;
+    EXPECT_EQ(valuesBucket.HasColumn("address_description"), false);
+    EXPECT_EQ(valuesBucket.HasColumn("language"), false);
+    std::vector<GeoKnowledgeRestore::GeoKnowledgeInfo> albumInfo;
+    GeoKnowledgeRestore::GeoKnowledgeInfo info;
+    info.adminArea = "test";
+    info.locality = "test";
+    info.language = "zh";
+    albumInfo.push_back(info);
+    valuesBucket = restoreService->geoKnowledgeRestore_.GetMapInsertValue(albumInfo.begin(), 0);
+    EXPECT_EQ(valuesBucket.HasColumn("address_description"), true);
+    EXPECT_EQ(valuesBucket.HasColumn("language"), true);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test1 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test2, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test2 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+
+    NativeRdb::ValuesBucket valuesBucket;
+    EXPECT_EQ(valuesBucket.HasColumn("address_description"), false);
+    EXPECT_EQ(valuesBucket.HasColumn("language"), false);
+    std::vector<GeoKnowledgeRestore::GeoKnowledgeInfo> albumInfo;
+    GeoKnowledgeRestore::GeoKnowledgeInfo info;
+    info.adminArea = "test";
+    info.locality = "test123";
+    info.language = "en";
+    albumInfo.push_back(info);
+    valuesBucket = restoreService->geoKnowledgeRestore_.GetMapInsertValue(albumInfo.begin(), 0);
+    EXPECT_EQ(valuesBucket.HasColumn("address_description"), true);
+    EXPECT_EQ(valuesBucket.HasColumn("language"), true);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test2 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test3, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test3 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+    restoreService->geoKnowledgeRestore_.mediaLibraryRdb_ = nullptr;
+    restoreService->geoKnowledgeRestore_.batchCnt_ = 0xFF;
+
+    std::vector<FileInfo> fileInfos;
+    restoreService->geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 0);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test3 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test4, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test4 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+    restoreService->geoKnowledgeRestore_.mediaLibraryRdb_ = photosStorePtr;
+    restoreService->geoKnowledgeRestore_.batchCnt_ = 0xFF;
+
+    std::vector<FileInfo> fileInfos;
+    restoreService->geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 0);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test4 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test5, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test5 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+    restoreService->geoKnowledgeRestore_.mediaLibraryRdb_ = photosStorePtr;
+    restoreService->geoKnowledgeRestore_.batchCnt_ = 0xFF;
+
+    constexpr double DOUBLE_EPSILON = 1e-15;
+    std::vector<FileInfo> fileInfos;
+    FileInfo info1;
+    info1.fileIdNew = 0;
+    fileInfos.push_back(info1);
+    FileInfo info2;
+    info2.fileIdNew = 1;
+    info2.latitude = DOUBLE_EPSILON + 1.0;
+    info2.longitude = DOUBLE_EPSILON + 1.0;
+    fileInfos.push_back(info2);
+    restoreService->geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 0);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test5 end");
+}
 } // namespace Media
 } // namespace OHOS
