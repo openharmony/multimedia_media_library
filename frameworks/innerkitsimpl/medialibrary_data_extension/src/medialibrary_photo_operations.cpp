@@ -2582,7 +2582,8 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(std::shared_ptr<FileAsset> &fi
 
     int32_t subtype = static_cast<int32_t>(fileAsset->GetPhotoSubType());
     int32_t movingPhotoSubtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
-    if (fileAsset->GetOriginalSubType() == movingPhotoSubtype) {
+    if (fileAsset->GetOriginalSubType() == movingPhotoSubtype &&
+        subtype == static_cast<int32_t>(PhotoSubType::DEFAULT)) {
         errCode = UpdateMovingPhotoSubtype(fileAsset->GetId(), subtype);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update movingPhoto subtype");
     }
