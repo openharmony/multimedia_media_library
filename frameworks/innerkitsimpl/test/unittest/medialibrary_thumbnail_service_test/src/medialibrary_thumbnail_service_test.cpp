@@ -633,37 +633,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_036, T
     EXPECT_EQ(requestId, dataValue->requestId_);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_001, TestSize.Level0)
-{
-    ThumbnailType type = ThumbnailType::MTH;
-    auto res = ThumbnailUtils::GetThumbnailSuffix(type);
-    EXPECT_EQ(res, "");
-}
-
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_002, TestSize.Level0)
-{
-    ThumbnailType type = ThumbnailType::LCD;
-    ThumbnailData data;
-    auto res = ThumbnailUtils::DeleteThumbFile(data, type);
-    EXPECT_EQ(res, false);
-}
-
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_003, TestSize.Level0)
-{
-    ThumbnailType type = ThumbnailType::LCD;
-    ThumbnailData data;
-    data.path = "/storage/cloud/files/";
-    auto res = ThumbnailUtils::DeleteThumbFile(data, type);
-    EXPECT_EQ(res, false);
-}
-
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_004, TestSize.Level0)
-{
-    ThumbnailData data;
-    auto res = ThumbnailUtils::DeleteThumbExDir(data);
-    EXPECT_EQ(res, true);
-}
-
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_005, TestSize.Level0)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
@@ -802,14 +771,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_017, Te
     EXPECT_EQ(res, true);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_018, TestSize.Level0)
-{
-    ThumbRdbOpt opts;
-    const ThumbnailType type = ThumbnailType::LCD;
-    auto res = ThumbnailUtils::DeleteAstcDataFromKvStore(opts, type);
-    EXPECT_EQ(res, false);
-}
-
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_019, TestSize.Level0)
 {
     ThumbnailData data;
@@ -837,13 +798,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_020, Te
     size2.width = 1;
     ThumbnailUtils::SetThumbnailSizeValue(values2, size2, column);
     EXPECT_NE(size.height, size2.height);
-}
-
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_021, TestSize.Level0)
-{
-    ThumbnailData data;
-    auto res = ThumbnailUtils::DeleteBeginTimestampDir(data);
-    EXPECT_EQ(res, true);
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_022, TestSize.Level0)
@@ -933,13 +887,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, Tes
     ThumbnailData data;
     ThumbRdbOpt opts;
     auto res = ThumbnailUtils::DoUpdateAstcDateTaken(opts, data);
-    EXPECT_EQ(res, false);
-}
-
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_025, TestSize.Level0)
-{
-    ThumbRdbOpt opts;
-    auto res = ThumbnailUtils::DoDeleteMonthAndYearAstc(opts);
     EXPECT_EQ(res, false);
 }
 

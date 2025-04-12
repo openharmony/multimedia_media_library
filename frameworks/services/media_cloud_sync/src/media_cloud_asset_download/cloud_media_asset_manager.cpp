@@ -275,7 +275,7 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
         }
         bool deleteFlag = true;
         for (size_t i = 0; i < fileIds.size(); i++) {
-            if (DeleteEditdata(paths[i]) != E_OK || !ThumbnailService::GetInstance()->HasInvalidateThumbnail(
+            if (DeleteEditdata(paths[i]) != E_OK || !ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(
                 fileIds[i], PhotoColumn::PHOTOS_TABLE, paths[i], dateTakens[i])) {
                 MEDIA_ERR_LOG("Delete error, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
                 deleteFlag = false;

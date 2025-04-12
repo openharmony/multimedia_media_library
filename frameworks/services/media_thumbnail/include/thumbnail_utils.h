@@ -65,12 +65,9 @@ public:
     // RDB Store Query
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
         ThumbnailData &data, int &err);
-    EXPORT static bool DeleteThumbFile(ThumbnailData &data, ThumbnailType type);
-    EXPORT static bool DeleteThumbExDir(ThumbnailData &data);
-    EXPORT static bool DeleteBeginTimestampDir(ThumbnailData &data);
 
-    EXPORT static bool DeleteOriginImage(ThumbRdbOpt &opts);
-    EXPORT static bool DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts);
+    EXPORT static bool DeleteAllThumbFilesAndAstc(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DeleteThumbnailDirAndAstc(const ThumbRdbOpt &opts, const ThumbnailData &data);
     // Steps
     EXPORT static bool LoadSourceImage(ThumbnailData &data);
     EXPORT static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
@@ -111,7 +108,6 @@ public:
         int &err);
     EXPORT static bool ResizeThumb(int& width, int& height);
     EXPORT static bool ResizeLcd(int& width, int& height);
-    EXPORT static bool IsSupportGenAstc();
     EXPORT static void QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
         ThumbnailData &data, int &err);
     EXPORT static bool CheckDateTaken(ThumbRdbOpt &opts, ThumbnailData &data);
@@ -121,7 +117,6 @@ public:
         const AntiAliasingOption &option);
     EXPORT static bool CenterScaleEx(std::shared_ptr<PixelMap> &dataSource, const Size &desiredSize,
         const std::string path);
-    EXPORT static std::string GetThumbnailSuffix(ThumbnailType type);
 
     EXPORT static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
         LoadSourceType sourceType);
@@ -133,7 +128,8 @@ public:
     EXPORT static bool CheckCloudThumbnailDownloadFinish(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr);
     EXPORT static bool QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
         const std::string &table, std::vector<ThumbnailData> &infos);
-    EXPORT static bool CheckRemainSpaceMeetCondition(const int32_t &freeSizePercentLimit);
+    EXPORT static void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
+    EXPORT static void DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
@@ -171,7 +167,6 @@ private:
     EXPORT static bool ScaleFastThumb(ThumbnailData &data, const Size &size);
 
     EXPORT static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
-    EXPORT static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
     EXPORT static bool UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data);
 
     static void HandleId(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);

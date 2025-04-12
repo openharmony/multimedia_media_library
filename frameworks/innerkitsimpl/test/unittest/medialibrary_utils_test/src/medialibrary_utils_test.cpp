@@ -414,19 +414,21 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeImage_test_001, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteOriginImage_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteAllThumbFilesAndAstc_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
     }
     ThumbnailData thumbnailData;
-    string row = "medialib_DeleteOriginImage_test_001";
+    string row = "medialib_DeleteAllThumbFilesAndAstc_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = MEDIALIBRARY_TABLE,
         .row = row
     };
-    bool ret = ThumbnailUtils::DeleteOriginImage(opts);
+    ThumbnailData data;
+    data.id = row;
+    bool ret = ThumbnailUtils::DeleteAllThumbFilesAndAstc(opts, data);
     EXPECT_EQ(ret, false);
 }
 

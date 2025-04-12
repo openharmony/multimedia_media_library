@@ -3230,7 +3230,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_0
     const string testPhotoPath = "/storage/cloud/files/Photo/1/IMG_test.jpg";
     string testLCDPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_LCD_SUFFIX);
     string testTHUMBPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMB_SUFFIX);
-    string testTHUMBASTCPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMBASTC_SUFFIX);
+    string testTHUMBASTCPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMB_ASTC_SUFFIX);
 
     // Create temporary thumbnail file
 
