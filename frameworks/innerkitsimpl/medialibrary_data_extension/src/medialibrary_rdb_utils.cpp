@@ -2465,6 +2465,35 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<MediaLibraryRdbS
     return ret;
 }
 
+static void NotifyShootingModeAlbumFunc(PhotoAlbumType albumtype, PhotoAlbumSubType subtype, int32_t albumId)
+{
+    const static set<PhotoAlbumSubType> NEED_FLUSH_ANALYSIS_ALBUM = {
+        PhotoAlbumSubType::SHOOTING_MODE,
+    };
+    if (NEED_FLUSH_ANALYSIS_ALBUM.find(subtype) != NEED_FLUSH_ANALYSIS_ALBUM.end()) {
+        auto watch = MediaLibraryNotify::GetInstance();
+        if (watch == nullptr) {
+            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+            return;
+        }
+        if (albumId > 0) {
+            watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX,
+                std::to_string(albumId)), NotifyType::NOTIFY_ADD);
+        } else {
+            watch->Notify(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
+        }
+    }
+}
+
+void MediaLibraryRdbUtils::UpdateShootingModeAlbum(const shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    vector<string> subtype = { std::to_string(PhotoAlbumSubType::SHOOTING_MODE) };
+    auto ret = RefreshAnalysisPhotoAlbums(rdbStore, NotifyShootingModeAlbumFunc, subtype);
+    if (ret != E_SUCCESS && ret != E_EMPTY_ALBUM_ID) {
+        MEDIA_ERR_LOG("Update shootingMode album error:%{public}d", ret);
+    }
+}
+
 void MediaLibraryRdbUtils::UpdateAllAlbumsForCloud(const std::shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
     // 注意，端云同步代码仓也有相同函数，添加新相册时，请通知端云同步进行相应修改
