@@ -36,7 +36,7 @@ void MediaLibraryKvstoreUtilsTest::TearDown(void) {}
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryKvstoreUtilsTest, MediaLibraryKvstoreUtils_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryKvstoreUtilsTest, MediaLibraryKvstoreUtils_Test_001, TestSize.Level1)
 {
     KvStoreValueType type = KvStoreValueType::MONTH_ASTC;
     std::string oldKey = "adc";

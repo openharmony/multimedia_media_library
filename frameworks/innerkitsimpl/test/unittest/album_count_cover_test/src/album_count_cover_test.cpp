@@ -553,7 +553,7 @@ void AlbumCountCoverTest::TearDown() {}
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_001, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_001, TestSize.Level2)
 {
     MEDIA_ERR_LOG("album_count_cover_001 start");
     ClearEnv();
@@ -617,7 +617,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_002 begin");
     // Clear all tables.
@@ -665,7 +665,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_003 begin");
     // Clear all tables.
@@ -730,7 +730,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_004 begin");
     // Clear all tables.
@@ -795,7 +795,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_007 begin");
     // Clear all tables.
@@ -859,7 +859,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI8YPJA
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_008, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_008 begin");
     // Clear all tables.
@@ -915,7 +915,7 @@ int QueryCountForBussinessTable()
     return count;
 }
 
-HWTEST_F(AlbumCountCoverTest, refresh_analysis_album001, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, refresh_analysis_album001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("refresh_analysis_album001 begin");
     MediaLibraryRdbUtils::UpdateAllAlbumsCountForCloud(
@@ -924,7 +924,7 @@ HWTEST_F(AlbumCountCoverTest, refresh_analysis_album001, TestSize.Level0)
     EXPECT_GT(count, 0);
 }
 
-HWTEST_F(AlbumCountCoverTest, refresh_analysis_album002, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, refresh_analysis_album002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("refresh_analysis_album002 begin");
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);

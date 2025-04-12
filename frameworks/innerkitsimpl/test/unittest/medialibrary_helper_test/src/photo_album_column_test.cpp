@@ -36,7 +36,7 @@ void PhotoAlbumColumnTest::TearDown(void) {}
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(PhotoAlbumColumnTest, PhotoAlbumColumn_Test_001, TestSize.Level0)
+HWTEST_F(PhotoAlbumColumnTest, PhotoAlbumColumn_Test_001, TestSize.Level1)
 {
     PhotoAlbumSubType subtype = PhotoAlbumSubType::ANALYSIS_START;
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);

@@ -98,7 +98,7 @@ static std::string CombinedTimeFunction(const std::string &format, time_t curTim
  * EnvConditions: NA
  * CaseDescription: SolveHandlesFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_001, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_001, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -117,7 +117,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_001, TestS
  * EnvConditions: NA
  * CaseDescription: SolveHandlesFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_002, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_002, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -136,7 +136,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_002, TestS
  * EnvConditions: NA
  * CaseDescription: SolveHandlesFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_003, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_003, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -155,7 +155,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_003, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSendObjectFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_004, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_004, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -173,7 +173,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_004, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSendObjectFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_005, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_005, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -191,7 +191,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_005, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSetObjectPropValueData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_006, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_006, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -212,7 +212,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_006, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSetObjectPropValueData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_007, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_007, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -234,7 +234,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_007, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSetObjectPropValueData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_008, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_008, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -256,7 +256,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_008, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByformat
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_009, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_009, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -274,7 +274,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_009, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByformat
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_010, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_010, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -292,7 +292,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_010, TestS
  * EnvConditions: NA
  * CaseDescription: GetPropListBySet
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_011, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_011, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -316,7 +316,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_011, TestS
  * EnvConditions: NA
  * CaseDescription: GetPropListBySet
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_012, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_012, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -339,7 +339,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_012, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditOneRowPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_013, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_013, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -369,7 +369,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_013, TestS
  * EnvConditions: NA
  * CaseDescription: ReturnError
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_014, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_014, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -387,7 +387,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_014, TestS
  * EnvConditions: NA
  * CaseDescription: ReturnError
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_015, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_015, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -405,7 +405,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_015, TestS
  * EnvConditions: NA
  * CaseDescription: GetFormatByPath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_016, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_016, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -423,7 +423,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_016, TestS
  * EnvConditions: NA
  * CaseDescription: GetFormatByPath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_018, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_018, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -441,7 +441,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_018, TestS
  * EnvConditions: NA
  * CaseDescription: GetFormat
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_019, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_019, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -460,7 +460,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_019, TestS
  * EnvConditions: NA
  * CaseDescription: GetPropValueBySet
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -480,7 +480,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByName
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_021, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_021, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -498,7 +498,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_021, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByName
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_022, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_022, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -516,7 +516,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_022, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByName
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_023, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_023, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -534,7 +534,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_023, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByName
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_024, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_024, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -552,7 +552,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_024, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_025, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_025, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -576,7 +576,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_025, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_026, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_026, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -599,7 +599,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_026, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_027, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_027, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -621,7 +621,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_027, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropValue
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_028, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_028, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -641,7 +641,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_028, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropValue
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_029, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_029, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -661,7 +661,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_029, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropValue
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_030, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_030, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -681,7 +681,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_030, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpFormatByPath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_034, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_034, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -700,7 +700,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_034, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_036, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_036, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -721,7 +721,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_036, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_037, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_037, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -742,7 +742,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_037, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_038, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_038, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -763,7 +763,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_038, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_039, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_039, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -784,7 +784,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_039, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_040, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_040, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -805,7 +805,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_040, TestS
  * EnvConditions: NA
  * CaseDescription: GetOneRowPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_041, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_041, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -831,7 +831,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_041, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_042, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_042, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -851,7 +851,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_042, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_043, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_043, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -871,7 +871,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_043, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_044, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_044, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -891,7 +891,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_044, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_045, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_045, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -911,7 +911,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_045, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_046, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_046, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -931,7 +931,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_046, TestS
  * EnvConditions: NA
  * CaseDescription: GetContainerLength
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_header_data_001, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_header_data_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = 0;
@@ -955,7 +955,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_header_data_001, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SetProperty
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_001, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_001, TestSize.Level1)
 {
     string column = "SetPropert";
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
@@ -987,7 +987,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_001, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SetMtpProperty
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_002, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_002, TestSize.Level1)
 {
     string column = MEDIA_DATA_DB_NAME;
     string path = "/data";
@@ -1025,7 +1025,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_002, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SetMtpOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_003, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_003, TestSize.Level1)
 {
     std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
     ASSERT_NE(outProps, nullptr);
@@ -1051,7 +1051,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_003, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetMtpPropValue
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_004, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_004, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -1083,7 +1083,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_004, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SetPtpProperty
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_005, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_005, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -1111,7 +1111,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_005, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetMtpPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_006, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_006, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -1140,7 +1140,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_006, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetMtpOneRowProp
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_007, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_007, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -1168,7 +1168,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_007, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetMtpOneRowProp
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_008, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_008, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -1213,7 +1213,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_008, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_009, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_009, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -1260,7 +1260,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_009, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetFormat
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_010, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_010, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -1290,7 +1290,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_010, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetFormat
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_011, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_011, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -1320,7 +1320,7 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_011, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: GetFormat
  */
-HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_012, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_012, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);

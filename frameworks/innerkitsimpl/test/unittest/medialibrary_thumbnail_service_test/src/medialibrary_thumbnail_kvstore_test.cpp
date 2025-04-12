@@ -76,7 +76,7 @@ void MediaLibraryThumbnailKvStoreTest::SetUp(void) {}
 
 void MediaLibraryThumbnailKvStoreTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Insert_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Insert_test_001, TestSize.Level1)
 {
     EXPECT_NE(kvStorePtr_, nullptr);
     std::vector<uint8_t> value;
@@ -86,14 +86,14 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Insert_test_001,
     EXPECT_EQ(errCode, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Delete_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Delete_test_002, TestSize.Level1)
 {
     EXPECT_NE(kvStorePtr_, nullptr);
     int errCode = kvStorePtr_->Delete(FIRST_KEY);
     EXPECT_EQ(errCode, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Query_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Query_test_003, TestSize.Level1)
 {
     EXPECT_NE(kvStorePtr_, nullptr);
     std::vector<uint8_t> value;
@@ -104,7 +104,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Query_test_003, 
     EXPECT_EQ(errCode, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_004, TestSize.Level1)
 {
     EXPECT_NE(kvStorePtr_, nullptr);
     std::vector<std::string> uriBatch;
@@ -140,7 +140,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_
     dataBatch.clear();
 }
 
-HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_RebuildKvStore_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_RebuildKvStore_test_005, TestSize.Level1)
 {
     EXPECT_NE(kvStorePtr_, nullptr);
     auto monthKvStorePtr = std::make_shared<MediaLibraryKvStore>();
@@ -160,7 +160,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_RebuildKvStore_t
     RestoreTestKvStore();
 }
 
-HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchInsert_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchInsert_test_006, TestSize.Level1)
 {
     EXPECT_NE(kvStorePtr_, nullptr);
     std::vector<DistributedKv::Entry> entries;
@@ -179,7 +179,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchInsert_test
     EXPECT_EQ(errCode, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_InitSingleKvstore_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_InitSingleKvstore_test_007, TestSize.Level1)
 {
     EXPECT_NE(kvStorePtr_, nullptr);
     auto singleOwnerKvStore = std::make_shared<MediaLibraryKvStore>();
@@ -190,7 +190,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_InitSingleKvstor
     EXPECT_EQ(errCode, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_PutAllValueToNewKvStore_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_PutAllValueToNewKvStore_test_008, TestSize.Level1)
 {
     EXPECT_NE(kvStorePtr_, nullptr);
     auto singleKvStore = std::make_shared<MediaLibraryKvStore>();

@@ -54,7 +54,7 @@ const std::string REAL_STORAGE_FILE = "/storage/media/100/local/files/Docs";
  * EnvConditions: NA
  * CaseDescription: EraseFromWatchMap
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_001, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_001, TestSize.Level1)
 {
     MtpFileObserver::EraseFromWatchMap(REAL_DOCUMENT_FILE);
     MtpFileObserver::isRunning_ = false;
@@ -71,7 +71,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_001, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: UpdateWatchMap
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_002, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_002, TestSize.Level1)
 {
     MtpFileObserver::UpdateWatchMap(REAL_DOCUMENT_FILE);
     MtpFileObserver::isRunning_ = false;
@@ -88,7 +88,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_002, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: DealWatchMap
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_003, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_003, TestSize.Level1)
 {
     inotify_event event;
     event.mask = IN_DELETE;
@@ -107,7 +107,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_003, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: DealWatchMap
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_004, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_004, TestSize.Level1)
 {
     inotify_event event;
     event.mask = IN_MOVED_TO;
@@ -127,7 +127,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_004, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: DealWatchMap
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_005, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_005, TestSize.Level1)
 {
     inotify_event event;
     event.mask = IN_MOVED_TO;
@@ -147,7 +147,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_005, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendEvent
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_006, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_006, TestSize.Level1)
 {
     inotify_event event;
     event.mask = IN_MOVED_TO;
@@ -167,7 +167,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_006, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendEvent
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_007, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_007, TestSize.Level1)
 {
     inotify_event event;
     event.mask = IN_MOVED_FROM;
@@ -187,7 +187,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_007, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendEvent
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_008, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_008, TestSize.Level1)
 {
     inotify_event event;
     event.mask = IN_CLOSE_WRITE;
@@ -207,7 +207,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_008, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendEvent
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_009, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_009, TestSize.Level1)
 {
     inotify_event event;
     event.mask = 0x400002C0;
@@ -227,7 +227,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_009, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendEvent
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0010, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0010, TestSize.Level1)
 {
     inotify_event event;
     event.mask = 0x000003C8;
@@ -247,7 +247,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0010, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendBattery
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0012, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0012, TestSize.Level1)
 {
     ContextSptr context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -264,7 +264,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0012, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: StartFileInotify
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0014, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0014, TestSize.Level1)
 {
     std::shared_ptr<MtpFileObserver> mtpFileObserver = make_shared<MtpFileObserver>();
     ASSERT_NE(mtpFileObserver, nullptr);
@@ -279,7 +279,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0014, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: WatchPathThread
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0015, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0015, TestSize.Level1)
 {
     MtpFileObserver::isRunning_ = false;
     ContextSptr context = make_shared<MtpOperationContext>();
@@ -295,7 +295,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0015, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: AddFileInotify
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0016, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0016, TestSize.Level1)
 {
     std::shared_ptr<MtpFileObserver> mtpFileObserver = make_shared<MtpFileObserver>();
     ASSERT_NE(mtpFileObserver, nullptr);
@@ -317,7 +317,7 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0016, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: EraseFromWatchMap
  */
-HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0017, TestSize.Level0)
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0017, TestSize.Level1)
 {
     std::shared_ptr<MtpFileObserver> mtpFileObserver = make_shared<MtpFileObserver>();
     ASSERT_NE(mtpFileObserver, nullptr);

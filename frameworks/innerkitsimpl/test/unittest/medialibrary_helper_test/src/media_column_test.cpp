@@ -35,7 +35,7 @@ void MediaColumnTest::TearDown(void) {}
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaColumnTest, MediaColumn_Test_001, TestSize.Level0)
+HWTEST_F(MediaColumnTest, MediaColumn_Test_001, TestSize.Level1)
 {
     std::string columnName = "";
     bool res = PhotoColumn::IsPhotoColumn(columnName);

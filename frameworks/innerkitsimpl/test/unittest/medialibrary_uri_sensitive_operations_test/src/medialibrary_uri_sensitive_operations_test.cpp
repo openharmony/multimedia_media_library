@@ -72,7 +72,6 @@ namespace OHOS {
 namespace Media {
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void CleanTestTables()
 {
@@ -204,7 +203,6 @@ void MediaLibraryUriSensitiveOperationsTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
 }
 
@@ -250,7 +248,7 @@ int TestInsert(DataShareValuesBucket &dataShareValue)
 /**
  * normal
  */
-HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -274,7 +272,7 @@ HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_te
 /**
  * extra column fail
  */
-HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -313,7 +311,7 @@ int TestDelete(OHOS::DataShare::DataSharePredicates &dataSharePredicate)
 /**
  * cancel a data.
  */
-HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_003");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -352,7 +350,7 @@ int TestBatchInsert(std::vector<DataShare::DataShareValuesBucket> &dataShareValu
 /**
  * batch insert two, and update
  */
-HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_004");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -403,7 +401,7 @@ HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_te
 /**
  * batch insert two no sensitiveType.
  */
-HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_005");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -469,7 +467,7 @@ static void GetDataShareValues(std::vector<DataShare::DataShareValuesBucket> &da
 /**
  * batch insert two, and update for tokenId
  */
-HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_tokenId_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_tokenId_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_tokenId_test_001");
     vector<string> inColumn;
@@ -517,7 +515,7 @@ HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_tokenId_test_
 /**
  * batch insert two no sensitiveType.
  */
-HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_tokenId_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryUriSensitiveOperationsTest, app_uri_sensitive_tokenId_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_tokenId_test_002");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");

@@ -225,7 +225,7 @@ void VideoCompositionCallbackImplTest::SetUp()
 
 void VideoCompositionCallbackImplTest::TearDown() {}
 
-HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_onProgress, TestSize.Level0)
+HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_onProgress, TestSize.Level1)
 {
     auto imp = make_shared<VideoCompositionCallbackImpl>();
     ASSERT_NE(imp, nullptr);
@@ -233,7 +233,7 @@ HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_onProgress, Tes
     imp->onProgress(11);
 }
 
-HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_CallStartComposite_Invalid_Path, TestSize.Level0)
+HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_CallStartComposite_Invalid_Path, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start VideoComposition_Test_CallStartComposite_Invalid_Path");
     string srcPatch;
@@ -247,7 +247,7 @@ HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_CallStartCompos
     MEDIA_INFO_LOG("end VideoComposition_Test_CallStartComposite_Invalid_Path");
 }
 
-HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_AddCompositionTask, TestSize.Level0)
+HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_AddCompositionTask, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start VideoComposition_Test_AddCompositionTask");
 

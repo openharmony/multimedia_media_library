@@ -53,7 +53,6 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace Media {
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static const int32_t SLEEP_FOR_SECONDS = 5;
 static const int32_t SLEEP_FOR_FIFTY_MS = 50;
 static const std::vector<std::string> EXTENSION_URI_LISTS = {
     // API9 compat photo operations constants
@@ -329,7 +328,6 @@ void MediaDatashareExtAbilityTest::TearDownTestCase(void)
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    this_thread::sleep_for(chrono::seconds(SLEEP_FOR_SECONDS));
     MEDIA_INFO_LOG("Clean is finish");
     MEDIA_ERR_LOG("TearDownTestCase finish");
 }
@@ -376,7 +374,7 @@ void InsertAsset(PhotoResult &result)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, Extension_Insert_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, Extension_Insert_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Extension_Insert_001::Start");
     auto extension = Init();
@@ -394,7 +392,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, Extension_Insert_001, TestSize.Level0)
     EXPECT_EQ((retVal > 0), true);
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, Extension_Update_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, Extension_Update_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Extension_Update_001::Start");
     auto extension = Init();
@@ -407,7 +405,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, Extension_Update_001, TestSize.Level0)
     EXPECT_EQ((ret > 0), false);
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, Extension_Update_002, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, Extension_Update_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Extension_Update_002::Start");
     auto extension = Init();
@@ -427,7 +425,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, Extension_Update_002, TestSize.Level0)
     EXPECT_EQ(ret, E_PERMISSION_DENIED);
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, Extension_Delete_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, Extension_Delete_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Extension_Delete_001::Start");
     auto extension = Init();
@@ -443,7 +441,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, Extension_Delete_001, TestSize.Level0)
     EXPECT_EQ(ret, E_PERMISSION_DENIED);
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, Extension_Query_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, Extension_Query_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Extension_Query_001::Start");
     auto extension = Init();
@@ -462,7 +460,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, Extension_Query_001, TestSize.Level0)
     EXPECT_EQ(result, nullptr);
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, Extension_GetType_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, Extension_GetType_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Extension_GetType_001::Start");
     auto extension = Init();
@@ -473,7 +471,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, Extension_GetType_001, TestSize.Level0)
     EXPECT_EQ(result, "");
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, Extension_RegisterObserver_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, Extension_RegisterObserver_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Extension_RegisterObserver_001::Start");
     auto extension = Init();
@@ -488,7 +486,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, Extension_RegisterObserver_001, TestSize.
     EXPECT_EQ(dataObserver, nullptr);
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, Extension_NotifyChange_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, Extension_NotifyChange_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Extension_NotifyChange_001::Start");
     auto extension = Init();
@@ -502,7 +500,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, Extension_NotifyChange_001, TestSize.Leve
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Update_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Update_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DataManager_Update_001::Start");
     struct PhotoResult photoAsset = {-1, static_cast<int32_t>(MEDIA_TYPE_IMAGE), "UpdateTest_002.jpg", "Pictures/"};
@@ -521,7 +519,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Update_001, TestSize.Level0)
     MEDIA_INFO_LOG("DataManager_Update_001::End");
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Query_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Query_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DataManager_Query_001::Start");
     int err = 0;
@@ -545,7 +543,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Query_001, TestSize.Level0)
     MEDIA_INFO_LOG("DataManager_Query_001::End");
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Delete_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Delete_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DataManager_Delete_001::Start");
     vector<string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_NAME};
@@ -564,7 +562,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, DataManager_Delete_001, TestSize.Level0)
     MEDIA_INFO_LOG("DataManager_Delete_001::End");
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, DataManager_GetType_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, DataManager_GetType_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DataManager_GetType_001::Start");
     string result;
@@ -577,7 +575,7 @@ HWTEST_F(MediaDatashareExtAbilityTest, DataManager_GetType_001, TestSize.Level0)
     MEDIA_INFO_LOG("DataManager_GetType_001::End");
 }
 
-HWTEST_F(MediaDatashareExtAbilityTest, DataManager_RegisterObserver_001, TestSize.Level0)
+HWTEST_F(MediaDatashareExtAbilityTest, DataManager_RegisterObserver_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DataManager_RegisterObserver_001::Start");
     sptr<AAFwk::IDataAbilityObserver> dataObserver;

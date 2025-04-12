@@ -39,7 +39,7 @@ void MediaLibraryHelperUnitTest::TearDown(void) {}
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_SetGet_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_SetGet_Test_001, TestSize.Level1)
 {
     unique_ptr<AlbumAsset> albumAsset = make_unique<AlbumAsset>();
 
