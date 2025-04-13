@@ -4416,6 +4416,49 @@ static void UpgradeAPI18(RdbStore &store, unordered_map<string, bool> &photoColu
     MEDIA_INFO_LOG("End VERSION_ADD_FOREGROUND_ANALYSIS");
 }
 
+static void AddAssetAlbumOperationTable(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_asset_and_album_operation",
+        CREATE_TAB_ASSET_ALBUM_OPERATION,
+        "DROP TABLE IF EXISTS operation_asset_insert_trigger",
+        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        "DROP TABLE IF EXISTS operation_asset_delete_trigger",
+        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_asset_update_trigger",
+        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_insert_trigger",
+        CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_delete_trigger",
+        CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_update_trigger",
+        CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+    };
+    ExecSqls(executeSqlStrs, store);
+    MEDIA_INFO_LOG("create asset and album operation table end");
+}
+
+static void AddAssetAlbumOperationTableForSync(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        CREATE_TAB_ASSET_ALBUM_OPERATION,
+        "DROP TABLE IF EXISTS operation_asset_insert_trigger",
+        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        "DROP TABLE IF EXISTS operation_asset_delete_trigger",
+        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_asset_update_trigger",
+        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_insert_trigger",
+        CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_delete_trigger",
+        CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_update_trigger",
+        CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+    };
+    ExecSqls(executeSqlStrs, store);
+    MEDIA_INFO_LOG("create asset and album operation table sync end");
+}
+
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -4428,6 +4471,10 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
         CheckIfPhotoColumnExists(store, photoColumnExists);
         UpgradeFromAPI15(store, photoColumnExists);
         UpgradeAPI18(store, photoColumnExists);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION_FOR_SYNC) {
+        AddAssetAlbumOperationTableForSync(store);
     }
 }
 
@@ -4474,6 +4521,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_HIGHLIGHT_MOVING_PHOTO) {
         AddMovingPhotoRelatedData(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
+        AddAssetAlbumOperationTable(store);
     }
 
     if (oldVersion < VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME) {
