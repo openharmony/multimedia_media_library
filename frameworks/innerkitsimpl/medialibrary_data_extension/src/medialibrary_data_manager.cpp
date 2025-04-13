@@ -436,35 +436,6 @@ static void AddAnalysisPhotoMapAssetIndex(const shared_ptr<MediaLibraryRdbStore>
     MEDIA_INFO_LOG("end map_asset index for ANALYSIS_PHOTO_MAP");
 }
 
-void AddAssetAlbumOperationTable(const shared_ptr<MediaLibraryRdbStore>& store)
-{
-    const vector<string> executeSqlStrs = {
-        CREATE_TAB_ASSET_ALBUM_OPERATION,
-        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
-        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
-        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
-        CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
-        CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
-        CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
-    };
-    MEDIA_INFO_LOG("start create asset and album operation table");
-    for (auto sql : executeSqlStrs) {
-        int ret = store->ExecuteSql(sql);
-        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
-            "AddAssetAlbumOperationTable failed: execute sql %{private}s failed", sql.c_str());
-        MEDIA_INFO_LOG("Execute sql %{private}s success", sql.c_str());
-    }
-    MEDIA_INFO_LOG("end create asset and album operation table");
-}
-
-void CreateOperationAlbumUpdateTrigger(const shared_ptr<MediaLibraryRdbStore>& store)
-{
-    MEDIA_INFO_LOG("start create operation_album_update_trigger");
-    int ret = store->ExecuteSql(CREATE_OPERATION_ALBUM_UPDATE_TRIGGER);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "CreateOperationAlbumUpdateTrigger failed, execute sql failed");
-    MEDIA_INFO_LOG("end create operation_album_update_trigger");
-}
-
 void HandleUpgradeRdbAsyncPart2(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -510,16 +481,6 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     if (oldVersion < VERSION_ANALYZE_PHOTOS) {
         MediaLibraryRdbUtils::AnalyzePhotosData();
         rdbStore->SetOldVersion(VERSION_ANALYZE_PHOTOS);
-    }
-
-    if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
-        AddAssetAlbumOperationTable(rdbStore);
-        rdbStore->SetOldVersion(VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION);
-    }
-
-    if (oldVersion < VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER) {
-        CreateOperationAlbumUpdateTrigger(rdbStore);
-        rdbStore->SetOldVersion(VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER);
     }
 
     if (oldVersion < VERSION_ADD_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX) {
