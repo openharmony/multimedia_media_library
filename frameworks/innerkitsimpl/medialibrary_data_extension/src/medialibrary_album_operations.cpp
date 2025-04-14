@@ -711,8 +711,8 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " >= " +
             to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" + USER_DISPLAY_LEVEL + " != 1 OR " +
             USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL + " != 3 OR " + USER_DISPLAY_LEVEL +
-            " IS NULL) " + " AND NOT (" + whereClauseAlbumName + ")))" +
-            " AND " + ALBUM_ID + " NOT IN " + whereClauseRelatedMe +
+            " IS NULL) " + " AND NOT (" + whereClauseAlbumName + ") AND (" +
+            ALBUM_ID + " NOT IN " + whereClauseRelatedMe + ")))" +
             " GROUP BY " + GROUP_TAG +
             " ORDER BY CASE WHEN " + IS_ME + " != 0 THEN 0 ELSE 1 END, CASE WHEN " +
             RENAME_OPERATION + " != 0 THEN 0 ELSE 1 END, " + COUNT + " DESC";
