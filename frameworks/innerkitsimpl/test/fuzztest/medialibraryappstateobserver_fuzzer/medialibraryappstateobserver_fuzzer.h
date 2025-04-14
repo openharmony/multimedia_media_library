@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
- #ifndef NOTIFYCHANGE_FUZZER_H
- #define NOTIFYCHANGE_FUZZER_H
- 
- #define FUZZ_PROJECT_NAME "medialibraryappstateobserver_fuzzer"
- 
- #endif
- 
+#ifndef NOTIFYCHANGE_FUZZER_H
+#define NOTIFYCHANGE_FUZZER_H
+
+#define FUZZ_PROJECT_NAME "medialibraryappstateobserver_fuzzer"
+
+#endif
