@@ -227,6 +227,9 @@ constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
 MediaLibraryNapi::MediaLibraryNapi()
     : env_(nullptr) {}
 
+MediaLibraryNapi::MediaLibraryNapi(int32_t userId)
+    : userId_(userId) {}
+
 MediaLibraryNapi::~MediaLibraryNapi() = default;
 
 void MediaLibraryNapi::MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
@@ -486,11 +489,11 @@ static int32_t ParseUserIdFormCbInfo(napi_env env, napi_callback_info info)
 
 static int32_t GetUserIdFromContext(MediaLibraryAsyncContext *context)
 {
-    MediaLibraryAsyncContext* contextLocal = context;
-    if (contextLocal == nullptr || contextLocal->objectInfo == nullptr) {
+    if (context == nullptr || context->objectInfo == nullptr) {
         return -1;
     }
-    return contextLocal->objectInfo->GetUserId();
+    MediaLibraryNapi* object = new MediaLibraryNapi(context->objectInfo->GetUserId());
+    return object->GetUserId();
 }
 
 // Constructor callback
