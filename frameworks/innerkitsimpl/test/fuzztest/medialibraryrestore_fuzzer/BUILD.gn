@@ -21,6 +21,7 @@ ohos_fuzztest("MediaLibraryRestoreFuzzTest") {
   include_dirs = [
     ".",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
     "../../../../../../../../distributeddatamgr/relational_store/interfaces/inner_api/rdb/include",
@@ -29,6 +30,7 @@ ohos_fuzztest("MediaLibraryRestoreFuzzTest") {
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./medialibraryrestore_fuzzer.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/event_handler",
   ]
 
   deps = [
