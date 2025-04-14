@@ -160,9 +160,7 @@ static int32_t GetPortraitAlbumIds(const string &albumId, vector<string> &portra
 int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValuesBucket> &values)
 {
     MEDIA_INFO_LOG("Add highlight assets start");
-    if (values.empty()) {
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET(!values.empty(), E_DB_FAIL);
 
     bool isValid = false;
     int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
@@ -272,9 +270,7 @@ int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<str
             MEDIA_ERR_LOG("RdbStore is nullptr");
         } else {
             int32_t updateHighlight = MediaLibraryRdbUtils::UpdateHighlightPlayInfo(rdbStore, albumId);
-            if (updateHighlight < 0) {
-                MEDIA_ERR_LOG("Update highlight playinfo fail");
-            }
+            CHECK_AND_PRINT_LOG(updateHighlight >= 0, "Update highlight playinfo fail");
         }
     }
     vector<string> updateAlbumIds;
@@ -377,9 +373,8 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
         int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-        if (trashAlbumId <= 0) {
-            MEDIA_ERR_LOG("Trash album id error: %{public}d, trash album notification unavailable", trashAlbumId);
-        }
+        CHECK_AND_PRINT_LOG(trashAlbumId > 0,
+            "Trash album id error: %{public}d, trash album notification unavailable", trashAlbumId);
         for (size_t i = 0; i < uriWhereArgs.size(); i++) {
             watch->Notify(MediaFileUtils::Encode(uriWhereArgs[i]), NotifyType::NOTIFY_REMOVE);
             watch->Notify(MediaFileUtils::Encode(uriWhereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
@@ -455,9 +450,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(cons
     string tagId;
     int32_t isRemoved;
     if (IsQueryGroupPhotoAlbumAssets(albumId, tagId, isRemoved)) {
-        if (isRemoved == ALBUM_IS_REMOVED) {
-            return nullptr;
-        }
+        CHECK_AND_RETURN_RET(isRemoved != ALBUM_IS_REMOVED, nullptr);
         return QueryGroupPhotoAlbumAssets(albumId, tagId, columns);
     }
     return MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);

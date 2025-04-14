@@ -582,9 +582,7 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
 {
     string reordererTagId;
     vector<string> splitResult;
-    if (target.empty()) {
-        return reordererTagId;
-    }
+    CHECK_AND_RETURN_RET(!target.empty(), reordererTagId);
     string pattern = ",";
     string strs = target + pattern;
     size_t pos = strs.find(pattern);

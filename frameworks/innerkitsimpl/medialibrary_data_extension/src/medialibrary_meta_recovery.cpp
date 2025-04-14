@@ -355,23 +355,14 @@ int32_t MediaLibraryMetaRecovery::AlbumRecovery(const string &path)
 
     do {
         ret = access(path.c_str(), F_OK | R_OK);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("file is not exist or no read access, path=%{public}s", DfxUtils::GetSafePath(path).c_str());
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK,
+            "file is not exist or no read access, path=%{public}s", DfxUtils::GetSafePath(path).c_str());
 
         ret = ReadPhotoAlbumFromFile(path, vecPhotoAlbum);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("read album file failed, errCode = %{public}d", ret);
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "read album file failed, errCode = %{public}d", ret);
 
         ret = InsertMetadataInDb(vecPhotoAlbum);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("AlbumRecovery: insert album failed, errCode = %{public}d", ret);
-            break;
-        }
-
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "AlbumRecovery: insert album failed, errCode = %{public}d", ret);
         MEDIA_INFO_LOG("AlbumRecovery: photo album is recovered successful");
     } while (false);
 
@@ -1128,10 +1119,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
 int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_ptr<PhotoAlbum>> &vecPhotoAlbum)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetRdbStore failed, return nullptr)");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "GetRdbStore failed, return nullptr)");
 
     for (auto iter : vecPhotoAlbum) {
         MEDIA_INFO_LOG("InsertMetadataInDb: album name = %{private}s", iter->GetAlbumName().c_str());
