@@ -101,6 +101,7 @@ ani_object MovingPhotoAni::Constructor(ani_env *env, [[maybe_unused]] ani_class 
     ani_object movingPhotoObject;
     if (ANI_OK != env->Object_New(cls, ctor, &movingPhotoObject, reinterpret_cast<ani_long>(obj.release()))) {
         MEDIA_ERR_LOG("New MovingPhoto Fail");
+        return nullptr;
     }
     return movingPhotoObject;
 }

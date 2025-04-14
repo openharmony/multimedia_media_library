@@ -1303,7 +1303,7 @@ export namespace photoAccessHelper {
   }
 
   export interface PhotoAccessHelper {
-    getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset>>): void;
+    getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset> | undefined>): void;
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
     getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     getFileAssetsInfo(options: FetchOptions): Array<FileAssetInfo>;
@@ -1358,7 +1358,27 @@ export namespace photoAccessHelper {
       }
     }
 
-    getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset>>): void {}
+    getAssets(options: FetchOptions, callback: AsyncCallback<FetchResult<PhotoAsset> | undefined>): void {
+      let cb = (): MediaLibraryAniError | FetchResult<PhotoAsset> => {
+        try {
+          return this.getAssetsInner(options);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as FetchResult<PhotoAsset>);
+          }
+        }
+      });
+    }
 
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void,
