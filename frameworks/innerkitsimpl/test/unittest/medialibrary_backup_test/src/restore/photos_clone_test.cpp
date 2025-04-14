@@ -236,6 +236,15 @@ HWTEST_F(PhotosCloneTest, GenerateUuid_Test, TestSize.Level0)
     MEDIA_INFO_LOG("GenerateUuid_Test end");
 }
 
+HWTEST_F(PhotosCloneTest, FindDuplicateBurstKey_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("FindDuplicateBurstKey_Test start");
+    std::vector<PhotosDao::PhotosRowData> duplicateBurstKeyList = PhotosClone().FindDuplicateBurstKey();
+    uint64_t number = static_cast<uint64_t>(duplicateBurstKeyList.size());
+    EXPECT_EQ(number, 0);
+    MEDIA_INFO_LOG("FindDuplicateBurstKey_Test end");
+}
+
 HWTEST_F(PhotosCloneTest, FindSourcePath_Test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("FindSourcePath_Test start");
