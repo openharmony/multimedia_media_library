@@ -97,7 +97,7 @@ public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
     EXPORT static void CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
-    EXPORT static bool DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
+    EXPORT static bool DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static void CreateLcd(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);
@@ -111,10 +111,10 @@ public:
     EXPORT static void AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
         ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId = 0);
     EXPORT static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
-    EXPORT static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
-    EXPORT static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
+    EXPORT static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
-    EXPORT static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
+    EXPORT static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoCreateAstcMthAndYear(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
