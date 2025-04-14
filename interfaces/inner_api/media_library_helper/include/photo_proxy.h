@@ -62,6 +62,10 @@ public:
     virtual double GetLongitude() = 0;
     virtual int32_t GetShootingMode() = 0;
     virtual uint32_t GetCloudImageEnhanceFlag() = 0;
+    virtual int32_t GetStageVideoTaskStatus() // 动态照片是否需要下发分段式视频任务，返回状态枚举值
+    {
+        return 0;
+    }
 };
 } // Media
 } // OHOS

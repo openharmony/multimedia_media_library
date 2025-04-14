@@ -900,6 +900,21 @@ static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues, 
     outValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
 }
 
+static void ExtractHandlePhotoInfo(MediaLibraryCommand &cmd,
+    ValuesBucket &outValues, const FileAsset &fileAsset)
+{
+    ValueObject value;
+
+    int32_t stageVideoTaskStatus = UNKNOWN_VALUE;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::STAGE_VIDEO_TASK_STATUS, value)) {
+        value.GetInt(stageVideoTaskStatus);
+    }
+    if (stageVideoTaskStatus != UNKNOWN_VALUE && \
+        fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        outValues.PutInt(PhotoColumn::STAGE_VIDEO_TASK_STATUS, stageVideoTaskStatus);
+    }
+}
+
 static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, const FileAsset &fileAsset)
 {
     if (!PermissionUtils::IsNativeSAApp()) {
@@ -907,8 +922,8 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
         return;
     }
 
-    bool isTemp = 0;
     ValueObject value;
+    bool isTemp = 0;
     if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_IS_TEMP, value)) {
         value.GetBool(isTemp);
     }
@@ -925,10 +940,6 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
     // quality、photoId、dirty for burst has been handled in HandleBurstPhoto
     if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
         return;
-    }
-    if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        outValues.PutInt(PhotoColumn::STAGE_VIDEO_TASK_STATUS,
-            static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE));
     }
 
     int32_t photoQuality = UNKNOWN_VALUE;
@@ -956,6 +967,8 @@ static void HandlePhotoInfo(MediaLibraryCommand &cmd, ValuesBucket &outValues, c
         MEDIA_INFO_LOG("set ce_available: %{public}d", ceAvailable);
     }
     outValues.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+
+    ExtractHandlePhotoInfo(cmd, outValues, fileAsset);
 }
 
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
