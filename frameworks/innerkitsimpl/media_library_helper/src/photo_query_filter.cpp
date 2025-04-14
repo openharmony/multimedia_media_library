@@ -67,7 +67,11 @@ std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Config& 
         whereClause += " AND hidden = " + string(config.hiddenConfig == ConfigType::INCLUDE ? "1" : "0");
     }
     if (config.trashedConfig != ConfigType::IGNORE) {
-        whereClause += " AND date_trashed = " + string(config.trashedConfig == ConfigType::INCLUDE ? "1" : "0");
+        if (config.trashedConfig == ConfigType::INCLUDE) {
+            whereClause += " AND date_trashed > 0";
+        } else {
+            whereClause += " AND date_trashed = 0";
+        }
     }
     if (config.burstCoverOnly != ConfigType::IGNORE) {
         whereClause += " AND burst_cover_level = " +
@@ -120,7 +124,11 @@ void PhotoQueryFilter::ModifyPredicate(const PhotoQueryFilter::Config& config, N
         predicates.EqualTo("hidden", config.hiddenConfig == ConfigType::INCLUDE ? 1 : 0);
     }
     if (config.trashedConfig != ConfigType::IGNORE) {
-        predicates.EqualTo("date_trashed", config.trashedConfig == ConfigType::INCLUDE ? 1 : 0);
+        if (config.trashedConfig == ConfigType::INCLUDE) {
+            predicates.GreaterThan("date_trashed", 0);
+        } else {
+            predicates.EqualTo("date_trashed", 0);
+        }
     }
     if (config.burstCoverOnly != ConfigType::IGNORE) {
         predicates.EqualTo("burst_cover_level", config.burstCoverOnly == ConfigType::INCLUDE ? 1 : 0);
