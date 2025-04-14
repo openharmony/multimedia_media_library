@@ -919,6 +919,21 @@ static napi_value initDeleteRequest(napi_env env, MediaAssetChangeRequestAsyncCo
     RETURN_NAPI_TRUE(env);
 }
 
+bool StrIsNumber(const string &str)
+{
+    if (str.empty()) {
+        NAPI_ERR_LOG("StrIsNumber input is empty");
+        return false;
+    }
+
+    for (char const &c : str) {
+        if (isdigit(c) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static napi_value ParseArgsDeleteAssets(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& context)
 {
@@ -949,7 +964,8 @@ static napi_value ParseArgsDeleteAssets(
 
     CHECK_COND_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty array");
     for (const auto& uri : uris) {
-        context->userId_ = stoi(MediaLibraryNapiUtils::GetUserIdFromUri(uri));
+        std::string userId = MediaLibraryNapiUtils::GetUserIdFromUri(uri);
+        context->userId_ = StrIsNumber(userId) ? stoi(userId) : -1;
         CHECK_COND(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI);
     }
 
