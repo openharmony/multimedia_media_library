@@ -71,10 +71,10 @@ static inline AppExecFwk::ExtensionAbilityType FuzzExtensionAbilityType(const ui
 {
     int32_t value = FuzzInt32(data, size);
     if (value >= static_cast<int32_t>(AppExecFwk::ExtensionAbilityType::FORM) &&
-        value <= static_cast<int32_t>(AppExecFwk::ExtensionAbilityType:: SYSPICKER_SHARE)) {
+        value <= static_cast<int32_t>(AppExecFwk::ExtensionAbilityType::SYSPICKER_SHARE)) {
         return static_cast<AppExecFwk::ExtensionAbilityType>(value);
     }
-    return  AppExecFwk::ExtensionAbilityType:: SYSPICKER_SHARE;
+    return  AppExecFwk::ExtensionAbilityType::SYSPICKER_SHARE;
 }
 
 static AppExecFwk::AppStateData FuzzAppStateData(const uint8_t* data, size_t size)
