@@ -1154,21 +1154,16 @@ static vector<string> QueryAlbumId(const shared_ptr<MediaLibraryRdbStore> rdbSto
         if (fileId.size() > 0) {
             idArgs.append("'").append(fileId).append("'").append(",");
         }
-        if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
-            continue;
-        }
-        if (idArgs.size() == 0) {
-            continue;
-        }
+        bool cond = ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1);
+        CHECK_AND_CONTINUE(!cond);
+        CHECK_AND_CONTINUE(idArgs.size() != 0);
+
         idArgs = idArgs.substr(0, idArgs.size() - 1);
         const string sql = ""
             "SELECT DISTINCT owner_album_id FROM Photos WHERE "
             "file_id IN ( " + idArgs + " ); ";
         auto resultSet = rdbStore->QueryByStep(sql);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Failed to Query AlbumId");
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(resultSet != nullptr, "Failed to Query AlbumId");
         while (resultSet->GoToNextRow() == E_OK) {
             albumIds.push_back(to_string(GetIntValFromColumn(resultSet, 0)));
         }
@@ -1499,6 +1494,7 @@ int32_t MediaLibraryRdbUtils::UpdateTrashedAssetOnAlbum(const shared_ptr<MediaLi
                 to_string(fileId), extraUri);
             fileAssetsUri.push_back(uri);
         }
+
         newWhereIdArgs.push_back(albumId);
         if (fileAssetsUri.empty()) {
             continue;
@@ -1566,9 +1562,7 @@ int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRd
     for (const auto &value : values) {
         bool isValidNew = false;
         std::string assetUri = value.Get(MediaColumn::MEDIA_ID, isValidNew);
-        if (!MediaFileUtils::StartsWith(assetUri, PhotoColumn::PHOTO_URI_PREFIX)) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(MediaFileUtils::StartsWith(assetUri, PhotoColumn::PHOTO_URI_PREFIX));
         auto photoId = std::stoi(MediaFileUri::GetPhotoId(assetUri));
         if (CopyAssetIfNeed(photoId, albumId, rdbStore, updateIds)) {
             updateRows++;
@@ -1576,10 +1570,9 @@ int32_t MediaLibraryRdbUtils::UpdateOwnerAlbumId(const shared_ptr<MediaLibraryRd
         }
         whereIdArgs.push_back(MediaFileUri::GetPhotoId(assetUri));
     }
-    if (whereIdArgs.empty()) {
-        MEDIA_INFO_LOG("add assets: no need copy assets is 0 for update owner album id");
-        return updateRows;
-    }
+    CHECK_AND_RETURN_RET_INFO_LOG(!whereIdArgs.empty(), updateRows,
+        "add assets: no need copy assets is 0 for update owner album id");
+
     RdbPredicates updatePredicates(PhotoColumn::PHOTOS_TABLE);
     updatePredicates.In(MediaColumn::MEDIA_ID, whereIdArgs);
     ValuesBucket updateValues;
@@ -1847,10 +1840,8 @@ static void UpdateSourceAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> 
 void MediaLibraryRdbUtils::UpdateCommonAlbumByUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     const vector<string> &uris, bool shouldNotify)
 {
-    if (uris.size() == 0) {
-        // it will be update all later
-        return;
-    }
+    // it will be update all later
+    CHECK_AND_RETURN(uris.size() != 0);
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCommonAlbumByUri");
     vector<string> albumIds = QueryAlbumId(rdbStore, uris);
@@ -2097,11 +2088,9 @@ static void GetSystemAlbumByUris(const shared_ptr<MediaLibraryRdbStore> rdbStore
             "Max(" + MediaColumn::MEDIA_IS_FAV + ")",
             "Max(" + PhotoColumn::PHOTO_STRONG_ASSOCIATION + ")",
         };
+
         auto resultSet = rdbStore->Query(predicates, columns);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Failed to query Systemalbum info!");
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(resultSet != nullptr, "Failed to query Systemalbum info!");
         while (resultSet->GoToNextRow() == E_OK) {
             int32_t hidden = GetIntValFromColumn(resultSet, 0);
             AddSystemAlbum(systemAlbum, resultSet);
@@ -2179,8 +2168,8 @@ static int32_t UpdateAlbumReplacedSignal(const shared_ptr<MediaLibraryRdbStore> 
             insertRefreshTableSql += "(" + albumIdVector[i] + ");";
         }
     }
-    MEDIA_DEBUG_LOG("output insertRefreshTableSql:%{public}s", insertRefreshTableSql.c_str());
 
+    MEDIA_DEBUG_LOG("output insertRefreshTableSql:%{public}s", insertRefreshTableSql.c_str());
     int32_t ret = rdbStore->ExecuteSql(insertRefreshTableSql);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "Can not insert refreshed table, ret:%{public}d", ret);
@@ -2205,8 +2194,8 @@ static int32_t UpdateBussinessRecord(const shared_ptr<MediaLibraryRdbStore> rdbS
                 updateValue[i].value + "');";
         }
     }
-    MEDIA_DEBUG_LOG("output insertTableSql:%{public}s", insertTableSql.c_str());
 
+    MEDIA_DEBUG_LOG("output insertTableSql:%{public}s", insertTableSql.c_str());
     int32_t ret = rdbStore->ExecuteSql(insertTableSql);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR,
         "Can not insert bussinessRecord table, ret:%{public}d", ret);
@@ -2334,10 +2323,9 @@ int RefreshPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     ret = GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, isUpdateAllAnalysis);
     DeleteAllAlbumId(rdbStore);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "failed to get analysis album id from refresh album");
-    if (systeAlbums.empty() && analysisAlbums.empty()) {
-        MEDIA_INFO_LOG("all album are empty");
-        return E_EMPTY_ALBUM_ID;
-    }
+    bool cond = (systeAlbums.empty() && analysisAlbums.empty());
+    CHECK_AND_RETURN_RET_INFO_LOG(!cond, E_EMPTY_ALBUM_ID, "all album are empty");
+
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     ret = RefreshAlbums(rdbStore, systeAlbums, refreshProcessHandler);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
@@ -2840,10 +2828,7 @@ void MediaLibraryRdbUtils::TransformAppId2TokenId(const shared_ptr<MediaLibraryR
 
     std::map<std::string, int64_t> tokenIdMap = QueryTokenIdMap(resultSet);
     resultSet->Close();
-    if (tokenIdMap.size() == 0) {
-        MEDIA_WARN_LOG("TransformAppId2TokenId tokenIdMap empty");
-        return;
-    }
+    CHECK_AND_RETURN_WARN_LOG(tokenIdMap.size() != 0, "TransformAppId2TokenId tokenIdMap empty");
     int32_t successCount = 0;
     for (auto &pair : tokenIdMap) {
         NativeRdb::RdbPredicates rdbPredicate(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);

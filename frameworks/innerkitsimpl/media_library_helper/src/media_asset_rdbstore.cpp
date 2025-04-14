@@ -224,19 +224,14 @@ void AddQueryFilter(AbsRdbPredicates &predicates)
     string filters;
     for (auto &t : joinTables) {
         string filter = GetQueryFilter(t);
-        if (filter.empty()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(!filter.empty());
         if (filters.empty()) {
             filters += filter;
         } else {
             filters += " AND " + filter;
         }
     }
-    if (filters.empty()) {
-        return;
-    }
-
+    CHECK_AND_RETURN(!filters.empty());
     /* rebuild */
     string queryCondition = predicates.GetWhereClause();
     MEDIA_DEBUG_LOG("queryCondition: %{public}s", queryCondition.c_str());
@@ -371,22 +366,18 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
         int columnIndex = 0;
         int64_t dateTakenTime = 0;
         int fileId = 0;
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) != NativeRdb::E_OK ||
-            resultSet->GetLong(columnIndex, dateTakenTime) != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Fail to get dateTaken");
-            return NativeRdb::E_ERROR;
-        }
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) != NativeRdb::E_OK ||
-            resultSet->GetInt(columnIndex, fileId) != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Fail to get fileId");
-            return NativeRdb::E_ERROR;
-        }
+        bool cond = (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) != NativeRdb::E_OK ||
+            resultSet->GetLong(columnIndex, dateTakenTime) != NativeRdb::E_OK);
+        CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR, "Fail to get dateTaken");
+
+        cond = (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) != NativeRdb::E_OK ||
+            resultSet->GetInt(columnIndex, fileId) != NativeRdb::E_OK);
+        CHECK_AND_RETURN_RET_LOG(!cond,  NativeRdb::E_ERROR, "Fail to get fileId");
 
         std::string timeId;
-        if (!MediaFileUtils::GenerateKvStoreKey(to_string(fileId), to_string(dateTakenTime), timeId)) {
-            MEDIA_ERR_LOG("Fail to generate kvStore key, fileId:%{public}d", fileId);
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::GenerateKvStoreKey(to_string(fileId),
+            to_string(dateTakenTime), timeId),
+            "Fail to generate kvStore key, fileId:%{public}d", fileId);
         batchKeys.emplace_back(std::move(timeId));
     }
     return NativeRdb::E_OK;

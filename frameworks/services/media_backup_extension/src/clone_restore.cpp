@@ -708,9 +708,7 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetCloudInsertValues(int32_t scene
     MEDIA_INFO_LOG("singleClone GetCloudInsertValues: %{public}u", fileInfos.size());
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i]));
         NativeRdb::ValuesBucket value = GetCloudInsertValue(fileInfos[i], fileInfos[i].cloudPath, sourceType);
         fileInfos[i].isNew = true;
         values.emplace_back(value);
@@ -1132,7 +1130,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, fileInfo.packageName);
     values.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, fileInfo.bundleName);
     if (fileInfo.packageName.empty() && fileInfo.bundleName.empty()) {
-        // package_name and owner_package are empty, clear owner_appid
+    // package_name and owner_package are empty, clear owner_appid
         values.PutString(MediaColumn::MEDIA_OWNER_APPID, "");
     }
     values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);

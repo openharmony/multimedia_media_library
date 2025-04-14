@@ -1122,10 +1122,8 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
 
     ValuesBucket rdbValues;
     int32_t err = PrepareUpdateValues(values, rdbValues);
-    if (err < 0 && !needRename) {
-        MEDIA_ERR_LOG("No values to update");
-        return err;
-    }
+    bool cond = (err < 0 && !needRename);
+    CHECK_AND_RETURN_RET_LOG(!cond, err, "No values to update");
     // Only user generic albums can be updated
     rdbPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
@@ -2404,24 +2402,18 @@ int32_t SetHighlightSubtitle(const ValuesBucket &values, const DataSharePredicat
     MEDIA_INFO_LOG("Start set highlight subtitle");
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
-    if (whereArgs.size() == 0) {
-        MEDIA_ERR_LOG("no target highlight album id");
-        return E_INVALID_VALUES;
-    }
+    CHECK_AND_RETURN_RET_LOG(whereArgs.size() != 0, E_INVALID_VALUES, "no target highlight album id");
+
     string highlightAlbumId = whereArgs[0];
     CHECK_AND_RETURN_RET_LOG(!highlightAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(highlightAlbumId),
         E_INVALID_VALUES, "highlight album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr! failed update for set highlight album name");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
+        "uniStore is nullptr! failed update for set highlight album name");
+
     string albumSubtitle;
     int err = GetStringVal(values, SUB_TITLE, albumSubtitle);
-    if (err < 0) {
-        MEDIA_ERR_LOG("invalid album name");
-        return E_INVALID_VALUES;
-    }
+    CHECK_AND_RETURN_RET_LOG(err >= 0, E_INVALID_VALUES, "invalid album name");
 
     MEDIA_INFO_LOG("New highlight subtitle is: %{public}s, album id is %{public}s",
         albumSubtitle.c_str(), highlightAlbumId.c_str());

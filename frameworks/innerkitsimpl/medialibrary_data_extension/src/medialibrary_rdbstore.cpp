@@ -491,10 +491,8 @@ void MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(const shared_ptr<MediaLibra
 
 void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
-    if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return;
-    }
+    bool cond = (rdbStore == nullptr || !rdbStore->CheckRdbStore());
+    CHECK_AND_RETURN_LOG(!cond, "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
 
     const vector<string> sqls = {
         PhotoColumn::DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
@@ -3330,10 +3328,7 @@ static void CheckIfPhotoColumnExists(RdbStore &store, unordered_map<string, bool
     std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
     std::vector<NativeRdb::ValueObject> args;
     auto resultSet = store.QuerySql(checkSql, args);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query %{private}s", checkSql.c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query %{private}s", checkSql.c_str());
 
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string name;
@@ -5099,13 +5094,8 @@ void MediaLibraryRdbStore::WalCheckPoint()
         return;
     }
     ssize_t size = fileStat.st_size;
-    if (size < 0) {
-        MEDIA_ERR_LOG("Invalid size for wal_checkpoint, size: %{public}zd", size);
-        return;
-    }
-    if (size <= RDB_CHECK_WAL_SIZE) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(size >= 0, "Invalid size for wal_checkpoint, size: %{public}zd", size);
+    CHECK_AND_RETURN(size > RDB_CHECK_WAL_SIZE);
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "wal_checkpoint rdbStore is nullptr!");

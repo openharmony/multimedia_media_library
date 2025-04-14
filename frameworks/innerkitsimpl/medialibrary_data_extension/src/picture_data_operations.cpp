@@ -312,10 +312,8 @@ bool PictureDataOperations::SavePicture(const std::string& imageId,
     MEDIA_INFO_LOG("enter photoId: %{public}s, isLowQualityPicture: %{public}d", imageId.c_str(), isLowQualityPicture);
     lock_guard<mutex> lock(pictureMapMutex_);
     bool isSuccess = false;
-    if (pictureMap.size() == 0) {
-        MEDIA_ERR_LOG("pictureMap is null.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(pictureMap.size() != 0, false, "pictureMap is null.");
+
     std::map<std::string, sptr<PicturePair>>::iterator iter;
     if (imageId == "default") {
         iter = pictureMap.begin();
@@ -354,10 +352,8 @@ int32_t PictureDataOperations::AddSavePictureTask(sptr<PicturePair>& picturePair
     }
 
     auto *taskData = new (std::nothrow) SavePictureData(picturePair);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for downloading cloud files!");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, -1,
+        "Failed to alloc async data for downloading cloud files!");
 
     auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(SavePictureExecutor, taskData);
     asyncWorker->AddTask(asyncTask, true);
