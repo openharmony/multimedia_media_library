@@ -278,9 +278,9 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     if (fileInfo.burstKey.size() > 0) {
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
+        values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     }
-    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
-    values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     return values;
 }
 
@@ -399,6 +399,13 @@ int32_t CheckBurstAndGetKey(const std::string &displayName, std::string &burstKe
     return static_cast<int32_t>(BurstCoverLevelType::MEMBER);
 }
 
+void CloneIosBurstPhoto(FileInfo &fileInfo)
+{
+    std::string burstKey = fileInfo.burstKey;
+    fileInfo.isBurst = CheckBurstAndGetKey(fileInfo.displayName, burstKey);
+    fileInfo.burstKey = burstKey;
+}
+
 void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo)
 {
     FileInfo tmpInfo;
@@ -415,9 +422,9 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
     tmpInfo.fileType = MediaFileUtils::GetMediaType(tmpInfo.displayName);
     tmpInfo.fileSize = statInfo.st_size;
     tmpInfo.dateModified = MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim);
-    std::string burstKey = tmpInfo.burstKey;
-    tmpInfo.isBurst = CheckBurstAndGetKey(tmpInfo.displayName, burstKey);
-    tmpInfo.burstKey = burstKey;
+    if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
+        CloneIosBurstPhoto(tmpInfo);
+    }
     if (tmpInfo.fileType == MediaType::MEDIA_TYPE_IMAGE) {
         std::regex pattern(R"(.*_enhanced(\.[^.]+)$)");
         if (std::regex_match(file, pattern)) {
