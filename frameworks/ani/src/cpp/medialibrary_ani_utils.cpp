@@ -51,6 +51,8 @@ using namespace OHOS::Security;
 
 namespace OHOS {
 namespace Media {
+static constexpr int32_t FIELD_IDX = 0;
+static constexpr int32_t VALUE_IDX = 1;
 static const string EMPTY_STRING = "";
 using json = nlohmann::json;
 
@@ -832,8 +834,6 @@ ani_status MediaLibraryAniUtils::GetPredicate(ani_env *env, const ani_object fet
 static bool HandleSpecialDateTypePredicate(const OperationItem &item,
     vector<OperationItem> &operations, const FetchOptionType &fetchOptType)
 {
-    constexpr int32_t FIELD_IDX = 0;
-    constexpr int32_t VALUE_IDX = 1;
     vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED,
         MEDIA_DATA_DB_DATE_TAKEN};
     string dateType = item.GetSingle(FIELD_IDX);
@@ -868,11 +868,23 @@ template <class AniContext>
 bool MediaLibraryAniUtils::HandleSpecialPredicate(AniContext &context,
     DataSharePredicates *predicate, FetchOptionType fetchOptType)
 {
-    constexpr int32_t FIELD_IDX = 0;
-    constexpr int32_t VALUE_IDX = 1;
+    if (predicate == nullptr) {
+        ANI_ERR_LOG("predicate is null");
+        return false;
+    }
     vector<OperationItem> operations;
-    auto &items = predicate->GetOperationList();
-    for (auto &item : items) {
+    if (!ProcessPredicateItems(context, predicate->GetOperationList(), operations, fetchOptType)) {
+        return false;
+    }
+    context->predicates = DataSharePredicates(move(operations));
+    return true;
+}
+
+template <class AniContext>
+bool MediaLibraryAniUtils::ProcessPredicateItems(AniContext& context, const vector<OperationItem>& items,
+    vector<OperationItem>& operations, FetchOptionType fetchOptType)
+{
+    for (auto& item : items) {
         if (item.singleParams.empty()) {
             operations.push_back(item);
             continue;
@@ -880,52 +892,67 @@ bool MediaLibraryAniUtils::HandleSpecialPredicate(AniContext &context,
         if (HandleSpecialDateTypePredicate(item, operations, fetchOptType)) {
             continue;
         }
-        // change uri ->file id
-        // get networkid
-        // replace networkid with file id
-        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == DEVICE_DB_NETWORK_ID) {
-            if (item.operation != DataShare::EQUAL_TO || static_cast<string>(item.GetSingle(VALUE_IDX)).empty()) {
-                ANI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
-                return false;
-            }
-            context->networkId = static_cast<string>(item.GetSingle(VALUE_IDX));
-            continue;
+        if (!HandleSpecialField(context, item, operations, fetchOptType)) {
+            return false;
         }
-        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MEDIA_DATA_DB_URI) {
-            if (item.operation != DataShare::EQUAL_TO) {
-                ANI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
-                return false;
-            }
-            string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
-            MediaFileUri::RemoveAllFragment(uri);
-            MediaFileUri fileUri(uri);
-            context->uri = uri;
-            if ((fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
-                fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
-            }
-            context->networkId = fileUri.GetNetworkId();
-            string field = (fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
-            operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
-            continue;
-        }
-        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == PENDING_STATUS) {
-            // do not query pending files below API11
-            continue;
-        }
-        if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(FIELD_IDX))) != LOCATION_PARAM_MAP.end()) {
-            continue;
-        }
-        operations.push_back(item);
     }
-    context->predicates = DataSharePredicates(move(operations));
+    return true;
+}
+
+template <class AniContext>
+bool MediaLibraryAniUtils::HandleSpecialField(AniContext& context, const OperationItem& item,
+    vector<OperationItem>& operations, FetchOptionType fetchOptType)
+{
+    const string& field = static_cast<string>(item.GetSingle(FIELD_IDX));
+    const string& value = static_cast<string>(item.GetSingle(VALUE_IDX));
+    if (field == DEVICE_DB_NETWORK_ID) {
+        return HandleNetworkIdField(context, item, value);
+    }
+    if (field == MEDIA_DATA_DB_URI) {
+        return HandleUriField(context, item, value, operations, fetchOptType);
+    }
+    if (field == PENDING_STATUS || LOCATION_PARAM_MAP.count(field)) {
+        return true;
+    }
+    operations.push_back(item);
+    return true;
+}
+
+template <class AniContext>
+bool MediaLibraryAniUtils::HandleNetworkIdField(AniContext& context, const OperationItem& item, const string& value)
+{
+    if (item.operation != DataShare::EQUAL_TO || value.empty()) {
+        ANI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
+        return false;
+    }
+    context->networkId = value;
+    return true;
+}
+
+template <class AniContext>
+bool MediaLibraryAniUtils::HandleUriField(AniContext& context, const OperationItem& item,
+    const string& uriValue, vector<OperationItem>& operations, FetchOptionType fetchOptType)
+{
+    if (item.operation != DataShare::EQUAL_TO) {
+        ANI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
+        return false;
+    }
+    string uri = uriValue;
+    MediaFileUri::RemoveAllFragment(uri);
+    MediaFileUri fileUri(uri);
+    context->uri = uri;
+    if ((fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
+        fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
+    }
+    context->networkId = fileUri.GetNetworkId();
+    string field = (fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
+    operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
     return true;
 }
 
 template <class AniContext>
 bool MediaLibraryAniUtils::GetLocationPredicate(AniContext &context, DataSharePredicates *predicate)
 {
-    constexpr int32_t FIELD_IDX = 0;
-    constexpr int32_t VALUE_IDX = 1;
     map<string, string> locationMap;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
@@ -1497,8 +1524,22 @@ template ani_status MediaLibraryAniUtils::ParsePredicates<unique_ptr<MediaLibrar
     const ani_object predicate, unique_ptr<MediaLibraryAsyncContext> &context, FetchOptionType fetchOptType);
 
 template bool MediaLibraryAniUtils::HandleSpecialPredicate<unique_ptr<PhotoAlbumAniContext>>(
-    unique_ptr<PhotoAlbumAniContext> &context, DataSharePredicates *predicate,
+    unique_ptr<PhotoAlbumAniContext> &context, DataSharePredicates *predicate, FetchOptionType fetchOptType);
+
+template bool MediaLibraryAniUtils::ProcessPredicateItems<unique_ptr<PhotoAlbumAniContext>>(
+    unique_ptr<PhotoAlbumAniContext> &context, const vector<OperationItem>& items, vector<OperationItem>& operations,
     FetchOptionType fetchOptType);
+
+template bool MediaLibraryAniUtils::HandleSpecialField<unique_ptr<PhotoAlbumAniContext>>(
+    unique_ptr<PhotoAlbumAniContext> &context, const OperationItem& item, vector<OperationItem>& operations,
+    FetchOptionType fetchOptType);
+
+template bool MediaLibraryAniUtils::HandleNetworkIdField<unique_ptr<PhotoAlbumAniContext>>(
+    unique_ptr<PhotoAlbumAniContext> &context, const OperationItem& item, const string& value);
+
+template bool MediaLibraryAniUtils::HandleUriField<unique_ptr<PhotoAlbumAniContext>>(
+    unique_ptr<PhotoAlbumAniContext> &context, const OperationItem& item, const string& uriValue,
+    vector<OperationItem>& operations, FetchOptionType fetchOptType);
 
 template bool MediaLibraryAniUtils::GetLocationPredicate<unique_ptr<PhotoAlbumAniContext>>(
     unique_ptr<PhotoAlbumAniContext> &context, DataSharePredicates *predicate);
