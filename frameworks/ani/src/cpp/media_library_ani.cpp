@@ -257,7 +257,17 @@ void ThumbnailBatchGenerateObserver::OnChange(const ChangeInfo &changeInfo)
         if (pos == std::string::npos) {
             continue;
         }
-        requestIdCallback_ = std::stoi(uriString.substr(pos + 1));
+
+        try {
+            requestIdCallback_ = std::stoi(uriString.substr(pos + 1));
+        } catch (const std::invalid_argument& e) {
+            ANI_ERR_LOG("Invalid argument: %{public}s", e.what());
+            continue;
+        } catch (const std::out_of_range& e) {
+            ANI_ERR_LOG("Out of range: %{public}s", e.what());
+            continue;
+        }
+
         std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
         if (!thumbnailGenerateHandlerMap.Find(requestIdCallback_, dataHandler)) {
             continue;
@@ -736,7 +746,11 @@ ani_status MediaLibraryAni::Release(ani_env *env, ani_object object)
 
 ani_status MediaLibraryAni::ApplyChanges(ani_env *env, ani_object object)
 {
-    auto mediaChangeRequestAni = MediaChangeRequestAni::Unwrap(env, object);
+    auto* mediaChangeRequestAni = MediaChangeRequestAni::Unwrap(env, object);
+    if (mediaChangeRequestAni == nullptr) {
+        ANI_ERR_LOG("Failed to unwrap MediaChangeRequestAni");
+        return ANI_ERROR;
+    }
     return mediaChangeRequestAni->ApplyChanges(env, object);
 }
 
@@ -982,6 +996,11 @@ static void PhotoAccessCreateAssetExecute(MediaLibraryAsyncContext* context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessCreateAssetExecute");
+
+    if (context == nullptr) {
+        ANI_ERR_LOG("PhotoAccessCreateAssetExecute: context is null");
+        return;
+    }
 
     if (!CheckDisplayNameParams(context)) {
         context->error = JS_E_DISPLAYNAME;

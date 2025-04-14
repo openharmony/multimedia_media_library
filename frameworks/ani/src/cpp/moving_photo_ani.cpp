@@ -50,28 +50,29 @@ ani_status MovingPhotoAni::MovingPhotoInit(ani_env *env)
 ani_object MovingPhotoAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz,
     [[maybe_unused]] ani_object context)
 {
-    auto nativeMovingPhotoHandle = new MovingPhotoAni();
+    auto nativeMovingPhotoHandle = std::make_unique<MovingPhotoAni>();
 
     static const char *className = ANI_CLASS_MOVING_PHOTO.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
-        ani_object nullobj = nullptr;
-        return nullobj;
+        return nullptr;
     }
 
     ani_method ctor;
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
         MEDIA_ERR_LOG("Failed to find method: %{public}s", "ctor");
-        ani_object nullobj = nullptr;
-        return nullobj;
+        return nullptr;
     }
 
     ani_object movingPhoto_object;
     if (ANI_OK != env->Object_New(cls, ctor, &movingPhoto_object,
-        reinterpret_cast<ani_long>(nativeMovingPhotoHandle))) {
+        reinterpret_cast<ani_long>(nativeMovingPhotoHandle.get()))) {
         MEDIA_ERR_LOG("New MovingPhoto Fail");
+        return nullptr;
     }
+
+    nativeMovingPhotoHandle.release();
     return movingPhoto_object;
 }
 
