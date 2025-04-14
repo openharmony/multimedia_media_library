@@ -59,6 +59,8 @@ ohos_shared_library("photo_access_helper_ani") {
     "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_nutils",
   ]
 
+  use_exceptions = true
+
   external_deps = [
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
