@@ -30,6 +30,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "rdb_store_config.h"
+#include "album_plugin_table_event_handler.h"
 
 namespace OHOS {
 using namespace std;
@@ -154,6 +155,24 @@ static void MediaLibraryRestoreTest(const uint8_t *data, size_t size)
     Media::MediaLibraryUnitTestUtils::StopUnistore();
     NativeRdb::RdbHelper::DeleteRdbStore(config);
 }
+
+static void AlbumPluginFuzzerTest(const uint8_t *data, size_t size)
+{
+    auto config = GetConfig();
+    Media::FuzzRestoreDataCallback callBack;
+    int errCode = 0;
+    auto rdb = NativeRdb::RdbHelper::GetRdbStore(config, RDB_VERSION, callBack, errCode);
+        if (rdb == nullptr) {
+        return;
+    }
+    errCode = rdb->ExecuteSql(INCREASE_SQL);
+    std::string testSql = FuzzString(data, size);
+    errCode = rdb->ExecuteSql(testSql);
+    Media::AlbumPluginTableEventHandler albumPluginTableEventHandler;
+    albumPluginTableEventHandler.OnCreate(*rdb);
+    albumPluginTableEventHandler.OnUpgrade(*rdb, 0, 0);
+}
+
 } // namespace OHOS
 
 /* Fuzzer entry point */
@@ -161,5 +180,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::MediaLibraryRestoreTest(data, size);
+    OHOS::AlbumPluginFuzzerTest(data, size);
     return 0;
 }

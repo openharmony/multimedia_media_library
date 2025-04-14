@@ -185,6 +185,7 @@ static void RefreshNotifyInfoTest(const uint8_t* data, size_t size)
     Media::CloudSyncNotifyInfo fuzzsyncnotifyinfo = FuzzCloudSyncNotifyInfo(data, size);
     std::vector<std::string> fuzzvector = FuzzVector(data, size);
     Media::AlbumsRefreshManager &instance = Media::AlbumsRefreshManager::GetInstance();
+    std::shared_ptr<Media::AlbumsRefreshWorker> refreshWorker = std::make_shared<Media::AlbumsRefreshWorker>();
     instance.RefreshPhotoAlbums(fuzznotifyinfo);
     instance.AddAlbumRefreshTask(fuzznotifyinfo);
     instance.NotifyPhotoAlbums(fuzznotifyinfo);
@@ -193,6 +194,10 @@ static void RefreshNotifyInfoTest(const uint8_t* data, size_t size)
     instance.CovertCloudId2AlbumId(g_rdbStore, fuzzvector);
     instance.CovertCloudId2FileId(g_rdbStore, fuzzvector);
     instance.RefreshPhotoAlbumsBySyncNotifyInfo(g_rdbStore, fuzznotifyinfo);
+    refreshWorker->StartConsumerThread();
+    refreshWorker->AddAlbumRefreshTask(fuzznotifyinfo);
+    refreshWorker->GetSystemAlbumIds(fuzznotifyinfo, fuzzvector);
+    refreshWorker->TryDeleteAlbum(fuzznotifyinfo, fuzzvector);
 }
 
 void SetTables()
