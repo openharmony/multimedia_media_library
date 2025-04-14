@@ -753,5 +753,15 @@ string FileAsset::GetAssetJson()
         AppFileService::SandboxHelper::Decode(jsonObject[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
     return jsonObject.dump();
 }
+
+void FileAsset::SetStageVideoTaskStatus(int32_t stageVideoTaskStatus)
+{
+    member_[PhotoColumn::STAGE_VIDEO_TASK_STATUS] = stageVideoTaskStatus;
+}
+
+int32_t FileAsset::GetStageVideoTaskStatus() const
+{
+    return GetInt32Member(PhotoColumn::STAGE_VIDEO_TASK_STATUS);
+}
 }  // namespace Media
 }  // namespace OHOS

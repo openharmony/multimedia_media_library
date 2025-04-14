@@ -241,6 +241,9 @@ public:
     EXPORT void SetUserId(int32_t userId);
     EXPORT int32_t GetUserId();
 
+    EXPORT void SetStageVideoTaskStatus(int32_t stageVideoTaskStatus);
+    EXPORT int32_t GetStageVideoTaskStatus() const;
+
 private:
     int32_t userId_;
     std::string albumUri_;
