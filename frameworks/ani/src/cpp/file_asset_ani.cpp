@@ -55,6 +55,7 @@
 #include "locale_config.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_ani_log.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -191,7 +192,7 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
 {
     FileAssetAttributes attrs;
     CHECK_STATUS_RET(GetFileAssetAttributes(env, object, attrs), "GetFileAssetAttributes fail");
-    ANI_INFO_LOG("GetFileAsset uri: %{private}s, displayName: %{private}s, photoType: %{public}d",
+    ANI_DEBUG_LOG("GetFileAsset uri: %{private}s, displayName: %{private}s, photoType: %{public}d",
         attrs.uri.c_str(), attrs.displayName.c_str(), attrs.photoType);
 
     ani_method photoTypeSetter {};
@@ -277,6 +278,9 @@ FileAssetAni* FileAssetAni::CreateFileAsset(ani_env *env, std::unique_ptr<FileAs
 
 ani_object FileAssetAni::Wrap(ani_env *env, FileAssetAni* fileAssetAni)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("FileAssetAni::Wrap");
+
     ani_class cls;
     if (ANI_OK != env->FindClass(ANI_CLASS_PHOTO_ASSET.c_str(), &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", ANI_CLASS_PHOTO_ASSET.c_str());
@@ -530,7 +534,7 @@ ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
 
     std::string inputKey;
     MediaLibraryAniUtils::GetString(env, member, inputKey);
-    ANI_INFO_LOG("FileAsset get key: %{public}s", inputKey.c_str());
+    ANI_DEBUG_LOG("FileAsset get key: %{public}s", inputKey.c_str());
 
     if (CheckSystemApiKeys(env, inputKey) < 0) {
         ANI_ERR_LOG("CheckSystemApiKeys failed");
@@ -539,7 +543,7 @@ ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
 
     ani_object aniResult = nullptr;
     if (DATE_TRANSITION_MAP.count(inputKey) != 0) {
-        ANI_WARN_LOG("key not in DATE_TRANSITION_MAP");
+        ANI_DEBUG_LOG("key not in DATE_TRANSITION_MAP");
         return HandleDateTransitionKey(env, DATE_TRANSITION_MAP.at(inputKey), fileAssetPtr);
     }
 
@@ -550,7 +554,7 @@ ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
     }
 
     if (IsSpecialKey(inputKey)) {
-        ANI_WARN_LOG("IsSpecialKey");
+        ANI_DEBUG_LOG("IsSpecialKey");
         return HandleGettingSpecialKey(env, inputKey, fileAssetPtr);
     }
     if (inputKey == PhotoColumn::PHOTO_DETAIL_TIME) {
@@ -558,7 +562,7 @@ ani_object FileAssetAni::Get(ani_env *env, ani_object object, ani_string member)
         return HandleGettingDetailTimeKey(env, fileAssetPtr);
     }
     auto m = fileAssetPtr->GetMemberMap().at(inputKey);
-    ANI_INFO_LOG("FileAsset get value type: %{public}d", (int)m.index());
+    ANI_DEBUG_LOG("FileAsset get value type: %{public}d", (int)m.index());
     if (m.index() == MEMBER_TYPE_STRING) {
         ani_string aniString {};
         MediaLibraryAniUtils::ToAniString(env, std::get<std::string>(m), aniString);
