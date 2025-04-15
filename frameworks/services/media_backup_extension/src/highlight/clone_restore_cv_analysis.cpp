@@ -625,9 +625,6 @@ void CloneRestoreCVAnalysis::ParseTimeline(nlohmann::json &newPlayInfo, size_t t
         newPlayInfo["timeline"][timelineIndex]["transitionVideoUri"] = GetValueFromMap(assetUriMap_, oldTransVideoUri);
     }
 
-    std::vector<int32_t> newFileIds;
-    bool cond = newPlayInfo["timeline"][timelineIndex].contains("fileId") &&
-        newPlayInfo["timeline"][timelineIndex].contains("fileUri");
     if (newPlayInfo["timeline"][timelineIndex].contains("fileId")) {
         for (size_t idIndex = 0; idIndex < newPlayInfo["timeline"][timelineIndex]["fileId"].size(); idIndex++) {
             int32_t oldFileId = newPlayInfo["timeline"][timelineIndex]["fileId"][idIndex];
