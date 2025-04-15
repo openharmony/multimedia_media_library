@@ -710,7 +710,13 @@ export namespace photoAccessHelper {
     }
     getAllObjects(): Promise<Array<T>> {
       return new Promise<Array<T>>((resolve: (v: Array<T>) => void, reject: RejectString) => {
-        let cb = (): Array<T> => { return this.getAllObjectsSync() };
+        let blockQueue: BlockingQueue<Array<T>> = new ArrayBlockingQueue<Array<T>>(2);
+        let cb = (): Array<T> => {
+          let result = this.getAllObjectsSync()
+          blockQueue.push(result)
+          return result
+        };
+
         taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret === null || ret === undefined) {
             let err: BusinessError<string> = {
@@ -725,6 +731,8 @@ export namespace photoAccessHelper {
             resolve(result);
           }
         });
+
+        blockQueue.pop();
       });
     }
   }
@@ -1195,7 +1203,13 @@ export namespace photoAccessHelper {
 
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void, reject: RejectString) => {
-        let cb = (): FetchResult<PhotoAsset> => { return this.getAssetsInner(options) };
+        let blockQueue: BlockingQueue<FetchResult<PhotoAsset>> = new ArrayBlockingQueue<FetchResult<PhotoAsset>>(2);
+        let cb = (): FetchResult<PhotoAsset> => {
+          let result = this.getAssetsInner(options)
+          blockQueue.push(result)
+          return result
+        };
+
         taskpool.execute(cb).then((buffer: NullishType): void => {
           if (buffer === null || buffer === undefined) {
             let error: BusinessError<string> = {
@@ -1209,6 +1223,8 @@ export namespace photoAccessHelper {
             resolve(buffer as FetchResult<PhotoAsset>);
           }
         });
+
+        blockQueue.pop();
       });
     }
 
