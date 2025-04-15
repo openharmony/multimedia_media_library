@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,22 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_CHANGE_REQUEST_ANI_H
-#define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_CHANGE_REQUEST_ANI_H
+#ifndef MEDIA_ASSET_MANAGER_CALLBACK_H
+#define MEDIA_ASSET_MANAGER_CALLBACK_H
 
-#include <ani.h>
+#include "transcoder.h"
 
 namespace OHOS {
 namespace Media {
-class MediaChangeRequestAni {
+class MediaAssetManagerCallback : public TransCoderCallback {
 public:
-    MediaChangeRequestAni() = default;
-    virtual ~MediaChangeRequestAni() = default;
-    static MediaChangeRequestAni* Unwrap(ani_env *env, ani_object aniObject);
-
-    static bool InitUserFileClient(ani_env *env, ani_object object);
-    virtual ani_status ApplyChanges(ani_env *env) = 0;
+    MediaAssetManagerCallback() = default;
+    ~MediaAssetManagerCallback() = default;
+    void SetRequestId(std::string requestId);
+protected:
+    void OnError(int32_t errCode, const std::string &errorMsg) override;
+    void OnInfo(int32_t type, int32_t extra) override;
+    std::string requestId_;
 };
 } // namespace Media
 } // namespace OHOS
-#endif // FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_CHANGE_REQUEST_ANI_H
+#endif // MEDIA_ASSET_MANAGER_CALLBACK_H

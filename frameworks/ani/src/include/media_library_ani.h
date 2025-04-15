@@ -16,8 +16,12 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_ACCESS_HELPER_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_PHOTO_ACCESS_HELPER_ANI_H
 
+#include <mutex>
+#include <vector>
 #include <ani.h>
 #include "ani_error.h"
+#include "datashare_helper.h"
+#include "datashare_predicates.h"
 #include "fetch_result_ani.h"
 #include "photo_album_ani.h"
 #include "medialibrary_ani_utils.h"
@@ -25,21 +29,65 @@
 
 namespace OHOS {
 namespace Media {
+struct MediaChangeListener {
+    MediaType mediaType;
+    OHOS::DataShare::DataShareObserver::ChangeInfo changeInfo;
+    std::string strUri;
+};
 
+class MediaOnNotifyObserver;
 class ChangeListenerAni {
 public:
+    class UvChangeMsg {
+    public:
+        UvChangeMsg(ani_env *env, ani_ref ref, OHOS::DataShare::DataShareObserver::ChangeInfo &changeInfo,
+            std::string strUri) : env_(env), ref_(ref), changeInfo_(changeInfo), strUri_(std::move(strUri)) {}
+        ~UvChangeMsg() {}
+        ani_env *env_;
+        ani_ref ref_;
+        OHOS::DataShare::DataShareObserver::ChangeInfo changeInfo_;
+        uint8_t *data_ {nullptr};
+        std::string strUri_;
+    };
+
     explicit ChangeListenerAni(ani_env *env) : env_(env) {}
 
+    ChangeListenerAni(const ChangeListenerAni &listener)
+    {
+        this->env_ = listener.env_;
+        this->cbOnRef_ = listener.cbOnRef_;
+        this->cbOffRef_ = listener.cbOffRef_;
+    }
+
+    ChangeListenerAni& operator=(const ChangeListenerAni &listener)
+    {
+        this->env_ = listener.env_;
+        this->cbOnRef_ = listener.cbOnRef_;
+        this->cbOffRef_ = listener.cbOffRef_;
+        return *this;
+    }
+
+    ~ChangeListenerAni() {};
+
+    void OnChange(MediaChangeListener &listener, const ani_ref cbRef);
+    static void ExecuteThreadWork(ani_env *env, UvChangeMsg *msg);
+    static ani_object SolveOnChange(ani_env *env, UvChangeMsg *msg);
+    static string GetTrashAlbumUri();
+    static std::string trashAlbumUri_;
+    ani_ref cbOnRef_ = nullptr;
+    ani_ref cbOffRef_ = nullptr;
+    std::vector<std::shared_ptr<MediaOnNotifyObserver>> observers_;
 private:
-    [[maybe_unused]] ani_env *env_ = nullptr;
+    ani_env *env_ = nullptr;
+    static std::mutex sWorkerMutex_;
 };
 
 class ThumbnailBatchGenerateObserver : public DataShare::DataShareObserver {
-    public:
-        ThumbnailBatchGenerateObserver() = default;
-        ~ThumbnailBatchGenerateObserver() = default;
+public:
+    ThumbnailBatchGenerateObserver() = default;
+    ~ThumbnailBatchGenerateObserver() = default;
 
-        void OnChange(const ChangeInfo &changeInfo) override;
+    void OnChange(const ChangeInfo &changeInfo) override;
 };
 
 using ThreadFunciton = std::function<void(ani_env*, ani_object, void*, void*)>;
@@ -52,33 +100,90 @@ public:
     ThreadFunciton threadSafeFunc_;
 };
 
+class MediaOnNotifyObserver : public DataShare::DataShareObserver {
+public:
+    MediaOnNotifyObserver(const ChangeListenerAni &listObj, std::string uri, ani_ref ref) : listObj_(listObj)
+    {
+        uri_ = uri;
+        ref_ = ref;
+    }
+
+    ~MediaOnNotifyObserver() = default;
+
+    void OnChange(const ChangeInfo &changeInfo) override
+    {
+        MediaChangeListener listener;
+        listener.changeInfo = changeInfo;
+        listener.strUri = uri_;
+        listObj_.OnChange(listener, ref_);
+    }
+    ChangeListenerAni listObj_;
+    std::string uri_;
+    ani_ref ref_;
+};
+
 class MediaLibraryAni {
 public:
     static ani_status PhotoAccessHelperInit(ani_env *env);
-    static ani_object Constructor([[maybe_unused]] ani_env *env, ani_object context);
-    static MediaLibraryAni* Unwrap(ani_env *env, ani_object object);
+    static ani_status UserFileMgrInit(ani_env *env);
 
-    static ani_object GetPhotoAlbums(ani_env *env, ani_object object, ani_enum_item albumTypeItem,
-        ani_enum_item albumSubtypeItem, ani_object fetchOptions);
-    static ani_status Release(ani_env *env, ani_object object);
-    static ani_status ApplyChanges(ani_env *env, ani_object object);
-    static ani_object createAsset1([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object obj,
-        [[maybe_unused]] ani_string stringObj);
+    static ani_object GetUserFileMgr(ani_env *env, ani_object context);
+    static ani_object GetPhotoAccessHelper(ani_env *env, ani_object context);
+    static MediaLibraryAni* Unwrap(ani_env *env, ani_object object);
+    static void OnThumbnailGenerated(ani_env *env, ani_object callback, void *context, void *data);
+
+    MediaLibraryAni();
+    ~MediaLibraryAni();
+
+    static std::mutex sUserFileClientMutex_;
+
+private:
+    static ani_object Constructor(ani_env *env, ani_class clazz, ani_object context);
+
+    // UserFileMgr
+    static ani_object GetPhotoAssets(ani_env *env, [[maybe_unused]] ani_object object, ani_object options);
+
+    // PhotoAccessHelper
+    static ani_object GetPhotoAlbums([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+        ani_enum_item albumTypeAni, ani_enum_item albumSubtypeAni, ani_object fetchOptions);
+    static ani_status Release([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object);
+    static ani_status ApplyChanges([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+        ani_object mediaChangeRequest);
+    static ani_object CreateAssetSystem([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+        ani_string displayName, ani_object options);
+    static ani_object CreateAssetComponent([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+        ani_enum_item photoTypeAni, ani_string extension, ani_object options);
     static ani_object GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_object options);
     static ani_object GetFileAssetsInfo([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_object options);
     static ani_object GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_object options);
-    static std::mutex sUserFileClientMutex_;
     static void PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_double taskId);
     static ani_int PhotoAccessStartCreateThumbnailTask([[maybe_unused]] ani_env *env,
         [[maybe_unused]] ani_object object, ani_object predicate);
-    static void OnThumbnailGenerated(ani_env *env, ani_object callback, void *context, void *data);
+    static ani_object GetBurstAssets([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
+        ani_string burstKey, ani_object fetchOptions);
+    static void PhotoAccessHelperOnCallback(ani_env *env, ani_object object, ani_string aniUri,
+        ani_boolean forChildUris, ani_fn_object callbackOn);
+    static void PhotoAccessHelperOffCallback(ani_env *env, ani_object object, ani_string aniUri,
+        ani_fn_object callbackOff);
+    static void PhotoAccessSaveFormInfo(ani_env *env, ani_object object, ani_object info);
+    static ani_object PhotoAccessHelperAgentCreateAssets(ani_env *env, ani_object object,
+        ani_object appInfo, ani_object photoCreationConfigs);
+    static ani_object PhotoAccessHelperAgentCreateAssetsWithMode(ani_env *env, ani_object object,
+        ani_object appInfo, ani_enum_item authorizationMode, ani_object photoCreationConfigs);
+    static ani_string PhotoAccessGetIndexConstructProgress(ani_env *env, ani_object object);
+    static ani_double PhotoAccessGrantPhotoUriPermission(ani_env *env, ani_object object, ani_object param,
+        ani_enum_item photoPermissionType, ani_enum_item hideSensitiveType);
 
-private:
+    void RegisterNotifyChange(ani_env *env, const std::string &uri, bool isDerived, ani_ref ref,
+        ChangeListenerAni &listObj);
+    void UnRegisterNotifyChange(ani_env *env, const std::string &uri, ani_ref ref, ChangeListenerAni &listObj);
+    static bool CheckRef(ani_env *env, ani_ref ref, ChangeListenerAni &listObj, bool isOff, const std::string &uri);
     ani_env *env_;
+    static std::mutex sOnOffMutex_;
 };
 
 struct PickerCallBack {

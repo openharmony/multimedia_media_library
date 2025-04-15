@@ -217,8 +217,9 @@ public:
         return TIME_TYPE_MAP;
     }
 
-    static ani_boolean isArray(ani_env *env, ani_object object);
-    static ani_boolean isUndefined(ani_env *env, ani_object object);
+    static ani_boolean IsArray(ani_env *env, ani_object object);
+    static ani_boolean IsUndefined(ani_env *env, ani_object object);
+    static ani_status GetUndefinedObject(ani_env *env, ani_object &object);
 
     static ani_status GetBool(ani_env *env, ani_boolean arg, bool &value);
     static ani_status GetBool(ani_env *env, ani_object arg, bool &value);
@@ -256,6 +257,7 @@ public:
 
     static ani_status ToAniBooleanObject(ani_env *env, bool src, ani_object &aniObj);
     static ani_status ToAniIntObject(ani_env *env, int32_t src, ani_object &aniObj);
+    static ani_status ToAniNumberObject(ani_env *env, int32_t src, ani_object &aniObj);
     static ani_status ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj);
     static ani_status ToAniDoubleObject(ani_env *env, double src, ani_object &aniObj);
 
@@ -263,6 +265,8 @@ public:
     static ani_status ToAniInt32Array(ani_env *env, const std::vector<uint32_t> &array, ani_object &aniArray);
     static ani_status GetStringArray(ani_env *env, ani_object arg, std::vector<std::string> &array);
     static ani_status ToAniStringArray(ani_env *env, const std::vector<std::string> &array, ani_object &aniArray);
+    static ani_status GetObjectArray(ani_env *env, ani_object arg, std::vector<ani_object> &array);
+    static ani_status ToAniMap(ani_env *env, const std::map<std::string, std::string> &map, ani_object &aniMap);
 
     static ani_status GetProperty(ani_env *env, ani_object arg, const std::string &propName, std::string &propValue);
     static ani_status GetProperty(ani_env *env, ani_object arg, const std::string &propName, ani_object &propObj);
@@ -270,6 +274,7 @@ public:
         std::vector<std::string> &array);
 
     static ani_status GetUriArrayFromAssets(ani_env *env, ani_object arg, std::vector<std::string> &array);
+    static ani_status GetArrayFromAssets(ani_env *env, ani_object arg, std::vector<std::shared_ptr<FileAsset>> &array);
     static ani_status ToFileAssetAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
         ani_object &aniArray);
     static ani_status ToFileAssetInfoAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
@@ -281,7 +286,7 @@ public:
     static ani_status ToPhotoAlbumAniArray(ani_env *env, std::vector<unique_ptr<PhotoAlbum>> &array,
         ani_object &aniArray);
 
-    static ani_status GetArrayBuffer(ani_env *env, ani_object arg, std::unique_ptr<uint8_t[]> &buffer, size_t &size);
+    static ani_status GetArrayBuffer(ani_env *env, ani_arraybuffer arg, void *&buffer, size_t &size);
 
     static ani_status GetOptionalStringPathMaxField(ani_env *env, ani_object src,
         const std::string &fieldName, std::string &value);
@@ -294,6 +299,7 @@ public:
     static std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> GetPhotoCreateOptions(
         ani_env *env, ani_object src);
 
+    static int32_t GetFileIdFromPhotoUri(const std::string &uri);
     static DataShare::DataSharePredicates* UnwrapPredicate(ani_env *env, const ani_object predicates);
     template <class AniContext>
     static ani_status GetPredicate(ani_env *env, const ani_object fetchOptions, const std::string &propName,

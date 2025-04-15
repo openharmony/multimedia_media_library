@@ -441,7 +441,7 @@ void MediaAniNativeImpl::GetFileAssetField(int32_t index, string name, const sha
         return;
     }
 
-    int status;
+    int status = 0;
     int integerVal = 0;
     string stringVal = "";
     int64_t longVal = 0;

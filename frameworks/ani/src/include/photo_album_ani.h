@@ -41,8 +41,7 @@ public:
 
 private:
     EXPORT void SetPhotoAlbumAniProperties();
-    EXPORT static ani_object PhotoAlbumAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz);
-    EXPORT static ani_object CreateEmptyPhotoAlbumAni(ani_env *env, ani_class clazz);
+    EXPORT static ani_object PhotoAlbumAniConstructor(ani_env *env, ani_class clazz);
     EXPORT static void PhotoAlbumAniDestructor(ani_env *env, ani_object object);
 
     EXPORT static ani_object PhotoAccessGetPhotoAssets(ani_env *env, ani_object object, ani_object fetchOptions);

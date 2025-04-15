@@ -42,6 +42,7 @@ void AniError::HandleError(ani_env *env, ani_object &errorObj)
 {
     // deal with context->error
     MediaLibraryAniUtils::HandleError(env, error, errorObj, apiName);
+    env->ThrowError(static_cast<ani_error>(errorObj));
 }
 
 void AniError::ThrowError(ani_env *env, int32_t err, const std::string &errMsg)

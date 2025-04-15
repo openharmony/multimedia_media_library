@@ -45,7 +45,7 @@ private:
         std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
     static bool PhotoAccessGetAssetsExecute(std::shared_ptr<MediaLibraryAsyncContext> context);
     static bool PhotoAccessGetFileAssetsInfoExecute(std::shared_ptr<MediaLibraryAsyncContext> context,
-        std::vector<std::unique_ptr<FileAsset>>& fileAssetArray);
+        std::vector<std::unique_ptr<FileAsset>> &fileAssetArray);
     static std::unique_ptr<FileAsset> GetNextRowFileAsset(shared_ptr<NativeRdb::ResultSet> resultSet);
     static void GetFileAssetField(int32_t index, string name, const shared_ptr<NativeRdb::ResultSet> resultSet,
         std::unique_ptr<FileAsset> &fileAsset);
