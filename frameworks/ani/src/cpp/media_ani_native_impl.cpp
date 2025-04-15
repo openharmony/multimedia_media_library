@@ -27,6 +27,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_db_const.h"
 #include "userfile_client.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -37,8 +38,10 @@ std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetFileAssetsInfo(
     const std::vector<std::string> &fetchColumns,
     const DataShare::DataSharePredicates *predicate)
 {
-    std::vector<std::unique_ptr<FileAsset>> result;
+    MediaLibraryTracer tracer;
+    tracer.Start("GetFileAssetsInfo Excute");
 
+    std::vector<std::unique_ptr<FileAsset>> result;
     std::shared_ptr<MediaLibraryAsyncContext> context = GetAssetsContext(fetchColumns, predicate);
     if (context == nullptr) {
         ANI_ERR_LOG("GetAssetsContext failed");
@@ -55,8 +58,10 @@ std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetFileAssetsInfo(
 std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetAssetsSync(
     const std::vector<std::string> &fetchColumns, const DataSharePredicates *predicate)
 {
-    std::vector<std::unique_ptr<FileAsset>> result;
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssetsSync Excute");
 
+    std::vector<std::unique_ptr<FileAsset>> result;
     std::shared_ptr<MediaLibraryAsyncContext> context = GetAssetsContext(fetchColumns, predicate);
     if (context == nullptr) {
         ANI_ERR_LOG("GetAssetsContext failed");
@@ -73,6 +78,9 @@ std::vector<std::unique_ptr<FileAsset>> MediaAniNativeImpl::GetAssetsSync(
 std::unique_ptr<FetchResult<FileAsset>> MediaAniNativeImpl::GetAssets(
     const std::vector<std::string> &fetchColumns, const DataSharePredicates *predicate)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssets Excute");
+
     std::shared_ptr<MediaLibraryAsyncContext> context = GetAssetsContext(fetchColumns, predicate);
     if (context == nullptr) {
         ANI_ERR_LOG("GetAssetsContext failed");

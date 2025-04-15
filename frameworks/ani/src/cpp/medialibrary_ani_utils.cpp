@@ -810,7 +810,7 @@ ani_status MediaLibraryAniUtils::ToFileAssetAniArray(ani_env *env, std::vector<s
         "Can't find method set in Lescompat/Array.");
 
     for (size_t i = 0; i < array.size(); ++i) {
-        auto fileAssetAni = FileAssetAni::CreateFileAsset(env, array[i]);
+        FileAssetAni* fileAssetAni = FileAssetAni::CreateFileAsset(env, array[i]);
         ani_object value = FileAssetAni::Wrap(env, fileAssetAni);
         CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAsset failed");
         CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, setMethod, (ani_int)i, value),

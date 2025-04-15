@@ -70,6 +70,8 @@ ohos_shared_library("medialibrary_ani_utils") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
   ]
 
+  use_exceptions = true
+
   external_deps = [
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
