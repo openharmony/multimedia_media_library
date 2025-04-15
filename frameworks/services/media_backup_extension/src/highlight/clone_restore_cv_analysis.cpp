@@ -608,7 +608,7 @@ void CloneRestoreCVAnalysis::ParseEffectlineFileDatas(nlohmann::json &newPlayInf
                 std::string oldFileUri =
                     newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex];
                 newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex] =
-                    GetNewPhotoUriByUri(oldFileUri);
+                    GetNewPhotoUriByUri(oldFileUri, cloneHighlight);
             }
         }
     }
@@ -638,7 +638,8 @@ void CloneRestoreCVAnalysis::ParseTimeline(nlohmann::json &newPlayInfo, size_t t
     if (newPlayInfo["timeline"][timelineIndex].contains("fileUri")) {
         for (size_t uriIndex = 0; uriIndex < newPlayInfo["timeline"][timelineIndex]["fileUri"].size(); uriIndex++) {
             std::string oldFileUri = newPlayInfo["timeline"][timelineIndex]["fileUri"][uriIndex];
-            newPlayInfo["timeline"][timelineIndex]["fileUri"][uriIndex] = GetNewPhotoUriByUri(oldFileUri);
+            newPlayInfo["timeline"][timelineIndex]["fileUri"][uriIndex] =
+                GetNewPhotoUriByUri(oldFileUri, cloneHighlight);
         }
     }
 }
