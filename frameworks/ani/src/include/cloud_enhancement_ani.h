@@ -17,14 +17,67 @@
 #define FRAMEWORKS_ANI_SRC_INCLUDE_CLOUD_ENHANCEMENT_ANI_H
 
 #include <ani.h>
+#include <string>
+#include <vector>
+#include "ani_error.h"
+#include "datashare_helper.h"
+#include "fetch_result.h"
+#include "file_asset_ani.h"
+#include "medialibrary_ani_utils.h"
 
 namespace OHOS {
 namespace Media {
+enum class CE_AVAILABLE : int32_t {
+    NOT_SUPPORT,
+    SUPPORT,
+    PROCESSING,
+    FAILED_RETRY,
+    FAILED,
+    SUCCESS,
+    EDIT,
+};
+
 class CloudEnhancementAni {
 public:
-    static ani_status CloudEnhancementAniInit(ani_env *env);
-    static ani_object Constructor(ani_env *env, ani_class clazz, ani_object context);
+    static ani_status Init(ani_env *env);
     static CloudEnhancementAni* Unwrap(ani_env *env, ani_object aniObject);
+
+    static bool InitUserFileClient(ani_env *env, ani_object aniObject);
+    static ani_status ParseArgGetPhotoAsset(ani_env *env, ani_object photoAsset, int &fileId, std::string &uri,
+        std::string &displayName);
+
+private:
+    static ani_object Constructor(ani_env *env, ani_class clazz, ani_object context);
+    static ani_object SubmitCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets,
+        ani_boolean hasCloudWatermark);
+    static ani_object PrioritizeCloudEnhancementTask(ani_env *env, ani_object aniObject, ani_object photoAsset);
+    static ani_object CancelCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets);
+    static ani_object CancelAllCloudEnhancementTasks(ani_env *env, ani_object aniObject);
+    static ani_object QueryCloudEnhancementTaskState(ani_env *env, ani_object aniObject, ani_object photoAsset);
+    static ani_object SyncCloudEnhancementTaskStatus(ani_env *env, ani_object aniObject);
+    static ani_object GetCloudEnhancementPair(ani_env *env, ani_object aniObject, ani_object asset);
+};
+
+struct CloudEnhancementAniContext : public AniError {
+    const int32_t UNDEFINED = -1;
+    CloudEnhancementAni* objectInfo;
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    std::vector<std::string> uris;
+    std::string photoUri;
+    int32_t fileId {UNDEFINED};
+    std::string displayName;
+    bool hasCloudWatermark_;
+    ResultNapiType resultNapiType;
+    AniAssetType assetType;
+    std::unique_ptr<FileAsset> fileAsset;
+    CloudEnhancementTaskStage cloudEnhancementTaskStage_ = CloudEnhancementTaskStage::TASK_STAGE_EXCEPTION;
+    int32_t transferredFileSize_ {UNDEFINED};
+    int32_t totalFileSize_ {UNDEFINED};
+    int32_t expectedDuration_ {UNDEFINED};
+    int32_t statusCode_ {UNDEFINED};
+    std::unique_ptr<FetchResult<FileAsset>> fetchFileResult;
+    bool GetPairAsset();
 };
 } // namespace Media
 } // namespace OHOS

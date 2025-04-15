@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,8 +24,6 @@ class SizeImpl implements image.Size {
   width: int = 0;
 }
 
-
-type ResolveVoid = (v: PromiseLike<void>) => void;
 type RejectString = (e: BusinessError<string>) => void;
 
 function businessError<T = void>(c: number, d?: string): BusinessError<T> {
@@ -39,12 +37,11 @@ function isNullish(d: NullishType): boolean {
   return (d === null || d === undefined) ? true : false;
 }
 
-class MediaLibraryAniError extends Error {
-  code: number;
-
+class MediaLibraryAniError extends BusinessError {
   constructor(code: number, message: string) {
-    super('MediaLibraryAniError', message, undefined);
+    super();
     this.code = code;
+    this.message = message;
   }
 }
 
@@ -172,7 +169,39 @@ export namespace photoAccessHelper {
 
   export interface PhotoProxy {}
 
+  type MediaAssetDataType = image.ImageSource | ArrayBuffer | MovingPhoto | boolean;
+  type QuickImageDataType = image.Picture;
+
   export class MediaAssetManager {
+    static onMediaAssetDataPrepared(data: MediaAssetDataType, map?: Map<string, string>,
+      dataHandler: MediaAssetDataHandler<MediaAssetDataType>): void {
+      if (dataHandler !== undefined && dataHandler !== null) {
+        dataHandler.onDataPrepared(data, map);
+      }
+    }
+
+    static onQuickImageDataPrepared(data: QuickImageDataType, imageSource: image.ImageSource,
+      map: Map<string, string>, dataHandler: QuickImageDataHandler<QuickImageDataType>): void {
+      if (dataHandler !== undefined && dataHandler !== null) {
+        dataHandler.onDataPrepared(data, imageSource, map);
+      }
+    }
+
+    static onMediaAssetProgress(progress: number, progressHandler: MediaAssetProgressHandler): void {
+      if (progressHandler !== undefined && progressHandler !== null) {
+        progressHandler.onProgress(progress);
+      }
+    }
+
+    native static requestImageInner(context: Context, asset: PhotoAsset, requestOptions: RequestOptions,
+      dataHandler: MediaAssetDataHandler<image.ImageSource>): string;
+    native static quickRequestImageInner(context: Context, asset: PhotoAsset, requestOptions: RequestOptions,
+      dataHandler: QuickImageDataHandler<image.Picture>): string;
+    native static requestImageDataInner(context: Context, asset: PhotoAsset, requestOptions: RequestOptions,
+      dataHandler: MediaAssetDataHandler<ArrayBuffer>): string;
+    native static requestMovingPhotoInner(context: Context, asset: PhotoAsset, requestOptions: RequestOptions,
+      dataHandler: MediaAssetDataHandler<MovingPhoto>): string;
+    native static cancelRequestInner(context: Context, requestId: string): void;
   }
 
   export type MemberType = number | string | boolean;
@@ -206,17 +235,356 @@ export namespace photoAccessHelper {
     readonly uri: string = "";
     readonly photoType: PhotoType;
     readonly displayName: string = "";
-
     private nativePhotoAsset: long = 0;
+
     constructor(context: long) {
       if (this.nativePhotoAsset == 0) {
         this.nativePhotoAsset = context;
       }
     }
 
-    native static create(): PhotoAsset;
-    native set(member: string, value: string): void;
     native get(member: string): MemberType;
+
+    native set(member: string, value: string): void;
+
+    commitModify(callback: AsyncCallback<void>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.commitModifySync();
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      }
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (isNullish(ret)) {
+          callback(businessError(0), undefined);
+        } else {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        }
+      });
+    }
+
+    commitModify(): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.commitModifySync();
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    open(mode: string, callback: AsyncCallback<number | undefined>): void {
+      let cb = (): MediaLibraryAniError | number => {
+        try {
+          return this.openSync(mode);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as number);
+          }
+        }
+      });
+    }
+
+    open(mode: string): Promise<number> {
+      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) => {
+        let cb = (): number | MediaLibraryAniError => {
+          try {
+            return this.openSync(mode);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as number);
+            }
+          }
+        });
+      });
+    }
+
+    close(fd: number, callback: AsyncCallback<void>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.closeSync(fd);
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      }
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (isNullish(ret)) {
+          callback(businessError(0), undefined);
+        } else {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        }
+      });
+    }
+
+    close(fd: number): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.closeSync(fd);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    getThumbnail(callback: AsyncCallback<image.PixelMap | undefined>): void {
+      let cb = (): MediaLibraryAniError | image.PixelMap | undefined => {
+        try {
+          return this.getThumbnailSync();
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as image.PixelMap | undefined);
+          }
+        }
+      });
+    }
+
+    getThumbnail(size: image.Size, callback: AsyncCallback<image.PixelMap | undefined>): void {
+      let cb = (): MediaLibraryAniError | image.PixelMap | undefined => {
+        try {
+          return this.getThumbnailSync(size);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as image.PixelMap | undefined);
+          }
+        }
+      });
+    }
+
+    getThumbnail(size?: image.Size): Promise<image.PixelMap> {
+      return new Promise<image.PixelMap>((resolve: (v: image.PixelMap) => void, reject: RejectString) => {
+        let cb = (): image.PixelMap | MediaLibraryAniError => {
+          try {
+            return this.getThumbnailSync(size);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as image.PixelMap);
+            }
+          }
+        });
+      });
+    }
+
+    setFavorite(favoriteState: boolean, callback: AsyncCallback<void>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.setFavoriteSync(favoriteState);
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      }
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (isNullish(ret)) {
+          callback(businessError(0), undefined);
+        } else {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        }
+      });
+    }
+
+    setFavorite(favoriteState: boolean): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.setFavoriteSync(favoriteState);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    setHidden(hiddenState: boolean, callback: AsyncCallback<void>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.setHiddenSync(hiddenState);
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (isNullish(ret)) {
+          callback(businessError(0), undefined);
+        } else {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        }
+      });
+    }
+
+    setHidden(hiddenState: boolean): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.setHiddenSync(hiddenState);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    setUserComment(userComment: string, callback: AsyncCallback<void>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.setUserCommentSync(userComment);
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (isNullish(ret)) {
+          callback(businessError(0), undefined);
+        } else {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        }
+      });
+    }
+
+    setUserComment(userComment: string): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.setUserCommentSync(userComment);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    getAnalysisData(analysisType: AnalysisType): Promise<string> {
+      return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
+        let cb = (): string | MediaLibraryAniError => {
+          try {
+            return this.getAnalysisDataSync(analysisType);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as string);
+            }
+          }
+        });
+      });
+    }
+
     native commitModifySync(): void;
     native openSync(mode: string): number;
     native closeSync(fd: number): void;
@@ -225,323 +593,7 @@ export namespace photoAccessHelper {
     native setHiddenSync(hiddenState: boolean): void;
     native setUserCommentSync(userComment: string): void;
     native getAnalysisDataSync(analysisType: AnalysisType): string;
-
-    commitModify(): Promise<void> {
-      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
-        let cb = (): PromiseLike<void> => { this.commitModifySync() };
-        taskpool.execute(cb).then((ret: NullishType): void => {
-          if (ret === null || ret === undefined) {
-            let err: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(err);
-          } else {
-            resolve(ret as PromiseLike<void>);
-          }
-        });
-      });
-    }
-    commitModify(callback: AsyncCallback<void, void>): void {
-      let task = new taskpool.Task(() =>this.commitModifySync());
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
-        } else {
-          eNull.code = 0;
-          callback(eNull, undefined);
-        }
-      });
-    }
-
-    open(mode: string): Promise<number> {
-      return new Promise<number>((resolve : (v: number) => void, reject : RejectString) => {
-        let cb = (): number => { return this.openSync(mode) };
-        taskpool.execute(cb).then((ret: NullishType): void => {
-          if (ret === null || ret === undefined) {
-            let err: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(err);
-          } else {
-            resolve(ret as number);
-          }
-        });
-      });
-    }
-    open(mode: string, callback: AsyncCallback<number | undefined, void>): void {
-      let task = new taskpool.Task(() =>this.openSync(mode));
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
-        } else {
-          let result = ret as number;
-          eNull.code = 0;
-          callback(eNull, result);
-        }
-      });
-    }
-
-    close(fd: number): Promise<void> {
-      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
-        let cb = (): PromiseLike<void> => { this.closeSync(fd) };
-        taskpool.execute(cb).then((ret: NullishType): void => {
-          resolve(ret as PromiseLike<void>);
-        });
-      });
-    }
-    close(fd: number, callback: AsyncCallback<void, void>): void {
-      let task = new taskpool.Task(() =>this.closeSync(fd));
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
-        } else {
-          eNull.code = 0;
-          callback(eNull, undefined);
-        }
-      });
-    }
-
-    getThumbnail(size?: image.Size): Promise<image.PixelMap> {
-      return new Promise<image.PixelMap>((resolve : (v: image.PixelMap) => void, reject: RejectString) => {
-        let cb = (): image.PixelMap => { return this.getThumbnailSync(size) };
-        taskpool.execute(cb).then((ret: NullishType): void => {
-          if (ret === null || ret === undefined) {
-            let ret1: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(ret1);
-          } else {
-            let pixelMap = ret as image.PixelMap;
-            resolve(pixelMap);
-          }
-        });
-      });
-    }
-
-    getThumbnail(callback: AsyncCallback<image.PixelMap | undefined, void>): void {
-      let task = new taskpool.Task(() =>this.getThumbnailSync());
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
-        } else {
-          let result = ret as image.PixelMap;
-          eNull.code = 0;
-          callback(eNull, result);
-        }
-      });
-    }
-
-    getThumbnail(size: image.Size, callback: AsyncCallback<image.PixelMap | undefined, void>): void {
-      let task = new taskpool.Task(() =>this.getThumbnailSync(size));
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
-        } else {
-          let result = ret as image.PixelMap;
-          eNull.code = 0;
-          callback(eNull, result);
-        }
-      });
-    }
-
-    setFavorite(favoriteState: boolean): Promise<void> {
-    return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
-      let cb = (): PromiseLike<void> => { this.setFavoriteSync(favoriteState) };
-      taskpool.execute(cb).then((ret: NullishType): void => {
-        if (ret === null || ret === undefined) {
-          let err: BusinessError<string> = {
-            code: -1,
-            data: "Operation failed",
-            name: "",
-            message: ""
-          };
-          reject(err);
-        } else {
-          resolve(ret as PromiseLike<void>);
-        }
-      });
-    });
-    }
-
-    setFavorite(favoriteState: boolean, callback: AsyncCallback<void, void>): void {
-      let task = new taskpool.Task(() =>this.setFavoriteSync(favoriteState));
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
-        } else {
-          eNull.code = 0;
-          callback(eNull, undefined);
-        }
-      });
-    }
-
-    setHidden(hiddenState: boolean): Promise<void> {
-      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
-        let cb = (): PromiseLike<void> => { this.setHiddenSync(hiddenState) };
-        taskpool.execute(cb).then((ret: NullishType): void => {
-          if (ret === null || ret === undefined) {
-            let err: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(err);
-          } else {
-            resolve(ret as PromiseLike<void>);
-          }
-        });
-      });
-    }
-
-    setHidden(hiddenState: boolean, callback: AsyncCallback<void, void>): void {
-      let task = new taskpool.Task(() =>this.setHiddenSync(hiddenState));
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
-        } else {
-          eNull.code = 0;
-          callback(eNull, undefined);
-        }
-      });
-    }
-
-    setUserComment(userComment: string): Promise<void> {
-      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
-        let cb = (): PromiseLike<void> => { this.setUserCommentSync(userComment) };
-        taskpool.execute(cb).then((ret: NullishType): void => {
-          if (ret === null || ret === undefined) {
-            let err: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(err);
-          } else {
-            resolve(ret as PromiseLike<void>);
-          }
-        });
-      });
-    }
-
-    setUserComment(userComment: string, callback: AsyncCallback<void, void>): void {
-      let task = new taskpool.Task(() =>this.setUserCommentSync(userComment));
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
-        } else {
-          eNull.code = 0;
-          callback(eNull, undefined);
-        }
-      });
-    }
-
-    getAnalysisData(analysisType: AnalysisType): Promise<string> {
-      return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
-        let cb = (): string => { return this.getAnalysisDataSync(analysisType) };
-        taskpool.execute(cb).then((ret: NullishType): void => {
-          if (ret === null || ret === undefined) {
-            let err: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(err);
-          } else {
-            resolve(ret as string);
-          }
-        });
-      });
-    }
-
-    getAnalysisData(analysisType: AnalysisType, callback: AsyncCallback<string | undefined, void>): void {
-      let task = new taskpool.Task(() =>this.getAnalysisDataSync(analysisType));
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
-        } else {
-          let result = ret as string;
-          eNull.code = 0;
-          callback(eNull, result);
-        }
-      });
-    }
   }
-
 
   export enum PhotoKeys {
     URI = 'uri',
@@ -627,6 +679,8 @@ export namespace photoAccessHelper {
     getFirstObject(): Promise<T>;
     getNextObject(callback: AsyncCallback<T | undefined>): void;
     getNextObject(): Promise<T>;
+    getObjectByPosition(index: number, callback: AsyncCallback<T | undefined>): void;
+    getObjectByPosition(index: number): Promise<T>;
     getAllObjects(callback: AsyncCallback<Array<T> | undefined>): void;
     getAllObjects(): Promise<Array<T>>;
     close(): void;
@@ -638,76 +692,171 @@ export namespace photoAccessHelper {
     constructor(value: long) {
         this.nativeValue = value;
     }
-    native getCount(): number;
-    native getFirstObjectSync(): T;
-    native getNextObjectSync(): T;
-    native getAllObjectsSync(): Array<T>;
-    native close(): void;
 
+    native getCount(): number;
     isAfterLast(): boolean {
       return false;
     }
-    getFirstObject(callback: AsyncCallback<T | undefined>): void {}
+    getFirstObject(callback: AsyncCallback<T | undefined, void>): void {
+      let cb = (): T | MediaLibraryAniError => {
+        try {
+          return this.getFirstObjectSync();
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1), undefined);
+          } else {
+            callback(businessError(0), ret as T);
+          }
+        }
+      });
+    }
+
     getFirstObject(): Promise<T> {
       return new Promise<T>((resolve: (v: T) => void, reject: RejectString) => {
-        let cb = (): T => { return this.getFirstObjectSync() };
+        let cb = (): T | MediaLibraryAniError => {
+          try {
+            return this.getFirstObjectSync();
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
         taskpool.execute(cb).then((ret: NullishType): void => {
-          if (ret === null || ret === undefined) {
-            let err: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(err);
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
           } else {
-            let result = ret as T;
-            resolve(result);
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as T);
+            }
           }
         });
       });
     }
 
-    getNextObject(callback: AsyncCallback<T | undefined>): void {}
+    getNextObject(callback: AsyncCallback<T | undefined, void>): void {
+      let cb = (): T | MediaLibraryAniError => {
+        try {
+          return this.getNextObjectSync();
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1), undefined);
+          } else {
+            callback(businessError(0), ret as T);
+          }
+        }
+      });
+    }
+
     getNextObject(): Promise<T> {
       return new Promise<T>((resolve: (v: T) => void, reject: RejectString) => {
-        let cb = (): T => { return this.getNextObjectSync() };
+        let cb = (): T | MediaLibraryAniError => {
+          try {
+            return this.getNextObjectSync();
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
         taskpool.execute(cb).then((ret: NullishType): void => {
-          if (ret === null || ret === undefined) {
-            let err: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(err);
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
           } else {
-            let result = ret as T;
-            resolve(result);
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as T);
+            }
+          }
+        });
+      });
+    }
+
+    getObjectByPosition(index: number, callback: AsyncCallback<T | undefined>): void {
+      let cb = (): MediaLibraryAniError | T => {
+        try {
+          return this.getObjectByPositionSync(index);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as T);
+          }
+        }
+      });
+    }
+
+    getObjectByPosition(index: number): Promise<T> {
+      return new Promise<T>((resolve: (v: T) => void, reject: RejectString) => {
+        let cb = (): T | MediaLibraryAniError => {
+          try {
+            return this.getObjectByPositionSync(index);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as T);
+            }
           }
         });
       });
     }
 
     getAllObjects(callback: AsyncCallback<Array<T> | undefined, void>): void {
-      let task = new taskpool.Task(() => this.getAllObjectsSync());
-      let p1 = taskpool.execute(task);
-      p1.then((ret: NullishType) => {
-        let eNull: BusinessError<void> = {
-          code: -1,
-          name: "",
-          message: ""
-        };
-        if (ret === null || ret === undefined) {
-          eNull.code = -1;
-          callback(eNull, undefined);
+      let cb = (): Array<T> | MediaLibraryAniError => {
+        try {
+          return this.getAllObjectsSync();
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
         } else {
-          let result = ret as Array<T>;
-          eNull.code = 0;
-          callback(eNull, result);
+          if (isNullish(ret)) {
+            callback(businessError(-1), undefined);
+          } else {
+            callback(businessError(0), ret as Array<T>);
+          }
         }
       });
     }
+
     getAllObjects(): Promise<Array<T>> {
       return new Promise<Array<T>>((resolve: (v: Array<T>) => void, reject: RejectString) => {
         let blockQueue: BlockingQueue<Array<T>> = new ArrayBlockingQueue<Array<T>>(2);
@@ -718,23 +867,28 @@ export namespace photoAccessHelper {
         };
 
         taskpool.execute(cb).then((ret: NullishType): void => {
-          if (ret === null || ret === undefined) {
-            let err: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(err);
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
           } else {
-            let result = ret as Array<T>;
-            resolve(result);
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as Array<T>);
+            }
           }
         });
 
         blockQueue.pop();
       });
     }
+
+    native close(): void;
+
+    native getFirstObjectSync(): T;
+    native getNextObjectSync(): T;
+    native getAllObjectsSync(): Array<T>;
+    native getObjectByPositionSync(index: number): T;
   }
 
   export enum AlbumType {
@@ -847,25 +1001,25 @@ export namespace photoAccessHelper {
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
       return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void,
         reject: RejectString) => {
-          let cb = (): FetchResult<PhotoAsset> | MediaLibraryAniError => {
-            try {
-              return this.getAssetsInner(options);
-            } catch(e) {
-              return e as MediaLibraryAniError;
-            }
-          };
-          taskpool.execute(cb).then((ret: NullishType): void => {
-            if (ret instanceof MediaLibraryAniError) {
-              let err = ret as MediaLibraryAniError;
-              reject(businessError<string>(err.code, err.message));
+        let cb = (): FetchResult<PhotoAsset> | MediaLibraryAniError => {
+          try {
+            return this.getAssetsInner(options);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
             } else {
-              if (isNullish(ret)) {
-                reject(businessError<string>(-1, "Operation failed"));
-              } else {
-                resolve(ret as FetchResult<PhotoAsset>);
-              }
+              resolve(ret as FetchResult<PhotoAsset>);
             }
-          });
+          }
+        });
       });
     }
 
@@ -1155,7 +1309,6 @@ export namespace photoAccessHelper {
     getAssets(options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
     getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     getFileAssetsInfo(options: FetchOptions): Array<FileAssetInfo>;
-    getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): Promise<FetchResult<Album>>;
     stopThumbnailCreationTask(taskId: number): void;
     startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
     getBurstAssets(burstKey: string, options: FetchOptions): Promise<FetchResult<PhotoAsset>>;
@@ -1168,14 +1321,42 @@ export namespace photoAccessHelper {
       callback: AsyncCallback<string | undefined>): void;
     createAsset(photoType: PhotoType, extension: string, callback: AsyncCallback<string | undefined>): void;
     createAsset(photoType: PhotoType, extension: string, options?: CreateOptions): Promise<string>;
+    getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions,
+       callback: AsyncCallback<FetchResult<Album> | undefined>): void;
+    getAlbums(type: AlbumType, subtype: AlbumSubtype, callback: AsyncCallback<FetchResult<Album> | undefined>): void;
+    getAlbums(type: AlbumType, subtype: AlbumSubtype, options?: FetchOptions): Promise<FetchResult<Album>>;
+    createAssetsForApp(bundleName: string, appName: string, appId: string,
+      photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>>;
+    createAssetsForAppWithMode(bundleName: string, appName: string, appId: string, tokenId: number,
+      authorizationMode: AuthorizationMode, photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>>;
+    release(callback: AsyncCallback<void>): void;
+    release(): Promise<void>;
+    saveFormInfo(info: FormInfo, callback: AsyncCallback<void>): void;
+    saveFormInfo(info: FormInfo): Promise<void>;
+    applyChanges(mediaChangeRequest: MediaChangeRequest): Promise<void>;
+    getIndexConstructProgress(): Promise<string>;
+    grantPhotoUriPermission(appid: string, uri: string, photoPermissionType: PhotoPermissionType,
+      hideSensitiveType: HideSensitiveType): Promise<number>;
+  }
+
+  interface AppInfo {
+    bundleName: string;
+    appName: string;
+    appId: string;
+    tokenId?: number;
+  }
+
+  interface GrantPhotoUriPermissionParam {
+    appid: string;
+    uri: string;
   }
 
   class PhotoAccessHelperHandle implements PhotoAccessHelper {
-    private nativePhotoAccessHelper: long = 0;
+    private nativeHandle: long = 0;
 
     constructor(nativePtr: long) {
-      if (this.nativePhotoAccessHelper == 0) {
-        this.nativePhotoAccessHelper = nativePtr;
+      if (this.nativeHandle == 0) {
+        this.nativeHandle = nativePtr;
       }
     }
 
@@ -1211,14 +1392,8 @@ export namespace photoAccessHelper {
         };
 
         taskpool.execute(cb).then((buffer: NullishType): void => {
-          if (buffer === null || buffer === undefined) {
-            let error: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(error);
+          if (isNullish(buffer)) {
+            reject(businessError<string>(-1, "Operation failed"));
           } else {
             resolve(buffer as FetchResult<PhotoAsset>);
           }
@@ -1228,73 +1403,497 @@ export namespace photoAccessHelper {
       });
     }
 
-    getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): Promise<FetchResult<Album>> {
-      return new Promise<FetchResult<Album>>((resolve: (v: FetchResult<Album>) => void, reject: RejectString) => {
-        let cb = (): FetchResult<Album> => { return this.getAlbumsInner(type, subtype, options) };
-        taskpool.execute(cb).then((buffer: NullishType): void => {
-          if (buffer === null || buffer === undefined) {
-            let error: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(error);
+    getBurstAssets(burstKey: string, options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
+      return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void,
+        reject: RejectString) => {
+        let cb = (): FetchResult<PhotoAsset> | MediaLibraryAniError => {
+          try {
+            return this.getBurstAssetsInner(burstKey, options);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
           } else {
-            resolve(buffer as FetchResult<Album>);
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as FetchResult<PhotoAsset>);
+            }
           }
         });
       });
     }
 
-    getBurstAssets(burstKey: string, options: FetchOptions): Promise<FetchResult<PhotoAsset>> {
-      return new Promise<FetchResult<PhotoAsset>>((resolve: (v: FetchResult<PhotoAsset>) => void,
-        reject: RejectString) => {
-        let emptyResult: FetchResult<PhotoAsset> = new FetchResultHandle<PhotoAsset>(0);
-        resolve(emptyResult);
+    createAsset(displayName: string, callback: AsyncCallback<PhotoAsset | undefined>): void {
+      let cb = (): MediaLibraryAniError | PhotoAsset => {
+        try {
+          return this.createAssetSystemInner(displayName);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as PhotoAsset);
+          }
+        }
       });
     }
 
-    createAsset(displayName: string, callback: AsyncCallback<PhotoAsset | undefined>): void {}
-
     createAsset(displayName: string): Promise<PhotoAsset> {
-      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: (e: BusinessError<string>) => void) => {
-          let emptyResult: PhotoAsset = new PhotoAssetHandle(0);
-          resolve(emptyResult);
+      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: RejectString) => {
+        let cb = (): PhotoAsset | MediaLibraryAniError => {
+          try {
+            return this.createAssetSystemInner(displayName);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as PhotoAsset);
+            }
+          }
         });
+      });
     }
 
     createAsset(displayName: string, options: PhotoCreateOptions): Promise<PhotoAsset> {
-      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: (e: BusinessError<string>) => void) => {
-        let emptyResult: PhotoAsset = new PhotoAssetHandle(0);
-        resolve(emptyResult);
+      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: RejectString) => {
+        let cb = (): PhotoAsset | MediaLibraryAniError => {
+          try {
+            return this.createAssetSystemInner(displayName, options);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as PhotoAsset);
+            }
+          }
+        });
       });
     }
 
     createAsset(displayName: string, options: PhotoCreateOptions,
-      callback: AsyncCallback<PhotoAsset | undefined>): void {}
-
-    createAsset(photoType: PhotoType, extension: string, options: CreateOptions,
-      callback: AsyncCallback<string | undefined>): void {}
-
-    createAsset(photoType: PhotoType, extension: string, callback: AsyncCallback<string | undefined>): void {}
-
-    createAsset(photoType: PhotoType, extension: string, options?: CreateOptions): Promise<string> {
-      return new Promise<string>((resolve: (v: string) => void, reject: (e: BusinessError<string>) => void) => {
-        let emptyResult: string = "";
-        resolve(emptyResult);
+      callback: AsyncCallback<PhotoAsset | undefined>): void {
+      let cb = (): MediaLibraryAniError | PhotoAsset => {
+        try {
+          return this.createAssetSystemInner(displayName, options);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as PhotoAsset);
+          }
+        }
       });
     }
 
-    native getAlbumsInner(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions): FetchResult<Album>;
-    native release(): void;
-    native applyChanges(mediaChangeRequest: MediaChangeRequest): void;
-    native createAsset1(displayName: string): PhotoAsset;
+    createAsset(photoType: PhotoType, extension: string, options: CreateOptions,
+      callback: AsyncCallback<string | undefined>): void {
+      let cb = (): MediaLibraryAniError | string => {
+        try {
+          return this.createAssetComponentInner(photoType, extension, options);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as string);
+          }
+        }
+      });
+    }
+
+    createAsset(photoType: PhotoType, extension: string, callback: AsyncCallback<string | undefined>): void {
+      let cb = (): MediaLibraryAniError | string => {
+        try {
+          return this.createAssetComponentInner(photoType, extension);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as string);
+          }
+        }
+      });
+    }
+
+    createAsset(photoType: PhotoType, extension: string, options?: CreateOptions): Promise<string> {
+      return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
+        let cb = (): string | MediaLibraryAniError => {
+          try {
+            return this.createAssetComponentInner(photoType, extension, options);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as string);
+            }
+          }
+        });
+      });
+    }
+
+    getAlbums(type: AlbumType, subtype: AlbumSubtype, options: FetchOptions,
+      callback: AsyncCallback<FetchResult<Album> | undefined>): void {
+      let cb = (): MediaLibraryAniError | FetchResult<Album> => {
+        try {
+          return this.getAlbumsInner(type, subtype, options);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as FetchResult<Album>);
+          }
+        }
+      });
+    }
+
+    getAlbums(type: AlbumType, subtype: AlbumSubtype, callback: AsyncCallback<FetchResult<Album> | undefined>): void {
+      let cb = (): MediaLibraryAniError | FetchResult<Album> => {
+        try {
+          return this.getAlbumsInner(type, subtype);
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      };
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (ret instanceof MediaLibraryAniError) {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        } else {
+          if (isNullish(ret)) {
+            callback(businessError(-1, "Operation failed"), undefined);
+          } else {
+            callback(businessError(0), ret as FetchResult<Album>);
+          }
+        }
+      });
+    }
+
+    getAlbums(type: AlbumType, subtype: AlbumSubtype, options?: FetchOptions): Promise<FetchResult<Album>> {
+      return new Promise<FetchResult<Album>>((resolve: (v: FetchResult<Album>) => void,
+        reject: RejectString) => {
+          let cb = (): FetchResult<Album> | MediaLibraryAniError => {
+            try {
+              return this.getAlbumsInner(type, subtype, options);
+            } catch(e) {
+              return e as MediaLibraryAniError;
+            }
+          };
+          taskpool.execute(cb).then((ret: NullishType): void => {
+            if (ret instanceof MediaLibraryAniError) {
+              let err = ret as MediaLibraryAniError;
+              reject(businessError<string>(err.code, err.message));
+            } else {
+              if (isNullish(ret)) {
+                reject(businessError<string>(-1, "Operation failed"));
+              } else {
+                resolve(ret as FetchResult<Album>);
+              }
+            }
+          });
+      });
+    }
+
+    createAssetsForApp(bundleName: string, appName: string, appId: string,
+      photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>> {
+      let appInfo: AppInfo = {
+        bundleName: bundleName,
+        appName: appName,
+        appId: appId
+      };
+      return new Promise<Array<string>>((resolve: (v: Array<string>) => void, reject: RejectString) => {
+        let cb = (): Array<string> | MediaLibraryAniError => {
+          try {
+            return this.createAssetsForAppInner(appInfo, photoCreationConfigs);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as Array<string>);
+            }
+          }
+        });
+      });
+    }
+
+    createAssetsForAppWithMode(bundleName: string, appName: string, appId: string, tokenId: number,
+      authorizationMode: AuthorizationMode, photoCreationConfigs: Array<PhotoCreationConfig>): Promise<Array<string>> {
+      let appInfo: AppInfo = {
+        bundleName: bundleName,
+        appName: appName,
+        appId: appId,
+        tokenId: tokenId
+      };
+      return new Promise<Array<string>>((resolve: (v: Array<string>) => void, reject: RejectString) => {
+        let cb = (): Array<string> | MediaLibraryAniError => {
+          try {
+            return this.createAssetsForAppWithModeInner(appInfo, authorizationMode, photoCreationConfigs);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as Array<string>);
+            }
+          }
+        });
+      });
+    }
+
+    release(callback: AsyncCallback<void>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.releaseInner();
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      }
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (isNullish(ret)) {
+          callback(businessError(0), undefined);
+        } else {
+          let err = ret as MediaLibraryAniError;
+        }
+      });
+    }
+
+    release(): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.releaseInner();
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    saveFormInfo(info: FormInfo, callback: AsyncCallback<void>): void {
+      let cb = (): MediaLibraryAniError | undefined => {
+        try {
+          this.saveFormInfoInner(info);
+          return undefined;
+        } catch(e) {
+          return e as MediaLibraryAniError;
+        }
+      }
+      taskpool.execute(cb).then((ret: NullishType): void => {
+        if (isNullish(ret)) {
+          callback(businessError(0), undefined);
+        } else {
+          let err = ret as MediaLibraryAniError;
+          callback(businessError(err.code, err.message), undefined);
+        }
+      });
+    }
+
+    saveFormInfo(info: FormInfo): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.saveFormInfoInner(info);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    applyChanges(mediaChangeRequest: MediaChangeRequest): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.applyChangesInner(mediaChangeRequest);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    getIndexConstructProgress(): Promise<string> {
+      return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
+        let cb = (): string | MediaLibraryAniError => {
+          try {
+            return this.getIndexConstructProgressInner();
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as string);
+            }
+          }
+        });
+      });
+    }
+
+    grantPhotoUriPermission(appid: string, uri: string, photoPermissionType: PhotoPermissionType,
+      hideSensitiveType: HideSensitiveType): Promise<number> {
+      let param: GrantPhotoUriPermissionParam = {
+        appid: appid,
+        uri: uri
+      };
+      return new Promise<number>((resolve: (v: number) => void, reject: RejectString) => {
+        let cb = (): number | MediaLibraryAniError => {
+          try {
+            return this.grantPhotoUriPermissionInner(param, photoPermissionType, hideSensitiveType);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as number);
+            }
+          }
+        });
+      });
+    }
+
+    native startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
+    native stopThumbnailCreationTask(taskId: number): void;
+    native registerChange(uri: string, forChildUris: boolean, callback: Callback<ChangeData>): void;
+    native unRegisterChange(uri: string, callback?: Callback<ChangeData>): void;
     native getAssetsSync(options: FetchOptions): Array<PhotoAsset>;
     native getFileAssetsInfo(options: FetchOptions): Array<FileAssetInfo>;
     native getAssetsInner(options: FetchOptions): FetchResult<PhotoAsset>;
-    native stopThumbnailCreationTask(taskId: number): void;
-    native startCreateThumbnailTask(predicate: dataSharePredicates.DataSharePredicates): int;
+    native getBurstAssetsInner(burstKey: string, options: FetchOptions): FetchResult<PhotoAsset>;
+    native createAssetSystemInner(displayName: string, options?: PhotoCreateOptions): PhotoAsset;
+    native createAssetComponentInner(photoType: PhotoType, extension: string, options?: CreateOptions): string;
+    native getAlbumsInner(type: AlbumType, subtype: AlbumSubtype, options?: FetchOptions): FetchResult<Album>;
+    native createAssetsForAppInner(appInfo: AppInfo, photoCreationConfigs: Array<PhotoCreationConfig>): Array<string>;
+    native createAssetsForAppWithModeInner(appInfo: AppInfo, authorizationMode: AuthorizationMode,
+      photoCreationConfigs: Array<PhotoCreationConfig>): Array<string>;
+    native releaseInner(): void;
+    native saveFormInfoInner(info: FormInfo): void;
+    native applyChangesInner(mediaChangeRequest: MediaChangeRequest): void;
+    native getIndexConstructProgressInner(): string;
+    native grantPhotoUriPermissionInner(param: GrantPhotoUriPermissionParam, photoPermissionType: PhotoPermissionType,
+      hideSensitiveType: HideSensitiveType): number;
   }
 
   export interface FormInfo {
@@ -1325,8 +1924,8 @@ export namespace photoAccessHelper {
   class ChangeDataHandle implements ChangeData {
     constructor() {}
     type: NotifyType;
-    uris: Array<string> =  new Array<string>();
-    extraUris: Array<string> =  new Array<string>();
+    uris: Array<string> = new Array<string>();
+    extraUris: Array<string> = new Array<string>();
   }
 
   export enum PhotoViewMIMETypes {
@@ -1372,13 +1971,52 @@ export namespace photoAccessHelper {
   }
 
   export class MediaAssetEditData {
+    private _compatibleFormat: string;
+    private _formatVersion: string;
+    private _data: string;
+    private nativeHandle: long = 0;
+
+    private native nativeConstructor(compatibleFormat: string, formatVersion: string): void;
+    private native compatibleFormatSetter(format: string): void;
+    private native compatibleFormatGetter(): string;
+    private native formatVersionSetter(version: string): void;
+    private native formatVersionGetter(): string;
+    private native dataSetter(data: string): void;
+    private native dataGetter(): string;
+
     constructor(compatibleFormat: string, formatVersion: string) {
-      this.compatibleFormat = compatibleFormat;
-      this.formatVersion = formatVersion;
+      this.nativeConstructor(compatibleFormat, formatVersion);
     }
-    compatibleFormat: string;
-    formatVersion: string;
-    data: string;
+
+    private create(context: long): void {
+      if (this.nativeHandle == 0) {
+        this.nativeHandle = context;
+      }
+    }
+
+    set compatibleFormat(format: string) {
+      this.compatibleFormatSetter(format);
+    }
+
+    get compatibleFormat(): string {
+      return this.compatibleFormatGetter();
+    }
+
+    set formatVersion(version: string) {
+      this.formatVersionSetter(version);
+    }
+
+    get formatVersion(): string {
+      return this.formatVersionGetter();
+    }
+
+    set data(data: string) {
+      this.dataSetter(data);
+    }
+
+    get data(): string {
+      return this.dataGetter();
+    }
   }
 
   export enum ResourceType {
@@ -1411,26 +2049,159 @@ export namespace photoAccessHelper {
 
   export interface MediaChangeRequest {}
 
+  export type AssetType = PhotoAsset | string;
+
   export class MediaAssetChangeRequest implements MediaChangeRequest {
-    constructor(asset: PhotoAsset) {}
+    private nativeHandle: long = 0;
+
+    constructor(asset: PhotoAsset) {
+      this.nativeConstructor(asset);
+    }
+
+    native static createImageAssetRequest(context: Context, fileUri: string): MediaAssetChangeRequest;
+
+    native static createVideoAssetRequest(context: Context, fileUri: string): MediaAssetChangeRequest;
+
+    static createAssetRequest(context: Context, displayName: string,
+      options?: PhotoCreateOptions): MediaAssetChangeRequest {
+      return MediaAssetChangeRequest.createAssetRequestByPhotoCreateOptions(context, displayName, options);
+    }
+
+    static createAssetRequest(context: Context, photoType: PhotoType, extension: string,
+      options?: CreateOptions): MediaAssetChangeRequest {
+      return MediaAssetChangeRequest.createAssetRequestByCreateOptions(context, photoType, extension, options);
+    }
+
+    static deleteAssets(context: Context, assets: Array<AssetType>): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            MediaAssetChangeRequest.deleteAssetsSync(context, assets);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    native getAsset(): PhotoAsset;
+
+    native setEditData(editData: MediaAssetEditData): void;
+
+    native addResource(type: ResourceType, fileUri: string): void;
+
+    native addResource(type: ResourceType, data: ArrayBuffer): void;
+
+    native addResource(type: ResourceType, proxy: PhotoProxy): void;
+
+    native setEffectMode(mode: MovingPhotoEffectMode): void;
+
+    private create(nativePointer: long): void {
+      if (this.nativeHandle == 0) {
+        this.nativeHandle = nativePointer;
+      }
+    }
+
+    private native nativeConstructor(asset: PhotoAsset): void;
+    private native static createAssetRequestByPhotoCreateOptions(context: Context, displayName: string,
+      options?: PhotoCreateOptions): MediaAssetChangeRequest;
+    private native static createAssetRequestByCreateOptions(context: Context, photoType: PhotoType, extension: string,
+      options?: CreateOptions): MediaAssetChangeRequest;
+    private native static deleteAssetsSync(context: Context, assets: Array<AssetType>): void;
   }
 
   export class MediaAssetsChangeRequest implements MediaChangeRequest {
-    private assets: Array<PhotoAsset>;
+    private nativeHandle: long = 0;
 
     constructor(assets: Array<PhotoAsset>) {
-      this.assets = assets;
+      this.nativeConstructor(assets);
     }
 
-    setFavorite(favoriteState: boolean): void {}
+    native setFavorite(favoriteState: boolean): void;
 
-    setHidden(hiddenState: boolean): void {}
+    native setHidden(hiddenState: boolean): void;
 
     setUserComment(userComment: string): void {}
+
+    private create(context: long): void {
+      if (this.nativeHandle == 0) {
+        this.nativeHandle = context;
+      }
+    }
+
+    native nativeConstructor(assets: Array<PhotoAsset>): void;
   }
 
   export class MediaAlbumChangeRequest implements MediaChangeRequest {
-    constructor(album: Album) {}
+    private nativeHandle: long = 0;
+
+    constructor(album: Album) {
+      this.nativeConstructor(album);
+    }
+
+    static deleteAlbums(context: Context, albums: Array<Album>): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: RejectString) : void => {
+        let cb = (): undefined | MediaLibraryAniError => {
+          try {
+            return MediaAlbumChangeRequest.deleteAlbumsSync(context, albums)
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(undefined);
+            }
+          }
+        });
+      });
+    }
+
+    native setCoverUri(coverUri: string): void;
+
+    native setAlbumName(name: string): void;
+
+    native addAssets(assets: Array<PhotoAsset>): void;
+
+    native moveAssets(assets: Array<PhotoAsset>, targetAlbum: Album): void;
+
+    native recoverAssets(assets: Array<PhotoAsset>): void;
+
+    native deleteAssets(assets: Array<PhotoAsset>): void;
+
+    native setIsMe(): void;
+
+    native setDisplayLevel(displayLevel: number): void;
+
+    native dismissAssets(assets: Array<PhotoAsset>): void;
+
+    native mergeAlbum(album: Album): void;
+
+    native placeBefore(album: Album): void;
+
+    private create(context: long): void {
+      if (this.nativeHandle == 0) {
+        this.nativeHandle = context;
+      }
+    }
+
+    native nativeConstructor(album: Album): void;
+    native static deleteAlbumsSync(context: Context, albums: Array<Album>): void;
   }
 
   export interface SharedPhotoAsset {
@@ -1540,39 +2311,35 @@ export namespace photoAccessHelper {
     private nativeMovingPhoto: long = 0;
 
     constructor(context: long) {
-      if(this.nativeMovingPhoto == 0){
+      if (this.nativeMovingPhoto == 0) {
         this.nativeMovingPhoto = context;
       }
     }
 
     requestContent(imageFileUri: string, videoFileUri: string): Promise<void> {
-      return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let cb = (): PromiseLike<void> => { this.requestContent1(imageFileUri, videoFileUri) };
+      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
+        let cb = (): PromiseLike<void> => { this.RequestContentByImageFileAndVideoFile(imageFileUri, videoFileUri) };
         taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
     }
+
     requestContent(resourceType: ResourceType, fileUri: string): Promise<void> {
-      return new Promise<void>((resolve: ResolveVoid, reject: RejectString) => {
-        let cb = (): PromiseLike<void> => { this.requestContent2(resourceType, fileUri) }
+      return new Promise<void>((resolve: (v: PromiseLike<void>) => void, reject: RejectString) => {
+        let cb = (): PromiseLike<void> => { this.RequestContentByResourceTypeAndFile(resourceType, fileUri) }
         taskpool.execute(cb).then((v: NullishType): void => {
           resolve(v as PromiseLike<void>);
         });
       });
     }
+
     requestContent(resourceType: ResourceType): Promise<ArrayBuffer> {
       return new Promise<ArrayBuffer>((resolve: (v: ArrayBuffer) => void, reject: RejectString) => {
-        let cb = (): ArrayBuffer => { return this.requestContent3(resourceType) };
+        let cb = (): ArrayBuffer => { return this.RequestContentByResourceType(resourceType) };
         taskpool.execute(cb).then((buffer: NullishType): void => {
-          if (buffer === null || buffer === undefined) {
-            let error: BusinessError<string> = {
-              code: -1,
-              data: "Operation failed",
-              name: "",
-              message: ""
-            };
-            reject(error);
+          if (isNullish(buffer)) {
+            reject(businessError<string>(-1, "Operation failed"));
           } else {
             resolve(buffer as ArrayBuffer);
           }
@@ -1580,10 +2347,10 @@ export namespace photoAccessHelper {
       });
     }
 
-    native requestContent1(imageFileUri: string, videoFileUri: string): void;
-    native requestContent2(resourceType: ResourceType, fileUri: string): void;
-    native requestContent3(resourceType: ResourceType): ArrayBuffer;
     native getUri(): string;
+    native RequestContentByImageFileAndVideoFile(imageFileUri: string, videoFileUri: string): void;
+    native RequestContentByResourceTypeAndFile(resourceType: ResourceType, fileUri: string): void;
+    native RequestContentByResourceType(resourceType: ResourceType): ArrayBuffer;
   }
 
   export enum HighlightAlbumInfoType {
@@ -1610,7 +2377,41 @@ export namespace photoAccessHelper {
   }
 
   export class HighlightAlbum {
-    constructor(album: Album) {}
+    private nativePhotoAlbum: long = 0;
+
+    constructor(album: Album) {
+      let nativePtr: long = this.nativeConstructor(album);
+      if (nativePtr != 0) {
+        this.nativePhotoAlbum = nativePtr;
+      }
+    }
+
+    getHighlightAlbumInfo(type: HighlightAlbumInfoType): Promise<string> {
+      return new Promise<string>((resolve: (v: string) => void, reject: RejectString) => {
+        let cb = (): string | MediaLibraryAniError => {
+          try {
+            return this.getHighlightAlbumInfoInner(type);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as string);
+            }
+          }
+        });
+      });
+    }
+
+    native nativeConstructor(album: Album): long;
+    native getHighlightAlbumInfoInner(type: HighlightAlbumInfoType): string;
   }
 
   export enum CloudEnhancementTaskStage {
@@ -1631,7 +2432,179 @@ export namespace photoAccessHelper {
     readonly statusCode?: number;
   }
 
+  class CloudEnhancementTaskStateHandle implements CloudEnhancementTaskState {
+    readonly taskStage: CloudEnhancementTaskStage = CloudEnhancementTaskStage.TASK_STAGE_EXCEPTION;
+    readonly transferredFileSize: number | undefined = undefined;
+    readonly totalFileSize: number | undefined = undefined;
+    readonly expectedDuration: number | undefined = undefined;
+    readonly statusCode: number | undefined = undefined;
+    private nativeHandle: long = 0;
+
+    private constructor(nativePointer: long) {
+      if (this.nativeHandle == 0) {
+        this.nativeHandle = nativePointer;
+        let undefinedValue: number = -1;
+        this.transferredFileSize =
+          this.getTransferredFileSize() == undefinedValue ? undefined : this.getTransferredFileSize();
+        this.totalFileSize = this.getTotalFileSize() == undefinedValue ? undefined : this.getTotalFileSize();
+        this.expectedDuration = this.getExpectedDuration() == undefinedValue ? undefined : this.getExpectedDuration();
+        this.statusCode = this.getStatusCode() == undefinedValue ? undefined : this.getStatusCode();
+      }
+    }
+
+    private native getTransferredFileSize(): number;
+    private native getTotalFileSize(): number;
+    private native getExpectedDuration(): number;
+    private native getStatusCode(): number;
+  }
+
   export class CloudEnhancement {
+    private nativeHandle: long = 0;
+
+    constructor(nativePointer: long) {
+      if (this.nativeHandle == 0) {
+        this.nativeHandle = nativePointer;
+      }
+    }
+
+    native static getCloudEnhancementInstance(context: Context): CloudEnhancement;
+
+    submitCloudEnhancementTasks(photoAssets: Array<PhotoAsset>, hasCloudWatermark: boolean): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.submitCloudEnhancementTasksSync(photoAssets, hasCloudWatermark);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    prioritizeCloudEnhancementTask(photoAsset: PhotoAsset): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.prioritizeCloudEnhancementTaskSync(photoAsset);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    cancelCloudEnhancementTasks(photoAssets: Array<PhotoAsset>): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.cancelCloudEnhancementTasksSync(photoAssets);
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    cancelAllCloudEnhancementTasks(): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.cancelAllCloudEnhancementTasksSync();
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    syncCloudEnhancementTaskStatus(): Promise<void> {
+      return new Promise<void>((resolve: (v: undefined) => void, reject: (e: BusinessError<void>) => void): void => {
+        let cb = (): MediaLibraryAniError | undefined => {
+          try {
+            this.syncCloudEnhancementTaskStatusSync();
+            return undefined;
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (isNullish(ret)) {
+            resolve(undefined);
+          } else {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError(err.code, err.message));
+          }
+        });
+      });
+    }
+
+    getCloudEnhancementPair(asset: PhotoAsset): Promise<PhotoAsset> {
+      return new Promise<PhotoAsset>((resolve: (v: PhotoAsset) => void, reject: RejectString) => {
+        let cb = (): PhotoAsset | MediaLibraryAniError => {
+          try {
+            return this.getCloudEnhancementPairSync(asset);
+          } catch(e) {
+            return e as MediaLibraryAniError;
+          }
+        };
+        taskpool.execute(cb).then((ret: NullishType): void => {
+          if (ret instanceof MediaLibraryAniError) {
+            let err = ret as MediaLibraryAniError;
+            reject(businessError<string>(err.code, err.message));
+          } else {
+            if (isNullish(ret)) {
+              reject(businessError<string>(-1, "Operation failed"));
+            } else {
+              resolve(ret as PhotoAsset);
+            }
+          }
+        });
+      });
+    }
+
+    private native submitCloudEnhancementTasksSync(photoAssets: Array<PhotoAsset>, hasCloudWatermark: boolean): void;
+    private native prioritizeCloudEnhancementTaskSync(photoAsset: PhotoAsset): void;
+    private native cancelCloudEnhancementTasksSync(photoAssets: Array<PhotoAsset>): void;
+    private native cancelAllCloudEnhancementTasksSync(): void;
+    private native queryCloudEnhancementTaskStateSync(photoAsset: PhotoAsset): CloudEnhancementTaskState;
+    private native syncCloudEnhancementTaskStatusSync(): void;
+    private native getCloudEnhancementPairSync(asset: PhotoAsset): PhotoAsset;
   }
 
   export enum CloudEnhancementState {

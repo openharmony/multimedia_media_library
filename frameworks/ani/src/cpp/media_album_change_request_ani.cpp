@@ -29,9 +29,9 @@
 
 using namespace std;
 namespace OHOS::Media {
-ani_status MediaAlbumChangeRequestAni::MediaAlbumChangeRequestInit(ani_env *env)
+ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
 {
-    static const char *className = ANI_CLASS_MEDIA_ALBUM_CHANGE_REQUEST.c_str();
+    static const char *className = PAH_ANI_CLASS_MEDIA_ALBUM_CHANGE_REQUEST.c_str();
     ani_class cls;
     auto status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
@@ -40,7 +40,7 @@ ani_status MediaAlbumChangeRequestAni::MediaAlbumChangeRequestInit(ani_env *env)
     }
 
     std::array methods = {
-        ani_native_function {"create", nullptr, reinterpret_cast<void *>(Constructor)},
+        ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)},
         ani_native_function {"placeBefore", nullptr, reinterpret_cast<void *>(PlaceBefore)},
         ani_native_function {"dismissAssets", nullptr, reinterpret_cast<void *>(DismissAssets)},
         ani_native_function {"addAssets", nullptr, reinterpret_cast<void *>(AddAssets)},
@@ -51,7 +51,7 @@ ani_status MediaAlbumChangeRequestAni::MediaAlbumChangeRequestInit(ani_env *env)
         ani_native_function {"recoverAssets", nullptr, reinterpret_cast<void *>(RecoverAssets)},
         ani_native_function {"setDisplayLevel", nullptr, reinterpret_cast<void *>(SetDisplayLevel)},
         ani_native_function {"deleteAssets", nullptr, reinterpret_cast<void *>(DeleteAssets)},
-        ani_native_function {"deleteAlbums", nullptr, reinterpret_cast<void *>(DeleteAlbums)},
+        ani_native_function {"deleteAlbumsSync", nullptr, reinterpret_cast<void *>(DeleteAlbums)},
         ani_native_function {"setIsMe", nullptr, reinterpret_cast<void *>(SetIsMe)},
     };
     status = env->Class_BindNativeMethods(cls, methods.data(), methods.size());
@@ -63,36 +63,21 @@ ani_status MediaAlbumChangeRequestAni::MediaAlbumChangeRequestInit(ani_env *env)
     return ANI_OK;
 }
 
-ani_object MediaAlbumChangeRequestAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz,
+ani_status MediaAlbumChangeRequestAni::Constructor([[maybe_unused]] ani_env *env, ani_object object,
     [[maybe_unused]] ani_object albumHandle)
 {
     auto albumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, albumHandle);
-    CHECK_COND_RET(albumAni != nullptr, nullptr, "albumAni is nullptr");
+    CHECK_COND_RET(albumAni != nullptr, ANI_ERROR, "albumAni is nullptr");
 
     auto nativeHandle = std::make_unique<MediaAlbumChangeRequestAni>();
     nativeHandle->photoAlbum_ = albumAni->GetPhotoAlbumInstance();
 
-    static const char *className = ANI_CLASS_MEDIA_ALBUM_CHANGE_REQUEST.c_str();
-    ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
-        ani_object nullobj = nullptr;
-        return nullobj;
-    }
-
-    ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
-        MEDIA_ERR_LOG("Failed to find method: %{public}s", "ctor");
-        ani_object nullobj = nullptr;
-        return nullobj;
-    }
-
-    ani_object mediaAlbumChangeRequestObj;
-    if (ANI_OK != env->Object_New(cls, ctor,
-        &mediaAlbumChangeRequestObj, reinterpret_cast<ani_long>(nativeHandle.release()))) {
+    if (ANI_OK != env->Object_CallMethodByName_Void(object, "create", nullptr,
+        reinterpret_cast<ani_long>(nativeHandle.release()))) {
         MEDIA_ERR_LOG("New PhotoAccessHelper Fail");
+        return ANI_ERROR;
     }
-    return mediaAlbumChangeRequestObj;
+    return ANI_OK;
 }
 
 MediaAlbumChangeRequestAni* MediaAlbumChangeRequestAni::Unwrap(ani_env *env, ani_object mediaAlbumChangeRequestHandle)
@@ -203,7 +188,7 @@ ani_status MediaAlbumChangeRequestAni::MergeAlbum(ani_env *env, ani_object objec
     auto photoAlbum = aniContext->objectInfo->photoAlbum_;
     auto targetAlbum = aniContext->objectInfo->targetAlbum_;
     CHECK_COND_WITH_RET_MESSAGE(env,
-        (photoAlbum != nullptr) && (targetAlbum != nullptr), ANI_INVALID_ARGS, "PhotoAlbum  Or TargetAlbum is nullptr");
+        (photoAlbum != nullptr) && (targetAlbum != nullptr), ANI_INVALID_ARGS, "PhotoAlbum or TargetAlbum is nullptr");
     CHECK_COND_WITH_RET_MESSAGE(env,
         (PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) &&
         (PhotoAlbum::IsSmartPortraitPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType())),
@@ -244,8 +229,8 @@ ani_status MediaAlbumChangeRequestAni::DismissAssets(ani_env *env, ani_object ob
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
     vector<std::string> newAssetArray;
     CHECK_COND_WITH_RET_MESSAGE(env,
-        MediaLibraryAniUtils::GetStringArray(env, arrayPhotoAssetStr, newAssetArray) == ANI_OK, ANI_INVALID_ARGS,
-        "Failed to get arrayPhotoAssetStr");
+        MediaLibraryAniUtils::GetUriArrayFromAssets(env, arrayPhotoAssetStr, newAssetArray) == ANI_OK,
+        ANI_INVALID_ARGS, "Failed to get arrayPhotoAssetStr");
     if (!CheckDismissAssetVaild(aniContext->objectInfo->dismissAssets_, newAssetArray)) {
         AniError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT, "This dismissAssets is not support");
         return ANI_INVALID_ARGS;
@@ -465,7 +450,8 @@ ani_status MediaAlbumChangeRequestAni::DeleteAssets(ani_env *env, ani_object obj
     return ANI_OK;
 }
 
-ani_status MediaAlbumChangeRequestAni::DeleteAlbums(ani_env *env, ani_object context, ani_object arrayAlbum)
+ani_status MediaAlbumChangeRequestAni::DeleteAlbums(ani_env *env, ani_class clazz, ani_object context,
+    ani_object arrayAlbum)
 {
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
@@ -490,8 +476,8 @@ ani_status MediaAlbumChangeRequestAni::DeleteAlbums(ani_env *env, ani_object con
     Uri deleteAlbumUri(PAH_DELETE_PHOTO_ALBUM);
     int ret = UserFileClient::Delete(deleteAlbumUri, aniContext->predicates);
     if (ret < 0) {
-        aniContext->SaveError(ret);
         ANI_ERR_LOG("Failed to delete albums, err: %{public}d", ret);
+        aniContext->ThrowError(env, ret, "Failed to delete albums");
         return ANI_ERROR;
     }
     ANI_INFO_LOG("Delete %{public}d album(s)", ret);
@@ -981,15 +967,17 @@ static void ApplyAlbumChangeRequestExecute(std::unique_ptr<MediaAlbumChangeReque
     }
 }
 
-ani_status MediaAlbumChangeRequestAni::ApplyChanges(ani_env *env, ani_object object)
+ani_status MediaAlbumChangeRequestAni::ApplyChanges(ani_env *env)
 {
     auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
-    aniContext->objectInfo = Unwrap(env, object);
+    aniContext->objectInfo = this;
     CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
     aniContext->objectInfo->CheckChangeOperations(env);
     aniContext->albumChangeOperations = aniContext->objectInfo->albumChangeOperations_;
     aniContext->objectInfo->albumChangeOperations_.clear();
     ApplyAlbumChangeRequestExecute(aniContext);
+    ani_object err = {};
+    aniContext->HandleError(env, err);
     return ANI_OK;
 }
 

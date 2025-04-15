@@ -56,29 +56,37 @@ static constexpr int32_t VALUE_IDX = 1;
 static const string EMPTY_STRING = "";
 using json = nlohmann::json;
 
-ani_boolean MediaLibraryAniUtils::isArray(ani_env *env, ani_object object)
+ani_boolean MediaLibraryAniUtils::IsArray(ani_env *env, ani_object object)
 {
     ani_boolean isArray = ANI_FALSE;
     ani_class cls {};
     static const std::string className = "Lescompat/Array;";
     CHECK_COND_RET(ANI_OK == env->FindClass(className.c_str(), &cls), isArray, "Can't find Lescompat/Array.");
 
-    ani_static_method static_method {};
-    CHECK_COND_RET(ANI_OK == env->Class_FindStaticMethod(cls, "isArray", nullptr, &static_method), isArray,
+    ani_static_method isArrayMethod {};
+    CHECK_COND_RET(ANI_OK == env->Class_FindStaticMethod(cls, "isArray", nullptr, &isArrayMethod), isArray,
         "Can't find method isArray in Lescompat/Array.");
 
-    CHECK_COND_RET(ANI_OK == env->Class_CallStaticMethod_Boolean(cls, static_method, &isArray, object),
+    CHECK_COND_RET(ANI_OK == env->Class_CallStaticMethod_Boolean(cls, isArrayMethod, &isArray, object),
         isArray, "Call method isArray failed.");
 
     return isArray;
 }
 
-ani_boolean MediaLibraryAniUtils::isUndefined(ani_env *env, ani_object object)
+ani_boolean MediaLibraryAniUtils::IsUndefined(ani_env *env, ani_object object)
 {
     ani_boolean isUndefined = ANI_TRUE;
     CHECK_COND_RET(ANI_OK == env->Reference_IsUndefined(object, &isUndefined), ANI_TRUE,
         "Call Reference_IsUndefined failed.");
     return isUndefined;
+}
+
+ani_status MediaLibraryAniUtils::GetUndefinedObject(ani_env *env, ani_object &object)
+{
+    ani_ref undefinedRef {};
+    CHECK_STATUS_RET(env->GetUndefined(&undefinedRef), "Call GetUndefined failed.");
+    object = static_cast<ani_object>(undefinedRef);
+    return ANI_OK;
 }
 
 ani_status MediaLibraryAniUtils::GetBool(ani_env *env, ani_boolean arg, bool &value)
@@ -89,7 +97,7 @@ ani_status MediaLibraryAniUtils::GetBool(ani_env *env, ani_boolean arg, bool &va
 
 ani_status MediaLibraryAniUtils::GetBool(ani_env *env, ani_object arg, bool &value)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
     static const std::string className = "Lstd/core/Boolean;";
@@ -113,7 +121,7 @@ ani_status MediaLibraryAniUtils::GetByte(ani_env *env, ani_byte arg, uint8_t &va
 
 ani_status MediaLibraryAniUtils::GetByte(ani_env *env, ani_object arg, uint8_t &value)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
     static const std::string className = "Lstd/core/Byte;";
@@ -137,7 +145,7 @@ ani_status MediaLibraryAniUtils::GetShort(ani_env *env, ani_short arg, int16_t &
 
 ani_status MediaLibraryAniUtils::GetShort(ani_env *env, ani_object arg, int16_t &value)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
     static const std::string className = "Lstd/core/Short;";
@@ -161,7 +169,7 @@ ani_status MediaLibraryAniUtils::GetInt32(ani_env *env, ani_int arg, int32_t &va
 
 ani_status MediaLibraryAniUtils::GetInt32(ani_env *env, ani_object arg, int32_t &value)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
     static const std::string className = "Lstd/core/Int;";
@@ -185,7 +193,7 @@ ani_status MediaLibraryAniUtils::GetUint32(ani_env *env, ani_int arg, uint32_t &
 
 ani_status MediaLibraryAniUtils::GetUint32(ani_env *env, ani_object arg, uint32_t &value)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
     static const std::string className = "Lstd/core/Int;";
@@ -208,7 +216,7 @@ ani_status MediaLibraryAniUtils::GetInt64(ani_env *env, ani_long arg, int64_t &v
 
 ani_status MediaLibraryAniUtils::GetInt64(ani_env *env, ani_object arg, int64_t &value)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
     static const std::string className = "Lstd/core/Int;";
@@ -231,7 +239,7 @@ ani_status MediaLibraryAniUtils::GetFloat(ani_env *env, ani_float arg, float &va
 
 ani_status MediaLibraryAniUtils::GetFloat(ani_env *env, ani_object arg, float &value)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
     static const std::string className = "Lstd/core/Float;";
@@ -254,7 +262,7 @@ ani_status MediaLibraryAniUtils::GetDouble(ani_env *env, ani_double arg, double 
 
 ani_status MediaLibraryAniUtils::GetDouble(ani_env *env, ani_object arg, double &value)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
     static const std::string className = "Lstd/core/Double;";
@@ -287,7 +295,7 @@ ani_status MediaLibraryAniUtils::GetString(ani_env *env, ani_string arg, std::st
 
 ani_status MediaLibraryAniUtils::GetString(ani_env *env, ani_object arg, std::string &str)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     return GetString(env, static_cast<ani_string>(arg), str);
 }
@@ -335,7 +343,7 @@ ani_status MediaLibraryAniUtils::GetParamStringPathMax(ani_env *env, ani_string 
 
 ani_status MediaLibraryAniUtils::GetParamStringPathMax(ani_env *env, ani_object arg, std::string &str)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     return GetParamStringWithLength(env, static_cast<ani_string>(arg), PATH_MAX, str);
 }
 
@@ -363,6 +371,19 @@ ani_status MediaLibraryAniUtils::ToAniIntObject(ani_env *env, int32_t src, ani_o
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &ctor), "Failed to find method: ctor");
 
     CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, static_cast<ani_int>(src)), "New int32 Object Fail");
+    return ANI_OK;
+}
+
+ani_status MediaLibraryAniUtils::ToAniNumberObject(ani_env *env, int32_t src, ani_object &aniObj)
+{
+    static const char *className = "Lstd/core/Double;";
+    ani_class cls {};
+    CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
+
+    ani_method ctor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "D:V", &ctor), "Failed to find method: ctor");
+
+    CHECK_STATUS_RET(env->Object_New(cls, ctor, &aniObj, static_cast<ani_double>(src)), "New number Object Fail");
     return ANI_OK;
 }
 
@@ -394,8 +415,8 @@ ani_status MediaLibraryAniUtils::ToAniLongObject(ani_env *env, int64_t src, ani_
 
 ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, std::vector<uint32_t> &array)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
-    CHECK_COND_RET(isArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
     ani_double length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
@@ -422,7 +443,7 @@ ani_status MediaLibraryAniUtils::ToAniInt32Array(ani_env *env, const std::vector
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array.");
 
     ani_method arrayConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V;", &arrayConstructor),
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &arrayConstructor),
         "Can't find method <ctor> in Lescompat/Array.");
 
     CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, array.size()), "Call method <ctor> failed.");
@@ -441,8 +462,8 @@ ani_status MediaLibraryAniUtils::ToAniInt32Array(ani_env *env, const std::vector
 
 ani_status MediaLibraryAniUtils::GetStringArray(ani_env *env, ani_object arg, std::vector<std::string> &array)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
-    CHECK_COND_RET(isArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
     ani_double length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
@@ -486,6 +507,54 @@ ani_status MediaLibraryAniUtils::ToAniStringArray(ani_env *env, const std::vecto
     return ANI_OK;
 }
 
+ani_status MediaLibraryAniUtils::GetObjectArray(ani_env *env, ani_object arg, std::vector<ani_object> &array)
+{
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
+
+    ani_double length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+        "Call method <get>length failed.");
+
+    for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
+        ani_ref value {};
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &value, i),
+            "Call method $_get failed.");
+        array.emplace_back(static_cast<ani_object>(value));
+    }
+    return ANI_OK;
+}
+
+ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::string, std::string> &map,
+    ani_object &aniMap)
+{
+    ani_class cls {};
+    static const std::string className = "Lescompat/Map;";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Map");
+
+    ani_method mapConstructor {};
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "Lstd/core/Object;:V", &mapConstructor),
+        "Can't find method <ctor> in Lescompat/Map");
+
+    CHECK_STATUS_RET(env->Object_New(cls, mapConstructor, &aniMap, nullptr), "Call method <ctor> fail");
+
+    ani_method setMethod {};
+    CHECK_STATUS_RET(
+        env->Class_FindMethod(cls, "set", "Lstd/core/Object;Lstd/core/Object;:Lescompat/Map;", &setMethod),
+        "Can't find method set in Lescompat/Map");
+
+    for (const auto &[key, value]: map) {
+        ani_string aniKey {};
+        CHECK_STATUS_RET(ToAniString(env, key, aniKey), "ToAniString key[%{public}s] fail", key.c_str());
+        ani_string aniValue{};
+        CHECK_STATUS_RET(ToAniString(env, value, aniValue), "ToAniString value[%{public}s] fail", value.c_str());
+        ani_ref setResult {};
+        CHECK_STATUS_RET(env->Object_CallMethod_Ref(aniMap, setMethod, &setResult, aniKey, aniValue),
+            "Call method set fail");
+    }
+    return ANI_OK;
+}
+
 ani_status MediaLibraryAniUtils::GetProperty(ani_env *env, ani_object arg, const std::string &propName,
     std::string &propValue)
 {
@@ -514,21 +583,12 @@ ani_status MediaLibraryAniUtils::GetArrayProperty(ani_env *env, ani_object arg, 
     return ANI_OK;
 }
 
-ani_status MediaLibraryAniUtils::GetArrayBuffer(ani_env *env, ani_object arg, std::unique_ptr<uint8_t[]> &buffer,
-    size_t &size)
+ani_status MediaLibraryAniUtils::GetArrayBuffer(ani_env *env, ani_arraybuffer arg, void *&buffer, size_t &size)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
-    ani_int length;
-    CHECK_STATUS_RET(env->Object_CallMethodByName_Int(arg, "getByteLength", nullptr, &length),
-        "GetArrayBuffer Object_CallMethodByName_Int failed.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    ani_size length;
+    CHECK_STATUS_RET(env->ArrayBuffer_GetInfo(arg, &buffer, &length), "ArrayBuffer_GetInfo failed.");
     size = static_cast<size_t>(length);
-    buffer = std::make_unique<uint8_t[]>(size);
-    for (int i = 0; i < static_cast<int>(size); ++i) {
-        ani_byte value {};
-        CHECK_STATUS_RET(env->Object_CallMethodByName_Byte(arg, "at", nullptr, &value, static_cast<ani_int>(i)),
-            "GetArrayBuffer Call method at failed.");
-        CHECK_STATUS_RET(GetByte(env, value, buffer[i]), "GetArrayBuffer GetByte failed.");
-    }
     return ANI_OK;
 }
 
@@ -607,12 +667,12 @@ std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> MediaL
     std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> result;
     std::string title;
     if (ANI_OK == GetOptionalStringPathMaxField(env, src, "title", title)) {
-        result[PhotoColumn::MEDIA_TITLE] = title;
+        result["title"] = title;
     }
 
     int32_t subtype;
     if (ANI_OK == GetOptionalEnumInt32Field(env, src, "subtype", subtype)) {
-        result[PhotoColumn::PHOTO_SUBTYPE] = subtype;
+        result["subtype"] = subtype;
     }
     return result;
 }
@@ -623,12 +683,12 @@ std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> MediaL
     std::unordered_map<std::string, std::variant<int32_t, bool, std::string>> result;
     std::string cameraShotKey;
     if (ANI_OK == GetOptionalStringPathMaxField(env, src, "cameraShotKey", cameraShotKey)) {
-        result[PhotoColumn::CAMERA_SHOT_KEY] = cameraShotKey;
+        result["cameraShotKey"] = cameraShotKey;
     }
 
     int32_t subtype;
     if (ANI_OK == GetOptionalEnumInt32Field(env, src, "subtype", subtype)) {
-        result[PhotoColumn::PHOTO_SUBTYPE] = subtype;
+        result["subtype"] = subtype;
     }
     return result;
 }
@@ -649,8 +709,8 @@ static std::string GetUriFromAsset(const std::shared_ptr<FileAsset> &fileAsset)
 
 ani_status MediaLibraryAniUtils::GetUriArrayFromAssets(ani_env *env, ani_object arg, std::vector<std::string> &array)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
-    CHECK_COND_RET(isArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
     ani_double length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
@@ -672,6 +732,36 @@ ani_status MediaLibraryAniUtils::GetUriArrayFromAssets(ani_env *env, ani_object 
             continue;
         }
         array.push_back(GetUriFromAsset(obj->GetFileAssetInstance()));
+    }
+    return ANI_OK;
+}
+
+ani_status MediaLibraryAniUtils::GetArrayFromAssets(ani_env *env, ani_object arg,
+    std::vector<std::shared_ptr<FileAsset>> &array)
+{
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
+
+    ani_double length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+        "Call method <get>length failed.");
+
+    for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
+        ani_ref asset {};
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &asset, i),
+            "Call method $_get failed.");
+
+        FileAssetAni *obj = FileAssetAni::Unwrap(env, static_cast<ani_object>(asset));
+        if (obj == nullptr || obj->GetFileAssetInstance() == nullptr) {
+            AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset ani object");
+            return ANI_INVALID_ARGS;
+        }
+        MediaType mediaType = obj->GetFileAssetInstance()->GetMediaType();
+        if ((mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO)) {
+            ANI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", mediaType);
+            continue;
+        }
+        array.push_back(obj->GetFileAssetInstance());
     }
     return ANI_OK;
 }
@@ -744,10 +834,11 @@ ani_status MediaLibraryAniUtils::ToFileAssetAniPtr(ani_env *env, std::unique_ptr
     return ANI_OK;
 }
 
-ani_status MediaLibraryAniUtils::GetPhotoAlbumAniArray(ani_env *env, ani_object arg, std::vector<PhotoAlbumAni*> &array)
+ani_status MediaLibraryAniUtils::GetPhotoAlbumAniArray(ani_env *env, ani_object arg,
+    std::vector<PhotoAlbumAni*> &array)
 {
-    CHECK_COND_RET(isUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
-    CHECK_COND_RET(isArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
     ani_double length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
@@ -798,6 +889,32 @@ ani_status MediaLibraryAniUtils::GetFetchOption(ani_env *env, ani_object fetchOp
     CHECK_STATUS_RET(GetArrayProperty(env, fetchOptions, "fetchColumns", context->fetchColumn),
         "Failed to parse fetchColumn");
     return ANI_OK;
+}
+
+int32_t MediaLibraryAniUtils::GetFileIdFromPhotoUri(const std::string &uri)
+{
+    const static int ERROR = -1;
+    if (PhotoColumn::PHOTO_URI_PREFIX.size() >= uri.size()) {
+        ANI_ERR_LOG("photo uri is too short");
+        return ERROR;
+    }
+    if (uri.substr(0, PhotoColumn::PHOTO_URI_PREFIX.size()) != PhotoColumn::PHOTO_URI_PREFIX) {
+        ANI_ERR_LOG("only photo uri is valid");
+        return ERROR;
+    }
+    std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
+
+    std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
+    if (fileIdStr.empty()) {
+        ANI_ERR_LOG("intercepted fileId is empty");
+        return ERROR;
+    }
+    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
+        return std::stoi(fileIdStr);
+    }
+
+    ANI_ERR_LOG("asset fileId is invalid");
+    return ERROR;
 }
 
 DataSharePredicates* MediaLibraryAniUtils::UnwrapPredicate(ani_env *env, const ani_object predicates)

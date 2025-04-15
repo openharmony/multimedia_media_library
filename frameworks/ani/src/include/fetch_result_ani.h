@@ -16,6 +16,8 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_FETCH_RESULT_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_FETCH_RESULT_ANI_H
 
+#include <map>
+
 #include <ani.h>
 #include "ani_error.h"
 #include "datashare_helper.h"
@@ -42,14 +44,15 @@ class FetchFileResultAni {
 public:
     FetchFileResultAni() = default;
     ~FetchFileResultAni() = default;
-    static ani_status FetchFileResultInit(ani_env *env);
+    static ani_status UserFileMgrInit(ani_env *env);
+    static ani_status PhotoAccessHelperInit(ani_env *env);
     static FetchFileResultAni* Unwrap(ani_env *env, ani_object fetchFileResultHandle);
     static ani_object Constructor(ani_env *env, [[maybe_unused]] ani_class clazz);
-
     static ani_object GetAllObjects(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_status Close(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetFirstObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
     static ani_object GetNextObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
+    static ani_object GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_double index);
     static ani_double GetCount([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle);
 
     static ani_object CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<FileAsset>> fileResult);

@@ -59,13 +59,14 @@ void MediaAssetsChangeRequestAni::SetFavorite([[maybe_unused]] ani_env *env, [[m
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return;
     }
-    auto context =  unwrapp(env, object);
+    auto context =  Unwrap(env, object);
     if (context == nullptr) {
         return;
     }
     for (const auto& fileAsset : context->fileAssets_) {
         fileAsset->SetFavorite(isFavorite);
     }
+    context->isFavorite_ = isFavorite;
     RecordChangeOperation(AssetsChangeOperation::BATCH_SET_FAVORITE);
 }
 
@@ -76,13 +77,14 @@ void MediaAssetsChangeRequestAni::SetHidden([[maybe_unused]] ani_env *env, [[may
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return;
     }
-    auto context = unwrapp(env, object);
+    auto context = Unwrap(env, object);
     if (context == nullptr) {
         return;
     }
     for (const auto& fileAsset : context->fileAssets_) {
         fileAsset->SetHidden(isHidden);
     }
+    context->isHidden_ = isHidden;
     RecordChangeOperation(AssetsChangeOperation::BATCH_SET_HIDDEN);
 }
 
@@ -119,9 +121,9 @@ bool MediaAssetsChangeRequestAni::SetAssetsPropertyExecute(const AssetsChangeOpe
     return true;
 }
 
-ani_status MediaAssetsChangeRequestAni::ApplyChanges(ani_env *env, ani_object aniObject)
+ani_status MediaAssetsChangeRequestAni::ApplyChanges(ani_env *env)
 {
-    auto context =  unwrapp(env, aniObject);
+    auto context =  this;
     if (context == nullptr) {
         return ANI_ERROR;
     }
@@ -135,7 +137,7 @@ ani_status MediaAssetsChangeRequestAni::ApplyChanges(ani_env *env, ani_object an
     }
 
     unordered_set<AssetsChangeOperation> appliedOperations;
-    for (const auto& changeOperation : assetsChangeOperations_) {
+    for (const auto& changeOperation : context->assetsChangeOperations_) {
         // Keep the final result(s) of each operation, and commit only once.
         if (appliedOperations.find(changeOperation) != appliedOperations.end()) {
             continue;
@@ -172,59 +174,44 @@ bool MediaAssetsChangeRequestAni::GetHiddenStatus()
 }
 
 
-MediaAssetsChangeRequestAni* MediaAssetsChangeRequestAni::unwrapp(ani_env *env, ani_object object)
+MediaAssetsChangeRequestAni* MediaAssetsChangeRequestAni::Unwrap(ani_env *env, ani_object object)
 {
     ani_long context;
-    if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativeMediaAssetsChangeRequestHandleImpl", &context)) {
-        ANI_ERR_LOG("unwrapp err");
+    if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativeHandle", &context)) {
         return nullptr;
     }
     return reinterpret_cast<MediaAssetsChangeRequestAni *>(context);
 }
 
-ani_object MediaAssetsChangeRequestAni::create([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz)
+ani_status MediaAssetsChangeRequestAni::Constructor(ani_env *env, ani_object object, ani_object arrayPhotoAssets)
 {
-    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
-    vector<shared_ptr<FileAsset>> fileAssets = {fileAsset};
-    auto nativeMediaAssetsChangeRequestHandle = std::make_unique<MediaAssetsChangeRequestAni>(fileAssets);
-
-    ani_class cls;
-    if (ANI_OK != env->FindClass(ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str(), &cls)) {
-        ANI_ERR_LOG("Failed to find class: %s", ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str());
-        return nullptr;
+    vector<shared_ptr<FileAsset>> newAssetArray;
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        MediaLibraryAniUtils::GetArrayFromAssets(env, arrayPhotoAssets, newAssetArray) == ANI_OK, ANI_INVALID_ARGS,
+        "Failed to get arrayPhotoAssets");
+    auto nativeHandle = std::make_unique<MediaAssetsChangeRequestAni>(newAssetArray);
+    if (nativeHandle == nullptr) {
+        return ANI_ERROR;
     }
-
-    ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
-        ANI_ERR_LOG("Failed to find MediaAssetsChangeRequest constructor method");
-        return nullptr;
+    if (ANI_OK != env->Object_CallMethodByName_Void(object, "create", nullptr,
+        reinterpret_cast<ani_long>(nativeHandle.release()))) {
+        MEDIA_ERR_LOG("New MediaAssetsChangeRequest Fail");
+        return ANI_ERROR;
     }
-
-    ani_object context_object;
-    if (ANI_OK != env->Object_New(cls, ctor, &context_object,
-        reinterpret_cast<ani_long>(nativeMediaAssetsChangeRequestHandle.get()))) {
-        ANI_ERR_LOG("Failed to create MediaAssetsChangeRequest object");
-        return nullptr;
-    }
-
-    nativeMediaAssetsChangeRequestHandle.release();
-    return context_object;
+    return ANI_OK;
 }
 
-ani_status MediaAssetsChangeRequestAni::MediaAssetsChangeRequestAniInit(ani_env *env)
+ani_status MediaAssetsChangeRequestAni::Init(ani_env *env)
 {
     ani_class cls;
-    if (ANI_OK != env->FindClass(ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str(), &cls)) {
+    if (ANI_OK != env->FindClass(PAH_ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str(), &cls)) {
         return ANI_ERROR;
     }
 
     std::array methods = {
-        ani_native_function {"SetFavoriteSync", nullptr,
-            reinterpret_cast<void *>(MediaAssetsChangeRequestAni::SetFavorite)},
-        ani_native_function {"SetHiddenSync",
-            nullptr, reinterpret_cast<void *>(MediaAssetsChangeRequestAni::SetHidden)},
-        ani_native_function {"create", nullptr, reinterpret_cast<void *>(MediaAssetsChangeRequestAni::create)},
-
+        ani_native_function {"setFavorite", nullptr, reinterpret_cast<void *>(SetFavorite)},
+        ani_native_function {"setHidden", nullptr, reinterpret_cast<void *>(SetHidden)},
+        ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)},
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {

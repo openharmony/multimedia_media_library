@@ -23,6 +23,7 @@
 #include "datashare_values_bucket.h"
 #include "file_asset.h"
 #include "pixel_map.h"
+#include "pixel_map_ani.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -56,22 +57,26 @@ public:
     static FileAssetAni* CreatePhotoAsset(ani_env *env, std::shared_ptr<FileAsset> &fileAsset);
     static FileAssetAni* CreateFileAsset(ani_env *env, std::unique_ptr<FileAsset> &fileAsset);
 
-    static ani_status FileAssetAniInit(ani_env *env);
+    static ani_status UserFileMgrInit(ani_env *env);
+    static ani_status PhotoAccessHelperInit(ani_env *env);
     static ani_object Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz);
     static void Destructor([[maybe_unused]] ani_env env, void *nativeObject, void *finalize_hint);
-    static ani_object Wrap(ani_env *env, FileAssetAni* fileAssetAni);
+    static ani_object Wrap(ani_env *env, FileAssetAni *fileAssetAni);
     static FileAssetAni* Unwrap(ani_env *env, ani_object object);
+
     static void Set(ani_env *env, ani_object object, ani_string member, ani_string value);
     static ani_object Get(ani_env *env, ani_object object, ani_string member);
-    static void CommitModify(ani_env *env, ani_object object);
-    static ani_double Open(ani_env *env, ani_object object, ani_string mode);
-    static void Close(ani_env *env, ani_object object, ani_double fd);
-    static ani_object GetThumbnail(ani_env *env, ani_object object, ani_object size);
-    static void SetUserComment([[maybe_unused]] ani_env *env, ani_object object, ani_string userComment);
-    static ani_string GetAnalysisData([[maybe_unused]] ani_env *env, ani_object object, ani_enum_item analysisType);
-    static void SetHidden([[maybe_unused]] ani_env *env, ani_object object, ani_boolean hiddenState);
-    static void SetFavorite([[maybe_unused]] ani_env *env, ani_object object, ani_boolean favoriteState);
-
+    static void PhotoAccessHelperCommitModify(ani_env *env, ani_object object);
+    static ani_double PhotoAccessHelperOpen(ani_env *env, ani_object object, ani_string mode);
+    static void PhotoAccessHelperClose(ani_env *env, ani_object object, ani_double fd);
+    static ani_object PhotoAccessHelperGetThumbnail(ani_env *env, ani_object object, ani_object size);
+    static void PhotoAccessHelperSetUserComment(ani_env *env, ani_object object, ani_string userComment);
+    static ani_string PhotoAccessHelperGetAnalysisData(ani_env *env, ani_object object, ani_enum_item analysisType);
+    static void PhotoAccessHelperSetHidden(ani_env *env, ani_object object, ani_boolean hiddenState);
+    static void PhotoAccessHelperSetFavorite(ani_env *env, ani_object object, ani_boolean favoriteState);
+    std::string GetFileDisplayName() const;
+    std::string GetFileUri() const;
+    int32_t GetFileId() const;
 private:
     static thread_local std::shared_ptr<FileAsset> sFileAsset_;
     std::shared_ptr<FileAsset> fileAssetPtr = nullptr;

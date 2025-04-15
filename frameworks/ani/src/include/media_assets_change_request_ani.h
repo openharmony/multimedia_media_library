@@ -40,25 +40,24 @@ enum class AssetsChangeOperation {
 
 class MediaAssetsChangeRequestAni : public MediaChangeRequestAni {
 public:
-    static ani_status MediaAssetsChangeRequestAniInit(ani_env *env);
+    static ani_status Init(ani_env *env);
     MediaAssetsChangeRequestAni(std::vector<std::shared_ptr<FileAsset>> fileAssets);
     ~MediaAssetsChangeRequestAni();
     static void RecordChangeOperation(AssetsChangeOperation changeOperation);
     static void SetFavorite([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object, ani_boolean isFavorite);
     static void SetHidden([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object, ani_boolean isHidden);
-    static ani_object create([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz);
-    static MediaAssetsChangeRequestAni* unwrapp(ani_env *env, ani_object object);
-    static std::vector<std::shared_ptr<FileAsset>> fileAssets_;
-    static std::vector<AssetsChangeOperation> assetsChangeOperations_;
+    static ani_status Constructor(ani_env *env, ani_object object, ani_object arrayPhotoAssets);
+    static MediaAssetsChangeRequestAni* Unwrap(ani_env *env, ani_object object);
     static std::vector<std::string> GetFileAssetUriArray();
     static bool GetFavoriteStatus();
     static bool GetHiddenStatus();
     static bool SetAssetsPropertyExecute(const AssetsChangeOperation& changeOperation);
-    virtual ani_status ApplyChanges(ani_env *env, ani_object aniObject) override;
-
+    virtual ani_status ApplyChanges(ani_env *env) override;
 private:
     static bool isFavorite_;
     static bool isHidden_;
+    static std::vector<std::shared_ptr<FileAsset>> fileAssets_;
+    static std::vector<AssetsChangeOperation> assetsChangeOperations_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -35,9 +35,9 @@ PhotoProxyAni::~PhotoProxyAni()
     }
 }
 
-ani_status PhotoProxyAni::PhotoProxyAniInit(ani_env *env)
+ani_status PhotoProxyAni::Init(ani_env *env)
 {
-    static const char *className = ANI_CLASS_PHOTO_PROXY.c_str();
+    static const char *className = PAH_ANI_CLASS_PHOTO_PROXY_HANDLE.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
@@ -66,7 +66,7 @@ ani_object PhotoProxyAni::PhotoProxyAniConstructor(ani_env *env, [[maybe_unused]
     nativeHandle->env_ = env;
     nativeHandle->photoProxy_ = sPhotoProxy_;
 
-    static const char *className = ANI_CLASS_PHOTO_PROXY.c_str();
+    static const char *className = PAH_ANI_CLASS_PHOTO_PROXY_HANDLE.c_str();
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
