@@ -112,6 +112,7 @@ private:
     int32_t FillMetadata(std::unique_ptr<Metadata> &data);
     int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     int32_t RenameFiles(vector<FileInfo> &restoreFiles);
+    int32_t BatchUpdateTimePending(vector<FileInfo> &restoreFiles);
     int32_t UpdatePhotoAlbum(RestoreTaskInfo &restoreTaskInfo, FileInfo fileInfo);
     void SendNotifyMessage(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum,
         const UniqueNumber &uniqueNumber);
