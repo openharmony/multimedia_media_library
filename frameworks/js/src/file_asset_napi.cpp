@@ -2869,6 +2869,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::SUPPORTED_WATERMARK_TYPE,
         PhotoColumn::PHOTO_IS_AUTO,
         PhotoColumn::PHOTO_IS_RECENT_SHOW,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };
@@ -4243,6 +4244,10 @@ napi_value FileAssetNapi::PhotoAccessHelperGetThumbnailData(napi_env env, napi_c
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperGetThumbnailData");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();

@@ -198,11 +198,7 @@ std::string GeoKnowledgeRestore::UpdateByGeoLocation(
 {
     std::string language = systemLanguage_;
     CHECK_AND_EXECUTE(!language.empty(), language = DOUBLE_CH);
-    if (language == SINGLE_EN) {
-        language = DOUBLE_EN;
-    } else {
-        language = DOUBLE_CH;
-    }
+    language = (language == SINGLE_EN) ? DOUBLE_EN : DOUBLE_CH;
 
     auto it = std::find_if(albumInfos_.begin(), albumInfos_.end(),
         [latitude, longitude, language](const GeoKnowledgeInfo& info) {

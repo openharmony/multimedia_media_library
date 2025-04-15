@@ -85,29 +85,19 @@ static vector<Media::CheckedPhotoInfo> FuzzVectorCheckedPhotoInfo(const uint8_t 
     return {FuzzCheckedPhotoInfo(data, size)};
 }
 
-static void HandleNoOriginPhotoTest(const uint8_t *data, size_t size)
-{
-    Media::CloudUploadChecker::GetPhotoCount(FuzzInt32(data, size));
-    int32_t startFileId = InsertPhotoAsset(data, size);
-    int32_t outFileId = -1;
-    Media::CloudUploadChecker::QueryPhotoInfo(startFileId, outFileId);
-    Media::CloudUploadChecker::HandlePhotoInfos(FuzzVectorCheckedPhotoInfo(data, size));
-    Media::CloudUploadChecker::HandleNoOriginPhoto();
-}
-
-static void RepairNoOriginButLcdTest(const uint8_t *data, size_t size)
+static void RepairNoOriginPhotoTest(const uint8_t *data, size_t size)
 {
     Media::CloudUploadChecker::QueryLcdPhotoCount(FuzzInt32(data, size));
     int32_t startFileId = InsertPhotoAsset(data, size);
-    int32_t outFileId = -1;
-    Media::CloudUploadChecker::QueryLcdAndRepair(startFileId, outFileId);
-    Media::CloudUploadChecker::RepairNoOriginButLcd();
+    int32_t curFileId = -1;
+    Media::CloudUploadChecker::QueryPhotoInfo(startFileId);
+    Media::CloudUploadChecker::HandlePhotoInfos(FuzzVectorCheckedPhotoInfo(data, size), curFileId);
+    Media::CloudUploadChecker::RepairNoOriginPhoto();
 }
 
 static void CloudUploadCheckerTest(const uint8_t *data, size_t size)
 {
-    HandleNoOriginPhotoTest(data, size);
-    RepairNoOriginButLcdTest(data, size);
+    RepairNoOriginPhotoTest(data, size);
 }
 
 void SetTables()

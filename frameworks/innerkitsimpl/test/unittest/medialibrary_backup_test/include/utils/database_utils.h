@@ -19,25 +19,17 @@
 #include <string>
 
 #include "rdb_store.h"
-#include "media_log.h"
-#include "backup_database_utils.h"
 
 namespace OHOS::Media {
 class DatabaseUtils {
 public:
-    std::shared_ptr<NativeRdb::RdbStore> GetRdbStore(const std::string &dbPath)
-    {
-        NativeRdb::RdbStoreConfig config(dbPath);
-        config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
-        config.SetHaMode(NativeRdb::HAMode::MANUAL_TRIGGER);
-        config.SetAllowRebuild(true);
-        // NativeRdb::RdbOpenCallback helper = *this;
-        int errCode = 0;
-        RdbCallback cb;
-        std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr = NativeRdb::RdbHelper::GetRdbStore(config, 1, cb, errCode);
-        MEDIA_INFO_LOG("RdbStore instance. errCode: %{public}d, dbPath: %{public}s", errCode, dbPath.c_str());
-        return rdbStorePtr;
-    }
+    static void ExecuteSql(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
+        const std::vector<NativeRdb::ValueObject> &bindArgs = {});
+    static void ExecuteSqls(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::vector<std::string> &sqls);
+    static int32_t QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &columnName,
+        const std::string &querySql, const std::vector<NativeRdb::ValueObject> &bindArgs = {});
+
+    std::shared_ptr<NativeRdb::RdbStore> GetRdbStore(const std::string &dbPath);
 };
 }  // namespace OHOS::Media
 #endif  // MEDIALIBRARY_BACKUP_TEST_DATABASE_UTILS_H

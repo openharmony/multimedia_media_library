@@ -34,9 +34,6 @@
 #include "media_log.h"
 #include "media_remote_thumbnail_column.h"
 #include "media_smart_album_column.h"
-#ifdef DISTRIBUTED
-#include "medialibrary_device.h"
-#endif
 #include "medialibrary_album_fusion_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
 #include "medialibrary_business_record_column.h"
@@ -481,12 +478,21 @@ void MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(const shared_ptr<MediaLibr
     MEDIA_INFO_LOG("end update location knowledge index");
 }
 
+void MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(const shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start to add album subtype and name index");
+    const vector<string> sqls = {
+        CREATE_ANALYSIS_ALBUM_SUBTYPE_NAME_INDEX,
+        CREATE_ANALYSIS_ALBUM_TAG_ID_INDEX
+    };
+    ExecSqls(sqls, *store->GetRaw().get());
+    MEDIA_INFO_LOG("end add album subtype and name index");
+}
+
 void MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(const shared_ptr<MediaLibraryRdbStore> rdbStore)
 {
-    if (rdbStore == nullptr || !rdbStore->CheckRdbStore()) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return;
-    }
+    bool cond = (rdbStore == nullptr || !rdbStore->CheckRdbStore());
+    CHECK_AND_RETURN_LOG(!cond, "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
 
     const vector<string> sqls = {
         PhotoColumn::DROP_SCHPT_MEDIA_TYPE_COUNT_READY_INDEX,
@@ -557,6 +563,24 @@ void MediaLibraryRdbStore::UpdatePhotoQualityCloned(const std::shared_ptr<MediaL
     MEDIA_INFO_LOG("end UpdatePhotoQualityCloned");
 }
 
+void MediaLibraryRdbStore::UpdateMdirtyTriggerForTdirty(const std::shared_ptr<MediaLibraryRdbStore> store)
+{
+    MEDIA_INFO_LOG("start UpdateMdirtyTriggerForTdirty");
+    const string dropMdirtyCreateTrigger = "DROP TRIGGER IF EXISTS photos_mdirty_trigger";
+    int32_t ret = ExecSqlWithRetry([&]() { return store->ExecuteSql(dropMdirtyCreateTrigger); });
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("drop photos_mdirty_trigger fail, ret = %{public}d", ret);
+        UpdateFail(__FILE__, __LINE__);
+    }
+
+    ret = ExecSqlWithRetry([&]() { return store->ExecuteSql(PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER); });
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("add photos_mdirty_trigger fail, ret = %{public}d", ret);
+        UpdateFail(__FILE__, __LINE__);
+    }
+    MEDIA_INFO_LOG("end UpdateMdirtyTriggerForTdirty");
+}
+
 int32_t MediaLibraryRdbStore::Init(const RdbStoreConfig &config, int version, RdbOpenCallback &openCallback)
 {
     MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", version);
@@ -592,17 +616,6 @@ shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw()
 {
     return rdbStore_;
 }
-
-#ifdef DISTRIBUTED
-void GetAllNetworkId(vector<string> &networkIds)
-{
-    vector<OHOS::DistributedHardware::DmDeviceInfo> deviceList;
-    MediaLibraryDevice::GetInstance()->GetAllNetworkId(deviceList);
-    for (auto& deviceInfo : deviceList) {
-        networkIds.push_back(deviceInfo.networkId);
-    }
-}
-#endif
 
 static void AddDefaultPhotoValues(ValuesBucket& values)
 {
@@ -1648,6 +1661,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
     CREATE_ANALYSIS_ALBUM_GROUP_TAG_INDEX,
+    CREATE_ANALYSIS_ALBUM_SUBTYPE_NAME_INDEX,
+    CREATE_ANALYSIS_ALBUM_TAG_ID_INDEX,
     CREATE_ANALYSIS_ALBUM_MAP,
     CREATE_HIGHLIGHT_ALBUM_TABLE,
     CREATE_HIGHLIGHT_COVER_INFO_TABLE,
@@ -1677,6 +1692,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
     CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
     CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+    CREATE_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -3290,9 +3306,10 @@ static void AddCheckFlag(RdbStore &store)
     MEDIA_INFO_LOG("end add check_flag columns");
 }
 
-static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
+static bool IsColumnExists(RdbStore &store, const std::string& tableName,
+    const std::string& columnName)
 {
-    std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
+    std::string checkSql = "PRAGMA table_info(" + tableName + ")";
     std::vector<NativeRdb::ValueObject> args;
     auto resultSet = store.QuerySql(checkSql, args);
     CHECK_AND_RETURN_RET(resultSet != nullptr, false);
@@ -3306,10 +3323,26 @@ static bool CheckMediaColumns(RdbStore &store, const std::string& columnName)
     return false;
 }
 
+static void CheckIfPhotoColumnExists(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
+{
+    std::string checkSql = "PRAGMA table_info(" + PhotoColumn::PHOTOS_TABLE + ")";
+    std::vector<NativeRdb::ValueObject> args;
+    auto resultSet = store.QuerySql(checkSql, args);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query %{private}s", checkSql.c_str());
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string name;
+        resultSet->GetString(1, name);
+        if (photoColumnExists.find(name) != photoColumnExists.end()) {
+            photoColumnExists[name] = true;
+        }
+    }
+}
+
 static void AddCloudEnhanceColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking cloud enhancement column");
-    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_CE_AVAILABLE);
+    bool hasColumn = IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_CE_AVAILABLE);
     MEDIA_INFO_LOG("End checking cloud enhancement column: %{public}d", hasColumn);
     if (!hasColumn) {
         AddCloudEnhancementColumns(store);
@@ -3320,7 +3353,7 @@ static void AddCloudEnhanceColumnsFix(RdbStore& store)
 static void AddDynamicRangeColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking dynamic_range_type column");
-    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE);
+    bool hasColumn = IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE);
     MEDIA_INFO_LOG("End checking dynamic_range_type column: %{public}d", hasColumn);
     if (!hasColumn) {
         AddDynamicRangeType(store);
@@ -3331,7 +3364,7 @@ static void AddDynamicRangeColumnsFix(RdbStore& store)
 static void AddThumbnailReadyColumnsFix(RdbStore& store)
 {
     MEDIA_INFO_LOG("Start checking thumbnail_ready column");
-    bool hasColumn = CheckMediaColumns(store, PhotoColumn::PHOTO_THUMBNAIL_READY);
+    bool hasColumn = IsColumnExists(store, PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_THUMBNAIL_READY);
     MEDIA_INFO_LOG("End checking thumbnail_ready column: %{public}d", hasColumn);
     if (!hasColumn) {
         AddThumbnailReady(store);
@@ -4300,6 +4333,150 @@ static void FixMdirtyTriggerToUploadDetailTime(RdbStore &store)
     MEDIA_INFO_LOG("End updating mdirty trigger to upload detail_time");
 }
 
+static void UpgradeFromAPI15(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
+{
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
+    UpdateSourcePhotoAlbumTrigger(store);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
+    if (photoColumnExists.find(PhotoColumn::PHOTO_IS_RECENT_SHOW) == photoColumnExists.end() ||
+        !photoColumnExists.at(PhotoColumn::PHOTO_IS_RECENT_SHOW)) {
+        AddIsRecentShow(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN");
+
+    MEDIA_INFO_LOG("Start VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH");
+    FixSourceAlbumCreateTriggersToUseLPath(store);
+    MEDIA_INFO_LOG("End VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_IS_AUTO");
+    if (photoColumnExists.find(PhotoColumn::PHOTO_IS_AUTO) == photoColumnExists.end() ||
+        !photoColumnExists.at(PhotoColumn::PHOTO_IS_AUTO)) {
+        AddIsAutoColumns(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_IS_AUTO");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME");
+    AddAlbumPluginBundleName(store);
+    MEDIA_INFO_LOG("End VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+    if (photoColumnExists.find(PhotoColumn::PHOTO_MEDIA_SUFFIX) == photoColumnExists.end() ||
+        !photoColumnExists.at(PhotoColumn::PHOTO_MEDIA_SUFFIX)) {
+        AddMediaSuffixColumn(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_MEDIA_SUFFIX_COLUMN");
+
+    MEDIA_INFO_LOG("Start VERSION_HIGHLIGHT_SUBTITLE");
+    if (!IsColumnExists(store, HIGHLIGHT_ALBUM_TABLE, HIGHLIGHT_USE_SUBTITLE)) {
+        AddHighlightUseSubtitle(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_HIGHLIGHT_SUBTITLE");
+}
+
+static void UpgradeAPI18(RdbStore &store, unordered_map<string, bool> &photoColumnExists)
+{
+    MEDIA_INFO_LOG("Start VERSION_ADD_METARECOVERY");
+    if (photoColumnExists.find(PhotoColumn::PHOTO_METADATA_FLAGS) == photoColumnExists.end() ||
+        !photoColumnExists.at(PhotoColumn::PHOTO_METADATA_FLAGS)) {
+        AddMetaRecovery(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_METARECOVERY");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_HIGHLIGHT_TRIGGER");
+    if (!IsColumnExists(store, PhotoColumn::HIGHLIGHT_TABLE, PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER)) {
+        AddHighlightTriggerColumn(store);
+        AddHighlightInsertAndUpdateTrigger(store);
+        AddHighlightIndex(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_HIGHLIGHT_TRIGGER");
+
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID");
+    UpdateSearchStatusTriggerForOwnerAlbumId(store);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID");
+
+    MEDIA_INFO_LOG("Start VERSION_HIGHLIGHT_MOVING_PHOTO");
+    AddMovingPhotoRelatedData(store);
+    MEDIA_INFO_LOG("End VERSION_HIGHLIGHT_MOVING_PHOTO");
+
+    MEDIA_INFO_LOG("Start VERSION_CREATE_TAB_FACARD_PHOTOS");
+    TabFaCardPhotosTableEventHandler().OnCreate(store);
+    MEDIA_INFO_LOG("End VERSION_CREATE_TAB_FACARD_PHOTOS");
+
+    MEDIA_INFO_LOG("Start VERSION_ADD_FOREGROUND_ANALYSIS");
+    if (!IsColumnExists(store, USER_PHOTOGRAPHY_INFO_TABLE, FRONT_INDEX_LIMIT)) {
+        AddFrontAnalysisColumn(store);
+    }
+    MEDIA_INFO_LOG("End VERSION_ADD_FOREGROUND_ANALYSIS");
+}
+
+static void AddAssetAlbumOperationTable(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_asset_and_album_operation",
+        CREATE_TAB_ASSET_ALBUM_OPERATION,
+        "DROP TABLE IF EXISTS operation_asset_insert_trigger",
+        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        "DROP TABLE IF EXISTS operation_asset_delete_trigger",
+        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_asset_update_trigger",
+        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_insert_trigger",
+        CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_delete_trigger",
+        CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_update_trigger",
+        CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+    };
+    ExecSqls(executeSqlStrs, store);
+    MEDIA_INFO_LOG("create asset and album operation table end");
+}
+
+static void AddAssetAlbumOperationTableForSync(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        CREATE_TAB_ASSET_ALBUM_OPERATION,
+        "DROP TABLE IF EXISTS operation_asset_insert_trigger",
+        CREATE_OPERATION_ASSET_INSERT_TRIGGER,
+        "DROP TABLE IF EXISTS operation_asset_delete_trigger",
+        CREATE_OPERATION_ASSET_DELETE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_asset_update_trigger",
+        CREATE_OPERATION_ASSET_UPDATE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_insert_trigger",
+        CREATE_OPERATION_ALBUM_INSERT_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_delete_trigger",
+        CREATE_OPERATION_ALBUM_DELETE_TRIGGER,
+        "DROP TABLE IF EXISTS operation_album_update_trigger",
+        CREATE_OPERATION_ALBUM_UPDATE_TRIGGER,
+    };
+    ExecSqls(executeSqlStrs, store);
+    MEDIA_INFO_LOG("create asset and album operation table sync end");
+}
+
+static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
+        unordered_map<string, bool> photoColumnExists = {
+            { PhotoColumn::PHOTO_IS_RECENT_SHOW, false },
+            { PhotoColumn::PHOTO_IS_AUTO, false },
+            { PhotoColumn::PHOTO_MEDIA_SUFFIX, false },
+            { PhotoColumn::PHOTO_METADATA_FLAGS, false },
+        };
+        CheckIfPhotoColumnExists(store, photoColumnExists);
+        UpgradeFromAPI15(store, photoColumnExists);
+        UpgradeAPI18(store, photoColumnExists);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION_FOR_SYNC) {
+        AddAssetAlbumOperationTableForSync(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS_RETRY) {
+        TabFaCardPhotosTableEventHandler().OnCreate(store);
+    }
+}
+
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STAGE_VIDEO_TASK_STATUS) {
@@ -4345,13 +4522,15 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
         AddMovingPhotoRelatedData(store);
     }
 
+    if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
+        AddAssetAlbumOperationTable(store);
+    }
+
     if (oldVersion < VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME) {
         FixMdirtyTriggerToUploadDetailTime(store);
     }
 
-    if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS_RETRY) {
-        TabFaCardPhotosTableEventHandler().OnCreate(store);
-    }
+    UpgradeExtensionPart6(store, oldVersion);
 }
 
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
@@ -4919,13 +5098,8 @@ void MediaLibraryRdbStore::WalCheckPoint()
         return;
     }
     ssize_t size = fileStat.st_size;
-    if (size < 0) {
-        MEDIA_ERR_LOG("Invalid size for wal_checkpoint, size: %{public}zd", size);
-        return;
-    }
-    if (size <= RDB_CHECK_WAL_SIZE) {
-        return;
-    }
+    CHECK_AND_RETURN_LOG(size >= 0, "Invalid size for wal_checkpoint, size: %{public}zd", size);
+    CHECK_AND_RETURN(size > RDB_CHECK_WAL_SIZE);
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "wal_checkpoint rdbStore is nullptr!");
@@ -4941,45 +5115,4 @@ int MediaLibraryRdbStore::ExecuteForChangedRowCount(int64_t &outValue, const std
         "Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
     return ExecSqlWithRetry([&]() { return GetRaw()->ExecuteForChangedRowCount(outValue, sql, args); });
 }
-
-#ifdef DISTRIBUTED
-MediaLibraryRdbStoreObserver::MediaLibraryRdbStoreObserver(const string &bundleName)
-{
-    bundleName_ = bundleName;
-    isNotifyDeviceChange_ = false;
-
-    if (timer_ == nullptr) {
-        timer_ = make_unique<OHOS::Utils::Timer>(bundleName_);
-        timerId_ = timer_->Register(bind(&MediaLibraryRdbStoreObserver::NotifyDeviceChange, this),
-            NOTIFY_TIME_INTERVAL);
-        timer_->Setup();
-    }
-}
-
-MediaLibraryRdbStoreObserver::~MediaLibraryRdbStoreObserver()
-{
-    if (timer_ != nullptr) {
-        timer_->Shutdown();
-        timer_->Unregister(timerId_);
-        timer_ = nullptr;
-    }
-}
-
-void MediaLibraryRdbStoreObserver::OnChange(const vector<string> &devices)
-{
-    MEDIA_INFO_LOG("MediaLibraryRdbStoreObserver OnChange call");
-    if (devices.empty() || bundleName_.empty()) {
-        return;
-    }
-    MediaLibraryDevice::GetInstance()->NotifyRemoteFileChange();
-}
-
-void MediaLibraryRdbStoreObserver::NotifyDeviceChange()
-{
-    if (isNotifyDeviceChange_) {
-        MediaLibraryDevice::GetInstance()->NotifyDeviceChange();
-        isNotifyDeviceChange_ = false;
-    }
-}
-#endif
 } // namespace OHOS::Media

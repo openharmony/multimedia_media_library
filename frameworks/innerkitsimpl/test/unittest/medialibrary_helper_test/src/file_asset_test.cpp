@@ -31,7 +31,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_001, TestSize.Level1)
 {
     FileAsset fileAsset;
 
@@ -80,7 +80,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_001, TestSize.Level0)
     EXPECT_EQ(fileAsset.GetTitle(), TEST_TITLE);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_002, TestSize.Level1)
 {
     FileAsset fileAsset;
 
@@ -125,7 +125,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_002, TestSize.Level0)
     EXPECT_EQ(fileAsset.GetResultNapiType(), TEST_RESULT_NAPI_TYPE);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_003, TestSize.Level1)
 {
     FileAsset fileAsset;
 
@@ -167,7 +167,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_SetGet_Test_003, TestSize.Level0)
     EXPECT_EQ(memberMap.size() > 0, true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_GetMemberValue_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_GetMemberValue_Test_001, TestSize.Level1)
 {
     FileAsset fileAsset;
     const int32_t TEST_FILE_ID = 1;
@@ -175,7 +175,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_GetMemberValue_Test_001, TestSize
     EXPECT_EQ(get<int32_t>(fileAsset.GetMemberValue(MEDIA_DATA_DB_ID)), TEST_FILE_ID);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_001, TestSize.Level1)
 {
     FileAsset fileAsset;
     int32_t fd = 0;
@@ -186,7 +186,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_001, TestSize.Level0)
     EXPECT_EQ(fileAsset.GetOpenStatus(1), E_INVALID_VALUES);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_002, TestSize.Level1)
 {
     FileAsset fileAsset;
     int32_t fd = 0;
@@ -196,7 +196,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_002, TestSize.Level0)
     EXPECT_EQ(fileAsset.GetOpenStatus(fd), 0);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_003, TestSize.Level1)
 {
     FileAsset fileAsset;
     string colName = "";
@@ -206,7 +206,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_003, TestSize.Level0)
     EXPECT_FALSE(fileAsset.resultTypeMap_.empty());
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, FileAsset_Test_004, TestSize.Level1)
 {
     FileAsset fileAsset;
     string colName = "";

@@ -22,9 +22,6 @@
 #include <unistd.h>
 #include "album_asset.h"
 #include "datashare_predicates.h"
-#ifdef DISTRIBUTED
-#include "device_manager.h"
-#endif
 #include "directory_ex.h"
 #include "fetch_result.h"
 #include "file_asset.h"

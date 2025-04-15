@@ -47,8 +47,6 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
 #include "userfile_manager_types.h"
@@ -391,7 +389,7 @@ void MediaLibraryPhotoEditTest::TearDown()
 {}
 
 // 普通拍照无水印无滤镜，只保存编辑后图片，媒体库生成空的editdata
-HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start common_photos_test_001");
     // 普通拍照无水印
@@ -404,7 +402,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_001, TestSize.Level0)
 }
 
 // 普通拍照无水印无滤镜，保存编辑后图片和editdata
-HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start common_photos_test_002");
     // 普通拍照无水印
@@ -417,7 +415,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_002, TestSize.Level0)
 }
 
 // 普通拍照有水印/滤镜，只保存编辑后图片，媒体库生成空的editdata
-HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start common_photos_test_003");
     if (!IsWaterMarkExists()) {
@@ -434,7 +432,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_003, TestSize.Level0)
 }
 
 // 普通拍照有水印/滤镜，保存编辑后图片和editdata
-HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start common_photos_test_004");
     if (!IsWaterMarkExists()) {
@@ -451,7 +449,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, common_photos_test_004, TestSize.Level0)
 }
 
 // 二阶段拍照，不编辑，不加水印滤镜
-HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_001");
     // 一阶段拍照不加水印
@@ -464,7 +462,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_001, TestSize.Level0)
 }
 
 // 二阶段拍照，不编辑，加水印滤镜
-HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_002");
     if (!IsWaterMarkExists()) {
@@ -481,7 +479,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_002, TestSize.Level0)
 }
 
 // 二阶段无水印无滤镜，只保存编辑后图片，媒体库生成空的editdata
-HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_003");
     // 一阶段拍照无水印
@@ -498,7 +496,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_003, TestSize.Level0)
 }
 
 // 二阶段无水印无滤镜，保存编辑后图片和editdata
-HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_004");
     // 一阶段拍照无水印
@@ -515,7 +513,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_004, TestSize.Level0)
 }
 
 // 二阶段有水印/滤镜，只保存编辑后图片，媒体库生成空的editdata
-HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_005");
     if (!IsWaterMarkExists()) {
@@ -536,7 +534,7 @@ HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_005, TestSize.Level0)
 }
 
 // 二阶段有水印/滤镜，保存编辑后图片和editdata
-HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoEditTest, deferred_photos_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start deferred_photos_test_006");
     if (!IsWaterMarkExists()) {

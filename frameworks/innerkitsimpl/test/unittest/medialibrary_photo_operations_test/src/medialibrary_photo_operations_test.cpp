@@ -48,8 +48,6 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "uri.h"
@@ -104,42 +102,6 @@ void CleanTestTables()
         MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
     }
 }
-
-class ArkJsRuntime : public AbilityRuntime::JsRuntime {
-public:
-    ArkJsRuntime() {};
-
-    ~ArkJsRuntime() {};
-
-    void StartDebugMode(const DebugOption debugOption) {};
-    void FinishPreload() {};
-    bool LoadRepairPatch(const string& patchFile, const string& baseFile)
-    {
-        return true;
-    };
-    bool NotifyHotReloadPage()
-    {
-        return true;
-    };
-    bool UnLoadRepairPatch(const string& patchFile)
-    {
-        return true;
-    };
-    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
-    {
-        return true;
-    };
-};
-
-#ifdef FILEEXT
-void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
-{
-    for (auto t : fileList) {
-        MEDIA_DEBUG_LOG("medialib_ListFile_test_001 file.uri: %s, file.fileName: %s, file.mode: %d, file.mimeType: %s",
-            t.uri.c_str(), t.fileName.c_str(), t.mode, t.mimeType.c_str());
-    }
-}
-#endif
 
 struct UniqueMemberValuesBucket {
     string assetMediaType;
@@ -952,7 +914,7 @@ const string CHAR256_CHINESE =
     "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中"
     "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中";
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_001");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -974,7 +936,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_002");
     string defaultRelativePath = "Pictures/1/";
@@ -997,7 +959,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_003");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1011,27 +973,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, Test
     EXPECT_GE(ret, 0);
     MediaLibraryPhotoOperations::Create(cmd);
     MediaLibraryPhotoOperations::Create(cmd);
-#ifdef FILEEXT
-    shared_ptr<MediaFileExtAbility> mediaFileExtAbility;
-    MediaLibraryUnitTestUtils::Init();
-    ArkJsRuntime runtime;
-    mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
-    const int64_t offset = 0;
-    const int64_t maxCount = 100;
-    FileAccessFwk::FileFilter filter;
-    FileAccessFwk::FileInfo rootInfo;
-    rootInfo.uri = COMMON_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_IMAGE_URI;
-    rootInfo.mimeType = DEFAULT_IMAGE_MIME_TYPE_PREFIX;
-    vector<FileAccessFwk::FileInfo> rootFileList;
-    ret = mediaFileExtAbility->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
-    EXPECT_EQ(ret, E_SUCCESS);
-    EXPECT_EQ(rootFileList.size(), 3);
-    DisplayFileList(rootFileList);
-#endif
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_004");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1045,27 +990,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, Test
     EXPECT_GE(ret, 0);
     MediaLibraryPhotoOperations::Create(cmd);
     MediaLibraryPhotoOperations::Create(cmd);
-#ifdef FILEEXT
-    shared_ptr<MediaFileExtAbility> mediaFileExtAbility;
-    MediaLibraryUnitTestUtils::Init();
-    ArkJsRuntime runtime;
-    mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
-    const int64_t offset = 0;
-    const int64_t maxCount = 100;
-    FileAccessFwk::FileFilter filter;
-    FileAccessFwk::FileInfo rootInfo;
-    rootInfo.uri = COMMON_PREFIX + ROOT_URI + MEDIALIBRARY_TYPE_VIDEO_URI;
-    rootInfo.mimeType = DEFAULT_VIDEO_MIME_TYPE_PREFIX;
-    vector<FileAccessFwk::FileInfo> rootFileList;
-    ret = mediaFileExtAbility->ListFile(rootInfo, offset, maxCount, filter, rootFileList);
-    EXPECT_EQ(ret, E_SUCCESS);
-    EXPECT_EQ(rootFileList.size(), 3);
-    DisplayFileList(rootFileList);
-#endif
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_005");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1087,7 +1015,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_006");
     TestPhotoCreateWithExtApi10("", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
@@ -1103,7 +1031,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_006, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_006");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api9_test_001");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1130,7 +1058,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_001, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api9_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api9_test_002");
     string defaultRelativePath = "Pictures/1/";
@@ -1158,7 +1086,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_002, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api9_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start photo_oprn_create_api9_test_003");
     string defaultDisplayName = "photo.jpg";
@@ -1183,7 +1111,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_003, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api9_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api9_test_004");
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -1236,22 +1164,15 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_004, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api9_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_delete_api10_test_001");
 
     // set photo
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < E_OK) {
-        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId);
-        return;
-    }
+    EXPECT_GE(fileId, E_OK);
     string filePath = GetFilePath(fileId);
-    if (filePath.empty()) {
-        MEDIA_ERR_LOG("Get filePath failed");
-        return;
-    }
-
+    EXPECT_FALSE(filePath.empty());
     EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), true);
     int32_t count = GetPhotoAssetCountIndb(PhotoColumn::MEDIA_NAME, "photo.jpg");
     EXPECT_EQ(count, 1);
@@ -1273,16 +1194,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_001");
 
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
-    if (fileId1 < E_OK) {
-        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
-        return;
-    }
-
+    EXPECT_GE(fileId1, E_OK);
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
         MediaLibraryApi::API_10);
@@ -1291,32 +1208,22 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_001, TestS
     cmd.SetDataSharePred(predicates);
     vector<string> columns;
     auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "photo1.jpg");
-    } else {
-        MEDIA_ERR_LOG("Test first tdd Query failed");
-        return;
-    }
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "photo1.jpg");
 
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_002");
 
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
-    if (fileId1 < E_OK) {
-        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
-        return;
-    }
+    EXPECT_GE(fileId1, E_OK);
     int32_t fileId2 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
-    if (fileId2 < E_OK) {
-        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId2);
-        return;
-    }
-
+    EXPECT_GE(fileId2, E_OK);
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
         MediaLibraryApi::API_10);
@@ -1327,35 +1234,23 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_002, TestS
     cmd.SetDataSharePred(predicates);
     vector<string> columns;
     auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "photo1.jpg");
-    } else {
-        MEDIA_ERR_LOG("Test first tdd Query failed");
-        return;
-    }
-
-    if (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "photo2.jpg");
-    } else {
-        MEDIA_ERR_LOG("Test second tdd Query failed");
-        return;
-    }
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "photo1.jpg");
+    EXPECT_EQ(resultSet->GoToNextRow(), NativeRdb::E_OK);
+    name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "photo2.jpg");
 
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_003");
 
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
-    if (fileId1 < E_OK) {
-        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
-        return;
-    }
-
+    EXPECT_GE(fileId1, E_OK);
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
         MediaLibraryApi::API_10);
@@ -1366,21 +1261,18 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_003, TestS
     columns.push_back(MediaColumn::MEDIA_NAME);
     columns.push_back(MediaColumn::MEDIA_DATE_ADDED);
     auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "photo1.jpg");
-        int64_t dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
-        EXPECT_GE(dateAdded, 0L);
-        int64_t dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
-        EXPECT_EQ(dateModified, 0L);
-    } else {
-        MEDIA_ERR_LOG("Test first tdd Query failed");
-        return;
-    }
+    EXPECT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "photo1.jpg");
+    int64_t dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
+    EXPECT_GE(dateAdded, 0L);
+    int64_t dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
+    EXPECT_EQ(dateModified, 0L);
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestSize.Level2)
 {
     // Hidden time test 1
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_004");
@@ -1426,7 +1318,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestSize.Level2)
 {
     // Last visit time test
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_005");
@@ -1473,7 +1365,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestSize.Level2)
 {
     // Hidden time test 2
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_006");
@@ -1527,7 +1419,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_006");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_007, TestSize.Level2)
 {
     // location album test
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_007");
@@ -1572,15 +1464,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_007, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_007");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_001");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_NAME, "pic.jpg" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
@@ -1589,15 +1477,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_002");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_NAME, "" } },
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
@@ -1633,15 +1517,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_002, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_003");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     unordered_map<string, string> updateMap1 = {
         { PhotoColumn::MEDIA_TITLE, "photo1" },
         { PhotoColumn::MEDIA_NAME, "photo2.jpg" }
@@ -1659,21 +1539,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_003, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_004");
     int32_t fileId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId1);
-        return;
-    }
-
+    EXPECT_GE(fileId1, 0);
     int32_t fileId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "pic.jpg");
-    if (fileId2 < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId2);
-        return;
-    }
-
+    EXPECT_GE(fileId2, 0);
     TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId1),
         { { PhotoColumn::MEDIA_TITLE, "photo1" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
@@ -1689,15 +1561,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_005");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_ID, "1"} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
@@ -1732,15 +1600,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_005, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_006");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::PHOTO_ORIENTATION, "1"} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
@@ -1754,7 +1618,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_006");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_007");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
@@ -1778,7 +1642,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_007");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_008");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
@@ -1802,15 +1666,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_008, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_008");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_009, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_009");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     
@@ -1826,15 +1686,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_009, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_009");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_010, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_010");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -1853,15 +1709,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_010, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_010");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_011, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_011");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -1880,15 +1732,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_011, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_011");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_012, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_012");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -1907,15 +1755,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_012, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_012");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_013, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_013");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PAH_BATCH_UPDATE_OWNER_ALBUM_ID;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     
@@ -1936,15 +1780,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_013, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_013");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_014, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_014");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PAH_DISCARD_CAMERA_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     
@@ -1960,15 +1800,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_014, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_014");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_015, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_015");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PATH_SAVE_PICTURE;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     MediaFileUtils::UriAppendKeyValue(uriStr, "image_file_type", "1");
@@ -1986,15 +1822,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_015, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_015");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_016, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_016");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PAH_SET_VIDEO_ENHANCEMENT_ATTR;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -2013,15 +1845,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_016, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_016");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_017, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_017");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PAH_DEGENERATE_MOVING_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -2038,15 +1866,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_017, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_017");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_018, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_018, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_018");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg", true);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     int32_t ret = UpdateEditTime(fileId, 1);
     EXPECT_EQ(ret, 0);
  
@@ -2066,15 +1890,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_018, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_018");
 }
  
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_019, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_019");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg", true);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
- 
+    EXPECT_GE(fileId, 0);
     std::string uriStr = PAH_DEGENERATE_MOVING_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
     MediaFileUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -2091,17 +1911,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_019, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_019");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api9_test_001");
     string displayName = "photo.jpg";
     string relativePath = "Pictures/1/";
     int32_t fileId = SetDefaultPhotoApi9(MediaType::MEDIA_TYPE_IMAGE, displayName, relativePath);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     unordered_map<string, string> updateMap = {
         { PhotoColumn::MEDIA_NAME, "photo1.jpg" },
         { PhotoColumn::MEDIA_RELATIVE_PATH, "Pictures/2" }
@@ -2119,16 +1935,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_001, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api9_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api9_test_002");
     string relativePath = "Pictures/1/";
     int32_t fileId = SetDefaultPhotoApi9(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg", relativePath);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestPhotoUpdateParamsApi9(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_NAME, "" } },
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_DISPLAY_NAME); });
@@ -2164,16 +1976,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_002, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api9_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start photo_oprn_update_api9_test_003");
     string relativePath = "Pictures/1/";
     int32_t fileId = SetDefaultPhotoApi9(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg", relativePath);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     string defaultDisplayName = "photo.jpg";
     string longEnglishRelativePath = "Pictures/" + CHAR256_ENGLISH + "/";
     string longChineseRelativePath = "Pictures/" + CHAR256_CHINESE + "/";
@@ -2203,42 +2011,28 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_003, TestS
 }
 
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api9_test_004");
     string relativePath = "Pictures/1/";
     int32_t fileId1 = SetDefaultPhotoApi9(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg", relativePath);
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId1);
-        return;
-    }
+    EXPECT_GE(fileId1, 0);
     int32_t fileId2 = SetDefaultPhotoApi9(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg", relativePath);
-    if (fileId2 < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId2);
-        return;
-    }
-
+    EXPECT_GE(fileId2, 0);
     TestPhotoUpdateParamsApi9(PhotoColumn::MEDIA_ID, to_string(fileId2),
         { { PhotoColumn::MEDIA_NAME, "photo1.jpg" } },
         [] (int32_t result) { EXPECT_EQ(result, E_HAS_DB_ERROR); });
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api9_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api9_test_005");
     string displayName = "photo.jpg";
     int32_t fileId1 = SetDefaultPhotoApi9(MediaType::MEDIA_TYPE_IMAGE, displayName, "Pictures/1/");
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId1);
-        return;
-    }
+    EXPECT_GE(fileId1, 0);
     int32_t fileId2 = SetDefaultPhotoApi9(MediaType::MEDIA_TYPE_IMAGE, displayName, "Pictures/2/");
-    if (fileId2 < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId2);
-        return;
-    }
-
+    EXPECT_GE(fileId2, 0);
     TestPhotoUpdateParamsApi9(PhotoColumn::MEDIA_ID, to_string(fileId2),
         { { PhotoColumn::MEDIA_RELATIVE_PATH, "Pictures/1" } },
         [] (int32_t result) { EXPECT_EQ(result, E_HAS_DB_ERROR); });
@@ -2255,16 +2049,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_005, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api9_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_001");
 
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     TestPhotoOpenParamsApi10(fileId, "",
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
     TestPhotoOpenParamsApi10(fileId, "m",
@@ -2275,17 +2065,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_002, TestSize.Level2)
 {
     // test function MediaLibraryPhotoOperations::RequestEditData
     MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_002");
 
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     const static int LARGE_NUM = 1000;
     string requestEditDataStr = MEDIA_OPERN_KEYWORD + "=" + EDIT_DATA_REQUEST;
     TestPhotoOpenEditParamsApi10(fileId, requestEditDataStr, "r",
@@ -2304,17 +2090,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_002, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_003, TestSize.Level2)
 {
     // test function MediaLibraryPhotoOperations::RequestEditSource
     MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_003");
 
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     const static int LARGE_NUM = 1000;
     string requestEditDataStr = MEDIA_OPERN_KEYWORD + "=" + SOURCE_REQUEST;
     TestPhotoOpenEditParamsApi10(fileId + LARGE_NUM, requestEditDataStr, "r",
@@ -2331,17 +2113,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_003, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_004, TestSize.Level2)
 {
     // test function MediaLibraryPhotoOperations::CommitEditOpen
     MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_004");
 
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     const static int LARGE_NUM = 1000;
     string requestEditDataStr = MEDIA_OPERN_KEYWORD + "=" + COMMIT_REQUEST;
     TestPhotoOpenEditParamsApi10(fileId, requestEditDataStr, "r",
@@ -2360,16 +2138,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_004, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_close_api10_test_001");
 
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
     static constexpr int LARGE_NUM = 1000;
     fileAssetPtr->SetId(fileId + LARGE_NUM);
@@ -2383,7 +2157,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_close_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, TestSize.Level2)
 {
     // common api10 create -> open -> write -> close
     MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_001");
@@ -2421,7 +2195,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_002, TestSize.Level2)
 {
     // common api10 create -> setPending(true) -> open -> write -> close -> setPending(false)
     MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_002");
@@ -2472,7 +2246,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_002, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_003, TestSize.Level2)
 {
     // common api10 create -> open -> setPending(true) -> write -> setPending(false) -> close
     MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_003");
@@ -2523,7 +2297,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_003, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api9_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api9_test_001, TestSize.Level2)
 {
     // common api9 create -> open -> write -> close
     MEDIA_INFO_LOG("start tdd photo_oprn_pending_api9_test_001");
@@ -2562,16 +2336,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api9_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api9_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_commit_edit_insert_test_001");
 
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     const static int LARGE_NUM = 1000;
     string editData = "123456";
 
@@ -2604,16 +2374,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_001
     MEDIA_INFO_LOG("end tdd photo_oprn_commit_edit_insert_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_commit_edit_insert_test_002");
 
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     string editData = "123456";
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::COMMIT_EDIT,
         MediaLibraryApi::API_10);
@@ -2626,16 +2392,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_002
     MEDIA_INFO_LOG("end tdd photo_oprn_commit_edit_insert_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_revert_edit_insert_test_001");
 
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     const static int LARGE_NUM = 1000;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::REVERT_EDIT,
         MediaLibraryApi::API_10);
@@ -2659,16 +2421,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_001
     MEDIA_INFO_LOG("end tdd photo_oprn_revert_edit_insert_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_revert_edit_insert_test_002");
 
     int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::REVERT_EDIT,
         MediaLibraryApi::API_10);
     ValuesBucket values;
@@ -2702,7 +2460,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_002
     MEDIA_INFO_LOG("end tdd photo_oprn_revert_edit_insert_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_edit_record_test_001");
 
@@ -2755,7 +2513,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     MEDIA_INFO_LOG("end tdd photo_edit_record_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_edit_record_test_002");
 
@@ -2801,7 +2559,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_002, TestSize.L
     MEDIA_INFO_LOG("end tdd photo_edit_record_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd multistages_capture_test_001");
 
@@ -2836,7 +2594,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_001, TestSize
     MEDIA_INFO_LOG("end tdd multistages_capture_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd multistages_capture_test_002");
 
@@ -2879,7 +2637,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_002, TestSize
     MEDIA_INFO_LOG("end tdd multistages_capture_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_open_cache_test_001");
 
@@ -2897,7 +2655,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_001, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_open_cache_test_002");
 
@@ -2920,7 +2678,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_002, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_open_cache_test_003");
 
@@ -2937,7 +2695,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_003, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_001");
 
@@ -2969,7 +2727,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_001, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_002");
 
@@ -3001,17 +2759,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_002, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_003");
 
     // create asset in pending
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     // open cache file
     string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
     string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
@@ -3037,7 +2791,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_004");
 
@@ -3079,7 +2833,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_004, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_005");
 
@@ -3108,17 +2862,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_005, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_001");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     // open cache file
     string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
     string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
@@ -3147,17 +2897,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_001, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_002");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "photo.mp4");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     // open cache file
     string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
     string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
@@ -3186,17 +2932,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_002, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_003");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     // open cache file
     string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
     string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
@@ -3222,17 +2964,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_004");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     // open cache file
     string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
     string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
@@ -3259,17 +2997,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_004, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_004");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_005");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     // open photo and video cache file
     string fileName;
     int32_t fd = OpenCacheFile(false, fileName);
@@ -3286,17 +3020,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_005, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_005");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_006");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     // open photo and video cache file
     string fileName;
     int32_t fd = OpenCacheFile(false, fileName);
@@ -3308,7 +3038,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_006, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_006");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_delete_cache_test_001");
 
@@ -3337,7 +3067,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_cache_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_delete_cache_test_002");
 
@@ -3366,27 +3096,15 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_batch_update_user_comment_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_batch_update_user_comment_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_batch_update_user_comment_test_001");
     int32_t fileId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("CreatePhoto failed, ret=%{public}d", fileId1);
-        return;
-    }
-
+    EXPECT_GE(fileId1, 0);
     int32_t fileId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
-    if (fileId2 < 0) {
-        MEDIA_ERR_LOG("CreatePhoto failed, ret=%{public}d", fileId2);
-        return;
-    }
-
+    EXPECT_GE(fileId2, 0);
     int32_t fileId3 = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "photo3.mp4");
-    if (fileId3 < 0) {
-        MEDIA_ERR_LOG("CreatePhoto failed, ret=%{public}d", fileId3);
-        return;
-    }
-
+    EXPECT_GE(fileId3, 0);
     vector<string> assetsArray = { to_string(fileId1), to_string(fileId2), to_string(fileId3) };
     string newUserComment = "batch update user comment";
     DataSharePredicates predicates;
@@ -3435,11 +3153,8 @@ bool CompareFile(const unsigned char originArray[], off_t originSize,
     return isEqual;
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("start tdd photo_oprn_convert_live_photo_test_001");
-
-    // create live photo
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
     ValuesBucket values;
     values.PutString(ASSET_EXTENTION, "jpg");
@@ -3451,18 +3166,14 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001
     MediaLibraryPhotoOperations::Create(cmd);
     int32_t fileId = QueryPhotoIdByDisplayName("live_photo.jpg");
     ASSERT_GE(fileId, 0);
-
     MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
     string fileUriStr = fileUri.ToString();
     Uri uri(fileUriStr);
     MediaLibraryCommand openImageCmd(uri, Media::OperationType::OPEN);
     int32_t imageFd = MediaLibraryPhotoOperations::Open(openImageCmd, "w");
     ASSERT_GE(imageFd, 0);
-    int32_t resWrite = write(imageFd, FILE_TEST_JPG, sizeof(FILE_TEST_JPG));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
-
+    ASSERT_NE(write(imageFd, FILE_TEST_JPG, sizeof(FILE_TEST_JPG)), -1);
+    
     string videoUriStr = fileUriStr;
     MediaFileUtils::UriAppendKeyValue(videoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
     Uri videoUri(videoUriStr);
@@ -3470,18 +3181,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001
     videoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t videoFd = MediaLibraryDataManager::GetInstance()->OpenFile(videoCmd, "w");
     ASSERT_GE(videoFd, 0);
-    resWrite = write(videoFd, FILE_TEST_MP4, sizeof(FILE_TEST_MP4));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
-
+    ASSERT_NE(write(videoFd, FILE_TEST_MP4, sizeof(FILE_TEST_MP4)), -1);
     MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
     ValuesBucket closeValues;
     closeValues.PutString(MEDIA_DATA_DB_URI, fileUriStr);
     closeCmd.SetValueBucket(closeValues);
     MediaLibraryPhotoOperations::Close(closeCmd);
-
-    // read live photo video
     string livePhotoUriStr = fileUriStr;
     MediaFileUtils::UriAppendKeyValue(livePhotoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_PRIVATE_LIVE_PHOTO);
     Uri livePhotoUri(livePhotoUriStr);
@@ -3494,15 +3199,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_convert_live_photo_test_001
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
     EXPECT_NE((buf == nullptr), true);
     read(livePhotoFd, buf, destLen);
-
-    bool result = CompareFile(FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO), buf, destLen);
+    EXPECT_EQ(CompareFile(FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO), buf, destLen), true);
     free(buf);
     close(livePhotoFd);
-    EXPECT_EQ(result, true);
-    MEDIA_INFO_LOG("end tdd photo_oprn_convert_live_photo_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_store_thumbnail_size_test_001");
 
@@ -3512,7 +3214,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_0
     const string testPhotoPath = "/storage/cloud/files/Photo/1/IMG_test.jpg";
     string testLCDPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_LCD_SUFFIX);
     string testTHUMBPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMB_SUFFIX);
-    string testTHUMBASTCPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMBASTC_SUFFIX);
+    string testTHUMBASTCPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMB_ASTC_SUFFIX);
 
     // Create temporary thumbnail file
 
@@ -3546,7 +3248,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_0
     MEDIA_INFO_LOG("end tdd photo_oprn_store_thumbnail_size_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_drop_thumbnail_size_test_001");
 
@@ -3570,7 +3272,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_00
     MEDIA_INFO_LOG("end tdd photo_oprn_drop_thumbnail_size_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_empty_columns, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_empty_columns, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_scan_movingphoto_empty_columns");
     MediaLibraryCommand cmd(OperationObject::PAH_MOVING_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
@@ -3580,7 +3282,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_empty_colu
     MEDIA_INFO_LOG("end tdd photo_oprn_scan_movingphoto_empty_columns");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_normal_columns, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_normal_columns, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_scan_movingphoto_normal_columns");
     MediaLibraryCommand cmd(OperationObject::PAH_MOVING_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
@@ -3591,7 +3293,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_normal_col
     MEDIA_INFO_LOG("end tdd photo_oprn_scan_movingphoto_normal_columns");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_bucket, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_bucket, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_empty_bucket");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
@@ -3603,7 +3305,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_bucket, T
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_empty_bucket");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_file, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_empty_file");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
@@ -3616,7 +3318,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_file, Tes
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_empty_file");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_normal_file, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_normal_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_normal_file");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
@@ -3638,7 +3340,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_normal_file, Te
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_normal_file");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_effect_mode, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_effect_mode, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_effect_mode");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
@@ -3652,7 +3354,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_effect_mode, Te
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_effect_mode");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_illegal_mode, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_illegal_mode, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_illegal_mode");
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
@@ -3670,17 +3372,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_illegal_mode, T
     MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_illegal_mode");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd clone_single_asset_001");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
-        return;
-    }
-
+    EXPECT_GE(fileId, 0);
     // open photo and video cache file
     string fileName;
     int32_t fd = OpenCacheFile(false, fileName);
@@ -3709,16 +3407,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_001, TestSize.Level
     MEDIA_INFO_LOG("end tdd clone_single_asset_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd clone_single_asset_002");
     
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
-        return;
-    }
+    EXPECT_GE(fileId, 0);
 
     // open photo and video cache file
     string fileName;
@@ -3753,16 +3448,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_002, TestSize.Level
 }
 
 // 多线程访问clone接口tdd测试
-HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd clone_single_asset_003");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "moving_photo.jpg", true);
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
-        return;
-    }
+    EXPECT_GE(fileId, 0);
 
     // open photo and video cache file
     string fileName;
@@ -3803,12 +3495,9 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, clone_single_asset_003, TestSize.Level
     MEDIA_INFO_LOG("end tdd clone_single_asset_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd picture_date_test_001");
-    if (s_pictureDataOperations == nullptr) {
-        return;
-    }
     EXPECT_NE(s_pictureDataOperations, nullptr);
 
     s_pictureDataOperations->CleanDateForPeriodical();
@@ -3816,10 +3505,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0
     EXPECT_EQ(s_pictureDataOperations->highQualityPictureMap_.size(), 0);
 
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("Create photo failed");
-        return;
-    }
+    EXPECT_GE(fileId1, 0);
     time_t currentTime;
     string fileId = to_string(fileId1);
     if ((currentTime = time(NULL)) == -1) {
@@ -3844,7 +3530,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, picture_date_test_001, TestSize.Level0
     MEDIA_INFO_LOG("end tdd picture_date_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_001, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3864,7 +3550,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_001, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_002, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3885,7 +3571,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_002, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_003, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3908,7 +3594,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_003, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_004, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3929,7 +3615,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_004, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_005, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3950,7 +3636,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_005, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_006, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3971,7 +3657,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_006, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_007, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -3993,7 +3679,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_007, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_008, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -4017,7 +3703,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_008, Test
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_09, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_09, TestSize.Level2)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
@@ -4039,13 +3725,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, asset_oprn_create_api10_test_09, TestS
     EXPECT_EQ(ret, 0);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, getAllDuplicateAssets_test, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, getAllDuplicateAssets_test, TestSize.Level2)
 {
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("Create photo failed");
-        return;
-    }
+    EXPECT_GE(fileId1, 0);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::FIND_DUPLICATE_ASSETS,
         MediaLibraryApi::API_10);
     DataSharePredicates predicates;
@@ -4061,13 +3744,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, getAllDuplicateAssets_test, TestSize.L
     EXPECT_NE(resultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestSize.Level2)
 {
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "test.jpg", true);
-    if (fileId1 < 0) {
-        MEDIA_ERR_LOG("Create photo failed");
-        return;
-    }
+    EXPECT_GE(fileId1, 0);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::FIND_DUPLICATE_ASSETS_TO_DELETE,
         MediaLibraryApi::API_10);
     DataSharePredicates predicates;
@@ -4083,17 +3763,17 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, getDuplicateAssetsToDelete_test, TestS
     EXPECT_NE(resultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_metadata_test, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_metadata_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_read_moving_photo_metadata_test");
 
-    // create moving photo
+    // create moving photo with live photo
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
     ValuesBucket valuesBucket;
     valuesBucket.PutString(ASSET_EXTENTION, "jpg");
     valuesBucket.PutString(PhotoColumn::MEDIA_TITLE, "moving_photo_metadata_test");
     valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
-    valuesBucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
+    valuesBucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::DEFAULT));
     cmd.SetValueBucket(valuesBucket);
     cmd.SetBundleName("test_bundle_name");
     MediaLibraryPhotoOperations::Create(cmd);
@@ -4103,21 +3783,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_metadata_
     MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
     string fileUriStr = fileUri.ToString();
     Uri uri(fileUriStr);
-    MediaLibraryCommand openMovingPhotoImageCmd(uri, Media::OperationType::OPEN);
-    int32_t imageFd = MediaLibraryPhotoOperations::Open(openMovingPhotoImageCmd, "w");
-    EXPECT_GE(imageFd, 0);
-    int32_t resWrite = write(imageFd, FILE_TEST_JPG, sizeof(FILE_TEST_JPG));
+    MediaLibraryCommand openLivePhotoCmd(uri, Media::OperationType::OPEN);
+    int32_t livePhotoFd = MediaLibraryPhotoOperations::Open(openLivePhotoCmd, "w");
+    EXPECT_GE(livePhotoFd, 0);
+    int32_t resWrite = write(livePhotoFd, FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO));
     EXPECT_GE(resWrite, 0);
-
-    string videoUriStr = fileUriStr;
-    MediaFileUtils::UriAppendKeyValue(videoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
-    Uri videoUri(videoUriStr);
-    MediaLibraryCommand openMovingPhotoVideoCmd(videoUri, Media::OperationType::OPEN);
-    openMovingPhotoVideoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
-    int32_t videoFd = MediaLibraryDataManager::GetInstance()->OpenFile(openMovingPhotoVideoCmd, "w");
-    EXPECT_GE(videoFd, 0);
-    resWrite = write(videoFd, FILE_TEST_MP4, sizeof(FILE_TEST_MP4));
-    EXPECT_GE(resWrite, 0);
+    close(livePhotoFd);
 
     MediaLibraryCommand closeFileCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
     ValuesBucket closeValues;
@@ -4136,10 +3807,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_metadata_
     EXPECT_GE(metadataFd, 0);
     int64_t destLen = lseek(metadataFd, 0, SEEK_END);
     EXPECT_GE(destLen, 0);
-
-    close(imageFd);
-    close(videoFd);
     close(metadataFd);
+
     MEDIA_INFO_LOG("end tdd photo_oprn_read_moving_photo_metadata_test");
 }
 } // namespace Media

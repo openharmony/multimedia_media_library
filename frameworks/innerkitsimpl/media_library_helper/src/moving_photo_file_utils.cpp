@@ -558,10 +558,19 @@ static bool IsValidHexInteger(const string &hexStr)
 {
     constexpr int32_t HEX_INT_LENGTH = 8;
     if (hexStr.length() > HEX_INT_LENGTH) {
+        MEDIA_ERR_LOG("hexStr length > HEX_INT_LENGTH");
         return false;
     }
-    uint64_t num = stoull(hexStr, nullptr, HEX_BASE);
-    if (num > numeric_limits<uint32_t>::max()) {
+    char* end = nullptr;
+    errno = 0;
+    uint64_t num = std::strtoull(hexStr.c_str(), &end, HEX_BASE);
+    if (errno == ERANGE || end == nullptr || end == hexStr.c_str() || *end != '\0') {
+        MEDIA_ERR_LOG("strtoull exec error");
+        return false;
+    }
+    int32_t maxInteger = numeric_limits<int32_t>::max();
+    if (num > static_cast<uint64_t>(maxInteger)) {
+        MEDIA_ERR_LOG("num > int32_t.max, num: %{public}llu", static_cast<unsigned long long>(num));
         return false;
     }
     return true;

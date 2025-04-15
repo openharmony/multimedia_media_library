@@ -135,7 +135,7 @@ void CloudAlbumHandler::DeleteOrUpdateCloudAlbums(const vector<string> &ids)
         if (count == 0) {
             NativeRdb::RdbPredicates rdbPredicate(PhotoAlbumColumns::TABLE);
             rdbPredicate.EqualTo(PhotoAlbumColumns::ALBUM_ID, id);
-            if (MediaLibraryAlbumOperations::DeletePhotoAlbum(rdbPredicate) > 0) {
+            if (DeletePhotoAlbum(rdbPredicate) > 0) {
                 MEDIA_INFO_LOG("delete Album {%{public}s} succ", id.c_str());
             } else {
                 MEDIA_INFO_LOG("delete Album {%{public}s} fail", id.c_str());

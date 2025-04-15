@@ -23,7 +23,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
-static inline bool isFileIdValid(const std::string& fileId)
+static inline bool IsFileIdValid(const std::string& fileId)
 {
     if (fileId.empty()) {
         return false;
@@ -36,25 +36,35 @@ static inline bool isFileIdValid(const std::string& fileId)
     return true;
 }
 
-void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
+std::string CloudThumbnailObserver::ParseUriCloudDownload(const Uri &uri)
 {
-    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
-    if (changeInfo.changeType_ != ChangeType::INSERT) {
-        MEDIA_DEBUG_LOG("change type is %{public}d, not insert", changeInfo.changeType_);
-        return;
-    }
+    string uriString = uri.ToString();
+    auto pos = uriString.find_last_of('/');
+    CHECK_AND_RETURN_RET(pos != std::string::npos, "");
+    string idString = uriString.substr(pos + 1);
+    CHECK_AND_RETURN_RET_LOG(IsFileIdValid(idString), "",
+        "cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
+    return idString;
+}
+
+void CloudThumbnailObserver::CreateAstcBatchCloudDownload(const ChangeInfo &changeInfo)
+{
     for (auto &uri : changeInfo.uris_) {
-        string uriString = uri.ToString();
-        auto pos = uriString.find_last_of('/');
-        if (pos == std::string::npos) {
-            continue;
-        }
-        string idString = uriString.substr(pos + 1);
-        if (!isFileIdValid(idString)) {
-            MEDIA_DEBUG_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
+        string idString = ParseUriCloudDownload(uri);
+        if (idString == "") {
             continue;
         }
         ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString);
+    }
+}
+
+void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
+{
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+    if (changeInfo.changeType_ == ChangeType::INSERT) {
+        CreateAstcBatchCloudDownload(changeInfo);
+    } else {
+        MEDIA_DEBUG_LOG("change type is %{public}d, not insert", changeInfo.changeType_);
     }
 }
 } // namespace Media

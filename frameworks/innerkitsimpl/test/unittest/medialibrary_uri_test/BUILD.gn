@@ -25,9 +25,6 @@ ohos_unittest("medialibrary_uri_test") {
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/devices_info_interact",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
@@ -56,7 +53,6 @@ ohos_unittest("medialibrary_uri_test") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
-    "device_manager:devicemanagersdk",
     "hilog:libhilog",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",

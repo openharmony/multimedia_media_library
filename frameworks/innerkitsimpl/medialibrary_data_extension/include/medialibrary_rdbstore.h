@@ -28,9 +28,6 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-#ifdef DISTRIBUTED
-class MediaLibraryRdbStoreObserver;
-#endif
 
 class MediaLibraryDataCallBack;
 
@@ -102,10 +99,12 @@ public:
     EXPORT static void RevertFixDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateLocationKnowledgeIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void AddAlbumSubtypeAndNameIdx(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddCloudEnhancementAlbumIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void AddPhotoDateAddedIndex(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdateLatitudeAndLongitudeDefaultNull(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static void UpdatePhotoQualityCloned(const std::shared_ptr<MediaLibraryRdbStore> store);
+    EXPORT static void UpdateMdirtyTriggerForTdirty(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static int32_t ReconstructMediaLibraryStorageFormat(const std::shared_ptr<MediaLibraryRdbStore> store);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryEditDataExists(
         const NativeRdb::AbsRdbPredicates &predicates);
@@ -153,10 +152,6 @@ private:
     EXPORT static const std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
     static std::mutex reconstructLock_;
     static std::mutex walCheckPointMutex_;
-#ifdef DISTRIBUTED
-    std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
-#endif
-    std::string bundleName_ {BUNDLE_NAME};
     NativeRdb::RdbStoreConfig config_ {""};
 };
 
@@ -204,6 +199,13 @@ public:
         table_(table), deleteRows_(deleteRows), bundleName_(bundleName) {}
     virtual ~DeleteFilesTask() override = default;
 
+    void SetOtherInfos(const std::map<std::string, std::string> &displayNames,
+        const std::map<std::string, std::string> &albumNames, const std::map<std::string, std::string> &ownerAlbumIds)
+    {
+        displayNames_ = displayNames;
+        albumNames_ = albumNames;
+        ownerAlbumIds_ = ownerAlbumIds;
+    }
     std::vector<std::string> ids_;
     std::vector<std::string> paths_;
     std::vector<std::string> notifyUris_;
@@ -213,24 +215,11 @@ public:
     std::string table_;
     int32_t deleteRows_;
     std::string bundleName_;
+    std::map<std::string, std::string> displayNames_;
+    std::map<std::string, std::string> albumNames_;
+    std::map<std::string, std::string> ownerAlbumIds_;
 };
 
-#ifdef DISTRIBUTED
-class MediaLibraryRdbStoreObserver : public NativeRdb::RdbStore::RdbStoreObserver {
-public:
-    explicit MediaLibraryRdbStoreObserver(const std::string &bundleName);
-    virtual ~MediaLibraryRdbStoreObserver();
-    void OnChange(const std::vector<std::string> &devices) override;
-
-private:
-    void NotifyDeviceChange();
-    static constexpr int NOTIFY_TIME_INTERVAL = 10000;
-    std::unique_ptr<OHOS::Utils::Timer> timer_;
-    uint32_t timerId_ {0};
-    std::string bundleName_;
-    bool isNotifyDeviceChange_;
-};
-#endif
 } // namespace Media
 } // namespace OHOS
 

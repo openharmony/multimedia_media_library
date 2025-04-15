@@ -898,7 +898,7 @@ uint16_t MtpOperationUtils::GetPropValue(shared_ptr<PayloadData> &data, uint16_t
             break;
         case MTP_DEVICE_PROPERTY_DEVICE_FRIENDLY_NAME_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
-            value->str_ = make_shared<string>(GetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME));
+            value->str_ = make_shared<string>(GetPropertyInner("const.product.name", DEFAULT_PRODUCT_NAME));
             break;
         case MTP_DEVICE_PROPERTY_SESSION_INITIATOR_VERSION_INFO_CODE:
             valueType = MTP_DEVICE_PROP_DESC_TYPE_STR;
@@ -935,7 +935,7 @@ uint16_t MtpOperationUtils::SetDevicePropValueResp(shared_ptr<PayloadData> &data
 
 uint16_t MtpOperationUtils::ResetDevicePropResp(shared_ptr<PayloadData> &data)
 {
-    CHECK_AND_PRINT_LOG(SetPropertyInner("persist.device.name", DEFAULT_PRODUCT_NAME), "SetPropertyInner fail");
+    CHECK_AND_PRINT_LOG(SetPropertyInner("const.product.name", DEFAULT_PRODUCT_NAME), "SetPropertyInner fail");
     data = make_shared<RespCommonData>();
     return MTP_OK_CODE;
 }

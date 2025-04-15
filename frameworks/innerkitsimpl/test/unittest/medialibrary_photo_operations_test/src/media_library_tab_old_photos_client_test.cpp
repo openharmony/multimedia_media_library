@@ -50,7 +50,7 @@ void TabOldPhotosClientTest::TearDown(void) {}
  * @tc.number: TabOldPhotosClientTest_001
  * @tc.desc  : Test when uri contains gallery uri prefix, the function should return id link type
  */
-HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_001, TestSize.Level0)
+HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_001, TestSize.Level1)
 {
     MediaLibraryManager mediaLibraryManager;
     std::vector<std::string> queryTabOldPhotosUris =
@@ -66,7 +66,7 @@ HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_001, TestSize.Level0)
  * @tc.number: TabOldPhotosClientTest_002
  * @tc.desc  : Test when uri contains gallery path, the function should return path type
  */
-HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_002, TestSize.Level0)
+HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_002, TestSize.Level1)
 {
     MediaLibraryManager mediaLibraryManager;
     std::vector<std::string> queryTabOldPhotosUris =
@@ -82,7 +82,7 @@ HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_002, TestSize.Level0)
  * @tc.number: TabOldPhotosClientTest_003
  * @tc.desc  : Test when uri is digit, the function should return id type
  */
-HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_003, TestSize.Level0)
+HWTEST_F(TabOldPhotosClientTest, TabOldPhotosClient_test_003, TestSize.Level1)
 {
     MediaLibraryManager mediaLibraryManager;
     std::vector<std::string> queryTabOldPhotosUris = {"123"};

@@ -46,7 +46,7 @@ public:
     EXPORT std::shared_ptr<NativeRdb::ResultSet> QueryRdb(const DataShare::DataSharePredicates& predicates,
         std::vector<std::string>& columns, OperationObject& object);
     EXPORT int32_t QueryTimeIdBatch(int32_t start, int32_t count, std::vector<std::string> &batchKeys);
-    EXPORT std::shared_ptr<NativeRdb::AbsSharedResultSet> AddQueryDateTakenTime(std::vector<std::string>& colums);
+
 private:
     MediaAssetRdbStore();
     int32_t TryGetRdbStore(bool isIngnoreSELinux = false);

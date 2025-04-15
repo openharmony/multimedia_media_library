@@ -20,6 +20,7 @@
 
 #include "exif_metadata.h"
 #include "hdr_type.h"
+#include "image_source.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 
 #include "medialibrary_errno.h"
@@ -188,6 +189,8 @@ std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyNoSurfaceBufferYuvPi
     opts.size.height = pixelMap->GetHeight();
     opts.pixelFormat = pixelMap->GetPixelFormat();
     std::shared_ptr<PixelMap> copyPixelMap = PixelMap::Create(opts);
+    CHECK_AND_RETURN_RET_LOG(copyPixelMap != nullptr, nullptr, "Create pixelMap failed");
+
     int32_t copyRes = memcpy_s(copyPixelMap->GetWritablePixels(), pixelMap->GetByteCount(),
         startPtr, pixelMap->GetByteCount());
     CHECK_AND_RETURN_RET_LOG(copyRes == E_OK, nullptr,
@@ -305,6 +308,11 @@ bool ThumbnailImageFrameWorkUtils::SetSbDynamicMetadata(sptr<SurfaceBuffer> &buf
     const std::vector<uint8_t> &dynamicMetadata)
 {
     return buffer->SetMetadata(ATTRKEY_HDR_DYNAMIC_METADATA, dynamicMetadata) == GSERROR_OK;
+}
+
+bool ThumbnailImageFrameWorkUtils::IsSupportGenAstc()
+{
+    return ImageSource::IsSupportGenAstc();
 }
 } // namespace Media
 } // namespace OHOS

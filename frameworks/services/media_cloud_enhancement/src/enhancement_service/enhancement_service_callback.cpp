@@ -36,6 +36,7 @@
 #include "medialibrary_photo_operations.h"
 #include "mimetype_utils.h"
 #include "securec.h"
+#include "moving_photo_file_utils.h"
 
 using namespace std;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
@@ -128,7 +129,9 @@ int32_t EnhancementServiceCallback::SaveCloudEnhancementPhoto(shared_ptr<CloudEn
     task.addr = nullptr;
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "save cloud enhancement image failed. ret=%{public}d, errno=%{public}d",
         ret, errno);
-    if (info->subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+    int32_t originalSubtype = GetInt32Val(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, resultSet);
+    if (MovingPhotoFileUtils::IsMovingPhoto(info->subtype, effectMode, originalSubtype)) {
         string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(info->filePath);
         string newVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(newFileInfo->filePath);
         bool copyResult = MediaFileUtils::CopyFileUtil(sourceVideoPath, newVideoPath);
@@ -321,10 +324,13 @@ void EnhancementServiceCallback::DealWithFailedTask(CloudEnhancementThreadTask& 
 void EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement()
 {
     MEDIA_INFO_LOG("UpdateAlbumsForCloudEnhancement start");
+    bool sourceAlbumNotify = true;
     if (!needUpdateUris.empty()) {
         auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
         CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
-        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, needUpdateUris, NotifyAlbumType::SYS_ALBUM);
+        MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, AlbumOperationType::DEFAULT,
+            needUpdateUris, NotifyAlbumType::SYS_ALBUM);
+        MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, needUpdateUris, sourceAlbumNotify);
         needUpdateUris.clear();
     } else {
         MEDIA_INFO_LOG("no uris need to update albums");

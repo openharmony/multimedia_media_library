@@ -226,24 +226,15 @@ int32_t PhotoOtherAlbumTransOperation::TransOtherAlbumData(const std::shared_ptr
     std::vector<std::pair<int64_t, std::string>> transAlbum;
     int64_t otherAlbumId = -1;
     GetOtherAlbumIdInfo(upgradeStore, otherAlbumId, transAlbum);
-    if (otherAlbumId == -1) {
-        MEDIA_INFO_LOG("No other album data need trans");
-        return E_DB_FAIL;
-    }
-
-    if (IsOtherAlbumEmpty(otherAlbumId, upgradeStore)) {
-        return E_DB_FAIL;
-    }
-
+    CHECK_AND_RETURN_RET_INFO_LOG(otherAlbumId != -1, E_DB_FAIL, "No other album data need trans");
+    CHECK_AND_RETURN_RET(!IsOtherAlbumEmpty(otherAlbumId, upgradeStore), E_DB_FAIL);
     CHECK_AND_RETURN_RET_LOG(CheckIfNeedTransOtherAlbumData(upgradeStore, otherAlbumId, transAlbum),
         E_DB_FAIL, "No other album data need to trans");
+
     isNeedUpdate = true;
     int64_t beginTime = MediaFileUtils::UTCTimeMilliSeconds();
     for (auto transInfo: transAlbum) {
-        if (!this->isContinue_.load()) {
-            MEDIA_INFO_LOG("Media_Operation: Trans other album is not allowed.");
-            break;
-        }
+        CHECK_AND_BREAK_INFO_LOG(this->isContinue_.load(), "Media_Operation: Trans other album is not allowed.");
         DealWithOtherAlbumTrans(upgradeStore, transInfo, otherAlbumId);
     }
     MEDIA_INFO_LOG("Trans album cost %{public}ld",

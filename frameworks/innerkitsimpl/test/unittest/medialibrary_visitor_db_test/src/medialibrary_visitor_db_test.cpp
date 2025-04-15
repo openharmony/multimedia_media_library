@@ -26,8 +26,6 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void MediaLibraryVisitorDbTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Visitor_Rdb_Test::Start");
@@ -35,7 +33,6 @@ void MediaLibraryVisitorDbTest::SetUpTestCase(void)
 
 void MediaLibraryVisitorDbTest::TearDownTestCase(void)
 {
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("Visitor_Rdb_Test::End");
 }
 
@@ -49,7 +46,7 @@ void MediaLibraryVisitorDbTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(MediaLibraryVisitorDbTest, Visitor_Query_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisitorDbTest, Visitor_Query_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Visitor_Query_Test_001::Start");
     Uri uri("hh");
@@ -67,7 +64,7 @@ HWTEST_F(MediaLibraryVisitorDbTest, Visitor_Query_Test_001, TestSize.Level0)
     }
 }
 
-HWTEST_F(MediaLibraryVisitorDbTest, Visitor_Query_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisitorDbTest, Visitor_Query_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Visitor_Query_Test_002::Start");
     Uri uri("hh");

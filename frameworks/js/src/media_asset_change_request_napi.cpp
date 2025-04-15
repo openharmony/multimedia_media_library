@@ -147,6 +147,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
         .ref = &constructor_,
         .constructor = Constructor,
         .props = {
+            DECLARE_NAPI_STATIC_FUNCTION("deleteLocalAssetsPermanentlyWithUri", JSDeleteLocalAssetsPermanentlyWithUri),
             DECLARE_NAPI_STATIC_FUNCTION("createAssetRequest", JSCreateAssetRequest),
             DECLARE_NAPI_STATIC_FUNCTION("createImageAssetRequest", JSCreateImageAssetRequest),
             DECLARE_NAPI_STATIC_FUNCTION("createVideoAssetRequest", JSCreateVideoAssetRequest),
@@ -1195,12 +1196,11 @@ napi_value MediaAssetChangeRequestNapi::JSSetDisplayName(napi_env env, napi_call
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, newDisplayName) == napi_ok,
         "Failed to parse args");
-    CHECK_COND_WITH_MESSAGE(env,
-        MediaFileUtils::GetMimeTypeFromDisplayName(newDisplayName) != DEFAULT_MIME_TYPE,
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::GetMimeTypeFromDisplayName(newDisplayName) != DEFAULT_MIME_TYPE,
         "Invalid newDisplayName, Extension is not support.");
     CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(newDisplayName) == E_OK, "Invalid display name.");
-    NAPI_INFO_LOG("wang do: newDisplayName: %{public}s", newDisplayName.c_str());
+    NAPI_INFO_LOG("newDisplayName: %{public}s", newDisplayName.c_str());
 
     std::string newTitle = MediaFileUtils::GetTitleFromDisplayName(newDisplayName);
     std::string newExtension = MediaFileUtils::GetExtensionFromPath(newDisplayName);
@@ -1211,12 +1211,12 @@ napi_value MediaAssetChangeRequestNapi::JSSetDisplayName(napi_env env, napi_call
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env,
         fileAsset != nullptr && fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::BURST),
-        JS_INNER_FAIL);
+        OHOS_INVALID_PARAM_CODE);
 
     MediaType oldMediaType = fileAsset->GetMediaType();
     std::string oldExtension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
     CHECK_COND_WITH_MESSAGE(env, newMediaType == oldMediaType,
-        "Invalid newDisplayName, newMediaType is not equal to oldMediaType.");
+        "Renaming across different media types is not supported.");
     
     auto setTitleIndex = std::find(changeRequest->assetChangeOperations_.begin(),
         changeRequest->assetChangeOperations_.end(), AssetChangeOperation::SET_TITLE);
@@ -2832,7 +2832,6 @@ napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
 static napi_value ParseArgsDeleteLocalAssetsPermanently(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& context)
 {
-    NAPI_DEBUG_LOG("enter ParseArgsDeleteLocalAssetsPermanently.");
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -2849,7 +2848,8 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
     CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
-    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object || valueType == napi_string,
+        "Argument must be array of strings of PhotoAsset object");
 
     if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
@@ -2858,10 +2858,27 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     }
     vector<string> deleteIds;
     for (const auto& napiValue : napiValues) {
-        FileAssetNapi* obj = nullptr;
-        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
-        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get photo napi object");
-        deleteIds.push_back(to_string(obj->GetFileId()));
+        if (valueType == napi_string) {
+            size_t str_length = 0;
+            if (napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length) != napi_ok) {
+                NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get string length");
+                return nullptr;
+            };
+            std::vector<char> uriBuffer(str_length + 1);
+            if (napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) != napi_ok) {
+                NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to copy string");
+                return nullptr;
+            };
+            std::string uriStr(uriBuffer.data());
+            std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(uriStr);
+            CHECK_COND_WITH_MESSAGE(env, !fileId.empty(), "Invalid URI format or empty fileId");
+            deleteIds.push_back(fileId);
+        } else {
+            FileAssetNapi* obj = nullptr;
+            CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
+            CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get photo napi object");
+            deleteIds.push_back(to_string(obj->GetFileId()));
+        }
     }
     context->predicates.In(PhotoColumn::MEDIA_ID, deleteIds);
     RETURN_NAPI_TRUE(env);
@@ -2910,6 +2927,17 @@ static void DeleteLocalAssetsPermanentlyCallback(napi_env env, napi_status statu
 napi_value MediaAssetChangeRequestNapi::JSDeleteLocalAssetsPermanently(napi_env env, napi_callback_info info)
 {
     NAPI_DEBUG_LOG("enter JSDeleteLocalAssetsPermanently.");
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteLocalAssetsPermanently(env, info, asyncContext),
+        "Failed to parse args");
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "ChangeRequestDeleteLocalAssetsPermanently",
+        DeleteLocalAssetsPermanentlydExecute, DeleteLocalAssetsPermanentlyCallback);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSDeleteLocalAssetsPermanentlyWithUri(napi_env env, napi_callback_info info)
+{
+    NAPI_DEBUG_LOG("enter JSDeleteLocalAssetsPermanentlyWithUri.");
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteLocalAssetsPermanently(env, info, asyncContext),
         "Failed to parse args");

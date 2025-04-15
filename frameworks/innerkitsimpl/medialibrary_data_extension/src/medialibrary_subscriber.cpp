@@ -61,6 +61,7 @@
 #include "resource_type.h"
 #include "dfx_manager.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_update_dirty_data_task_data.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_type_const.h"
 #include "moving_photo_processor.h"
@@ -107,10 +108,13 @@ const int32_t DELAY_TASK_TIME = 30000;
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
 const int32_t MegaByte = 1024*1024;
 const int32_t MAX_FILE_SIZE_MB = 10240;
+const int32_t UPDATE_DIRTY_CLOUD_CLONE_V1 = 1;
+const int32_t UPDATE_DIRTY_CLOUD_CLONE_V2 = 2;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
+static const std::string NO_UPDATE_DIRTY_CLOUD_CLONE_V2 = "no_update_dirty_cloud_clone_v2";
 static const std::string NO_DELETE_DIRTY_HDC_DATA = "no_delete_dirty_hdc_data";
 
 // The network should be available in this state
@@ -548,10 +552,13 @@ static int32_t DoUpdateBurstFromGallery()
 
 static void UpdateDirtyForCloudClone(AsyncTaskData *data)
 {
+    auto *taskData = static_cast<UpdateDirtyDataAsyncTaskData *>(data);
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is nullptr!");
+    int32_t taskVersion = taskData->taskVersion_;
     auto dataManager = MediaLibraryDataManager::GetInstance();
     CHECK_AND_RETURN_LOG(dataManager != nullptr, "Failed to MediaLibraryDataManager instance!");
 
-    int32_t result = dataManager->UpdateDirtyForCloudClone();
+    int32_t result = dataManager->UpdateDirtyForCloudClone(taskVersion);
     CHECK_AND_PRINT_LOG(result == E_OK, "UpdateDirtyForCloudClone faild, result = %{public}d", result);
 }
 
@@ -565,13 +572,15 @@ static void ClearDirtyHdcData(AsyncTaskData *data)
 }
 
 
-static int32_t DoUpdateDirtyForCloudClone()
+static int32_t DoUpdateDirtyForCloudClone(int32_t taskVersion)
 {
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_FAIL,
         "Failed to get async worker instance!");
+    auto *taskData = new (std::nothrow) UpdateDirtyDataAsyncTaskData(taskVersion);
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_FAIL, "Failed to alloc async data for update dirty data!");
     shared_ptr<MediaLibraryAsyncTask> updateDirtyForCloudTask =
-        make_shared<MediaLibraryAsyncTask>(UpdateDirtyForCloudClone, nullptr);
+        make_shared<MediaLibraryAsyncTask>(UpdateDirtyForCloudClone, taskData);
     CHECK_AND_RETURN_RET_LOG(updateDirtyForCloudTask != nullptr, E_FAIL,
         "Failed to create async task for updateDirtyForCloudTask !");
     asyncWorker->AddTask(updateDirtyForCloudTask, false);
@@ -651,8 +660,13 @@ static int32_t DoUpdateBurstCoverLevelFromGallery()
 
 static void UpdateDirtyForBeta(const shared_ptr<NativePreferences::Preferences>& prefs)
 {
-    if (IsBetaVersion() && prefs != nullptr && (prefs->GetInt(NO_UPDATE_DIRTY, 0) != 1)) {
-        int32_t ret = DoUpdateDirtyForCloudClone();
+    CHECK_AND_RETURN_LOG((IsBetaVersion() && prefs != nullptr), "not need UpdateDirtyForBeta");
+    if (prefs->GetInt(NO_UPDATE_DIRTY, 0) != 1) {
+        int32_t ret = DoUpdateDirtyForCloudClone(UPDATE_DIRTY_CLOUD_CLONE_V1);
+        CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
+    }
+    if (prefs->GetInt(NO_UPDATE_DIRTY_CLOUD_CLONE_V2, 0) != 1) {
+        int32_t ret = DoUpdateDirtyForCloudClone(UPDATE_DIRTY_CLOUD_CLONE_V2);
         CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateDirtyForCloudClone failed");
     }
     return;
@@ -710,8 +724,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     // update burst from gallery
     int32_t ret = DoUpdateBurstFromGallery();
     CHECK_AND_PRINT_LOG(ret == E_OK, "DoUpdateBurstFromGallery faild");
-    CloudUploadChecker::RepairNoOriginButLcd();
-    CloudUploadChecker::HandleNoOriginPhoto();
+    CloudUploadChecker::RepairNoOriginPhoto();
 
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
     // add permission for cloud enhancement photo
@@ -744,6 +757,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         watch->DoAging();
     }
     PhotoMimetypeOperation::UpdateInvalidMimeType();
+    DfxManager::GetInstance()->HandleTwoDayMissions();
 }
 
 static void PauseBackgroundDownloadCloudMedia()

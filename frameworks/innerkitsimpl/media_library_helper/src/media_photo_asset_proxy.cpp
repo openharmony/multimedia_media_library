@@ -138,7 +138,7 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
-    if (photoProxy->GetCloudImageEnhanceFlag() != static_cast<int32_t>(CloudEnhancementAvailableType::NOT_SUPPORT) &&
+    if (photoProxy->GetCloudImageEnhanceFlag() != static_cast<uint32_t>(CloudEnhancementAvailableType::NOT_SUPPORT) &&
         photoProxy->GetPhotoId().size() > 0) {
         values.Put(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(photoProxy->GetCloudImageEnhanceFlag()));
         values.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());

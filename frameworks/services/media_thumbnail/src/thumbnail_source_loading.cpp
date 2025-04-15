@@ -55,6 +55,11 @@ const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_SOURCE_LO
     { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
 };
 
+const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_ORIGIN_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::CLOUD_ORIGIN },
+    { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
+};
+
 const std::unordered_map<SourceState, SourceState> SourceLoader::ALL_SOURCE_LOADING_STATES = {
     { SourceState::BEGIN, SourceState::LOCAL_THUMB },
     { SourceState::LOCAL_THUMB, SourceState::LOCAL_LCD },
@@ -256,7 +261,7 @@ int32_t ParseDesiredMinSide(const ThumbnailType &type)
         default:
             break;
     }
-    return INT32_MAX_VALUE_LENGTH;
+    return std::numeric_limits<int32_t>::max();
 }
 
 void SwitchToNextState(ThumbnailData &data, SourceState &state)
@@ -294,7 +299,17 @@ bool SourceLoader::CreateVideoFramePixelMap()
 {
     MediaLibraryTracer tracer;
     tracer.Start("CreateVideoFramePixelMap");
-    return ThumbnailUtils::LoadVideoFile(data_, desiredSize_);
+    int64_t timeStamp = AV_FRAME_TIME;
+    if (!data_.tracks.empty()) {
+        int64_t timeStamp = std::stoll(data_.timeStamp);
+        timeStamp = timeStamp * MS_TRANSFER_US;
+    }
+    if (state_ == SourceState::CLOUD_ORIGIN && timeStamp != AV_FRAME_TIME) {
+        MEDIA_ERR_LOG("Avoid reading specific frame from cloud video, path %{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
+        return false;
+    }
+    return ThumbnailUtils::LoadVideoFrame(data_, desiredSize_, timeStamp);
 }
 
 void SourceLoader::SetCurrentStateFunction()
@@ -390,8 +405,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
     // When encode picture, if mainPixel width or height is odd, hardware encode would fail.
     // For the safety of encode process, only those of even desiredSize are allowed to generate througth picture.
-    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage() &&
-        data_.lcdDesiredSize.width % 2 == 0 && data_.lcdDesiredSize.height % 2 == 0;
+    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage();
     bool isGenerateSucceed = shouldGeneratePicture ?
         GeneratePictureSource(imageSource, targetSize) : GeneratePixelMapSource(imageSource, sourceSize, targetSize);
     if (!isGenerateSucceed && shouldGeneratePicture) {
@@ -428,7 +442,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
 bool SourceLoader::CreateSourcePixelMap()
 {
-    if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO) {
+    if (data_.mediaType == MEDIA_TYPE_VIDEO) {
         return CreateVideoFramePixelMap();
     }
 
@@ -738,10 +752,9 @@ bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 std::string CloudOriginSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
-        // avoid opening cloud origin video file.
-        MEDIA_ERR_LOG("avoid opening cloud origin video file path:%{public}s",
+        MEDIA_ERR_LOG("Opening cloud origin video file, path:%{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
-        return "";
+        return data.path;
     }
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!IsCloudSourceAvailable(data.path)) {

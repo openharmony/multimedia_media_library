@@ -29,20 +29,17 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void EventScanTest::SetUpTestCase(void) {}
 
-void EventScanTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void EventScanTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void EventScanTest::SetUp() {}
 
 void EventScanTest::TearDown(void) {}
 
-HWTEST_F(EventScanTest, medialib_event_ScanFileInternal_test_001, TestSize.Level0)
+HWTEST_F(EventScanTest, medialib_event_ScanFileInternal_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("medialib_event_ScanFileInternal_test_001::start");
     string path = "medialib_ScanFileInternal_test_001/.test";
@@ -53,7 +50,7 @@ HWTEST_F(EventScanTest, medialib_event_ScanFileInternal_test_001, TestSize.Level
     MEDIA_INFO_LOG("medialib_event_ScanFileInternal_test_001::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(EventScanTest, medialib_event_ScanFileInTraversal_test_001, TestSize.Level0)
+HWTEST_F(EventScanTest, medialib_event_ScanFileInTraversal_test_001, TestSize.Level1)
 {
     string dir = "/storage/cloud/files/";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -68,7 +65,7 @@ HWTEST_F(EventScanTest, medialib_event_ScanFileInTraversal_test_001, TestSize.Le
     EXPECT_EQ(ret, E_FILE_HIDDEN);
 }
 
-HWTEST_F(EventScanTest, medialib_event_InsertOrUpdateAlbumInfo_test_001, TestSize.Level0)
+HWTEST_F(EventScanTest, medialib_event_InsertOrUpdateAlbumInfo_test_001, TestSize.Level1)
 {
     string dir = "/storage/cloud/files";
     shared_ptr<IMediaScannerCallback> callback = nullptr;
@@ -79,7 +76,7 @@ HWTEST_F(EventScanTest, medialib_event_InsertOrUpdateAlbumInfo_test_001, TestSiz
     EXPECT_EQ(ret, UNKNOWN_ID);
 }
 
-HWTEST_F(EventScanTest, medialib_event_ReadAlbums_test_001, TestSize.Level0)
+HWTEST_F(EventScanTest, medialib_event_ReadAlbums_test_001, TestSize.Level1)
 {
     MediaScannerDb mediaScannerDb;
     unordered_map<string, Metadata> albumMap_;
@@ -88,7 +85,7 @@ HWTEST_F(EventScanTest, medialib_event_ReadAlbums_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
 }
 
-HWTEST_F(EventScanTest, medialib_event_GetFileDBUriFromPath_test_001, TestSize.Level0)
+HWTEST_F(EventScanTest, medialib_event_GetFileDBUriFromPath_test_001, TestSize.Level1)
 {
     MediaScannerDb mediaScannerDb;
     string path = "";

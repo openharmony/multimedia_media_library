@@ -40,21 +40,12 @@ private:
 
 private:
     const std::string SQL_GALLERY_MEDIA_QUERY_COUNT = "\
-        WITH album_v2 AS \
-        ( \
-            SELECT \
-                relativeBucketId, \
-                lPath \
-            FROM gallery_album \
-            WHERE COALESCE(relativeBucketId, '') <> '' \
-            GROUP BY relativeBucketId \
-        ) \
         SELECT COUNT(1) AS count \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
@@ -69,21 +60,12 @@ private:
             (1 = ? OR storage_id IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_CLOUD_META_QUERY_COUNT = "\
-        WITH album_v2 AS \
-        ( \
-            SELECT \
-                relativeBucketId, \
-                lPath \
-            FROM gallery_album \
-            WHERE COALESCE(relativeBucketId, '') <> '' \
-            GROUP BY relativeBucketId \
-        ) \
         SELECT COUNT(1) AS count \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
@@ -98,85 +80,6 @@ private:
             (1 = ? OR storage_id IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE = "\
-        WITH album_v2 AS \
-        ( \
-            SELECT \
-                relativeBucketId, \
-                lPath \
-            FROM gallery_album \
-            WHERE COALESCE(relativeBucketId, '') <> '' \
-            GROUP BY relativeBucketId \
-        ) \
-        SELECT \
-            _id, \
-            local_media_id, \
-            _data, \
-            _display_name, \
-            description, \
-            is_hw_favorite, \
-            recycledTime, \
-            _size, \
-            duration, \
-            media_type, \
-            showDateToken, \
-            height, \
-            width, \
-            title, \
-            orientation, \
-            date_modified, \
-            relative_bucket_id, \
-            sourcePath, \
-            is_hw_burst, \
-            recycleFlag, \
-            hash, \
-            special_file_type, \
-            first_update_time, \
-            datetaken, \
-            detail_time, \
-            photo_quality, \
-            thumbType, \
-            gallery_media.albumId, \
-            local_media_id, \
-            uniqueId, \
-            resolution, \
-            CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
-                THEN gallery_album.lPath \
-                ELSE album_v2.lPath \
-            END AS lPath, \
-            latitude, \
-            longitude, \
-            story_id, \
-            portrait_id, \
-            story_chosen \
-        FROM gallery_media \
-            LEFT JOIN gallery_album \
-            ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
-        WHERE (local_media_id != -1) AND \
-            (relative_bucket_id IS NULL OR \
-                relative_bucket_id NOT IN ( \
-                    SELECT DISTINCT relative_bucket_id \
-                    FROM garbage_album \
-                    WHERE type = 1 \
-                ) \
-            ) AND \
-            (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
-            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
-            COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
-        ORDER BY _id ASC \
-        LIMIT ?, ?;";
-    const std::string SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE = "\
-        WITH album_v2 AS \
-        ( \
-            SELECT \
-                relativeBucketId, \
-                lPath \
-            FROM gallery_album \
-            WHERE COALESCE(relativeBucketId, '') <> '' \
-            GROUP BY relativeBucketId \
-        ) \
         SELECT \
             _id, \
             local_media_id, \
@@ -213,7 +116,70 @@ private:
             resolution, \
             CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
                 THEN gallery_album.lPath \
-                ELSE album_v2.lPath \
+                ELSE relative_album.lPath \
+            END AS lPath, \
+            latitude, \
+            longitude, \
+            story_id, \
+            portrait_id, \
+            story_chosen \
+        FROM gallery_media \
+            LEFT JOIN gallery_album \
+            ON gallery_media.albumId=gallery_album.albumId \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
+        WHERE (local_media_id != -1) AND \
+            (relative_bucket_id IS NULL OR \
+                relative_bucket_id NOT IN ( \
+                    SELECT DISTINCT relative_bucket_id \
+                    FROM garbage_album \
+                    WHERE type = 1 \
+                ) \
+            ) AND \
+            (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
+            _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
+            COALESCE(_data, '') <> '' AND \
+            (1 = ? OR storage_id IN (0, 65537) ) \
+        ORDER BY _id ASC \
+        LIMIT ?, ?;";
+    const std::string SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE = "\
+        SELECT \
+            _id, \
+            local_media_id, \
+            localThumbPath, \
+            localBigThumbPath, \
+            _data, \
+            _display_name, \
+            description, \
+            is_hw_favorite, \
+            recycledTime, \
+            _size, \
+            duration, \
+            media_type, \
+            showDateToken, \
+            height, \
+            width, \
+            title, \
+            orientation, \
+            date_modified, \
+            relative_bucket_id, \
+            sourcePath, \
+            is_hw_burst, \
+            recycleFlag, \
+            hash, \
+            special_file_type, \
+            first_update_time, \
+            datetaken, \
+            detail_time, \
+            photo_quality, \
+            thumbType, \
+            gallery_media.albumId, \
+            local_media_id, \
+            uniqueId, \
+            resolution, \
+            CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
+                THEN gallery_album.lPath \
+                ELSE relative_album.lPath \
             END AS lPath, \
             story_id, \
             portrait_id, \
@@ -221,8 +187,8 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \

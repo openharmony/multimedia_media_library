@@ -450,7 +450,6 @@ ohos_shared_library("photoaccesshelpernative") {
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
-    "device_manager:devicemanagersdk",
     "e2fsprogs:libext2_blkid",
     "hilog:libhilog",
     "i18n:intl_util",

@@ -60,7 +60,6 @@ ohos_unittest("medialibrary_astc_phase_test") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   defines = []

@@ -274,7 +274,8 @@ int32_t MediaScannerObj::Commit()
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT && data_->GetBurstCoverLevel() == COVER) {
             if (data_->GetForAdd()) {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
-                MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis();
+                MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis(GetUriWithoutSeg(uri_),
+                    data_->GetFileMediaType());
             } else {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_UPDATE);
             }

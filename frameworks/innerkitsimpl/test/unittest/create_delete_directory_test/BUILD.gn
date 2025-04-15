@@ -30,9 +30,6 @@ ohos_unittest("create_delete_directory_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/devices_info_interact",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "//third_party/json/include",
@@ -65,9 +62,6 @@ ohos_unittest("create_delete_directory_test") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
-    "device_auth:deviceauth_sdk",
-    "device_manager:devicemanagersdk",
-    "device_security_level:dslm_sdk",
     "eventhandler:libeventhandler",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
@@ -78,7 +72,6 @@ ohos_unittest("create_delete_directory_test") {
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {

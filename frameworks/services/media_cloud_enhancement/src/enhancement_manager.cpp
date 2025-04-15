@@ -561,8 +561,9 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
         return E_ERR;
     }
     unordered_map<int32_t, string> fileId2Uri;
-    vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_IS_AUTO,
-        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE };
+    vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_HIDDEN,
+        PhotoColumn::PHOTO_IS_AUTO, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE,
+        PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE };
     auto resultSet = EnhancementDatabaseOperations::BatchQuery(cmd, columns, fileId2Uri);
     CHECK_AND_RETURN_RET_LOG(CheckResultSet(resultSet) == E_OK, E_ERR, "result set invalid");
     int32_t errCode = E_OK;
@@ -574,6 +575,8 @@ int32_t EnhancementManager::HandleAddOperation(MediaLibraryCommand &cmd, const b
         int32_t dynamicRangeType = GetInt32Val(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, resultSet);
         string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
         int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
+        int32_t hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
+        CHECK_AND_CONTINUE_ERR_LOG(hidden == 0, "photo is hidden, photo_id: %{public}s", photoId.c_str());
         MEDIA_INFO_LOG("HandleAddOperation fileId: %{public}d, photoId: %{public}s, ceAvailable: %{public}d",
             fileId, photoId.c_str(), ceAvailable);
         if (!ShouldAddTask(isAuto, photoIsAuto, ceAvailable, photoId)) {
@@ -623,7 +626,7 @@ int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
     }
     int32_t errCode = E_OK;
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
-    vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE,
+    vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE };
     GenerateAddAutoServicePredicates(servicePredicates);
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
@@ -637,6 +640,8 @@ int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
         int32_t dynamicRangeType = GetInt32Val(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, resultSet);
         string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
         int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
+        int32_t hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
+        CHECK_AND_CONTINUE_ERR_LOG(hidden == 0, "photo is hidden, photo_id: %{public}s", photoId.c_str());
         MEDIA_INFO_LOG("fileId: %{public}d, photoId: %{public}s, ceAvailable: %{public}d",
             fileId, photoId.c_str(), ceAvailable);
         if (!isReboot && EnhancementTaskManager::InProcessingTask(photoId)) {

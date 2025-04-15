@@ -22,7 +22,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #define private public
-#include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
 #include "thumbnail_utils.h"
@@ -38,7 +37,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 class ConfigTestOpenCall : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
@@ -75,7 +73,6 @@ void MediaLibraryUtilsTest::SetUpTestCase(void)
 void MediaLibraryUtilsTest::TearDownTestCase(void)
 {
     MediaLibraryUnitTestUtils::StopUnistore();
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 // SetUp:Execute before each test case
@@ -83,7 +80,7 @@ void MediaLibraryUtilsTest::SetUp() {}
 
 void MediaLibraryUtilsTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailSet_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailSet_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -98,7 +95,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailSet_test_001, TestSize.Le
     EXPECT_NE(resultSetPtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailInfo_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -115,7 +112,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailInfo_test_001, TestSize.L
     EXPECT_EQ(resultSetPtr, nullptr);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_table, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_table, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -130,7 +127,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_table, TestSize.Leve
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -145,7 +142,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_001, TestSize.Level0
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -161,7 +158,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level0
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -175,26 +172,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestS
     EXPECT_EQ(ret, false);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryAgingDistributeLcdInfos_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string udid = "medialib_QueryAgingDistributeLcdInfos_test_001";
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .udid = udid
-    };
-    int LcdLimit = 0;
-    vector<ThumbnailData> infos;
-    int err = 0;
-    bool ret = ThumbnailUtils::QueryAgingDistributeLcdInfos(opts, LcdLimit, infos, err);
-    EXPECT_EQ(ret, false);
-}
-#endif
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryAgingLcdInfos_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryAgingLcdInfos_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -211,7 +189,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryAgingLcdInfos_test_001, TestSize.L
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -227,7 +205,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_001, TestSize.Leve
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -243,7 +221,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Leve
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -259,7 +237,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSiz
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -275,7 +253,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSiz
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -291,7 +269,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_001, TestSiz
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_002, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -307,7 +285,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightInfos_test_002, TestSiz
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightValue_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightValue_test_001, TestSize.Level1)
 {
     string str = "{name:value}";
     string key = "nonexistent";
@@ -323,7 +301,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightValue_test_001, TestSize.Le
     EXPECT_EQ(ThumbnailUtils::GetHighlightValue(str, key), "value");
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryHighlightTriggerPath_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryHighlightTriggerPath_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -339,7 +317,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryHighlightTriggerPath_test_001, Tes
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightTracks_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightTracks_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -355,7 +333,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_GetHighlightTracks_test_001, TestSize.L
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightPath_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightPath_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -370,7 +348,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightPath_test_001, TestSize
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateLcdInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateLcdInfo_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -390,7 +368,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateLcdInfo_test_001, TestSize.Level0
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateVisitTime_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateVisitTime_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -408,42 +386,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateVisitTime_test_001, TestSize.Leve
     EXPECT_EQ(ret, false);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDeviceThumbnailRecords_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string udid = "medialib_QueryDeviceThumbnailRecords_test_001";
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .udid = udid
-    };
-    vector<ThumbnailData> infos;
-    int err = 0;
-    bool ret = ThumbnailUtils::QueryDeviceThumbnailRecords(opts, infos, err);
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_QueryRemoteThumbnail_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    ThumbnailData data;
-    ThumbRdbOpt opts = {
-    .store = storePtr,
-    };
-    int err = 0;
-    bool ret = ThumbnailUtils::QueryRemoteThumbnail(opts, data, err);
-    EXPECT_EQ(ret, false);
-    opts.networkId = "medialib_QueryRemoteThumbnail_test";
-    ret = ThumbnailUtils::QueryRemoteThumbnail(opts, data, err);
-    EXPECT_EQ(ret, false);
-}
-#endif
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_CleanThumbnailInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_CleanThumbnailInfo_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -457,42 +400,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_CleanThumbnailInfo_test_001, TestSize.L
     EXPECT_EQ(ret, false);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPushTable_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string table = "medialib_SyncPushTable_test_001";
-    MediaLibrarySyncOpts syncOpts = {
-        .rdbStore = storePtr,
-        .table = table,
-        .bundleName = "medialib_SyncPushTable_test_001",
-    };
-    vector<string> devices;
-    bool isBlock = true;
-    bool ret = MediaLibrarySyncOperation::SyncPushTable(syncOpts, devices, isBlock);
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPullTable_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string table = "medialib_SyncPullTable_test_001";
-    MediaLibrarySyncOpts syncOpts = {
-        .rdbStore = storePtr,
-        .table = table,
-        .bundleName = "medialib_SyncPullTable_test_001",
-    };
-    vector<string> devices;
-    bool ret = MediaLibrarySyncOperation::SyncPullTable(syncOpts, devices);
-    EXPECT_EQ(ret, false);
-}
-#endif
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeImage_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeImage_test_001, TestSize.Level1)
 {
     vector<uint8_t> data;
     Size size;
@@ -504,60 +412,25 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeImage_test_001, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_WaitFor_test_001, TestSize.Level0)
-{
-    MediaLibrarySyncCallback mediaLibrary;
-    bool ret = mediaLibrary.WaitFor();
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteDistributeLcdData_test_001, TestSize.Level0)
-{
-    ThumbnailData thumbnailData;
-    ThumbRdbOpt opts;
-    bool ret = ThumbnailUtils::DeleteDistributeLcdData(opts, thumbnailData);
-    EXPECT_EQ(ret, false);
-    thumbnailData.lcdKey = "DeleteDistributeLcdData";
-    ret = ThumbnailUtils::DeleteDistributeLcdData(opts, thumbnailData);
-    EXPECT_EQ(ret, true);
-    opts.networkId = "medialib_DeleteDistributeLcdData_test_001";
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    opts.kvStore = kvStorePtr;
-    ret = ThumbnailUtils::DeleteDistributeLcdData(opts, thumbnailData);
-    EXPECT_EQ(ret, true);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_DoUpdateRemoteThumbnail_test_001, TestSize.Level0)
-{
-    ThumbnailData thumbnailData;
-    ThumbRdbOpt opts;
-    int err = 0;
-    bool ret = ThumbnailUtils::DoUpdateRemoteThumbnail(opts, thumbnailData, err);
-    EXPECT_EQ(ret, false);
-    opts.networkId = "medialib_DoUpdateRemoteThumbnail_test_001";
-    ret = ThumbnailUtils::DoUpdateRemoteThumbnail(opts, thumbnailData, err);
-    EXPECT_EQ(ret, false);
-}
-#endif
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteOriginImage_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteAllThumbFilesAndAstc_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
     }
     ThumbnailData thumbnailData;
-    string row = "medialib_DeleteOriginImage_test_001";
+    string row = "medialib_DeleteAllThumbFilesAndAstc_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = MEDIALIBRARY_TABLE,
         .row = row
     };
-    bool ret = ThumbnailUtils::DeleteOriginImage(opts);
+    ThumbnailData data;
+    data.id = row;
+    bool ret = ThumbnailUtils::DeleteAllThumbFilesAndAstc(opts, data);
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateTakenFromKvStore_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateTakenFromKvStore_test_001, TestSize.Level1)
 {
     ThumbnailData data;
     const string testStr = "medialib_UpdateAstcDateTakenFromKvStore_test_001";
@@ -570,60 +443,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateTakenFromKvStore_test_001
     EXPECT_EQ(ret, false);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPullKvstore_test_001, TestSize.Level0)
-{
-    vector<string> thumbnailKeys = {"SyncPullKvstore"};
-    auto ret = MediaLibrarySyncOperation::SyncPullKvstore(nullptr, thumbnailKeys, "");
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, thumbnailKeys, "");
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-    string networkId = "Kvstore";
-    ret = MediaLibrarySyncOperation::SyncPullKvstore(kvStorePtr, thumbnailKeys, networkId);
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPushKvstore_test_001, TestSize.Level0)
-{
-    vector<string> thumbnailKeys = {"SyncPushKvstore"};
-    auto ret = MediaLibrarySyncOperation::SyncPushKvstore(nullptr, thumbnailKeys, "");
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, thumbnailKeys, "");
-    EXPECT_EQ(ret, DistributedKv::Status::ERROR);
-    string networkId = "Kvstore";
-    ret = MediaLibrarySyncOperation::SyncPushKvstore(kvStorePtr, thumbnailKeys, networkId);
-    EXPECT_NE(ret, DistributedKv::Status::ERROR);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_RemoveDataFromKv_test_001, TestSize.Level0)
-{
-    bool ret = ThumbnailUtils::RemoveDataFromKv(nullptr, "");
-    EXPECT_EQ(ret, false);
-    string key = "RemoveDataFromKv";
-    ret = ThumbnailUtils::RemoveDataFromKv(nullptr, key);
-    EXPECT_EQ(ret, false);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = ThumbnailUtils::RemoveDataFromKv(kvStorePtr, key);
-    EXPECT_EQ(ret, true);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_IsImageExist_test_001, TestSize.Level0)
-{
-    string networkId = "medialib_IsImageExist_test_001";
-    bool ret = ThumbnailUtils::IsImageExist("", networkId, nullptr);
-    EXPECT_EQ(ret, false);
-    string key = "IsImageExist";
-    ret = ThumbnailUtils::IsImageExist(key, networkId, nullptr);
-    EXPECT_EQ(ret, false);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    ret = ThumbnailUtils::IsImageExist(key, networkId, kvStorePtr);
-    EXPECT_EQ(ret, false);
-}
-#endif
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_compressImage_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_compressImage_test_001, TestSize.Level1)
 {
     ThumbnailData data;
     data.thumbnail.push_back(0);
@@ -633,7 +453,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_compressImage_test_001, TestSize.Level0
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Level1)
 {
     ThumbnailData data;
     data.mediaType = MEDIA_TYPE_VIDEO;
@@ -655,13 +475,13 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_uTCTimeSeconds_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_uTCTimeSeconds_test_001, TestSize.Level1)
 {
     int64_t ret = ThumbnailUtils::UTCTimeMilliSeconds();
     EXPECT_GT(ret, 0);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_parseQueryResult_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_parseQueryResult_test_001, TestSize.Level1)
 {
     vector<string> column = {
         REMOTE_THUMBNAIL_DB_FILE_ID,
@@ -685,26 +505,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseQueryResult_test_001, TestSize.Lev
     EXPECT_NE(err, 0);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_deleteDistributeThumbnailInfo_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    ThumbRdbOpt opts;
-    opts.store = storePtr;
-    opts.networkId = "GetUdidByNetworkId";
-    opts.udid = "GetUdidByNetworkId";
-    string key = "RemoveDataFromKv";
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    opts.kvStore = kvStorePtr;
-    ThumbnailUtils::RemoveDataFromKv(opts.kvStore, key);
-    bool ret = ThumbnailUtils::DeleteDistributeThumbnailInfo(opts);
-    EXPECT_EQ(ret, false);
-}
-#endif
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_parseStringResult_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_parseStringResult_test_001, TestSize.Level1)
 {
     vector<string> column = {
         REMOTE_THUMBNAIL_DB_FILE_ID,
@@ -715,20 +516,19 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseStringResult_test_001, TestSize.Le
     };
     int index = 0;
     string data = "ParseStringResult";
-    int err = 0;
     RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.Limit(0);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    string dataTest = "";
-    ThumbnailUtils::ParseStringResult(resultSet, -1, dataTest, err);
-    EXPECT_GT(err, E_OK);
-    ThumbnailUtils::ParseStringResult(resultSet, index, data, err);
-    EXPECT_GT(err, E_OK);
+    string dataTest;
+    ThumbnailUtils::ParseStringResult(resultSet, -1, dataTest);
+    EXPECT_EQ(dataTest, "");
+    ThumbnailUtils::ParseStringResult(resultSet, index, dataTest);
+    EXPECT_EQ(dataTest, "");
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_checkResultSetCount_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_checkResultSetCount_test_001, TestSize.Level1)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
@@ -758,7 +558,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_checkResultSetCount_test_001, TestSize.
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_queryThumbDataFromFileId_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_queryThumbDataFromFileId_test_001, TestSize.Level1)
 {
     string table = "Photos";
     ThumbRdbOpt opts = {
@@ -774,7 +574,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_queryThumbDataFromFileId_test_001, Test
     EXPECT_NE(err, 0);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Level1)
 {
     Size targetSize;
     targetSize.width = 20;
@@ -786,7 +586,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Lev
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level1)
 {
     ThumbnailData data;
     Size desiredSize;
@@ -799,7 +599,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     std::string sourcePath = "";
     bool ret = ThumbnailUtils::LoadImageFile(data, desiredSize);
     EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::LoadVideoFile(data, desiredSize);
+    ret = ThumbnailUtils::LoadVideoFrame(data, desiredSize, 0);
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::LoadAudioFile(data, desiredSize);
     EXPECT_EQ(ret, false);
@@ -809,7 +609,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_ParseVideoSize_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_ParseVideoSize_test_001, TestSize.Level1)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     int32_t videoWidth = 0;
@@ -818,7 +618,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ParseVideoSize_test_001, TestSize.Level
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_ConvertStrToInt32_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_ConvertStrToInt32_test_001, TestSize.Level1)
 {
     std::string testStr = "";
     int32_t result = 0;
@@ -832,56 +632,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ConvertStrToInt32_test_001, TestSize.Le
     EXPECT_EQ(ret, false);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryUtilsTest, medialib_getUdidByNetworkId_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    ThumbRdbOpt opts = {
-        .store = storePtr,
-        .networkId = "GetUdidByNetworkId",
-        .table = MEDIALIBRARY_TABLE,
-        .row = "GetUdidByNetworkId",
-    };
-    opts.store = storePtr;
-    string networkIdTest = "";
-    string outUdidTest = "";
-    int err = 0;
-    bool ret = ThumbnailUtils::GetUdidByNetworkId(opts, networkIdTest, outUdidTest, err);
-    EXPECT_EQ(ret, false);
-    string outUdid = "GetUdidByNetworkId";
-    ret = ThumbnailUtils::GetUdidByNetworkId(opts, opts.networkId, outUdid, err);
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_updateRemoteThumbnailInfo_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    ThumbRdbOpt opts;
-    ThumbnailData data;
-    int err = 0;
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    opts.kvStore = kvStorePtr;
-    opts.store = storePtr;
-    opts.networkId = "InsertRemoteThumbnailInfo";
-    opts.row = "InsertRemoteThumbnailInfo";
-    bool ret = ThumbnailUtils::UpdateRemoteThumbnailInfo(opts, data, err);
-    EXPECT_EQ(ret, false);
-    data.id = "0";
-    data.udid = "InsertRemoteThumbnailInfo";
-    opts.store = storePtr;
-    ThumbnailUtils::InsertRemoteThumbnailInfo(opts, data, err);
-    ret = ThumbnailUtils::UpdateRemoteThumbnailInfo(opts, data, err);
-    EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::CleanDistributeLcdInfo(opts);
-    EXPECT_EQ(ret, false);
-}
-#endif
-
-HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_001, TestSize.Level1)
 {
     int width, height;
     width = 512;
@@ -920,7 +671,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_001, TestSize.Level0)
     EXPECT_EQ(height, 384);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level1)
 {
     int width, height;
     width = 1000;
@@ -952,7 +703,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level0)
     EXPECT_EQ(height, 3840);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, PostErrorProcess_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, PostErrorProcess_test_001, TestSize.Level1)
 {
     PostEventUtils postEventUtils;
     uint32_t errType = ErrType::DEFAULT_ERR;
@@ -961,7 +712,7 @@ HWTEST_F(MediaLibraryUtilsTest, PostErrorProcess_test_001, TestSize.Level0)
     EXPECT_EQ(errType, ErrType::DEFAULT_ERR);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, PostStatProcess_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryUtilsTest, PostStatProcess_test_002, TestSize.Level1)
 {
     PostEventUtils postEventUtils;
     uint32_t statType = StatType::DEFAULT_STAT;

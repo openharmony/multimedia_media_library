@@ -58,7 +58,7 @@ const int PARAM_INDEX_5 = 5;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context;
     GetObjectPropValueData getObjectPropValueDataOne(context);
@@ -76,7 +76,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_001, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
@@ -91,7 +91,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_001, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_002, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
@@ -104,7 +104,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_002, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_003, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
@@ -117,7 +117,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_003, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_004, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
@@ -130,7 +130,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_004, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_005, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
@@ -143,7 +143,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_005, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_006, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
@@ -156,7 +156,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_006, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_007, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
@@ -169,7 +169,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_007, TestSize.Leve
     EXPECT_EQ(ret, MTP_INVALID_OBJECTPROP_FORMAT_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
@@ -181,7 +181,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_001, TestS
     EXPECT_EQ(ret, MTP_INVALID_OBJECTPROP_FORMAT_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_002, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropValueData getObjectPropValueData(context);
@@ -195,7 +195,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_002, TestS
     EXPECT_NE(ret, MTP_INVALID_OBJECTPROP_FORMAT_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_002, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetNumObjectsData getNumObjectsData(context);
@@ -212,7 +212,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_002, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_003, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetNumObjectsData getNumObjectsData(context);
@@ -224,7 +224,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_003, TestSize.Lev
     EXPECT_EQ(ret, MTP_ERROR_INVALID_STORAGE_ID);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_008, TestSize.Level1)
 {
     GetNumObjectsData getNumObjectsData;
     vector<uint8_t> outBuffer;
@@ -236,7 +236,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_008, TestSize.Leve
     EXPECT_EQ(ret, MTP_OK_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_003, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetNumObjectsData getNumObjectsData(context);
@@ -244,7 +244,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_003, TestS
     EXPECT_EQ(ret, MTP_INVALID_OBJECTHANDLE_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getNum_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getNum_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetNumObjectsData getNumObjectsData(context);
@@ -258,7 +258,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getNum_test_001, TestSize.Lev
     EXPECT_EQ(retTest, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_004, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context;
     GetObjectReferencesData getObjectReferencesDataOne(context);
@@ -276,7 +276,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_004, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_009, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectReferencesData getObjectReferencesData(context);
@@ -285,7 +285,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_009, TestSize.Leve
     EXPECT_EQ(ret, MTP_SESSION_NOT_OPEN_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_010, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->sessionOpen = true;
@@ -295,7 +295,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_010, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_004, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectReferencesData getObjectReferencesData(context);
@@ -303,7 +303,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_004, TestS
     EXPECT_EQ(ret, MTP_SESSION_NOT_OPEN_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_005, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->sessionOpen = true;
@@ -312,7 +312,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_005, TestS
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_setObjectHandles_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_setObjectHandles_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     shared_ptr<UInt32List> objectHandles = make_shared<UInt32List>();
@@ -327,7 +327,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_setObjectHandles_test_001, Te
     EXPECT_NE(retTest, nullptr);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_005, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SetObjectReferencesData setObjectReferencesData(context);
@@ -336,7 +336,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_005, TestSize.Lev
     EXPECT_EQ(ret, MTP_SESSION_NOT_OPEN_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_006, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->sessionOpen = true;
@@ -351,7 +351,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_006, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_011, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SetObjectReferencesData setObjectReferencesData(context);
@@ -360,7 +360,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_011, TestSize.Leve
     EXPECT_EQ(ret, MTP_INVALID_OBJECTHANDLE_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_012, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SetObjectReferencesData setObjectReferencesData(context);
@@ -373,7 +373,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_012, TestSize.Leve
     EXPECT_EQ(retTest, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_006, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SetObjectReferencesData setObjectReferencesData(context);
@@ -381,7 +381,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_006, TestS
     EXPECT_EQ(ret, MTP_INVALID_OBJECTHANDLE_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_007, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->sessionOpen = true;
@@ -391,7 +391,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_007, TestS
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_007, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     CopyObjectData copyObjectData(context);
@@ -408,7 +408,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_007, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_013, TestSize.Level1)
 {
     CopyObjectData copyObjectData;
     vector<uint8_t> outBuffer;
@@ -422,7 +422,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_013, TestSize.Leve
     EXPECT_EQ(retTest, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_008, TestSize.Level1)
 {
     CopyObjectData copyObjectData;
     int ret = copyObjectData.CalculateSize();
@@ -432,7 +432,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_008, TestS
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_008, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetDevicePropValueData getDevicePropValueData(context);
@@ -447,7 +447,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_008, TestSize.Lev
     EXPECT_EQ(ret, MTP_ERROR_CONTEXT_IS_NULL);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_014, TestSize.Level1)
 {
     GetDevicePropValueData getDevicePropValueData;
     vector<uint8_t> outBuffer;
@@ -460,7 +460,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_014, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_009, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetDevicePropValueData getDevicePropValueData(context);
@@ -473,7 +473,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_009, TestS
     EXPECT_NE(ret, MTP_ERROR_DEVICEPROP_NOT_SUPPORTED);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_writeValue_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_writeValue_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetDevicePropValueData getDevicePropValueData(context);
@@ -507,7 +507,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_writeValue_test_001, TestSize
     EXPECT_EQ(ret, MTP_ERROR_DEVICEPROP_NOT_SUPPORTED);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_009, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     RespCommonData respCommonData(context);
@@ -516,7 +516,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_009, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_015, TestSize.Level1)
 {
     RespCommonData respCommonData;
     vector<uint8_t> outBuffer;
@@ -543,7 +543,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_015, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_010, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     RespCommonData respCommonData(context);
@@ -570,7 +570,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_010, TestS
     EXPECT_EQ(ret, 20);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_010, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context;
     GetPartialObjectData getPartialObjectDataOne(context);
@@ -588,7 +588,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_010, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_016, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetPartialObjectData getPartialObjectData(context);
@@ -603,7 +603,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_016, TestSize.Leve
     EXPECT_EQ(retTest, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_011, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetPartialObjectData getPartialObjectData(context);
@@ -614,7 +614,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_011, TestS
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_011, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SetDevicePropValueData setDevicePropValueData(context);
@@ -631,7 +631,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_011, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_012, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->indata = true;
@@ -644,7 +644,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_012, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_017, TestSize.Level1)
 {
     SetDevicePropValueData setDevicePropValueData;
     vector<uint8_t> outBuffer;
@@ -652,14 +652,14 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_017, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_012, TestSize.Level1)
 {
     SetDevicePropValueData setDevicePropValueData;
     int ret = setDevicePropValueData.CalculateSize();
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_paserPropValue_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_paserPropValue_test_001, TestSize.Level1)
 {
     SetDevicePropValueData setDevicePropValueData;
     vector<uint8_t> buffer;
@@ -674,7 +674,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_paserPropValue_test_001, Test
     setDevicePropValueData.PaserPropValue(buffer, offset, 0xD405);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_013, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SendObjectInfoData sendObjectInfoData(context);
@@ -691,7 +691,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_013, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_014, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->indata = true;
@@ -702,7 +702,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_014, TestSize.Lev
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_018, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_018, TestSize.Level1)
 {
     SendObjectInfoData sendObjectInfoData;
     vector<uint8_t> outBuffer;
@@ -716,7 +716,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_018, TestSize.Leve
     EXPECT_EQ(retTest, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_013, TestSize.Level1)
 {
     SendObjectInfoData sendObjectInfoData;
     int ret = sendObjectInfoData.CalculateSize();
@@ -726,7 +726,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_013, TestS
     EXPECT_EQ(ret, 12);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserData_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserData_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SendObjectInfoData sendObjectInfoData(context);
@@ -742,7 +742,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserData_test_001, TestSize
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserDataForImageInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserDataForImageInfo_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SendObjectInfoData sendObjectInfoData(context);
@@ -758,7 +758,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserDataForImageInfo_test_0
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserDataForFileInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserDataForFileInfo_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SendObjectInfoData sendObjectInfoData(context);
@@ -774,7 +774,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parserDataForFileInfo_test_00
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_015, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     CloseSessionData closeSessionData(context);
@@ -783,7 +783,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_015, TestSize.Lev
     EXPECT_EQ(ret, MTP_SESSION_NOT_OPEN_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_016, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->sessionOpen = true;
@@ -793,7 +793,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_016, TestSize.Lev
     EXPECT_EQ(ret, MTP_OK_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_019, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     CloseSessionData closeSessionData(context);
@@ -802,7 +802,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_019, TestSize.Leve
     EXPECT_EQ(ret, MTP_OK_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_014, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     CloseSessionData closeSessionData(context);
@@ -810,7 +810,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_014, TestS
     EXPECT_GT(ret, 0);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_017, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context;
     GetObjectPropListData getObjectPropListDataOne(context);
@@ -828,7 +828,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_017, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_020, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_020, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropListData getObjectPropListData(context);
@@ -844,7 +844,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_020, TestSize.Leve
     EXPECT_EQ(retTest, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_015, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropListData getObjectPropListData(context);
@@ -894,7 +894,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_015, TestS
     getObjectPropListData.WritePropertyIntValue(outBuffer, prop);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_018, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_018, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context;
     vector<uint8_t> buffer;
@@ -907,7 +907,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_018, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_021, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_021, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SendObjectData sendObjectData(context);
@@ -916,7 +916,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_021, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_016, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     SendObjectData sendObjectData(context);
@@ -924,7 +924,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_016, TestS
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_019, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context;
     DeleteObjectData deleteObjectDataOne(context);
@@ -942,7 +942,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_019, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_020, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_020, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     DeleteObjectData deleteObjectData(context);
@@ -956,7 +956,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_020, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_022, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_022, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     DeleteObjectData deleteObjectData(context);
@@ -965,7 +965,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_022, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_017, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     DeleteObjectData deleteObjectData(context);
@@ -973,7 +973,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_017, TestS
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_021, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_021, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetDeviceInfoData getDeviceInfoData(context);
@@ -982,7 +982,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_021, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_023, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_023, TestSize.Level1)
 {
     GetDeviceInfoData getDeviceInfoData;
     vector<uint8_t> outBuffer;
@@ -990,7 +990,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_023, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_018, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_018, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetDeviceInfoData getDeviceInfoData(context);
@@ -1003,7 +1003,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_018, TestS
     getDeviceInfoData.SetSerialNum(manufacturer);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_022, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_022, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetDevicePropDescData getDevicePropDescData(context);
@@ -1018,7 +1018,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_022, TestSize.Lev
     EXPECT_EQ(ret, MTP_ERROR_CONTEXT_IS_NULL);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_024, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_024, TestSize.Level1)
 {
     GetDevicePropDescData getDevicePropDescData;
     vector<uint8_t> outBuffer;
@@ -1030,7 +1030,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_024, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_019, TestSize.Level1)
 {
     GetDevicePropDescData getDevicePropDescData;
     int ret = getDevicePropDescData.CalculateSize();
@@ -1041,7 +1041,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_019, TestS
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_023, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_023, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectData getObjectData(context);
@@ -1058,7 +1058,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_023, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_025, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_025, TestSize.Level1)
 {
     GetObjectData getObjectData;
     vector<uint8_t> outBuffer;
@@ -1066,14 +1066,14 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_025, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_020, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_020, TestSize.Level1)
 {
     GetObjectData getObjectData;
     int ret = getObjectData.CalculateSize();
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_setResult_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_setResult_test_019, TestSize.Level1)
 {
     GetObjectData getObjectData;
     bool ret = getObjectData.SetResult(0);
@@ -1082,7 +1082,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_setResult_test_019, TestSize.
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_024, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_024, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectHandlesData getObjectHandlesData(context);
@@ -1099,7 +1099,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_024, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_026, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_026, TestSize.Level1)
 {
     GetObjectHandlesData getObjectHandlesData;
     vector<uint8_t> outBuffer;
@@ -1114,7 +1114,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_026, TestSize.Leve
     EXPECT_EQ(retTest, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_021, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_021, TestSize.Level1)
 {
     GetObjectHandlesData getObjectHandlesData;
     vector<uint8_t> outBuffer;
@@ -1126,7 +1126,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_021, TestS
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getObjectHandles_test_028, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getObjectHandles_test_028, TestSize.Level1)
 {
     GetObjectHandlesData getObjectHandlesData;
     vector<uint8_t> outBuffer;
@@ -1138,7 +1138,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getObjectHandles_test_028, Te
     EXPECT_NE(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_025, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_025, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectInfoData getObjectInfoData(context);
@@ -1155,7 +1155,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_025, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_027, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_027, TestSize.Level1)
 {
     GetObjectInfoData getObjectInfoData;
     vector<uint8_t> outBuffer;
@@ -1170,7 +1170,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_027, TestSize.Leve
     EXPECT_EQ(retTest, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_022, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_022, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectInfoData getObjectInfoData(context);
@@ -1182,7 +1182,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_022, TestS
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getObjectInfo_test_021, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getObjectInfo_test_021, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectInfoData getObjectInfoData(context);
@@ -1194,7 +1194,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getObjectInfo_test_021, TestS
     EXPECT_NE(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_026, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_026, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context;
     vector<uint8_t> buffer;
@@ -1212,7 +1212,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_026, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_028, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_028, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropDescData getObjectPropDescData(context);
@@ -1221,7 +1221,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_028, TestSize.Leve
     EXPECT_EQ(ret, MTP_INVALID_OBJECTHANDLE_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_029, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_029, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->property = MTP_PROPERTY_OBJECT_FORMAT_CODE;
@@ -1231,7 +1231,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_029, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_023, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_023, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropDescData getObjectPropDescData(context);
@@ -1239,7 +1239,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_023, TestS
     EXPECT_EQ(ret, MTP_INVALID_OBJECTHANDLE_CODE);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_024, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_024, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->property = MTP_PROPERTY_OBJECT_FORMAT_CODE;
@@ -1248,7 +1248,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_024, TestS
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getProp_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getProp_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropDescData getObjectPropDescData(context);
@@ -1264,7 +1264,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getProp_test_001, TestSize.Le
     EXPECT_NE(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getPropInt_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getPropInt_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropDescData getObjectPropDescData(context);
@@ -1292,7 +1292,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getPropInt_test_001, TestSize
     EXPECT_NE(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getPropStr_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getPropStr_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropDescData getObjectPropDescData(context);
@@ -1312,7 +1312,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getPropStr_test_001, TestSize
     EXPECT_NE(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getPropForm_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getPropForm_test_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropDescData getObjectPropDescData(context);
@@ -1336,7 +1336,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_getPropForm_test_001, TestSiz
     EXPECT_NE(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_027, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_027, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropsSupportedData getObjectPropsSupportedData(context);
@@ -1354,7 +1354,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_027, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_030, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_030, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetObjectPropsSupportedData getObjectPropsSupportedData(context);
@@ -1363,7 +1363,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_030, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_025, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_025, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = MTP_FORMAT_EXIF_JPEG_CODE;
@@ -1383,7 +1383,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_025, TestS
     getObjectPropsSupportedDataThree.GetObjectProps(properties);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_028, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_028, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetStorageIdsData getStorageIdsData(context);
@@ -1392,7 +1392,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_028, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_031, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_031, TestSize.Level1)
 {
     GetStorageIdsData getStorageIdsData;
     vector<std::shared_ptr<Storage>> storages;
@@ -1402,7 +1402,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_031, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_026, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_026, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     GetStorageIdsData getStorageIdsData(context);
@@ -1410,7 +1410,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_026, TestS
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_029, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_029, TestSize.Level1)
 {
     GetStorageInfoData getStorageInfoData;
     vector<uint8_t> buffer;
@@ -1427,7 +1427,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_029, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_032, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_032, TestSize.Level1)
 {
     GetStorageInfoData getStorageInfoData;
     vector<uint8_t> outBuffer;
@@ -1439,14 +1439,14 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_032, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_027, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_027, TestSize.Level1)
 {
     GetStorageInfoData getStorageInfoData;
     int ret = getStorageInfoData.CalculateSize();
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_030, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_030, TestSize.Level1)
 {
     GetThumbData getThumbData;
     vector<uint8_t> buffer;
@@ -1463,7 +1463,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_030, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_033, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_033, TestSize.Level1)
 {
     GetThumbData getThumbData;
     vector<uint8_t> outBuffer;
@@ -1478,7 +1478,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_033, TestSize.Leve
     EXPECT_EQ(retTest, false);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_028, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_028, TestSize.Level1)
 {
     GetThumbData getThumbData;
     int ret = getThumbData.CalculateSize();
@@ -1489,7 +1489,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_028, TestS
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_031, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_031, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     MoveObjectData moveObjectData(context);
@@ -1503,7 +1503,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_031, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_034, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_034, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     MoveObjectData moveObjectData(context);
@@ -1512,7 +1512,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_034, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_029, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_029, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     MoveObjectData moveObjectData(context);
@@ -1520,7 +1520,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_029, TestS
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_032, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_032, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ObjectEventData objectEventData(context);
@@ -1529,7 +1529,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_032, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_035, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_035, TestSize.Level1)
 {
     ObjectEventData objectEventData;
     vector<uint8_t> outBuffer;
@@ -1537,7 +1537,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_035, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_030, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_030, TestSize.Level1)
 {
     ObjectEventData objectEventData;
     objectEventData.SetPayload(0);
@@ -1545,7 +1545,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_030, TestS
     EXPECT_GT(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_033, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_033, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context;
     OpenSessionData OpenSessionDataOne(context);
@@ -1563,7 +1563,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_parser_test_033, TestSize.Lev
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_036, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_036, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     OpenSessionData OpenSessionData(context);
@@ -1573,7 +1573,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_maker_test_036, TestSize.Leve
     EXPECT_EQ(ret, MTP_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_031, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_mtp_calculateSize_test_031, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     OpenSessionData OpenSessionData(context);

@@ -721,7 +721,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
     config.parameters.userId = option.userId;
-    config.parameters.MIMETypeFilter = parseMIMETypeFilter(option.MIMETypeFilter);
+    config.parameters.mimeTypeFilter = parseMimeTypeFilter(option.mimeTypeFilter);
     config.parameters.fileSizeFilter = option.fileSizeFilter;
     config.parameters.videoDurationFilter = option.videoDurationFilter;
     config.parameters.isPc = deviceinfo.deviceType === '2in1';
@@ -730,15 +730,19 @@ function parsePhotoPickerSelectOption(args) {
   return config;
 }
 
-function parseMIMETypeFilter(filter) {
+function parseMimeTypeFilter(filter) {
   if (!filter) {
       return undefined;
   }
   let o = {};
-  o.MIMETypeArray = [];
-  if (filter.MIMETypeArray) {
-    for (let mimeType of filter.MIMETypeArray) {
-      o.MIMETypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+  o.mimeTypeArray = [];
+  if (filter.mimeTypeArray) {
+    for (let mimeType of filter.mimeTypeArray) {
+      if (PHOTO_VIEW_MIME_TYPE_MAP.has(mimeType)) {
+        o.mimeTypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+      } else {
+        o.mimeTypeArray.push(mimeType);
+      }
     }
   }
   return o;
@@ -771,7 +775,7 @@ async function photoPickerSelect(...args) {
   }
 
   const config = parsePhotoPickerSelectOption(args);
-  console.log('[picker] config: ' + JSON.stringify(config));
+  console.log('[picker] config: ' + encrypt(JSON.stringify(config)));
   if (config.parameters.userId && config.parameters.userId > 0) {
     let check = await checkInteractAcrossLocalAccounts();
     if (!check) {
@@ -792,9 +796,9 @@ async function photoPickerSelect(...args) {
       throw getErr(ErrCode.CONTEXT_NO_EXIST);
     }
     let result = await startPhotoPicker(context, config);
-    console.log('[picker] result: ' + JSON.stringify(result));
+    console.log('[picker] result: ' + encrypt(JSON.stringify(result)));
     const selectResult = getPhotoPickerSelectResult(result);
-    console.log('[picker] selectResult: ' + JSON.stringify(selectResult));
+    console.log('[picker] selectResult: ' + encrypt(JSON.stringify(selectResult)));
     if (args.length === ARGS_TWO && typeof args[ARGS_ONE] === 'function') {
       return args[ARGS_ONE](selectResult.error, selectResult.data);
     } else if (args.length === ARGS_ONE && typeof args[ARGS_ZERO] === 'function') {
@@ -829,8 +833,8 @@ async function checkInteractAcrossLocalAccounts() {
   }
 }
 
-function MIMETypeFilter() {
-  this.MIMETypeArray = [];
+function MimeTypeFilter() {
+  this.mimeTypeArray = [];
 }
 
 function FileSizeFilter() {
@@ -873,6 +877,13 @@ function PhotoViewPicker() {
 }
 
 function RecommendationOptions() {
+}
+
+function encrypt(data) {
+  if (!data || data?.indexOf('file:///data/storage/') !== -1) {
+    return '';
+  }
+  return data.replace(/(\/\w+)\./g, '/******.');
 }
 
 class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest {
@@ -942,7 +953,8 @@ export default {
   HighlightUserActionType: photoAccessHelper.HighlightUserActionType,
   RequestPhotoType: photoAccessHelper.RequestPhotoType,
   PhotoViewMIMETypes: PhotoViewMIMETypes,
-  MIMETypeFilter: MIMETypeFilter,
+  SingleSelectionMode: SingleSelectionMode,
+  MimeTypeFilter: MimeTypeFilter,
   FileSizeFilter: FileSizeFilter,
   VideoDurationFilter: VideoDurationFilter,
   FilterOperator: FilterOperator,
