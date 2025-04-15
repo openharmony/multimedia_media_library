@@ -742,7 +742,9 @@ void MediaLibraryAni::PhotoAccessStopCreateThumbnailTask([[maybe_unused]] ani_en
 ani_object MediaLibraryAni::GetFileAssetsInfo([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_object options)
 {
-    ANI_INFO_LOG("GetFileAssetsInfo start");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetFileAssetsInfo");
+    ANI_DEBUG_LOG("GetFileAssetsInfo start");
 
     ani_ref fetchColumns;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
@@ -774,14 +776,16 @@ ani_object MediaLibraryAni::GetFileAssetsInfo([[maybe_unused]] ani_env *env, [[m
         ANI_ERR_LOG("MediaLibraryAniUtils::ToFileAssetInfoAniArray failed");
     }
 
-    ANI_INFO_LOG("GetFileAssetsInfo end");
+    ANI_DEBUG_LOG("GetFileAssetsInfo end");
     return result;
 }
 
 ani_object MediaLibraryAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_object options)
 {
-    ANI_INFO_LOG("GetAssetsSync start");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssetsSync");
+    ANI_DEBUG_LOG("GetAssetsSync start");
 
     ani_ref fetchColumns;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
@@ -812,14 +816,16 @@ ani_object MediaLibraryAni::GetAssetsSync([[maybe_unused]] ani_env *env, [[maybe
         ANI_ERR_LOG("MediaLibraryAniUtils::ToFileAssetAniArray failed");
     }
 
-    ANI_INFO_LOG("GetAssetsSync end");
+    ANI_DEBUG_LOG("GetAssetsSync end");
     return result;
 }
 
 ani_object MediaLibraryAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
     ani_object options)
 {
-    ANI_INFO_LOG("GetAssetsInner start");
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAssets");
+    ANI_DEBUG_LOG("GetAssetsInner start");
 
     ani_ref fetchColumns;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(options, "fetchColumns", &fetchColumns)) {
@@ -849,7 +855,7 @@ ani_object MediaLibraryAni::GetAssetsInner([[maybe_unused]] ani_env *env, [[mayb
         ANI_ERR_LOG("MediaLibraryAniUtils::ToFileAssetAniPtr failed");
     }
 
-    ANI_INFO_LOG("GetAssetsInner end");
+    ANI_DEBUG_LOG("GetAssetsInner end");
     return result;
 }
 

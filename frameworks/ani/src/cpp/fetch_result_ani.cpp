@@ -20,6 +20,7 @@
 #include "ani_class_name.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_ani_utils.h"
+#include "medialibrary_tracer.h"
 
 namespace OHOS::Media {
 ani_status FetchFileResultAni::UserFileMgrInit(ani_env *env)
@@ -155,19 +156,22 @@ FetchFileResultAni* FetchFileResultAni::Unwrap(ani_env *env, ani_object fetchFil
 
 static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContext>& aniContest)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAllObjectsExcute");
+
     auto propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
     if (propertyPtr == nullptr) {
         ANI_ERR_LOG("propertyPtr is nullptr");
         return;
     }
 
-    ANI_INFO_LOG("GetAllObject type: %{public}d", propertyPtr->fetchResType_);
+    ANI_DEBUG_LOG("GetAllObject type: %{public}d", propertyPtr->fetchResType_);
     switch (propertyPtr->fetchResType_) {
         case FetchResType::TYPE_FILE: {
             auto fetchResult = propertyPtr->fetchFileResult_;
             auto file = fetchResult->GetFirstObject();
             while (file != nullptr) {
-                aniContest->fileAssetArray.push_back(move(file));
+                aniContest->fileAssetArray.emplace_back(move(file));
                 file = fetchResult->GetNextObject();
             }
             break;
@@ -176,7 +180,7 @@ static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContex
             auto fetchResult = propertyPtr->fetchAlbumResult_;
             auto album = fetchResult->GetFirstObject();
             while (album != nullptr) {
-                aniContest->fileAlbumArray.push_back(move(album));
+                aniContest->fileAlbumArray.emplace_back(move(album));
                 album = fetchResult->GetNextObject();
             }
             break;
@@ -185,7 +189,7 @@ static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContex
             auto fetchResult = propertyPtr->fetchPhotoAlbumResult_;
             auto photoAlbum = fetchResult->GetFirstObject();
             while (photoAlbum != nullptr) {
-                aniContest->filePhotoAlbumArray.push_back(move(photoAlbum));
+                aniContest->filePhotoAlbumArray.emplace_back(move(photoAlbum));
                 photoAlbum = fetchResult->GetNextObject();
             }
             break;
@@ -194,13 +198,12 @@ static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContex
             auto fetchResult = propertyPtr->fetchSmartAlbumResult_;
             auto smartAlbum = fetchResult->GetFirstObject();
             while (smartAlbum != nullptr) {
-                aniContest->fileSmartAlbumArray.push_back(move(smartAlbum));
+                aniContest->fileSmartAlbumArray.emplace_back(move(smartAlbum));
                 smartAlbum = fetchResult->GetNextObject();
             }
             break;
         }
         default:
-            ANI_ERR_LOG("unsupported FetchResType");
             break;
     }
 }
@@ -220,10 +223,13 @@ static bool CheckIfFFRAniNotEmpty(FetchFileResultAni* obj)
 
 static ani_object GetAllObjectComplete(ani_env *env, std::unique_ptr<FetchFileResultAniContext> &context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAllObjectsComplete");
+
     ani_object result = nullptr;
     ani_status status;
     FetchResType fetchResType = context->objectPtr->fetchResType_;
-    ANI_INFO_LOG("fetchResType: %{public}d", fetchResType);
+    ANI_DEBUG_LOG("fetchResType: %{public}d", fetchResType);
     switch (fetchResType) {
         case FetchResType::TYPE_FILE:
             status = MediaLibraryAniUtils::ToFileAssetAniArray(env, context->fileAssetArray, result);
@@ -240,6 +246,9 @@ static ani_object GetAllObjectComplete(ani_env *env, std::unique_ptr<FetchFileRe
 
 ani_object FetchFileResultAni::GetAllObjects(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetAllObjects");
+
     ani_object nullobj = nullptr;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);

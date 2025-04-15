@@ -55,6 +55,7 @@
 #include "locale_config.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_ani_log.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -206,7 +207,7 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
 {
     FileAssetAttributes attrs;
     CHECK_STATUS_RET(GetFileAssetAttributes(env, object, attrs), "GetFileAssetAttributes fail");
-    ANI_INFO_LOG("GetFileAsset uri: %{private}s, displayName: %{private}s, photoType: %{public}d",
+    ANI_DEBUG_LOG("GetFileAsset uri: %{private}s, displayName: %{private}s, photoType: %{public}d",
         attrs.uri.c_str(), attrs.displayName.c_str(), attrs.photoType);
 
     ani_method photoTypeSetter {};
