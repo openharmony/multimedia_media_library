@@ -40,24 +40,25 @@ ForegroundAnalysisMeta::ForegroundAnalysisMeta(std::shared_ptr<NativeRdb::Result
     if (result == nullptr) {
         return;
     }
-    while (result->GoToNextRow() == NativeRdb::E_OK) {
-        int colIndex = 0;
-        int frontIndexLimit = 0;
-        result->GetColumnIndex(FRONT_INDEX_LIMIT, colIndex);
-        result->GetInt(colIndex, frontIndexLimit);
-        if (frontIndexLimit > 0) {
-            frontIndexLimit_ = frontIndexLimit;
-        }
-        result->GetColumnIndex(FRONT_INDEX_MODIFIED, colIndex);
-        result->GetLong(colIndex, frontIndexModified_);
-        result->GetColumnIndex(FRONT_INDEX_COUNT, colIndex);
-        result->GetInt(colIndex, frontIndexCount_);
-        result->GetColumnIndex(FRONT_CV_MODIFIED, colIndex);
-        result->GetLong(colIndex, frontCvModified_);
-        result->GetColumnIndex(FRONT_CV_COUNT, colIndex);
-        result->GetInt(colIndex, frontCvCount_);
-        isInit_ = true;
+    if (result->GoToNextRow() != NativeRdb::E_OK) {
+        return;
     }
+    int colIndex = 0;
+    int frontIndexLimit = 0;
+    result->GetColumnIndex(FRONT_INDEX_LIMIT, colIndex);
+    result->GetInt(colIndex, frontIndexLimit);
+    if (frontIndexLimit > 0) {
+        frontIndexLimit_ = frontIndexLimit;
+    }
+    result->GetColumnIndex(FRONT_INDEX_MODIFIED, colIndex);
+    result->GetLong(colIndex, frontIndexModified_);
+    result->GetColumnIndex(FRONT_INDEX_COUNT, colIndex);
+    result->GetInt(colIndex, frontIndexCount_);
+    result->GetColumnIndex(FRONT_CV_MODIFIED, colIndex);
+    result->GetLong(colIndex, frontCvModified_);
+    result->GetColumnIndex(FRONT_CV_COUNT, colIndex);
+    result->GetInt(colIndex, frontCvCount_);
+    isInit_ = true;
 }
 
 ForegroundAnalysisMeta::~ForegroundAnalysisMeta() {}
