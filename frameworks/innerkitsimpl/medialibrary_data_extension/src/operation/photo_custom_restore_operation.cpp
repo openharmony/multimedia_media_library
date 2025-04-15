@@ -291,6 +291,9 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     MEDIA_DEBUG_LOG("BatchInsert success.");
     int32_t successFileNum = RenameFiles(insertRestoreFiles);
     MEDIA_DEBUG_LOG("RenameFiles finished.");
+    errCode = BatchUpdateTimePending(insertRestoreFiles);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "BatchUpdateTimePending failed. errCode: %{public}d", errCode);
+    MEDIA_DEBUG_LOG("BatchUpdateTimePending success.");
     if (isFirst) {
         CHECK_AND_RETURN_RET(successFileNum != 0, E_ERR);
         CHECK_AND_RETURN_RET_LOG(UpdatePhotoAlbum(restoreTaskInfo, insertRestoreFiles[0]) == E_OK,
@@ -300,6 +303,33 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     successNum_.fetch_add(successFileNum);
     failNum_.fetch_add(totalFileNum - successFileNum - sameFileNum);
     MEDIA_DEBUG_LOG("HandleCustomRestore success.");
+    return E_OK;
+}
+
+int32_t PhotoCustomRestoreOperation::BatchUpdateTimePending(vector<FileInfo> &restoreFiles)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "BatchUpdateTimePending: get rdb store fail!");
+
+     // 构建包含所有文件路径的参数列表
+    std::vector<NativeRdb::ValueObject> params;
+    for (const auto& file : restoreFiles) {
+        params.push_back(file.filePath);
+    }
+
+    string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_TIME_PENDING +
+        " = 0 WHERE " + PhotoColumn::MEDIA_FILE_PATH + " IN (";
+    for (size_t i = 0; i < restoreFiles.size(); ++i) {
+        updateSql += "?";
+        if (i != restoreFiles.size() - 1) {
+            updateSql += ", ";
+        }
+    }
+    updateSql += ");";
+
+    int32_t errCode = rdbStore->ExecuteSql(updateSql, params);
+    CHECK_AND_PRINT_LOG(errCode >= 0, "BatchUpdateTimePending: execute update time_pending failed."
+        " ret = %{public}d", errCode);
     return E_OK;
 }
 
@@ -741,7 +771,7 @@ NativeRdb::ValuesBucket PhotoCustomRestoreOperation::GetInsertValue(
     value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
     value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
-    value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
+    value.PutLong(MediaColumn::MEDIA_TIME_PENDING, -1);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
     value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
