@@ -76,6 +76,7 @@ private:
     EXPORT static napi_value CreateAlbumSubTypeEnum(napi_env env);
     EXPORT static napi_value CreatePositionTypeEnum(napi_env env);
     EXPORT static napi_value CreateMovingPhotoEffectModeEnum(napi_env env);
+    EXPORT static napi_value CreateDynamicRangeTypeEnum(napi_env env);
 
     EXPORT static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
@@ -109,6 +110,7 @@ private:
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
     static thread_local napi_ref sMovingPhotoEffectModeEnumRef_;
+    static thread_local napi_ref sDynamicRangeTypeEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

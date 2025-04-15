@@ -47,7 +47,7 @@ void PhotoBurstOperationTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(PhotoBurstOperationTest, subtype_is_not_burst, TestSize.Level0)
+HWTEST_F(PhotoBurstOperationTest, subtype_is_not_burst, TestSize.Level1)
 {
     PhotoAssetInfo photoAssetInfo;
     // Pattern: IMG_3025.jpg
@@ -61,7 +61,7 @@ HWTEST_F(PhotoBurstOperationTest, subtype_is_not_burst, TestSize.Level0)
     EXPECT_TRUE(burstKey.empty());
 }
 
-HWTEST_F(PhotoBurstOperationTest, rdbstore_nullptr, TestSize.Level0)
+HWTEST_F(PhotoBurstOperationTest, rdbstore_nullptr, TestSize.Level1)
 {
     PhotoAssetInfo photoAssetInfo;
     // Pattern: IMG_20240222_135017_BURST004.jpg

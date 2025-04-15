@@ -45,7 +45,6 @@ ohos_fuzztest("MediaLibraryMetaRecoverFuzzTest") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
-    "device_manager:devicemanagersdk",
     "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",

@@ -63,7 +63,7 @@ void MediaLibraryHandlerTest::TearDown(void) {}
  * @tc.name      : convert file uri
  * @tc.desc      : convert file uri to mnt path
  */
-HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_001, TestSize.Level1)
 {
     std::string filename = "/data/medialibrary_handler_unittest.txt";
     std::string fileContent = ReadFileToString(filename);
@@ -95,7 +95,7 @@ HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_001, TestSize.Level0)
  * @tc.name      : convert file uri
  * @tc.desc      : convert file uri to mnt path
  */
-HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_002, TestSize.Level1)
 {
     auto mediaLibraryHandlerManager = MediaLibraryHandler::GetMediaLibraryHandler();
 
@@ -137,7 +137,7 @@ HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_002, TestSize.Level0)
  * @tc.name      : convert file uri
  * @tc.desc      : convert file uri to mnt path
  */
-HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_003, TestSize.Level1)
 {
     auto mediaLibraryHandlerManager = MediaLibraryHandler::GetMediaLibraryHandler();
 
@@ -156,7 +156,7 @@ HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_003, TestSize.Level0)
  * @tc.name      : convert file uri
  * @tc.desc      : convert file uri to mnt path
  */
-HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_004, TestSize.Level1)
 {
     auto mediaLibraryHandlerManager = MediaLibraryHandler::GetMediaLibraryHandler();
 

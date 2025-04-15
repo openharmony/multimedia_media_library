@@ -134,10 +134,15 @@ int32_t BackupDatabaseUtils::QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbSt
         return 0;
     }
     auto resultSet = rdbStore->QuerySql(sql, args);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
+        return 0;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
         return 0;
     }
     int32_t result = GetInt32Val(column, resultSet);
+    resultSet->Close();
     return result;
 }
 
@@ -204,10 +209,15 @@ void BackupDatabaseUtils::QueryGalleryDuplicateDataCount(std::shared_ptr<NativeR
     static string QUERY_GALLERY_DUPLICATE_DATA_COUNT = "SELECT count(DISTINCT _data) as count, count(1) as total"
         " FROM gallery_media WHERE _data IN (SELECT _data FROM gallery_media GROUP BY _data HAVING count(1) > 1)";
     auto resultSet = GetQueryResultSet(galleryRdb, QUERY_GALLERY_DUPLICATE_DATA_COUNT);
-    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    bool cond = (resultSet == nullptr);
     CHECK_AND_RETURN(!cond);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return;
+    }
     count = GetInt32Val("count", resultSet);
     total = GetInt32Val("total", resultSet);
+    resultSet->Close();
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::GetQueryResultSet(
@@ -234,6 +244,7 @@ std::unordered_map<std::string, std::string> BackupDatabaseUtils::GetColumnInfoM
         }
         columnInfoMap[columnName] = columnType;
     }
+    resultSet->Close();
     return columnInfoMap;
 }
 
@@ -336,9 +347,7 @@ void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb:
     std::string updateSql = "UPDATE tab_analysis_face_tag SET count = (SELECT count(1) from tab_analysis_image_face \
         WHERE tab_analysis_image_face.tag_id = tab_analysis_face_tag.tag_id)";
     int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
-    if (errCode < 0) {
-        MEDIA_ERR_LOG("execute update analysis face tag count failed, ret=%{public}d", errCode);
-    }
+    CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis face tag count failed, ret=%{public}d", errCode);
 }
 
 void BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
@@ -476,6 +485,7 @@ std::vector<std::pair<std::string, std::string>> BackupDatabaseUtils::GetColumnI
         columnInfoPairs.emplace_back(columnName, columnType);
     }
 
+    resultSet->Close();
     return columnInfoPairs;
 }
 
@@ -672,6 +682,7 @@ std::vector<TagPairOpt> BackupDatabaseUtils::QueryTagInfo(std::shared_ptr<Native
         ParseFaceTagResultSet(resultSet, tagPair);
         result.emplace_back(tagPair);
     }
+    resultSet->Close();
     return result;
 }
 
@@ -805,6 +816,8 @@ void BackupDatabaseUtils::UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbSt
 void BackupDatabaseUtils::BatchUpdatePhotosToLocal(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::vector<std::string> &inColumn)
 {
+    CHECK_AND_RETURN(!inColumn.empty());
+
     int32_t changeRows = 0;
     std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
         make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
@@ -831,12 +844,17 @@ std::string BackupDatabaseUtils::CheckDbIntegrity(std::shared_ptr<NativeRdb::Rdb
 {
     const std::string querySql = "PRAGMA " + COLUMN_INTEGRITY_CHECK;
     auto resultSet = GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+    if (resultSet == nullptr) {
         MEDIA_ERR_LOG ("Query resultSet is null or GoToFirstRow failed.");
+        return "";
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
         return "";
     }
     std::string result = GetStringVal(COLUMN_INTEGRITY_CHECK, resultSet);
     MEDIA_INFO_LOG("Check db integrity: %{public}d, %{public}s, %{public}s", sceneCode, dbTag.c_str(), result.c_str());
+    resultSet->Close();
     return result;
 }
 
@@ -872,6 +890,7 @@ std::unordered_map<int32_t, int32_t> BackupDatabaseUtils::QueryMediaTypeCount(
         int32_t count = GetInt32Val(CUSTOM_COUNT, resultSet);
         mediaTypeCountMap[mediaType] = count;
     }
+    resultSet->Close();
     return mediaTypeCountMap;
 }
 
@@ -889,8 +908,11 @@ std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::QuerySql(
 void BackupDatabaseUtils::UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     const string updateSql =
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1," +
-        PhotoColumn::PHOTO_BURST_KEY + " = NULL WHERE " + SQL_SELECT_ERROR_BURST_PHOTOS +
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) +
+        "," + PhotoColumn::PHOTO_BURST_KEY + " = NULL," +
+        PhotoColumn::PHOTO_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoSubType::DEFAULT)) +
+        " WHERE " + SQL_SELECT_ERROR_BURST_PHOTOS +
         "AND file_id IN (" + SQL_SELECT_CLONE_FILE_IDS + ")";
     int32_t erroCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     CHECK_AND_PRINT_LOG(erroCode >= 0, "execute update continuous shooting photos, ret=%{public}d", erroCode);

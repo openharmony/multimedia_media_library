@@ -27,8 +27,9 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-    "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
   ]
+
+  cflags = [ "-fno-access-control" ]
 
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
@@ -64,7 +65,6 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {

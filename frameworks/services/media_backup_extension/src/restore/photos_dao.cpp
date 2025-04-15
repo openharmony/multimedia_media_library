@@ -80,15 +80,12 @@ PhotosDao::PhotosBasicInfo PhotosDao::GetBasicInfo()
 {
     PhotosDao::PhotosBasicInfo basicInfo = {0, 0};
     std::string querySql = this->SQL_PHOTOS_BASIC_INFO;
-    if (this->mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return basicInfo;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, basicInfo,
+        "Media_Restore: mediaLibraryRdb_ is null.");
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_WARN_LOG("Media_Restore: GetBasicInfo resultSet is null. querySql: %{public}s", querySql.c_str());
-        return basicInfo;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_WARN_LOG(!cond, basicInfo,
+        "Media_Restore: GetBasicInfo resultSet is null. querySql: %{public}s", querySql.c_str());
     basicInfo.maxFileId = GetInt32Val("max_file_id", resultSet);
     basicInfo.count = GetInt32Val("count", resultSet);
     MEDIA_INFO_LOG("Media_Restore: max_file_id: %{public}d, count: %{public}d", basicInfo.maxFileId, basicInfo.count);
@@ -116,13 +113,11 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFile(const FileInfo &fileInfo, const
     CHECK_AND_RETURN_RET(!cond, rowData);
 
     rowData = this->FindSameFileBySourcePath(fileInfo, maxFileId);
-    if (!rowData.data.empty() || rowData.fileId != 0) {
-        MEDIA_WARN_LOG("Media_Restore: FindSameFile - find Photos by sourcePath, "
-                       "DB Info: %{public}s, Object: %{public}s",
-            this->ToString(rowData).c_str(),
-            this->ToString(fileInfo).c_str());
-        return rowData;
-    }
+    cond = (!rowData.data.empty() || rowData.fileId != 0);
+    CHECK_AND_RETURN_RET_WARN_LOG(!cond, rowData,
+        "Media_Restore: FindSameFile - find Photos by sourcePath, "
+        "DB Info: %{public}s, Object: %{public}s",
+        this->ToString(rowData).c_str(), this->ToString(fileInfo).c_str());
     return rowData;
 }
 

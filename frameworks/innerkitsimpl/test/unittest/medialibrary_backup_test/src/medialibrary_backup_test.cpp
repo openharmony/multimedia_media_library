@@ -36,6 +36,8 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "vision_db_sqls.h"
+#include "geo_knowledge_restore.h"
 #undef private
 #undef protected
 #include "mimetype_utils.h"
@@ -55,6 +57,8 @@ const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 const std::string TEST_PATH_PREFIX = "/TestPrefix";
 const std::string TEST_RELATIVE_PATH = "/Pictures/Test/test.jpg";
 const std::string TEST_CLOUD_PATH_PREFIX = "/storage/cloud/files/Photo/1/";
+const std::string TEST_FILE = "photoTest.mp4";
+const std::string TEST_DIR_PATH = "test";
 
 const int EXPECTED_NUM = 34;
 const int EXPECTED_OREINTATION = 270;
@@ -83,6 +87,11 @@ const int64_t TEST_FALSE_MEDIAID = -1;
 const int64_t TEST_SIZE_2MB = 2 * 1024 * 1024;
 const int64_t TEST_SIZE_2MB_BELOW = TEST_SIZE_2MB - 1;
 const int64_t TEST_SIZE_2MB_ABOVE = TEST_SIZE_2MB + 1;
+const int32_t TEST_MIGRATE_CLOUD_LCD_TYPE = 1;
+const int32_t APP_MAIN_DATA_USER_ID = 0;
+const int32_t APP_TWIN_DATA_USER_ID_START = 128;
+const std::string TEST_TRUE_UNIQUEID = "1";
+const std::string TEST_FALSE_UNIQUEID = "-1";
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
@@ -96,6 +105,7 @@ const vector<string> CLEAR_SQLS = {
     "DELETE FROM tab_analysis_image_face",
     "DELETE FROM tab_analysis_face_tag",
     "DELETE FROM tab_analysis_total",
+    CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
 };
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +
@@ -237,7 +247,7 @@ void MediaLibraryBackupTest::SetUp() {}
 
 void MediaLibraryBackupTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_init start");
     std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
@@ -247,7 +257,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level0)
     MEDIA_INFO_LOG("medialib_backup_test_init end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid start");
     std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='not_sync_weixin.jpg'";
@@ -257,7 +267,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.L
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_invalid, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_invalid, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_invalid start");
     std::string queryNotSyncInvalid =
@@ -268,7 +278,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_invalid, TestSize
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_invalid end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_camera, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_camera, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_camera start");
     std::string queryNotSyncPendingCamera =
@@ -279,7 +289,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_camera, T
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_camera end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_others, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_others, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_others start");
     std::string queryNotSyncPendingOthers =
@@ -290,7 +300,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_others, T
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_others end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_restore_size_0, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_restore_size_0, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_restore_size_0 start");
     std::string queryNotSyncPendingOthers =
@@ -301,7 +311,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_restore_size_0, TestSi
     MEDIA_INFO_LOG("medialib_backup_test_not_restore_size_0 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_create_asset_path_by_id, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_create_asset_path_by_id, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_create_asset_path_by_id start");
     int32_t uniqueId = 2;
@@ -317,9 +327,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_create_asset_path_by_id, T
     MEDIA_INFO_LOG("medialib_backup_test_create_asset_path_by_id end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_001, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number start");
+    MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number_001 start");
     restoreService->notFoundNumber_ = 0;
     std::vector<FileInfo> fileInfos = restoreService->QueryFileInfos(0);
     restoreService->restoreMode_ = RESTORE_MODE_PROC_ALL_DATA;
@@ -332,7 +342,47 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number, Test
     MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_mode_not_del_db, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number_002 start");
+    restoreService->notFoundNumber_ = 0;
+    std::vector<FileInfo> fileInfos;
+    FileInfo fileInfo;
+    fileInfo.userId = APP_TWIN_DATA_USER_ID_START;
+    fileInfos.push_back(fileInfo);
+    restoreService->restoreMode_ = RESTORE_MODE_PROC_ALL_DATA;
+    (void)restoreService->BaseRestore::GetInsertValues(0, fileInfos, 0);
+    EXPECT_EQ(restoreService->notFoundNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number_003 start");
+    restoreService->notFoundNumber_ = 0;
+    std::vector<FileInfo> fileInfos;
+    FileInfo fileInfo;
+    fileInfo.userId = APP_MAIN_DATA_USER_ID;
+    fileInfos.push_back(fileInfo);
+    restoreService->restoreMode_ = RESTORE_MODE_PROC_ALL_DATA;
+    (void)restoreService->BaseRestore::GetInsertValues(0, fileInfos, 0);
+    EXPECT_EQ(restoreService->notFoundNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_cal_not_found_number_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_cal_not_found_number_004 start");
+    restoreService->notFoundNumber_ = 0;
+    std::vector<FileInfo> fileInfos;
+    FileInfo fileInfo;
+    fileInfo.userId = APP_MAIN_DATA_USER_ID;
+    fileInfo.filePath = TEST_DIR_PATH;
+    fileInfos.push_back(fileInfo);
+    restoreService->restoreMode_ = RESTORE_MODE_PROC_ALL_DATA;
+    (void)restoreService->BaseRestore::GetInsertValues(0, fileInfos, 0);
+    EXPECT_EQ(restoreService->notFoundNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_mode_not_del_db, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_restore_mode_not_del_db start");
     const string galleryDbPath = TEST_BACKUP_PATH + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
@@ -352,7 +402,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_mode_not_del_db, T
     MEDIA_INFO_LOG("medialib_backup_test_restore_mode_not_del_db end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_mode_del_db, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_mode_del_db, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_restore_mode_del_db start");
     const string galleryDbPath = TEST_BACKUP_PATH + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
@@ -372,7 +422,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_mode_del_db, TestS
     MEDIA_INFO_LOG("medialib_backup_test_restore_mode_del_db end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_clone, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_clone, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_update_clone start");
     int32_t uniqueId = 2;
@@ -388,7 +438,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_clone, TestSize.Lev
     MEDIA_INFO_LOG("medialib_backup_test_update_clone end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_not_sync_valid, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_not_sync_valid, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_a_media_not_sync_valid start");
     std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='a_media_not_sync.jpg'";
@@ -398,7 +448,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_not_sync_valid, Te
     MEDIA_INFO_LOG("medialib_backup_test_a_media_not_sync_valid end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_a_media_zero_size start");
     std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='a_media_zero_size.jpg'";
@@ -408,7 +458,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_a_media_zero_size end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_duplicate_data start");
     restoreService->photosRestore_.galleryRdb_ = restoreService->galleryRdb_;
@@ -433,7 +483,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data, TestSize.L
     MEDIA_INFO_LOG("medialib_backup_test_duplicate_data end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_modify_file, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_modify_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_modify_file start");
     struct stat bufBefore;
@@ -452,7 +502,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_modify_file, TestSize.Leve
     MEDIA_INFO_LOG("medialib_backup_test_modify_file end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_audio, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_audio, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_audio start");
     int32_t uniqueId = 2;
@@ -464,7 +514,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_a
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_audio end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_video, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_video, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_video start");
     int32_t uniqueId = 2;
@@ -476,7 +526,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_v
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_video end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fileId, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fileId, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileId start");
     int32_t fileId = -1;
@@ -489,7 +539,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fil
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileId end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_fileId, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_fileId, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId start");
     // file id > ASSET_DIR_START_NUM * ASSET_IN_BUCKET_NUM_MAX (16 * 1000) and Remainder != 0
@@ -502,7 +552,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_file
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder start");
     // file id > ASSET_DIR_START_NUM * ASSET_IN_BUCKET_NUM_MAX (16 * 1000) and fileIdRemainder == 0
@@ -515,7 +565,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_file
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fileType_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fileType_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_illegal_fileType_001 start");
     int32_t fileId = 2;
@@ -528,7 +578,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fil
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_illegal_fileType_001 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fileType_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fileType_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_002 start");
     // fileId = ASSET_MAX_COMPLEMENT_ID + invalid file type
@@ -541,7 +591,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fil
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_002 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fileType_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fileType_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_003 start");
     // fileId > ASSET_MAX_COMPLEMENT_ID + invalid file type
@@ -554,7 +604,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fil
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_003 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_empty, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_empty start");
     string path;
@@ -563,7 +613,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_empty,
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_empty end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_not_have, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_not_have, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_not_have start");
     string path = "test";
@@ -572,7 +622,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_not_ha
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_not_have end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_ok, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_ok, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_ok start");
     string path = "test/ee/ee";
@@ -581,7 +631,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_ok, TestSiz
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_ok end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_dispalyName_empty, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_dispalyName_empty, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_dispalyName_empty start");
     string displayName;
@@ -590,7 +640,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_dispalyName_empty,
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_dispalyName_empty end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_ok, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_ok, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_ok start");
     string displayName = "test.mp3";
@@ -599,7 +649,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_ok, TestSize.Level
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_ok end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_no_dot, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_no_dot, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_no_dot start");
     string displayName = "testmp3";
@@ -608,7 +658,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_no_dot, TestSize.L
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_no_dot end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_normal_type, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_normal_type, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_normal_type start");
     // test case 1 normal PrefixType
@@ -619,7 +669,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_normal_
     MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_normal_type end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_illegal_type, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_illegal_type, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_illegal_type start");
     // test case 2 illegal PrefixType
@@ -630,7 +680,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_illegal
     MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_illegal_type end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_normal_name, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_normal_name, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_normal_name start");
     // name start with Screenshot_
@@ -665,7 +715,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_normal_name, Tes
     MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_normal_name end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_empty_name, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_empty_name, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_empty_name start");
     // empty file name
@@ -675,7 +725,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_empty_name, Test
     MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_empty_name end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix start");
     // illegal srcPrefix + normal dstPrefix
@@ -687,7 +737,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_ill
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix start");
     // illegal dstPrefix + normal srcPrefix
@@ -699,7 +749,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_ill
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix, TestSize.Level2)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix start");
     // normal srcPrefix + normal dstPrefix
@@ -711,7 +761,7 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_nor
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_UPGRADE_RESTORE_ID, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_UPGRADE_RESTORE_ID, TestSize.Level2)
 {
     MEDIA_INFO_LOG("RestoreAudio_sceneCode_UPGRADE_RESTORE_ID start");
     restoreService->RestoreAudio();
@@ -722,7 +772,7 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_UPGRADE_RESTORE_ID, Test
     MEDIA_INFO_LOG("RestoreAudio_sceneCode_UPGRADE_RESTORE_ID end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_Clone, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_Clone, TestSize.Level2)
 {
     MEDIA_INFO_LOG("RestoreAudio_sceneCode_Clone start");
     restoreService->sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
@@ -734,7 +784,7 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_Clone, TestSize.Level0)
     MEDIA_INFO_LOG("RestoreAudio_sceneCode_Clone end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_no_audioRdb, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_no_audioRdb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_db start");
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -747,7 +797,7 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_no_audioRd
     MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_db end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_fake_audiodb, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_fake_audiodb, TestSize.Level2)
 {
     MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_fake_audiodb start");
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -761,7 +811,7 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_fake_audio
     MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_db end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, RestoreAudio_ParseResultSetFromAudioDb_return_false, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_ParseResultSetFromAudioDb_return_false, TestSize.Level2)
 {
     MEDIA_INFO_LOG("RestoreAudio_ParseResultSetFromAudioDb_return_false start");
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -773,7 +823,7 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_ParseResultSetFromAudioDb_return_f
     MEDIA_INFO_LOG("RestoreAudio_ParseResultSetFromAudioDb_return_false end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test001 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test001 start");
@@ -786,7 +836,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test001, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test001 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test002 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test002 start");
@@ -798,7 +848,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test002, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test002 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test003 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test003 start");
@@ -811,7 +861,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test003, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test003 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test004 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test004 start");
@@ -824,7 +874,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test004, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test004 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test005 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test005 start");
@@ -837,7 +887,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test005, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test005 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test006, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test006 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test006 start");
@@ -850,7 +900,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test006, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test006 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test007, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test007 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test007 start");
@@ -863,7 +913,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test007, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test007 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test008, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test008 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test008 start");
@@ -876,7 +926,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test008, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test008 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test009, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test009 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test009 start");
@@ -894,7 +944,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test009, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test009 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test010, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test010 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test010 start");
@@ -912,7 +962,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test010, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test010 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test011, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test011, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test011 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test011 start");
@@ -930,7 +980,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test011, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test011 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test012, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test012, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test012 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test012 start");
@@ -948,7 +998,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test012, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test012 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test101, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test101, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test101 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test101 start");
@@ -966,7 +1016,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test101, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test101 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test102, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test102, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test102 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test102 start");
@@ -979,7 +1029,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test102, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test102 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test103, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test103, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test103 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test103 start");
@@ -992,7 +1042,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test103, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test103 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test104, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test104, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test104 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test104 start");
@@ -1005,7 +1055,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test104, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test104 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test105, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test105, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test105 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test105 start");
@@ -1018,7 +1068,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test105, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test105 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test106, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test106, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test106 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test106 start");
@@ -1031,7 +1081,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test106, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test106 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test107, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test107, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test107 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test107 start");
@@ -1044,7 +1094,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test107, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test107 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test108, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test108, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test108 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test108 start");
@@ -1057,7 +1107,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test108, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test108 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test109, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test109, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test109 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test109 start");
@@ -1075,7 +1125,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test109, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test109 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test110, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test110, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test110 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test110 start");
@@ -1093,7 +1143,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test110, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test110 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test111, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test111, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test111 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test111 start");
@@ -1111,7 +1161,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test111, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test111 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test112, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test112, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test112 start";
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test112 start");
@@ -1129,7 +1179,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test112, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test112 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_upgrade, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_upgrade, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_upgrade start");
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1151,7 +1201,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_upgrade, TestSize.L
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_upgrade end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_empty_file start");
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1166,7 +1216,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSiz
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_empty_file end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_MoveDirectory, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_MoveDirectory, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_MoveDirectory start");
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1180,7 +1230,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_MoveDirectory, TestSize.Level0)
     MEDIA_INFO_LOG("medialib_backup_MoveDirectory end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_BatchQueryPhoto start");
     vector<FileInfo> fileInfos;
@@ -1212,7 +1262,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level
     MEDIA_INFO_LOG("medialib_backup_BatchQueryPhoto end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_002 start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1223,7 +1273,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_002, TestSize.Lev
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_002 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_003 start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1234,7 +1284,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_003, TestSize.Lev
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_003 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_004 start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1245,7 +1295,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_004, TestSize.Lev
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_004 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_005 start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1256,7 +1306,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_005, TestSize.Lev
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_005 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_001 start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1267,7 +1317,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_001, TestSize.
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_001 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_002 start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1278,7 +1328,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_002, TestSize.
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_002 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_003 start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1289,7 +1339,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_003, TestSize.
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_003 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetValueFromMetaData, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetValueFromMetaData, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_SetValueFromMetaData start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1304,7 +1354,44 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetValueFromMetaData, Test
     GTEST_LOG_(INFO) << "medialib_backup_test_SetValueFromMetaData end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetBackupInfo, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetUserComment_TEST1, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST1 start";
+    FileInfo fileInfo;
+    fileInfo.filePath = "TEST";
+    fileInfo.userComment = "TEST123";
+    NativeRdb::ValuesBucket valueBucket;
+    // no column user comment
+    bool hasUserComment = valueBucket.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
+    EXPECT_EQ(hasUserComment, false);
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    upgrade->SetValueFromMetaData(fileInfo, valueBucket);
+    hasUserComment = valueBucket.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
+    EXPECT_EQ(hasUserComment, true);
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST1 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetUserComment_TEST2, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST2 start";
+    FileInfo fileInfo;
+    fileInfo.filePath = "TEST";
+    fileInfo.userComment = "TEST123";
+    NativeRdb::ValuesBucket valueBucket;
+    // has column user comment
+    valueBucket.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
+    bool hasUserComment = valueBucket.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
+    EXPECT_EQ(hasUserComment, true);
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    upgrade->SetValueFromMetaData(fileInfo, valueBucket);
+    hasUserComment = valueBucket.HasColumn(PhotoColumn::PHOTO_USER_COMMENT);
+    EXPECT_EQ(hasUserComment, true);
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetUserComment_TEST2 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetBackupInfo, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetBackupInfo start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1315,7 +1402,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetBackupInfo, TestSize.Le
     GTEST_LOG_(INFO) << "medialib_backup_test_GetBackupInfo end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_empty, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_empty, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_empty start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1334,7 +1421,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_empty, TestSiz
     GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_empty end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_normal, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_normal, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_normal start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1360,7 +1447,22 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_normal, TestSi
     GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_normal end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_image, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertCloudPhoto, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_InsertCloudPhoto start");
+    int sceneCode = 0;
+    int32_t sourceType = SourceType::GALLERY;
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    FileInfo fileInfo;
+    vector<FileInfo> fileInfos = {fileInfo};
+    upgrade->mediaLibraryRdb_ = photosStorePtr;
+    int32_t ret = upgrade->InsertCloudPhoto(sceneCode, fileInfos, sourceType);
+    EXPECT_EQ(ret, E_OK);
+    upgrade->mediaLibraryRdb_ = nullptr;
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_image, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_image start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1381,7 +1483,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_image end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_video, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_video, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_video start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1402,7 +1504,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_video end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_audio, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_audio, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_audio start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1423,7 +1525,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_audio end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1444,7 +1546,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType
     GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetErrorCode, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetErrorCode, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_SetErrorCode start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1468,7 +1570,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetErrorCode, TestSize.Lev
     GTEST_LOG_(INFO) << "medialib_backup_test_SetErrorCode end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetSubCountInfo_illegal_type, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetSubCountInfo_illegal_type, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetSubCountInfo_illegal_type start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1481,7 +1583,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetSubCountInfo_illegal_ty
     GTEST_LOG_(INFO) << "medialib_backup_test_GetSubCountInfo_illegal_type end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_empty_types, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_empty_types, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_empty_types start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1496,7 +1598,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_empty_typ
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_empty_types end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_normal_types, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_normal_types, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_normal_types start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1511,7 +1613,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_normal_ty
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_normal_types end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_types, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_types, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1525,7 +1627,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_t
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_need_batch_query_photo, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_need_batch_query_photo, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_need_batch_query_photo start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1555,14 +1657,14 @@ void TestConvertPathToRealPathByStorageType(bool isSd)
     EXPECT_EQ(relativePath, TEST_RELATIVE_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_001 start";
     TestConvertPathToRealPathByStorageType(false); // internal, normal
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_001 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_002 start";
     TestConvertPathToRealPathByStorageType(true); // sd card, normal
@@ -1585,7 +1687,7 @@ void TestConvertPathToRealPathByFileSize(int64_t fileSize, const std::string &sr
     EXPECT_EQ(relativePath, TEST_RELATIVE_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_003 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
@@ -1594,7 +1696,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_003 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_004 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
@@ -1603,7 +1705,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_004 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_005 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
@@ -1628,7 +1730,7 @@ void TestConvertPathToRealPathByLocalMediaId(int32_t localMediaId, const std::st
     EXPECT_EQ(relativePath, TEST_RELATIVE_PATH);
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_006, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_006 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
@@ -1637,7 +1739,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_006 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_007, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 start";
     std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
@@ -1646,7 +1748,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level start";
     std::string path = "/../";
@@ -1657,7 +1759,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_lev
     GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_duplicate_number, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_duplicate_number, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number start";
     std::unique_ptr<UpgradeRestore> upgrade =
@@ -1678,7 +1780,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_duplicate_number, T
     GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause start";
     std::string whereClause;
@@ -1689,7 +1791,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, Te
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_001 start";
     int length = TEST_SIZE_MIN; // (0, 2 * min), no need to scale
@@ -1698,7 +1800,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_001, T
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_001 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 start";
     int length = TEST_SIZE_MIN * TEST_SIZE_MULT_UNIT + TEST_SIZE_INCR_UNIT; // [2 * min, 4 * min)
@@ -1708,7 +1810,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_002, T
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 start";
     int length = TEST_SIZE_MIN * TEST_SIZE_MULT_UNIT * TEST_SIZE_MULT_UNIT; // [4 * min, ...)
@@ -1718,7 +1820,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_003, T
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_004 start";
     int width = TEST_SIZE_MIN;
@@ -1737,7 +1839,7 @@ void InitFaceInfoScale(FaceInfo &faceInfo, float scaleX, float scaleY, float sca
     faceInfo.scaleHeight = scaleHeight;
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_001 start";
     FaceInfo faceInfo;
@@ -1748,7 +1850,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_001, Tes
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_001 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_002 start";
     FaceInfo faceInfo;
@@ -1759,7 +1861,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_002, Tes
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_002 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_003 start";
     FaceInfo faceInfo;
@@ -1770,7 +1872,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_003, Tes
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_003 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_004 start";
     FaceInfo faceInfo;
@@ -1781,7 +1883,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_004, Tes
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_004 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_005 start";
     FaceInfo faceInfo;
@@ -1877,7 +1979,7 @@ void QueryPortraitTotalCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
     QueryInt(rdbStore, querySql, "count", result);
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_livephoto, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_livephoto, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_is_livephoto start");
     FileInfo info;
@@ -1894,7 +1996,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_livephoto, TestSize.Lev
     MEDIA_INFO_LOG("medialib_backup_test_is_livephoto end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_to_moving_photo, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_to_moving_photo, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_convert_to_moving_photo start");
     string livePhotoPath = "/data/test/backup_test_livephoto.jpg";
@@ -1916,7 +2018,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_to_moving_photo, T
     MEDIA_INFO_LOG("medialib_backup_test_convert_to_moving_photo end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_file_access_helper, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_file_access_helper, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_file_access_helper start");
     string backupFilePath = "/data/test/Pictures/Camera/Flower.png";
@@ -1939,7 +2041,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_file_access_helper, TestSi
     MEDIA_INFO_LOG("medialib_backup_test_file_access_helper end");
 }
  
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_media_type_beyong_1_3, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_media_type_beyong_1_3, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_media_type start");
     PhotosRestore photosRestore;
@@ -1965,70 +2067,70 @@ void TestAppTwinData(const string &path, const string &expectedExtraPrefix, int3
     EXPECT_EQ(extraPrefix, expectedExtraPrefix);
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_001 start");
     TestAppTwinData("", "", CLONE_RESTORE_ID); // not upgrade
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_001 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_002, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_002 start");
     TestAppTwinData("", ""); // not app twin data: empty
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_002 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_003, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_003 start");
     TestAppTwinData("/storage/ABCE-EFGH/0/", ""); // not app twin data: external
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_003 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_004, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_004 start");
     TestAppTwinData("/storage/emulated/0/", ""); // not app twin data: main user
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_004 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_005, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_005 start");
     TestAppTwinData("/storage/emulated", ""); // not app twin data: first / not found
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_005 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_006, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_006 start");
     TestAppTwinData("/storage/emulated/", ""); // not app twin data: second / not found
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_006 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_007, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_007 start");
     TestAppTwinData("/storage/emulated/abc/", ""); // not app twin data: not number
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_007 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_008, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_008 start");
     TestAppTwinData("/storage/emulated/1234/", ""); // not app twin data: not in [128, 147]
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_008 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_009, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_app_twin_data_009, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_009 start");
     TestAppTwinData("/storage/emulated/128/", APP_TWIN_DATA_PREFIX); // app twin data
     MEDIA_INFO_LOG("medialib_backup_test_app_twin_data_009 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetFileFolderFromPath, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetFileFolderFromPath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GetFileFolderFromPath start");
     // test case 1 empty path
@@ -2053,7 +2155,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetFileFolderFromPath, Tes
     MEDIA_INFO_LOG("medialib_backup_test_GetFileFolderFromPath end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_PreparePath, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_PreparePath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_PreparePath start");
     // test case 1 empty path
@@ -2075,7 +2177,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_PreparePath, TestSize.Leve
     MEDIA_INFO_LOG("medialib_backup_test_PreparePath end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GarbleFilePath, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GarbleFilePath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_GarbleFilePath start");
     string path = "/data/test/GYH/test.txt";
@@ -2090,7 +2192,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GarbleFilePath, TestSize.L
     MEDIA_INFO_LOG("medialib_backup_test_GarbleFilePath end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CreatePath, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CreatePath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_CreatePath start");
     // invalid data type
@@ -2101,7 +2203,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_CreatePath, TestSize.Level
     MEDIA_INFO_LOG("medialib_backup_test_CreatePath end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_IsLowQualityImage, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_IsLowQualityImage, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_IsLowQualityImage start");
     string filePath = "/data/test/GYH/GYH.mp3";
@@ -2113,7 +2215,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_IsLowQualityImage, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_IsLowQualityImage end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_ConvertLowQualityPath start");
     int sceneCode = 0;
@@ -2146,19 +2248,461 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, Tes
     MEDIA_INFO_LOG("medialib_backup_test_ConvertLowQualityPath end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_from_cloud_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_from_cloud_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_restore_from_cloud_test start");
-    int32_t countBefore = restoreService -> totalNumber_;
-    restoreService -> RestoreCloudFromGallery();
-    EXPECT_EQ((restoreService -> totalNumber_ - countBefore), 0);
+    int32_t countBefore = restoreService->totalNumber_;
+    restoreService->RestoreCloudFromGallery();
+    EXPECT_EQ((restoreService->totalNumber_ - countBefore), 0);
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_cloud_infos_test, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_cloud_infos_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_query_cloud_infos_test start");
-    auto result = restoreService -> QueryCloudFileInfos(0);
+    auto result = restoreService->QueryCloudFileInfos(0);
     EXPECT_EQ(result.empty(), true);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_restore_mode_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_restore_mode_test_001 start");
+    restoreService->restoreInfo_ = R"([{"type":"appTwinDataRestoreState", "detail":"2"}])";
+    std::string restoreExInfo;
+    restoreService->BaseRestore::StartRestoreEx("", "", restoreExInfo);
+    EXPECT_EQ(restoreService->restoreMode_, 2);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_restore_mode_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_restore_mode_test_002 start");
+    restoreService->restoreInfo_ = R"([{"type":"appTwinDataRestoreState", "detail":"5"}])";
+    std::string restoreExInfo;
+    restoreService->BaseRestore::StartRestoreEx("", "", restoreExInfo);
+    EXPECT_EQ(restoreService->restoreMode_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_account_valid_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_account_valid_test_001 start");
+    restoreService->sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
+    restoreService->restoreInfo_ = R"([{"type":"dualAccountId", "detail":"oldId"}])";
+    (void)restoreService->BaseRestore::GetAccountValid();
+    EXPECT_FALSE(restoreService->isAccountValid_);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_account_valid_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_account_valid_test_002 start");
+    restoreService->sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
+    restoreService->restoreInfo_ = R"([{"type":"test", "detail":"oldId"}])";
+    (void)restoreService->BaseRestore::GetAccountValid();
+    EXPECT_FALSE(restoreService->isAccountValid_);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_source_device_info_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_source_device_info_test start");
+    restoreService->restoreInfo_ = R"([{"type":"dualDeviceSoftName", "detail":"0"}])";
+    (void)restoreService->BaseRestore::GetSourceDeviceInfo();
+    EXPECT_EQ(restoreService->dualDeviceSoftName_, "0");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_is_restore_photo_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_is_restore_photo_test_001 start");
+    restoreService->restoreInfo_ = R"([{"type":"backupInfo", "detail":"0"}])";
+    bool restorePhoto = restoreService->BaseRestore::IsRestorePhoto();
+    EXPECT_FALSE(restorePhoto);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_is_restore_photo_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_is_restore_photo_test_002 start");
+    restoreService->restoreInfo_ = R"([{"type":"backupInfo", "detail":"galleryData"}])";
+    bool restorePhoto = restoreService->BaseRestore::IsRestorePhoto();
+    EXPECT_TRUE(restorePhoto);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_query_sql_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_query_sql_test start");
+    std::string sql = "";
+    std::vector<std::string> selectionArgs = {""};
+    auto result = restoreService->BaseRestore::QuerySql(sql, selectionArgs);
+    EXPECT_EQ(result, nullptr);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_insert_date_taken_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_insert_date_taken_test start");
+    FileInfo fileInfo;
+    int64_t dateModified = 1741351029532;
+    fileInfo.dateModified = dateModified;
+    NativeRdb::ValuesBucket values;
+    restoreService->BaseRestore::SetValueFromMetaData(fileInfo, values);
+    EXPECT_EQ(fileInfo.dateTaken, dateModified);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_cloud_insert_values_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_cloud_insert_values_test start");
+    FileInfo fileInfo;
+    fileInfo.displayName = TEST_FILE;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    auto result = restoreService->BaseRestore::GetCloudInsertValues(0, fileInfos, 0);
+    EXPECT_EQ(result.size(), 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_insert_orientation_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_insert_orientation_test start");
+    NativeRdb::ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_ORIENTATION, 90);
+    FileInfo fileInfo;
+    fileInfo.fileType = MEDIA_TYPE_VIDEO;
+    restoreService->BaseRestore::SetValueFromMetaData(fileInfo, values);
+    int32_t orientation;
+    ValueObject valueObject;
+    values.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject);
+    valueObject.GetInt(orientation);
+    EXPECT_EQ(orientation, 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_set_cover_position_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_set_cover_position_test start");
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    int32_t orientation = 180;
+    data->SetOrientation(orientation);
+    FileInfo fileInfo;
+    fileInfo.specialFileType = LIVE_PHOTO_TYPE;
+    NativeRdb::ValuesBucket values;
+    restoreService->BaseRestore::SetValueFromMetaData(fileInfo, values);
+    int32_t coverPosition;
+    ValueObject valueObject;
+    values.GetObject(PhotoColumn::PHOTO_COVER_POSITION, valueObject);
+    valueObject.GetInt(coverPosition);
+    EXPECT_EQ(coverPosition, 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_move_migrate_file_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_move_migrate_file_test start");
+    FileInfo fileInfo;
+    fileInfo.needMove = true;
+    fileInfo.filePath = TEST_DIR_PATH;
+    fileInfo.specialFileType = LIVE_PHOTO_TYPE;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    int32_t fileMoveCount = 0;
+    int32_t videoFileMoveCount = 0;
+    int32_t sceneCode = 0;
+    restoreService->BaseRestore::MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    EXPECT_TRUE(fileInfos[0].needVisible);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_move_migrate_cloud_file_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_move_migrate_cloud_file_test start");
+    FileInfo fileInfo;
+    fileInfo.needMove = true;
+    fileInfo.filePath = TEST_DIR_PATH;
+    fileInfo.specialFileType = LIVE_PHOTO_TYPE;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    int32_t fileMoveCount = 0;
+    int32_t videoFileMoveCount = 0;
+    int32_t sceneCode = 0;
+    restoreService->BaseRestore::MoveMigrateCloudFile(fileInfos, fileMoveCount, videoFileMoveCount, sceneCode);
+    EXPECT_EQ(restoreService->migrateFileNumber_, 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_batch_create_dentry_file_test_001 start");
+    FileInfo fileInfo;
+    fileInfo.needMove = true;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    std::vector<std::string> failCloudIds;
+    std::string fileType = DENTRY_INFO_ORIGIN;
+    int32_t ret = restoreService->BaseRestore::BatchCreateDentryFile(fileInfos, failCloudIds, fileType);
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_batch_create_dentry_file_test_002 start");
+    FileInfo fileInfo;
+    fileInfo.needMove = true;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    std::vector<std::string> failCloudIds;
+    std::string fileType = DENTRY_INFO_LCD;
+    int32_t ret = restoreService->BaseRestore::BatchCreateDentryFile(fileInfos, failCloudIds, fileType);
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_create_dentry_file_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_batch_create_dentry_file_test_003 start");
+    FileInfo fileInfo;
+    fileInfo.needMove = true;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    std::vector<std::string> failCloudIds;
+    std::string fileType = DENTRY_INFO_THM;
+    int32_t ret = restoreService->BaseRestore::BatchCreateDentryFile(fileInfos, failCloudIds, fileType);
+    EXPECT_NE(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_restore_lcd_and_thumb_from_cloud_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_restore_lcd_and_thumb_from_cloud_test start");
+    FileInfo fileInfo;
+    int32_t type = TEST_MIGRATE_CLOUD_LCD_TYPE;
+    bool ret = restoreService->BaseRestore::RestoreLcdAndThumbFromCloud(fileInfo, type, 0);
+    EXPECT_EQ(ret, false);
+
+    fileInfo.localBigThumbPath = TEST_DIR_PATH;
+    ret = restoreService->BaseRestore::RestoreLcdAndThumbFromCloud(fileInfo, type, 0);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_handle_fail_data_test_001 start");
+    FileInfo fileInfoOrigin;
+    fileInfoOrigin.uniqueId = TEST_TRUE_UNIQUEID;
+    std::vector<FileInfo> fileInfos = {fileInfoOrigin};
+    std::vector<std::string> failCloudIds = {TEST_TRUE_UNIQUEID};
+    std::string fileType = DENTRY_INFO_ORIGIN;
+    restoreService->BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
+    EXPECT_EQ(fileInfos.size(), 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_handle_fail_data_test_002 start");
+    FileInfo fileInfoLcd;
+    fileInfoLcd.uniqueId = TEST_TRUE_UNIQUEID;
+    std::vector<FileInfo> fileInfos = {fileInfoLcd};
+    std::vector<std::string> failCloudIds = {TEST_TRUE_UNIQUEID};
+    std::string fileType = DENTRY_INFO_LCD;
+    restoreService->BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
+    EXPECT_EQ(fileInfos.size(), 1);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_handle_fail_data_test_003 start");
+    FileInfo fileInfoThm;
+    fileInfoThm.uniqueId = TEST_TRUE_UNIQUEID;
+    std::vector<FileInfo> fileInfos = {fileInfoThm};
+    std::vector<std::string> failCloudIds = {TEST_TRUE_UNIQUEID};
+    std::string fileType = DENTRY_INFO_THM;
+    restoreService->BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
+    EXPECT_EQ(fileInfos.size(), 1);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_handle_fail_data_test_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_handle_fail_data_test_004 start");
+    FileInfo fileInfoNotFail;
+    fileInfoNotFail.uniqueId = TEST_FALSE_UNIQUEID;
+    std::vector<FileInfo> fileInfos = {fileInfoNotFail};
+    std::vector<std::string> failCloudIds = {TEST_TRUE_UNIQUEID};
+    std::string fileType = DENTRY_INFO_THM;
+    restoreService->BaseRestore::HandleFailData(fileInfos, failCloudIds, fileType);
+    EXPECT_EQ(fileInfos.size(), 1);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_set_visible_photo_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_set_visible_photo_test start");
+    FileInfo fileInfo;
+    fileInfo.needVisible = true;
+    fileInfo.needMove = true;
+    std::vector<FileInfo> fileInfos = {fileInfo};
+    bool ret = restoreService->BaseRestore::SetVisiblePhoto(fileInfos);
+    EXPECT_EQ(fileInfos.size(), 1);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_batch_insert_map_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_batch_insert_map_test start");
+    FileInfo fileInfo1;
+    fileInfo1.packageName = "0";
+    FileInfo fileInfo2;
+    std::vector<FileInfo> fileInfos = {fileInfo1, fileInfo2};
+    int64_t totalNum = 0;
+    restoreService->BaseRestore::BatchInsertMap(fileInfos, totalNum);
+    EXPECT_EQ(totalNum, 0);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_unique_id_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_unique_id_test start");
+    int32_t fileType = MediaType::MEDIA_TYPE_IMAGE;
+    int32_t uniqueId = restoreService->BaseRestore::GetUniqueId(fileType);
+    EXPECT_EQ(uniqueId, restoreService->imageNumber_ - 1);
+
+    fileType = MediaType::MEDIA_TYPE_VIDEO;
+    uniqueId = restoreService->BaseRestore::GetUniqueId(fileType);
+    EXPECT_EQ(uniqueId, restoreService->videoNumber_ - 1);
+
+    fileType = MediaType::MEDIA_TYPE_AUDIO;
+    uniqueId = restoreService->BaseRestore::GetUniqueId(fileType);
+    EXPECT_EQ(uniqueId, restoreService->audioNumber_ - 1);
+
+    fileType = -1;
+    uniqueId = restoreService->BaseRestore::GetUniqueId(fileType);
+    EXPECT_EQ(uniqueId, - 1);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_progress_info_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_progress_info_test start");
+    std::string progressInfo = restoreService->BaseRestore::GetProgressInfo();
+    EXPECT_FALSE(progressInfo.empty());
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_update_database_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_update_database_test start");
+    restoreService->BaseRestore::UpdateDatabase();
+    EXPECT_EQ(restoreService->updateProcessStatus_, ProcessStatus::STOP);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_extra_check_for_clone_same_file_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_extra_check_for_clone_same_file_test start");
+    PhotosDao::PhotosRowData rowData;
+    FileInfo fileInfo;
+    rowData.cleanFlag = 1;
+    rowData.position = static_cast<int32_t>(PhotoPositionType::CLOUD);
+    rowData.fileId = 1;
+    bool ret = restoreService->BaseRestore::ExtraCheckForCloneSameFile(fileInfo, rowData);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_insert_value_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_get_insert_value_test start");
+    FileInfo fileInfo;
+    std::string newPath;
+    fileInfo.firstUpdateTime = 1;
+    fileInfo.dateTaken = 1;
+    fileInfo.isFavorite = 1;
+    fileInfo.hidden = 1;
+    fileInfo.packageName = TEST_DIR_PATH;
+    fileInfo.localMediaId = TEST_FALSE_MEDIAID;
+    auto values = restoreService->GetInsertValue(fileInfo, newPath, 0);
+    std::string packageName;
+    ValueObject valueObject;
+    values.GetObject(PhotoColumn::MEDIA_PACKAGE_NAME, valueObject);
+    valueObject.GetString(packageName);
+    EXPECT_EQ(packageName, TEST_DIR_PATH);
+
+    fileInfo.firstUpdateTime = 0;
+    values = restoreService->GetInsertValue(fileInfo, newPath, 0);
+    int32_t dateAdded;
+    values.GetObject(PhotoColumn::MEDIA_DATE_ADDED, valueObject);
+    valueObject.GetInt(dateAdded);
+    EXPECT_EQ(dateAdded, 1);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test1, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test1 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+
+    NativeRdb::ValuesBucket valuesBucket;
+    EXPECT_EQ(valuesBucket.HasColumn("address_description"), false);
+    EXPECT_EQ(valuesBucket.HasColumn("language"), false);
+    std::vector<GeoKnowledgeRestore::GeoKnowledgeInfo> albumInfo;
+    GeoKnowledgeRestore::GeoKnowledgeInfo info;
+    info.adminArea = "test";
+    info.locality = "test";
+    info.language = "zh";
+    albumInfo.push_back(info);
+    valuesBucket = restoreService->geoKnowledgeRestore_.GetMapInsertValue(albumInfo.begin(), 0);
+    EXPECT_EQ(valuesBucket.HasColumn("address_description"), true);
+    EXPECT_EQ(valuesBucket.HasColumn("language"), true);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test1 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test2, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test2 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+
+    NativeRdb::ValuesBucket valuesBucket;
+    EXPECT_EQ(valuesBucket.HasColumn("address_description"), false);
+    EXPECT_EQ(valuesBucket.HasColumn("language"), false);
+    std::vector<GeoKnowledgeRestore::GeoKnowledgeInfo> albumInfo;
+    GeoKnowledgeRestore::GeoKnowledgeInfo info;
+    info.adminArea = "test";
+    info.locality = "test123";
+    info.language = "en";
+    albumInfo.push_back(info);
+    valuesBucket = restoreService->geoKnowledgeRestore_.GetMapInsertValue(albumInfo.begin(), 0);
+    EXPECT_EQ(valuesBucket.HasColumn("address_description"), true);
+    EXPECT_EQ(valuesBucket.HasColumn("language"), true);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test2 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test3, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test3 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+    restoreService->geoKnowledgeRestore_.mediaLibraryRdb_ = nullptr;
+    restoreService->geoKnowledgeRestore_.batchCnt_ = 0xFF;
+
+    std::vector<FileInfo> fileInfos;
+    restoreService->geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 0);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test3 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test4, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test4 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+    restoreService->geoKnowledgeRestore_.mediaLibraryRdb_ = photosStorePtr;
+    restoreService->geoKnowledgeRestore_.batchCnt_ = 0xFF;
+
+    std::vector<FileInfo> fileInfos;
+    restoreService->geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 0);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test4 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test5, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test5 start");
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
+    restoreService->geoKnowledgeRestore_.mediaLibraryRdb_ = photosStorePtr;
+    restoreService->geoKnowledgeRestore_.batchCnt_ = 0xFF;
+
+    constexpr double DOUBLE_EPSILON = 1e-15;
+    std::vector<FileInfo> fileInfos;
+    FileInfo info1;
+    info1.fileIdNew = 0;
+    fileInfos.push_back(info1);
+    FileInfo info2;
+    info2.fileIdNew = 1;
+    info2.latitude = DOUBLE_EPSILON + 1.0;
+    info2.longitude = DOUBLE_EPSILON + 1.0;
+    fileInfos.push_back(info2);
+    restoreService->geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 0);
+    MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test5 end");
 }
 } // namespace Media
 } // namespace OHOS

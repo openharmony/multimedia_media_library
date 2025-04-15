@@ -24,7 +24,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_001, TestSize.Level1)
 {
     string path = "";
     string mode = "";
@@ -34,7 +34,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_002, TestSize.Level1)
 {
     string path = ".Open";
     string mode = "Z";
@@ -44,7 +44,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_002, TestSize.Level0)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_003, TestSize.Level1)
 {
     string path = ".jpeg";
     string mode = "";
@@ -54,7 +54,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_003, TestSize.Level0)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_004, TestSize.Level1)
 {
     string path = ".Open";
     string mode = "w";
@@ -64,7 +64,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_004, TestSize.Level0)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_005, TestSize.Level1)
 {
     string path(4096, 'a');
     string mode = "w";
@@ -74,7 +74,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_005, TestSize.Level0)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_006, TestSize.Level1)
 {
     string path = "data:image/;base64,Open.jpeg";
     string mode = "a";
@@ -84,7 +84,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_006, TestSize.Level0)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_007, TestSize.Level1)
 {
     string path = "data:image/;base64,Open.jpeg";
     string mode = "rwrwrw";
@@ -94,7 +94,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_007, TestSize.Level0)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_008, TestSize.Level1)
 {
     string path = "/storage/cloud/files/open.jpeg";
     string mode = "w";
@@ -104,7 +104,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_008, TestSize.Level0)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_009, TestSize.Level1)
 {
     string path = "";
     string mode = "w";
@@ -114,7 +114,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_009, TestSize.Level0)
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_Open_test_010, TestSize.Level1)
 {
     string path = "/storage/cloud/files/";
     string mode = "w";

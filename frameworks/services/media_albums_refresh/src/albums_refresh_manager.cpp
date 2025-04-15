@@ -294,9 +294,7 @@ static void RefreshEachPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbSto
     bool notifyAssets = false;
     int32_t ret = E_SUCCESS;
     for (auto photoAlbum : photoAlbums) {
-        if (photoAlbum.albumSubtype <= 0) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(photoAlbum.albumSubtype > 0);
         PhotoAlbumSubType subtype = static_cast<PhotoAlbumSubType>(photoAlbum.albumSubtype);
         ret = RefreshAlbumInfoAndUris(rdbStore, photoAlbum.albumId, subtype, info);
         if (ret != E_SUCCESS) {
@@ -361,7 +359,7 @@ static int32_t DeleteUpdatedPhotoAlbumIds(const shared_ptr<MediaLibraryRdbStore>
 
         RdbPredicates predicates(ALBUM_REFRESH_TABLE);
         predicates.In(REFRESH_ALBUM_ID, childVector);
-        
+
         if (!updateFailedAlbumIds.empty()) {
             predicates.NotIn(REFRESH_ALBUM_ID, updateFailedAlbumIds);
         }
@@ -389,10 +387,7 @@ static void HandleAllPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore
 
     int32_t ret = GetAllPhotoAlbums(rdbStore, photoAlbums, info.forceRefreshType);
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get photo albums from refreshalbum table");
-    if (photoAlbums.empty()) {
-        MEDIA_INFO_LOG("photoAlbums is empty");
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(!photoAlbums.empty(), "photoAlbums is empty");
 
     std::vector<string> updateAlbumIds;
     std::vector<string> updateFailedAlbumIds;
@@ -414,13 +409,9 @@ static void HandleAllPhotoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore
 static void HandleImageAndVideoAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore, SyncNotifyInfo &info)
 {
     std::vector<RefreshAlbumData> photoAlbums;
-
     int32_t ret = GetImageAndVideoAlbums(rdbStore, photoAlbums, info.forceRefreshType);
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get IMG and VID albums from refreshalbum table");
-    if (photoAlbums.empty()) {
-        MEDIA_INFO_LOG("photoAlbums is empty");
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(!photoAlbums.empty(), "photoAlbums is empty");
 
     std::vector<string> updateAlbumIds;
     std::vector<string> updateFailedAlbumIds;
@@ -432,7 +423,6 @@ static void HandleImageAndVideoAlbums(const shared_ptr<MediaLibraryRdbStore> rdb
     RefreshEachPhotoAlbums(rdbStore, photoAlbums, info, updateFailedAlbumIds);
     ret = DeleteUpdatedPhotoAlbumIds(rdbStore, updateAlbumIds, updateFailedAlbumIds);
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "Batch delete IMG and VID albums from RefreshAlbums Table failed");
-
     info.refreshResult = E_SUCCESS;
 }
 
@@ -443,9 +433,7 @@ static void HandleAnalysisAlbums(const shared_ptr<MediaLibraryRdbStore> rdbStore
     int32_t ret =
         GetAnalysisRefreshAlbums(rdbStore, analysisAlbums, info.forceRefreshType);
     CHECK_AND_RETURN_LOG(ret == E_SUCCESS, "failed to get analysis albums from refreshalbum table");
-    if (analysisAlbums.empty()) {
-        return;
-    }
+    CHECK_AND_RETURN(!analysisAlbums.empty());
 
     // Clean all analysis albums from RefreshAlbums Table
     DeleteAnalysisAlbumIds(rdbStore);
@@ -474,6 +462,7 @@ void AlbumsRefreshManager::RefreshPhotoAlbumsBySyncNotifyInfo(const shared_ptr<M
 
     if (info.taskType == TIME_END_SYNC) {
         HandleAllRefreshAlbums(rdbStore, info);
+        MediaLibraryRdbUtils::UpdateShootingModeAlbum(rdbStore);
         MEDIA_INFO_LOG("refresh all albums from RefreshAlbums Table end, cost: %{public}ld",
             (long)(MediaFileUtils::UTCTimeMilliSeconds() - start));
         return;
@@ -530,9 +519,7 @@ static void ConstructAssetsNotifyUris(const shared_ptr<MediaLibraryRdbStore> rdb
     if (info.notifyType == NOTIFY_ADD) {
         vector<string> cloudIds;
         for (auto cloudId : uriIds) {
-            if (cloudId.empty()) {
-                continue;
-            }
+            CHECK_AND_CONTINUE(!cloudId.empty());
             cloudIds.emplace_back(cloudId);
         }
         auto resultSet = AlbumsRefreshManager::GetInstance().CovertCloudId2FileId(rdbStore, cloudIds);

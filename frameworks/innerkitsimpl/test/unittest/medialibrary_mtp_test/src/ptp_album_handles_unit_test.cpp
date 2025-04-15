@@ -24,17 +24,12 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void PtpAlbumHandlesUnitTest::SetUpTestCase(void)
 {
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
 }
 
-void PtpAlbumHandlesUnitTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void PtpAlbumHandlesUnitTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void PtpAlbumHandlesUnitTest::SetUp() {}
@@ -48,7 +43,7 @@ void PtpAlbumHandlesUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: AddHandle RemoveHandle FindHandle
  */
-HWTEST_F(PtpAlbumHandlesUnitTest, medialibrary_PTP_message_testlevel_01, TestSize.Level0)
+HWTEST_F(PtpAlbumHandlesUnitTest, medialibrary_PTP_message_testlevel_01, TestSize.Level1)
 {
     std::shared_ptr<PtpAlbumHandles> ptpAlbumHandles = PtpAlbumHandles::GetInstance();
     ASSERT_NE(ptpAlbumHandles, nullptr);
@@ -80,7 +75,7 @@ HWTEST_F(PtpAlbumHandlesUnitTest, medialibrary_PTP_message_testlevel_01, TestSiz
  * EnvConditions: NA
  * CaseDescription: AddHandle AddAlbumHandles FindHandle
  */
-HWTEST_F(PtpAlbumHandlesUnitTest, medialibrary_PTP_message_testlevel_02, TestSize.Level0)
+HWTEST_F(PtpAlbumHandlesUnitTest, medialibrary_PTP_message_testlevel_02, TestSize.Level1)
 {
     std::shared_ptr<PtpAlbumHandles> ptpAlbumHandles = PtpAlbumHandles::GetInstance();
     ASSERT_NE(ptpAlbumHandles, nullptr);
@@ -105,7 +100,7 @@ HWTEST_F(PtpAlbumHandlesUnitTest, medialibrary_PTP_message_testlevel_02, TestSiz
  * EnvConditions: NA
  * CaseDescription: AddHandle AddAlbumHandles FindHandle
  */
-HWTEST_F(PtpAlbumHandlesUnitTest, medialibrary_PTP_message_testlevel_03, TestSize.Level0)
+HWTEST_F(PtpAlbumHandlesUnitTest, medialibrary_PTP_message_testlevel_03, TestSize.Level1)
 {
     std::shared_ptr<PtpAlbumHandles> ptpAlbumHandles = PtpAlbumHandles::GetInstance();
     ASSERT_NE(ptpAlbumHandles, nullptr);

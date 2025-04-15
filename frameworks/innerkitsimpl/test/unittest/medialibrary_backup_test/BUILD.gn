@@ -77,6 +77,7 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/gallery_db_upgrade.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/gallery_media_dao.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/media_library_db_upgrade.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_dao.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_clone.cpp",
@@ -97,17 +98,22 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/report/photos_count_statistic_test.cpp",
     "./src/report/upgrade_restore_gallery_media_task_test.cpp",
     "./src/report/upgrade_restore_task_report_test.cpp",
+    "./src/restore/db_upgrade_utils_test.cpp",
+    "./src/restore/media_library_db_upgrade_test.cpp",
+    "./src/restore/photo_album_clone_test.cpp",
     "./src/restore/photo_album_dao_test.cpp",
     "./src/restore/photos_clone_test.cpp",
+    "./src/restore/photos_data_handler_test.cpp",
     "./src/restore/photos_restore_test.cpp",
+    "./src/restore/tab_old_photos_restore_test.cpp",
+    "./src/utils/database_utils.cpp",
+    "./src/highlight_restore_test.cpp",
   ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
-
-  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
 
   external_deps = [
     "ability_base:want",
@@ -124,6 +130,7 @@ ohos_unittest("medialibrary_backup_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
+    "e2fsprogs:libext2_uuid",
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",

@@ -67,7 +67,8 @@ enum class CloudSyncErrType : int32_t {
     LCD_NOT_FOUND,
     LCD_SIZE_IS_TOO_LARGE,
     CONTENT_SIZE_IS_ZERO,
-    ALBUM_NOT_FOUND
+    ALBUM_NOT_FOUND,
+    THM_GENERATE_FAILED,
 };
 
 enum PrivateAlbumType {
@@ -102,7 +103,8 @@ enum class DirtyType : int32_t {
     TYPE_DELETED,
     TYPE_RETRY,
     TYPE_SDIRTY,
-    TYPE_COPY
+    TYPE_COPY,
+    TYPE_TDIRTY
 };
 
 enum class CloudEnhancementAvailableType : int32_t {

@@ -172,6 +172,7 @@ void MediaLibraryRestore::DoRdbBackup()
         MediaLibraryTracer tracer;
         tracer.Start("MediaLibraryRestore::DoRdbBackup Backup");
         MediaLibraryRestore::GetInstance().isDoingBackup_ = true;
+        MEDIA_INFO_LOG("DoRdbBackup: Backup [start]");
         int errCode = rdb->Backup("");
         MediaLibraryRestore::GetInstance().isDoingBackup_ = false;
         if (errCode == NativeRdb::E_OK) {

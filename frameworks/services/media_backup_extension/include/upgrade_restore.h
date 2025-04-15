@@ -22,6 +22,8 @@
 #include "backup_database_helper.h"
 #include "base_restore.h"
 #include "burst_key_generator.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "photos_restore.h"
 
 namespace OHOS {
@@ -116,7 +118,11 @@ private:
         const std::string &dbName);
     std::string CheckGalleryDbIntegrity();
     void RestorePhotoInner();
-    void PrcoessBurstPhotos();
+    void AddToGalleryFailedOffsets(int32_t offset);
+    void AddToExternalFailedOffsets(int32_t offset);
+    void ProcessGalleryFailedOffsets();
+    void ProcessCloudGalleryFailedOffsets();
+    void ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -141,8 +147,10 @@ private:
     PhotoAlbumRestore photoAlbumRestore_;
     PhotosRestore photosRestore_;
     BackupDatabaseHelper backupDatabaseHelper_;
-    std::vector<int> galleryFailedOffsets;
-    std::vector<int> externalFailedOffsets;
+    std::vector<int> galleryFailedOffsets_;
+    std::vector<int> externalFailedOffsets_;
+    ffrt::mutex galleryFailedMutex_;
+    ffrt::mutex externalFailedMutex_;
     int32_t maxId_{-1};
 };
 } // namespace Media

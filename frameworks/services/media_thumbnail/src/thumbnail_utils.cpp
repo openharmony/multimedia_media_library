@@ -24,9 +24,6 @@
 #include "cloud_sync_helper.h"
 #include "datashare_helper.h"
 #include "datashare_abs_result_set.h"
-#ifdef DISTRIBUTED
-#include "device_manager.h"
-#endif
 #include "dfx_utils.h"
 #include "directory_ex.h"
 #include "distributed_kv_data_manager.h"
@@ -35,15 +32,12 @@
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
 #include "media_column.h"
-#ifdef DISTRIBUTED
-#include "media_device_column.h"
-#endif
 #include "media_exif.h"
 #include "media_remote_thumbnail_column.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
-#include "medialibrary_sync_operation.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -53,6 +47,7 @@
 #include "rdb_errno.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
+#include "thumbnail_file_utils.h"
 #include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "unique_fd.h"
@@ -72,103 +67,108 @@ namespace Media {
 static constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 static const std::string CLOUD_DATASHARE_URI = "datashareproxy://com.huawei.hmos.clouddrive/cloud_sp?Proxy=true";
 
-#ifdef DISTRIBUTED
-bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
+using HandleFunc = void(*)(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data);
+const std::unordered_map<std::string, HandleFunc> ThumbnailUtils::RESULT_SET_HANDLER = {
+    {MEDIA_DATA_DB_ID, HandleId},
+    {MEDIA_DATA_DB_FILE_PATH, HandleFilePath},
+    {MEDIA_DATA_DB_DATE_ADDED, HandleDateAdded},
+    {MEDIA_DATA_DB_NAME, HandleDisplayName},
+    {MEDIA_DATA_DB_MEDIA_TYPE, HandleMediaType},
+    {MEDIA_DATA_DB_DATE_TAKEN, HandleDateTaken},
+    {MEDIA_DATA_DB_DATE_MODIFIED, HandleDateModified},
+    {MEDIA_DATA_DB_ORIENTATION, HandleOrientation},
+    {MEDIA_DATA_DB_POSITION, HandlePosition},
+    {MEDIA_DATA_DB_HEIGHT, HandlePhotoHeight},
+    {MEDIA_DATA_DB_WIDTH, HandlePhotoWidth},
+    {MEDIA_DATA_DB_DIRTY, HandleDirty},
+    {MEDIA_DATA_DB_THUMBNAIL_READY, HandleReady},
+    {PhotoColumn::PHOTO_LCD_VISIT_TIME, HandleLcdVisitTime},
+};
+
+void ThumbnailUtils::HandleId(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data)
 {
-    if (thumbnailData.lcdKey.empty()) {
-        MEDIA_ERR_LOG("lcd Key is empty");
-        return false;
-    }
-
-    if (IsImageExist(thumbnailData.lcdKey, opts.networkId, opts.kvStore)) {
-        if (!RemoveDataFromKv(opts.kvStore, thumbnailData.lcdKey)) {
-            MEDIA_ERR_LOG("ThumbnailUtils::RemoveDataFromKv faild");
-            return false;
-        }
-        if (!CleanDistributeLcdInfo(opts)) {
-            return false;
-        }
-    }
-
-    return true;
-}
-#endif
-
-std::string ThumbnailUtils::GetThumbnailSuffix(ThumbnailType type)
-{
-    string suffix;
-    switch (type) {
-        case ThumbnailType::THUMB:
-            suffix = THUMBNAIL_THUMB_SUFFIX;
-            break;
-        case ThumbnailType::THUMB_ASTC:
-            suffix = THUMBNAIL_THUMBASTC_SUFFIX;
-            break;
-        case ThumbnailType::LCD:
-            suffix = THUMBNAIL_LCD_SUFFIX;
-            break;
-        default:
-            return "";
-    }
-    return suffix;
+    ParseStringResult(resultSet, idx, data.id);
 }
 
-bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, ThumbnailType type)
+void ThumbnailUtils::HandleFilePath(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
 {
-    string fileName = GetThumbnailPath(data.path, GetThumbnailSuffix(type));
-    if (!MediaFileUtils::DeleteFile(fileName)) {
-        MEDIA_ERR_LOG("delete file faild %{public}d", errno);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, fileName}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return false;
-    }
-    return true;
+    ParseStringResult(resultSet, idx, data.path);
 }
 
-bool ThumbnailUtils::DeleteThumbExDir(ThumbnailData &data)
+void ThumbnailUtils::HandleDateAdded(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx,
+    ThumbnailData &data)
 {
-    string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
-    string dirName = MediaFileUtils::GetParentPath(fileName);
-    if (access(dirName.c_str(), F_OK) != 0) {
-        MEDIA_INFO_LOG("No need to delete THM_EX, directory not exists path: %{public}s, id: %{public}s",
-            DfxUtils::GetSafePath(dirName).c_str(), data.id.c_str());
-        return true;
-    }
-    if (!MediaFileUtils::DeleteDir(dirName)) {
-        MEDIA_INFO_LOG("Failed to delete THM_EX directory, path: %{public}s, id: %{public}s",
-            DfxUtils::GetSafePath(dirName).c_str(), data.id.c_str());
-        return false;
-    }
-    return true;
+    ParseStringResult(resultSet, idx, data.dateAdded);
 }
 
-bool ThumbnailUtils::DeleteBeginTimestampDir(ThumbnailData &data)
+void ThumbnailUtils::HandleDisplayName(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
 {
-    string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
-    string dirName = MediaFileUtils::GetParentPath(fileName);
-    if (access(dirName.c_str(), F_OK) != 0) {
-        MEDIA_INFO_LOG("No need to delete beginTimeStamp, directory not exists path: %{public}s, id: %{public}s",
-            DfxUtils::GetSafePath(dirName).c_str(), data.id.c_str());
-        return true;
-    }
+    ParseStringResult(resultSet, idx, data.displayName);
+}
 
-    for (const auto &dirEntry : std::filesystem::directory_iterator{dirName}) {
-        string dir = dirEntry.path().string();
-        if (!MediaFileUtils::IsDirectory(dir)) {
-            continue;
-        }
-        string folderName = MediaFileUtils::GetFileName(dir);
-        if (folderName.find("beginTimeStamp") == 0) {
-            string folderPath = dirName + '/' + folderName;
-            if (!MediaFileUtils::DeleteDir(folderPath)) {
-                MEDIA_ERR_LOG("failed to delete beginStamp directory, path: %{public}s, id: %{public}s",
-                    DfxUtils::GetSafePath(folderPath).c_str(), data.id.c_str());
-                return false;
-            }
-        }
-    }
-    return true;
+void ThumbnailUtils::HandleDateTaken(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
+{
+    ParseStringResult(resultSet, idx, data.dateTaken);
+}
+
+void ThumbnailUtils::HandleDateModified(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
+{
+    ParseStringResult(resultSet, idx, data.dateModified);
+}
+
+void ThumbnailUtils::HandleMediaType(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
+{
+    data.mediaType = MediaType::MEDIA_TYPE_ALL;
+    ParseInt32Result(resultSet, idx, data.mediaType);
+}
+
+void ThumbnailUtils::HandleOrientation(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
+{
+    ParseInt32Result(resultSet, idx, data.orientation);
+}
+
+void ThumbnailUtils::HandlePosition(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
+{
+    int position = 0;
+    ParseInt32Result(resultSet, idx, position);
+    data.isLocalFile = (position == static_cast<int32_t>(PhotoPositionType::LOCAL) ||
+        position == static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    data.position = position;
+}
+
+void ThumbnailUtils::HandlePhotoHeight(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
+{
+    ParseInt32Result(resultSet, idx, data.photoHeight);
+}
+
+void ThumbnailUtils::HandlePhotoWidth(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
+{
+    ParseInt32Result(resultSet, idx, data.photoWidth);
+}
+
+void ThumbnailUtils::HandleDirty(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data)
+{
+    ParseInt32Result(resultSet, idx, data.dirty);
+}
+
+void ThumbnailUtils::HandleReady(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx, ThumbnailData &data)
+{
+    ParseInt64Result(resultSet, idx, data.thumbnailReady);
+}
+
+void ThumbnailUtils::HandleLcdVisitTime(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int idx, ThumbnailData &data)
+{
+    ParseInt64Result(resultSet, idx, data.lcdVisitTime);
 }
 
 bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
@@ -237,7 +237,7 @@ bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, Size &desiredSize)
     return true;
 }
 
-bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
+bool ThumbnailUtils::LoadVideoFrame(ThumbnailData &data, Size &desiredSize, int64_t timeStamp)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     string path = data.path;
@@ -255,17 +255,10 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
-    std::shared_ptr<PixelMap> pixelMap;
-    if (!data.tracks.empty()) {
-        int64_t timestamp = std::stoll(data.timeStamp);
-        timestamp = timestamp * MS_TRANSFER_US;
-        pixelMap = avMetadataHelper->FetchFrameYuv(timestamp, AVMetadataQueryOption::AV_META_QUERY_CLOSEST,
-        param);
-    } else {
-        pixelMap = avMetadataHelper->FetchFrameYuv(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
-        param);
-    }
+    int32_t queryOption = (timeStamp == AV_FRAME_TIME) ?
+        AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC : AVMetadataQueryOption::AV_META_QUERY_CLOSEST;
 
+    std::shared_ptr<PixelMap> pixelMap = avMetadataHelper->FetchFrameYuv(timeStamp, queryOption, param);
     if (pixelMap == nullptr) {
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
@@ -690,46 +683,6 @@ bool ThumbnailUtils::QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount
     outLcdCount = rowCount;
     return true;
 }
-
-#ifdef DISTRIBUTED
-bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
-    vector<ThumbnailData> &infos, int &err)
-{
-    vector<string> column = {
-        REMOTE_THUMBNAIL_DB_FILE_ID,
-        MEDIA_DATA_DB_LCD
-    };
-    RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
-    rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
-    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
-
-    rdbPredicates.Limit(LcdLimit);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        return false;
-    }
-
-    err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
-
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        if (!data.lcdKey.empty()) {
-            infos.push_back(data);
-        }
-    } while (resultSet->GoToNextRow() == E_OK);
-    return true;
-}
-#endif
 
 bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
     vector<ThumbnailData> &infos, int &err)
@@ -1298,11 +1251,13 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
         return false;
     }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { opts.row });
+        vector<string> { data.id });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return false;
     }
+    CHECK_AND_RETURN_RET_LOG(changedRows != 0, false, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
+        data.id.c_str(), DeleteThumbnailDirAndAstc(opts, data));
     return true;
 }
 
@@ -1328,12 +1283,6 @@ bool ThumbnailUtils::UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data,
 
 bool ThumbnailUtils::UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
-#ifdef DISTRIBUTED
-    if (!opts.networkId.empty()) {
-        return DoUpdateRemoteThumbnail(opts, data, err);
-    }
-#endif
-
     ValuesBucket values;
     int changedRows;
     int64_t timeNow = UTCTimeMilliSeconds();
@@ -1369,213 +1318,6 @@ bool ThumbnailUtils::UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data
     return true;
 }
 
-#ifdef DISTRIBUTED
-bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<ThumbnailData> &infos,
-    int &err)
-{
-    vector<string> column = {
-        REMOTE_THUMBNAIL_DB_FILE_ID,
-        MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD
-    };
-    RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
-    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        return false;
-    }
-
-    err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
-
-    ThumbnailData data;
-    do {
-        ParseQueryResult(resultSet, data, err, column);
-        infos.push_back(data);
-    } while (resultSet->GoToNextRow() == E_OK);
-    return true;
-}
-
-bool ThumbnailUtils::GetUdidByNetworkId(ThumbRdbOpt &opts, const string &networkId,
-    string &outUdid, int &err)
-{
-    vector<string> column = {
-        DEVICE_DB_ID,
-        DEVICE_DB_UDID
-    };
-    RdbPredicates rdbPredicates(DEVICE_TABLE);
-    rdbPredicates.EqualTo(DEVICE_DB_NETWORK_ID, networkId);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        return false;
-    }
-
-    err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
-    int index;
-    err = resultSet->GetColumnIndex(DEVICE_DB_UDID, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, outUdid, err);
-    } else {
-        MEDIA_ERR_LOG("Get column index error %{public}d", err);
-    }
-    return true;
-}
-
-bool ThumbnailUtils::QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
-{
-    if (data.udid.empty() && !GetUdidByNetworkId(opts, opts.networkId, data.udid, err)) {
-        MEDIA_ERR_LOG("GetUdidByNetworkId failed! %{public}d", err);
-        return false;
-    }
-
-    vector<string> column = {
-        REMOTE_THUMBNAIL_DB_ID,
-        MEDIA_DATA_DB_THUMBNAIL,
-        MEDIA_DATA_DB_LCD
-    };
-    RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
-    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_FILE_ID, data.id);
-    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, data.udid);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
-    if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
-        return false;
-    }
-
-    err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
-
-    int index;
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_LCD, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.lcdKey, err);
-    }
-
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_THUMBNAIL, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.thumbnailKey, err);
-    }
-    return true;
-}
-
-static inline bool IsKeyNotSame(const string &newKey, const string &oldKey)
-{
-    return !newKey.empty() && !oldKey.empty() && (newKey != oldKey);
-}
-
-bool ThumbnailUtils::DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
-{
-    if (opts.networkId.empty()) {
-        return false;
-    }
-    if (data.thumbnailKey.empty() && data.lcdKey.empty()) {
-        return false;
-    }
-    ThumbnailData tmpData = data;
-    auto isGot = ThumbnailUtils::QueryRemoteThumbnail(opts, tmpData, err);
-    if (isGot) {
-        if (IsKeyNotSame(data.thumbnailKey, tmpData.thumbnailKey)) {
-            if (!RemoveDataFromKv(opts.kvStore, tmpData.thumbnailKey)) {
-                return false;
-            }
-        }
-        if (IsKeyNotSame(data.lcdKey, tmpData.lcdKey)) {
-            if (!RemoveDataFromKv(opts.kvStore, tmpData.lcdKey)) {
-                return false;
-            }
-        }
-    }
-
-    data.udid = tmpData.udid;
-    if (isGot) {
-        return UpdateRemoteThumbnailInfo(opts, data, err);
-    } else {
-        return InsertRemoteThumbnailInfo(opts, data, err);
-    }
-}
-
-bool ThumbnailUtils::UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
-{
-    RdbPredicates rdbPredicates(REMOTE_THUMBNAIL_TABLE);
-    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_FILE_ID, data.id);
-    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, data.udid);
-
-    ValuesBucket values;
-    if (!data.thumbnailKey.empty()) {
-        values.PutString(MEDIA_DATA_DB_THUMBNAIL, data.thumbnailKey);
-    }
-
-    if (!data.lcdKey.empty()) {
-        values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
-    }
-
-    int changedRows;
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    err = opts.store->Update(changedRows, values, rdbPredicates);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        return false;
-    }
-
-    return true;
-}
-
-bool ThumbnailUtils::InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
-{
-    ValuesBucket values;
-    if (MediaFileUtils::IsValidInteger(data.id)) {
-        values.PutInt(REMOTE_THUMBNAIL_DB_FILE_ID, stoi(data.id));
-    }
-    values.PutString(REMOTE_THUMBNAIL_DB_UDID, data.udid);
-    if (!data.thumbnailKey.empty()) {
-        values.PutString(MEDIA_DATA_DB_THUMBNAIL, data.thumbnailKey);
-    }
-
-    if (!data.lcdKey.empty()) {
-        values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
-    }
-
-    int64_t outRowId = -1;
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    err = opts.store->Insert(outRowId, REMOTE_THUMBNAIL_TABLE, values);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        return false;
-    }
-    return true;
-}
-#endif
-
 bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd)
 {
     ValuesBucket values;
@@ -1605,53 +1347,6 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
     return true;
 }
 
-#ifdef DISTRIBUTED
-bool ThumbnailUtils::CleanDistributeLcdInfo(ThumbRdbOpt &opts)
-{
-    string udid;
-    int err;
-    if (!GetUdidByNetworkId(opts, opts.networkId, udid, err)) {
-        MEDIA_ERR_LOG("GetUdidByNetworkId failed! %{public}d", err);
-        return false;
-    }
-
-    ValuesBucket values;
-    values.PutNull(MEDIA_DATA_DB_LCD);
-    int changedRows;
-    vector<string> whereArgs = { udid, opts.row };
-    string deleteCondition = REMOTE_THUMBNAIL_DB_UDID + " = ? AND " +
-        REMOTE_THUMBNAIL_DB_FILE_ID + " = ?";
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    auto ret = opts.store->Update(changedRows, REMOTE_THUMBNAIL_TABLE, values, deleteCondition, whereArgs);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Delete failed! %{public}d", ret);
-        return false;
-    }
-    return true;
-}
-
-bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
-{
-    int changedRows;
-    vector<string> whereArgs = { opts.udid, opts.row };
-    string deleteCondition = REMOTE_THUMBNAIL_DB_UDID + " = ? AND " +
-        REMOTE_THUMBNAIL_DB_FILE_ID + " = ?";
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    auto err = opts.store->Delete(changedRows, REMOTE_THUMBNAIL_TABLE, deleteCondition, whereArgs);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Delete failed! %{public}d", err);
-        return false;
-    }
-    return true;
-}
-#endif
-
 void PostProcPixelMapSource(ThumbnailData &data)
 {
     auto pixelMap = data.source.GetPixelMap();
@@ -1660,7 +1355,7 @@ void PostProcPixelMapSource(ThumbnailData &data)
     }
     pixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (data.orientation != 0) {
-        if (data.isLocalFile) {
+        if (data.isLocalFile || data.isRegenerateStage) {
             std::shared_ptr<PixelMap> copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
             data.source.SetPixelMapEx(copySource);
         }
@@ -1683,7 +1378,7 @@ void PostProcPictureSource(ThumbnailData &data)
         return;
     }
     if (data.orientation != 0) {
-        if (data.isLocalFile) {
+        if (data.isLocalFile || data.isRegenerateStage) {
             std::shared_ptr<Picture> copySource = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
             data.source.SetPictureEx(copySource);
         }
@@ -1850,7 +1545,7 @@ int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)
             writeSize = data.thumbnail.size();
             break;
         case ThumbnailType::THUMB_ASTC:
-            suffix = THUMBNAIL_THUMBASTC_SUFFIX;
+            suffix = THUMBNAIL_THUMB_ASTC_SUFFIX;
             output = data.thumbAstc.data();
             writeSize = data.thumbAstc.size();
             break;
@@ -1989,67 +1684,51 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     return true;
 }
 
-// notice: return value is whether thumb/lcd is deleted
-bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
+bool ThumbnailUtils::DeleteAllThumbFilesAndAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    ThumbnailData tmpData;
-    tmpData.path = opts.path;
-    bool isDelete = false;
-    if (opts.path.empty()) {
+    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, false, "RdbStore is nullptr");
+    if (data.path.empty()) {
         int err = 0;
-        auto rdbSet = QueryThumbnailInfo(opts, tmpData, err);
-        if (rdbSet == nullptr) {
-            MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
-            return isDelete;
-        }
+        auto rdbSet = QueryThumbnailInfo(opts, data, err);
+        CHECK_AND_RETURN_RET_LOG(rdbSet != nullptr, false, "QueryThumbnailInfo Faild [ %{public}d ]", err);
     }
     ValuesBucket values;
     int changedRows;
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, 0);
     values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, 0);
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { opts.row });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update Failed Before Delete Thumbnail! %{public}d", err);
+        vector<string> { data.id });
+    CHECK_AND_WARN_LOG(err == NativeRdb::E_OK, "RdbStore Update Failed Before Delete Thumbnail! %{public}d", err);
+    MEDIA_INFO_LOG("Start DeleteAllThumbFilesAndAstc, table:%{public}s, id: %{public}s, dateKey:%{public}s, "
+        "path:%{public}s", opts.table.c_str(), data.id.c_str(), data.dateTaken.c_str(),
+        DfxUtils::GetSafePath(data.path).c_str());
+
+    bool isDeleteAllThumbFiles = ThumbnailFileUtils::DeleteAllThumbFiles(data);
+    if (opts.table == AudioColumn::AUDIOS_TABLE) {
+        return isDeleteAllThumbFiles;
     }
-    MEDIA_INFO_LOG("Start DeleteOriginImage, id: %{public}s, path: %{public}s",
-        opts.row.c_str(), DfxUtils::GetSafePath(tmpData.path).c_str());
-    if (!opts.dateTaken.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
-        isDelete = true;
+
+    DropThumbnailSize(opts, data);
+    if (data.dateTaken.empty()) {
+        return isDeleteAllThumbFiles;
     }
-    if (!opts.dateTaken.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC)) {
-        isDelete = true;
-    }
-    if (DeleteThumbFile(tmpData, ThumbnailType::THUMB)) {
-        isDelete = true;
-    }
-    if (ThumbnailUtils::IsSupportGenAstc() && DeleteThumbFile(tmpData, ThumbnailType::THUMB_ASTC)) {
-        isDelete = true;
-    }
-    if (DeleteThumbFile(tmpData, ThumbnailType::LCD)) {
-        isDelete = true;
-    }
-    if (DeleteThumbExDir(tmpData)) {
-        isDelete = true;
-    }
-    if (DeleteBeginTimestampDir(tmpData)) {
-        isDelete = true;
-    }
-    string fileName = GetThumbnailPath(tmpData.path, "");
-    return isDelete;
+    bool isDeleteAstc = ThumbnailFileUtils::DeleteMonthAndYearAstc(data);
+    return isDeleteAllThumbFiles && isDeleteAstc;
 }
 
-bool ThumbnailUtils::DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts)
+bool ThumbnailUtils::DeleteThumbnailDirAndAstc(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoDeleteMonthAndYearAstc, id: %{public}s", opts.row.c_str());
-    bool isDeleteAstcSuccess = true;
-    if (!DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
-        isDeleteAstcSuccess = false;
+    MEDIA_INFO_LOG("Start DeleteThumbnailDirAndAstc, table:%{public}s, id: %{public}s, dateKey:%{public}s, "
+        "path:%{public}s", opts.table.c_str(), data.id.c_str(), data.dateTaken.c_str(),
+        DfxUtils::GetSafePath(data.path).c_str());
+    bool isDeleteThumbnailDir = ThumbnailFileUtils::DeleteThumbnailDir(data);
+    if (opts.table == AudioColumn::AUDIOS_TABLE) {
+        return isDeleteThumbnailDir;
     }
-    if (!DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC)) {
-        isDeleteAstcSuccess = false;
-    }
-    return isDeleteAstcSuccess;
+
+    DropThumbnailSize(opts, data);
+    bool isDeleteAstc = ThumbnailFileUtils::DeleteMonthAndYearAstc(data);
+    return isDeleteThumbnailDir && isDeleteAstc;
 }
 
 bool ThumbnailUtils::DoUpdateAstcDateTaken(ThumbRdbOpt &opts, ThumbnailData &data)
@@ -2057,46 +1736,6 @@ bool ThumbnailUtils::DoUpdateAstcDateTaken(ThumbRdbOpt &opts, ThumbnailData &dat
     MEDIA_INFO_LOG("Start DoUpdateAstcDateTaken, id: %{public}s", opts.row.c_str());
     return UpdateAstcDateTakenFromKvStore(opts, data);
 }
-
-#ifdef DISTRIBUTED
-bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, const shared_ptr<SingleKvStore> &kvStore)
-{
-    if (key.empty()) {
-        return false;
-    }
-
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("KvStore is not init");
-        return false;
-    }
-
-    bool ret = false;
-    DataQuery query;
-    query.InKeys({key});
-    int count = 0;
-    auto status = kvStore->GetCount(query, count);
-    if (status == Status::SUCCESS && count > 0) {
-        ret = true;
-    }
-
-    if (!ret) {
-        if (!networkId.empty()) {
-            MediaLibraryTracer tracer;
-            tracer.Start("SyncPullKvstore");
-            vector<string> keys = { key };
-            auto syncStatus = MediaLibrarySyncOperation::SyncPullKvstore(kvStore, keys, networkId);
-            if (syncStatus == DistributedKv::Status::SUCCESS) {
-                MEDIA_DEBUG_LOG("SyncPullKvstore SUCCESS");
-                return true;
-            } else {
-                MEDIA_ERR_LOG("SyncPullKvstore failed! ret %{public}d", syncStatus);
-                return false;
-            }
-        }
-    }
-    return ret;
-}
-#endif
 
 int64_t ThumbnailUtils::UTCTimeMilliSeconds()
 {
@@ -2126,10 +1765,10 @@ bool ThumbnailUtils::CheckResultSetCount(const shared_ptr<ResultSet> &resultSet,
     return true;
 }
 
-void ThumbnailUtils::ParseStringResult(const shared_ptr<ResultSet> &resultSet, int index, string &data, int &err)
+void ThumbnailUtils::ParseStringResult(const shared_ptr<ResultSet> &resultSet, int index, string &data)
 {
     bool isNull = true;
-    err = resultSet->IsColumnNull(index, isNull);
+    int err = resultSet->IsColumnNull(index, isNull);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to check column %{public}d null %{public}d", index, err);
     }
@@ -2138,6 +1777,38 @@ void ThumbnailUtils::ParseStringResult(const shared_ptr<ResultSet> &resultSet, i
         err = resultSet->GetString(index, data);
         if (err != E_OK) {
             MEDIA_ERR_LOG("Failed to get column %{public}d string %{public}d", index, err);
+        }
+    }
+}
+
+void ThumbnailUtils::ParseInt32Result(const shared_ptr<ResultSet> &resultSet, int index, int32_t &data)
+{
+    bool isNull = true;
+    int err = resultSet->IsColumnNull(index, isNull);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to check column %{public}d null %{public}d", index, err);
+    }
+
+    if (!isNull) {
+        err = resultSet->GetInt(index, data);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("Failed to get column %{public}d int32 %{public}d", index, err);
+        }
+    }
+}
+
+void ThumbnailUtils::ParseInt64Result(const shared_ptr<ResultSet> &resultSet, int index, int64_t &data)
+{
+    bool isNull = true;
+    int err = resultSet->IsColumnNull(index, isNull);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to check column %{public}d null %{public}d", index, err);
+    }
+
+    if (!isNull) {
+        err = resultSet->GetLong(index, data);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("Failed to get column %{public}d int64 %{public}d", index, err);
         }
     }
 }
@@ -2151,36 +1822,9 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         if (err != NativeRdb::E_OK) {
             continue;
         }
-        if (columnValue == MEDIA_DATA_DB_ID) {
-            ParseStringResult(resultSet, index, data.id, err);
-        } else if (columnValue == MEDIA_DATA_DB_FILE_PATH) {
-            ParseStringResult(resultSet, index, data.path, err);
-        } else if (columnValue == MEDIA_DATA_DB_DATE_ADDED) {
-            ParseStringResult(resultSet, index, data.dateAdded, err);
-        } else if (columnValue == MEDIA_DATA_DB_NAME) {
-            ParseStringResult(resultSet, index, data.displayName, err);
-        } else if (columnValue == MEDIA_DATA_DB_MEDIA_TYPE) {
-            data.mediaType = MediaType::MEDIA_TYPE_ALL;
-            err = resultSet->GetInt(index, data.mediaType);
-        } else if (columnValue == MEDIA_DATA_DB_ORIENTATION) {
-            err = resultSet->GetInt(index, data.orientation);
-        } else if (columnValue == MEDIA_DATA_DB_POSITION) {
-            int position = 0;
-            err = resultSet->GetInt(index, position);
-            data.isLocalFile = (position == 1);
-            data.position = position;
-        } else if (columnValue == MEDIA_DATA_DB_HEIGHT) {
-            err = resultSet->GetInt(index, data.photoHeight);
-        } else if (columnValue == MEDIA_DATA_DB_WIDTH) {
-            err = resultSet->GetInt(index, data.photoWidth);
-        } else if (columnValue == MEDIA_DATA_DB_DATE_TAKEN) {
-            ParseStringResult(resultSet, index, data.dateTaken, err);
-        } else if (columnValue == MEDIA_DATA_DB_THUMBNAIL_READY) {
-            err = resultSet->GetLong(index, data.thumbnailReady);
-        } else if (columnValue == PhotoColumn::PHOTO_LCD_VISIT_TIME) {
-            err = resultSet->GetLong(index, data.lcdVisitTime);
-        } else if (columnValue == MEDIA_DATA_DB_DATE_MODIFIED) {
-            ParseStringResult(resultSet, index, data.dateModified, err);
+        auto iter = RESULT_SET_HANDLER.find(columnValue);
+        if (iter != RESULT_SET_HANDLER.end()) {
+            iter->second(resultSet, index, data);
         }
     }
 }
@@ -2190,17 +1834,17 @@ void ThumbnailUtils::ParseHighlightQueryResult(const shared_ptr<ResultSet> &resu
     int index;
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, index);
     if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.id, err);
+        ParseStringResult(resultSet, index, data.id);
     }
 
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_VIDEO_TRACKS, index);
     if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.tracks, err);
+        ParseStringResult(resultSet, index, data.tracks);
     }
 
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_HIGHLIGHT_TRIGGER, index);
     if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.trigger, err);
+        ParseStringResult(resultSet, index, data.trigger);
     }
 }
 
@@ -2286,11 +1930,6 @@ bool ThumbnailUtils::ResizeLcd(int &width, int &height)
     return true;
 }
 
-bool ThumbnailUtils::IsSupportGenAstc()
-{
-    return ImageSource::IsSupportGenAstc();
-}
-
 int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type)
 {
     string key;
@@ -2359,7 +1998,7 @@ bool ThumbnailUtils::CheckDateTaken(ThumbRdbOpt &opts, ThumbnailData &data)
     int index;
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_TAKEN, index);
     if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.dateTaken, err);
+        ParseStringResult(resultSet, index, data.dateTaken);
     } else {
         MEDIA_ERR_LOG("GetColumnIndex failed, err: %{public}d", err);
         resultSet->Close();
@@ -2389,6 +2028,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_DATE_TAKEN,
         MEDIA_DATA_DB_DATE_MODIFIED,
+        MEDIA_DATA_DB_DIRTY,
     };
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("opts.store is nullptr");
@@ -2414,34 +2054,6 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
     }
     resultSet->Close();
     data.stats.uri = data.path;
-}
-
-bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type)
-{
-    string key;
-    if (!MediaFileUtils::GenerateKvStoreKey(opts.row, opts.dateTaken, key)) {
-        MEDIA_ERR_LOG("GenerateKvStoreKey failed");
-        return false;
-    }
-
-    std::shared_ptr<MediaLibraryKvStore> kvStore;
-    if (type == ThumbnailType::MTH_ASTC) {
-        kvStore = MediaLibraryKvStoreManager::GetInstance()
-            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
-    } else if (type == ThumbnailType::YEAR_ASTC) {
-        kvStore = MediaLibraryKvStoreManager::GetInstance()
-            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC);
-    } else {
-        MEDIA_ERR_LOG("invalid thumbnailType");
-        return false;
-    }
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("kvStore is nullptr");
-        return false;
-    }
-
-    int status = kvStore->Delete(key);
-    return status == E_OK;
 }
 
 bool ThumbnailUtils::UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data)
@@ -2797,20 +2409,22 @@ bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbS
     return true;
 }
 
-bool ThumbnailUtils::CheckRemainSpaceMeetCondition(const int32_t &freeSizePercentLimit)
+void ThumbnailUtils::StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data)
 {
-    static int64_t totalSize = MediaFileUtils::GetTotalSize();
-    if (totalSize <= 0) {
-        totalSize = MediaFileUtils::GetTotalSize();
+    std::string photoId = opts.row.empty() ? data.id : opts.row;
+    std::string tmpPath = opts.path.empty() ? data.path : opts.path;
+    if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+        MediaLibraryPhotoOperations::StoreThumbnailSize(photoId, tmpPath);
     }
-    CHECK_AND_RETURN_RET_LOG(totalSize > 0, false, "Get total size failed, totalSize:%{public}" PRId64, totalSize);
-    int64_t freeSize = MediaFileUtils::GetFreeSize();
-    CHECK_AND_RETURN_RET_LOG(freeSize > 0, false, "Get free size failed, freeSize:%{public}" PRId64, freeSize);
-    int32_t freeSizePercent = static_cast<int32_t>(freeSize * 100 / totalSize);
-    CHECK_AND_RETURN_RET_LOG(freeSizePercent > freeSizePercentLimit, false,
-        "Check free size failed, totalSize:%{public}" PRId64 ", freeSize:%{public}" PRId64 ", "
-        "freeSizePercentLimit:%{public}d", totalSize, freeSize, freeSizePercentLimit);
-    return true;
+}
+
+void ThumbnailUtils::DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data)
+{
+    std::string photoId = opts.row.empty() ? data.id : opts.row;
+    std::string tmpPath = opts.path.empty() ? data.path : opts.path;
+    if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+        MediaLibraryPhotoOperations::HasDroppedThumbnailSize(photoId);
+    }
 }
 } // namespace Media
 } // namespace OHOS

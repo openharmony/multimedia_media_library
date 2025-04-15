@@ -39,9 +39,7 @@ void BackupDfxUtils::PostPortraitStat(uint32_t albumCount, uint64_t photoCount, 
         KEY_PHOTO_COUNT, photoCount,
         KEY_FACE_COUNT, faceCount,
         KEY_TOTAL_TIME_COST, totalTimeCost);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("PostPortraitStat error:%{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret==0, "PostPortraitStat error:%{public}d", ret);
 }
 } // namespace Media
 } // namespace OHOS

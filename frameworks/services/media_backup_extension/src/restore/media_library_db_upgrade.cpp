@@ -149,12 +149,9 @@ int32_t MediaLibraryDbUpgrade::UpdatelPathColumn(NativeRdb::RdbStore &store)
     std::string executeSql = this->SQL_PHOTO_ALBUM_TABLE_UPDATE_LPATH_COLUMN;
     std::vector<NativeRdb::ValueObject> args;
     int32_t ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(executeSql); });
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Media_Restore: MediaLibraryDbUpgrade::UpdatelPathColumn failed, ret=%{public}d, sql=%{public}s",
-            ret,
-            executeSql.c_str());
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret,
+        "Media_Restore: MediaLibraryDbUpgrade::UpdatelPathColumn failed, ret=%{public}d, sql=%{public}s",
+        ret, executeSql.c_str());
     MEDIA_INFO_LOG("Media_Restore: MediaLibraryDbUpgrade::UpdatelPathColumn success");
     return ret;
 }

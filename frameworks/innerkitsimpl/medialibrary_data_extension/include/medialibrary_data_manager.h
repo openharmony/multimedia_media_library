@@ -115,26 +115,23 @@ public:
     EXPORT int32_t CheckCloudThumbnailDownloadFinish();
     EXPORT void UploadDBFileInner(int64_t totalFileSize);
     EXPORT int32_t UpdateDateTakenWhenZero();
-    EXPORT int32_t UpdateDirtyForCloudClone();
+    EXPORT int32_t UpdateDirtyForCloudClone(int32_t version);
     EXPORT int32_t ClearDirtyHdcData();
 
 private:
     int32_t InitMediaLibraryRdbStore();
     int32_t UpdateDirtyHdcDataStatus();
+    int32_t UpdateDirtyForCloudClone();
+    int32_t UpdateDirtyForCloudCloneV2();
     void InitResourceInfo();
     void DeleteDirtyFileAndDir(const std::vector<std::string>& deleteFilePaths);
     void HandleUpgradeRdbAsync(bool isInMediaLibraryOnStart);
-
-#ifdef DISTRIBUTED
-    bool QuerySync(const std::string &networkId, const std::string &tableName);
-#endif
+    int32_t BatchInsertMediaAnalysisData(MediaLibraryCommand &cmd,
+        const std::vector<DataShare::DataShareValuesBucket> &values);
     int32_t HandleThumbnailOperations(MediaLibraryCommand &cmd);
 
     EXPORT int32_t SolveInsertCmd(MediaLibraryCommand &cmd);
     EXPORT int32_t SetCmdBundleAndDevice(MediaLibraryCommand &outCmd);
-#ifdef DISTRIBUTED
-    int32_t InitDeviceData();
-#endif
     EXPORT int32_t InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
     std::shared_ptr<NativeRdb::ResultSet> QuerySet(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
         const DataShare::DataSharePredicates &predicates, int &errCode);
@@ -142,15 +139,8 @@ private:
     void InitDatabaseACLPermission();
     std::shared_ptr<NativeRdb::ResultSet> QueryInternal(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates);
-#ifdef DISTRIBUTED
-    int32_t LcdDistributeAging();
-    int32_t DistributeDeviceAging();
-#endif
     EXPORT std::shared_ptr<ThumbnailService> thumbnailService_;
     int32_t RevertPendingByFileId(const std::string &fileId);
-#ifdef DISTRIBUTED
-    int32_t SyncPullThumbnailKeys(const Uri &uri);
-#endif
     int32_t DeleteInRdbPredicates(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     int32_t DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     int32_t UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
@@ -164,10 +154,6 @@ private:
     int32_t AstcMthAndYearInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
     std::shared_mutex mgrSharedMutex_;
-#ifdef DISTRIBUTED
-    std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
-    DistributedKv::DistributedKvDataManager dataManager_;
-#endif
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     std::string bundleName_ {BUNDLE_NAME};
     static std::mutex mutex_;

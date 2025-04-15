@@ -23,6 +23,7 @@
 #include "values_bucket.h"
 #include "datashare_values_bucket.h"
 #include "abs_permission_handler.h"
+#include "media_controller_service_factory.h"
 
 namespace OHOS {
 namespace AbilityRuntime {
@@ -243,11 +244,16 @@ public:
      */
     EXPORT Uri DenormalizeUri(const Uri &uri) override;
     EXPORT void InitPermissionHandler();
+    EXPORT int32_t UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option);
+
 private:
-    Runtime& runtime_;
-    std::shared_ptr<Media::AbsPermissionHandler> permissionHandler_ = nullptr;
     int CheckPermissionForOpenFile(const Uri &uri, Media::MediaLibraryCommand &command, std::string &unifyMode);
     void OnStartSub(const AAFwk::Want &want);
+
+private:
+    Runtime &runtime_;
+    std::shared_ptr<Media::AbsPermissionHandler> permissionHandler_ = nullptr;
+    Media::IPC::MediaControllerServiceFactory serviceFactory_;
 };
 } // namespace AbilityRuntime
 } // namespace OHOS

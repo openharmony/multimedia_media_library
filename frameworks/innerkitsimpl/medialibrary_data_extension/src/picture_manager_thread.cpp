@@ -149,12 +149,12 @@ void PictureManagerThread::DeleteDataWithImageId(const std::string& imageId, Pic
 }
 
 std::shared_ptr<Media::Picture> PictureManagerThread::GetDataWithImageId(const std::string& imageId,
-    bool &isHighQualityPicture, bool isCleanImmediately)
+    bool &isHighQualityPicture, bool &isTakeEffect, bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter ");
     CHECK_AND_RETURN_RET_LOG(pictureDataOperations_ != nullptr, nullptr,
         "GetDataWithImageId failed, pictureDataOperations_ is null");
-    return pictureDataOperations_->GetDataWithImageId(imageId, isHighQualityPicture, isCleanImmediately);
+    return pictureDataOperations_->GetDataWithImageId(imageId, isHighQualityPicture, isTakeEffect, isCleanImmediately);
 }
 
 void PictureManagerThread::SavePictureWithImageId(const std::string& imageId)

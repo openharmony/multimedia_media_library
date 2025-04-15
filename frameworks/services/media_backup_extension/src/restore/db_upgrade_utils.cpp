@@ -31,10 +31,8 @@ bool DbUpgradeUtils::IsTableExists(NativeRdb::RdbStore &store, const std::string
     std::string querySql = this->SQL_SQLITE_MASTER_QUERY;
     std::vector<NativeRdb::ValueObject> bindArgs = {tableName};
     auto resultSet = store.QuerySql(querySql, bindArgs);
-    if (resultSet == nullptr) {
-        MEDIA_WARN_LOG("Query resultSql is null. tableName: %{public}s is not exists.", tableName.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_WARN_LOG(resultSet != nullptr, false,
+        "Query resultSql is null. tableName: %{public}s is not exists.", tableName.c_str());
     int rowCount = 0;
     bool isExists = !resultSet->GetRowCount(rowCount) && rowCount > 0;
     MEDIA_INFO_LOG("Media_Restore: tableName=%{public}s, isExists:%{public}d", tableName.c_str(), isExists);
@@ -50,12 +48,9 @@ bool DbUpgradeUtils::IsColumnExists(
     std::string querySql = this->SQL_PRAGMA_TABLE_INFO_QUERY;
     std::vector<NativeRdb::ValueObject> bindArgs = {tableName, columnName};
     auto resultSet = store.QuerySql(querySql, bindArgs);
-    if (resultSet == nullptr) {
-        MEDIA_WARN_LOG("Query resultSql is null. tableName: %{public}s, columnName: %{public}s is not exists.",
-            tableName.c_str(),
-            columnName.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_WARN_LOG(resultSet != nullptr, false,
+        "Query resultSql is null. tableName: %{public}s, columnName: %{public}s is not exists.",
+        tableName.c_str(), columnName.c_str());
     int rowCount = 0;
     bool isExists = !resultSet->GetRowCount(rowCount) && rowCount > 0;
     MEDIA_INFO_LOG("Media_Restore: tableName=%{public}s, columnName=%{public}s, isExists:%{public}d",
@@ -71,10 +66,8 @@ std::vector<std::string> DbUpgradeUtils::GetAllTriggers(NativeRdb::RdbStore &sto
     std::vector<NativeRdb::ValueObject> bindArgs = {tableName};
     auto resultSet = store.QuerySql(querySql, bindArgs);
     std::vector<std::string> result;
-    if (resultSet == nullptr) {
-        MEDIA_WARN_LOG("Query resultSql is null. tableName: %{public}s does not have any triggers.", tableName.c_str());
-        return result;
-    }
+    CHECK_AND_RETURN_RET_WARN_LOG(resultSet != nullptr, result,
+        "Query resultSql is null. tableName: %{public}s does not have any triggers.", tableName.c_str());
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string triggerName = GetStringVal("name", resultSet);
         result.emplace_back(triggerName);
@@ -89,9 +82,8 @@ int32_t DbUpgradeUtils::DropAllTriggers(NativeRdb::RdbStore &store, const std::s
     for (auto &triggerName : triggerNames) {
         std::string deleteTriggerSql = prefix + triggerName + ";";
         int32_t ret = store.ExecuteSql(deleteTriggerSql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Media_Restore: Drop trigger failed, triggerName=%{public}s", triggerName.c_str());
-        }
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+            "Media_Restore: Drop trigger failed, triggerName=%{public}s", triggerName.c_str());
     }
     return NativeRdb::E_OK;
 }
@@ -101,10 +93,8 @@ std::vector<std::string> DbUpgradeUtils::GetAllUniqueIndex(NativeRdb::RdbStore &
     std::vector<NativeRdb::ValueObject> bindArgs = {tableName};
     auto resultSet = store.QuerySql(querySql, bindArgs);
     std::vector<std::string> result;
-    if (resultSet == nullptr) {
-        MEDIA_WARN_LOG("resultSet is null. tableName: %{public}s does not have any unique index.", tableName.c_str());
-        return result;
-    }
+    CHECK_AND_RETURN_RET_WARN_LOG(resultSet != nullptr, result,
+        "resultSet is null. tableName: %{public}s does not have any unique index.", tableName.c_str());
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string uniqueIndexName = GetStringVal("name", resultSet);
         result.emplace_back(uniqueIndexName);
@@ -119,9 +109,8 @@ int32_t DbUpgradeUtils::DropAllUniqueIndex(NativeRdb::RdbStore &store, const std
     for (auto &indexName : uniqueIndexNames) {
         std::string deleteIndexSql = prefix + indexName + ";";
         int32_t ret = store.ExecuteSql(deleteIndexSql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Media_Restore: Drop trigger failed, indexName=%{public}s", indexName.c_str());
-        }
+        CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK,
+            "Media_Restore: Drop trigger failed, indexName=%{public}s", indexName.c_str());
     }
     return NativeRdb::E_OK;
 }

@@ -86,11 +86,11 @@ const std::vector<std::string> analysisAlbumSubType {
 };
 
 const std::vector<std::string> positionTypeEnum {
-    "LOCAL", "CLOUD", "BOTH"
+    "LOCAL", "CLOUD", "LOCAL_AND_CLOUD"
 };
 
 const std::vector<std::string> photoSubTypeEnum {
-    "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO"
+    "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO", "BURST"
 };
 
 const std::vector<std::string> photoPermissionTypeEnum {

@@ -34,14 +34,9 @@ namespace Media {
 static std::vector<uint8_t> testData_open = {  0x10, 0x00, 0x00, 0x00, 0x01, 0x00,
     0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void MediaLibraryMTPUnitTest::SetUpTestCase(void) {}
 
-void MediaLibraryMTPUnitTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MediaLibraryMTPUnitTest::TearDownTestCase(void) {}
 // SetUp:Execute before each test case
 void MediaLibraryMTPUnitTest::SetUp() {}
 void MediaLibraryMTPUnitTest::TearDown(void) {}
@@ -54,7 +49,7 @@ void MediaLibraryMTPUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_001, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_001, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -87,7 +82,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_001, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_DEVICE_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_002, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_002, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -122,7 +117,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_002, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_STORAGE_IDS_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_003, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_003, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -162,7 +157,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_003, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_STORAGE_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_004, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_004, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -209,7 +204,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_004, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_HANDLES_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_005, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_005, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -264,7 +259,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_005, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_DEVICE_PROP_DESC_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_006, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_006, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -305,7 +300,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_006, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_007, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_007, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -345,7 +340,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_007, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROPS_SUPPORTED_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_008, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_008, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -386,7 +381,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_008, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_009, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_009, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -426,7 +421,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_009, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_010, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_010, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -485,7 +480,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_010, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_LIST_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_011, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_011, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -528,7 +523,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_011, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SEND_OBJECT_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_012, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_012, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -568,7 +563,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_012, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SEND_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_013, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_013, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -606,7 +601,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_013, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_014, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_014, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -665,7 +660,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_014, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_015, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_015, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -724,7 +719,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_015, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_DELETE_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_017, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_017, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -783,7 +778,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_017, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_018, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_018, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -822,7 +817,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_018, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_DEVICE_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_019, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_019, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -863,7 +858,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_019, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_MOVE_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -921,7 +916,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_021, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_STORAGE_IDS_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_023, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_023, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -957,7 +952,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_023, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_025, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_025, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1011,7 +1006,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_025, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_DEVICE_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_026, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_026, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1043,7 +1038,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_026, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_028, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_028, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1073,7 +1068,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_028, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_030, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_030, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1107,7 +1102,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_030, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_CLOSE_SESSION_CODE / MTP_OPERATION_RESET_DEVICE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_031, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_031, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1141,7 +1136,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_031, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_CLOSE_SESSION_CODE / MTP_OPERATION_RESET_DEVICE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_032, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_032, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1173,7 +1168,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_032, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_STORAGE_IDS_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_034, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_034, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1207,7 +1202,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_034, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_STORAGE_IDS_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_036, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_036, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1239,7 +1234,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_036, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_STORAGE_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_037, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_037, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1277,7 +1272,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_037, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_STORAGE_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_038, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_038, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1315,7 +1310,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_038, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_HANDLES_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_039, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_039, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1358,7 +1353,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_039, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_HANDLES_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_040, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_040, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1401,7 +1396,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_040, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_THUMB_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_041, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_041, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1447,7 +1442,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_041, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_DELETE_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_042, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_042, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1493,7 +1488,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_042, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_DELETE_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_043, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_043, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1538,7 +1533,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_043, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SEND_OBJECT_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_044, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_044, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1572,7 +1567,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_044, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_045, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_045, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1619,7 +1614,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_045, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_046, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_046, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1665,7 +1660,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_046, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_047, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_047, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1711,7 +1706,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_047, TestS
 //  * EnvConditions: NA
 //  * CaseDescription: MTP_OPERATION_GET_OBJECT_CODE
 //  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_048, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_048, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1757,7 +1752,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_048, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SEND_OBJECT_INFO_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_049, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_049, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1791,7 +1786,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_049, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SEND_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_050, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_050, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1823,7 +1818,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_050, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_DEVICE_PROP_DESC_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_052, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_052, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1857,7 +1852,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_052, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_DEVICE_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_054, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_054, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1891,7 +1886,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_054, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_056, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_056, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1925,7 +1920,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_056, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_MOVE_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_057, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_057, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -1971,7 +1966,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_057, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_MOVE_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_058, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_058, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2017,7 +2012,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_058, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_COPY_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_059, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_059, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2061,7 +2056,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_059, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROPS_SUPPORTED_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_060, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_060, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2096,7 +2091,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_060, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_061, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_061, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2130,7 +2125,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_061, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_062, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_062, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2164,7 +2159,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_062, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_063, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_063, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2198,7 +2193,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_063, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_064, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_064, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2244,7 +2239,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_064, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_PROP_LIST_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_065, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_065, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2281,7 +2276,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_065, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_NUM_OBJECTS_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_066, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_066, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2325,7 +2320,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_066, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_OBJECT_REFERENCES_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_067, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_067, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2368,7 +2363,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_067, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_SET_OBJECT_REFERENCES_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_068, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_068, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2411,7 +2406,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_068, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_GET_PARTIAL_OBJECT_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_069, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_069, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;
@@ -2457,7 +2452,7 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_069, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_RESET_DEVICE_PROP_VALUE_CODE
  */
-HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_070, TestSize.Level0)
+HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_070, TestSize.Level1)
 {
     std::shared_ptr<OHOS::Media::MtpTest> mtpTest = OHOS::Media::MtpTest::GetInstance();
     std::shared_ptr<MtpOperation> operationPtr_;

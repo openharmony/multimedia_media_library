@@ -582,9 +582,7 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
 {
     string reordererTagId;
     vector<string> splitResult;
-    if (target.empty()) {
-        return reordererTagId;
-    }
+    CHECK_AND_RETURN_RET(!target.empty(), reordererTagId);
     string pattern = ",";
     string strs = target + pattern;
     size_t pos = strs.find(pattern);
@@ -680,6 +678,8 @@ static int32_t SetGroupAlbumName(const ValuesBucket &values, const DataSharePred
         return E_INVALID_VALUES;
     }
     string targetAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!targetAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(targetAlbumId),
+        E_INVALID_VALUES, "target album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL, "uniStore is nullptr! failed update for set album name");
 
@@ -709,6 +709,8 @@ static int32_t SetGroupCoverUri(const ValuesBucket &values, const DataSharePredi
         return E_INVALID_VALUES;
     }
     string targetAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!targetAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(targetAlbumId),
+        E_INVALID_VALUES, "target album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
         "uniStore is nullptr! failed update for set album cover uri");
@@ -740,6 +742,8 @@ static int32_t DismissGroupPhotoAlbum(const ValuesBucket &values, const DataShar
         return E_INVALID_VALUES;
     }
     string targetAlbumId = whereArgs[0];
+    CHECK_AND_RETURN_RET_LOG(!targetAlbumId.empty() && MediaLibraryDataManagerUtils::IsNumber(targetAlbumId),
+        E_INVALID_VALUES, "target album id not exists");
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_DB_FAIL,
         "uniStore is nullptr! failed update for set album cover uri");

@@ -25,8 +25,6 @@ ohos_unittest("log_storage_test") {
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
   ]
 
   sources = [

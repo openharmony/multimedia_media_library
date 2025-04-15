@@ -292,13 +292,9 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     int32_t successFileNum = RenameFiles(insertRestoreFiles);
     MEDIA_DEBUG_LOG("RenameFiles finished.");
     if (isFirst) {
-        if (successFileNum == 0) {
-            return E_ERR;
-        }
-        if (UpdatePhotoAlbum(restoreTaskInfo, insertRestoreFiles[0]) != E_OK) {
-            MEDIA_ERR_LOG("UpdatePhotoAlbum failed.");
-            return errCode;
-        }
+        CHECK_AND_RETURN_RET(successFileNum != 0, E_ERR);
+        CHECK_AND_RETURN_RET_LOG(UpdatePhotoAlbum(restoreTaskInfo, insertRestoreFiles[0]) == E_OK,
+            errCode, "UpdatePhotoAlbum failed.");
     }
     int32_t totalFileNum = static_cast<int32_t>(filePathVector.size());
     successNum_.fetch_add(successFileNum);
@@ -440,36 +436,27 @@ vector<FileInfo> PhotoCustomRestoreOperation::SetDestinationPath(
         string mediaDirPath;
         int32_t mediaType = fileInfo.mediaType;
         GetAssetRootDir(mediaType, mediaDirPath);
-        if (mediaDirPath.empty()) {
-            MEDIA_ERR_LOG("get asset root dir failed. mediaType: %{public}d", mediaType);
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(!mediaDirPath.empty(),
+            "get asset root dir failed. mediaType: %{public}d", mediaType);
+
         int32_t fileId = 0;
         if (fileInfo.mediaType == MediaType::MEDIA_TYPE_IMAGE) {
             fileId = uniqueNumber.imageCurrentNumber++;
         } else if (fileInfo.mediaType == MediaType::MEDIA_TYPE_VIDEO) {
             fileId = uniqueNumber.videoCurrentNumber++;
         }
-
         int32_t bucketNum = 0;
         int32_t retCode = MediaFileUri::CreateAssetBucket(fileId, bucketNum);
-        if (retCode != E_OK) {
-            MEDIA_ERR_LOG("CreateAssetBucket failed. bucketNum: %{public}d", bucketNum);
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(retCode == E_OK, "CreateAssetBucket failed. bucketNum: %{public}d", bucketNum);
 
         string realName;
         retCode = MediaFileUtils::CreateAssetRealName(fileId, fileInfo.mediaType, fileInfo.extension, realName);
-        if (retCode != E_OK) {
-            MEDIA_ERR_LOG("CreateAssetRealName failed. retCode: %{public}d", retCode);
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(retCode == E_OK, "CreateAssetRealName failed. retCode: %{public}d", retCode);
+
         string dirPath = ROOT_MEDIA_DIR + mediaDirPath + to_string(bucketNum);
         if (!MediaFileUtils::IsFileExists(dirPath)) {
-            if (!MediaFileUtils::CreateDirectory(dirPath)) {
-                MEDIA_ERR_LOG("CreateDirectory failed. retCode: %{public}s", dirPath.c_str());
-                continue;
-            }
+            CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::CreateDirectory(dirPath),
+                "CreateDirectory failed. retCode: %{public}s", dirPath.c_str());
         }
         fileInfo.filePath = dirPath + "/" + realName;
         fileInfo.fileId = fileId;
@@ -785,10 +772,9 @@ vector<FileInfo> PhotoCustomRestoreOperation::GetFileInfos(vector<string> &fileP
         fileInfo.isLivePhoto = MovingPhotoFileUtils::IsLivePhoto(filePath);
         if (fileInfo.mediaType == MediaType::MEDIA_TYPE_FILE) {
             fileInfo.mediaType = MediaFileUtils::GetMediaTypeNotSupported(fileInfo.fileName);
-            if (fileInfo.mediaType == MediaType::MEDIA_TYPE_IMAGE ||
-                fileInfo.mediaType == MediaType::MEDIA_TYPE_VIDEO) {
-                MEDIA_WARN_LOG("media type not support, fileName is %{private}s", fileInfo.fileName.c_str());
-            }
+            bool cond = (fileInfo.mediaType == MediaType::MEDIA_TYPE_IMAGE ||
+                fileInfo.mediaType == MediaType::MEDIA_TYPE_VIDEO);
+            CHECK_AND_WARN_LOG(!cond, "media type not support, fileName is %{private}s", fileInfo.fileName.c_str());
         }
         if (fileInfo.mediaType == MediaType::MEDIA_TYPE_IMAGE) {
             uniqueNumber.imageTotalNumber++;

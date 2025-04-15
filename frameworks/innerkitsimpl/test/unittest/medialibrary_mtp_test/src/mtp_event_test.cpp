@@ -57,7 +57,7 @@ void MtpEventTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: SendObjectAdded
  */
-HWTEST_F(MtpEventTest, mtp_event_test_001, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_001, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -77,7 +77,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_001, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendObjectAdded
  */
-HWTEST_F(MtpEventTest, mtp_event_test_002, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_002, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -97,7 +97,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_002, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendObjectRemovedByHandle
  */
-HWTEST_F(MtpEventTest, mtp_event_test_003, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_003, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -117,7 +117,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_003, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendObjectInfoChanged
  */
-HWTEST_F(MtpEventTest, mtp_event_test_004, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_004, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -136,7 +136,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_004, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendObjectInfoChanged
  */
-HWTEST_F(MtpEventTest, mtp_event_test_005, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_005, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -155,7 +155,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_005, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendDevicePropertyChanged
  */
-HWTEST_F(MtpEventTest, mtp_event_test_006, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_006, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -174,7 +174,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_006, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendStoreAdded
  */
-HWTEST_F(MtpEventTest, mtp_event_test_007, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_007, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -193,7 +193,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_007, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendStoreAdded
  */
-HWTEST_F(MtpEventTest, mtp_event_test_008, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_008, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -214,7 +214,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_008, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendEvent
  */
-HWTEST_F(MtpEventTest, mtp_event_test_009, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_009, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -234,7 +234,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_009, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendEvent
  */
-HWTEST_F(MtpEventTest, mtp_event_test_0010, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_0010, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -254,7 +254,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_0010, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: SendEvent
  */
-HWTEST_F(MtpEventTest, mtp_event_test_0011, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_0011, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);
@@ -274,7 +274,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_0011, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: EventPayloadData
  */
-HWTEST_F(MtpEventTest, mtp_event_test_0012, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_0012, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = nullptr;
     std::shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
@@ -293,7 +293,7 @@ HWTEST_F(MtpEventTest, mtp_event_test_0012, TestSize.Level0)
  * EnvConditions: NA
  * CaseDescription: EventPayloadData
  */
-HWTEST_F(MtpEventTest, mtp_event_test_0013, TestSize.Level0)
+HWTEST_F(MtpEventTest, mtp_event_test_0013, TestSize.Level1)
 {
     std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     ASSERT_NE(context, nullptr);

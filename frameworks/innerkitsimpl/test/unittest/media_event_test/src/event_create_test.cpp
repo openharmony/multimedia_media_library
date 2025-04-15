@@ -31,8 +31,6 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void EventCreateTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
@@ -42,10 +40,7 @@ void EventCreateTest::SetUpTestCase(void)
     ASSERT_TRUE(tokenId != 0);
 }
 
-void EventCreateTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void EventCreateTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void EventCreateTest::SetUp()
@@ -98,7 +93,7 @@ int32_t DeleteAsset(const int &id)
 }
 
 
-HWTEST_F(EventCreateTest, medialib_event_CreateFileAsset_test_001, TestSize.Level0)
+HWTEST_F(EventCreateTest, medialib_event_CreateFileAsset_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("medialib_event_CreateFileAsset_test_001::Start");
     string relativePath = "Pictures/";
@@ -115,7 +110,7 @@ HWTEST_F(EventCreateTest, medialib_event_CreateFileAsset_test_001, TestSize.Leve
     MEDIA_INFO_LOG("medialib_event_CreateFileAsset_test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(EventCreateTest, medialib_event_CreateFileAsset_test_002, TestSize.Level0)
+HWTEST_F(EventCreateTest, medialib_event_CreateFileAsset_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("medialib_event_CreateFileAsset_test_002::Start");
     string relativePath = "";
@@ -126,7 +121,7 @@ HWTEST_F(EventCreateTest, medialib_event_CreateFileAsset_test_002, TestSize.Leve
     MEDIA_INFO_LOG("medialib_event_CreateFileAsset_test_002::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(EventCreateTest, medialib_event_CreateFileAsset_test_003, TestSize.Level0)
+HWTEST_F(EventCreateTest, medialib_event_CreateFileAsset_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("medialib_event_CreateFileAsset_test_003::Start");
     string relativePath = "Pictures/";
@@ -137,7 +132,7 @@ HWTEST_F(EventCreateTest, medialib_event_CreateFileAsset_test_003, TestSize.Leve
     MEDIA_INFO_LOG("medialib_event_CreateFileAsset_test_003::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(EventCreateTest, medialib_event_CreateAlbum_test_001, TestSize.Level0)
+HWTEST_F(EventCreateTest, medialib_event_CreateAlbum_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("medialib_event_CreateAlbum_test_001::Start");
     string path = "";

@@ -224,7 +224,7 @@ public:
         std::shared_ptr<std::vector<Property>> &outProps);
     static int32_t GetPropValueBySet(const uint32_t property,
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
-        PropertyValue &outPropValue);
+        PropertyValue &outPropValue, bool isVideoOfMovingPhoto);
     static int32_t GetMediaTypeByName(std::string &displayName, MediaType &outMediaType);
     // MTP
     static int32_t GetMtpPropList(const std::shared_ptr<std::unordered_map<uint32_t, std::string>> &handles,
@@ -264,6 +264,8 @@ private:
     static void GetMovingOrEnditOneRowPropList(const shared_ptr<UInt16List> &properties, const std::string &path,
         const std::shared_ptr<MtpOperationContext> &context, shared_ptr<vector<Property>> &outProps,
         const MovingType &movingType);
+    static int32_t GetPropValueForVideoOfMovingPhoto(const std::string &path,
+        const uint32_t property, PropertyValue &outPropValue);
 };
 } // namespace Media
 } // namespace OHOS

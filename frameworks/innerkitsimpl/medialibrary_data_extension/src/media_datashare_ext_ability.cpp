@@ -427,10 +427,8 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
     string uri = cmd.GetUriStringWithoutSegment();
     if (SYSTEM_API_OBJECTS.find(obj) != SYSTEM_API_OBJECTS.end() ||
         (SYSTEM_API_URIS.find(uri) != SYSTEM_API_URIS.end())) {
-        if (!PermissionUtils::IsSystemApp()) {
-            MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-            return -E_CHECK_SYSTEMAPP_FAIL;
-        }
+        CHECK_AND_RETURN_RET_LOG(PermissionUtils::IsSystemApp(), -E_CHECK_SYSTEMAPP_FAIL,
+            "Systemapi should only be called by system applications!");
     }
     return E_SUCCESS;
 }
@@ -476,10 +474,8 @@ static int32_t HandleSecurityComponentPermission(MediaLibraryCommand &cmd)
         cmd.GetUri().ToString().find(OPRN_SAVE_CAMERA_PHOTO_COMPONENT) != string::npos) {
 #ifdef MEDIALIBRARY_SECURITY_OPEN
         auto tokenId = PermissionUtils::GetTokenId();
-        if (!Security::SecurityComponent::SecCompKit::VerifySavePermission(tokenId)) {
-            MEDIA_ERR_LOG("Failed to verify save permission of security component");
-            return E_NEED_FURTHER_CHECK;
-        }
+        CHECK_AND_RETURN_RET_LOG(Security::SecurityComponent::SecCompKit::VerifySavePermission(tokenId),
+            E_NEED_FURTHER_CHECK, "Failed to verify save permission of security component");
         return E_SUCCESS;
 #else
         MEDIA_ERR_LOG("Security component is not existed");
@@ -525,9 +521,8 @@ static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool i
     }
 
     int32_t err = HandleSecurityComponentPermission(cmd);
-    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
-        return err;
-    }
+    bool cond = (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK));
+    CHECK_AND_RETURN_RET(!cond, err);
 
     vector<string> perms;
     if (obj == OperationObject::UFM_AUDIO) {
@@ -597,9 +592,7 @@ static void UnifyOprnObject(MediaLibraryCommand &cmd)
 static int32_t MediatoolPermCheck(MediaLibraryCommand &cmd)
 {
     if (IsMediatoolOperation(cmd)) {
-        if (!IsDeveloperMediaTool(cmd)) {
-            return E_PERMISSION_DENIED;
-        }
+        CHECK_AND_RETURN_RET(IsDeveloperMediaTool(cmd), E_PERMISSION_DENIED);
         return E_SUCCESS;
     } else {
         return E_NEED_FURTHER_CHECK;
@@ -1045,6 +1038,30 @@ Uri MediaDataShareExtAbility::DenormalizeUri(const Uri &uri)
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     auto ret = uri;
     MEDIA_INFO_LOG("%{public}s end.", __func__);
+    return ret;
+}
+
+int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option)
+{
+    PermParam permParam = {.isWrite = false};
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_ERR, "permissionHandler_ is nullptr");
+    uint32_t operationCode = data.ReadUint32();
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t ret = E_IPC_SEVICE_NOT_FOUND;
+    for (auto &controllerService : this->serviceFactory_.GetAllMediaControllerService()) {
+        if (!controllerService->Accept(operationCode)) {
+            continue;
+        }
+        controllerService->OnRemoteRequest(operationCode, data, reply, option);
+        ret = E_OK;
+        break;
+    }
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t costTime = endTime - startTime;
+    MEDIA_INFO_LOG("API excuted, code: %{public}d, ret: %{public}d, costTime: %{public}ld",
+        static_cast<int32_t>(operationCode),
+        ret,
+        static_cast<long>(costTime));
     return ret;
 }
 } // namespace AbilityRuntime

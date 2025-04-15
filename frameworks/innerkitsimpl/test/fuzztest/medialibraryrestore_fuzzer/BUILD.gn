@@ -21,6 +21,7 @@ ohos_fuzztest("MediaLibraryRestoreFuzzTest") {
   include_dirs = [
     ".",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
     "../../../../../../../../distributeddatamgr/relational_store/interfaces/inner_api/rdb/include",
@@ -28,6 +29,7 @@ ohos_fuzztest("MediaLibraryRestoreFuzzTest") {
 
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/event_handler/album_plugin_table_event_handler.cpp",
     "./medialibraryrestore_fuzzer.cpp",
   ]
 
@@ -47,7 +49,6 @@ ohos_fuzztest("MediaLibraryRestoreFuzzTest") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
-    "device_manager:devicemanagersdk",
     "dfs_service:cloudsync_kit_inner",
     "hilog:libhilog",
     "ipc:ipc_single",

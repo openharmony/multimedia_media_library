@@ -25,6 +25,7 @@
 #include "parameter.h"
 #include "parameters.h"
 #include "result_set_utils.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 namespace OHOS {
@@ -32,10 +33,7 @@ namespace Media {
 int32_t PictureDataOperations::taskSize = 0;
 const int32_t SAVE_PICTURE_TIMEOUT_SEC = 20;
 
-PictureDataOperations::PictureDataOperations()
-{
-    max_capibilty = stoi(system::GetParameter("const.multimedia.max_picture_capbility", "1")); // MAX_PICTURE_CAPBILITY
-}
+PictureDataOperations::PictureDataOperations() {}
 
 PictureDataOperations::~PictureDataOperations()
 {
@@ -44,19 +42,21 @@ PictureDataOperations::~PictureDataOperations()
     highQualityPictureImageId.clear();
 }
 
-static bool IsPictureEdited(const string &photoId)
+static int32_t IsPictureTempAndEdited(const string &photoId, bool &isTemp, bool &isEdited)
 {
-    CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(photoId), false, "photoId is invalid");
+    MediaLibraryTracer tracer;
+    tracer.Start("IsPictureTempAndEdited " + photoId);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Failed to get rdbStore");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "Failed to get rdbStore");
     NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_ID, photoId);
-    vector<string> columns { PhotoColumn::PHOTO_EDIT_TIME };
+    vector<string> columns { PhotoColumn::PHOTO_IS_TEMP, PhotoColumn::PHOTO_EDIT_TIME };
     auto resultSet = rdbStore->Query(predicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK, false,
-        "resultSet is empty");
-    bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
-    return isEdited;
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        E_ERR, "resultSet is empty");
+    isTemp = (GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet) == 1);
+    isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
+    return E_OK;
 }
 
 void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap,
@@ -69,9 +69,12 @@ void PictureDataOperations::CleanPictureMapData(std::map<std::string, sptr<Pictu
         time_t now = time(nullptr);
         bool isNeedDeletePicture = ((iter->second)->expireTime_ < now) && ((iter->second)->isCleanImmediately_);
         if (isNeedDeletePicture || ((iter->second)->expireTime_ + SAVE_PICTURE_TIMEOUT_SEC) < now) {
-            if (pictureType == LOW_QUALITY_PICTURE) {
-                bool isEdited = IsPictureEdited(iter->first);
-                FileUtils::SavePicture(iter->first, (iter->second)->picture_, isEdited, true);
+            bool isTemp = false;
+            bool isEdited = false;
+            IsPictureTempAndEdited(iter->first, isTemp, isEdited);
+            bool isLowQualityPicture = (pictureType != HIGH_QUALITY_PICTURE);
+            if (isTemp) {
+                FileUtils::SavePicture(iter->first, (iter->second)->picture_, isEdited, isLowQualityPicture);
                 MEDIA_INFO_LOG("end SavePicture, photoId: %{public}s, isEdited: %{public}d",
                     (iter->first).c_str(), static_cast<int32_t>(isEdited));
             }
@@ -164,6 +167,14 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
         std::string imageId = *iter;
         std::map<std::string, sptr<PicturePair>>::iterator iterPicture = highQualityPictureMap_.find(imageId);
         if (iterPicture != highQualityPictureMap_.end() && (iterPicture->second)->isCleanImmediately_) {
+            bool isTemp = false;
+            bool isEdited = false;
+            IsPictureTempAndEdited(iterPicture->first, isTemp, isEdited);
+            if (isTemp) {
+                FileUtils::SavePicture(iterPicture->first, (iterPicture->second)->picture_, isEdited, false);
+                MEDIA_INFO_LOG("end SavePicture, photoId: %{public}s, isEdited: %{public}d",
+                    (iterPicture->first).c_str(), static_cast<int32_t>(isEdited));
+            }
             highQualityPictureMap_.erase(iterPicture);
             iter = pictureImageIdList.erase(iter);
         } else {
@@ -174,7 +185,7 @@ void PictureDataOperations::CleanHighQualityPictureDataInternal(const std::strin
 }
 
 std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const std::string& imageId,
-    bool &isHighQualityPicture, bool isCleanImmediately)
+    bool &isHighQualityPicture, bool &isTakeEffect, bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter %{public}s enter", imageId.c_str());
     enum PictureType pictureType;
@@ -182,7 +193,7 @@ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageId(const 
     isHighQualityPicture = false;
     for (pictureType = HIGH_QUALITY_PICTURE; pictureType >= LOW_QUALITY_PICTURE;
         pictureType = (PictureType)(pictureType - 1)) {
-        picture = GetDataWithImageIdAndPictureType(imageId, pictureType, isCleanImmediately);
+        picture = GetDataWithImageIdAndPictureType(imageId, pictureType, isTakeEffect, isCleanImmediately);
         if (picture != nullptr && picture->GetMainPixel() != nullptr) {
             MEDIA_INFO_LOG("GetDataWithImageId is founded, pictureType:%{public}d", static_cast<int32_t>(pictureType));
             isHighQualityPicture = (pictureType == HIGH_QUALITY_PICTURE);
@@ -220,7 +231,7 @@ void PictureDataOperations::SavePictureWithImageId(const std::string& imageId)
 }
 
 std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageIdAndPictureType(const std::string& imageId,
-    PictureType pictureType, bool isCleanImmediately)
+    PictureType pictureType, bool &isTakeEffect, bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter ");
     lock_guard<mutex>  lock(pictureMapMutex_);
@@ -239,6 +250,7 @@ std::shared_ptr<Media::Picture> PictureDataOperations::GetDataWithImageIdAndPict
             if (iter != highQualityPictureMap_.end()) {
                 (iter->second)->isCleanImmediately_ = isCleanImmediately;
                 picture = (iter->second)->picture_;
+                isTakeEffect = (iter->second)->isTakeEffect_;
             }
             break;
         default:
@@ -300,10 +312,8 @@ bool PictureDataOperations::SavePicture(const std::string& imageId,
     MEDIA_INFO_LOG("enter photoId: %{public}s, isLowQualityPicture: %{public}d", imageId.c_str(), isLowQualityPicture);
     lock_guard<mutex> lock(pictureMapMutex_);
     bool isSuccess = false;
-    if (pictureMap.size() == 0) {
-        MEDIA_ERR_LOG("pictureMap is null.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(pictureMap.size() != 0, false, "pictureMap is null.");
+
     std::map<std::string, sptr<PicturePair>>::iterator iter;
     if (imageId == "default") {
         iter = pictureMap.begin();
@@ -342,10 +352,8 @@ int32_t PictureDataOperations::AddSavePictureTask(sptr<PicturePair>& picturePair
     }
 
     auto *taskData = new (std::nothrow) SavePictureData(picturePair);
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for downloading cloud files!");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_LOG(taskData != nullptr, -1,
+        "Failed to alloc async data for downloading cloud files!");
 
     auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(SavePictureExecutor, taskData);
     asyncWorker->AddTask(asyncTask, true);

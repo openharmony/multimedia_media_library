@@ -24,13 +24,7 @@ ohos_prebuilt_etc("userfilemanager_mimetypes.json") {
 }
 
 config("media_data_extension_public_config") {
-  include_fileext = [ "${MEDIALIB_SERVICES_PATH}/media_file_extension/include" ]
   include_fuse = [ "${MEDIALIB_SERVICES_PATH}/media_fuse/include" ]
-  include_distributed = [
-    "${MEDIALIB_SERVICES_PATH}/media_distributed/include/database_manage",
-    "${MEDIALIB_SERVICES_PATH}/media_distributed/include/device_manage",
-    "${MEDIALIB_SERVICES_PATH}/media_distributed/include/devices_info_interact",
-  ]
   include_scanner = [
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
@@ -57,6 +51,23 @@ config("media_data_extension_public_config") {
   include_albums_refresh =
       [ "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/include" ]
 
+  include_cloud_sync_server = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync/controller",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync/service",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/native/cloud_sync",
+  ]
+
+  include_media_ipc = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/vo",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/util",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/ipc/controller",
+  ]
+
+  include_media_po =
+      [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/po" ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -77,15 +88,16 @@ config("media_data_extension_public_config") {
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
-  include_dirs += include_fileext
   include_dirs += include_fuse
-  include_dirs += include_distributed
   include_dirs += include_scanner
   include_dirs += include_multistages_capture
   include_dirs += include_dfx
   include_dirs += include_cloud_asset_download
   include_dirs += include_cloud_dirty_handle
   include_dirs += include_albums_refresh
+  include_dirs += include_cloud_sync_server
+  include_dirs += include_media_ipc
+  include_dirs += include_media_po
 
   if (media_library_feature_cloud_enhancement) {
     include_cloud_enhancement = [
@@ -123,45 +135,6 @@ config("media_data_extension_public_config") {
   }
 }
 
-ohos_hap("medialibrary_ext_hap") {
-  hap_profile = "MediaLibraryExt/entry/src/main/module.json"
-  deps = [
-    ":MediaLibStage_js_assets",
-    ":MediaLibStage_resources",
-  ]
-  shared_libraries = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
-  certificate_profile = "${MEDIALIB_INNERKITS_PATH}/signature/medialib.p7b"
-  hap_name = "Media_Library_Ext"
-  part_name = "media_library"
-  subsystem_name = "multimedia"
-  module_install_dir = "app/com.ohos.medialibrary.MediaLibraryData"
-  publicity_file = "../../../publicity.xml"
-  if (defined(sign_hap_py_path)) {
-    certificate_profile =
-        "${MEDIALIB_INNERKITS_PATH}/signature/medialib_new.p7b"
-    key_alias = "medialibrarydata"
-    private_key_path = "medialibrarydata"
-    compatible_version = "9"
-  }
-}
-
-ohos_js_assets("MediaLibStage_js_assets") {
-  hap_profile = "MediaLibraryExt/entry/src/main/module.json"
-  ets2abc = true
-  source_dir = "MediaLibraryExt/entry/src/main/ets"
-}
-
-ohos_app_scope("MediaLibStage_app_profile") {
-  app_profile = "MediaLibraryExt/AppScope/app.json"
-  sources = [ "MediaLibraryExt/AppScope/resources" ]
-}
-
-ohos_resources("MediaLibStage_resources") {
-  sources = [ "MediaLibraryExt/entry/src/main/resources" ]
-  deps = [ ":MediaLibStage_app_profile" ]
-  hap_profile = "MediaLibraryExt/entry/src/main/module.json"
-}
-
 ohos_shared_library("medialibrary_data_extension") {
   install_enable = true
 
@@ -184,6 +157,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/cloud_thumbnail_observer.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/ithumbnail_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_aging_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_file_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker_manager.cpp",
@@ -267,6 +241,11 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_observer.cpp",
   ]
 
+  media_cloud_sync_server_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync/controller/cloud_media_data_controller_service.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync/service/cloud_media_data_service.cpp",
+  ]
+
   media_cloud_dirty_handle_source = [ "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_dirty_handle/cloud_upload_checker.cpp" ]
 
   media_albums_refresh_source = [
@@ -274,6 +253,9 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_notify.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_worker.cpp",
   ]
+
+  media_ipc_source =
+      [ "src/ipc/controller/media_controller_service_factory.cpp" ]
 
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
@@ -367,6 +349,8 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_cloud_asset_download_source
   sources += media_cloud_dirty_handle_source
   sources += media_albums_refresh_source
+  sources += media_cloud_sync_server_source
+  sources += media_ipc_source
 
   if (media_library_feature_cloud_enhancement) {
     media_cloud_enhancement_source = [
@@ -426,6 +410,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "data_share:datashare_provider",
     "dfs_service:cloudsync_kit_inner",
     "drivers_interface_display:display_commontype_idl_headers",
+    "e2fsprogs:libext2_uuid",
     "eventhandler:libeventhandler",
     "ffrt:libffrt",
     "file_api:filemgmt_libn",
@@ -453,8 +438,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "window_manager:libdm",
     "zlib:shared_libz",
   ]
-
-  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
 
   defines = []
   if (defined(global_parts_info) &&

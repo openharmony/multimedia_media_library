@@ -34,7 +34,6 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const int32_t DEFAULT_PHOTO_ID = 100000001;
 const std::string MEDIA_FILEMODE_READWRITE = "rw";
 const std::shared_ptr<MtpOperationContext> g_context = {};
@@ -45,10 +44,7 @@ const std::string DEFAULT_DATA_PATH = "/data/media/image";
 
 void MediaLibraryPTPUnitTest::SetUpTestCase(void) {}
 
-void MediaLibraryPTPUnitTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MediaLibraryPTPUnitTest::TearDownTestCase(void) {}
 // SetUp:Execute before each test case
 void MediaLibraryPTPUnitTest::SetUp()
 {
@@ -68,7 +64,7 @@ void MediaLibraryPTPUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_001, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -83,7 +79,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_001, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_002, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -104,7 +100,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_002, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_003, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -123,7 +119,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_003, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_004, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_004, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -142,7 +138,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_004, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_005, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_005, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -157,7 +153,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_005, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_006, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_006, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -177,7 +173,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_006, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_07, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_07, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -194,7 +190,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_07, TestSi
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_008, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_008, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -212,7 +208,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_008, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_009, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_009, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -230,7 +226,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_009, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_010, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_010, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -248,7 +244,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_010, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_011, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_011, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -265,7 +261,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_011, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_012, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_012, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -283,7 +279,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_012, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_013, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_013, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -300,7 +296,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_013, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_014, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_014, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -319,7 +315,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_014, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_015, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_015, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -339,7 +335,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_015, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_016, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_016, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -356,7 +352,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_016, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_017, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_017, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -373,7 +369,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_017, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_018, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_018, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -391,7 +387,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_018, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_019, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_019, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -410,7 +406,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_019, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_020, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_020, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -426,7 +422,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_020, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_021, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_021, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -443,7 +439,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_021, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_022, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_022, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -459,7 +455,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_022, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_023, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_023, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -475,7 +471,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_023, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_024, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_024, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -492,7 +488,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_024, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_025, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_025, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -509,7 +505,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_025, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_026, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_026, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);
@@ -526,7 +522,7 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_026, TestS
  * EnvConditions: NA
  * CaseDescription: MTP_OPERATION_OPEN_SESSION_CODE
  */
-HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_027, TestSize.Level0)
+HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_027, TestSize.Level1)
 {
     std::shared_ptr <MtpMedialibraryManager> mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     EXPECT_NE(mtpMedialibraryManager, nullptr);

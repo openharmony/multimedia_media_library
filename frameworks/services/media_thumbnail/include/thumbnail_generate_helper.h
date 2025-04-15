@@ -36,6 +36,7 @@ public:
     EXPORT static int32_t CreateAstcMthAndYear(ThumbRdbOpt &opts);
     EXPORT static int32_t CreateLcdBackground(ThumbRdbOpt &opts);
     EXPORT static int32_t GenerateHighlightThumbnailBackground(ThumbRdbOpt &opts);
+    EXPORT static int32_t RegenerateThumbnailFromCloud(ThumbRdbOpt &opts);
     EXPORT static int32_t TriggerHighlightThumbnail(ThumbRdbOpt &opts, std::string &id, std::string &tracks,
         std::string &trigger, std::string &genType);
     EXPORT static int32_t UpgradeThumbnailBackground(ThumbRdbOpt &opts, bool isWifiConnected);

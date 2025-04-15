@@ -613,6 +613,9 @@ const std::string UPDATE_VIDEO_LABEL_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABL
 const std::string UPDATE_SEARCH_INDEX_FOR_VIDEO = "UPDATE " + SEARCH_TOTAL_TABLE + " SET " + TBL_SEARCH_PHOTO_STATUS +
     " = 2, " + TBL_SEARCH_CV_STATUS + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " +
     PhotoColumn::PHOTOS_TABLE + " WHERE media_type = 2)";
+const std::string MAP_ASSET_INDEX = "map_asset_index";
+const std::string CREATE_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX = "CREATE INDEX IF NOT EXISTS " + MAP_ASSET_INDEX + " ON " +
+    ANALYSIS_PHOTO_MAP_TABLE + " (" + MAP_ASSET + ")";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_DB_SQLS_H

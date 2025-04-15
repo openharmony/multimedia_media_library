@@ -26,6 +26,7 @@
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "datashare_abs_result_set.h"
+#include "database_report.h"
 #include "directory_ex.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
@@ -36,6 +37,7 @@
 #include "media_log.h"
 #include "media_scanner.h"
 #include "medialibrary_rdb_transaction.h"
+#include "upgrade_restore_task_report.h"
 
 namespace OHOS {
 namespace Media {
@@ -47,6 +49,7 @@ const int PHONE_FIFTH_NUMBER = 110;
 const int PHONE_SIXTH_NUMBER = 101;
 const int QUERY_NUMBER = 200;
 const int STRONG_ASSOCIATION_ENABLE = 1;
+constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int32_t MAX_CLONE_THREAD_NUM = 2;
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const std::string I_PHONE_LPATH = "/Pictures/";
@@ -74,6 +77,7 @@ static constexpr uint32_t ASCII_CHAR_LENGTH = 8;
 static constexpr uint32_t DECODE_NAME_IDX = 4;
 static constexpr uint32_t DECODE_SURFIX_IDX = 5;
 static constexpr uint32_t DECODE_TIME_IDX = 3;
+static constexpr uint32_t IOS_BURST_CODE_LEN = 19;
 
 static std::string GetPhoneName()
 {
@@ -121,6 +125,26 @@ void OthersCloneRestore::CloneInfoPushBack(std::vector<CloneDbInfo> &pushInfos, 
     }
 }
 
+void OthersCloneRestore::GetDbInfo(int32_t sceneCode, std::vector<CloneDbInfo> &mediaDbInfo,
+    const std::shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    std::vector<CloneDbInfo> infos;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        CloneDbInfo tmpDbInfo;
+        tmpDbInfo.data = GetStringVal(OTHER_CLONE_DATA, resultSet);
+        if (sceneCode == I_PHONE_CLONE_RESTORE) {
+            tmpDbInfo.displayName = GetStringVal(OTHER_CLONE_DISPLAYNAME, resultSet);
+            tmpDbInfo.dateModified = GetDoubleVal(OTHER_CLONE_MODIFIED, resultSet);
+            tmpDbInfo.dateTaken = GetDoubleVal(OTHER_CLONE_TAKEN, resultSet);
+        } else {
+            tmpDbInfo.dateModified = static_cast<double>(GetInt64Val(OTHER_CLONE_MODIFIED, resultSet));
+            tmpDbInfo.dateTaken = static_cast<double>(GetInt64Val(OTHER_CLONE_TAKEN, resultSet));
+        }
+        infos.push_back(tmpDbInfo);
+    };
+    CloneInfoPushBack(mediaDbInfo, infos);
+}
+
 void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> mediaRdb, int32_t offset,
     int32_t sceneCode, std::vector<CloneDbInfo> &mediaDbInfo)
 {
@@ -131,7 +155,7 @@ void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> 
     }
     std::string queryExternalMayClonePhoto;
     if (sceneCode == I_PHONE_CLONE_RESTORE) {
-        queryExternalMayClonePhoto = "SELECT primaryStr, date_modified, datetaken FROM mediainfo LIMIT " +
+        queryExternalMayClonePhoto = "SELECT _data, primaryStr, date_modified, datetaken FROM mediainfo LIMIT " +
             std::to_string(offset) + ", " + std::to_string(QUERY_NUMBER);
     } else if (sceneCode == LITE_PHONE_CLONE_RESTORE) {
         queryExternalMayClonePhoto = "SELECT _data, date_modified, datetaken FROM mediainfo LIMIT " +
@@ -145,25 +169,7 @@ void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> 
         MEDIA_ERR_LOG("Query resultSql is null.");
         return;
     }
-    std::vector<CloneDbInfo> infos;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        CloneDbInfo tmpDbInfo;
-        if (sceneCode == I_PHONE_CLONE_RESTORE) {
-            tmpDbInfo.displayName = GetStringVal(OTHER_CLONE_DISPLAYNAME, resultSet);
-            tmpDbInfo.dateModified = GetDoubleVal(OTHER_CLONE_MODIFIED, resultSet);
-            tmpDbInfo.dateTaken = GetDoubleVal(OTHER_CLONE_TAKEN, resultSet);
-        } else if (sceneCode == LITE_PHONE_CLONE_RESTORE) {
-            tmpDbInfo.data = GetStringVal(OTHER_CLONE_DATA, resultSet);
-            tmpDbInfo.dateModified = static_cast<double>(GetInt64Val(OTHER_CLONE_MODIFIED, resultSet));
-            tmpDbInfo.dateTaken = static_cast<double>(GetInt64Val(OTHER_CLONE_TAKEN, resultSet));
-        } else {
-            tmpDbInfo.data = GetStringVal(OTHER_CLONE_DATA, resultSet);
-            tmpDbInfo.dateModified = static_cast<double>(GetInt64Val(OTHER_CLONE_MODIFIED, resultSet));
-            tmpDbInfo.dateTaken = static_cast<double>(GetInt64Val(OTHER_CLONE_TAKEN, resultSet));
-        }
-        infos.push_back(tmpDbInfo);
-    };
-    CloneInfoPushBack(mediaDbInfo, infos);
+    GetDbInfo(sceneCode, mediaDbInfo, resultSet);
 }
 
 void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<CloneDbInfo> &mediaDbInfo)
@@ -194,6 +200,16 @@ void OthersCloneRestore::GetCloneDbInfos(const std::string &dbName, std::vector<
     ffrt::wait();
 }
 
+void OthersCloneRestore::ReportMissingFilesFromDB(std::vector<CloneDbInfo> &mediaDbInfo, const std::string &dbType)
+{
+    for (auto &info : mediaDbInfo) {
+        if (!info.fileExists) {
+            (dbType == STAT_TYPE_PHOTO) ? photoFileNotFoundCount_++ : audioFileNotFoundCount_++;
+            MEDIA_ERR_LOG("Missing file from db! Db path: %{public}s", info.data.c_str());
+        }
+    }
+}
+
 int32_t OthersCloneRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
 {
     if (BaseRestore::Init() != E_OK) {
@@ -217,9 +233,19 @@ int32_t OthersCloneRestore::Init(const std::string &backupRetoreDir, const std::
         return err;
     }
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("GetCloneDb cost %{public}ld, recursively getting all files cost %{public}ld, phonesize:%{public}d, \
-        audiosize:%{public}d", (long)(startCurrent - startGetInfo), (long)(end - startCurrent),
-        (int)photoInfos_.size(), (int)audioInfos_.size());
+    ReportMissingFilesFromDB(audioDbInfo_, STAT_TYPE_AUDIO);
+    ReportMissingFilesFromDB(photoDbInfo_, STAT_TYPE_PHOTO);
+
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
+        .Report("INIT_OTHERS_CLONE", "",
+            "get clone db cost: " + std::to_string(startCurrent - startGetInfo) +
+            ", recursively getting all files cost: " + std::to_string(end - startCurrent) +
+            "; photo file size: " + std::to_string(photoInfos_.size()) +
+            ", audio file size: " + std::to_string(audioInfos_.size()) +
+            "; photo db size: " + std::to_string(photoDbInfo_.size()) +
+            ", audio db size: " + std::to_string(audioDbInfo_.size()) +
+            "; db photo file not found: " + std::to_string(photoFileNotFoundCount_) +
+            ", db audio file not found: " + std::to_string(audioFileNotFoundCount_));
     this->photoAlbumDao_.SetMediaLibraryRdb(this->mediaLibraryRdb_);
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, nullptr);
     MEDIA_INFO_LOG("Init end");
@@ -250,6 +276,11 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.dateTrashed);
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
+    if (fileInfo.burstKey.size() > 0) {
+        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
+        values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
+    }
     return values;
 }
 
@@ -312,7 +343,6 @@ static bool RecoverHiddenOrRecycleFile(std::string &currentPath, FileInfo &tmpIn
     } else if (recyclePos != std::string::npos) {
         recycleFlag = true;
     } else {
-        MEDIA_INFO_LOG("currentPath %{public}s is normal", currentPath.c_str());
         return false;
     }
 
@@ -355,6 +385,27 @@ void OthersCloneRestore::AddAudioFile(FileInfo &tmpInfo)
     audioInfos_.emplace_back(tmpInfo);
 }
 
+int32_t CheckBurstAndGetKey(const std::string &displayName, std::string &burstKey)
+{
+    size_t burstPos = displayName.find("_BURST");
+    if (burstPos == std::string::npos) {
+        return 0;
+    }
+    size_t burstStartPos = (burstPos >= IOS_BURST_CODE_LEN) ? burstPos - IOS_BURST_CODE_LEN : 0;
+    burstKey = displayName.substr(burstStartPos, burstPos - burstStartPos);
+    if (displayName.find("COVER") != std::string::npos) {
+        return static_cast<int32_t>(BurstCoverLevelType::COVER);
+    }
+    return static_cast<int32_t>(BurstCoverLevelType::MEMBER);
+}
+
+void CloneIosBurstPhoto(FileInfo &fileInfo)
+{
+    std::string burstKey = fileInfo.burstKey;
+    fileInfo.isBurst = CheckBurstAndGetKey(fileInfo.displayName, burstKey);
+    fileInfo.burstKey = burstKey;
+}
+
 void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo)
 {
     FileInfo tmpInfo;
@@ -371,6 +422,9 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
     tmpInfo.fileType = MediaFileUtils::GetMediaType(tmpInfo.displayName);
     tmpInfo.fileSize = statInfo.st_size;
     tmpInfo.dateModified = MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim);
+    if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
+        CloneIosBurstPhoto(tmpInfo);
+    }
     if (tmpInfo.fileType == MediaType::MEDIA_TYPE_IMAGE) {
         std::regex pattern(R"(.*_enhanced(\.[^.]+)$)");
         if (std::regex_match(file, pattern)) {
@@ -401,12 +455,56 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
     }
 }
 
+bool OthersCloneRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath)
+{
+    size_t pos = 0;
+    CHECK_AND_RETURN_RET(BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath,
+        INTERNAL_PREFIX_LEVEL, pos), false);
+    newPath = prefix + srcPath;
+    relativePath = srcPath.substr(pos);
+    return true;
+}
+
+bool OthersCloneRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath, FileInfo &fileInfo)
+{
+    CHECK_AND_RETURN_RET(srcPath != "", false);
+    if (MediaFileUtils::StartsWith(srcPath, INTERNAL_PREFIX)) {
+        return ConvertPathToRealPath(srcPath, prefix, newPath, relativePath);
+    }
+    size_t pos = 0;
+    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, SD_PREFIX_LEVEL, pos)) {
+        return false;
+    }
+    relativePath = srcPath.substr(pos);
+    if (fileInfo.fileSize < TAR_FILE_LIMIT || fileInfo.hidden > 0 ||
+        fileInfo.dateTrashed > 0) {
+        newPath = prefix + srcPath; // packed as tar, hidden or trashed, use path in DB
+    } else {
+        newPath = prefix + relativePath; // others, remove sd prefix, use relative path
+    }
+    fileInfo.isInternal = false;
+    return true;
+}
+
+bool OthersCloneRestore::CheckSamePathForSD(const std::string &dataPath, FileInfo &fileInfo,
+    const std::string &filePath)
+{
+    std::string newPath = "";
+    std::string newRelativePath = "";
+    ConvertPathToRealPath(dataPath, OTHER_CLONE_FILE_ROOT_PATH, newPath, newRelativePath, fileInfo);
+    return newPath == filePath;
+}
+
 void OthersCloneRestore::UpDateFileModifiedTime(FileInfo &fileInfo)
 {
     auto pathMatch = [displayName {fileInfo.displayName}, filePath {fileInfo.filePath},
-        sceneCode {sceneCode_}](const auto &info) {
+        sceneCode {sceneCode_}, &fileInfo, this](const auto &info) {
         if (sceneCode == I_PHONE_CLONE_RESTORE) {
             return info.displayName == displayName;
+        } else if (sceneCode == LITE_PHONE_CLONE_RESTORE) {
+            return CheckSamePathForSD(info.data, fileInfo, filePath);
         } else {
             return info.data == ParseSourcePathToPath(filePath, OTHER_CLONE_FILE_ROOT_PATH);
         }
@@ -417,6 +515,7 @@ void OthersCloneRestore::UpDateFileModifiedTime(FileInfo &fileInfo)
         if (it != audioDbInfo_.end()) {
             info.dateModified = it->dateModified;
             info.dateTaken = it->dateTaken;
+            it->fileExists = true;
         } else {
             return;
         }
@@ -425,12 +524,14 @@ void OthersCloneRestore::UpDateFileModifiedTime(FileInfo &fileInfo)
         if (it != photoDbInfo_.end()) {
             info.dateModified = it->dateModified;
             info.dateTaken = it->dateTaken;
+            it->fileExists = true;
         } else {
             auto it = std::find_if(audioDbInfo_.begin(), audioDbInfo_.end(), pathMatch);
             if (it != audioDbInfo_.end()) {
                 MEDIA_WARN_LOG("find video in audio info map %{public}s", fileInfo.displayName.c_str());
                 info.dateModified = it->dateModified;
                 info.dateTaken = it->dateTaken;
+                it->fileExists = true;
             }
         }
     } else {
@@ -518,12 +619,31 @@ void OthersCloneRestore::HandleInsertBatch(int32_t offset)
     InsertPhoto(insertInfos);
 }
 
+void OthersCloneRestore::ReportCloneBefore()
+{
+    MEDIA_INFO_LOG("Start ReportCloneBefore.");
+    DatabaseReport()
+        .SetSceneCode(sceneCode_)
+        .SetTaskId(taskId_)
+        .ReportMedia(mediaLibraryRdb_, DatabaseReport::PERIOD_BEFORE);
+    
+    UpgradeRestoreTaskReport()
+        .SetSceneCode(sceneCode_)
+        .SetTaskId(taskId_)
+        .Report("others Clone Restore", "",
+            "sceneCode_: " + std::to_string(sceneCode_) +
+            ", isAccountValid_: " + std::to_string(isAccountValid_) +
+            ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOn_));
+    MEDIA_INFO_LOG("End ReportCloneBefore.");
+}
+
 void OthersCloneRestore::RestorePhoto()
 {
     if (!photoInfos_.size()) {
         MEDIA_INFO_LOG("photo infos size zero");
         return;
     }
+    ReportCloneBefore();
     std::vector<FileInfo> fileInfos;
     totalNumber_ += photoInfos_.size();
     RestoreAlbum(photoInfos_);
@@ -537,6 +657,7 @@ void OthersCloneRestore::RestorePhoto()
             }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    ProcessBurstPhotos();
 }
 
 void OthersCloneRestore::InsertPhoto(std::vector<FileInfo> &fileInfos)

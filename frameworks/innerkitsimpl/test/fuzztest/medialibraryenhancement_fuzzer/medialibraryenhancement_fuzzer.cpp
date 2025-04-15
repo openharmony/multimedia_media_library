@@ -30,7 +30,6 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore.h"
 #include "medialibrary_unistore_manager.h"
-#include "media_file_ext_ability.h"
 #include "medialibrary_photo_operations.h"
 #include "result_set_utils.h"
 #include "medialibrary_rdb_utils.h"
@@ -419,7 +418,10 @@ static void EnhancementManagerTest(const uint8_t *data, size_t size)
 
 static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
 {
-    int32_t offset = sizeof(int32_t);
+    const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count) {
+        return;
+    }
     MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle
         = Media::EnhancementManager::GetInstance().enhancementService_->CreateBundle();
     string photoId = FuzzString(data, size);
@@ -446,14 +448,13 @@ static void EnhancementManagerExtraTest(const uint8_t *data, size_t size)
     Media::EnhancementManager::GetInstance().HandlePauseAllOperation();
     Media::EnhancementManager::GetInstance().HandleResumeAllOperation();
     Media::EnhancementManager::GetInstance().HandleStateChangedOperation(FuzzBool(data, size));
-    Media::EnhancementManager::GetInstance().HandleNetChange(FuzzBool(data, size), FuzzBool(data + offset, size));
+    Media::EnhancementManager::GetInstance().HandleNetChange(FuzzBool(data, size), FuzzBool(data, size));
     string photosAutoOption = Media::PHOTO_OPTION_CLOSE;
     if (FuzzBool(data, size)) {
         photosAutoOption = FuzzString(data, size);
     }
     Media::EnhancementManager::GetInstance().HandlePhotosAutoOptionChange(photosAutoOption);
     Media::EnhancementManager::GetInstance().HandlePhotosWaterMarkChange(FuzzBool(data, size));
-    Media::EnhancementManager::GetInstance().InitAsync();
 }
 
 static void EnhancementTaskManagerTest(const uint8_t *data, size_t size)

@@ -124,4 +124,65 @@ HWTEST_F(PhotoAlbumDaoTest, GetPhotoAlbum_find_crash_01, TestSize.Level0)
     }
     MEDIA_INFO_LOG("GetPhotoAlbum_find_crash_01 end");
 }
+
+HWTEST_F(PhotoAlbumDaoTest, BuildAlbumInfoOfRecorders_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BuildAlbumInfoOfRecorders_Test start");
+    PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->photoAlbumDao_.BuildAlbumInfoOfRecorders();
+    EXPECT_EQ(albumRowData.albumName, AlbumPlugin::ALBUM_NAME_SCREEN_RECORDS);
+    EXPECT_EQ(albumRowData.bundleName, AlbumPlugin::BUNDLE_NAME_SCREEN_RECORDS);
+    EXPECT_EQ(albumRowData.lPath, AlbumPlugin::LPATH_SCREEN_RECORDS);
+    EXPECT_EQ(albumRowData.priority, 1);
+    MEDIA_INFO_LOG("BuildAlbumInfoOfRecorders_Test end");
+}
+
+HWTEST_F(PhotoAlbumDaoTest, ParseSourcePathToLPath_Test01, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ParseSourcePathToLPath_Test01 start");
+    const std::string sourcePath = "/storage/emulated/0/DCIM/Camera/IMG_111.jpg";
+    std::string result = this->photoAlbumDao_.ParseSourcePathToLPath(sourcePath);
+    EXPECT_FALSE(result.empty());
+    EXPECT_EQ(result, "/DCIM/Camera");
+    MEDIA_INFO_LOG("ParseSourcePathToLPath_Test01 end");
+}
+
+HWTEST_F(PhotoAlbumDaoTest, ParseSourcePathToLPath_Test02, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("ParseSourcePathToLPath_Test02 start");
+    const std::string sourcePath = "";
+    std::string result = this->photoAlbumDao_.ParseSourcePathToLPath(sourcePath);
+    EXPECT_FALSE(result.empty());
+    EXPECT_EQ(result, "/Pictures/其它");
+    MEDIA_INFO_LOG("ParseSourcePathToLPath_Test02 end");
+}
+
+HWTEST_F(PhotoAlbumDaoTest, BuildAlbumInfoByLPath_Test01, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BuildAlbumInfoByLPath_Test01 start");
+    const std::string lPath = "/Pictures/Test";
+    PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPath);
+    EXPECT_FALSE(albumRowData.lPath.empty());
+    EXPECT_EQ(albumRowData.lPath, "/Pictures/Test");
+    MEDIA_INFO_LOG("BuildAlbumInfoByLPath_Test01 end");
+}
+
+HWTEST_F(PhotoAlbumDaoTest, BuildAlbumInfoByLPath_Test02, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BuildAlbumInfoByLPath_Test02 start");
+    const std::string lPath = "/Pictures/Users";
+    PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPath);
+    EXPECT_FALSE(albumRowData.lPath.empty());
+    EXPECT_EQ(albumRowData.lPath, "/Pictures/Users");
+    MEDIA_INFO_LOG("BuildAlbumInfoByLPath_Test02 end");
+}
+
+HWTEST_F(PhotoAlbumDaoTest, BuildAlbumInfoByLPath_Test03, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BuildAlbumInfoByLPath_Test03 start");
+    const std::string lPath = "";
+    PhotoAlbumDao::PhotoAlbumRowData albumRowData = this->photoAlbumDao_.BuildAlbumInfoByLPath(lPath);
+    EXPECT_FALSE(albumRowData.lPath.empty());
+    EXPECT_EQ(albumRowData.lPath, "/Pictures/其它");
+    MEDIA_INFO_LOG("BuildAlbumInfoByLPath_Test03 end");
+}
 }  // namespace OHOS::Media

@@ -30,7 +30,7 @@ namespace OHOS {
 namespace Media {
 const string TDD_TEST_PATH = "/storage/cloud/files/Photo/";
 
-HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_001, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -45,7 +45,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_001, TestSize.Lev
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_002, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -66,7 +66,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_002, TestSize.Lev
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_003, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::TRASH);
     int32_t ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -95,7 +95,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_003, TestSize.Lev
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_004, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UNKNOWN_TYPE);
     int32_t ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -111,7 +111,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_004, TestSize.Lev
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_CreateDirOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_CreateDirOperation_test_001, TestSize.Level1)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
@@ -135,7 +135,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_CreateDirOperation_test_001, TestSize.Lev
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_TrashDirOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_TrashDirOperation_test_001, TestSize.Level1)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);

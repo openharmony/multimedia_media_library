@@ -227,19 +227,20 @@ int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &c
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(MediaLibraryCommand &cmd)
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(
+    MediaLibraryCommand &cmd)
 {
     std::shared_ptr<ForegroundAnalysisMeta> cvInfo = nullptr;
     int32_t errCode = InitForegroundAnalysisMeta(cmd, cvInfo);
     if (errCode != NativeRdb::E_OK) {
-        return errCode;
+        return nullptr;
     }
     errCode = cvInfo->GenerateOpType(cmd);
     if (errCode != NativeRdb::E_OK) {
-        return errCode;
+        return nullptr;
     }
     cvInfo->StartAnalysisService();
-    return NativeRdb::E_OK;
+    return ForegroundAnalysisMeta::QueryByErrorCode(NativeRdb::E_OK);
 }
 
 int32_t MediaLibraryVisionOperations::InitForegroundAnalysisMeta(MediaLibraryCommand &cmd,
@@ -262,15 +263,31 @@ int32_t MediaLibraryVisionOperations::InitForegroundAnalysisMeta(MediaLibraryCom
     return E_OK;
 }
 
-int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis()
+int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis(const std::string &assetUri,
+    MediaType mediaType)
 {
-    Uri uri(PAH_UPDATE_ANA_FOREGROUND);
+    int errCode = E_OK;
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        MEDIA_INFO_LOG("ignore media type:%{public}d", mediaType);
+        return errCode;
+    }
+    std::string uriStr = PAH_QUERY_ANA_FOREGROUND;
+    MediaFileUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TYPE,
+        std::to_string(AnalysisType::ANALYSIS_SEARCH_INDEX));
+    MediaFileUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TASK_ID,
+        std::to_string(ForegroundAnalysisMeta::GetIncTaskId()));
+    Uri uri(uriStr);
     MediaLibraryCommand cmd(uri);
     DataShare::DataSharePredicates predicates;
-    DataShareValuesBucket value;
-    value.Put(FOREGROUND_ANALYSIS_TYPE, AnalysisType::ANALYSIS_SEARCH_INDEX);
-    value.Put(FOREGROUND_ANALYSIS_TASK_ID, ForegroundAnalysisMeta::GetIncTaskId());
-    return MediaLibraryDataManager::GetInstance()->Update(cmd, value, predicates);
+    std::string photoUri = assetUri;
+    std::string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(photoUri);
+    if (!fileId.empty()) {
+        std::vector<std::string> fileIds = { fileId };
+        predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
+    }
+    std::vector<string> columns;
+    MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    return errCode;
 }
 }
 }

@@ -101,7 +101,6 @@ const std::string INSERT_VIDEO_PHOTO_AEERT =
 const std::string DELETE_DATA = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = 1";
 
 static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void SetTables()
 {
     std::vector<std::string> createTableSqlList = { PhotoColumn::CREATE_PHOTO_TABLE };
@@ -177,7 +176,6 @@ void ChangeRequestSetDisplayNameTest::TearDownTestCase()
     ClearAndRestart();
     g_rdbStore = nullptr;
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
     MEDIA_INFO_LOG("SetDisplayNameTest Clean is finish");
 }
 
@@ -323,7 +321,7 @@ int32_t CompareNewAssetToDdAsset(
  * @tc.desc: photo SetDisplayName oldExtension is jpg and newExtension is heif, expect set success
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_001, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_001, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_PHOTO_AEERT);
@@ -364,7 +362,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_001, TestSiz
  * @tc.desc: SetDisplayName oldExtension is jpg and newExtension is mp4, expect set fail
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_002, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_002, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_PHOTO_AEERT);
@@ -405,7 +403,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_002, TestSiz
  * @tc.desc: moving photo SetDisplayName oldExtension is jpg and newExtension is heif, expect set success
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_003, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_003, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_MOVING_PHOTO_AEERT);
@@ -450,7 +448,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_003, TestSiz
  * @tc.desc: moving photo SetDisplayName oldExtension is jpg and newExtension is mp4, expect set fail
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_004, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_004, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_MOVING_PHOTO_AEERT);
@@ -495,7 +493,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_004, TestSiz
  * @tc.desc:  video SetDisplayName oldExtension is mp4 and newExtension is avi, expect set success
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_005, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_005, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_VIDEO_PHOTO_AEERT);
@@ -536,7 +534,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_005, TestSiz
  * @tc.desc:  video SetDisplayName oldExtension is mp4 and newExtension is heif, expect set fail
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_006, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_006, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_VIDEO_PHOTO_AEERT);
@@ -577,7 +575,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_006, TestSiz
  * @tc.desc:  photo SetDisplayName after editdata, oldExtension is jpg and newExtension is heif, expect set success
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_007, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_007, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_PHOTO_AEERT);
@@ -633,7 +631,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_007, TestSiz
  * @tc.desc:  photo SetDisplayName after editdata, oldExtension is jpg and newExtension is mp4, expect set fail
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_008, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_008, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_PHOTO_AEERT);
@@ -689,7 +687,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_008, TestSiz
  * @tc.desc:  movingphoto SetDisplayName after editdata, oldExtension is jpg newExtension is heif, expect set success
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_009, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_009, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_PHOTO_AEERT);
@@ -749,7 +747,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_009, TestSiz
  * @tc.desc:  moving photo SetDisplayName after editdata, oldExtension is jpg and newExtension is mp4, expect set fail
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_010, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_010, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_PHOTO_AEERT);
@@ -809,7 +807,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_010, TestSiz
  * @tc.desc:  video SetDisplayName after editdata, oldExtension is mp4 and newExtension is avi, expect set success
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_011, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_011, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_VIDEO_PHOTO_AEERT);
@@ -865,7 +863,7 @@ HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_011, TestSiz
  * @tc.desc:  video SetDisplayName after editdata, oldExtension is mp4 and newExtension is heif, expect set fail
  * @tc.type: FUNC
  */
-HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_012, TestSize.Level0)
+HWTEST_F(ChangeRequestSetDisplayNameTest, SetDisplayName_PhotoAsset_012, TestSize.Level1)
 {
     EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->ExecuteSql(INSERT_VIDEO_PHOTO_AEERT);

@@ -137,10 +137,8 @@ int64_t PhotoAlbumCopyMetaDataOperation::GetLatestAlbumIdBylPath(const std::stri
     auto resultSet = this->mediaRdbStore_->QuerySql(this->SQL_PHOTO_ALBUM_SELECT_MAX_ALBUM_ID_BY_LPATH, params);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, -1, "resultSet is nullptr");
 
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_INFO_LOG("No exist album found by lpath");
-        return -1;
-    }
+    CHECK_AND_RETURN_RET_INFO_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, -1,
+        "No exist album found by lpath");
     int64_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
     CHECK_AND_RETURN_RET_LOG(albumId > 0, -1, "invalid album id");
 

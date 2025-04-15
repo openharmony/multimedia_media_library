@@ -42,9 +42,6 @@
           "camera_framework",
           "common_event_service",
           "data_share",
-          "device_auth",
-          "device_manager",
-          "device_security_level",
           "dfs_service",
           "drivers_interface_display",
           "drivers_interface_usb",
@@ -78,7 +75,6 @@
           "storage_service",
           "thermal_manager",
           "usb_manager",
-          "user_file_service",
           "window_manager",
           "background_task_mgr",
           "ffrt",
@@ -122,11 +118,12 @@
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_handler:media_library_handler",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_data_extension",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:userfilemanager_mimetypes.json",
-            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_scanner:scanner",
-            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_tool:mediatool",
-            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:medialibrary_ext_hap",
+            "//foundation/multimedia/media_library/tools/medialibrary_scanner:scanner",
+            "//foundation/multimedia/media_library/tools/medialibrary_tool:mediatool",
+            "//foundation/multimedia/media_library/MediaLibraryExt:medialibrary_ext_hap",
             "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:media_backup_package",
-            "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp_package"
+            "//foundation/multimedia/media_library/frameworks/services/media_mtp:media_mtp_package",
+            "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync"
           ]
         },
         "inner_kits": [
@@ -209,6 +206,15 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/interfaces/kits/cj:cj_photoaccesshelper_ffi"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/native/cloud_sync",
+                "header_files": [
+                  "cloud_media_data_client.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync"
             }
         ],
         "test": [

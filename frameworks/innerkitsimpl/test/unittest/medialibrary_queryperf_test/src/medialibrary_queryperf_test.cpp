@@ -145,7 +145,7 @@ int64_t UTCTimeSeconds()
     return static_cast<int64_t>((t.tv_sec * S2MS) + (t.tv_nsec / MS2NS));
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_001, TestSize.Level1)
 {
     AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
@@ -155,16 +155,17 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_001, TestSize.Lev
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
     tracer.Start("QueryALLColumn");
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(mediaLibraryDataManager, nullptr);
     for (int i = 0; i < 50; i++) {
-        auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
+        auto result = mediaLibraryDataManager->rdbStore_->Query(predicates, columns);
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
-
     GTEST_LOG_(INFO) << "QueryALLColumn Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_002, TestSize.Level1)
 {
     AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
@@ -184,16 +185,17 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_002, TestSize.Lev
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
     tracer.Start("Query10Column");
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(mediaLibraryDataManager, nullptr);
     for (int i = 0; i < 50; i++) {
-        auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
+        auto result = mediaLibraryDataManager->rdbStore_->Query(predicates, columns);
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
-
     GTEST_LOG_(INFO) << "Query10Column Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_003, TestSize.Level1)
 {
     AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
@@ -214,16 +216,17 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_003, TestSize.Lev
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
     tracer.Start("Query10Columnlimit50");
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    EXPECT_NE(mediaLibraryDataManager, nullptr);
     for (int i = 0; i < 50; i++) {
-        auto result = MediaLibraryDataManager::GetInstance()->rdbStore_->Query(predicates, columns);
+        auto result = mediaLibraryDataManager->rdbStore_->Query(predicates, columns);
     }
     tracer.Finish();
     int64_t end = UTCTimeSeconds();
-
     GTEST_LOG_(INFO) << "Query10Columnlimit50 Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_004, TestSize.Level1)
 {
     AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
@@ -270,7 +273,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_004, TestSize.Lev
     GTEST_LOG_(INFO) << "GetALLColumn Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_005, TestSize.Level1)
 {
     AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
@@ -319,7 +322,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_005, TestSize.Lev
     GTEST_LOG_(INFO) << "Get10Column Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_006, TestSize.Level1)
 {
     AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
@@ -368,7 +371,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_006, TestSize.Lev
     GTEST_LOG_(INFO) << "Get10Columnlimit50 Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_007, TestSize.Level1)
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     DataSharePredicates predicates;
@@ -387,7 +390,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_007, TestSi
     GTEST_LOG_(INFO) << "DataShareQueryALLColumn Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_008, TestSize.Level1)
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     DataSharePredicates predicates;
@@ -418,7 +421,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_008, TestSi
 }
 
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_009, TestSize.Level1)
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     DataSharePredicates predicates;
@@ -452,7 +455,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_009, TestSi
     GTEST_LOG_(INFO) << "DataShareQuery50-10Column Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_010, TestSize.Level1)
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     DataSharePredicates predicates;
@@ -497,7 +500,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_010, TestSi
     GTEST_LOG_(INFO) << "DataShareGetALLColumn Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_011, TestSize.Level1)
 {
     string queryUri = PAH_QUERY_PHOTO;
     UriAppendKeyValue(queryUri, "api_version", to_string(MEDIA_API_VERSION_V10));
@@ -546,7 +549,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_011, TestSi
     GTEST_LOG_(INFO) << "DataShareGet10Column Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_012, TestSize.Level1)
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     DataSharePredicates predicates;
@@ -597,7 +600,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_012, TestSi
     GTEST_LOG_(INFO) << "DataShareGet10Columnlimit50 Cost: " << ((double)(end - start)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_013, TestSize.Level1)
 {
     AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
@@ -618,7 +621,7 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_013, TestSize.Lev
     GTEST_LOG_(INFO) << "rdb GetRowCount Cost: " << ((double)(timeSum)/50) << "ms";
 }
 
-HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_014, TestSize.Level1)
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     DataSharePredicates predicates;

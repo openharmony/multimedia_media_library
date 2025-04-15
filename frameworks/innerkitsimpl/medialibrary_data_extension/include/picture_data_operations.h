@@ -44,6 +44,7 @@ public:
     time_t expireTime_;
     bool isCleanImmediately_ = true;
     bool isEdited_ = false;
+    bool isTakeEffect_ = false;
     explicit PicturePair(std::shared_ptr<Media::Picture> picture, std::string photoId,
         time_t expireTime, bool isCleanImmediately, bool isEdited)
     {
@@ -96,6 +97,11 @@ public:
            << "}";
         return ss.str();
     }
+    
+    void SetTakeEffect(bool isTakeEffect)
+    {
+        isTakeEffect_ = isTakeEffect;
+    }
 };
 
 class SavePictureData : public AsyncTaskData {
@@ -113,9 +119,9 @@ public:
     void CleanPictureMapData(std::map<std::string, sptr<PicturePair>>& pictureMap, PictureType pictureType);
     EXPORT void InsertPictureData(const std::string& imageId, sptr<PicturePair>& picturePair, PictureType pictureType);
     std::shared_ptr<Media::Picture> GetDataWithImageId(const std::string& imageId,
-        bool &isHighQualityPicture, bool isCleanImmediately = true);
+        bool &isHighQualityPicture, bool &isTakeEffect, bool isCleanImmediately = true);
     std::shared_ptr<Media::Picture> GetDataWithImageIdAndPictureType(const std::string& imageId,
-        PictureType pictureType, bool isCleanImmediately = true);
+        PictureType pictureType, bool &isTakeEffect, bool isCleanImmediately = true);
     void DeleteDataWithImageId(const std::string& imageId, PictureType pictureType);
     bool IsExsitDataForPictureType(PictureType pictureType);
     bool IsExsitDataForPictureType(const std::string& imageId, PictureType pictureType);

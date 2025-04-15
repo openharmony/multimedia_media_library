@@ -61,7 +61,7 @@ void MedialibraryMetaRecoveryJsonTest::TearDownTestCase(void)
 void MedialibraryMetaRecoveryJsonTest::SetUp() {}
 void MedialibraryMetaRecoveryJsonTest::TearDown() {}
 
-HWTEST_F(MedialibraryMetaRecoveryJsonTest, MedialibraryMetaRecoveryJsonTest_00, TestSize.Level0)
+HWTEST_F(MedialibraryMetaRecoveryJsonTest, MedialibraryMetaRecoveryJsonTest_00, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "MedialibraryMetaRecoveryJsonTest_00 begin";
 
@@ -87,7 +87,7 @@ HWTEST_F(MedialibraryMetaRecoveryJsonTest, MedialibraryMetaRecoveryJsonTest_00, 
     GTEST_LOG_(INFO) << "MedialibraryMetaRecoveryJsonTest_00 ok";
 }
 
-HWTEST_F(MedialibraryMetaRecoveryJsonTest, MedialibraryMetaRecoveryJsonTest_01, TestSize.Level0)
+HWTEST_F(MedialibraryMetaRecoveryJsonTest, MedialibraryMetaRecoveryJsonTest_01, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "MedialibraryMetaRecoveryJsonTest_01 begin";
 
@@ -120,7 +120,7 @@ static void InsertMetaStatusData(const std::string &key, int32_t val, std::set<i
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MedialibraryMetaRecoveryJsonTest, MedialibraryMetaRecoveryJsonTest_02, TestSize.Level0)
+HWTEST_F(MedialibraryMetaRecoveryJsonTest, MedialibraryMetaRecoveryJsonTest_02, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "MedialibraryMetaRecoveryJsonTest_02 begin";
     const std::string metaStatusPath = "/storage/cloud/files/.meta/status.json";

@@ -46,17 +46,13 @@ void CloudSyncSwitchObserver::HandleIndex()
     std::this_thread::sleep_for(std::chrono::milliseconds(SYNC_INTERVAL));
     lock_guard<mutex> lock(syncMutex_);
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(uniStore != nullptr, "uniStore is nullptr!");
 
     //delete index
     const std::string queryIdToDeleteIndex = "SELECT file_id FROM tab_analysis_search_index WHERE photo_status = -1";
     auto resultSet = uniStore->QuerySql(queryIdToDeleteIndex);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is nullptr!");
-    }
+    CHECK_AND_PRINT_LOG(resultSet != nullptr, "resultSet is nullptr!");
+    
     std::vector<std::string> idToDeleteIndex;
     while (resultSet != nullptr && resultSet->GoToNextRow() == NativeRdb::E_OK) {
         idToDeleteIndex.push_back(to_string(GetInt32Val("file_id", resultSet)));
@@ -70,10 +66,7 @@ void CloudSyncSwitchObserver::HandleIndex()
     //update index
     const std::string queryIdToUpdateIndex = "SELECT file_id FROM tab_analysis_search_index WHERE photo_status = 2";
     auto resultSetUpdateIndex = uniStore->QuerySql(queryIdToUpdateIndex);
-    if (resultSetUpdateIndex == nullptr) {
-        MEDIA_ERR_LOG("resultSetUpdateIndex is nullptr!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSetUpdateIndex != nullptr, "resultSetUpdateIndex is nullptr!");
     std::vector<std::string> idToUpdateIndex;
     while (resultSetUpdateIndex->GoToNextRow() == NativeRdb::E_OK) {
         idToUpdateIndex.push_back(to_string(GetInt32Val("file_id", resultSetUpdateIndex)));
@@ -90,29 +83,18 @@ void CloudSyncSwitchManager::RegisterObserver()
 {
     options.enabled_ = true;
     auto dataShareHelper = DataShare::DataShareHelper::Creator(QUERY_URI, options);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dataShareHelper != nullptr, "dataShareHelper is nullptr");
 
     const string photos = "persist.kernel.bundle_name.photos";
     const string clouddrive = "persist.kernel.bundle_name.clouddrive";
     const std::string GALLERY_BUNDLE_NAME = system::GetParameter(photos, "");
     const std::string CLOUDDRIVE_BUNDLE_NAME = system::GetParameter(clouddrive, "");
-    if (GALLERY_BUNDLE_NAME == "") {
-        MEDIA_ERR_LOG("can't get gallery bundle name");
-        return;
-    }
-    if (CLOUDDRIVE_BUNDLE_NAME == "") {
-        MEDIA_ERR_LOG("can't get clouddrive bundle name");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(GALLERY_BUNDLE_NAME != "", "can't get gallery bundle name");
+    CHECK_AND_RETURN_LOG(CLOUDDRIVE_BUNDLE_NAME != "", "can't get clouddrive bundle name");
     std::string queryUri = QUERY_URI + CLOUDDRIVE_BUNDLE_NAME + "/sync_switch?bundleName=" + GALLERY_BUNDLE_NAME;
 
     sptr<CloudSyncSwitchObserver> switchObserver(new (std::nothrow) CloudSyncSwitchObserver());
-    if (switchObserver == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN(switchObserver != nullptr);
     Uri observerUri(queryUri);
     dataShareHelper->RegisterObserver(observerUri, switchObserver);
 }

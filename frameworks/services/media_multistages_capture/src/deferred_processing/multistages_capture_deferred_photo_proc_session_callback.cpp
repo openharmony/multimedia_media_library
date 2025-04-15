@@ -222,8 +222,9 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
 
     // 裸picture落盘处理
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
+    bool isTakeEffect = false;
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhotoForPicture(
-        isEdited, data, picture, fileId, mimeType, resultPicture);
+        isEdited, data, picture, fileId, mimeType, resultPicture, isTakeEffect);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,
@@ -231,7 +232,8 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
         return;
     }
 
-    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), isEdited);
+    MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(
+        imageId, std::move(picture), isEdited, isTakeEffect);
     UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag, modifyType);
     MediaLibraryObjectUtils::ScanFileAsync(
         data, to_string(fileId), MediaLibraryApi::API_10, isMovingPhoto, resultPicture);
@@ -240,10 +242,6 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::ProcessAndSaveHighQuali
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId, mediaType);
     MultiStagesCaptureDfxResult::Report(imageId,
         static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS), mediaType);
-
-    // delete raw file
-    MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(imageId, false);
-
     if (isMovingPhoto) {
         MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(imageId);
     }
@@ -282,7 +280,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
         tracer.Finish();
         MEDIA_INFO_LOG("result set is empty.");
         // 高质量图先上来，直接保存
-        MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
+        MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false, false);
         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
         // When subType query failed, default mediaType is Image
         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR),
@@ -298,7 +296,7 @@ void MultiStagesCaptureDeferredPhotoProcSessionCallback::OnProcessImageDone(cons
             static_cast<int32_t>(FirstStageModifyType::NOT_MODIFIED));
     if (isTemp) {
         MEDIA_INFO_LOG("MultistagesCapture, this picture is temp.");
-        MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false);
+        MultiStagesPhotoCaptureManager::GetInstance().DealHighQualityPicture(imageId, std::move(picture), false, false);
         UpdateHighQualityPictureInfo(imageId, cloudImageEnhanceFlag, modifyType);
         return;
     }

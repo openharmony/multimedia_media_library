@@ -125,8 +125,8 @@ SendableFileAssetNapi::~SendableFileAssetNapi() = default;
 void SendableFileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
 {
     SendableFileAssetNapi *fileAssetObj = reinterpret_cast<SendableFileAssetNapi*>(nativeObject);
+    lock_guard<mutex> lockGuard(mutex_);
     if (fileAssetObj != nullptr) {
-        lock_guard<mutex> lockGuard(mutex_);
         delete fileAssetObj;
         fileAssetObj = nullptr;
     }
@@ -914,6 +914,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::PHOTO_USER_COMMENT,
         PhotoColumn::CAMERA_SHOT_KEY,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };

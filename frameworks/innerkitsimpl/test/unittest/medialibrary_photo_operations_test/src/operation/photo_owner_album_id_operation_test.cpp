@@ -45,7 +45,7 @@ void PhotoOwnerAlbumIdOperationTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(PhotoOwnerAlbumIdOperationTest, FixPhotoRelation_NULL_RDB_Test, TestSize.Level0)
+HWTEST_F(PhotoOwnerAlbumIdOperationTest, FixPhotoRelation_NULL_RDB_Test, TestSize.Level1)
 {
     std::vector<std::string> fileIds = {"1", "2", "3"};
     std::shared_ptr<MediaLibraryRdbStore> uniStore = nullptr;

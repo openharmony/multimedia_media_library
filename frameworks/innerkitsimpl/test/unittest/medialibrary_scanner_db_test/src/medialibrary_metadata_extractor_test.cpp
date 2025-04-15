@@ -30,7 +30,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_test_001, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -41,7 +41,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_AVMETADATA);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_test_002, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -52,7 +52,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_test_002, TestSize.Level0)
     EXPECT_EQ(ret, E_AVMETADATA);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_empty_path, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_empty_path, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -65,7 +65,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_empty_path, TestSize.Level0
     EXPECT_EQ(ret, E_IMAGE);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_empty_path, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_empty_path, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -78,7 +78,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_empty_path, TestS
     EXPECT_EQ(ret, E_AVMETADATA);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_normal_path, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_normal_path, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -90,7 +90,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_normal_path, Test
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_nonexistent_path, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_nonexistent_path, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -102,7 +102,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_nonexistent_path,
     EXPECT_EQ(ret, E_SYSCALL);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_clone_test, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_clone_test, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -115,7 +115,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_clone_test, TestS
     EXPECT_EQ(ret, E_AVMETADATA);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_001, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -127,7 +127,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_001, Test
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_002, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -139,7 +139,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_002, Test
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_001, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -159,7 +159,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_001, Tes
     EXPECT_EQ(data->GetLatitude(), 0);
 }
 
-HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_002, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
@@ -182,7 +182,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_002, Tes
     EXPECT_EQ(data->GetLongitude(), longtitude);
     EXPECT_EQ(data->GetLatitude(), latitude);
 }
-HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_photo, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_photo, TestSize.Level1)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
     unique_ptr<MediaScannerDb> mediaScannerDb;
