@@ -57,13 +57,12 @@ void MultiStagesCaptureDfxRequestPolicy::GetCount(const RequestPolicy policy, Re
 void MultiStagesCaptureDfxRequestPolicy::SetPolicy(const std::string &callingPackage, const RequestPolicy policy)
 {
     RequestCount requestCountForEachCaller { 0, 0, 0 };
-    if (requestCountMap_.find(callingPackage) != requestCountMap_.end()) {
-        requestCountForEachCaller = requestCountMap_[callingPackage];
+    if (requestCountMap_.Find(callingPackage, requestCountForEachCaller)) {
         GetCount(policy, requestCountForEachCaller);
-        requestCountMap_[callingPackage] = requestCountForEachCaller;
+        requestCountMap_.EnsureInsert(callingPackage, requestCountForEachCaller);
     } else {
         GetCount(policy, requestCountForEachCaller);
-        requestCountMap_.emplace(callingPackage, requestCountForEachCaller);
+        requestCountMap_.Insert(callingPackage, requestCountForEachCaller);
     }
 
     if (ShouldReport()) {
@@ -89,23 +88,23 @@ bool MultiStagesCaptureDfxRequestPolicy::ShouldReport()
 
 void MultiStagesCaptureDfxRequestPolicy::Report()
 {
-    if (requestCountMap_.empty()) {
+    if (requestCountMap_.IsEmpty()) {
         return;
     }
 
-    for (auto iter = requestCountMap_.begin(); iter != requestCountMap_.end(); iter++) {
-        VariantMap map = {{ KEY_CALLING_PACKAGE, iter->first },
-            { KEY_HIGH_QUALITY_COUNT, iter->second.highQualityCount },
-            { KEY_BALANCE_QUALITY_COUNT, iter->second.balanceQualityCount },
-            { KEY_EMERGENCY_QUALITY_COUNT, iter->second.emergencyQualityCount }};
+    requestCountMap_.Iterate([](std::string key, RequestCount &val) {
+        VariantMap map = {{ KEY_CALLING_PACKAGE, key },
+            { KEY_HIGH_QUALITY_COUNT, val.highQualityCount },
+            { KEY_BALANCE_QUALITY_COUNT, val.balanceQualityCount },
+            { KEY_EMERGENCY_QUALITY_COUNT, val.emergencyQualityCount }};
 
         MEDIA_INFO_LOG("Report caller:%{public}s, high: %{public}d, balance: %{public}d, emergency: %{public}d",
-            iter->first.c_str(), iter->second.highQualityCount, iter->second.balanceQualityCount,
-            iter->second.emergencyQualityCount);
+            key.c_str(), val.highQualityCount, val.balanceQualityCount,
+            val.emergencyQualityCount);
         PostEventUtils::GetInstance().PostStatProcess(StatType::MSC_REQUEST_POLICY_STAT, map);
-    }
+    });
 
-    requestCountMap_.clear();
+    requestCountMap_.Clear();
     lastReportTime_ = MediaFileUtils::UTCTimeMilliSeconds();
     isReporting_ = false;
 }
