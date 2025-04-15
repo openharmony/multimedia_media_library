@@ -330,33 +330,6 @@ int32_t PhotoCustomRestoreOperation::BatchUpdateTimePending(vector<FileInfo> &re
     return E_OK;
 }
 
-int32_t PhotoCustomRestoreOperation::BatchUpdateTimePending(vector<FileInfo> &restoreFiles)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "BatchUpdateTimePending: get rdb store fail!");
-
-     // 构建包含所有文件路径的参数列表
-    std::vector<NativeRdb::ValueObject> params;
-    for (const auto& file : restoreFiles) {
-        params.push_back(file.filePath);
-    }
-
-    string updateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + MediaColumn::MEDIA_TIME_PENDING +
-        " = 0 WHERE " + PhotoColumn::MEDIA_FILE_PATH + " IN (";
-    for (size_t i = 0; i < restoreFiles.size(); ++i) {
-        updateSql += "?";
-        if (i != restoreFiles.size() - 1) {
-            updateSql += ", ";
-        }
-    }
-    updateSql += ");";
-
-    int32_t errCode = rdbStore->ExecuteSql(updateSql, params);
-    CHECK_AND_PRINT_LOG(errCode >= 0, "BatchUpdateTimePending: execute update time_pending failed."
-        " ret = %{public}d", errCode);
-    return E_OK;
-}
-
 int32_t PhotoCustomRestoreOperation::UpdatePhotoAlbum(RestoreTaskInfo &restoreTaskInfo, FileInfo fileInfo)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
