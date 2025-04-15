@@ -187,11 +187,6 @@ static void ClearEmptyGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &cle
     if (clearAlbums.empty()) {
         return;
     }
-    ValuesBucket values;
-    values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, 0);
-    values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, "");
-    values.PutInt(IS_COVER_SATISFIED, static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING));
-    values.PutInt(IS_ME, ALBUM_IS_NOT_ME);
 
     RdbPredicates rdbPredicates(ANALYSIS_ALBUM_TABLE);
     stringstream ss;
@@ -205,7 +200,7 @@ static void ClearEmptyGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &cle
     rdbPredicates.SetWhereClause(clause);
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SMART));
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::GROUP_PHOTO));
-    auto ret = MediaLibraryRdbStore::UpdateWithDateTime(values, rdbPredicates);
+    auto ret = MediaLibraryRdbStore::Delete(rdbPredicates);
     CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "Clear empty group photo album info failed! Error: %{public}d", ret);
 }
 
