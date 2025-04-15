@@ -4348,6 +4348,10 @@ static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME) {
         FixMdirtyTriggerToUploadDetailTime(store);
     }
+
+    if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS_RETRY) {
+        TabFaCardPhotosTableEventHandler().OnCreate(store);
+    }
 }
 
 static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
