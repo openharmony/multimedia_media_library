@@ -550,7 +550,7 @@ std::string CloneRestoreCVAnalysis::ParsePlayInfo(const std::string &oldPlayInfo
             ParseTimeline(newPlayInfo, timelineIndex, cloneHighlight);
         }
     }
-    return newPlayInfo.dump();
+    return newPlayInfo.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 }
 
 void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t effectlineIndex,
@@ -588,22 +588,26 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
         cond = newPlayInfo["effectline"]["effectline"][effectlineIndex].contains(EFFECTLINE_ID[infoIndex]) &&
             newPlayInfo["effectline"]["effectline"][effectlineIndex].contains(EFFECTLINE_URI[infoIndex]);
         CHECK_AND_CONTINUE(cond);
-        for (size_t idIndex = 0;
-            idIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]].size();
-            idIndex++) {
-            int32_t oldFileId =
-                newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]][idIndex];
-            newFileIds.emplace_back(cloneHighlight.GetNewHighlightPhotoId(oldFileId));
-            newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]][idIndex] =
-                newFileIds[idIndex];
+        if (newPlayInfo["effectline"]["effectline"][effectlineIndex].contains(EFFECTLINE_ID[infoIndex])) {
+            for (size_t idIndex = 0;
+                idIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]].size();
+                idIndex++) {
+                int32_t oldFileId =
+                    newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]][idIndex];
+                newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]][idIndex] =
+                    cloneHighlight.GetNewHighlightPhotoId(oldFileId);
+            }
         }
 
-        for (size_t uriIndex = 0;
-            uriIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]].size();
-            uriIndex++) {
-            CHECK_AND_BREAK(uriIndex < newFileIds.size());
-            std::string newFileUri = cloneHighlight.GetNewHighlightPhotoUri(newFileIds[uriIndex]);
-            newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex] = newFileUri;
+        if (newPlayInfo["effectline"]["effectline"][effectlineIndex].contains(EFFECTLINE_URI[infoIndex])) {
+            for (size_t uriIndex = 0;
+                uriIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]].size();
+                uriIndex++) {
+                std::string oldFileUri =
+                    newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex];
+                newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex] =
+                    GetNewPhotoUriByUri(oldFileUri);
+            }
         }
     }
 }
@@ -623,17 +627,19 @@ void CloneRestoreCVAnalysis::ParseTimeline(nlohmann::json &newPlayInfo, size_t t
 
     std::vector<int32_t> newFileIds;
     bool cond = newPlayInfo["timeline"][timelineIndex].contains("fileId") &&
-        newPlayInfo["timeline"][timelineIndex].contains("fileUri")
-    if (cond) {
+        newPlayInfo["timeline"][timelineIndex].contains("fileUri");
+    if (newPlayInfo["timeline"][timelineIndex].contains("fileId")) {
         for (size_t idIndex = 0; idIndex < newPlayInfo["timeline"][timelineIndex]["fileId"].size(); idIndex++) {
             int32_t oldFileId = newPlayInfo["timeline"][timelineIndex]["fileId"][idIndex];
-            newFileIds.emplace_back(cloneHighlight.GetNewHighlightPhotoId(oldFileId));
-            newPlayInfo["timeline"][timelineIndex]["fileId"][idIndex] = newFileIds[idIndex];
+            newPlayInfo["timeline"][timelineIndex]["fileId"][idIndex] =
+                cloneHighlight.GetNewHighlightPhotoId(oldFileId);
         }
+    }
 
+    if (newPlayInfo["timeline"][timelineIndex].contains("fileUri"))
         for (size_t uriIndex = 0; uriIndex < newPlayInfo["timeline"][timelineIndex]["fileUri"].size(); uriIndex++) {
-            std::string newFileUri = cloneHighlight.GetNewHighlightPhotoUri(newFileIds[uriIndex]);
-            newPlayInfo["timeline"][timelineIndex]["fileUri"][uriIndex] = newFileUri;
+            std::string oldFileUri = newPlayInfo["timeline"][timelineIndex]["fileUri"][uriIndex];
+            newPlayInfo["timeline"][timelineIndex]["fileUri"][uriIndex] = GetNewPhotoUriByUri(oldFileUri);;
         }
     }
 }
