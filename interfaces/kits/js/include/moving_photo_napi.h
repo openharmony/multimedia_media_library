@@ -48,6 +48,7 @@ struct MovingPhotoAsyncContext : public NapiError {
     RequestContentMode requestContentMode = UNDEFINED;
     void* arrayBufferData = nullptr;
     size_t arrayBufferLength = 0;
+    int32_t position = 0;
 };
 
 struct MovingPhotoParam {
@@ -60,8 +61,8 @@ public:
     MovingPhotoNapi(const std::string& photoUri) : photoUri_(photoUri) {};
     ~MovingPhotoNapi() = default;
     EXPORT static napi_value Init(napi_env env, napi_value exports);
-    static int32_t OpenReadOnlyFile(const string& uri, bool isReadImage);
-    static int32_t OpenReadOnlyLivePhoto(const string& destLivePhotoUri);
+    static int32_t OpenReadOnlyFile(const string& uri, bool isReadImage, int32_t position);
+    static int32_t OpenReadOnlyLivePhoto(const string& destLivePhotoUri, int32_t position);
     static int32_t OpenReadOnlyMetadata(const string& movingPhotoUri);
     static napi_value NewMovingPhotoNapi(napi_env env, const string& photoUri, SourceMode sourceMode,
         MovingPhotoParam movingPhotoParam,
@@ -79,6 +80,7 @@ public:
     static void OnProgress(napi_env env, napi_value cb, void *context, void *data);
     static int32_t GetFdFromUri(const std::string &sandBoxUri);
     static void SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context);
+    static void RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context);
     static void CallRequestContentCallBack(napi_env env, MovingPhotoAsyncContext* context);
 private:
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
