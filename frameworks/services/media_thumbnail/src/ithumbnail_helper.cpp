@@ -540,7 +540,7 @@ bool IThumbnailHelper::TrySavePixelMap(ThumbnailData &data, ThumbnailType type)
     if (!data.needCheckWaitStatus) {
         int err = ThumbnailUtils::TrySaveFile(data, type);
         CHECK_AND_RETURN_RET_LOG(err >= 0, false, "No wait TrySavePixelMap failed: %{public}d, path: %{public}s", err,
-            DfxUtils::GetSafePath(data.path).c_str())
+            DfxUtils::GetSafePath(data.path).c_str());
         return true;
     }
     ThumbnailWait thumbnailWait(false);
@@ -633,7 +633,7 @@ bool IThumbnailHelper::SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &da
             DfxUtils::GetSafePath(data.path).c_str());
         copySource = ThumbnailImageFrameWorkUtils::CopyPictureSource(lcdSource);
         CHECK_AND_RETURN_RET_LOG(copySource != nullptr, false, "SaveLcdPictureSource failed, CopyPictureSource failed");
-        CHECK_AND_RETRUN_RET_LOG(lcdSource->GetMainPixel()->GetWidth() * lcdSource->GetMainPixel()->GetHeight() != 0,
+        CHECK_AND_RETURN_RET_LOG(lcdSource->GetMainPixel()->GetWidth() * lcdSource->GetMainPixel()->GetHeight() != 0,
             false, "SaveLcdPictureSource failed, invalid mainpixel size");
         float widthScale = (1.0f * lcdDesiredWidth) / lcdSource->GetMainPixel()->GetWidth();
         float heightScale = (1.0f * lcdDesiredHeight) / lcdSource->GetMainPixel()->GetHeight();
