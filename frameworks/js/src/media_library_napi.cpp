@@ -3445,7 +3445,7 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
 
     NAPI_CALL(env, napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
-    asyncContext->objectInfo == nullptr;
+    asyncContext->objectInfo = nullptr;
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
     MediaLibraryAsyncContext *context = asyncContext.get();
     std::function<void()> task = [env, status, context]() {
