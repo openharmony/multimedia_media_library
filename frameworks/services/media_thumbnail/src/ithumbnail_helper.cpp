@@ -799,8 +799,7 @@ bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
 
     auto pixelMapEx = data.source.GetPixelMapEx();
     CHECK_AND_RETURN_RET_LOG(pixelMapEx != nullptr, false,
-        "sourceEx is nullptr when generate thumbnailEx, path: %{public}s",
-        DfxUtils::GetSafePath(opts.path).c_str());
+        "sourceEx is nullptr when generate thumbnailEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
     CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CompressImage(pixelMapEx, data.thumbnail, false), false,
         "CompressImage failed id %{public}s", opts.row.c_str());
     CHECK_AND_RETURN_RET_LOG(TrySavePixelMap(data, ThumbnailType::THUMB_EX), false,
