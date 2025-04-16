@@ -1256,6 +1256,7 @@ int32_t MediaLibraryMetaRecovery::StartAsyncRecovery()
             recoveryState_.exchange(MediaLibraryMetaRecoveryState::STATE_NONE);
         }
         recoveryCostTime_ += recoveryTotalTime;
+        RecoveryStatistic();
     }).detach();
 
     return E_OK;
