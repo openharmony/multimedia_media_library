@@ -37,6 +37,8 @@ ohos_unittest("media_library_manager_test") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
   ]
 
+  cflags = [ "-fno-access-control" ]
+
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
     "./src/media_library_manager_test.cpp",
