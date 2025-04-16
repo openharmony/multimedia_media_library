@@ -698,8 +698,9 @@ std::string CloneRestoreCVAnalysis::GetNewTransitionVideoUri(const std::string &
     assetUriMap_.insert(std::make_pair(oldVideoUri, newVideoUri));
 
     std::string dstPath = "/storage/media/local/files/highlight/video/" + std::to_string(newAssetId) + "/" +
-        std::to_string(newAssetId) + suffix;
-    std::string srcPath = assetPath_ + std::to_string(oldAssetId) + "/" + std::to_string(oldAssetId) + suffix;
+        std::to_string(newAssetId) + "_" + std::to_string(newNextPhotoId) + suffix;
+    std::string srcPath = assetPath_ + std::to_string(oldAssetId) + "/" +
+        std::to_string(oldAssetId) + "_" + std::to_string(oldNextAssetId) + suffix;
     MoveAnalysisAssets(srcPath, dstPath);
     return newVideoUri;
 }
