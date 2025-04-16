@@ -1430,5 +1430,21 @@ HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandlePhotoAlbumOperations_test_00
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_001 End");
 }
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_RenewDeletedPhotoAlbum_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_002::Start");
+    int32_t id = 1;
+    NativeRdb::ValuesBucket albumValues;
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>("test");
+    ASSERT_NE(trans, nullptr);
+    int32_t ret = MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(id, albumValues, trans);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+
+    trans = nullptr;
+    ret = MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(id, albumValues, trans);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_002 End");
+}
 } // namespace Media
 } // namespace OHOS
