@@ -13,20 +13,20 @@
  * limitations under the License.
  */
 
- #ifndef MEDIALIBRARY_EXT_UNIT_TEST_H
- #define MEDIALIBRARY_EXT_UNIT_TEST_H
+#ifndef MEDIALIBRARY_EXT_UNIT_TEST_H
+#define MEDIALIBRARY_EXT_UNIT_TEST_H
+
+#include <gtest/gtest.h>
  
- #include <gtest/gtest.h>
- 
- namespace OHOS {
- namespace Media {
- class MediaLibraryIthumbnailHelperTest : public testing::Test {
- public:
-     static void SetUpTestCase(void);
-     static void TearDownTestCase(void);
-     void SetUp();
-     void TearDown();
- };
- } // namespace Media
- } // namespace OHOS
- #endif // MEDIALIBRARY_EXT_UNIT_TEST_H
+namespace OHOS {
+namespace Media {
+class MediaLibraryIthumbnailHelperTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
+} // namespace Media
+} // namespace OHOS
+#endif // MEDIALIBRARY_EXT_UNIT_TEST_H
