@@ -131,8 +131,7 @@ ani_object FetchFileResultAni::FetchFileResultAniConstructor(ani_env *env, ani_c
     ani_method ctor;
     if (ANI_OK != env->Class_FindMethod(clazz, "<ctor>", nullptr, &ctor)) {
         ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
-        ani_object nullobj = nullptr;
-        return nullobj;
+        return nullptr;
     }
 
     ani_object fetchResult;
@@ -249,18 +248,17 @@ ani_object FetchFileResultAni::GetAllObjects(ani_env *env, [[maybe_unused]] ani_
     MediaLibraryTracer tracer;
     tracer.Start("GetAllObjects");
 
-    ani_object nullobj = nullptr;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
     if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
         aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
-        CHECK_COND_RET(aniContext->objectPtr, nullobj, "propertyPtr is nullptr");
+        CHECK_COND_RET(aniContext->objectPtr, nullptr, "propertyPtr is nullptr");
         GetAllObjectFromFetchResult(aniContext);
         return GetAllObjectComplete(env, aniContext);
     } else {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "GetAllObject obj == nullptr");
     }
-    return nullobj;
+    return nullptr;
 }
 
 
@@ -388,7 +386,13 @@ static ani_object GetPositionObjectComplete(ani_env *env, std::unique_ptr<FetchF
     switch (aniContest->objectPtr->fetchResType_) {
         case FetchResType::TYPE_FILE: {
             auto fileAssetAni = FileAssetAni::CreateFileAsset(env, aniContest->fileAsset);
-            etsAsset = FileAssetAni::Wrap(env, fileAssetAni);
+            FileAssetAniMethod fileAssetAniMethod;
+            if (ANI_OK != FileAssetAni::InitFileAssetAniMethod(env,
+                fileAssetAni->GetFileAssetInstance()->GetResultNapiType(), fileAssetAniMethod)) {
+                ANI_ERR_LOG("InitFileAssetAniMethod failed");
+                return nullptr;
+            }
+            etsAsset = FileAssetAni::Wrap(env, fileAssetAni, fileAssetAniMethod);
             break;
         }
         case FetchResType::TYPE_PHOTOALBUM: {
@@ -409,12 +413,11 @@ static ani_object GetPositionObjectComplete(ani_env *env, std::unique_ptr<FetchF
 
 ani_object FetchFileResultAni::GetFirstObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle)
 {
-    ani_object nullobj = nullptr;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
     if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
         aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
-        CHECK_COND_RET(aniContext->objectPtr, nullobj, "propertyPtr is nullptr");
+        CHECK_COND_RET(aniContext->objectPtr, nullptr, "propertyPtr is nullptr");
         GetFirstAsset(aniContext);
         return GetPositionObjectComplete(env, aniContext);
     } else {
@@ -457,12 +460,11 @@ static void GetNextAsset(std::unique_ptr<FetchFileResultAniContext>& aniContest)
 
 ani_object FetchFileResultAni::GetNextObject(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle)
 {
-    ani_object nullobj = nullptr;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
     if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
         aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
-        CHECK_COND_RET(aniContext->objectPtr, nullobj, "propertyPtr is nullptr");
+        CHECK_COND_RET(aniContext->objectPtr, nullptr, "propertyPtr is nullptr");
         GetNextAsset(aniContext);
         return GetPositionObjectComplete(env, aniContext);
     } else {
@@ -500,13 +502,12 @@ static void GetObjectAtPosition(std::unique_ptr<FetchFileResultAniContext>& aniC
 
 ani_object FetchFileResultAni::GetPositionObject(ani_env *env, ani_object fetchFileResultHandle, ani_double index)
 {
-    ani_object nullobj = nullptr;
     auto aniContext = make_unique<FetchFileResultAniContext>();
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
     if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
         aniContext->position = static_cast<int32_t>(index);
         aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
-        CHECK_COND_RET(aniContext->objectPtr, nullobj, "propertyPtr is nullptr");
+        CHECK_COND_RET(aniContext->objectPtr, nullptr, "propertyPtr is nullptr");
         GetObjectAtPosition(aniContext);
         return GetPositionObjectComplete(env, aniContext);
     } else {

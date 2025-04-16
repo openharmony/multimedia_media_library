@@ -793,7 +793,13 @@ static ani_object GetAniPairFileAsset(ani_env *env, std::unique_ptr<CloudEnhance
         return pairRes;
     }
     context->fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    pairRes = FileAssetAni::Wrap(env, FileAssetAni::CreateFileAsset(env, context->fileAsset));
+    FileAssetAniMethod fileAssetAniMethod;
+    if (ANI_OK != FileAssetAni::InitFileAssetAniMethod(env, ResultNapiType::TYPE_PHOTOACCESS_HELPER,
+        fileAssetAniMethod)) {
+        ANI_ERR_LOG("InitFileAssetAniMethod failed");
+        return nullptr;
+    }
+    pairRes = FileAssetAni::Wrap(env, FileAssetAni::CreateFileAsset(env, context->fileAsset), fileAssetAniMethod);
     if (pairRes == nullptr) {
         MediaLibraryAniUtils::CreateAniErrorObject(env, errorObj, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch File Result");
