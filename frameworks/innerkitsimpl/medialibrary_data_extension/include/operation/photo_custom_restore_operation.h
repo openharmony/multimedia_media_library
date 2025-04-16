@@ -107,7 +107,7 @@ private:
     vector<FileInfo> SetDestinationPath(vector<FileInfo> &restoreFiles, UniqueNumber &uniqueNumber);
     void GetAssetRootDir(int32_t mediaType, string &rootDirPath);
     vector<FileInfo> BatchInsert(
-        RestoreTaskInfo &restoreTaskInfo, vector<FileInfo> &restoreFiles, int32_t &sameFileNum);
+        RestoreTaskInfo &restoreTaskInfo, vector<FileInfo> &restoreFiles, int32_t &sameFileNum, bool isFirst);
     NativeRdb::ValuesBucket GetInsertValue(RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo);
     int32_t FillMetadata(std::unique_ptr<Metadata> &data);
     int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
