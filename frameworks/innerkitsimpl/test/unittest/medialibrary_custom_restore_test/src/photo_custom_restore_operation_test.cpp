@@ -334,7 +334,7 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_02
     PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
     vector<FileInfo> files = {};
     int32_t code = 0;
-    vector<FileInfo> result = operatorObj.BatchInsert(restoreTaskInfo, files, code);
+    vector<FileInfo> result = operatorObj.BatchInsert(restoreTaskInfo, files, code, true);
     EXPECT_EQ(result.size(), 0);
     MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_026 End");
 }
@@ -467,6 +467,19 @@ HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_03
     operatorObj.CleanTimeoutCustomRestoreTaskDir();
     EXPECT_EQ(operatorObj.IsCancelTask(restoreTaskInfo), false);
     MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_039 End");
+}
+
+HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_Operation_Test_040, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_040 Start");
+    RestoreTaskInfo restoreTaskInfo;
+    restoreTaskInfo.keyPath = "restoreTaskInfo";
+    PhotoCustomRestoreOperation &operatorObj = PhotoCustomRestoreOperation ::GetInstance();
+    vector<FileInfo> files = {};
+    int32_t code = 0;
+    vector<FileInfo> result = operatorObj.BatchInsert(restoreTaskInfo, files, code, false);
+    EXPECT_EQ(result.size(), 0);
+    MEDIA_INFO_LOG("Photo_Custom_Restore_Operation_Test_040 End");
 }
 
 HWTEST_F(PhotoCustomRestoreOperationTest, Photo_Custom_Restore_UpdatePhotoAlbum_Test, TestSize.Level0)

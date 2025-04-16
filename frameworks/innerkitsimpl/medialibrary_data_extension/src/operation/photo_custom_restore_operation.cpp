@@ -148,6 +148,7 @@ void PhotoCustomRestoreOperation::DoCustomRestore(RestoreTaskInfo &restoreTaskIn
     bool isFirstRestoreSuccess = false;
     int32_t firstRestoreIndex = 0;
     int32_t total = static_cast<int32_t>(files.size());
+    MEDIA_INFO_LOG("DoCustomRestore files count: %{public}d", total);
     int32_t lastIndex = total - 1;
     for (int32_t index = 0; index < total; index++) {
         if (IsCancelTask(restoreTaskInfo)) {
@@ -272,28 +273,22 @@ int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
     RestoreTaskInfo &restoreTaskInfo, vector<string> filePathVector, bool isFirst,
     UniqueNumber &uniqueNumber)
 {
-    MEDIA_DEBUG_LOG("HandleCustomRestore begin. size: %{public}d, isFirst: %{public}d",
+    MEDIA_INFO_LOG("HandleCustomRestore begin. size: %{public}d, isFirst: %{public}d",
         static_cast<int32_t>(filePathVector.size()), isFirst ? 1 : 0);
     vector<FileInfo> restoreFiles = GetFileInfos(filePathVector, uniqueNumber);
-    MEDIA_DEBUG_LOG("GetFileInfos finished");
     int32_t errCode = UpdateUniqueNumber(uniqueNumber);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "UpdateUniqueNumber failed. errCode: %{public}d", errCode);
 
-    MEDIA_DEBUG_LOG("UpdateUniqueNumber success.");
     vector<FileInfo> destRestoreFiles = SetDestinationPath(restoreFiles, uniqueNumber);
     if (destRestoreFiles.size() == 0) {
         MEDIA_ERR_LOG("restore file number is zero.");
         return E_ERR;
     }
-    MEDIA_DEBUG_LOG("SetDestinationPath finished");
     int32_t sameFileNum = 0;
-    vector<FileInfo> insertRestoreFiles = BatchInsert(restoreTaskInfo, destRestoreFiles, sameFileNum);
-    MEDIA_DEBUG_LOG("BatchInsert success.");
+    vector<FileInfo> insertRestoreFiles = BatchInsert(restoreTaskInfo, destRestoreFiles, sameFileNum, isFirst);
     int32_t successFileNum = RenameFiles(insertRestoreFiles);
-    MEDIA_DEBUG_LOG("RenameFiles finished.");
     errCode = BatchUpdateTimePending(insertRestoreFiles);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "BatchUpdateTimePending failed. errCode: %{public}d", errCode);
-    MEDIA_DEBUG_LOG("BatchUpdateTimePending success.");
     if (isFirst) {
         CHECK_AND_RETURN_RET(successFileNum != 0, E_ERR);
         CHECK_AND_RETURN_RET_LOG(UpdatePhotoAlbum(restoreTaskInfo, insertRestoreFiles[0]) == E_OK,
@@ -508,7 +503,7 @@ void PhotoCustomRestoreOperation::GetAssetRootDir(int32_t mediaType, string &roo
 }
 
 vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
-    RestoreTaskInfo &restoreTaskInfo, vector<FileInfo> &restoreFiles, int32_t &sameFileNum)
+    RestoreTaskInfo &restoreTaskInfo, vector<FileInfo> &restoreFiles, int32_t &sameFileNum, bool isFirst)
 {
     vector<FileInfo> insertFiles;
     vector<NativeRdb::ValuesBucket> values;
@@ -521,7 +516,7 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
     }
     sameFileNum = static_cast<int32_t>(restoreFiles.size() - insertFiles.size());
     sameNum_.fetch_add(sameFileNum);
-    MEDIA_DEBUG_LOG("BatchInsert values size: %{public}d, sameNum:%{public}d",
+    MEDIA_INFO_LOG("BatchInsert values size: %{public}d, sameNum:%{public}d",
         static_cast<int32_t>(values.size()), sameFileNum);
     if (values.size() == 0) {
         return insertFiles;
@@ -535,13 +530,14 @@ vector<FileInfo> PhotoCustomRestoreOperation::BatchInsert(
             " rowNum: %{public}" PRId64, errCode, rowNum);
         return errCode;
     };
-    errCode = trans.RetryTrans(func, false);
+    // If not the first batch of data, retry 10 times
+    errCode = trans.RetryTrans(func, !isFirst);
     if (errCode != E_OK) {
         insertFiles.clear();
         MEDIA_ERR_LOG("RetryTrans: trans retry fail!, ret:%{public}d", errCode);
         return insertFiles;
     }
-    MEDIA_DEBUG_LOG("BatchInsert success rowNum: %{public}" PRId64, rowNum);
+    MEDIA_INFO_LOG("BatchInsert success rowNum: %{public}" PRId64, rowNum);
     return insertFiles;
 }
 
