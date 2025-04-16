@@ -55,7 +55,7 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, TrySaveCurrentPixelMap_test_001, Test
     auto res = thumbnaiWait.TrySaveCurrentPixelMap(data, type);
     EXPECT_EQ(res, false);
     type = ThumbnailType::THUMB;
-    res = thumbnaiWait.TrySaveCurrentPixelMap(data, type);
+    res = thumbnailWait.TrySaveCurrentPixelMap(data, type);
     EXPECT_EQ(res, false);
 }
 
@@ -88,10 +88,10 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, TrySavePixelMap_test_001, TestSize.Le
 {
     ThumbnailData data;
     ThumbnailType type = ThumbnailType::THUMB;
-    auto res = IthumbnailHelper::TrySavePixelMap(data, type);
+    auto res = IThumbnailHelper::TrySavePixelMap(data, type);
     EXPECT_EQ(res, false);
     data.needCheckWaitStatus = true;
-    res = IthumbnailHelper::TrySavePixelMap(data, type);
+    res = IThumbnailHelper::TrySavePixelMap(data, type);
     EXPECT_EQ(res, false);
 }
 
@@ -101,10 +101,10 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, TrySavePicture_test_001, TestSize.Lev
     bool isSourceEx = false;
     const string tempOutputPath = "/path/to/temp";
     ThumbnailType type = ThumbnailType::THUMB;
-    auto res = IthumbnailHelper::TrySavePicture(data, isSourceEx, tempOutputPath);
+    auto res = IThumbnailHelper::TrySavePicture(data, isSourceEx, tempOutputPath);
     EXPECT_EQ(res, false);
     data.needCheckWaitStatus = true;
-    res = IthumbnailHelper::TrySavePicture(data, isSourceEx, tempOutputPath);
+    res = IThumbnailHelper::TrySavePicture(data, isSourceEx, tempOutputPath);
     EXPECT_EQ(res, false);
 }
 
@@ -114,14 +114,14 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, UpdateSuccessState_test_001, TestSize
     ThumbnailData data;
     data.id = "";
     opts.row = "";
-    auto res = IthumbnailHelper::UpdateSuccessState(opts, data);
+    auto res = IThumbnailHelper::UpdateSuccessState(opts, data);
     EXPECT_EQ(res, false);
     data.id = "validId";
     opts.row = "validRow";
-    res = IthumbnailHelper::UpdateSuccessState(opts, data);
+    res = IThumbnailHelper::UpdateSuccessState(opts, data);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = IthumbnailHelper::UpdateSuccessState(opts, data);
+    res = IThumbnailHelper::UpdateSuccessState(opts, data);
     EXPECT_EQ(res, false);
 }
 }
