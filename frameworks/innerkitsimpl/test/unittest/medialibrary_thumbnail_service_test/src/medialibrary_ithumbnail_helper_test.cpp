@@ -52,7 +52,7 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, TrySaveCurrentPixelMap_test_001, Test
     data.dateModified = "test_date";
     ThumbnailType type = ThumbnailType::LCD;
     ThumbnailWait thumbnailWait(true);
-    auto res = thumbnaiWait.TrySaveCurrentPixelMap(data, type);
+    auto res = thumbnailWait.TrySaveCurrentPixelMap(data, type);
     EXPECT_EQ(res, false);
     type = ThumbnailType::THUMB;
     res = thumbnailWait.TrySaveCurrentPixelMap(data, type);
@@ -68,7 +68,7 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, TrySaveCurrentPicture_test_001, TestS
     bool isSourceEx = false;
     string tempOutputPath = "/path/to/temp";
     ThumbnailWait thumbnailWait(true);
-    auto res = thumbnaiWait.TrySaveCurrentPicture(data, isSourceEx, tempOutputPath);
+    auto res = thumbnailWait.TrySaveCurrentPicture(data, isSourceEx, tempOutputPath);
     EXPECT_EQ(res, false);
 }
 
