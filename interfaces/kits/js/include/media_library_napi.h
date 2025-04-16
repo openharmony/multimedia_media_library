@@ -227,7 +227,6 @@ public:
     void SetUserId(const int32_t &userId);
 
     EXPORT MediaLibraryNapi();
-    EXPORT MediaLibraryNapi(int32_t userId);
     EXPORT ~MediaLibraryNapi();
     static std::mutex sUserFileClientMutex_;
 
