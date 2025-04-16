@@ -18,18 +18,25 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "access_token.h"
+#include "accesstoken_kit.h"
 #include "directory_ex.h"
 #include "file_uri.h"
 #include "media_file_utils.h"
+#include "media_file_uri.h"
+#include "moving_photo_file_utils.h"
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_utils.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
 #include "media_call_transcode.h"
+#include "permission_utils.h"
 
 using namespace std;
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS {
 namespace Media {
@@ -41,6 +48,15 @@ static SafeMap<std::string, bool> isMovingPhotoTranscoderMap;
 static SafeMap<std::string, MovingPhotoAsyncContext *> requestContentCompleteResult;
 static std::mutex isMovingPhotoTranscoderMapMutex;
 static std::mutex requestContentCompleteResultMutex;
+
+enum class MovingPhotoResourceType : int32_t {
+    DEFAULT = 0,
+    CLOUD_IMAGE,
+    CLOUD_VIDEO,
+    CLOUD_LIVE_PHOTO,
+    CLOUD_METADATA,
+};
+
 napi_value MovingPhotoNapi::Init(napi_env env, napi_value exports)
 {
     NapiClassInfo info = {
@@ -139,12 +155,17 @@ void MovingPhotoNapi::SetRequestId(const std::string requestId)
     requestId_ = requestId;
 }
 
-static int32_t OpenReadOnlyVideo(const std::string& videoUri, bool isMediaLibUri)
+static int32_t OpenReadOnlyVideo(const std::string& videoUri, bool isMediaLibUri, int32_t position)
 {
     if (isMediaLibUri) {
         std::string openVideoUri = videoUri;
-        MediaFileUtils::UriAppendKeyValue(openVideoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
-            OPEN_MOVING_PHOTO_VIDEO);
+        if (position == POSITION_CLOUD) {
+            MediaFileUtils::UriAppendKeyValue(openVideoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
+                OPEN_MOVING_PHOTO_VIDEO_CLOUD);
+        } else {
+            MediaFileUtils::UriAppendKeyValue(openVideoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
+                OPEN_MOVING_PHOTO_VIDEO);
+        }
         Uri uri(openVideoUri);
         return UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
     }
@@ -158,10 +179,15 @@ static int32_t OpenReadOnlyVideo(const std::string& videoUri, bool isMediaLibUri
     return fd;
 }
 
-static int32_t OpenReadOnlyImage(const std::string& imageUri, bool isMediaLibUri)
+static int32_t OpenReadOnlyImage(const std::string& imageUri, bool isMediaLibUri, int32_t position)
 {
     if (isMediaLibUri) {
-        Uri uri(imageUri);
+        std::string openImageUri = imageUri;
+        if (position == POSITION_CLOUD) {
+            MediaFileUtils::UriAppendKeyValue(openImageUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
+                OPEN_MOVING_PHOTO_VIDEO_CLOUD);
+        }
+        Uri uri(openImageUri);
         return UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
     }
     AppFileService::ModuleFileUri::FileUri fileUri(imageUri);
@@ -174,7 +200,7 @@ static int32_t OpenReadOnlyImage(const std::string& imageUri, bool isMediaLibUri
     return fd;
 }
 
-int32_t MovingPhotoNapi::OpenReadOnlyFile(const std::string& uri, bool isReadImage)
+int32_t MovingPhotoNapi::OpenReadOnlyFile(const std::string& uri, bool isReadImage, int32_t position)
 {
     if (uri.empty()) {
         NAPI_ERR_LOG("Failed to open read only file, uri is empty");
@@ -190,10 +216,11 @@ int32_t MovingPhotoNapi::OpenReadOnlyFile(const std::string& uri, bool isReadIma
         }
         curUri = uris[isReadImage ? MOVING_PHOTO_IMAGE_POS : MOVING_PHOTO_VIDEO_POS];
     }
-    return isReadImage ? OpenReadOnlyImage(curUri, isMediaLibUri) : OpenReadOnlyVideo(curUri, isMediaLibUri);
+    return isReadImage ? OpenReadOnlyImage(curUri, isMediaLibUri, position) :
+        OpenReadOnlyVideo(curUri, isMediaLibUri, position);
 }
 
-int32_t MovingPhotoNapi::OpenReadOnlyLivePhoto(const string& destLivePhotoUri)
+int32_t MovingPhotoNapi::OpenReadOnlyLivePhoto(const string& destLivePhotoUri, int32_t position)
 {
     if (destLivePhotoUri.empty()) {
         NAPI_ERR_LOG("Failed to open read only file, uri is empty");
@@ -214,8 +241,13 @@ int32_t MovingPhotoNapi::OpenReadOnlyLivePhoto(const string& destLivePhotoUri)
             NAPI_ERR_LOG("ReadMovingPhotoVideo for other user is %{public}s", userId.c_str());
         }
         string livePhotoUri = destLivePhotoUri;
-        MediaFileUtils::UriAppendKeyValue(livePhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
-            OPEN_PRIVATE_LIVE_PHOTO);
+        if (position == POSITION_CLOUD) {
+            MediaFileUtils::UriAppendKeyValue(livePhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
+                OPEN_MOVING_PHOTO_VIDEO_CLOUD);
+        } else {
+            MediaFileUtils::UriAppendKeyValue(livePhotoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
+                OPEN_PRIVATE_LIVE_PHOTO);
+        }
         Uri uri(livePhotoUri);
         return UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY, userId !="" ? stoi(userId) : -1);
     }
@@ -263,7 +295,8 @@ static int32_t CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
     return E_OK;
 }
 
-static int32_t WriteToSandboxUri(int32_t srcFd, const string& sandboxUri)
+static int32_t WriteToSandboxUri(int32_t srcFd, const string& sandboxUri,
+    MovingPhotoResourceType type = MovingPhotoResourceType::DEFAULT)
 {
     UniqueFd srcUniqueFd(srcFd);
 
@@ -273,6 +306,13 @@ static int32_t WriteToSandboxUri(int32_t srcFd, const string& sandboxUri)
         NAPI_ERR_LOG("Create empty dest file in sandbox failed, path:%{private}s", destPath.c_str());
         return E_HAS_FS_ERROR;
     }
+
+    if (type == MovingPhotoResourceType::CLOUD_IMAGE) {
+        return MovingPhotoFileUtils::ConvertToMovingPhoto(srcFd, destPath, "", "");
+    } else if (type == MovingPhotoResourceType::CLOUD_VIDEO) {
+        return MovingPhotoFileUtils::ConvertToMovingPhoto(srcFd, "", destPath, "");
+    }
+
     int32_t destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     if (destFd < 0) {
         NAPI_ERR_LOG("Open dest file failed, error: %{public}d", errno);
@@ -306,25 +346,29 @@ static int32_t RequestContentToSandbox(napi_env env, MovingPhotoAsyncContext* co
         MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
     }
     if (!context->destImageUri.empty()) {
-        int32_t imageFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true);
+        int32_t imageFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true, context->position);
         CHECK_COND_RET(HandleFd(imageFd), imageFd, "Open source image file failed");
-        int32_t ret = WriteToSandboxUri(imageFd, context->destImageUri);
+        int32_t ret = WriteToSandboxUri(imageFd, context->destImageUri,
+            context->position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_IMAGE
+                                                : MovingPhotoResourceType::DEFAULT);
         CHECK_COND_RET(ret == E_OK, ret, "Write image to sandbox failed");
     }
     if (!context->destVideoUri.empty()) {
-        int32_t videoFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false);
+        int32_t videoFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false, context->position);
         CHECK_COND_RET(HandleFd(videoFd), videoFd, "Open source video file failed");
         if (context->compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
             NAPI_DEBUG_LOG("movingPhoto CompatibleMode  COMPATIBLE_FORMAT_MODE");
             int32_t ret = MovingPhotoNapi::DoMovingPhotoTranscode(env, videoFd, context);
             CHECK_COND_RET(ret == E_OK, ret, "moving video transcode failed");
         } else {
-            int32_t ret = WriteToSandboxUri(videoFd, context->destVideoUri);
+            int32_t ret = WriteToSandboxUri(videoFd, context->destVideoUri,
+                context->position == POSITION_CLOUD ? MovingPhotoResourceType::CLOUD_VIDEO
+                                                    : MovingPhotoResourceType::DEFAULT);
             CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
         }
     }
     if (!context->destLivePhotoUri.empty()) {
-        int32_t livePhotoFd = MovingPhotoNapi::OpenReadOnlyLivePhoto(movingPhotoUri);
+        int32_t livePhotoFd = MovingPhotoNapi::OpenReadOnlyLivePhoto(movingPhotoUri, context->position);
         CHECK_COND_RET(HandleFd(livePhotoFd), livePhotoFd, "Open source video file failed");
         int32_t ret = WriteToSandboxUri(livePhotoFd, context->destLivePhotoUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
@@ -347,16 +391,16 @@ static int32_t AcquireFdForArrayBuffer(MovingPhotoAsyncContext* context)
     }
     switch (context->resourceType) {
         case ResourceType::IMAGE_RESOURCE: {
-            fd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true);
+            fd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true, context->position);
             CHECK_COND_RET(HandleFd(fd), fd, "Open source image file failed");
             return fd;
         }
         case ResourceType::VIDEO_RESOURCE:
-            fd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false);
+            fd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false, context->position);
             CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
             return fd;
         case ResourceType::PRIVATE_MOVING_PHOTO_RESOURCE:
-            fd = MovingPhotoNapi::OpenReadOnlyLivePhoto(movingPhotoUri);
+            fd = MovingPhotoNapi::OpenReadOnlyLivePhoto(movingPhotoUri, context->position);
             CHECK_COND_RET(HandleFd(fd), fd, "Open live photo failed");
             return fd;
         case ResourceType::PRIVATE_MOVING_PHOTO_METADATA:
@@ -461,6 +505,43 @@ static bool IsValidResourceType(int32_t resourceType)
                MediaLibraryNapiUtils::IsSystemApp());
 }
 
+static int32_t QueryPhotoPosition(string movingPhotoUri, bool hasReadPermission, int32_t &position)
+{
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, MediaFileUtils::GetIdFromUri(movingPhotoUri));
+    std::vector<std::string> fetchColumn { PhotoColumn::PHOTO_POSITION };
+    string queryUri;
+    if (hasReadPermission) {
+        queryUri = PAH_QUERY_PHOTO;
+    } else {
+        queryUri = movingPhotoUri;
+        MediaFileUri::RemoveAllFragment(queryUri);
+    }
+    Uri uri(queryUri);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        NAPI_ERR_LOG("query resultSet is nullptr");
+        return E_ERR;
+    }
+
+    int index;
+    int err = resultSet->GetColumnIndex(PhotoColumn::PHOTO_POSITION, index);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("Failed to GetColumnIndex");
+        return E_ERR;
+    }
+    resultSet->GetInt(index, position);
+    return E_OK;
+}
+
+static bool HasReadPermission()
+{
+    static bool result = (AccessTokenKit::VerifyAccessToken(IPCSkeleton::GetSelfTokenID(), PERM_READ_IMAGEVIDEO)
+        == PermissionState::PERMISSION_GRANTED);
+    return result;
+}
+
 static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const napi_value argv[],
     MovingPhotoNapi* thisArg, unique_ptr<MovingPhotoAsyncContext>& context)
 {
@@ -520,7 +601,12 @@ static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const na
 static void RequestContentExecute(napi_env env, void *data)
 {
     auto* context = static_cast<MovingPhotoAsyncContext*>(data);
-    int32_t ret;
+    int32_t ret = QueryPhotoPosition(context->movingPhotoUri, HasReadPermission(), context->position);
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("Failed to query position of moving photo");
+        context->SaveError(ret);
+        return;
+    }
     switch (context->requestContentMode) {
         case MovingPhotoAsyncContext::WRITE_TO_SANDBOX:
             ret = RequestContentToSandbox(env, context);
@@ -747,20 +833,71 @@ void CallMovingProgressCallback(napi_env env, ProgressHandler &progressHandler, 
     NAPI_DEBUG_LOG("CallProgressCallback process %{public}d", process);
 }
 
+void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context)
+{
+    if (context->position != POSITION_CLOUD) {
+        NAPI_ERR_LOG("Failed to check postion: %{public}d", context->position);
+        context->arrayBufferData = nullptr;
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    int32_t err = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("Failed to get detailed size of moving photo");
+        context->arrayBufferData = nullptr;
+        context->SaveError(E_HAS_FS_ERROR);
+        return;
+    }
+
+    int32_t ret = E_FAIL;
+    size_t fileSize = 0;
+    switch (context->resourceType) {
+        case ResourceType::IMAGE_RESOURCE:
+            fileSize = static_cast<size_t>(imageSize);
+            context->arrayBufferData = malloc(fileSize);
+            ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, context->arrayBufferData, nullptr, nullptr);
+            break;
+        case ResourceType::VIDEO_RESOURCE:
+            fileSize = static_cast<size_t>(videoSize);
+            context->arrayBufferData = malloc(fileSize);
+            ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, nullptr, context->arrayBufferData, nullptr);
+            break;
+        default:
+            NAPI_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(context->resourceType));
+            break;
+    }
+
+    if (!context->arrayBufferData || ret != E_OK) {
+        NAPI_ERR_LOG(
+            "Failed to get arraybuffer, resource type is %{public}d", static_cast<int32_t>(context->resourceType));
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+    context->arrayBufferLength = fileSize;
+}
+
 void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
 {
+    if (context->position == POSITION_CLOUD) {
+        return RequestCloudContentArrayBuffer(fd, context);
+    }
+
     UniqueFd uniqueFd(fd);
     off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
     if (fileLen < 0) {
         NAPI_ERR_LOG("Failed to get file length, error: %{public}d", errno);
-        context->error = E_HAS_FS_ERROR;
+        context->SaveError(E_HAS_FS_ERROR);
         return;
     }
 
     off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
     if (ret < 0) {
         NAPI_ERR_LOG("Failed to reset file offset, error: %{public}d", errno);
-        context->error = E_HAS_FS_ERROR;
+        context->SaveError(E_HAS_FS_ERROR);
         return;
     }
 
@@ -769,7 +906,7 @@ void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* con
     if (!context->arrayBufferData) {
         NAPI_ERR_LOG("Failed to malloc array buffer data, moving photo uri is %{public}s, resource type is %{public}d",
             context->movingPhotoUri.c_str(), static_cast<int32_t>(context->resourceType));
-        context->error = E_HAS_FS_ERROR;
+            context->error = JS_INNER_FAIL;
         return;
     }
     size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), context->arrayBufferData, fileSize));
@@ -778,7 +915,7 @@ void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* con
             "error: %{public}d", readBytes, fileSize, errno);
         free(context->arrayBufferData);
         context->arrayBufferData = nullptr;
-        context->error = E_HAS_FS_ERROR;
+        context->SaveError(E_HAS_FS_ERROR);
         return;
     }
     context->arrayBufferLength = fileSize;
