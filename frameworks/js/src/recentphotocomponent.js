@@ -99,7 +99,7 @@ export class RecentPhotoComponent extends ViewPU {
         Row.pop();
     }
     handleOnReceive(p2) {
-        console.info('RecentPhotoComponent OnReceive:' + this.encrypt(JSON.stringify(p2)));
+        console.info('RecentPhotoComponent OnReceive:' + JSON.stringify(p2));
         let q2 = p2.dataType;
         if (q2 === 'checkResult') {
             if (this.onRecentPhotoCheckResult) {
@@ -146,13 +146,6 @@ export class RecentPhotoComponent extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
-    }
-
-    encrypt(data) {
-        if (!data || data?.indexOf('file:///data/storage/') !== -1) {
-          return '';
-        }
-        return data.replace(/(\/\w+)\./g, '/******.');
     }
 }
 

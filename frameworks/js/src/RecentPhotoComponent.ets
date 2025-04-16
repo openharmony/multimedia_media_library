@@ -62,7 +62,7 @@ export struct RecentPhotoComponent {
   }
 
   private handleOnReceive(wantParam: Record<string, Object>): void {
-    console.info('RecentPhotoComponent OnReceive:' + this.encrypt(JSON.stringify(wantParam)));
+    console.info('RecentPhotoComponent OnReceive:' + JSON.stringify(wantParam));
     let dataType: string = wantParam['dataType'] as string;
     if (dataType === 'checkResult') {
       if (this.onRecentPhotoCheckResult) {
@@ -104,13 +104,6 @@ export struct RecentPhotoComponent {
     }
     console.info('RecentPhotoComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
-  }
-
-  private encrypt(data: string): string {
-    if (!data || data?.indexOf('file:///data/storage/') !== -1) {
-      return '';
-    }
-    return data.replace(/(\/\w+)\./g, '/******.');
   }
 }
 
