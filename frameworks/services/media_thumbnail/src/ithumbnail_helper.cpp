@@ -1219,7 +1219,7 @@ unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
     decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
     decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    CHECK_AND_RETURN_RET_LOG(ixelMap != nullptr, nullptr,
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, nullptr,
         "Decode thumbnail from fd failed, CreatePixelMap err: %{public}d", err);
     return pixelMap;
 }
