@@ -188,7 +188,7 @@ void MtpManager::OnMtpParamDisableChanged(const char *key, const char *value, vo
             MEDIA_INFO_LOG("start to execute disconnect task");
             // 调用内核接口，将MTP或PTP端口切换为HDC接口
             OHOS::USB::UsbSrvClient::GetInstance().SetCurrentFunctions(currentFunctions_);
-        }  
+        }
         instance->StopMtpService();
     }
 }
