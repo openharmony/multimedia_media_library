@@ -4471,6 +4471,10 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION_FOR_SYNC) {
         AddAssetAlbumOperationTableForSync(store);
     }
+
+    if (oldVersion < VERSION_CREATE_TAB_FACARD_PHOTOS_RETRY) {
+        TabFaCardPhotosTableEventHandler().OnCreate(store);
+    }
 }
 
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)
