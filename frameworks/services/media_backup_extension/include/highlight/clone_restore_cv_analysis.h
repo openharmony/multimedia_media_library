@@ -134,7 +134,7 @@ private:
     void GetRecommendationInsertValue(NativeRdb::ValuesBucket &value, const AnalysisRecommendationInfo &info);
     std::string ParsePlayInfo(const std::string &oldPlayInfo, CloneRestoreHighlight &cloneHighlight);
     void ParseEffectline(nlohmann::json &newPlayInfo, size_t effectlineIndex, CloneRestoreHighlight &cloneHighlight);
-    void ParseEffectlineFileDatas(nlohmann::json &newPlayInfo, size_t effectlineIndex,
+    void ParseEffectlineFileData(nlohmann::json &newPlayInfo, size_t effectlineIndex,
         CloneRestoreHighlight &cloneHighlight);
     void ParseTimeline(nlohmann::json &newPlayInfo, size_t TimelineIndex, CloneRestoreHighlight &cloneHighlight);
     void UpdateHighlightPlayInfos(CloneRestoreHighlight &cloneHighlight, std::vector<int32_t> &updateHighlightIds);

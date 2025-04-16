@@ -583,10 +583,10 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
             newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["transitionVideoUri"] = transVideoUri);
     }
 
-    ParseEffectlineFileDatas(newPlayInfo, effectlineIndex, cloneHighlight);
+    ParseEffectlineFileData(newPlayInfo, effectlineIndex, cloneHighlight);
 }
 
-void CloneRestoreCVAnalysis::ParseEffectlineFileDatas(nlohmann::json &newPlayInfo, size_t effectlineIndex,
+void CloneRestoreCVAnalysis::ParseEffectlineFileData(nlohmann::json &newPlayInfo, size_t effectlineIndex,
     CloneRestoreHighlight &cloneHighlight)
 {
     for (size_t infoIndex = 0; infoIndex < EFFECTLINE_ID.size(); infoIndex++) {
