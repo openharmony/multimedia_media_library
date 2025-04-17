@@ -181,7 +181,7 @@ static void PermissionUtilsTest(const uint8_t *data, size_t size)
 
     std::string appId = FuzzString(data, size);
     offset += sizeof(int64_t);
-    int64_t tokenId = FuzzInt64(data, size);
+    int64_t tokenId = FuzzInt64(data + offset, size);
     Media::PermissionUtils::GetMainTokenId(appId, tokenId);
 
     std::string permission = FuzzString(data, size);
@@ -266,16 +266,23 @@ static void PhotoProxyTest(const uint8_t *data, size_t size)
 
 static void PhotoFileUtilsTest(const uint8_t *data, size_t size)
 {
+     const int32_t int32Count = 2;
+    if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(int64_t)) {
+        return;
+    }
+    int offset = 0;
     std::string photoPath = FuzzBool(data, size) ? ROOT_MEDIA_DIR : FuzzString(data, size);
-    int32_t userId = FuzzInt32(data, size);
+    int32_t userId = FuzzInt32(data + offset, size);
     Media::PhotoFileUtils::GetEditDataPath(photoPath, userId);
     Media::PhotoFileUtils::GetEditDataCameraPath(photoPath, userId);
     Media::PhotoFileUtils::GetEditDataSourcePath(photoPath, userId);
 
-    int64_t editTime = FuzzInt64(data, size);
+    offset += sizeof(int64_t);
+    int64_t editTime = FuzzInt64(data + offset, size);
     Media::PhotoFileUtils::HasEditData(editTime);
     bool hasEditDataCamera = FuzzBool(data, size);
-    int32_t effectMode = FuzzInt32(data, size);
+    offset += sizeof(int32_t);
+    int32_t effectMode = FuzzInt32(data + offset, size);
     Media::PhotoFileUtils::HasSource(hasEditDataCamera, editTime, effectMode);
 
     photoPath = FuzzBool(data, size) ? "" : FuzzString(data, size);

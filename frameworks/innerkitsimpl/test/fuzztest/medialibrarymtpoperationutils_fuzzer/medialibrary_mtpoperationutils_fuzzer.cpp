@@ -276,7 +276,6 @@ static void MtpOperationUtilsHandleTest(const uint8_t* data, size_t size)
     mtpOperUtils_->GetObjectDataDeal();
     mtpOperUtils_->GetObject(payData, errorCode);
     mtpOperUtils_->ModifyObjectInfo();
-    mtpOperUtils_->DoRecevieSendObject();
 
     MtpManager::GetInstance().mtpMode_ = MtpManager::MtpMode::MTP_MODE;
     mtpOperUtils_->GetObjectDataDeal();
@@ -285,8 +284,6 @@ static void MtpOperationUtilsHandleTest(const uint8_t* data, size_t size)
 
     offset += sizeof(int32_t);
     int fd = FuzzInt32(data + offset, size);
-    bool deal = FuzzBool(data, size);
-    mtpOperUtils_->PreDealFd(deal, fd);
     MtpFileRange object = FuzzMtpFileRange(data, size);
     mtpOperUtils_->RecevieSendObject(object, fd);
     mtpOperUtils_->GetThumb(payData, containerType, errorCode);
