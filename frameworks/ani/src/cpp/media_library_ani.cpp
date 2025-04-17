@@ -1740,7 +1740,13 @@ static ani_object CreateAsset(ani_env *env, unique_ptr<MediaLibraryAsyncContext>
                 "System inner fail");
         } else {
             ANI_DEBUG_LOG("CreateAsset jsFileAsset != nullptr");
-            resultObj = FileAssetAni::Wrap(env, asset);
+            FileAssetAniMethod fileAssetAniMethod;
+            if (ANI_OK != FileAssetAni::InitFileAssetAniMethod(env, asset->GetFileAssetInstance()->GetResultNapiType(),
+                fileAssetAniMethod)) {
+                ANI_ERR_LOG("InitFileAssetAniMethod failed");
+                return nullptr;
+            }
+            resultObj = FileAssetAni::Wrap(env, asset, fileAssetAniMethod);
         }
     }
     return resultObj;
