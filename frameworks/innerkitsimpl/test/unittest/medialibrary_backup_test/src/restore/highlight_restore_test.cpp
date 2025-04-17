@@ -80,19 +80,18 @@ static void ExecuteSqls(shared_ptr<RdbStore> rdbStore, const vector<string> &sql
     }
 }
 
-static void ClearData(shared_ptr<RdbStore> rdbStore)
+static void ClearData()
 {
     MEDIA_INFO_LOG("Start clear data");
-    ExecuteSqls(rdbStore, CLEAR_SQLS);
-    MediaLibraryUnitTestUtils::InitUnistore();
-    auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdbStore);
+    ExecuteSqls(g_rdbStore->GetRaw(), CLEAR_SQLS);
+    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore);
     MEDIA_INFO_LOG("End clear data");
 }
 
 void HighlightRestoreTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("SetUpTestCase");
+    InitDestinationDb();
     GallerySource gallerySource;
     gallerySource.Init(TEST_BACKUP_PATH);
     g_galleryPtr = gallerySource.galleryStorePtr_;
@@ -120,7 +119,6 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_001, TestSize.Level0)
     MEDIA_INFO_LOG("highlight_restore_test_001 start");
 
     shared_ptr<HighlightRestore> highlightRestore = make_shared<HighlightRestore>();
-    InitDestinationDb();
     highlightRestore->Init(2, "1", g_rdbStore->GetRaw(), g_galleryPtr);
     EXPECT_NE(highlightRestore->mediaLibraryRdb_, nullptr);
     EXPECT_NE(highlightRestore->galleryRdb_, nullptr);
@@ -135,8 +133,9 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_001, TestSize.Level0)
     highlightRestore->RestoreMaps(fileInfos);
     EXPECT_NE(highlightRestore->albumInfos_.size(), 0);
     highlightRestore->UpdateAlbums();
+    EXPECT_EQ(highlightRestore->failCnt_, 1);
 
-    ClearData(g_rdbStore->GetRaw());
+    ClearData();
 }
 
 HWTEST_F(HighlightRestoreTest, highlight_restore_test_002, TestSize.Level0)
@@ -178,7 +177,6 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("highlight_restore_test_003 start");
     shared_ptr<HighlightRestore> highlightRestore = make_shared<HighlightRestore>();
-    InitDestinationDb();
     highlightRestore->Init(2, "1", nullptr, g_galleryPtr);
     EXPECT_EQ(highlightRestore->sceneCode_, 2);
     HighlightRestore::HighlightAlbumInfo info;
@@ -192,7 +190,6 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("highlight_restore_test_004 start");
     shared_ptr<HighlightRestore> highlightRestore = make_shared<HighlightRestore>();
-    InitDestinationDb();
     highlightRestore->Init(2, "1", nullptr, g_galleryPtr);
     EXPECT_EQ(highlightRestore->sceneCode_, 2);
     HighlightRestore::HighlightAlbumInfo info;
@@ -206,7 +203,6 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("highlight_restore_test_005 start");
     shared_ptr<HighlightRestore> highlightRestore = make_shared<HighlightRestore>();
-    InitDestinationDb();
     highlightRestore->Init(2, "1", nullptr, g_galleryPtr);
     EXPECT_EQ(highlightRestore->sceneCode_, 2);
     FileInfo fileInfo;
