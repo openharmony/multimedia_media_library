@@ -56,7 +56,7 @@ enum CloudReadStatus {
 class ThumbnailSyncStatus {
 public:
     bool CheckSavedFileMap(const std::string &id, ThumbnailType type, const std::string &dateModified);
-    bool UpdateSavedFileMap(const std::string &id, ThumbnailType type, const std::string &dateModified);
+    EXPORT bool UpdateSavedFileMap(const std::string &id, ThumbnailType type, const std::string &dateModified);
     std::condition_variable cond_;
     std::mutex mtx_;
     bool isSyncComplete_{false};
@@ -71,8 +71,8 @@ public:
 using ThumbnailMap = std::map<std::string, std::shared_ptr<ThumbnailSyncStatus>>;
 class ThumbnailWait {
 public:
-    ThumbnailWait(bool release);
-    ~ThumbnailWait();
+    EXPORT ThumbnailWait(bool release);
+    EXPORT ~ThumbnailWait();
 
     WaitStatus InsertAndWait(const std::string &id, ThumbnailType type, const std::string &dateModified);
     WaitStatus CloudInsertAndWait(const std::string &id, CloudLoadType cloudLoadType);
@@ -80,8 +80,8 @@ public:
     void UpdateThumbnailMap();
     void UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, bool isLoadSuccess);
 
-    bool TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType type);
-    bool TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
+    EXPORT bool TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType type);
+    EXPORT bool TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
 
 private:
     void Notify();
