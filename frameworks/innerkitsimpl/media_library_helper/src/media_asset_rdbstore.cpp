@@ -361,6 +361,7 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
     AddQueryFilter(rdbPredicates);
     auto resultSet = rdbStore_->Query(rdbPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, NativeRdb::E_ERROR, "fail to acquire result from visitor query");
+    
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int columnIndex = 0;
         int64_t dateTakenTime = 0;
