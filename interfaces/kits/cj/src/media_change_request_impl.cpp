@@ -18,6 +18,8 @@
 #include "photo_accesshelper_impl.h"
 #include "userfile_client.h"
 
+using namespace OHOS::FFI;
+
 namespace OHOS {
 namespace Media {
 bool MediaChangeRequestImpl::InitUserFileClient(int64_t contextId)
@@ -28,7 +30,13 @@ bool MediaChangeRequestImpl::InitUserFileClient(int64_t contextId)
 
     std::unique_lock<std::mutex> helperLock(PhotoAccessHelperImpl::sUserFileClientMutex_);
     if (!UserFileClient::IsValid()) {
-        UserFileClient::Init(contextId);
+        auto context = FFIData::GetData<AbilityRuntime::CJAbilityContext>(contextId);
+        if (context == nullptr) {
+            LOGE("Get context instance failed.");
+            return false;
+        }
+        sptr<IRemoteObject> token = context->GetToken();
+        UserFileClient::Init(token);
     }
     helperLock.unlock();
     return UserFileClient::IsValid();

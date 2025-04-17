@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2023 Huawei Device Co., Ltd.
+# Copyright (C) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,77 +17,68 @@ import("//foundation/multimedia/media_library/media_library.gni")
 group("unittest") {
   testonly = true
 
-  deps = [ ":media_library_helper_test" ]
+  deps = [ ":medialibrary_rdb_utils_test" ]
 }
 
-ohos_unittest("media_library_helper_test") {
+ohos_unittest("medialibrary_rdb_utils_test") {
   module_out_path = "media_library/media_library-asset"
-
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",
-    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
   ]
-
-  cflags = [ "-fno-access-control" ]
 
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "./src/album_asset_test.cpp",
-    "./src/dir_asset_test.cpp",
-    "./src/fetch_result_test.cpp",
-    "./src/file_asset_test.cpp",
-    "./src/media_asset_rdbstore_test.cpp",
-    "./src/media_column_test.cpp",
-    "./src/media_file_uri_test.cpp",
-    "./src/media_file_utils_test.cpp",
-    "./src/media_photo_asset_proxy_test.cpp",
-    "./src/media_volume_test.cpp",
-    "./src/medialibrary_kvstore_manager_test.cpp",
-    "./src/medialibrary_kvstore_test.cpp",
-    "./src/medialibrary_kvstore_utils_test.cpp",
-    "./src/moving_photo_file_utils_test.cpp",
-    "./src/native_album_asset_test.cpp",
-    "./src/photo_album_asset_test.cpp",
-    "./src/photo_album_column_test.cpp",
-    "./src/photo_file_utils_test.cpp",
-    "./src/photo_query_filter_test.cpp",
-    "./src/smart_album_asset_test.cpp",
+    "./src/medialibrary_rdb_utils_test.cpp",
   ]
-
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
+    "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
 
   external_deps = [
     "ability_base:zuri",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
-    "data_share:datashare_consumer",
+    "data_share:datashare_provider",
+    "dfs_service:cloudsync_kit_inner",
     "hilog:libhilog",
-    "image_framework:image_native",
     "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "samgr:samgr_proxy",
   ]
+
+  defines = []
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.filemanagement_dfs_service)) {
+    defines += [ "CLOUD_SYNC_MANAGER" ]
+    external_deps += [ "dfs_service:cloudsync_kit_inner" ]
+  }
 
   sanitize = {
     cfi = true
     cfi_cross_dso = true
     debug = false
+  }
+
+  if (is_standard_system) {
+    external_deps += [ "hilog:libhilog" ]
+  } else {
+    external_deps += [ "hilog:libhilog" ]
   }
 
   resource_config_file =
