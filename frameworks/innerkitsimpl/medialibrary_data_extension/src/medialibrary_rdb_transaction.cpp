@@ -52,6 +52,9 @@ int32_t TransactionOperations::Start(bool isBackup)
     MEDIA_INFO_LOG("Start transaction_, funName is :%{public}s", funcName_.c_str());
     if (isBackup) {
         rdbStore_ = backupRdbStore_;
+        if (rdbStore_ == nullptr) {
+            rdbStore_ = MediaLibraryRdbStore::GetRaw();
+        }
     } else {
         rdbStore_ = MediaLibraryRdbStore::GetRaw();
     }
