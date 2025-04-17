@@ -32,6 +32,7 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::AppExecFwk;
+constexpr int32_t WAITFOR_REVOKE = 1000;
 
 sptr<IAppMgr> MedialibraryAppStateObserverManager::GetAppManagerInstance()
 {
@@ -78,6 +79,29 @@ void MedialibraryAppStateObserverManager::UnSubscribeAppState()
     appStateObserver_ = nullptr;
     MEDIA_INFO_LOG("UnSubscribeAppState success");
     return;
+}
+
+void MedialibraryAppStateObserverManager::AddTokenId(int64_t tokenId, bool needRevoke)
+{
+    revokeMap_[tokenId] = needRevoke;
+}
+
+void MedialibraryAppStateObserverManager::RemoveTokenId(int64_t tokenId)
+{
+    revokeMap_.erase(tokenId);
+}
+
+bool MedialibraryAppStateObserverManager::NeedRevoke(int64_t tokenId)
+{
+    if (revokeMap_.find(tokenId) != revokeMap_.end()) {
+        return revokeMap_[tokenId];
+    }
+    return ture;
+}
+
+bool MedialibraryAppStateObserverManager::IsContainTokenId(int64_t tokenId)
+{
+    return std::find(revokeMap_.begin(), revokeMap_.end(), tokenId) != revokeMap_.end();
 }
 
 MedialibraryAppStateObserverManager &MedialibraryAppStateObserverManager::GetInstance()
@@ -171,16 +195,33 @@ static int32_t DeleteHideSensitive(const std::shared_ptr<MediaLibraryRdbStore> r
 void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData)
 {
     auto tokenId = appStateData.accessTokenId;
+    if (!MedialibraryAppStateObserverManager::GetInstance().IsContainTokenId(tokenId)) {
+        return;
+    }
+    MEDIA_INFO_LOG("TokenId: %{public}ld OnAppStopped, revoke permission", tokenId);
+    MedialibraryAppStateObserverManager::GetInstance().AddTokenId(tokenId, true);
+    std::this_thread::sleep_for(chrono::milliseconds(WAITFOR_REVOKE));
+    if (!MedialibraryAppStateObserverManager::GetInstance().NeedRevoke(tokenId)) {
+        
+        return;
+    }
     MEDIA_INFO_LOG("MedialibraryAppStateObserver OnAppStopped, tokenId:%{public}d", tokenId);
     auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Uripermission Delete failed, rdbStore is null.");
 
     int32_t deletedRowsPermission = DeleteTemporaryPermission(rdbStore, tokenId);
     int32_t deletedRowsSensitive = DeleteHideSensitive(rdbStore, tokenId);
-    if (deletedRowsPermission == 0 && deletedRowsSensitive == 0) {
-        return;
-    }
+    MedialibraryAppStateObserverManager::GetInstance().RemoveTokenId(tokenId);
     TryUnSubscribeAppState(rdbStore);
+}
+
+void MedialibraryAppStateObserver::OnAppStarted(const AppStateData &appStateData)
+{
+    auto tokenId = appStateData.accessTokenId;
+    if (MedialibraryAppStateObserverManager::GetInstance().IsContainTokenId(tokenId)) {
+        MEDIA_INFO_LOG("TokenId: %{public}ld reStart, cancel revoke", tokenId);
+        MedialibraryAppStateObserverManager::GetInstance().AddTokenId(tokenId, false);
+    }
 }
 }  // namespace Media
 }  // namespace OHOS

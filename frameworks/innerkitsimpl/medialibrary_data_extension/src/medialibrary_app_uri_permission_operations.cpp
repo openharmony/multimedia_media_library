@@ -123,6 +123,31 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsert(
     return SUCCEED;
 }
 
+// SubscribeAppState && add tokenid to cache
+static void DoSubcribeForAppStop(const std::vector<DataShare::DataShareValuesBucket> &values)
+{
+    if (values.size() == 0) {
+        MEDIA_WARN_LOG("values is empty");
+        return;
+    }
+    auto it = values.begin();
+    ValuesBucket valueBucket = RdbUtils::ToValuesBucket(*it);
+    int64_t destTokenId = -1;
+    ValueObject valueObject;
+    if (valueBucket.GetObject(AppUriPermissionColumn::TARGET_TOKENID, valueObject)) {
+        valueObject.GetLong(destTokenId);
+    }
+    int permissionTypeParam = -1;
+    if (valueBucket.GetObject(AppUriPermissionColumn::PERMISSION_TYPE, valueObject)) {
+        permissionTypeParam = valueObject;
+    }
+    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
+        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+        MedialibraryAppStateObserverManager::GetInstance().AddTokenId(destTokenId);
+    }
+}
+
 int32_t MediaLibraryAppUriPermissionOperations::BatchInsertInner(
     MediaLibraryCommand &cmd, const std::vector<DataShare::DataShareValuesBucket> &values,
     std::shared_ptr<TransactionOperations> trans)
@@ -147,11 +172,6 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsertInner(
         value.Delete(AppUriSensitiveColumn::IS_FORCE_SENSITIVE);
 
         if (queryFlag == 0) {
-            // delete the temporary permission when the app dies
-            if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
-                AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
-                MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
-            }
             value.PutLong(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
             insertVector.push_back(value);
         } else if (UpdatePermissionType(resultSet, permissionTypeParam) == ERROR) {
@@ -171,6 +191,7 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsertInner(
             return ERROR;
         }
     }
+    DoSubcribeForAppStop(values);
     return errCode;
 }
 

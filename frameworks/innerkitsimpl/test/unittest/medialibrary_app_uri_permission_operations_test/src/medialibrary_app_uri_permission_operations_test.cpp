@@ -635,6 +635,27 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_011");
 }
 
+/**
+ * batchinsert a empty data.
+ */
+HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api12_test_012, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd app_uri_permission_oprn_api12_test_012");
+    int ret = -1;
+    std::vector<DataShare::DataShareValuesBucket> values;
+    MediaLibraryCommand cmd(OperationObject::MEDIA_APP_URI_PERMISSION, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>(__func__);
+    std::function<int(void)> func = [&]()->int {
+        return MediaLibraryAppUriPermissionOperations::BatchInsertInner(cmd, values, trans);
+    };
+    ret = trans->RetryTrans(func);
+    // expected result: 0.
+    EEXPECT_EQ(ret, 0);
+
+    MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_012");
+}
+
 HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, medialibrary_grant_permission_test_001, TestSize.Level1)
 {
     std::vector<DataShare::DataShareValuesBucket> dataShareValues;
