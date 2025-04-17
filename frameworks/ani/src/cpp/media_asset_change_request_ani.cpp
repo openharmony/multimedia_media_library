@@ -821,7 +821,14 @@ ani_object MediaAssetChangeRequestAni::getAsset(ani_env *env, ani_object aniObje
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
  
     if (fileAsset->GetId() > 0) {
-        return FileAssetAni::Wrap(env, FileAssetAni::CreatePhotoAsset(env, fileAsset));
+        auto fileAssetAni = FileAssetAni::CreatePhotoAsset(env, fileAsset);
+        FileAssetAniMethod fileAssetAniMethod;
+        if (ANI_OK != FileAssetAni::InitFileAssetAniMethod(env,
+            fileAssetAni->GetFileAssetInstance()->GetResultNapiType(), fileAssetAniMethod)) {
+            ANI_ERR_LOG("InitFileAssetAniMethod failed");
+            return nullptr;
+        }
+        return FileAssetAni::Wrap(env, fileAssetAni, fileAssetAniMethod);
     }
     return nullptr;
 }
