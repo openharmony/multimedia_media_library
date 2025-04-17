@@ -836,12 +836,17 @@ export namespace photoAccessHelper {
     }
 
     getAllObjects(callback: AsyncCallback<Array<T> | undefined, void>): void {
+      let blockQueue: BlockingQueue<Array<T> | MediaLibraryAniError> =
+        new ArrayBlockingQueue<Array<T> | MediaLibraryAniError>(2);
       let cb = (): Array<T> | MediaLibraryAniError => {
+        let result: Array<T> | MediaLibraryAniError;
         try {
-          return this.getAllObjectsSync();
+          result = this.getAllObjectsSync();
         } catch(e) {
-          return e as MediaLibraryAniError;
+          result = e as MediaLibraryAniError;
         }
+        blockQueue.push(result);
+        return result;
       };
       taskpool.execute(cb).then((ret: NullishType): void => {
         if (ret instanceof MediaLibraryAniError) {
@@ -855,17 +860,23 @@ export namespace photoAccessHelper {
           }
         }
       });
+      blockQueue.pop();
     }
 
     getAllObjects(): Promise<Array<T>> {
       return new Promise<Array<T>>((resolve: (v: Array<T>) => void, reject: RejectString) => {
-        let blockQueue: BlockingQueue<Array<T>> = new ArrayBlockingQueue<Array<T>>(2);
-        let cb = (): Array<T> => {
-          let result = this.getAllObjectsSync()
-          blockQueue.push(result)
-          return result
+        let blockQueue: BlockingQueue<Array<T> | MediaLibraryAniError> =
+          new ArrayBlockingQueue<Array<T> | MediaLibraryAniError>(2);
+        let cb = (): Array<T> | MediaLibraryAniError => {
+        let result: Array<T> | MediaLibraryAniError;
+          try {
+            result = this.getAllObjectsSync();
+          } catch(e) {
+            result = e as MediaLibraryAniError;
+          }
+          blockQueue.push(result);
+          return result;
         };
-
         taskpool.execute(cb).then((ret: NullishType): void => {
           if (ret instanceof MediaLibraryAniError) {
             let err = ret as MediaLibraryAniError;
@@ -878,7 +889,6 @@ export namespace photoAccessHelper {
             }
           }
         });
-
         blockQueue.pop();
       });
     }
