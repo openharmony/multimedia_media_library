@@ -782,7 +782,6 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     PauseBackgroundDownloadCloudMedia();
     PhotoAlbumLPathOperation::GetInstance().Stop();
-    PhotoOtherAlbumTransOperation::GetInstance().Stop();
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
 }
 
