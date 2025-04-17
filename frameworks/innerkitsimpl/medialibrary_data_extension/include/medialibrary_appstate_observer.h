@@ -30,12 +30,17 @@ class MedialibraryAppStateObserverManager {
 
         EXPORT void SubscribeAppState();
         EXPORT void UnSubscribeAppState();
+        EXPORT void AddTokenId(int64_t tokenId, bool needRevoke);
+        EXPORT void RemoveTokenId(int64_t tokenId);
+        EXPORT bool IsContainTokenId(int64_t tokenId);
+        EXPORT bool NeedRevoke(int64_t tokenId);
 
     protected:
         sptr<ApplicationStateObserverStub> appStateObserver_ = nullptr;
 
     private:
         sptr<IAppMgr> GetAppManagerInstance();
+        SafeMap<int64_t, bool> revokeMap_;
 };
 
 class MedialibraryAppStateObserver : public AppExecFwk::ApplicationStateObserverStub {
