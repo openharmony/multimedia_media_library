@@ -266,7 +266,7 @@ static void PhotoProxyTest(const uint8_t *data, size_t size)
 
 static void PhotoFileUtilsTest(const uint8_t *data, size_t size)
 {
-     const int32_t int32Count = 2;
+    const int32_t int32Count = 2;
     if (data == nullptr || size < sizeof(int32_t) * int32Count + sizeof(int64_t)) {
         return;
     }
