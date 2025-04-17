@@ -29,6 +29,11 @@
 
 #include <thread>
 
+#define USB_FUNTION_HDC     (1 << 2)
+#define USB_FUNTION_MTP     (1 << 3)
+#define USB_FUNTION_PTP     (1 << 4)
+#define USB_FUNTION_STORAGE     (1 << 9)
+
 namespace OHOS {
 namespace Media {
 namespace {
@@ -175,6 +180,15 @@ void MtpManager::OnMtpParamDisableChanged(const char *key, const char *value, vo
         }
     } else {
         MEDIA_INFO_LOG("MTP Manager not init");
+        int32_t currentFunctions_ = USB_FUNTION_STORAGE;
+        int ret = OHOS::USB::UsbSrvClient::GetInstance().GetCurrentFunctions(currentFunctions_);
+        if (ret == 0) {
+            currentFunctions_ = static_cast<uint32_t>(currentFunctions_) & (~USB_FUNTION_MTP) & (~USB_FUNTION_PTP);
+            currentFunctions_ = currentFunctions_ == 0 ? USB_FUNTION_STORAGE : currentFunctions_;
+            MEDIA_INFO_LOG("start to execute disconnect task");
+            // 调用内核接口，将MTP或PTP端口切换为HDC接口
+            OHOS::USB::UsbSrvClient::GetInstance().SetCurrentFunctions(currentFunctions_);
+        }
         instance->StopMtpService();
     }
 }
