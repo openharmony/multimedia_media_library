@@ -75,6 +75,15 @@ int32_t audioIndex = 0;
 int32_t randomNumber = 0;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
+struct UriParams {
+    string path;
+    string fileUri;
+    Size size;
+    bool isAstc;
+    DecodeDynamicRange dynamicRange;
+    string user;
+};
+
 static const unsigned char FILE_CONTENT_TXT[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24
 };
@@ -2535,6 +2544,180 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test, T
     string value = "1";
     vector<string> columns;
     EXPECT_NE(mediaLibraryExtendManager->GetResultSetFromDb(columnName, value, columns), nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_InitMediaLibraryManager_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    int32_t ret = 0;
+    string uri = "file://media-test_value";
+    string openMode = "test_value";
+    mediaLibraryManager->InitMediaLibraryManager();
+    ret = mediaLibraryManager->OpenAsset(uri, openMode);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstcYearAndMonth_test_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    std::vector<string> uris;
+    int32_t ret;
+    for (int i = 0; i < 5; i++) {
+        uris.push_back(CreatePhotoAsset("test.mp4"));
+    }
+    ret = mediaLibraryManager->GetAstcYearAndMonth(uris);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryTotalSize_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    int32_t ret;
+    MediaVolume outMediaVolume;
+    ret = mediaLibraryManager->QueryTotalSize(outMediaVolume);
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    std::string columnName = MEDIA_DATA_DB_URI;
+    std::string value = "test";
+    std::vector<string> columns;
+    std::shared_ptr<DataShare::DataShareResultSet> res =
+        mediaLibraryManager->GetResultSetFromDb(columnName, value, columns);
+    EXPECT_EQ(res, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_003, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    std::shared_ptr<DataShareResultSet> ptr = nullptr;
+    std::string columnName = "file_id_test";
+    std::string value = "test";
+    std::vector<string> columns;
+    ptr = mediaLibraryManager->GetResultSetFromDb(columnName, value, columns);
+    EXPECT_NE(ptr, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    std::shared_ptr<DataShareResultSet> resultSet = nullptr;
+    int32_t ret;
+    ret = mediaLibraryManager->CheckResultSet(resultSet);
+    EXPECT_NE(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    vector<string> columns;
+    DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    ASSERT_NE(sDataShareHelper_, nullptr);
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+    int32_t ret;
+    ret = mediaLibraryManager->CheckResultSet(resultSet);
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    string file = "/path/to/file";
+    Uri fileUri(file);
+    string filePath = "/path/to/testfile";
+    string userId = "100";
+    int32_t ret;
+    ret = mediaLibraryManager->GetFilePathFromUri(fileUri, filePath, userId);
+    EXPECT_NE(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    string file = "/path/to/file";
+    Uri fileUri(file);
+    string filePath = "/path/to/testfile";
+    string userId = "100";
+    int32_t ret;
+#define MEDIALIBRARY_COMPATIBILITY
+    ret = mediaLibraryManager->GetFilePathFromUri(fileUri, filePath, userId);
+#undef MEDIALIBRARY_COMPATIBILITY
+    EXPECT_NE(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_OpenThumbnail_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    string uristr = URI_QUERY_PHOTO;
+    string filePath = "/path/to/testfile";
+    Size size;
+    bool isAstc = true;
+    int ret;
+    ret = MediaLibraryManager::OpenThumbnail(uristr, filePath, size, isAstc);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeThumbnail_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    UniqueFd uniqueFd;
+    Size size;
+    DecodeDynamicRange dynamicRange = DecodeDynamicRange::SDR;
+    std::unique_ptr<PixelMap> ret = nullptr;
+    ret = MediaLibraryManager::DecodeThumbnail(uniqueFd, size, dynamicRange);
+    EXPECT_EQ(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryThumbnail_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    UriParams params;
+    params.path = "/path/to/testfile";
+    params.fileUri = "/Photo";
+    params.isAstc = true;
+    std::unique_ptr<PixelMap> ret = nullptr;
+    ret = MediaLibraryManager::QueryThumbnail(params);
+    EXPECT_EQ(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetThumbnail_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    string file = "/path/to/file";
+    Uri fileUri(file);
+    std::unique_ptr<PixelMap> ret = nullptr;
+    ret = mediaLibraryManager->GetThumbnail(fileUri);
+    EXPECT_EQ(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    vector<string> uriBatch;
+    vector<vector<uint8_t>> astcBatch;
+    string beginUri =
+        "file://media/Photo/64/IMG_063/IMG_11311.jpg?oper=astc&width=256&height=256&time_id=00000001";
+    uriBatch.push_back(beginUri);
+    uriBatch.push_back("/media/ml/uri/offset/1");
+    uriBatch.push_back("&offset=");
+    int32_t ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
+    EXPECT_EQ(ret, E_INVALID_URI);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeAstc_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    UniqueFd uniqueFd;
+    unique_ptr<PixelMap> ret = nullptr;
+    ret = MediaLibraryManager::DecodeAstc(uniqueFd);
+    EXPECT_EQ(ret, nullptr);
 }
 } // namespace Media
 } // namespace OHOS

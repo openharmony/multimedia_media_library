@@ -545,73 +545,101 @@ std::string CloneRestoreCVAnalysis::ParsePlayInfo(const std::string &oldPlayInfo
             ParseEffectline(newPlayInfo, effectlineIndex, cloneHighlight);
         }
     }
-
     if (newPlayInfo.contains("timeline")) {
         for (size_t timelineIndex = 0; timelineIndex < newPlayInfo["timeline"].size(); timelineIndex++) {
-            std::string oldEffectVideoUri = newPlayInfo["timeline"][timelineIndex]["effectVideoUri"];
-            newPlayInfo["timeline"][timelineIndex]["effectVideoUri"] = GetValueFromMap(assetUriMap_, oldEffectVideoUri);
-
-            std::string oldTransVideoUri = newPlayInfo["timeline"][timelineIndex]["transitionVideoUri"];
-            newPlayInfo["timeline"][timelineIndex]["transitionVideoUri"] =
-                GetValueFromMap(assetUriMap_, oldTransVideoUri);
-
-            std::vector<int32_t> newFileIds;
-            for (size_t idIndex = 0; idIndex < newPlayInfo["timeline"][timelineIndex]["fileId"].size(); idIndex++) {
-                int32_t oldFileId = newPlayInfo["timeline"][timelineIndex]["fileId"][idIndex];
-                newFileIds.emplace_back(cloneHighlight.GetNewHighlightPhotoId(oldFileId));
-                newPlayInfo["timeline"][timelineIndex]["fileId"][idIndex] = newFileIds[idIndex];
-            }
-
-            for (size_t uriIndex = 0; uriIndex < newPlayInfo["timeline"][timelineIndex]["fileUri"].size(); uriIndex++) {
-                std::string newFileUri = cloneHighlight.GetNewHighlightPhotoUri(newFileIds[uriIndex]);
-                newPlayInfo["timeline"][timelineIndex]["fileUri"][uriIndex] = newFileUri;
-            }
+            ParseTimeline(newPlayInfo, timelineIndex, cloneHighlight);
         }
     }
-    return newPlayInfo.dump();
+    return newPlayInfo.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 }
 
 void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t effectlineIndex,
     CloneRestoreHighlight &cloneHighlight)
 {
-    std::string oldEffectVideoUri = newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"];
-    if (MediaFileUtils::StartsWith(oldEffectVideoUri, PHOTO_URI_PREFIX)) {
-        newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"] =
-            GetNewPhotoUriByUri(oldEffectVideoUri, cloneHighlight);
-    } else if (MediaFileUtils::StartsWith(oldEffectVideoUri, HIGHLIGHT_ASSET_URI_PREFIX)) {
-        newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"] =
-            GetNewEffectVideoUri(oldEffectVideoUri);
+    if (newPlayInfo["effectline"]["effectline"][effectlineIndex].contains("effectVideoUri")) {
+        std::string oldEffectVideoUri = newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"];
+        if (MediaFileUtils::StartsWith(oldEffectVideoUri, PHOTO_URI_PREFIX)) {
+            newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"] =
+                GetNewPhotoUriByUri(oldEffectVideoUri, cloneHighlight);
+        } else if (MediaFileUtils::StartsWith(oldEffectVideoUri, HIGHLIGHT_ASSET_URI_PREFIX)) {
+            newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"] =
+                GetNewEffectVideoUri(oldEffectVideoUri);
+        }
     }
 
-    if (newPlayInfo["effectline"]["effectline"][effectlineIndex]["effect"] == EFFECTLINE_TYPE_MASK2) {
+    bool cond = newPlayInfo["effectline"]["effectline"][effectlineIndex].contains("effect") &&
+        newPlayInfo["effectline"]["effectline"][effectlineIndex]["effect"] == EFFECTLINE_TYPE_MASK2 &&
+        newPlayInfo["effectline"]["effectline"][effectlineIndex].contains("transitionVideoUri");
+    if (cond) {
         std::string transVideoUri = GetNewTransitionVideoUri(
             newPlayInfo["effectline"]["effectline"][effectlineIndex]["transitionVideoUri"], cloneHighlight);
         newPlayInfo["effectline"]["effectline"][effectlineIndex]["transitionVideoUri"] = transVideoUri;
 
-        bool cond = (effectlineIndex > 0 &&
-            newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["effect"] == EFFECTLINE_TYPE_MASK1);
+        cond = (effectlineIndex > 0 &&
+            newPlayInfo["effectline"]["effectline"][effectlineIndex - 1].contains("effect") &&
+            newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["effect"] == EFFECTLINE_TYPE_MASK1 &&
+            newPlayInfo["effectline"]["effectline"][effectlineIndex - 1].contains("transitionVideoUri"));
         CHECK_AND_EXECUTE(!cond,
             newPlayInfo["effectline"]["effectline"][effectlineIndex - 1]["transitionVideoUri"] = transVideoUri);
     }
 
+    ParseEffectlineFileData(newPlayInfo, effectlineIndex, cloneHighlight);
+}
+
+void CloneRestoreCVAnalysis::ParseEffectlineFileData(nlohmann::json &newPlayInfo, size_t effectlineIndex,
+    CloneRestoreHighlight &cloneHighlight)
+{
     for (size_t infoIndex = 0; infoIndex < EFFECTLINE_ID.size(); infoIndex++) {
-        std::vector<int32_t> newFileIds;
-        for (size_t idIndex = 0;
-            idIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]].size();
-            idIndex++) {
-            int32_t oldFileId =
-                newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]][idIndex];
-            newFileIds.emplace_back(cloneHighlight.GetNewHighlightPhotoId(oldFileId));
-            newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]][idIndex] =
-                newFileIds[idIndex];
+        if (newPlayInfo["effectline"]["effectline"][effectlineIndex].contains(EFFECTLINE_ID[infoIndex])) {
+            for (size_t idIndex = 0;
+                idIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]].size();
+                idIndex++) {
+                int32_t oldFileId =
+                    newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]][idIndex];
+                newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_ID[infoIndex]][idIndex] =
+                    cloneHighlight.GetNewHighlightPhotoId(oldFileId);
+            }
         }
 
-        for (size_t uriIndex = 0;
-            uriIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]].size();
-            uriIndex++) {
-            CHECK_AND_BREAK(uriIndex < newFileIds.size());
-            std::string newFileUri = cloneHighlight.GetNewHighlightPhotoUri(newFileIds[uriIndex]);
-            newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex] = newFileUri;
+        if (newPlayInfo["effectline"]["effectline"][effectlineIndex].contains(EFFECTLINE_URI[infoIndex])) {
+            for (size_t uriIndex = 0;
+                uriIndex < newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]].size();
+                uriIndex++) {
+                std::string oldFileUri =
+                    newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex];
+                newPlayInfo["effectline"]["effectline"][effectlineIndex][EFFECTLINE_URI[infoIndex]][uriIndex] =
+                    GetNewPhotoUriByUri(oldFileUri, cloneHighlight);
+            }
+        }
+    }
+}
+
+void CloneRestoreCVAnalysis::ParseTimeline(nlohmann::json &newPlayInfo, size_t timelineIndex,
+    CloneRestoreHighlight &cloneHighlight)
+{
+    if (newPlayInfo["timeline"][timelineIndex].contains("effectVideoUri")) {
+        std::string oldEffectVideoUri = newPlayInfo["timeline"][timelineIndex]["effectVideoUri"];
+        newPlayInfo["timeline"][timelineIndex]["effectVideoUri"] = GetValueFromMap(assetUriMap_, oldEffectVideoUri);
+    }
+
+    if (newPlayInfo["timeline"][timelineIndex].contains("transitionVideoUri")) {
+        std::string oldTransVideoUri = newPlayInfo["timeline"][timelineIndex]["transitionVideoUri"];
+        newPlayInfo["timeline"][timelineIndex]["transitionVideoUri"] = GetValueFromMap(assetUriMap_, oldTransVideoUri);
+    }
+
+    if (newPlayInfo["timeline"][timelineIndex].contains("fileId")) {
+        for (size_t idIndex = 0; idIndex < newPlayInfo["timeline"][timelineIndex]["fileId"].size(); idIndex++) {
+            int32_t oldFileId = newPlayInfo["timeline"][timelineIndex]["fileId"][idIndex];
+            newPlayInfo["timeline"][timelineIndex]["fileId"][idIndex] =
+                cloneHighlight.GetNewHighlightPhotoId(oldFileId);
+        }
+    }
+
+    if (newPlayInfo["timeline"][timelineIndex].contains("fileUri")) {
+        for (size_t uriIndex = 0; uriIndex < newPlayInfo["timeline"][timelineIndex]["fileUri"].size(); uriIndex++) {
+            std::string oldFileUri = newPlayInfo["timeline"][timelineIndex]["fileUri"][uriIndex];
+            newPlayInfo["timeline"][timelineIndex]["fileUri"][uriIndex] =
+                GetNewPhotoUriByUri(oldFileUri, cloneHighlight);
         }
     }
 }
@@ -670,8 +698,9 @@ std::string CloneRestoreCVAnalysis::GetNewTransitionVideoUri(const std::string &
     assetUriMap_.insert(std::make_pair(oldVideoUri, newVideoUri));
 
     std::string dstPath = "/storage/media/local/files/highlight/video/" + std::to_string(newAssetId) + "/" +
-        std::to_string(newAssetId) + suffix;
-    std::string srcPath = assetPath_ + std::to_string(oldAssetId) + "/" + std::to_string(oldAssetId) + suffix;
+        std::to_string(newAssetId) + "_" + std::to_string(newNextPhotoId) + suffix;
+    std::string srcPath = assetPath_ + std::to_string(oldAssetId) + "/" +
+        std::to_string(oldAssetId) + "_" + std::to_string(oldNextAssetId) + suffix;
     MoveAnalysisAssets(srcPath, dstPath);
     return newVideoUri;
 }
