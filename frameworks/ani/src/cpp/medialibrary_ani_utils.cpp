@@ -719,9 +719,13 @@ ani_status MediaLibraryAniUtils::ToFileAssetAniArray(ani_env *env, std::vector<s
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
         "Can't find method set in Lescompat/Array.");
 
+    FileAssetAniMethod fileAssetAniMethod;
+    CHECK_STATUS_RET(FileAssetAni::InitFileAssetAniMethod(env, ResultNapiType::TYPE_PHOTOACCESS_HELPER,
+        fileAssetAniMethod), "InitFileAssetAniMethod failed");
+
     for (size_t i = 0; i < array.size(); ++i) {
         FileAssetAni* fileAssetAni = FileAssetAni::CreateFileAsset(env, array[i]);
-        ani_object value = FileAssetAni::Wrap(env, fileAssetAni);
+        ani_object value = FileAssetAni::Wrap(env, fileAssetAni, fileAssetAniMethod);
         CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAsset failed");
         CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, setMethod, (ani_int)i, value),
             "Call method $_set failed.");

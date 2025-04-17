@@ -47,6 +47,20 @@ struct FileAssetContext : public AniError {
     std::string userComment;
 };
 
+struct FileAssetAniMethod {
+    ani_class cls;
+    ani_method ctor;
+    ani_method setUri;
+    ani_method setPhotoType;
+    ani_method setDisplayName;
+};
+
+struct FileAssetAttributes {
+    std::string uri;
+    MediaType photoType;
+    std::string displayName;
+};
+
 class FileAssetAni {
 public:
     FileAssetAni(std::shared_ptr<FileAsset> fileAsset);
@@ -59,8 +73,13 @@ public:
     static ani_status FileAssetAniInit(ani_env *env);
     static ani_object Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz);
     static void Destructor([[maybe_unused]] ani_env env, void *nativeObject, void *finalize_hint);
-    static ani_object Wrap(ani_env *env, FileAssetAni* fileAssetAni);
+    static ani_object Wrap(ani_env *env, FileAssetAni *fileAssetAni, const FileAssetAniMethod &fileAssetAniMethod);
     static FileAssetAni* Unwrap(ani_env *env, ani_object object);
+    static ani_status InitFileAssetAniMethod(ani_env *env, ResultNapiType classType,
+        FileAssetAniMethod &fileAssetAniMethod);
+    static ani_status BindAniAttributes(ani_env *env, ani_object object, const FileAssetAniMethod &fileAssetAniMethod,
+        const FileAssetAttributes &attrs);
+
     static void Set(ani_env *env, ani_object object, ani_string member, ani_string value);
     static ani_object Get(ani_env *env, ani_object object, ani_string member);
     static void CommitModify(ani_env *env, ani_object object);
