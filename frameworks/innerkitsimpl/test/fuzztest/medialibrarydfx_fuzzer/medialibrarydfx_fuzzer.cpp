@@ -224,12 +224,17 @@ static void DfxTimerFuzzer(const uint8_t *data, size_t size)
 
 static void DfxTransactionFuzzer(const uint8_t *data, size_t size)
 {
+    if (data == nullptr || size < sizeof(int32_t) + sizeof(uint8_t)) {
+        return;
+    }
+    int offset = 0;
     std::string funcName = FuzzString(data, size);
     std::shared_ptr<Media::DfxTransaction> dfxTransaction = std::make_shared<Media::DfxTransaction>(funcName);
     dfxTransaction->Restart();
     dfxTransaction->ReportIfTimeout();
-    uint8_t abnormalType = FuzzUInt8(data, size);
-    int32_t errCode = FuzzInt32(data, size);
+    uint8_t abnormalType = FuzzUInt8(data + offset, size);
+    offset += sizeof(int32_t);
+    int32_t errCode = FuzzInt32(data + offset, size);
     dfxTransaction->ReportError(abnormalType, errCode);
 }
 
