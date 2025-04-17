@@ -73,7 +73,6 @@ ohos_shared_library("cj_photoaccesshelper_ffi") {
     "src/photo_accesshelper_utils.cpp",
     "src/photo_album_impl.cpp",
     "src/photo_asset_impl.cpp",
-    "src/userfile_client.cpp",
   ]
 
   deps = [
