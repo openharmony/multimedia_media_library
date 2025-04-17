@@ -27,6 +27,8 @@
 #include "photo_map_column.h"
 #include "vision_column.h"
 
+#include"utils/ScopeGuard.h"
+
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
