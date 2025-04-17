@@ -87,6 +87,10 @@
     {
       "name": "permission_storage_manager",
       "value": "Allow app use sdcard mount/umount broadcast"
+    },
+    {
+      "name": "permission_get_network_info",
+      "value": "Allow app to get network info"
     }
   ]
 }

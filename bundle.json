@@ -83,7 +83,8 @@
           "libxml2",
           "zlib",
           "device_standby",
-          "libfuse"
+          "libfuse",
+          "netmanager_base"
         ],
         "third_party": [
           "openssl"

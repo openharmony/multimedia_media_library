@@ -73,6 +73,7 @@
 #ifdef HAS_WIFI_MANAGER_PART
 #include "wifi_device.h"
 #endif
+#include "net_conn_client.h"
 #include "power_efficiency_manager.h"
 #include "photo_album_lpath_operation.h"
 #include "medialibrary_astc_stat.h"
@@ -160,6 +161,22 @@ bool GetNowLocalTime(std::tm &nowLocalTime)
     auto now = std::chrono::system_clock::now();
     std::time_t nowTime = std::chrono::system_clock::to_time_t(now);
     return localtime_r(&nowTime, &nowLocalTime) != nullptr;
+}
+
+void MedialibrarySubscriber::RefreshCellularNetStatus()
+{
+    NetManagerStandard::NetHandle handle;
+    int32_t ret = NetManagerStandard::NetConnClient::GetInstance().GetDefaultNet(handle);
+    CHECK_AND_RETURN_LOG(ret == 0, "GetDefaultNet failed, err:%{public}d", ret);
+    NetManagerStandard::NetAllCapabilities netAllCap;
+    ret = NetManagerStandard::NetConnClient::GetInstance().GetNetCapabilities(handle, netAllCap);
+    CHECK_AND_RETURN_LOG(ret == 0, "GetNetCapabilities failed, err:%{public}d", ret);
+    const std::set<NetManagerStandard::NetBearType>& types = netAllCap.bearerTypes_;
+    if (types.count(NetManagerStandard::BEARER_CELLULAR)) {
+        MEDIA_INFO_LOG("init cellular status success: %{public}d", isCellularNetConnected_);
+        isCellularNetConnected_ = true;
+    }
+    return;
 }
 
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
