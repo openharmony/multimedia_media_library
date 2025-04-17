@@ -321,7 +321,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/operation/photo_displayname_operation.cpp",
     "src/operation/photo_file_operation.cpp",
     "src/operation/photo_mimetype_operation.cpp",
-    "src/operation/photo_other_album_trans_operation.cpp",
     "src/operation/photo_owner_album_id_operation.cpp",
     "src/operation/photo_source_path_operation.cpp",
     "src/operation/photo_storage_operation.cpp",
