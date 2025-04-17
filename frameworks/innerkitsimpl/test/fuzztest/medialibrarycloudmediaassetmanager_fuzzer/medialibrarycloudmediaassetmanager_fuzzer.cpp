@@ -279,7 +279,7 @@ static void CloudMediaAssetDownloadOperationFuzzer(const uint8_t *data, size_t s
 
 static void CloudMediaAssetDownloadCallbackFuzzer(const uint8_t *data, size_t size)
 {
-    const int32_t int32Count = 3;
+    const int32_t int32Count = 2;
     if (data == nullptr || size < sizeof(int32_t) * int32Count) {
         return;
     }
@@ -290,8 +290,7 @@ static void CloudMediaAssetDownloadCallbackFuzzer(const uint8_t *data, size_t si
     downloadProgressObj.downloadId = FuzzInt32(data + offset, size);
     offset += sizeof(int32_t);
     downloadProgressObj.downloadErrorType = FuzzDownloadErrorType(data + offset, size);
-    offset += sizeof(int32_t);
-    downloadProgressObj.path = FuzzString(data + offset, size);
+    downloadProgressObj.path = FuzzString(data, size);
     operation->HandleSuccessCallback(downloadProgressObj);
     operation->HandleFailedCallback(downloadProgressObj);
     operation->HandleStoppedCallback(downloadProgressObj);
