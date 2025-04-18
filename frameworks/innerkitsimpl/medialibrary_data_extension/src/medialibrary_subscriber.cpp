@@ -78,7 +78,6 @@
 #include "photo_album_lpath_operation.h"
 #include "medialibrary_astc_stat.h"
 #include "photo_mimetype_operation.h"
-#include "photo_other_album_trans_operation.h"
 #include "preferences.h"
 #include "preferences_helper.h"
 #include "background_cloud_file_processor.h"
@@ -800,7 +799,6 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     PauseBackgroundDownloadCloudMedia();
     PhotoAlbumLPathOperation::GetInstance().Stop();
-    PhotoOtherAlbumTransOperation::GetInstance().Stop();
     CloudMediaAssetManager::GetInstance().StopDeleteCloudMediaAssets();
 }
 
