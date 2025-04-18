@@ -458,9 +458,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_a_media_zero_size end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data_001, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("medialib_backup_test_duplicate_data start");
+    MEDIA_INFO_LOG("medialib_backup_test_duplicate_data_001 start");
     restoreService->photosRestore_.galleryRdb_ = restoreService->galleryRdb_;
     ASSERT_NE(restoreService->photosRestore_.galleryRdb_, nullptr);
  
@@ -480,7 +480,24 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data, TestSize.L
     isDuplicateData = restoreService->photosRestore_.IsDuplicateData(dataPath);
     MEDIA_INFO_LOG("check %{public}s: %{public}d", dataPath.c_str(), static_cast<int32_t>(isDuplicateData));
     EXPECT_EQ(isDuplicateData, false); // not exist in map, not duplicate
-    MEDIA_INFO_LOG("medialib_backup_test_duplicate_data end");
+    MEDIA_INFO_LOG("medialib_backup_test_duplicate_data_001 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_duplicate_data_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_duplicate_data_002 start");
+    restoreService->photosRestore_.galleryRdb_ = restoreService->galleryRdb_;
+    ASSERT_NE(restoreService->photosRestore_.galleryRdb_, nullptr);
+    restoreService->AnalyzeGalleryErrorSource();
+ 
+    string dataPath = "/storage/emulated/0/A/media/Rocket/test/DUPLICATE_DATA_CASE.mp4";
+    bool isDuplicateData = restoreService->photosRestore_.IsDuplicateData(dataPath);
+    EXPECT_EQ(isDuplicateData, false);
+    
+    dataPath = "/storage/emulated/0/A/media/Rocket/test/duplicate_data_case.mp4";
+    isDuplicateData = restoreService->photosRestore_.IsDuplicateData(dataPath);
+    EXPECT_EQ(isDuplicateData, true);
+    MEDIA_INFO_LOG("medialib_backup_test_duplicate_data_002 end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_modify_file, TestSize.Level2)
