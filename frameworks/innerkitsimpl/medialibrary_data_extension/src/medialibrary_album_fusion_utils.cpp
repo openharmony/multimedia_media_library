@@ -40,7 +40,6 @@
 #include "medialibrary_rdb_transaction.h"
 #include "photo_album_lpath_operation.h"
 #include "photo_album_update_date_modified_operation.h"
-#include "photo_other_album_trans_operation.h"
 #include "photo_album_copy_meta_data_operation.h"
 
 namespace OHOS::Media {
