@@ -173,7 +173,7 @@ void ForegroundAnalysisMeta::StartAnalysisService()
     if (opType_ == ForegroundAnalysisOpType::FOREGROUND_NOT_HANDLE) {
         return;
     }
-    MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}u", taskId_, opType_,
+    MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}zu", taskId_, opType_,
         fileIds_.size());
 }
 
@@ -214,7 +214,7 @@ int32_t ForegroundAnalysisMeta::QueryPendingAnalyzeFileIds(MediaLibraryCommand &
     if (fileIds.empty()) {
         MEDIA_INFO_LOG("no fileId match");
     } else {
-        MEDIA_INFO_LOG("cv match cnt:%{public}u", fileIds.size());
+        MEDIA_INFO_LOG("cv match cnt:%{public}zu", fileIds.size());
     }
     return E_OK;
 }
