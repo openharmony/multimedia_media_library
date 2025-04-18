@@ -94,7 +94,7 @@ void MediaLibraryAllAlbumRefreshProcessor::TryRefreshAllAlbums()
         if (!CheckRefreshConditionLocked()) {
             return;
         }
-        MEDIA_INFO_LOG("RefreshAllAlbums! now: %{public}lld, last : %{public}lld",
+        MEDIA_INFO_LOG("RefreshAllAlbums! now: %{public}" PRId64 ", last : %{public}" PRId64,
             GetNowTimeUs(), lastRefreshAllAlbumsTime_);
         lastRefreshAllAlbumsTime_ = GetNowTimeUs();
     }
