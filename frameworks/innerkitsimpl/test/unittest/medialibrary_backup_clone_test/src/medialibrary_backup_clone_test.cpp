@@ -2690,15 +2690,17 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test1 start");
     ClearData();
     CloneSource cloneSource;
-    vector<string> tableList = { VISION_IMAGE_FACE_TABLE };
-    Init(cloneSource, TEST_DB_PATH, tableList);
-    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
-    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    vector<string> tableList;
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
 
-    restoreService->cloneRestoreGeo_.GetGeoKnowledgeInfos();
-    restoreService->cloneRestoreGeo_.GetAnalysisGeoInfos();
-    EXPECT_EQ(restoreService->cloneRestoreGeo_.geoInfos_.size(), 0);
-    EXPECT_EQ(restoreService->cloneRestoreGeo_.anaTotalfos_.size(), 0);
+    cloneRestoreService->cloneRestoreGeo_.GetGeoKnowledgeInfos();
+    cloneRestoreService->cloneRestoreGeo_.GetAnalysisGeoInfos();
+    EXPECT_EQ(cloneRestoreService->cloneRestoreGeo_.geoInfos_.size(), 0);
+    EXPECT_EQ(cloneRestoreService->cloneRestoreGeo_.anaTotalfos_.size(), 0);
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test1 end");
 }
 
@@ -2707,16 +2709,18 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test2 start");
     ClearData();
     CloneSource cloneSource;
-    vector<string> tableList = { VISION_IMAGE_FACE_TABLE };
-    Init(cloneSource, TEST_DB_PATH, tableList);
-    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
-    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    vector<string> tableList;
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
     CloneRestoreGeo::GeoCloneInfo info;
-    restoreService->cloneRestoreGeo_.geoInfos_.emplace_back(info);
+    cloneRestoreService->cloneRestoreGeo_.geoInfos_.emplace_back(info);
 
     std::vector<FileInfo> fileInfos;
-    restoreService->cloneRestoreGeo_.RestoreMaps(fileInfos);
-    EXPECT_EQ(restoreService->cloneRestoreGeo_.successUpdateCnt_, 0);
+    cloneRestoreService->cloneRestoreGeo_.RestoreMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreService->cloneRestoreGeo_.successUpdateCnt_, 0);
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test2 end");
 }
 
@@ -2725,12 +2729,13 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test3 start");
     ClearData();
     CloneSource cloneSource;
-    vector<string> tableList = { VISION_IMAGE_FACE_TABLE };
-    Init(cloneSource, TEST_DB_PATH, tableList);
-    restoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
-    restoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
+    vector<string> tableList;
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    unique_ptr<CloneRestore> cloneRestoreService = make_unique<CloneRestore>();
+    cloneRestoreService->mediaRdb_ = cloneSource.cloneStorePtr_;
+    cloneRestoreService->mediaLibraryRdb_ = g_rdbStore->GetRaw();
     CloneRestoreGeo::GeoCloneInfo info;
-    restoreService->cloneRestoreGeo_.geoInfos_.emplace_back(info);
+    cloneRestoreService->cloneRestoreGeo_.geoInfos_.emplace_back(info);
 
     constexpr double DOUBLE_EPSILON = 1e-15;
     std::vector<FileInfo> fileInfos;
@@ -2742,8 +2747,9 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
     info2.latitude = DOUBLE_EPSILON + 1.0;
     info2.longitude = DOUBLE_EPSILON + 1.0;
     fileInfos.push_back(info2);
-    restoreService->cloneRestoreGeo_.RestoreMaps(fileInfos);
-    EXPECT_EQ(restoreService->cloneRestoreGeo_.successUpdateCnt_, 0);
+    cloneRestoreService->cloneRestoreGeo_.RestoreMaps(fileInfos);
+    EXPECT_EQ(cloneRestoreService->cloneRestoreGeo_.successUpdateCnt_, 0);
+    ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test3 end");
 }
 } // namespace Media
