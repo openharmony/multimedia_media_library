@@ -249,7 +249,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
         UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
     }
     HandleRestData();
-    StopParameterForClone(CLONE_RESTORE_ID);
+    StopParameterForClone();
     CloseAllKvStore();
     MEDIA_INFO_LOG("End clone restore");
 }

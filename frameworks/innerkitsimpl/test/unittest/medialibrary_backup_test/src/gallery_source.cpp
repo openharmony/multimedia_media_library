@@ -99,6 +99,7 @@ void GallerySource::Init(const string &dbPath)
     InitGalleryMediaThree();
     InitGalleryMediaFour();
     InitGalleryMediaFive();
+    InitGalleryMediaSix();
     InitGarbageAlbum();
     InitGalleryAlbumOne();
     InitGalleryAlbumTwo();
@@ -313,6 +314,21 @@ void GallerySource::InitGalleryMediaFive()
         "'duplicate_data', 'NULL', 'duplicate_data.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
         "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data.mp4', \
         0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00')");
+}
+
+void GallerySource::InitGalleryMediaSix()
+{
+    // duplicate data with case differences
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(38, 32, ") +
+        "'/storage/emulated/0/A/media/Rocket/test/DUPLICATE_DATA_CASE.mp4', 10865209, 1708600079, 1708600079," +
+        "'DUPLICATE_DATA_CASE', 'NULL', 'DUPLICATE_DATA_CASE.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/DUPLICATE_DATA_CASE.mp4', \
+        0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00')");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(39, 33, ") +
+        "'/storage/emulated/0/A/media/Rocket/test/duplicate_data_case.mp4', 10865209, 1708600079, 1708600079," +
+        "'duplicate_data_case', 'NULL', 'duplicate_data_case.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data_case.mp4', \
+        0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00')");
 }
 
 void GallerySource::InitGarbageAlbum()

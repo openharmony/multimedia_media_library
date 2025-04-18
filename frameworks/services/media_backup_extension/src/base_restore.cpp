@@ -1411,10 +1411,10 @@ void BaseRestore::SetParameterForClone()
     CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
 }
 
-void BaseRestore::StopParameterForClone(int32_t sceneCode)
+void BaseRestore::StopParameterForClone()
 {
     bool retFlag = system::SetParameter(CLONE_FLAG, "0");
-    CHECK_AND_PRINT_LOG(retFlag, "Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set stop parameter cloneFlag, retFlag:%{public}d", retFlag);
 }
 
 void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType)
@@ -1521,19 +1521,19 @@ int32_t BaseRestore::GetUniqueId(int32_t fileType)
     int32_t uniqueId = -1;
     switch (fileType) {
         case MediaType::MEDIA_TYPE_IMAGE: {
-            lock_guard<mutex> lock(imageMutex_);
+            std::lock_guard<ffrt::mutex> lock(imageMutex_);
             uniqueId = static_cast<int32_t>(imageNumber_);
             imageNumber_++;
             break;
         }
         case MediaType::MEDIA_TYPE_VIDEO: {
-            lock_guard<mutex> lock(videoMutex_);
+            std::lock_guard<ffrt::mutex> lock(videoMutex_);
             uniqueId = static_cast<int32_t>(videoNumber_);
             videoNumber_++;
             break;
         }
         case MediaType::MEDIA_TYPE_AUDIO: {
-            lock_guard<mutex> lock(audioMutex_);
+            std::lock_guard<ffrt::mutex> lock(audioMutex_);
             uniqueId = static_cast<int32_t>(audioNumber_);
             audioNumber_++;
             break;
