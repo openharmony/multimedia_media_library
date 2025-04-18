@@ -21,6 +21,8 @@
 #include <unordered_map>
 
 #include "backup_const.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "media_file_utils.h"
 #include "nlohmann/json.hpp"
 #include "photos_dao.h"
@@ -127,7 +129,7 @@ protected:
     virtual void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount,
         int32_t &videoFileMoveCount, int32_t sceneCode);
     void SetParameterForClone();
-    void StopParameterForClone(int32_t sceneCode);
+    void StopParameterForClone();
     void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void UpdateLcdVisibleColumn(const FileInfo &fileInfo);
     bool NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
@@ -204,9 +206,9 @@ protected:
     std::string upgradeRestoreDir_;
     std::string albumOdid_;
     std::string dualDeviceSoftName_;
-    std::mutex imageMutex_;
-    std::mutex videoMutex_;
-    std::mutex audioMutex_;
+    ffrt::mutex imageMutex_;
+    ffrt::mutex videoMutex_;
+    ffrt::mutex audioMutex_;
     std::mutex failedFilesMutex_;
     int32_t errorCode_{RestoreError::SUCCESS};
     std::string errorInfo_;
