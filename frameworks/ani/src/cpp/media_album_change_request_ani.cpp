@@ -76,13 +76,15 @@ ani_object MediaAlbumChangeRequestAni::Constructor([[maybe_unused]] ani_env *env
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
         MEDIA_ERR_LOG("Failed to find class: %{public}s", className);
-        return nullptr;
+        ani_object nullobj = nullptr;
+        return nullobj;
     }
 
     ani_method ctor;
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
         MEDIA_ERR_LOG("Failed to find method: %{public}s", "ctor");
-        return nullptr;
+        ani_object nullobj = nullptr;
+        return nullobj;
     }
 
     ani_object mediaAlbumChangeRequestObj;
