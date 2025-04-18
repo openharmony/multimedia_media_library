@@ -20,6 +20,8 @@
 #include <sstream>
 #include <unordered_set>
 
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "rdb_store.h"
 #include "photo_album_restore.h"
 #include "photos_dao.h"
@@ -119,7 +121,7 @@ private:
     PhotosDao::PhotosBasicInfo photosBasicInfo_;
     PhotosDao photosDao_;
     PhotoAlbumDao photoAlbumDao_;
-    std::mutex duplicateDataUsedCountMutex_;
+    ffrt::mutex duplicateDataUsedCountMutex_;
     std::unordered_map<std::string, int32_t> duplicateDataUsedCountMap_;
     GalleryMediaDao galleryMediaDao_;
 

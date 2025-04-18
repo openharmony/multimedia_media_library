@@ -412,7 +412,6 @@ void UpgradeRestore::RestorePhoto()
     CHECK_AND_RETURN(IsRestorePhoto());
     AnalyzeSource();
     RestorePhotoInner();
-    StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
         (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
     if (sceneCode_ == UPGRADE_RESTORE_ID) {
@@ -445,6 +444,7 @@ void UpgradeRestore::RestorePhoto()
         MEDIA_INFO_LOG("restore mode no need to del gallery db");
     }
     ProcessBurstPhotos();
+    StopParameterForClone();
 }
 
 void UpgradeRestore::AnalyzeSource()

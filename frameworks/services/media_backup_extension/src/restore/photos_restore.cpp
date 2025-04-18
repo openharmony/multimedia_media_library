@@ -217,7 +217,7 @@ void PhotosRestore::GetDuplicateData(int32_t duplicateDataCount)
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             std::string data = GetStringVal(GALLERY_FILE_DATA, resultSet);
             int32_t count = GetInt32Val(CUSTOM_COUNT, resultSet);
-            this->duplicateDataUsedCountMap_[data] = 0;
+            this->duplicateDataUsedCountMap_[ToLower(data)] = 0;
             MEDIA_INFO_LOG("Get duplicate data: %{public}s, count: %{public}d",
                 BackupFileUtils::GarbleFilePath(data, DEFAULT_RESTORE_ID).c_str(),
                 count);
@@ -233,10 +233,10 @@ void PhotosRestore::GetDuplicateData(int32_t duplicateDataCount)
  */
 bool PhotosRestore::IsDuplicateData(const std::string &data)
 {
-    std::lock_guard<mutex> lock(this->duplicateDataUsedCountMutex_);
-    CHECK_AND_RETURN_RET(this->duplicateDataUsedCountMap_.count(data) != 0, false);
-    this->duplicateDataUsedCountMap_[data]++;
-    return this->duplicateDataUsedCountMap_.at(data) > 1;
+    std::lock_guard<ffrt::mutex> lock(this->duplicateDataUsedCountMutex_);
+    CHECK_AND_RETURN_RET(this->duplicateDataUsedCountMap_.count(ToLower(data)) != 0, false);
+    this->duplicateDataUsedCountMap_[ToLower(data)]++;
+    return this->duplicateDataUsedCountMap_.at(ToLower(data)) > 1;
 }
 
 /**
