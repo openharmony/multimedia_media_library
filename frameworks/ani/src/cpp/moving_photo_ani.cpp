@@ -477,9 +477,10 @@ ani_object MovingPhotoAni::RequestContentByImageFileAndVideoFile(ani_env *env, a
 {
     unique_ptr<MovingPhotoAsyncContext> asyncContext = make_unique<MovingPhotoAsyncContext>();
     MovingPhotoAni* nativeObject = Unwrap(env, object);
+    ani_object nullobj = nullptr;
 
     CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsByImageFileAndVideoFile(env, imageFileUri, videoFileUri, nativeObject,
-        asyncContext) == ANI_OK, nullptr, "Failed to parse requestContent args");
+        asyncContext) == ANI_OK, nullobj, "Failed to parse requestContent args");
     RequestContentExecute(env, asyncContext);
     return RequestContentComplete(env, asyncContext);
 }
@@ -489,9 +490,10 @@ ani_object MovingPhotoAni::RequestContentByResourceTypeAndFile(ani_env *env, ani
 {
     unique_ptr<MovingPhotoAsyncContext> asyncContext = make_unique<MovingPhotoAsyncContext>();
     MovingPhotoAni* nativeObject = Unwrap(env, object);
+    ani_object nullobj = nullptr;
 
     CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsByResourceTypeAndFile(env, resourceTypeAni, fileUri, nativeObject,
-        asyncContext) == ANI_OK, nullptr, "Failed to parse requestContent args");
+        asyncContext) == ANI_OK, nullobj, "Failed to parse requestContent args");
     RequestContentExecute(env, asyncContext);
     return RequestContentComplete(env, asyncContext);
 }
@@ -500,9 +502,10 @@ ani_object MovingPhotoAni::RequestContentByResourceType(ani_env *env, ani_object
 {
     unique_ptr<MovingPhotoAsyncContext> asyncContext = make_unique<MovingPhotoAsyncContext>();
     MovingPhotoAni* nativeObject = Unwrap(env, object);
+    ani_object nullobj = nullptr;
 
     CHECK_COND_WITH_RET_MESSAGE(env, ParseArgsByResourceType(env, resourceTypeAni, nativeObject,
-        asyncContext) == ANI_OK, nullptr, "Failed to parse requestContent args");
+        asyncContext) == ANI_OK, nullobj, "Failed to parse requestContent args");
     RequestContentExecute(env, asyncContext);
     return RequestContentComplete(env, asyncContext);
 }
