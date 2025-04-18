@@ -1847,7 +1847,7 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     SendModifyUserCommentNotify(cmd, fileAsset->GetId(), extraUri);
 
     CHECK_AND_RETURN_RET_LOG(RenameEditDataDirBySetDisplayName(cmd, fileAsset) == E_OK, E_FAIL,
-        "failed to setdisplayname due to rename editdatadir fail. filename is %{puiblic}s",
+        "failed to setdisplayname due to rename editdatadir fail. filename is %{public}s",
         fileAsset->GetDisplayName().c_str());
     CreateThumbnailFileScan(fileAsset, extraUri, orientationUpdated, isNeedScan);
     auto watch = MediaLibraryNotify::GetInstance();
@@ -2540,13 +2540,8 @@ int32_t MediaLibraryPhotoOperations::UpdateDbByRevertToOrigin(
         E_ERR, "failed to update, ret: %{public}d, updateRows: %{public}d.", ret, updateRows);
     int64_t dataTaken = fileAsset->GetDateTaken();
     std::string oldPath = fileAsset->GetPath();
-    bool isThumbnailInvalidate =  ThumbnailService::GetInstance()->HasInvalidateThumbnail(
+    bool isThumbnailInvalidate =  ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(
         to_string(id), PhotoColumn::PHOTOS_TABLE, oldPath, to_string(dataTaken));
-    if (isThumbnailInvalidate) {
-        int32_t userId = -1;
-        string thumbPath = MediaFileUtils::GetThumbDir(oldPath, userId);
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteDir(thumbPath), E_ERR, "failed to update.");
-    }
     fileAsset->SetPath(path);
     MEDIA_INFO_LOG("UpdateDbByRevertToOrigin end.");
     return ret;
