@@ -225,7 +225,7 @@ bool PhotoAccessHelperImpl::CheckWhetherInitSuccess(const sptr<IRemoteObject> &t
 {
     if (!UserFileClient::IsValid()) {
         unique_lock<mutex> helperLock(sUserFileClientMutex_);
-        UserFileClient::Init(token);
+        UserFileClient::Init(token, true);
         if (!UserFileClient::IsValid()) {
             LOGE("UserFileClient creation failed");
             helperLock.unlock();
