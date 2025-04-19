@@ -20,6 +20,7 @@
 #include <securec.h>
 #include <dirent.h>
 #include <regex>
+#include <charconv>
 
 #include "album_plugin_config.h"
 #include "backup_const_column.h"
@@ -363,7 +364,13 @@ static bool RecoverHiddenOrRecycleFile(std::string &currentPath, FileInfo &tmpIn
     }
     decodeFileName = substrings[DECODE_NAME_IDX] + substrings[DECODE_SURFIX_IDX];
     if (recycleFlag) {
-        tmpInfo.dateTrashed = std::stoll(substrings[DECODE_TIME_IDX], nullptr, 10); //10 : decimal
+        auto res = std::from_chars(substrings[DECODE_TIME_IDX].data(),
+            substrings[DECODE_TIME_IDX].data() + substrings[DECODE_TIME_IDX].size(),
+            tmpInfo.dateTrashed, 10); //10 : decimal
+        if (res.ec != std::errc()) {
+            MEDIA_ERR_LOG("get dateTrashed %{public}ld fail", tmpInfo.dateTrashed);
+            return false;
+        }
     }
     return true;
 }
