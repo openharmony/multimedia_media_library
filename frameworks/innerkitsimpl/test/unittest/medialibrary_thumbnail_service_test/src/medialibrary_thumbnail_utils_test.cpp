@@ -50,7 +50,7 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, LoadAudioFileInfo_test_001, TestSize.Le
     ThumbnailData data;
     Size desiredsize;
     uint32_t errCode;
-    auto res = ThumbnailUitls::LoadAudioFileInfo(avMetadataHelper, data, desiredsize, errCode);
+    auto res = ThumbnailUtils::LoadAudioFileInfo(avMetadataHelper, data, desiredsize, errCode);
     EXPECT_EQ(res, false);
 }
 
@@ -60,7 +60,7 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, LoadVideoFrame_test_001, TestSize.Level
     Size desiredsize;
     int64_t timeStamp = 0;
     data.path = "test_path";
-    auto res = ThumbnailUitls::LoadVideoFrame(data, desiredsize, timeStamp);
+    auto res = ThumbnailUtils::LoadVideoFrame(data, desiredsize, timeStamp);
     EXPECT_EQ(res, false);
 }
 
@@ -68,7 +68,7 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, GenTargetPixelmap_test_001, TestSize.Le
 {
     ThumbnailData data;
     Size desiredsize;
-    auto res = ThumbnailUitls::GenTargetPixelmap(data, desiredsize);
+    auto res = ThumbnailUtils::GenTargetPixelmap(data, desiredsize);
     EXPECT_EQ(res, false);
 }
 
@@ -79,7 +79,7 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, SaveAfterPacking_test_001, TestSize.Lev
     bool isSourceEx = false;
     string tempOutputPath = "temp_outout_path";
     Size desiredsize;
-    auto res = ThumbnailUitls::SaveAfterPacking(data, isSourceEx, tempOutputPath);
+    auto res = ThumbnailUtils::SaveAfterPacking(data, isSourceEx, tempOutputPath);
     EXPECT_EQ(res, false);
 }
 
@@ -90,10 +90,10 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, QueryLcdCount_test_001, TestSize.Level0
     int outLcdCount = 0;
     int err = 0;
     opts.store = nullptr;
-    auto res = ThumbnailUitls::QueryLcdCount(opts, outLcdCount, err);
+    auto res = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUitls::QueryLcdCount(opts, outLcdCount, err);
+    res = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
     EXPECT_EQ(res, false);
 }
 
@@ -106,10 +106,10 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, QueryLcdCountByTime_test_001, TestSize.
     int outLcdCount = 0;
     int err = 0;
     opts.store = nullptr;
-    auto res = ThumbnailUitls::QueryLcdCountByTime(time, before, opts, outLcdCount, err);
+    auto res = ThumbnailUtils::QueryLcdCountByTime(time, before, opts, outLcdCount, err);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUitls::QueryLcdCountByTime(time, before, opts, outLcdCount, err);
+    res = ThumbnailUtils::QueryLcdCountByTime(time, before, opts, outLcdCount, err);
     EXPECT_EQ(res, false);
 }
 
@@ -119,10 +119,10 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, QueryLocalNoLcdInfos_test_001, TestSize
     std::vector<ThumbnailData> infos;
     int err = 0;
     opts.store = nullptr;
-    auto res = ThumbnailUitls::QueryLocalNoLcdInfos(opts, infos, err);
+    auto res = ThumbnailUtils::QueryLocalNoLcdInfos(opts, infos, err);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUitls::QueryLocalNoLcdInfos(opts, infos, err);
+    res = ThumbnailUtils::QueryLocalNoLcdInfos(opts, infos, err);
     EXPECT_EQ(res, false);
 }
 
@@ -133,10 +133,10 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, QueryNoHighlightPath_test_001, TestSize
     data.id = "123";
     int err = 0;
     opts.store = nullptr;
-    auto res = ThumbnailUitls::QueryNoHighlightPath(opts, data, err);
+    auto res = ThumbnailUtils::QueryNoHighlightPath(opts, data, err);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUitls::QueryNoHighlightPath(opts, data, err);
+    res = ThumbnailUtils::QueryNoHighlightPath(opts, data, err);
     EXPECT_EQ(res, false);
 }
 
@@ -147,10 +147,10 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, QueryNoHighlightInfos_test_001, TestSiz
     std::vector<ThumbnailData> infos;
     int err = 0;
     opts.store = nullptr;
-    auto res = ThumbnailUitls::QueryNoHighlightInfos(opts, infos, err);
+    auto res = ThumbnailUtils::QueryNoHighlightInfos(opts, infos, err);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUitls::QueryNoHighlightInfos(opts, infos, err);
+    res = ThumbnailUtils::QueryNoHighlightInfos(opts, infos, err);
     EXPECT_EQ(res, false);
 }
 
@@ -162,10 +162,10 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, GetHighlightTracks_test_001, TestSize.L
     std::vector<int> trackInfos;
     int err = 0;
     opts.store = nullptr;
-    auto res = ThumbnailUitls::GetHighlightTracks(opts, trackInfos, err);
+    auto res = ThumbnailUtils::GetHighlightTracks(opts, trackInfos, err);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUitls::GetHighlightTracks(opts, trackInfos, err);
+    res = ThumbnailUtils::GetHighlightTracks(opts, trackInfos, err);
     EXPECT_EQ(res, false);
 }
 
@@ -178,10 +178,10 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, UpdateHighlightInfo_test_001, TestSize.
     data.tracks = "track_data";
     int err = 0;
     opts.store = nullptr;
-    auto res = ThumbnailUitls::UpdateHighlightInfo(opts, data, err);
+    auto res = ThumbnailUtils::UpdateHighlightInfo(opts, data, err);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUitls::UpdateHighlightInfo(opts, data, err);
+    res = ThumbnailUtils::UpdateHighlightInfo(opts, data, err);
     EXPECT_EQ(res, false);
 }
 
@@ -192,10 +192,10 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, UpdateVisitTime_test_001, TestSize.Leve
     opts.row = "123";
     int err = 0;
     opts.store = nullptr;
-    auto res = ThumbnailUitls::UpdateVisitTime(opts, data, err);
+    auto res = ThumbnailUtils::UpdateVisitTime(opts, data, err);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUitls::UpdateVisitTime(opts, data, err);
+    res = ThumbnailUtils::UpdateVisitTime(opts, data, err);
     EXPECT_EQ(res, false);
 }
 
@@ -204,13 +204,13 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, CheckDateTaken_test_001, TestSize.Level
     ThumbRdbOpt opts;
     opts.table = PhotoColumn::PHOTOS_TABLE;
     ThumbnailData data;
-    date.dateTaken = "";
+    data.dateTaken = "";
     data.id = "123";
     opts.store = nullptr;
-    auto res = ThumbnailUitls::CheckDateTaken(opts, data);
+    auto res = ThumbnailUtils::CheckDateTaken(opts, data);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUitls::CheckDateTaken(opts, data);
+    res = ThumbnailUtils::CheckDateTaken(opts, data);
     EXPECT_EQ(res, false);
 }
 
@@ -220,29 +220,29 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, GetLocalThumbSize_test_001, TestSize.Le
     Size size;
     ThumbnailType type = ThumbnailType::THUMB;
     data.path = "/path/to/image.jpg";
-    auto res = ThumbnailUitls::GetLocalThumbSize(data, type, size);
+    auto res = ThumbnailUtils::GetLocalThumbSize(data, type, size);
     EXPECT_EQ(res, false);
-    ThumbnailType type = ThumbnailType::THUMB_ASTC;
-    res = ThumbnailUitls::GetLocalThumbSize(data, type, size);
+    type = ThumbnailType::THUMB_ASTC;
+    res = ThumbnailUtils::GetLocalThumbSize(data, type, size);
     EXPECT_EQ(res, false);
-    ThumbnailType type = ThumbnailType::LCD;
-    res = ThumbnailUitls::GetLocalThumbSize(data, type, size);
+    type = ThumbnailType::LCD;
+    res = ThumbnailUtils::GetLocalThumbSize(data, type, size);
     EXPECT_EQ(res, false);
 }
 HWTEST_F(MediaLibraryThumbnailUtilsTest, ConvertStrToInt32_test_001, TestSize.Level0)
 {
     string str = "123";
     int32_t ret;
-    auto res = ThumbnailUitls::ConvertStrToInt32(str, ret);
+    auto res = ThumbnailUtils::ConvertStrToInt32(str, ret);
     EXPECT_EQ(res, true);
     str = "test";
-    res = ThumbnailUitls::ConvertStrToInt32(str, ret);
+    res = ThumbnailUtils::ConvertStrToInt32(str, ret);
     EXPECT_EQ(res, false);
     str = "-100000000000000";
-    res = ThumbnailUitls::ConvertStrToInt32(str, ret);
+    res = ThumbnailUtils::ConvertStrToInt32(str, ret);
     EXPECT_EQ(res, false);
     str = "100000000000000";
-    res = ThumbnailUitls::ConvertStrToInt32(str, ret);
+    res = ThumbnailUtils::ConvertStrToInt32(str, ret);
     EXPECT_EQ(res, false);
 }
 }
