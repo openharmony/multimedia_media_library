@@ -296,9 +296,9 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
 
     bool needRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
     CHECK_AND_RETURN_RET_LOG(ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
-    needRevolve ? videoWidth : videoHeight), false, "Parse width from resultmap error");
+        needRevolve ? videoWidth : videoHeight), false, "Parse width from resultmap error");
     CHECK_AND_RETURN_RET_LOG(ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
-    needRevolve ? videoHeight : videoWidth), false, "Parse width from resultmap error");
+        needRevolve ? videoHeight : videoWidth), false, "Parse width from resultmap error");
     return true;
 }
 
@@ -444,8 +444,9 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
         return false;
     }
     int ret = SaveFileCreateDir(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX, outputPath);
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "CompressPicture failed, SaveFileCreateDir failed, path: %{public}s, isSourceEx: %{public}d",
-            DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
+        "CompressPicture failed, SaveFileCreateDir failed, path: %{public}s, isSourceEx: %{public}d",
+        DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
     size_t lastSlash = outputPath.rfind('/');
     if (lastSlash == string::npos || outputPath.size() <= lastSlash + 1) {
         MEDIA_ERR_LOG("CompressPicture failed, failed to check outputPath: %{public}s, isSourceEx: %{public}d",
@@ -455,8 +456,9 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
     tempOutputPath = outputPath.substr(0, lastSlash) + "/temp_" + data.dateModified + "_" +
         outputPath.substr(lastSlash + 1);
     ret = MediaFileUtils::CreateAsset(tempOutputPath);
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false, "CompressPicture failed, failed to create temp filter file: %{public}s, isSourceEx: %{public}d",
-            DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false,
+        "CompressPicture failed, failed to create temp filter file: %{public}s, isSourceEx: %{public}d",
+        DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
     Media::ImagePacker imagePacker;
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
@@ -482,8 +484,9 @@ bool ThumbnailUtils::SaveAfterPacking(ThumbnailData &data, bool isSourceEx, cons
     }
     auto outputPath = GetThumbnailPath(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
     int ret = rename(tempOutputPath.c_str(), outputPath.c_str());
-    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false, "SaveAfterPacking failed, failed to rename temp filters file: %{public}s",
-            DfxUtils::GetSafePath(tempOutputPath).c_str());
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false,
+        "SaveAfterPacking failed, failed to rename temp filters file: %{public}s",
+        DfxUtils::GetSafePath(tempOutputPath).c_str());
     if (MediaFileUtils::IsFileExists(tempOutputPath)) {
         MEDIA_INFO_LOG("file: %{public}s exists, needs to be deleted", DfxUtils::GetSafePath(tempOutputPath).c_str());
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
@@ -497,7 +500,7 @@ void ThumbnailUtils::CancelAfterPacking(const string &tempOutputPath)
     if (MediaFileUtils::IsFileExists(tempOutputPath)) {
         MEDIA_INFO_LOG("CancelAfterPacking: %{public}s exists, needs deleted",
             DfxUtils::GetSafePath(tempOutputPath).c_str());
-        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath), 
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "CancelAfterPacking delete failed: %{public}s", DfxUtils::GetSafePath(tempOutputPath).c_str());
     }
 }
@@ -1260,7 +1263,8 @@ bool ThumbnailUtils::UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data
     }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
-    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false, "UpdateLcdReadyStatus rdbStore Update failed! %{public}d", err);
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false,
+        "UpdateLcdReadyStatus rdbStore Update failed! %{public}d", err);
     return true;
 }
 
@@ -1408,7 +1412,7 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
     int ret = write(fd.Get(), output, writeSize);
     CHECK_AND_RETURN_RET_LOG(ret >= 0, -errno, "write failed errno %{public}d", errno);
     int32_t errCode = fsync(fd.Get());
-    CHECK_AND_RETURN_RET_LOG(err >= 0, -errno, "fsync failed errno %{public}d", errno);
+    CHECK_AND_RETURN_RET_LOG(errCode >= 0, -errno, "fsync failed errno %{public}d", errno);
     close(fd.Release());
 
     if (MediaFileUtils::IsFileExists(fileName)) {
@@ -2057,8 +2061,9 @@ bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSource
     dataSource->GetImageInfo(imageInfo);
     if (imageInfo.pixelFormat != PixelFormat::RGBA_8888) {
         uint32_t ret = ImageFormatConvert::ConvertImageFormat(dataSource, PixelFormat::RGBA_8888);
-        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "Fail to scale convert image format, isSourceEx: %{public}d, format: %{public}d.",
-                isSourceEx, imageInfo.pixelFormat);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
+            "Fail to scale convert image format, isSourceEx: %{public}d, format: %{public}d.",
+            isSourceEx, imageInfo.pixelFormat);
     }
     if (isSourceEx) {
         data.source.SetPixelMapEx(dataSource);
