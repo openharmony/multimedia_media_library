@@ -46,7 +46,7 @@ void MediaLibraryThumbnailUtilsTest::TearDown(void) {}
  
 HWTEST_F(MediaLibraryThumbnailUtilsTest, LoadAudioFileInfo_test_001, TestSize.Level0)
 {
-    shared_ptr<AVMetadataHelper> avMetadataHelper - nullptr;
+    shared_ptr<AVMetadataHelper> avMetadataHelper = nullptr;
     ThumbnailData data;
     Size desiredsize;
     uint32_t errCode;
