@@ -265,8 +265,8 @@ void PhotoCustomRestoreOperation::InitRestoreTask(RestoreTaskInfo &restoreTaskIn
     std::thread applyEfficiencyQuotaThread([this, fileNum] { ApplyEfficiencyQuota(fileNum); });
     applyEfficiencyQuotaThread.detach();
     QueryAlbumId(restoreTaskInfo);
-    GetAlbumUriBySubType(PhotoAlbumSubType::IMAGE, restoreTaskInfo.imageAlbumUri);
-    GetAlbumUriBySubType(PhotoAlbumSubType::VIDEO, restoreTaskInfo.videoAlbumUri);
+    GetAlbumInfoBySubType(PhotoAlbumSubType::IMAGE, restoreTaskInfo.imageAlbumUri, restoreTaskInfo.imageAlbumId);
+    GetAlbumInfoBySubType(PhotoAlbumSubType::VIDEO, restoreTaskInfo.videoAlbumUri, restoreTaskInfo.videoAlbumId);
 }
 
 int32_t PhotoCustomRestoreOperation::HandleCustomRestore(
@@ -380,11 +380,14 @@ void PhotoCustomRestoreOperation::SendPhotoAlbumNotify(RestoreTaskInfo &restoreT
     std::string albumUri =
         MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(restoreTaskInfo.albumId));
     watch->Notify(albumUri, NotifyType::NOTIFY_UPDATE);
+    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_ALBUM_ADD_ASSET, restoreTaskInfo.albumId);
     if (uniqueNumber.imageTotalNumber > 0) {
         watch->Notify(restoreTaskInfo.imageAlbumUri, NotifyType::NOTIFY_UPDATE);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_ALBUM_ADD_ASSET, restoreTaskInfo.imageAlbumId);
     }
     if (uniqueNumber.videoTotalNumber > 0) {
         watch->Notify(restoreTaskInfo.videoAlbumUri, NotifyType::NOTIFY_UPDATE);
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_ALBUM_ADD_ASSET, restoreTaskInfo.videoAlbumId);
     }
     MEDIA_DEBUG_LOG("PhotoAlbumNotify finished.");
 }
@@ -585,24 +588,24 @@ void PhotoCustomRestoreOperation::QueryAlbumId(RestoreTaskInfo &restoreTaskInfo)
     }
 }
 
-int32_t PhotoCustomRestoreOperation::GetAlbumUriBySubType(int32_t subType, string &albumUri)
+int32_t PhotoCustomRestoreOperation::GetAlbumInfoBySubType(int32_t subType, string &albumUri, int32_t &albumId)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "GetAlbumUriBySubType: get rdb store fail!");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "GetAlbumInfoBySubType: get rdb store fail!");
 
     const string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = ? ;";
     std::vector<NativeRdb::ValueObject> params = {subType};
     auto resultSet = rdbStore->QuerySql(querySql, params);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR,
-        "GetAlbumUriBySubType: query PhotoAlbum failed! subType=%{public}d", subType);
+        "GetAlbumInfoBySubType: query PhotoAlbum failed! subType=%{public}d", subType);
 
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetAlbumUriBySubType first row empty.");
+        MEDIA_ERR_LOG("GetAlbumInfoBySubType first row empty.");
         resultSet->Close();
         return E_HAS_DB_ERROR;
     }
-    int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
     resultSet->Close();
     albumUri = MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(albumId));
     return E_OK;
