@@ -208,6 +208,7 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
         }
     }
 #endif
+    MedialibrarySubscriber::RefreshCellularNetStatus();
     MediaLibraryAllAlbumRefreshProcessor::GetInstance()->OnCurrentStatusChanged(
         isScreenOff_ && isCharging_ && batteryCapacity_ >= PROPER_DEVICE_BATTERY_CAPACITY
         && isDeviceTemperatureProper_);
