@@ -16,7 +16,7 @@
 #include <thread>
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
-#include "medialibrary_Thumbnail_utils_test.h"
+#include "medialibrary_thumbnail_utils_test.h"
 #define private public
 #include "thumbnail_service.h"
 #include "ithumbnail_helper.h"
