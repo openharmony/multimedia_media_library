@@ -36,7 +36,7 @@ bool MediaChangeRequestImpl::InitUserFileClient(int64_t contextId)
             return false;
         }
         sptr<IRemoteObject> token = context->GetToken();
-        UserFileClient::Init(token);
+        UserFileClient::Init(token, true);
     }
     helperLock.unlock();
     return UserFileClient::IsValid();
