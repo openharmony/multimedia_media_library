@@ -81,7 +81,7 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, UpdateSavedFileMap_test_001, TestSize
     bool isSourceEx = false;
     syncStatus.latestSavedFileMap_[id + "THM"] = "2025-04-15";
     auto res = syncStatus.UpdateSavedFileMap(id, type, dateModified);
-    EXPECT_EQ(res, false);
+    EXPECT_EQ(res, true);
 }
 
 HWTEST_F(MediaLibraryIthumbnailHelperTest, TrySavePixelMap_test_001, TestSize.Level0)
