@@ -681,11 +681,25 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, file_utils_save_file_001, Test
     const string testFileName = "/data/test/test.jpg";
     char testOutput[] = "test.jpg";
     FileUtils::SaveImage(testFileName, (void*)testOutput, sizeof(testOutput));
+    FileUtils::SaveMovingPhotoVideo(testFileName);
 
     EXPECT_EQ(FileUtils::IsFileExist(testFileName), true);
     EXPECT_EQ(FileUtils::IsFileExist(testFileName + ".tmp"), false);
     EXPECT_EQ(FileUtils::DeleteFile(testFileName), 0);
     MEDIA_INFO_LOG("file_utils_save_file_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, file_utils_save_file_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("file_utils_save_file_002 Start");
+    const string testFileName = "/data/test/test.jpg";
+    std::shared_ptr<Media::Picture> picture;
+    bool isEdited = false;
+    bool isLowQualityPicture = false;
+    auto result = FileUtils::SavePicture(testFileName,
+        picture, isEdited, isLowQualityPicture);
+
+    EXPECT_EQ(result, -1);
 }
 
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, manager_add_image_001, TestSize.Level1)

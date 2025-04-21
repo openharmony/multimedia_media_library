@@ -22,11 +22,13 @@
 #include "ithumbnail_helper.h"
 #include "thumbnail_generate_helper.h"
 #undef private
+#include "media_file_utils.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "vision_db_sqls.h"
 #include "highlight_column.h"
+#include "thumbnail_generate_worker_manager.h"
 
 using namespace std;
 using namespace OHOS;
@@ -878,6 +880,30 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, Tes
     EXPECT_EQ(res2, false);
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_saveAfterPacking_test, TestSize.Level0)
+{
+    ThumbnailData data;
+    std::shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
+    data.source.SetPixelMap(pixelMap);
+    bool isSourceEx = true;
+    std::shared_ptr<Picture> pictureEx = Picture::Create(pixelMap);
+    data.source.SetPictureEx(pictureEx);
+    std::string tempOutputPath;
+    auto res = ThumbnailUtils::SaveAfterPacking(data, isSourceEx, tempOutputPath);
+    EXPECT_EQ(res, false);
+    bool isSourceEx2 = false;
+    auto res2 = ThumbnailUtils::SaveAfterPacking(data, isSourceEx2, tempOutputPath);
+    EXPECT_EQ(res2, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_cancelAfterPacking_test, TestSize.Level0)
+{
+    std::string tempOutputPath = "path";
+    ThumbnailUtils::CancelAfterPacking(tempOutputPath);
+    auto res = MediaFileUtils::IsFileExists(tempOutputPath);
+    EXPECT_EQ(res, false);
+}
+
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_024, TestSize.Level1)
 {
     ThumbnailData data;
@@ -1204,6 +1230,19 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAs
     serverTest.ReleaseService();
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailWithPictureAsync_test_002, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string url = "";
+    ThumbnailService serverTest;
+    std::shared_ptr<Picture> originalPhotoPicture = nullptr;
+    int32_t ret = serverTest.CreateThumbnailFileScanedWithPicture(url, "", originalPhotoPicture, false);
+    EXPECT_NE(ret, E_OK);
+    serverTest.ReleaseService();
+}
+
 HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_014, TestSize.Level1)
 {
     ThumbRdbOpt opts;
@@ -1388,6 +1427,18 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, Te
     EXPECT_EQ(res, false);
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_updateLcdInfo_test, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.row = "a";
+    opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
+    opts.table = "tab_analysis_video_label";
+    ThumbnailData data;
+    int err = E_ERR;
+    auto res = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
+    EXPECT_EQ(res, false);
+}
+
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_046, TestSize.Level1)
 {
     ThumbRdbOpt opts;
@@ -1428,6 +1479,76 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_049, Te
     unique_ptr<PixelMap> pixelMap;
     auto res = ThumbnailUtils::ResizeImage(data, size, pixelMap);
     EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_TrySavePixelMap_test, TestSize.Level0)
+{
+    ThumbnailData thumbData;
+    thumbData.id = "0";
+    thumbData.dateModified = "data_modified";
+    auto ret = IThumbnailHelper::TrySavePixelMap(thumbData, ThumbnailType::LCD);
+    EXPECT_NE(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_TrySavePicture_test, TestSize.Level0)
+{
+    ThumbnailData thumbData;
+    thumbData.id = "0";
+    thumbData.dateModified = "data_modified";
+    string tempOutputPath = "path";
+    auto ret = IThumbnailHelper::TrySavePicture(thumbData, true, tempOutputPath);
+    EXPECT_NE(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_UpdateHighlightDbState_test_001, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.table = PhotoColumn::HIGHLIGHT_TABLE;
+    opts.store = storePtr;
+    ThumbnailData thumbData;
+    thumbData.id = "0";
+    thumbData.dateModified = "data_modified";
+    string tempOutputPath = "path";
+    IThumbnailHelper::UpdateHighlightDbState(opts, thumbData);
+    EXPECT_EQ(opts.table, PhotoColumn::HIGHLIGHT_TABLE);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_UpdateHighlightDbState_test_002, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    opts.table = PhotoColumn::PHOTOS_TABLE;
+    opts.store = storePtr;
+    ThumbnailData thumbData;
+    thumbData.id = "0";
+    thumbData.dateModified = "data_modified";
+    string tempOutputPath = "path";
+    IThumbnailHelper::UpdateHighlightDbState(opts, thumbData);
+    EXPECT_NE(opts.table, PhotoColumn::HIGHLIGHT_TABLE);
+}
+
+void executeFunction(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (data != nullptr) {
+        MEDIA_INFO_LOG("Executing task with ID: %{public}s, requestId: %d",
+                       data->thumbnailData_.id.c_str(), data->requestId_);
+    }
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_AddThumbnailGenBatchTask_test, TestSize.Level0)
+{
+    ThumbnailGenerateExecute executor = executeFunction;
+    ThumbRdbOpt opts;
+    opts.store = storePtr;
+    opts.networkId = "GetUdidByNetworkId";
+    opts.udid = "GetUdidByNetworkId";
+    ThumbnailData thumbData;
+    thumbData.id = "0";
+    thumbData.dateModified = "data_modified";
+    int32_t requestId = 1;
+    IThumbnailHelper::AddThumbnailGenBatchTask(executor, opts, thumbData, requestId);
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
+    EXPECT_NE(thumbnailWorker, nullptr);
 }
 } // namespace Media
 } // namespace OHOS

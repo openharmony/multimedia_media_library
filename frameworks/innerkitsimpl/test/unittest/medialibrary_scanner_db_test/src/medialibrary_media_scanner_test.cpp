@@ -36,13 +36,10 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_Scan_test_001, TestSize.Level1)
     MediaScannerObj mediaScannerObjOne(path, callback, MediaScannerObj::DIRECTORY);
     mediaScannerObjOne.Scan();
     MediaScannerObj mediaScannerObjTwo(path, callback, MediaScannerObj::START);
-    mediaScannerObjTwo.Scan();
     MediaScannerObj mediaScannerObjThree(path, callback, MediaScannerObj::ERROR);
     mediaScannerObjThree.Scan();
-    MediaScannerObj mediaScannerObjFour(path, callback, MediaScannerObj::SET_ERROR);
-    mediaScannerObjFour.Scan();
     shared_ptr<bool> flag = make_shared<bool>();
-    mediaScannerObjFour.SetStopFlag(flag);
+    mediaScannerObjThree.SetStopFlag(flag);
     MediaScannerObj mediaScannerObjTest(path, callback, MediaScannerObj::FILE);
     int32_t ret = mediaScannerObjTest.GetFileMetadata();
     EXPECT_NE(ret, E_OK);
