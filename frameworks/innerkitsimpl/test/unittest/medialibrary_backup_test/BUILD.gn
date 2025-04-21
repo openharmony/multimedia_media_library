@@ -99,6 +99,7 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/report/upgrade_restore_gallery_media_task_test.cpp",
     "./src/report/upgrade_restore_task_report_test.cpp",
     "./src/restore/db_upgrade_utils_test.cpp",
+    "./src/restore/highlight_restore_test.cpp",
     "./src/restore/media_library_db_upgrade_test.cpp",
     "./src/restore/photo_album_clone_test.cpp",
     "./src/restore/photo_album_dao_test.cpp",
@@ -107,7 +108,6 @@ ohos_unittest("medialibrary_backup_test") {
     "./src/restore/photos_restore_test.cpp",
     "./src/restore/tab_old_photos_restore_test.cpp",
     "./src/utils/database_utils.cpp",
-    "./src/highlight_restore_test.cpp",
   ]
 
   deps = [
