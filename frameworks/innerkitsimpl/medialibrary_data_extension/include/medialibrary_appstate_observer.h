@@ -40,7 +40,8 @@ class MedialibraryAppStateObserverManager {
 
     private:
         sptr<IAppMgr> GetAppManagerInstance();
-        SafeMap<int64_t, bool> revokeMap_;
+        std::map<int64_t, bool> revokeMap_;
+        std::mutex revokeMapMutex_;
 };
 
 class MedialibraryAppStateObserver : public AppExecFwk::ApplicationStateObserverStub {
@@ -49,6 +50,10 @@ class MedialibraryAppStateObserver : public AppExecFwk::ApplicationStateObserver
         ~MedialibraryAppStateObserver() override = default;
 
         void OnAppStopped(const AppStateData &appStateData) override;
+        void OnAppStarted(const AppStateData &appStateData) override;
+
+    private:
+        void Wait4Revoke(int64_t tokenId);
 };
 }  // namespace Media
 }  // namespace OHOS

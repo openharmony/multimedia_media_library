@@ -651,7 +651,7 @@ HWTEST_F(MediaLibraryAppUriPermissionOperationsTest, app_uri_permission_oprn_api
     };
     ret = trans->RetryTrans(func);
     // expected result: 0.
-    EEXPECT_EQ(ret, 0);
+    EXPECT_EQ(ret, 0);
 
     MEDIA_INFO_LOG("end tdd app_uri_permission_oprn_api12_test_012");
 }
