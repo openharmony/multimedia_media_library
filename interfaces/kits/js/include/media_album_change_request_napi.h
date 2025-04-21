@@ -92,6 +92,7 @@ private:
     EXPORT static napi_value JSGetAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSCreateAlbumRequest(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSDeleteAlbumsWithUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSAddAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSRemoveAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSMoveAssets(napi_env env, napi_callback_info info);
