@@ -15,6 +15,8 @@
 #define MLOG_TAG "ForeGroundAnalysisMeta"
 #include "foreground_analysis_meta.h"
 
+#include "ffrt.h"
+#include "ffrt_inner.h"
 #include "media_analysis_helper.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -159,18 +161,26 @@ void ForegroundAnalysisMeta::StartAnalysisService()
     if (opType_ == ForegroundAnalysisOpType::FOREGROUND_NOT_HANDLE) {
         return;
     }
-    std::thread([taskId = taskId_, opType = opType_, fileIds = fileIds_]()-> void {
-        MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}u", taskId, opType,
-            fileIds.size());
-        if (opType & ForegroundAnalysisOpType::OCR_AND_LABEL) {
-            MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
-                IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_OCR, fileIds, taskId);
-        }
-        if (opType & ForegroundAnalysisOpType::SEARCH_INDEX) {
-            MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
-                IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX, {}, taskId);
-        }
-    }).detach();
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, []() {
+        ffrt_set_cpu_worker_max_num(ffrt::qos_utility, FRONT_THREAD_NUM);
+    });
+    ffrt::submit(
+        [taskId = taskId_, opType = opType_, fileIds = fileIds_]() {
+            MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}u", taskId, opType,
+                fileIds.size());
+            if (opType & ForegroundAnalysisOpType::OCR_AND_LABEL) {
+                MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
+                    IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_OCR, fileIds, taskId);
+            }
+            if (opType & ForegroundAnalysisOpType::SEARCH_INDEX) {
+                MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
+                    IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX, {}, taskId);
+            }
+        },
+        {},
+        {},
+        ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
 }
 
 int32_t ForegroundAnalysisMeta::QueryPendingAnalyzeFileIds(MediaLibraryCommand &cmd, std::vector<std::string> &fileIds)
