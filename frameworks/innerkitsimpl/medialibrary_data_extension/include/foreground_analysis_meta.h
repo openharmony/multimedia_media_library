@@ -34,6 +34,7 @@ static constexpr const char *FOREGROUND_ANALYSIS_TYPE = "foreground_analysis_typ
 static constexpr const char *FOREGROUND_ANALYSIS_TASK_ID = "foreground_analysis_task_id";
 static const int FRONT_INDEX_MAX_LIMIT = 2000;
 static const int FRONT_CV_MAX_LIMIT = 20;
+static const int FRONT_THREAD_NUM = 4;
 class ForegroundAnalysisMeta {
 public:
     ForegroundAnalysisMeta() = default;
