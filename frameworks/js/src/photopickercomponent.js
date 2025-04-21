@@ -306,7 +306,7 @@ export class PhotoPickerComponent extends ViewPU {
             this.handleOtherOnReceive(e);
             console.info('PhotoPickerComponent onReceive: other case');
         }
-        console.info('PhotoPickerComponent onReceive' + JSON.stringify(e));
+        console.info('PhotoPickerComponent onReceive' + this.pickerController.encrypt(JSON.stringify(e)));
     }
 
     handleOtherOnReceive(e) {
@@ -359,7 +359,8 @@ export class PhotoPickerComponent extends ViewPU {
             if (this.proxy) {
                 if ('thumbnail' === n && o === ClickType.SELECTED) {
                     this.proxy.send({ clickConfirm: i.uri, isConfirm: r });
-                    console.info('PhotoPickerComponent onReceive: click confirm: uri = ' + i.uri + 'isConfirm = ' + r);
+                    console.info('PhotoPickerComponent onReceive: click confirm: uri = ' +
+                        this.pickerController.encrypt(i.uri) + 'isConfirm = ' + r);
                 }
                 if ('camera' === n) {
                     this.proxy.send({ enterCamera: r });
@@ -385,7 +386,7 @@ export class PhotoPickerComponent extends ViewPU {
         if (this.onPhotoBrowserChanged) {
             this.onPhotoBrowserChanged(o);
         }
-        console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + o.uri);
+        console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + this.pickerController.encrypt(o.uri));
     }
 
     handleVideoPlayStateChanged(e) {
@@ -444,14 +445,14 @@ let PickerController = class {
                 let e = o;
                 if (e) {
                     this.data = new Map([['SET_SELECTED_URIS', [...e]]]);
-                    console.info('PhotoPickerComponent SET_SELECTED_URIS' + JSON.stringify(e));
+                    console.info('PhotoPickerComponent SET_SELECTED_URIS' + this.encrypt(JSON.stringify(e)));
                 }
             }
         } else if (e === DataType.SET_ALBUM_URI) {
             let e = o;
             if (e !== undefined) {
                 this.data = new Map([['SET_ALBUM_URI', e]]);
-                console.info('PhotoPickerComponent SET_ALBUM_URI' + JSON.stringify(e));
+                console.info('PhotoPickerComponent SET_ALBUM_URI' + this.encrypt(JSON.stringify(e)));
             }
         } else {
             console.info('PhotoPickerComponent setData: other case');
@@ -471,7 +472,7 @@ let PickerController = class {
         let m = o ? o : PhotoBrowserRange.ALL;
         l.photoBrowserRange = m;
         this.data = new Map([['SET_PHOTO_BROWSER_ITEM', l]]);
-        console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM ' + JSON.stringify(l));
+        console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM ' + this.encrypt(JSON.stringify(l)));
     }
 
     exitPhotoBrowser() {
@@ -578,6 +579,13 @@ let PickerController = class {
         m.isVisible = o;
         this.data = new Map([['SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY', m]]);
         console.info('PhotoPickerComponent SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY ' + JSON.stringify(m));
+    }
+
+    encrypt(data) {
+        if (!data || data?.indexOf('file:///data/storage/') !== -1) {
+          return '';
+        }
+        return data.replace(/(\/\w+)\./g, '/******.');
     }
 };
 PickerController = __decorate([Observed], PickerController);
