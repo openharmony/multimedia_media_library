@@ -1177,8 +1177,9 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
         if (burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
             ScanFile(path, false, true, true, stoi(fileId), resultPicture);
         } else {
+            resultPicture = nullptr;
             MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(
-                path, false, true, true, stoi(fileId), resultPicture);
+                path, false, true, true, stoi(fileId));
         }
     }
     tracer.Finish();
