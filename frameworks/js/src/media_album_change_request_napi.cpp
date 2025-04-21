@@ -629,7 +629,7 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
 
     vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseUriOrAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+    CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
         "Failed to parse assets");
     auto moveMap = changeRequest->GetMoveMap();
     for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
@@ -701,7 +701,7 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callb
         "Only trash album can recover assets");
 
     vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseUriOrAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+    CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
         "Failed to parse assets");
     if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToRecover_)) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
@@ -768,7 +768,7 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
         "Only trash album can delete assets permanently");
 
     vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseUriOrAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+    CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
         "Failed to parse assets");
     if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToDelete_)) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
