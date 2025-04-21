@@ -308,5 +308,108 @@ HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_009, TestSize.Level1)
     property.WriteFormData(buffer);
 }
 
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_010, TestSize.Level1)
+{
+    std::shared_ptr<Property> property = std::make_shared<Property>();
+    ASSERT_NE(property, nullptr);
+
+    std::vector<uint8_t> buffer = {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 0
+    };
+    size_t offset = 0;
+    property->code_ = 0xD000;
+    property->type_ = MTP_TYPE_AUINT8_CODE;
+    bool res = property->ReadValueData(buffer, offset);
+    EXPECT_TRUE(res);
+}
+
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_011, TestSize.Level1)
+{
+    std::shared_ptr<Property> property = std::make_shared<Property>();
+    ASSERT_NE(property, nullptr);
+
+    std::vector<uint8_t> buffer = {
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0
+    };
+    size_t offset = 0;
+    property->code_ = 0;
+    property->type_ = MTP_TYPE_AUINT8_CODE;
+    bool res = property->ReadValueData(buffer, offset);
+    EXPECT_TRUE(res);
+}
+
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_012, TestSize.Level1)
+{
+    std::shared_ptr<Property> property = std::make_shared<Property>();
+    ASSERT_NE(property, nullptr);
+
+    std::vector<uint8_t> buffer = {
+        0, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0
+    };
+    size_t offset = 0;
+    property->code_ = 0xD000;
+    property->type_ = MTP_TYPE_STRING_CODE;
+    bool res = property->ReadValueData(buffer, offset);
+    EXPECT_TRUE(res);
+}
+
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_013, TestSize.Level1)
+{
+    std::shared_ptr<Property> property = std::make_shared<Property>();
+    ASSERT_NE(property, nullptr);
+
+    std::vector<uint8_t> buffer = {
+        0, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 0
+    };
+    size_t offset = 0;
+    property->code_ = 0;
+    property->type_ = MTP_TYPE_STRING_CODE;
+    bool res = property->ReadValueData(buffer, offset);
+    EXPECT_TRUE(res);
+}
+
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_014, TestSize.Level1)
+{
+    std::shared_ptr<Property> property = std::make_shared<Property>();
+    ASSERT_NE(property, nullptr);
+
+    std::vector<uint8_t> buffer = {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 0
+    };
+    size_t offset = 0;
+    property->type_ = MTP_TYPE_STRING_CODE;
+    bool res = property->ReadFormData(buffer, offset);
+    EXPECT_TRUE(res);
+}
+
+HWTEST_F(MtpPropetryTest, mtp_SetProperty_test_015, TestSize.Level1)
+{
+    std::shared_ptr<Property> property = std::make_shared<Property>();
+    ASSERT_NE(property, nullptr);
+
+    std::vector<uint8_t> buffer = {
+        2, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 0
+    };
+    size_t offset = 0;
+    property->type_ = MTP_TYPE_STRING_CODE;
+    bool res = property->ReadFormData(buffer, offset);
+    EXPECT_TRUE(res);
+}
 } // namespace Media
 } // namespace OHOS

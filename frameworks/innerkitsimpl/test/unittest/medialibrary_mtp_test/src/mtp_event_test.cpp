@@ -305,5 +305,24 @@ HWTEST_F(MtpEventTest, mtp_event_test_0013, TestSize.Level1)
     uint16_t res = mtpEvent->EventPayloadData(code, data);
     EXPECT_EQ(res, MTP_UNDEFINED_CODE);
 }
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: EventPayloadData
+ */
+HWTEST_F(MtpEventTest, mtp_event_test_0014, TestSize.Level1)
+{
+    std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
+    ASSERT_NE(mtpEvent, nullptr);
+
+    ASSERT_NE(mtpEvent->mtpContextPtr_, nullptr);
+    mtpEvent->SendEvent(MTP_EVENT_UNDEFINED_CODE);
+}
 } // namespace Media
 } // namespace OHOS

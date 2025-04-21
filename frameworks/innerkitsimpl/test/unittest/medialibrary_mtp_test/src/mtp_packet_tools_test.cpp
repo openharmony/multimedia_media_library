@@ -238,5 +238,35 @@ HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_009, TestSize.Level1)
     EXPECT_FALSE(MtpPacketTool::CanDump());
     MtpPacketTool::DumpPacket(outbuffer);
 }
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: Utf8ToUtf16
+ */
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_010, TestSize.Level1)
+{
+    std::string inputStr = "\xFF";
+    auto res = MtpPacketTool::Utf8ToUtf16(inputStr);
+    EXPECT_TRUE(res.empty());
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: Utf16ToUtf8
+ */
+HWTEST_F(MtpPacketToolsTest, mtp_packet_tools_test_1_011, TestSize.Level1)
+{
+    std::u16string inputStr = u"\xD800";
+    auto res = MtpPacketTool::Utf16ToUtf8(inputStr);
+    EXPECT_TRUE(res.empty());
+}
 } // namespace Media
 } // namespace OHOS
