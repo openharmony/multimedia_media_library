@@ -277,11 +277,16 @@ bool MediaAssetRdbStore::IsQueryGroupPhotoAlbumAssets(const string &albumId)
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
     vector<string> columns = {PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE};
     auto resultSet = rdbStore_->Query(predicates, columns);
-
-    cond = (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK);
-    CHECK_AND_RETURN_RET(!cond, false);
+    if (resultSet == nullptr) {
+        return false;
+    }
+    if (resultSet->GoToFirstRow() != E_OK) {
+        resultSet->Close();
+        return false;
+    }
     int32_t albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
     int32_t albumSubtype = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
+    resultSet->Close();
     return albumType == PhotoAlbumType::SMART && albumSubtype == PhotoAlbumSubType::GROUP_PHOTO;
 }
 
@@ -380,6 +385,7 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
             "Fail to generate kvStore key, fileId:%{public}d", fileId);
         batchKeys.emplace_back(std::move(timeId));
     }
+    resultSet->Close();
     return NativeRdb::E_OK;
 }
 
