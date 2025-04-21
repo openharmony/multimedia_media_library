@@ -328,5 +328,27 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0017, TestSize.Level1)
     MtpFileObserver::isRunning_ = false;
     EXPECT_TRUE(MtpFileObserver::WatchPathThread(context));
 }
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: EraseFromWatchMap
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0018, TestSize.Level1)
+{
+    std::shared_ptr<MtpFileObserver> mtpFileObserver = std::make_shared<MtpFileObserver>();
+    ASSERT_NE(mtpFileObserver, nullptr);
+
+    std::string path = "/file/Docs";
+
+    MtpFileObserver::watchMap_.insert(std::pair<int, std::string>(1, "/file/Docs/1.jpg"));
+    MtpFileObserver::watchMap_.insert(std::pair<int, std::string>(1, "/file/Docs/"));
+
+    mtpFileObserver->EraseFromWatchMap(path);
+    EXPECT_FALSE(MtpFileObserver::watchMap_.empty());
+}
 } // namespace Media
 } // namespace OHOS

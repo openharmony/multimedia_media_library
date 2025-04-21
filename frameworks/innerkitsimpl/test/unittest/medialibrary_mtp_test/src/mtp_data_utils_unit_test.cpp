@@ -1340,5 +1340,70 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_012, TestSize.Level1)
     uint16_t outFormat = 0;
     mtpDataUtils->GetFormat(resultSet, outFormat);
 }
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetProperty
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_013, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+
+    std::string column = "date_modified";
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    ResultSetDataType type = TYPE_INT64;
+    Property prop;
+    prop.currentValue = std::make_shared<Property::Value>();
+    ASSERT_NE(prop.currentValue, nullptr);
+    prop.currentValue->str_ = nullptr;
+    mtpDataUtils->SetProperty(column, resultSet, type, prop);
+    EXPECT_NE(prop.currentValue->str_, nullptr);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetPropValueForVideoOfMovingPhoto
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_014, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+
+    std::string path = "";
+    uint32_t property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
+    PropertyValue outPropValue;
+    int32_t res = mtpDataUtils->GetPropValueForVideoOfMovingPhoto(path, property, outPropValue);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetPropValueForVideoOfMovingPhoto
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_015, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+
+    std::string path = "/storage/media/local/files/Docs";
+    uint32_t property = MTP_PROPERTY_OBJECT_SIZE_CODE;
+    PropertyValue outPropValue;
+    int32_t res = mtpDataUtils->GetPropValueForVideoOfMovingPhoto(path, property, outPropValue);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
+}
 } // namespace Media
 } // namespace OHOS

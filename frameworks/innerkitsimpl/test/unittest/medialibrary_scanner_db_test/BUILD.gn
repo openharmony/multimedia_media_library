@@ -28,8 +28,6 @@ ohos_unittest("medialibrary_scanner_db_test") {
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
   ]
 
-  cflags = [ "-fno-access-control" ]
-
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_media_scanner_test.cpp",

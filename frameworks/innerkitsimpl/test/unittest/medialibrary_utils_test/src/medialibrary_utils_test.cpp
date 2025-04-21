@@ -443,6 +443,19 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateTakenFromKvStore_test_001
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateTakenFromKvStore_test_002, TestSize.Level0)
+{
+    ThumbnailData data;
+    const string testStr = "test";
+    data.dateTaken = testStr;
+    ThumbRdbOpt opts = {
+        .dateTaken = testStr,
+        .row = testStr,
+    };
+    bool ret = ThumbnailUtils::UpdateAstcDateTakenFromKvStore(opts, data);
+    EXPECT_EQ(ret, false);
+}
+
 HWTEST_F(MediaLibraryUtilsTest, medialib_compressImage_test_001, TestSize.Level1)
 {
     ThumbnailData data;
@@ -502,6 +515,30 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseQueryResult_test_001, TestSize.Lev
     rdbPredicates.Limit(0);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     ThumbnailUtils::ParseQueryResult(resultSet, data, err, column);
+    EXPECT_NE(err, 0);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_parseHighlightQueryResult_test_001, TestSize.Level0)
+{
+    vector<string> column = {
+        REMOTE_THUMBNAIL_DB_FILE_ID,
+        MEDIA_DATA_DB_LCD
+    };
+    ThumbnailData data;
+    data.id = "0";
+    data.path = "/storage/cloud/files";
+    data.mediaType = 0;
+    int err = 0;
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = REMOTE_THUMBNAIL_TABLE,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
+    rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
+    rdbPredicates.Limit(0);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    ThumbnailUtils::ParseHighlightQueryResult(resultSet, data, err);
     EXPECT_NE(err, 0);
 }
 
@@ -669,6 +706,38 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_001, TestSize.Level1)
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 128);
     EXPECT_EQ(height, 384);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_002, TestSize.Level0)
+{
+    int width, height;
+    width = 768;
+    height = 512;
+    bool result = ThumbnailUtils::ResizeThumb(width, height);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(width, 525);
+    EXPECT_EQ(height, 350);
+
+    width = 2560;
+    height = 512;
+    result = ThumbnailUtils::ResizeThumb(width, height);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(width, 1050);
+    EXPECT_EQ(height, 350);
+
+    width = 300;
+    height = 128;
+    result = ThumbnailUtils::ResizeThumb(width, height);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(width, 300);
+    EXPECT_EQ(height, 128);
+
+    width = 1000;
+    height = 128;
+    result = ThumbnailUtils::ResizeThumb(width, height);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(width, 384);
+    EXPECT_EQ(height, 128);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level1)
