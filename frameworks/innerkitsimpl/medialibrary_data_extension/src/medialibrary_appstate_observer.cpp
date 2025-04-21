@@ -32,7 +32,7 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::AppExecFwk;
-constexpr int32_t WAITFOR_REVOKE = 1000;
+constexpr int32_t WAITFOR_REVOKE = 2000;
 
 sptr<IAppMgr> MedialibraryAppStateObserverManager::GetAppManagerInstance()
 {
@@ -83,11 +83,13 @@ void MedialibraryAppStateObserverManager::UnSubscribeAppState()
 
 void MedialibraryAppStateObserverManager::AddTokenId(int64_t tokenId, bool needRevoke)
 {
+    std::lock_guard<std::mutex> lock(revokeMapMutex_);
     revokeMap_[tokenId] = needRevoke;
 }
 
 void MedialibraryAppStateObserverManager::RemoveTokenId(int64_t tokenId)
 {
+    std::lock_guard<std::mutex> lock(revokeMapMutex_);
     revokeMap_.erase(tokenId);
 }
 
@@ -96,12 +98,12 @@ bool MedialibraryAppStateObserverManager::NeedRevoke(int64_t tokenId)
     if (revokeMap_.find(tokenId) != revokeMap_.end()) {
         return revokeMap_[tokenId];
     }
-    return ture;
+    return true;
 }
 
 bool MedialibraryAppStateObserverManager::IsContainTokenId(int64_t tokenId)
 {
-    return std::find(revokeMap_.begin(), revokeMap_.end(), tokenId) != revokeMap_.end();
+    return revokeMap_.find(tokenId) != revokeMap_.end();
 }
 
 MedialibraryAppStateObserverManager &MedialibraryAppStateObserverManager::GetInstance()
@@ -192,20 +194,14 @@ static int32_t DeleteHideSensitive(const std::shared_ptr<MediaLibraryRdbStore> r
     return deletedRows;
 }
 
-void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData)
+void MedialibraryAppStateObserver::Wait4Revoke(int64_t tokenId)
 {
-    auto tokenId = appStateData.accessTokenId;
-    if (!MedialibraryAppStateObserverManager::GetInstance().IsContainTokenId(tokenId)) {
-        return;
-    }
-    MEDIA_INFO_LOG("TokenId: %{public}ld OnAppStopped, revoke permission", tokenId);
-    MedialibraryAppStateObserverManager::GetInstance().AddTokenId(tokenId, true);
     std::this_thread::sleep_for(chrono::milliseconds(WAITFOR_REVOKE));
     if (!MedialibraryAppStateObserverManager::GetInstance().NeedRevoke(tokenId)) {
-        
+        MEDIA_INFO_LOG("MedialibraryAppStateObserver stop revoke tokenId:%{public}ld", static_cast<long>(tokenId));
         return;
     }
-    MEDIA_INFO_LOG("MedialibraryAppStateObserver OnAppStopped, tokenId:%{public}d", tokenId);
+    MEDIA_INFO_LOG("MedialibraryAppStateObserver OnAppStopped, tokenId:%{public}ld", static_cast<long>(tokenId));
     auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Uripermission Delete failed, rdbStore is null.");
 
@@ -215,11 +211,25 @@ void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData
     TryUnSubscribeAppState(rdbStore);
 }
 
+void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData)
+{
+    auto tokenId = appStateData.accessTokenId;
+    if (!MedialibraryAppStateObserverManager::GetInstance().IsContainTokenId(tokenId)) {
+        return;
+    }
+    MEDIA_INFO_LOG("MedialibraryAppStateObserver TokenId: %{public}ld OnAppStopped, revoke permission",
+        static_cast<long>(tokenId));
+    MedialibraryAppStateObserverManager::GetInstance().AddTokenId(tokenId, true);
+    std::thread revokeThread([&] { this->Wait4Revoke(tokenId); });
+    revokeThread.detach();
+}
+
 void MedialibraryAppStateObserver::OnAppStarted(const AppStateData &appStateData)
 {
     auto tokenId = appStateData.accessTokenId;
     if (MedialibraryAppStateObserverManager::GetInstance().IsContainTokenId(tokenId)) {
-        MEDIA_INFO_LOG("TokenId: %{public}ld reStart, cancel revoke", tokenId);
+        MEDIA_INFO_LOG("MedialibraryAppStateObserver OnAppStarted tokenId: %{public}ld reStart, cancel revoke",
+            static_cast<long>(tokenId));
         MedialibraryAppStateObserverManager::GetInstance().AddTokenId(tokenId, false);
     }
 }
