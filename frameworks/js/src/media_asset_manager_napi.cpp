@@ -1679,31 +1679,29 @@ void MediaAssetManagerNapi::WriteDataToDestPath(WriteData &writeData, napi_value
         NAPI_ERR_LOG("get source file fd failed %{public}d", srcFd);
         return;
     }
+    UniqueFd uniqueSrcFd(srcFd);
     struct stat statSrc;
-    if (fstat(srcFd, &statSrc) == -1) {
-        close(srcFd);
+    if (fstat(uniqueSrcFd.Get(), &statSrc) == -1) {
         napi_get_boolean(writeData.env, false, &resultNapiValue);
         NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
         return;
     }
     int destFd = GetFdFromSandBoxUri(writeData.destUri);
     if (destFd < 0) {
-        close(srcFd);
         napi_get_boolean(writeData.env, false, &resultNapiValue);
         NAPI_ERR_LOG("get dest fd failed %{public}d", destFd);
         return;
     }
+    UniqueFd uniqueDestFd(destFd);
     NAPI_INFO_LOG("WriteDataToDestPath compatibleMode %{public}d", writeData.compatibleMode);
     if (writeData.compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
         isTranscoderMap_.Insert(requestId, true);
         MediaCallTranscode::RegisterCallback(NotifyOnProgress);
-        MediaCallTranscode::CallTranscodeHandle(writeData.env, srcFd, destFd, resultNapiValue,
+        MediaCallTranscode::CallTranscodeHandle(writeData.env, uniqueSrcFd.Get(), uniqueDestFd.Get(), resultNapiValue,
             statSrc.st_size, requestId);
     } else {
-        SendFile(writeData.env, srcFd, destFd, resultNapiValue, statSrc.st_size);
+        SendFile(writeData.env, uniqueSrcFd.Get(), uniqueDestFd.Get(), resultNapiValue, statSrc.st_size);
     }
-    close(srcFd);
-    close(destFd);
     return;
 }
 
