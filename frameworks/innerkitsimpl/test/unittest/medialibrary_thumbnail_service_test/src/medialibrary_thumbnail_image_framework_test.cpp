@@ -204,5 +204,93 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, IsSupportCopyPixelMap_test_001
     ASSERT_NE(pixelMap, nullptr);
     EXPECT_EQ(ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(pixelMap), true);
 }
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, CopySurfaceBufferInfo_test_001, TestSize.Level0)
+{
+    sptr<SurfaceBuffer> source = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> dst = SurfaceBuffer::Create();
+    ThumbnailImageFrameWorkUtils::CopySurfaceBufferInfo(source, dst);
+    EXPECT_NE(source, nullptr);
+    EXPECT_NE(dst, nullptr);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, GetSbStaticMetadata_test_001, TestSize.Level0)
+{
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    std::vector<uint8_t> staticMetadata;
+    uint8_t testvalue = 1;
+    staticMetadata.push_back(testvalue);
+    bool ret = ThumbnailImageFrameWorkUtils::GetSbStaticMetadata(buffer, staticMetadata);
+    EXPECT_NE(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, GetSbDynamicMetadata_test_001, TestSize.Level0)
+{
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    std::vector<uint8_t> staticMetadata;
+    uint8_t testvalue = 2;
+    staticMetadata.push_back(testvalue);
+    bool ret = ThumbnailImageFrameWorkUtils::GetSbDynamicMetadata(buffer, staticMetadata);
+    EXPECT_NE(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetSbStaticMetadata_test_001, TestSize.Level0)
+{
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    std::vector<uint8_t> staticMetadata;
+    uint8_t testvalue = 3;
+    staticMetadata.push_back(testvalue);
+    bool ret = ThumbnailImageFrameWorkUtils::SetSbStaticMetadata(buffer, staticMetadata);
+    EXPECT_NE(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetSbDynamicMetadata_test_001, TestSize.Level0)
+{
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    std::vector<uint8_t> staticMetadata;
+    uint8_t testvalue = 4;
+    staticMetadata.push_back(testvalue);
+    bool ret = ThumbnailImageFrameWorkUtils::SetSbDynamicMetadata(buffer, staticMetadata);
+    EXPECT_NE(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, GetPictureOrientation_test_003, TestSize.Level0)
+{
+    std::shared_ptr<Picture> picture = std::make_shared<Picture>();
+    int32_t orientation = 10;
+    int32_t ret = 0;
+    ret = ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
+    EXPECT_NE(ret, 0);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfo_test_001, TestSize.Level0)
+{
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV12, true);
+    ASSERT_NE(pixelMap, nullptr);
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    bool isHdr = true;
+    bool ret = ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(surfaceBuffer, pixelMap, isHdr);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfo_test_002, TestSize.Level0)
+{
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::NV21, true);
+    ASSERT_NE(pixelMap, nullptr);
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    bool isHdr = true;
+    bool ret = ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(surfaceBuffer, pixelMap, isHdr);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfo_test_003, TestSize.Level0)
+{
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::BGRA_8888, true);
+    ASSERT_NE(pixelMap, nullptr);
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    bool isHdr = true;
+    bool ret = ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(surfaceBuffer, pixelMap, isHdr);
+    EXPECT_EQ(ret, true);
+}
 } // namespace Media
 } // namespace OHOS
