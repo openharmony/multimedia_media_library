@@ -56,8 +56,11 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("addAssets", JSAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", JSRemoveAssets),
             DECLARE_NAPI_FUNCTION("moveAssets", JSMoveAssets),
+            DECLARE_NAPI_FUNCTION("moveAssetsWithUri", JSMoveAssetsWithUri),
             DECLARE_NAPI_FUNCTION("recoverAssets", JSRecoverAssets),
+            DECLARE_NAPI_FUNCTION("recoverAssetsWithUri", JSRecoverAssetsWithUri),
             DECLARE_NAPI_FUNCTION("deleteAssets", JSDeleteAssets),
+            DECLARE_NAPI_FUNCTION("deleteAssetsWithUri", JSDeleteAssetsWithUri),
             DECLARE_NAPI_FUNCTION("setAlbumName", JSSetAlbumName),
             DECLARE_NAPI_FUNCTION("setCoverUri", JSSetCoverUri),
             DECLARE_NAPI_FUNCTION("placeBefore", JSPlaceBefore),
@@ -325,21 +328,15 @@ static napi_value GetUriArray(napi_env env, vector<napi_value> &napiValues, vect
     return ret;
 }
 
-static napi_value ParseUriOrAssetArray(napi_env env, napi_value arg, vector<string>& uriArray)
+static napi_value ParseUriArray(napi_env env, napi_value arg, vector<string>& uriArray)
 {
     vector<napi_value> napiValues;
     napi_valuetype valueType = napi_undefined;
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
     CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
-    if (valueType == napi_string) {
-        CHECK_NULLPTR_RET(GetUriArray(env, napiValues, uriArray));
-    } else if (valueType == napi_object) {
-        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetUriArrayFromAssets(env, napiValues, uriArray));
-    } else {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid type");
-        return nullptr;
-    }
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_string, "Invalid argument type");
+    CHECK_NULLPTR_RET(GetUriArray(env, napiValues, uriArray));
     RETURN_NAPI_TRUE(env);
 }
 
@@ -647,6 +644,43 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
+        "Failed to get object info");
+
+    auto changeRequest = asyncContext->objectInfo;
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
+
+    shared_ptr<PhotoAlbum> targetAlbum = nullptr;
+    CHECK_COND_WITH_MESSAGE(
+        env, ParsePhotoAlbum(env, asyncContext->argv[PARAM1], targetAlbum), "Failed to parse targetAlbum");
+    CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
+
+    vector<string> assetUriArray;
+    CHECK_COND_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+        "Failed to parse assets");
+    auto moveMap = changeRequest->GetMoveMap();
+    for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
+        if (!CheckDuplicatedAssetArray(assetUriArray, iter->second)) {
+            NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
+                "The previous moveAssets operation has contained the same asset");
+            return nullptr;
+        }
+    }
+    changeRequest->RecordMoveAssets(assetUriArray, targetAlbum);
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::MOVE_ASSETS);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -668,6 +702,39 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callb
 
     vector<string> assetUriArray;
     CHECK_COND_WITH_MESSAGE(env, ParseUriOrAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+        "Failed to parse assets");
+    if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToRecover_)) {
+        NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
+            "The previous recoverAssets operation has contained the same asset");
+        return nullptr;
+    }
+    changeRequest->assetsToRecover_.insert(
+        changeRequest->assetsToRecover_.end(), assetUriArray.begin(), assetUriArray.end());
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::RECOVER_ASSETS);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSRecoverAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_ONE) == napi_ok,
+        "Failed to get object info");
+
+    auto changeRequest = asyncContext->objectInfo;
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
+    CHECK_COND_WITH_MESSAGE(env,
+        PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only trash album can recover assets");
+
+    vector<string> assetUriArray;
+    CHECK_COND_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
         "Failed to parse assets");
     if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToRecover_)) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
@@ -702,6 +769,41 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
 
     vector<string> assetUriArray;
     CHECK_COND_WITH_MESSAGE(env, ParseUriOrAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+        "Failed to parse assets");
+    if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToDelete_)) {
+        NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
+            "The previous deleteAssets operation has contained the same asset");
+        return nullptr;
+    }
+    changeRequest->assetsToDelete_.insert(
+        changeRequest->assetsToDelete_.end(), assetUriArray.begin(), assetUriArray.end());
+    changeRequest->userId_ = photoAlbum->GetUserId();
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::DELETE_ASSETS);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    NAPI_INFO_LOG("enter");
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_ONE) == napi_ok,
+        "Failed to get object info");
+
+    auto changeRequest = asyncContext->objectInfo;
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
+    CHECK_COND_WITH_MESSAGE(env,
+        PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only trash album can delete assets permanently");
+
+    vector<string> assetUriArray;
+    CHECK_COND_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
         "Failed to parse assets");
     if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToDelete_)) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
