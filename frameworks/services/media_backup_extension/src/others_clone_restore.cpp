@@ -368,7 +368,7 @@ static bool RecoverHiddenOrRecycleFile(std::string &currentPath, FileInfo &tmpIn
             substrings[DECODE_TIME_IDX].data() + substrings[DECODE_TIME_IDX].size(),
             tmpInfo.dateTrashed, 10); //10 : decimal
         if (res.ec != std::errc()) {
-            MEDIA_ERR_LOG("get dateTrashed %{public}ld fail", tmpInfo.dateTrashed);
+            MEDIA_ERR_LOG("get dateTrashed %{public}lld fail", tmpInfo.dateTrashed);
             return false;
         }
     }
