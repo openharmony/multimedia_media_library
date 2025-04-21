@@ -30,12 +30,18 @@ class MedialibraryAppStateObserverManager {
 
         EXPORT void SubscribeAppState();
         EXPORT void UnSubscribeAppState();
+        EXPORT void AddTokenId(int64_t tokenId, bool needRevoke);
+        EXPORT void RemoveTokenId(int64_t tokenId);
+        EXPORT bool IsContainTokenId(int64_t tokenId);
+        EXPORT bool NeedRevoke(int64_t tokenId);
 
     protected:
         sptr<ApplicationStateObserverStub> appStateObserver_ = nullptr;
 
     private:
         sptr<IAppMgr> GetAppManagerInstance();
+        std::map<int64_t, bool> revokeMap_;
+        std::mutex revokeMapMutex_;
 };
 
 class MedialibraryAppStateObserver : public AppExecFwk::ApplicationStateObserverStub {
@@ -44,6 +50,10 @@ class MedialibraryAppStateObserver : public AppExecFwk::ApplicationStateObserver
         ~MedialibraryAppStateObserver() override = default;
 
         void OnAppStopped(const AppStateData &appStateData) override;
+        void OnAppStarted(const AppStateData &appStateData) override;
+
+    private:
+        void Wait4Revoke(int64_t tokenId);
 };
 }  // namespace Media
 }  // namespace OHOS

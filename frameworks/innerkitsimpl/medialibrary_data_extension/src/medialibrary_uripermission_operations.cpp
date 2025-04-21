@@ -377,13 +377,6 @@ static void BatchUpdate(MediaLibraryCommand &cmd, std::vector<string> inColumn, 
     UriPermissionOperations::UpdateOperation(cmd, trans);
 }
 
-static void AppstateOberserverBuild(int32_t permissionType)
-{
-    if (permissionType != static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO)) {
-        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
-    }
-}
-
 static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values)
 {
     bool isValidArr[] = {false, false, false, false, false};
@@ -425,12 +418,34 @@ static void InsertValueBucketPrepare(const std::vector<DataShareValuesBucket> &v
 static void GrantPermissionPrepareHandle(MediaLibraryCommand &cmd, const std::vector<DataShareValuesBucket> &values,
     std::vector<int32_t>& dbOperation, std::shared_ptr<OHOS::NativeRdb::ResultSet>& resultSet)
 {
-    bool isValid = false;
-    int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
-    AppstateOberserverBuild(permissionType);
     QueryUriPermission(cmd, values, resultSet);
     GetAllUriDbOperation(values, dbOperation, resultSet);
     FilterNotExistUri(values, dbOperation);
+}
+
+// SubscribeAppState && add tokenid to cache
+static void DoSubcribeForAppStop(const std::vector<DataShare::DataShareValuesBucket> &values)
+{
+    if (values.size() == 0) {
+        MEDIA_WARN_LOG("values is empty");
+        return;
+    }
+    auto it = values.begin();
+    ValuesBucket valueBucket = RdbUtils::ToValuesBucket(*it);
+    int64_t destTokenId = -1;
+    ValueObject valueObject;
+    if (valueBucket.GetObject(AppUriPermissionColumn::TARGET_TOKENID, valueObject)) {
+        valueObject.GetLong(destTokenId);
+    }
+    int permissionTypeParam = -1;
+    if (valueBucket.GetObject(AppUriPermissionColumn::PERMISSION_TYPE, valueObject)) {
+        permissionTypeParam = valueObject;
+    }
+    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
+        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+        MedialibraryAppStateObserverManager::GetInstance().AddTokenId(destTokenId, false);
+    }
 }
 
 int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
@@ -449,6 +464,7 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     if (ValueBucketCheck(values) != E_OK || rdbStore == nullptr) {
         return E_ERR;
     }
+    DoSubcribeForAppStop(values);
     GrantPermissionPrepareHandle(cmd, values, dbOperation, resultSet);
     for (size_t i = 0; i < values.size(); i++) {
         int32_t fileId = GetFileId(values.at(i), isValid);
