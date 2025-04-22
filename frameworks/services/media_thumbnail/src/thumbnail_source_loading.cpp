@@ -15,6 +15,7 @@
 
 #include "thumbnail_source_loading.h"
 
+#include <charconv>
 #include <fcntl.h>
 
 #include "dfx_manager.h"
@@ -295,13 +296,25 @@ unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
     return imageSource;
 }
 
+int64_t SafeStoll(const std::string &str)
+{
+    int64_t value;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+
+    if (ec != std::errc()) {
+        MEDIA_ERR_LOG("Failed to convert string to int64_t: %{public}s", str.c_str());
+        return 0;
+    }
+    return value;
+}
+
 bool SourceLoader::CreateVideoFramePixelMap()
 {
     MediaLibraryTracer tracer;
     tracer.Start("CreateVideoFramePixelMap");
     int64_t timeStamp = AV_FRAME_TIME;
     if (!data_.tracks.empty()) {
-        int64_t timeStamp = std::stoll(data_.timeStamp);
+        int64_t timeStamp = SafeStoll(data_.timeStamp);
         timeStamp = timeStamp * MS_TRANSFER_US;
     }
     if (state_ == SourceState::CLOUD_ORIGIN && timeStamp != AV_FRAME_TIME) {
