@@ -45,6 +45,11 @@ enum class AlbumChangeOperation {
     SET_ORDER_POSITION,
 };
 
+enum class ParameterType {
+    PHOTO_ASSET,
+    ASSET_URI,
+};
+
 struct PhotoAlbumPtrCompare {
     bool operator()(const std::shared_ptr<PhotoAlbum>& album, const std::shared_ptr<PhotoAlbum>& albumCmp) const
     {
