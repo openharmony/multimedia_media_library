@@ -99,10 +99,16 @@ private:
     EXPORT static napi_value JSDeleteAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSAddAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSRemoveAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSMoveAssetsImplement(napi_env env, napi_callback_info info,
+        ParameterType parameterType);
     EXPORT static napi_value JSMoveAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSMoveAssetsWithUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSRecoverAssetsImplement(napi_env env, napi_callback_info info,
+        ParameterType parameterType);
     EXPORT static napi_value JSRecoverAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSRecoverAssetsWithUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSDeleteAssetsImplement(napi_env env, napi_callback_info info,
+        ParameterType parameterType);
     EXPORT static napi_value JSDeleteAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteAssetsWithUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
