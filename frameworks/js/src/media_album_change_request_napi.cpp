@@ -750,7 +750,7 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(napi_env env, na
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsWithUri(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
 {
     RETURN_NAPI_UNDEFINED(MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(env, info, ParameterType::PHOTO_ASSET));
 }
