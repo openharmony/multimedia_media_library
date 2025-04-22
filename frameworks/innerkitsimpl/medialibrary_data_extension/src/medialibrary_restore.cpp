@@ -196,6 +196,7 @@ void MediaLibraryRestore::InterruptBackup()
     CHECK_AND_RETURN_LOG((rdb != nullptr), "[InterruptBackup] rdbStore is nullptr");
     int errCode = rdb->InterruptBackup();
     isBackuping_ = false;
+    ResetHAModeSwitchStatus();
     cv_.notify_all();
     MEDIA_INFO_LOG("InterruptBackup [end]. errCode = %{public}d", errCode);
 }
