@@ -993,7 +993,7 @@ napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<st
     for (const auto &column : fetchColumn) {
         if (column == PENDING_STATUS) {
             validFetchColumns.insert(MediaColumn::MEDIA_TIME_PENDING);
-        } else if (isValidColumn(column)) {
+        } else if (isValidColumn(column) || (column == MEDIA_SUM_SIZE && IsSystemApp())) {
             validFetchColumns.insert(column);
         } else if (column == MEDIA_DATA_DB_URI) {
             continue;

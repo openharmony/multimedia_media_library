@@ -521,7 +521,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
 {
-    if (columnName == MEDIA_COLUMN_COUNT || columnName == MEDIA_SUM_SIZE) {
+    if (columnName == MEDIA_COLUMN_COUNT) {
         return true;
     }
     return (PHOTO_COLUMNS.find(columnName) != PHOTO_COLUMNS.end()) ||
