@@ -3397,16 +3397,9 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
-    if (context->objectInfo != nullptr) {
-        napi_create_int32(env, E_SUCCESS, &jsContext->data);
-        jsContext->status = true;
-        napi_get_undefined(env, &jsContext->error);
-    } else {
-        NAPI_ERR_LOG("JSReleaseCompleteCallback context->objectInfo == nullptr");
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "UserFileClient is invalid");
-        napi_get_undefined(env, &jsContext->data);
-    }
+    napi_create_int32(env, E_SUCCESS, &jsContext->data);
+    jsContext->status = true;
+    napi_get_undefined(env, &jsContext->error);
 
     tracer.Finish();
     MediaLibraryNapiUtils::InvokeJSAsyncMethodWithoutWork(env, context->deferred, context->callbackRef,
