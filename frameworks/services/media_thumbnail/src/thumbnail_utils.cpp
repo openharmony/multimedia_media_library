@@ -265,10 +265,7 @@ bool ThumbnailUtils::LoadVideoFrame(ThumbnailData &data, Size &desiredSize, int6
     }
     if (pixelMap->GetPixelFormat() == PixelFormat::YCBCR_P010) {
         uint32_t ret = ImageFormatConvert::ConvertImageFormat(pixelMap, PixelFormat::RGBA_1010102);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "PixelMapYuv10ToRGBA_1010102: source ConvertImageFormat fail");
     }
 
     data.source.SetPixelMap(pixelMap);
@@ -298,16 +295,10 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
     }
 
     bool needRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
-    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
-        needRevolve ? videoWidth : videoHeight)) {
-        MEDIA_ERR_LOG("Parse width from resultmap error");
-        return false;
-    }
-    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
-        needRevolve ? videoHeight : videoWidth)) {
-        MEDIA_ERR_LOG("Parse height from resultmap error");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
+        needRevolve ? videoWidth : videoHeight), false, "Parse width from resultmap error");
+    CHECK_AND_RETURN_RET_LOG(ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
+        needRevolve ? videoHeight : videoWidth), false, "Parse width from resultmap error");
     return true;
 }
 
@@ -453,11 +444,9 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
         return false;
     }
     int ret = SaveFileCreateDir(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX, outputPath);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("CompressPicture failed, SaveFileCreateDir failed, path: %{public}s, isSourceEx: %{public}d",
-            DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
+        "CompressPicture failed, SaveFileCreateDir failed, path: %{public}s, isSourceEx: %{public}d",
+        DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
     size_t lastSlash = outputPath.rfind('/');
     if (lastSlash == string::npos || outputPath.size() <= lastSlash + 1) {
         MEDIA_ERR_LOG("CompressPicture failed, failed to check outputPath: %{public}s, isSourceEx: %{public}d",
@@ -467,11 +456,9 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
     tempOutputPath = outputPath.substr(0, lastSlash) + "/temp_" + data.dateModified + "_" +
         outputPath.substr(lastSlash + 1);
     ret = MediaFileUtils::CreateAsset(tempOutputPath);
-    if (ret != E_SUCCESS) {
-        MEDIA_ERR_LOG("CompressPicture failed, failed to create temp filter file: %{public}s, isSourceEx: %{public}d",
-            DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false,
+        "CompressPicture failed, failed to create temp filter file: %{public}s, isSourceEx: %{public}d",
+        DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
     Media::ImagePacker imagePacker;
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
@@ -497,16 +484,13 @@ bool ThumbnailUtils::SaveAfterPacking(ThumbnailData &data, bool isSourceEx, cons
     }
     auto outputPath = GetThumbnailPath(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
     int ret = rename(tempOutputPath.c_str(), outputPath.c_str());
-    if (ret != E_SUCCESS) {
-        MEDIA_ERR_LOG("SaveAfterPacking failed, failed to rename temp filters file: %{public}s",
-            DfxUtils::GetSafePath(tempOutputPath).c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, false,
+        "SaveAfterPacking failed, failed to rename temp filters file: %{public}s",
+        DfxUtils::GetSafePath(tempOutputPath).c_str());
     if (MediaFileUtils::IsFileExists(tempOutputPath)) {
         MEDIA_INFO_LOG("file: %{public}s exists, needs to be deleted", DfxUtils::GetSafePath(tempOutputPath).c_str());
-        if (!MediaFileUtils::DeleteFile(tempOutputPath)) {
-            MEDIA_ERR_LOG("SaveAfterPacking delete failed: %{public}s", DfxUtils::GetSafePath(tempOutputPath).c_str());
-        }
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+            "SaveAfterPacking delete failed: %{public}s", DfxUtils::GetSafePath(tempOutputPath).c_str());
     }
     return true;
 }
@@ -516,10 +500,8 @@ void ThumbnailUtils::CancelAfterPacking(const string &tempOutputPath)
     if (MediaFileUtils::IsFileExists(tempOutputPath)) {
         MEDIA_INFO_LOG("CancelAfterPacking: %{public}s exists, needs deleted",
             DfxUtils::GetSafePath(tempOutputPath).c_str());
-        if (!MediaFileUtils::DeleteFile(tempOutputPath)) {
-            MEDIA_ERR_LOG("CancelAfterPacking delete failed: %{public}s",
-                DfxUtils::GetSafePath(tempOutputPath).c_str());
-        }
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+            "CancelAfterPacking delete failed: %{public}s", DfxUtils::GetSafePath(tempOutputPath).c_str());
     }
 }
 
@@ -638,10 +620,7 @@ bool ThumbnailUtils::QueryLcdCountByTime(const int64_t &time, const bool &before
     int rowCount = 0;
     err = resultSet->GetRowCount(rowCount);
     resultSet.reset();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed to get row count %{public}d", err);
     MEDIA_DEBUG_LOG("rowCount is %{public}d", rowCount);
     if (rowCount <= 0) {
         MEDIA_INFO_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
@@ -711,10 +690,7 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
     }
 
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
     ThumbnailData data;
     do {
@@ -754,10 +730,7 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &i
     }
 
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("QueryNoLcdInfos failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "QueryNoLcdInfos failed GoToFirstRow %{public}d", err);
 
     ThumbnailData data;
     do {
@@ -796,11 +769,7 @@ bool ThumbnailUtils::QueryLocalNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailDat
     }
 
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("QueryLocalNoLcdInfos failed GoToFirstRow %{public}d", err);
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "QueryLocalNoLcdInfos failed GoToFirstRow %{public}d", err);
     ThumbnailData data;
     do {
         ParseQueryResult(resultSet, data, err, column);
@@ -813,6 +782,10 @@ bool ThumbnailUtils::QueryLocalNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailDat
 
 bool ThumbnailUtils::QueryNoHighlightPath(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     vector<string> column = {
         MEDIA_DATA_DB_FILE_PATH,
     };
@@ -825,16 +798,17 @@ bool ThumbnailUtils::QueryNoHighlightPath(ThumbRdbOpt &opts, ThumbnailData &data
     }
 
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("QueryNoHighlightPath failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "QueryNoHighlightPath failed GoToFirstRow %{public}d", err);
     ParseQueryResult(resultSet, data, err, column);
     return true;
 }
 
 bool ThumbnailUtils::QueryNoHighlightInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_VIDEO_TRACKS,
@@ -849,10 +823,7 @@ bool ThumbnailUtils::QueryNoHighlightInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     }
 
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("QueryNoHighlightInfos failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "QueryNoHighlightInfos failed GoToFirstRow %{public}d", err);
     
     ThumbnailData data;
     do {
@@ -872,6 +843,10 @@ bool ThumbnailUtils::QueryNoHighlightInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
 
 bool ThumbnailUtils::GetHighlightTracks(ThumbRdbOpt &opts, vector<int> &trackInfos, int32_t &err)
 {
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_VIDEO_TRACKS,
@@ -888,10 +863,7 @@ bool ThumbnailUtils::GetHighlightTracks(ThumbRdbOpt &opts, vector<int> &trackInf
     }
 
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GetHighlightTracks failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "GetHighlightTracks failed GoToFirstRow %{public}d", err);
     
     ThumbnailData data;
     std::string timeStamp;
@@ -967,10 +939,7 @@ bool ThumbnailUtils::QueryLocalNoThumbnailInfos(ThumbRdbOpt &opt, vector<Thumbna
         return false;
     }
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
     ThumbnailData data;
     do {
@@ -1023,10 +992,7 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     }
 
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
     ThumbnailData data;
     do {
@@ -1071,10 +1037,7 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     }
 
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
     ThumbnailData data;
     do {
@@ -1125,10 +1088,7 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
     }
 
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
     ThumbnailData data;
     do {
@@ -1172,10 +1132,7 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         return false;
     }
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
     ThumbnailData data;
     do {
         ParseQueryResult(resultSet, data, err, column);
@@ -1218,10 +1175,7 @@ bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &ti
     int rowCount = 0;
     err = resultSet->GetRowCount(rowCount);
     resultSet.reset();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
     MEDIA_DEBUG_LOG("rowCount is %{public}d", rowCount);
     if (rowCount <= 0) {
         MEDIA_INFO_LOG("No match! %{public}s", rdbPredicates.ToString().c_str());
@@ -1252,10 +1206,7 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false, "RdbStore Update failed! %{public}d", err);
     CHECK_AND_RETURN_RET_LOG(changedRows != 0, false, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
         data.id.c_str(), DeleteThumbnailDirAndAstc(opts, data));
     return true;
@@ -1263,6 +1214,10 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
 
 bool ThumbnailUtils::UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("opts.store is nullptr");
+        return false;
+    }
     ValuesBucket values;
     int changedRows;
 
@@ -1274,10 +1229,7 @@ bool ThumbnailUtils::UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data,
     rdbPredicates.EqualTo(MEDIA_DATA_DB_ID, data.id);
     rdbPredicates.EqualTo(MEDIA_DATA_DB_VIDEO_TRACKS, data.tracks);
     err = opts.store->Update(changedRows, values, rdbPredicates);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("UpdateHighlightInfo failed! %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false, "UpdateHighlightInfo failed! %{public}d", err);
     return true;
 }
 
@@ -1311,10 +1263,8 @@ bool ThumbnailUtils::UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data
     }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("UpdateLcdReadyStatus rdbStore Update failed! %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false,
+        "UpdateLcdReadyStatus rdbStore Update failed! %{public}d", err);
     return true;
 }
 
@@ -1340,10 +1290,7 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
     }
     auto err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, false, "RdbStore Update failed! %{public}d", err);
     return true;
 }
 
@@ -1463,15 +1410,9 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
         }
     }
     int ret = write(fd.Get(), output, writeSize);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("write failed errno %{public}d", errno);
-        return -errno;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, -errno, "write failed errno %{public}d", errno);
     int32_t errCode = fsync(fd.Get());
-    if (errCode < 0) {
-        MEDIA_ERR_LOG("fsync failed errno %{public}d", errno);
-        return -errno;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode >= 0, -errno, "fsync failed errno %{public}d", errno);
     close(fd.Release());
 
     if (MediaFileUtils::IsFileExists(fileName)) {
@@ -1651,24 +1592,15 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
 {
     MediaLibraryTracer tracer;
     tracer.Start("ResizeImage");
-    if (data.size() == 0) {
-        MEDIA_ERR_LOG("Data is empty");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(data.size() != 0, false, "Data is empty");
 
     tracer.Start("ImageSource::CreateImageSource");
     uint32_t err = E_OK;
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data.data(),
         data.size(), opts, err);
-    if (imageSource == nullptr) {
-        MEDIA_ERR_LOG("imageSource is nullptr");
-        return false;
-    }
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to create image source %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(imageSource != nullptr, false, "imageSource is nullptr");
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed to create image source %{public}d", err);
     tracer.Finish();
 
     tracer.Start("imageSource->CreatePixelMap");
@@ -1676,10 +1608,7 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     decodeOpts.desiredSize.width = size.width;
     decodeOpts.desiredSize.height = size.height;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    if (err != E_SUCCESS) {
-        MEDIA_ERR_LOG("Failed to create pixelmap %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_SUCCESS, false, "Failed to create pixelmap %{public}d", err);
 
     return true;
 }
@@ -1949,10 +1878,7 @@ int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailTy
         MEDIA_ERR_LOG("invalid thumbnailType");
         return E_ERR;
     }
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("kvStore is nullptr");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(kvStore != nullptr, E_ERR, "kvStore is nullptr");
 
     int status = kvStore->Insert(key, type == ThumbnailType::MTH_ASTC ? data.monthAstc : data.yearAstc);
     if (status != E_OK) {
@@ -1990,10 +1916,7 @@ bool ThumbnailUtils::CheckDateTaken(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GoToFirstRow failed, err: %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "GoToFirstRow failed, err: %{public}d", err);
 
     int index;
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_TAKEN, index);
@@ -2089,10 +2012,7 @@ bool ThumbnailUtils::UpdateAstcDateTakenFromKvStore(ThumbRdbOpt &opts, const Thu
     }
 
     int status = monthKvStore->Delete(formerKey) && yearKvStore->Delete(formerKey);
-    if (status != E_OK) {
-        MEDIA_ERR_LOG("Former kv delete failed, fileId %{public}s", opts.row.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == E_OK, false, "Former kv delete failed, fileId %{public}s", opts.row.c_str());
     return true;
 }
 
@@ -2135,20 +2055,15 @@ bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSource
     }
     if (dataSource != nullptr && dataSource->IsHdr()) {
         uint32_t ret = dataSource->ToSdr();
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("Fail to transform to sdr, isSourceEx: %{public}d.", isSourceEx);
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false, "Fail to transform to sdr, isSourceEx: %{public}d.", isSourceEx);
     }
     ImageInfo imageInfo;
     dataSource->GetImageInfo(imageInfo);
     if (imageInfo.pixelFormat != PixelFormat::RGBA_8888) {
         uint32_t ret = ImageFormatConvert::ConvertImageFormat(dataSource, PixelFormat::RGBA_8888);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("Fail to scale convert image format, isSourceEx: %{public}d, format: %{public}d.",
-                isSourceEx, imageInfo.pixelFormat);
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, false,
+            "Fail to scale convert image format, isSourceEx: %{public}d, format: %{public}d.",
+            isSourceEx, imageInfo.pixelFormat);
     }
     if (isSourceEx) {
         data.source.SetPixelMapEx(dataSource);
@@ -2210,10 +2125,8 @@ bool ThumbnailUtils::GetLocalThumbSize(const ThumbnailData &data, const Thumbnai
     }
     ImageInfo imageInfo;
     err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to Get ImageInfo, path:%{public}s", DfxUtils::GetSafePath(tmpPath).c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false,
+        "Failed to Get ImageInfo, path:%{public}s", DfxUtils::GetSafePath(tmpPath).c_str());
     size.height = imageInfo.size.height;
     size.width = imageInfo.size.width;
     return true;
@@ -2244,15 +2157,9 @@ static bool IsMobileNetworkEnabled()
         return true;
     }
     auto saMgr = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saMgr == nullptr) {
-        MEDIA_ERR_LOG("Failed to get SystemAbilityManagerClient");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(saMgr != nullptr, false, "Failed to get SystemAbilityManagerClient");
     OHOS::sptr<OHOS::IRemoteObject> remoteObject = saMgr->CheckSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    if (remoteObject == nullptr) {
-        MEDIA_ERR_LOG("Token is null.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(remoteObject != nullptr, false, "Token is null.");
     std::shared_ptr<DataShare::DataShareHelper> cloudHelper =
         DataShare::DataShareHelper::Creator(remoteObject, CLOUD_DATASHARE_URI);
     if (cloudHelper == nullptr) {
@@ -2312,10 +2219,7 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         return false;
     }
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
     ThumbnailData data;
     do {
@@ -2396,10 +2300,7 @@ bool ThumbnailUtils::QueryOldKeyAstcInfos(const std::shared_ptr<MediaLibraryRdbS
         return false;
     }
     err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
 
     ThumbnailData data;
     do {
