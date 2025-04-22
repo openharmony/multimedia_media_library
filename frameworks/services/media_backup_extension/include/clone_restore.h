@@ -114,7 +114,7 @@ private:
     void BatchNotifyPhoto(const std::vector<FileInfo> &fileInfos);
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AlbumInfo> &albumInfos,
-        const std::string &tableName);
+        std::vector<std::string> &albumIds, const std::string &tableName);
     bool HasSameAlbum(const AlbumInfo &albumInfo, const std::string &tableName);
     void BatchQueryAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);

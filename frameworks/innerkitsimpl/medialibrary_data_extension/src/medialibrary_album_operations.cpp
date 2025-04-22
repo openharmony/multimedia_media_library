@@ -1308,8 +1308,8 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs, NotifyAlbumType::SYS_ALBUM, false,
-        AlbumOperationType::RECOVER_PHOTO);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs, { NotifyAlbumType::SYS_ALBUM, false,
+        AlbumOperationType::RECOVER_PHOTO, true});
 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
