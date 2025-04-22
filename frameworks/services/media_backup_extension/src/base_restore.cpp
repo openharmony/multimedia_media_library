@@ -1626,7 +1626,8 @@ void BaseRestore::UpdateDatabase()
     GetUpdateTotalCount();
     MEDIA_INFO_LOG("Start update all albums");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {}, NotifyAlbumType::NO_NOTIFY, true);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {}, { NotifyAlbumType::NO_NOTIFY, true,
+        AlbumOperationType::DEFAULT, false });
     MEDIA_INFO_LOG("Start update unique number");
     BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
     BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
@@ -1634,6 +1635,14 @@ void BaseRestore::UpdateDatabase()
     MEDIA_INFO_LOG("Start notify");
     NotifyAlbum();
     updateProcessStatus_ = ProcessStatus::STOP;
+}
+
+void BaseRestore::UpdatePhotoAlbumDateModified(const vector<string> &albumIds)
+{
+    MEDIA_INFO_LOG("Start update photoAlbums date modified");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, albumIds, false, true);
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore, albumIds, false, true);
 }
 
 void BaseRestore::NotifyAlbum()

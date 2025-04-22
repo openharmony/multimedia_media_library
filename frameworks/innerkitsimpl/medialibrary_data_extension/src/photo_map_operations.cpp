@@ -108,7 +108,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         }
 
         changedRows = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore, values, updateIds);
-        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { to_string(albumId) });
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { to_string(albumId) }, false, true);
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
             to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT)
@@ -359,7 +359,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     CHECK_AND_RETURN_RET_LOG(deleteRow > 0, deleteRow,
         "Update Removed Asset to Trash failed, ret: %{public}d", deleteRow);
 
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { strAlbumId });
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { strAlbumId }, false, true);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
         to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),

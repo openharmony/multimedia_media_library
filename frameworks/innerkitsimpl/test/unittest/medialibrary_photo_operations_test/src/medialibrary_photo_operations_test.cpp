@@ -90,7 +90,8 @@ void CleanTestTables()
         AudioColumn::AUDIOS_TABLE,
         MEDIALIBRARY_TABLE,
         ASSET_UNIQUE_NUMBER_TABLE,
-        PhotoExtColumn::PHOTOS_EXT_TABLE
+        PhotoExtColumn::PHOTOS_EXT_TABLE,
+        PhotoAlbumColumns::TABLE
     };
     for (auto &dropTable : dropTableList) {
         string dropSql = "DROP TABLE " + dropTable + ";";
@@ -153,7 +154,8 @@ void SetTables()
         AudioColumn::CREATE_AUDIO_TABLE,
         CREATE_MEDIA_TABLE,
         CREATE_ASSET_UNIQUE_NUMBER_TABLE,
-        PhotoExtColumn::CREATE_PHOTO_EXT_TABLE
+        PhotoExtColumn::CREATE_PHOTO_EXT_TABLE,
+        PhotoAlbumColumns::CREATE_TABLE
         // todo: album tables
     };
     for (auto &createTableSql : createTableSqlList) {
@@ -866,6 +868,63 @@ static bool QueryPhotoThumbnailVolumn(int32_t photoId, size_t& queryResult)
     }
     queryResult = static_cast<size_t>(size);
     return true;
+}
+
+static int32_t CreateAlbum()
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return 0;
+    }
+    std::string insertSql = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
+        PhotoAlbumColumns::ALBUM_TYPE +", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
+        PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_LPATH +
+        ") VALUES (0, 1, '新建相册001', '/Pictures/Users/新建相册001')";
+    auto ret = uniStore->ExecuteSql(insertSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("create album failed");
+        return 0;
+    }
+
+    const string sql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
+        " ORDER BY " + PhotoAlbumColumns::ALBUM_ID + " DESC LIMIT 1";
+    auto resultSet = uniStore->QuerySql(sql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("resultSet is null!");
+        return 0;
+    }
+    int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID,
+        resultSet, TYPE_INT32));
+    if (albumId < 0) {
+        MEDIA_ERR_LOG("Invalid albumId from database: %{public}d", albumId);
+        return 0;
+    }
+    return albumId;
+}
+
+static int64_t QueryAlbumDateModifiedById(int32_t albumId)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return 0;
+    }
+
+    const string sql = "SELECT " + PhotoAlbumColumns::ALBUM_DATE_MODIFIED + " FROM " + PhotoAlbumColumns::TABLE +
+        " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId);
+    auto resultSet = uniStore->QuerySql(sql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("resultSet is null!");
+        return 0;
+    }
+    int32_t datemodified = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
+        resultSet, TYPE_INT64));
+    if (datemodified < 0) {
+        MEDIA_ERR_LOG("Invalid datemodified from database: %{public}d", datemodified);
+        return 0;
+    }
+    return datemodified;
 }
 
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
@@ -3810,6 +3869,42 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_metadata_
     close(metadataFd);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_read_moving_photo_metadata_test");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_date_modified_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_date_modified_001");
+    int32_t albumId = CreateAlbum();
+    EXPECT_GT(albumId, 0);
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    EXPECT_GE(fileId, 0);
+    std::string uriStr = PAH_BATCH_UPDATE_OWNER_ALBUM_ID;
+    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+    EXPECT_EQ(changedRows, 1);
+
+    std::string newDisplayName = "photo_oprn_update_date_modified_001.jpg";
+    std::string updateUriStr = PAH_UPDATE_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(updateUriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
+    MediaFileUtils::UriAppendKeyValue(updateUriStr, "set_displayName", newDisplayName);
+    MediaFileUtils::UriAppendKeyValue(updateUriStr, "old_displayName", "photo.jpg");
+    MediaFileUtils::UriAppendKeyValue(updateUriStr, "can_fallback", "1");
+    Uri updateUri(updateUriStr);
+    MediaLibraryCommand updateCmd(updateUri);
+    DataShareValuesBucket values2;
+    values2.Put(MediaColumn::MEDIA_NAME, newDisplayName);
+    values2.Put(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(newDisplayName));
+    MediaLibraryDataManager::GetInstance()->Update(updateCmd, values2, predicates);
+    int64_t datemodified = QueryAlbumDateModifiedById(albumId);
+    EXPECT_GT(datemodified, 0);
+    
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_date_modified_001");
 }
 } // namespace Media
 } // namespace OHOS

@@ -1426,26 +1426,30 @@ void CloneRestore::InsertAlbum(vector<AlbumInfo> &albumInfos, const string &tabl
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
     CHECK_AND_RETURN_LOG(!albumInfos.empty(), "albumInfos are empty");
+    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
+    BatchQueryAlbum(albumInfos, tableName);
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
-    vector<NativeRdb::ValuesBucket> values = GetInsertValues(albumInfos, tableName);
+    vector<string> albumIds{};
+    vector<NativeRdb::ValuesBucket> values = GetInsertValues(albumInfos, albumIds, tableName);
+    if (!albumIds.empty()) {
+        UpdatePhotoAlbumDateModified(albumIds);
+    }
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
     CHECK_AND_RETURN_LOG(errCode == E_OK, "Batc insert failed");
     migrateDatabaseAlbumNumber_ += rowNum;
-
-    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
-    BatchQueryAlbum(albumInfos, tableName);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("insert %{public}ld albums cost %{public}ld, query cost %{public}ld.", (long)rowNum,
-        (long)(startQuery - startInsert), (long)(end - startQuery));
+        (long)(end - startInsert), (long)(startInsert - startQuery));
 }
 
-vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> &albumInfos,
+vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> &albumInfos, vector<string> &albumIds,
     const string &tableName)
 {
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < albumInfos.size(); i++) {
         if (HasSameAlbum(albumInfos[i], tableName)) {
+            albumIds.emplace_back(to_string(albumInfos[i].albumIdNew));
             MEDIA_WARN_LOG("Album (%{public}d, %{public}d, %{public}d, %{public}s) already exists.",
                 albumInfos[i].albumIdOld, static_cast<int32_t>(albumInfos[i].albumType),
                 static_cast<int32_t>(albumInfos[i].albumSubType), albumInfos[i].albumName.c_str());

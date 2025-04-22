@@ -1057,13 +1057,13 @@ void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
         MEDIA_INFO_LOG("albumId: %{public}d", metadata.GetAlbumId());
         if (metadata.GetFileId() != FILE_ID_DEFAULT) {
             std::string uri = PhotoColumn::PHOTO_URI_PREFIX + to_string(metadata.GetFileId());
-            MediaLibraryRdbUtils::UpdateCommonAlbumByUri(rdbStore, {uri}, metadata.GetForAdd());
+            MediaLibraryRdbUtils::UpdateCommonAlbumByUri(rdbStore, {uri}, metadata.GetForAdd(), true);
         }
     } else {
         if (!metadata.GetOwnerPackage().empty()) {
             if (metadata.GetFileId() != FILE_ID_DEFAULT) {
                 std::string uri = PhotoColumn::PHOTO_URI_PREFIX + to_string(metadata.GetFileId());
-                MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {uri}, metadata.GetForAdd());
+                MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, {uri}, metadata.GetForAdd(), true);
             }
         }
     }
