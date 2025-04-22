@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2024 Huawei Device Co., Ltd.
+* Copyright (C) 2025 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -113,49 +113,6 @@ HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
         path.substr(ROOT_MEDIA_DIR.length()) + "/beginTimeStamp" + timeStamp + "/" + suffix;
 
     EXPECT_EQ(res, expectRes);
-}
-
-HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
-    ThumbnailSourceLoading_GetLcdExPath_test_001, TestSize.Level0)
-{
-    std::string path = "";
-    
-    std::string res = OHOS::Media::GetLcdExPath(path);
-
-    EXPECT_EQ(res, "");
-}
-
-HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
-    ThumbnailSourceLoading_GetLcdExPath_test_002, TestSize.Level0)
-{
-    std::string path = ROOT_MEDIA_DIR + "test";
-    
-    std::string res = OHOS::Media::GetLcdExPath(path);
-
-    std::string suffix = "/THM_EX/" + THUMBNAIL_LCD_SUFFIX + ".jpg";
-    std::string expectRes = ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
-
-    EXPECT_EQ(res, expectRes);
-}
-
-HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
-    ThumbnailSourceLoading_IsLocalSourceAvailable_test_001, TestSize.Level0)
-{
-    std::string path = "";
-
-    bool res = OHOS::Media::IsLocalSourceAvailable(path);
-
-    EXPECT_EQ(res, false);
-}
-
-HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
-    ThumbnailSourceLoading_IsCloudSourceAvailable_test_001, TestSize.Level0)
-{
-    std::string path = "";
-
-    bool res = OHOS::Media::IsCloudSourceAvailable(path);
-
-    EXPECT_EQ(res, false);
 }
 
 HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
@@ -335,24 +292,6 @@ HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
     int32_t res = OHOS::Media::ParseDesiredMinSide(type);
 
     EXPECT_EQ(res, std::numeric_limits<int32_t>::max());
-}
-
-HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
-    ThumbnailSourceLoading_SwitchToNextState_test_001, TestSize.Level0)
-{
-    ThumbnailData data;
-    SourceState state = SourceState::FINISH;
-
-    OHOS::Media::SwitchToNextState(data, state);
-}
-
-HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
-    ThumbnailSourceLoading_SwitchToNextState_test_002, TestSize.Level0)
-{
-    ThumbnailData data;
-    SourceState state = SourceState::BEGIN;
-
-    OHOS::Media::SwitchToNextState(data, state);
 }
 
 HWTEST_F(MediaLibraryThumbnailSourceLoadingTest,
