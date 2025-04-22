@@ -652,12 +652,12 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi
 
 napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback_info info)
 {
-    RETURN_NAPI_UNDEFINED(MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(env, info, ParameterType::PHOTO_ASSET));
+    return MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(env, info, ParameterType::PHOTO_ASSET);
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsWithUri(napi_env env, napi_callback_info info)
 {
-    RETURN_NAPI_UNDEFINED(MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(env, info, ParameterType::ASSET_URI));
+    return MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(env, info, ParameterType::ASSET_URI);
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(napi_env env, napi_callback_info info,
@@ -701,12 +701,12 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(napi_env env, n
 
 napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callback_info info)
 {
-    RETURN_NAPI_UNDEFINED(MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(env, info, ParameterType::PHOTO_ASSET));
+    return MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(env, info, ParameterType::PHOTO_ASSET);
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSRecoverAssetsWithUri(napi_env env, napi_callback_info info)
 {
-    RETURN_NAPI_UNDEFINED(MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(env, info, ParameterType::ASSET_URI));
+    return MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(env, info, ParameterType::ASSET_URI);
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(napi_env env, napi_callback_info info,
@@ -752,12 +752,12 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(napi_env env, na
 
 napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
 {
-    RETURN_NAPI_UNDEFINED(MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(env, info, ParameterType::PHOTO_ASSET));
+    return MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(env, info, ParameterType::PHOTO_ASSET);
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsWithUri(napi_env env, napi_callback_info info)
 {
-    RETURN_NAPI_UNDEFINED(MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(env, info, ParameterType::ASSET_URI));
+    return MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(env, info, ParameterType::ASSET_URI);
 }
 
 static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> &assetsArray)
