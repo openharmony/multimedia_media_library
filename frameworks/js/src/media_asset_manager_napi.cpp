@@ -166,6 +166,10 @@ static void DeleteProcessHandlerSafe(ProgressHandler *handler, napi_env env)
         napi_delete_reference(env, handler->progressRef);
         handler->progressRef = nullptr;
     }
+    if (handler->progressFunc != nullptr) {
+        napi_release_threadsafe_function(handler->progressFunc, napi_tsfn_release);
+        handler->progressFunc = nullptr;
+    }
     delete handler;
     handler = nullptr;
 }
