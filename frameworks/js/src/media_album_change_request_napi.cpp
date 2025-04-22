@@ -609,42 +609,12 @@ napi_value MediaAlbumChangeRequestNapi::JSRemoveAssets(napi_env env, napi_callba
 
 napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback_info info)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
-
-    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
-        "Failed to get object info");
-
-    auto changeRequest = asyncContext->objectInfo;
-    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
-    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
-
-    shared_ptr<PhotoAlbum> targetAlbum = nullptr;
-    CHECK_COND_WITH_MESSAGE(
-        env, ParsePhotoAlbum(env, asyncContext->argv[PARAM1], targetAlbum), "Failed to parse targetAlbum");
-    CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
-
-    vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
-        "Failed to parse assets");
-    auto moveMap = changeRequest->GetMoveMap();
-    for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
-        if (!CheckDuplicatedAssetArray(assetUriArray, iter->second)) {
-            NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
-                "The previous moveAssets operation has contained the same asset");
-            return nullptr;
-        }
-    }
-    changeRequest->RecordMoveAssets(assetUriArray, targetAlbum);
-    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::MOVE_ASSETS);
+    MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(env, info, napi_object);
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsWithUri(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi_callback_info info,
+    napi_valuetype valueType)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
@@ -666,6 +636,13 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsWithUri(napi_env env, napi_c
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
 
     vector<string> assetUriArray;
+    if (valueType == napi_string) {
+        CHECK_COND_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    }
     CHECK_COND_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
         "Failed to parse assets");
     auto moveMap = changeRequest->GetMoveMap();
