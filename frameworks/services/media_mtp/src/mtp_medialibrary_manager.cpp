@@ -793,6 +793,7 @@ void MtpMedialibraryManager::CondCloseFd(bool isConditionTrue, const int fd)
 {
     bool cond = (!isConditionTrue || fd <= 0);
     CHECK_AND_RETURN_LOG(!cond, "fd error");
+    CHECK_AND_RETURN_LOG(fcntl(fd, F_GETFD) != -1, "fd is already invalid");
     int32_t ret = close(fd);
     CHECK_AND_PRINT_LOG(ret == MTP_SUCCESS, "DealFd CloseFd fail!");
 }
@@ -1095,6 +1096,7 @@ int32_t MtpMedialibraryManager::CloseFdForGet(const std::shared_ptr<MtpOperation
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     MEDIA_INFO_LOG("CloseFd  handle::%{public}u", context->handle);
+    CHECK_AND_RETURN_RET_LOG(fcntl(fd, F_GETFD) != -1, E_ERR, "fd is already invalid");
     CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "wrong fd");
     int errCode = close(fd);
     return MtpErrorUtils::SolveCloseFdError(errCode);
