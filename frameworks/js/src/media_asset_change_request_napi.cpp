@@ -2523,6 +2523,13 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    auto changeOperations = context.assetChangeOperations;
+    bool containsSaveCameraPhoto = std::find(changeOpreations.begin(), changeOpreations.end(),
+        AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOpreations.end();
+    if (containsSaveCameraPhoto) {
+        NAPI_INFO_LOG("set camera shot key will execute by save camera photo.");
+        return true;
+    }
     MediaLibraryTracer tracer;
     tracer.Start("SetCameraShotKeyExecute");
 
@@ -2561,6 +2568,10 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     auto changeOpreations = context.assetChangeOperations;
     bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_RESOURCE) != changeOpreations.end();
+    bool containsSetSupportedWatermarkType = std::find(changeOpreations.begin(), changeOpreations.end(),
+        AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE) != changeOpreations.end();
+    bool containsSetCameraShotKey = std::find(changeOpreations.begin(), changeOpreations.end(),
+        AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOpreations.end();
     std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     if (containsAddResource && !MediaLibraryNapiUtils::IsSystemApp()) {
         // remove high quality photo
@@ -2571,7 +2582,6 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
         MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_DIRTY,
             to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
     }
-
     // The watermark will trigger the scan. If the watermark is turned on, there is no need to trigger the scan again.
     bool needScan = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_FILTERS) == changeOpreations.end();
@@ -2582,12 +2592,19 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
         to_string(fileAsset->GetPhotoSubType()));
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE,
-        to_string(objInfo->GetImageFileType()));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, IMAGE_FILE_TYPE, to_string(objInfo->GetImageFileType()));
     Uri uri(uriStr);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
     DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    if (containsSetSupportedWatermarkType) {
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+        valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
+    }
+    if (containsSetCameraShotKey) {
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+        valuesBucket.Put(PhotoColumn::CAMERA_SHOT_KEY, fileAsset->GetCameraShotKey());
+    }
+    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
     auto ret = UserFileClient::Update(uri, predicates, valuesBucket);
     if (ret < 0) {
         NAPI_ERR_LOG("save camera photo fail");
@@ -2693,6 +2710,13 @@ static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& conte
 
 static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    auto changeOperations = context.assetChangeOperations;
+    bool containsSaveCameraPhoto = std::find(changeOpreations.begin(), changeOpreations.end(),
+        AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOpreations.end();
+    if (containsSaveCameraPhoto) {
+        NAPI_INFO_LOG("set supported watermark type will execute by save camera photo.");
+        return true;
+    }
     MediaLibraryTracer tracer;
     tracer.Start("SetSupportedWatermarkTypeExecute");
 

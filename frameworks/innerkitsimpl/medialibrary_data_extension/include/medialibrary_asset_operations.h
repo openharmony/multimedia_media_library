@@ -172,6 +172,10 @@ public:
     EXPORT static std::shared_ptr<FileAsset> QuerySinglePhoto(int32_t rowId);
     EXPORT static std::vector<std::string> QueryPhotosTableColumnInfo();
     EXPORT static const std::vector<std::string> &GetPhotosTableColumnInfo();
+    static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
+        int32_t &value);
+    static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
+        std::string &value);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
@@ -235,11 +239,7 @@ protected:
     EXPORT static int32_t GrantUriPermission(const std::string &uri, const std::string &bundleName,
         const std::string &path, bool isMovingPhoto = false);
 
-    static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
-        int32_t &value);
     EXPORT static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
-    static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
-        std::string &value);
     EXPORT static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
         const std::string &fileId, int32_t type = -1);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
