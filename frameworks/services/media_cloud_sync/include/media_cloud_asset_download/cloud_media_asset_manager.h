@@ -67,8 +67,17 @@ private:
     EXPORT static int32_t ReadyDataForDelete(std::vector<std::string> &fileIds, std::vector<std::string> &paths,
         std::vector<std::string> &dateTakens);
     static void DeleteAllCloudMediaAssetsOperation(AsyncTaskData *data);
-    EXPORT int32_t UpdateCloudMeidaAssets();
+    EXPORT int32_t UpdateCloudMediaAssets();
     EXPORT int32_t DeleteEmptyCloudAlbums();
+    EXPORT int32_t UpdateLocalAlbums();
+    EXPORT int32_t UpdateBothLocalAndCloudAssets();
+    EXPORT static std::string GetEditDataDirPath(const std::string &path);
+    EXPORT static int32_t DeleteEditdata(const std::string &path);
+    EXPORT bool HasDataForUpdate(std::vector<std::string> &updateFileIds);
+    EXPORT int32_t UpdateCloudAssets(const std::vector<std::string> &updateFileIds);
+    EXPORT void NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds);
+    EXPORT bool HasLocalAndCloudAssets(std::vector<std::string> &updateFileIds);
+    EXPORT int32_t UpdateLocalAndCloudAssets(const std::vector<std::string> &updateFileIds);
 
 private:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;

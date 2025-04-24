@@ -301,7 +301,7 @@ static void CloudMediaAssetDeleteFuzzer(const uint8_t *data, size_t size)
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
     instance.StartDeleteCloudMediaAssets();
     instance.StopDeleteCloudMediaAssets();
-    instance.UpdateCloudMeidaAssets();
+    instance.UpdateCloudMediaAssets();
 
     int32_t fileId = InsertAsset(data, size);
     vector<string> fileIds = { to_string(fileId) };
@@ -317,7 +317,7 @@ static void CloudMediaAssetDeleteFuzzer(const uint8_t *data, size_t size)
 
     int32_t firstFileId = InsertDeleteAsset(data, size);
     int32_t secondFileId = InsertDeleteAsset(data, size);
-    instance.UpdateCloudMeidaAssets();
+    instance.UpdateCloudMediaAssets();
     instance.DeleteAllCloudMediaAssetsAsync();
     firstFileId = InsertDeleteAsset(data, size);
     secondFileId = InsertDeleteAsset(data, size);
