@@ -2571,7 +2571,7 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     bool containsSetSupportedWatermarkType = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE) != changeOpreations.end();
     bool containsSetCameraShotKey = std::find(changeOpreations.begin(), changeOpreations.end(),
-        AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOpreations.end();
+        AssetChangeOperation::SET_CAMERA_SHOT_KEY) != changeOpreations.end();
     std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     if (containsAddResource && !MediaLibraryNapiUtils::IsSystemApp()) {
         // remove high quality photo
