@@ -36,10 +36,6 @@ EXPORT bool GenDecodeOpts(const Size &sourceSize, const Size &targetSize, Decode
 EXPORT std::unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err);
 EXPORT bool NeedAutoResize(const Size &size);
 EXPORT int32_t ParseDesiredMinSide(const ThumbnailType &type);
-EXPORT std::string GetLcdExPath(const std::string &path);
-EXPORT bool IsLocalSourceAvailable(const std::string& path);
-EXPORT bool IsCloudSourceAvailable(const std::string& path);
-EXPORT void SwitchToNextState(ThumbnailData &data, SourceState &state);
 
 const std::unordered_map<SourceState, std::string> STATE_NAME_MAP = {
     { SourceState::BEGIN, "BEGIN" },
