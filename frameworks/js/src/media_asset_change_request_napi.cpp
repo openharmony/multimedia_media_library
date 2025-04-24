@@ -2888,7 +2888,8 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
             CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length) == napi_ok,
                 "Failed to get string length");
             std::vector<char> uriBuffer(str_length + 1);
-            CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) == napi_ok,
+            CHECK_COND_WITH_MESSAGE(env,
+                napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) == napi_ok,
                 "Failed to copy string");
             std::string uriStr(uriBuffer.data());
             std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(uriStr);
