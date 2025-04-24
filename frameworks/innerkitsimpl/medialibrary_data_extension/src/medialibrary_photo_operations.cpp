@@ -1107,7 +1107,19 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-
+    ValuesBucket &cmdValues = cmd.GetValueBucket();
+    int32_t supportedWatermarkType = 0;
+    string cameraShotKey;
+    if (MediaLibraryAssetOperations::GetInt32FromValuesBucket(cmdValues,
+        PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType)) {
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+        values.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType);
+    }
+    if (MediaLibraryAssetOperations::GetStringFromValuesBucket(cmdValues,
+        PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey)) {
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+        values.Put(PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey);
+    }
     int32_t updateDirtyRows = 0;
     if (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))) {
         // Only third-party app save photo, it will bring dirty flag
