@@ -20,6 +20,7 @@
 #include <securec.h>
 
 #include "media_log.h"
+#include "mtp_manager.h"
 #include "ptp_album_handles.h"
 #include "photo_album_column.h"
 #include "datashare_predicates.h"
@@ -34,6 +35,7 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t RESERVE_ALBUM = 10;
 constexpr int32_t PARENT_ID = 0;
+constexpr int32_t PARENT_ID_IN_MTP = 500000000;
 constexpr int32_t DELETE_LIMIT_TIME = 5000;
 constexpr int32_t ERR_NUM = -1;
 constexpr int32_t MAX_PARCEL_LEN_LIMIT = 5000;
@@ -53,6 +55,11 @@ bool startsWith(const std::string& str, const std::string& prefix)
         CHECK_AND_RETURN_RET(str[i] == prefix[i], false);
     }
     return true;
+}
+
+static inline int32_t GetParentId()
+{
+    return MtpManager::GetInstance().IsMtpMode() ? PARENT_ID_IN_MTP : PARENT_ID;
 }
 
 void MediaSyncObserver::SendEventPackets(uint32_t objectHandle, uint16_t eventCode)
@@ -81,7 +88,7 @@ void MediaSyncObserver::SendEventPacketAlbum(uint32_t objectHandle, uint16_t eve
     MtpPacketTool::PutUInt32(outBuffer, event.length);
     MtpPacketTool::PutUInt16(outBuffer, EVENT_CONTAINER_TYPE);
     MtpPacketTool::PutUInt16(outBuffer, eventCode);
-    MtpPacketTool::PutUInt32(outBuffer, PARENT_ID);
+    MtpPacketTool::PutUInt32(outBuffer, context_->transactionID);
     MtpPacketTool::PutUInt32(outBuffer, objectHandle);
 
     event.data = outBuffer;
@@ -255,7 +262,7 @@ void MediaSyncObserver::AddPhotoHandle(int32_t handle)
         albumHandles->AddHandle(ownerAlbumId);
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_ADDED_CODE);
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-        SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+        SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
     }
 }
 
@@ -424,7 +431,7 @@ void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<
                 }
                 SendEventPacketAlbum(albumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             }
-            SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             break;
         case static_cast<int32_t>(NotifyType::NOTIFY_REMOVE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM REMOVE");
@@ -432,7 +439,7 @@ void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<
                 albumHandles->RemoveHandle(albumId);
                 SendEventPacketAlbum(albumId, MTP_EVENT_OBJECT_REMOVED_CODE);
             }
-            SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             break;
         default:
             break;

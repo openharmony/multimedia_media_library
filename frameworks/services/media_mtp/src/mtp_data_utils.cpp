@@ -24,7 +24,9 @@
 #include "media_mtp_utils.h"
 #include "mtp_data_utils.h"
 #include "mtp_constants.h"
+#include "mtp_manager.h"
 #include "mtp_packet_tools.h"
+#include "mtp_ptp_const.h"
 #include "payload_data/get_object_props_supported_data.h"
 #include "payload_data.h"
 #include "rdb_errno.h"
@@ -599,6 +601,13 @@ void MtpDataUtils::SetProperty(const std::string &column, const shared_ptr<DataS
             break;
         case TYPE_INT32:
             prop.currentValue->bin_.i32 = get<int32_t>(columnValue);
+            {
+                // if ptp in mtp mode, set parent id to PTP_IN_MTP_ID
+                bool isParent = column.compare(MEDIA_DATA_DB_PARENT_ID) == 0;
+                if (isParent && MtpManager::GetInstance().IsMtpMode() && prop.currentValue->bin_.i32 == 0) {
+                    prop.currentValue->bin_.i32 = PTP_IN_MTP_ID;
+                }
+            }
             break;
         case TYPE_INT64:
             if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
@@ -1064,5 +1073,52 @@ void MtpDataUtils::SetMtpOneDefaultlPropList(uint32_t handle,
     outProps->push_back(prop);
 }
 
+int32_t MtpDataUtils::GetGalleryPropList(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<std::vector<Property>> &outProps, const std::string &name)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
+    CHECK_AND_RETURN_RET_LOG(outProps != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "outProps is nullptr");
+    auto properties = std::make_shared<UInt16List>();
+    CHECK_AND_RETURN_RET_LOG(properties != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "properties is nullptr");
+    if (context->property == MTP_PROPERTY_ALL_CODE) {
+        auto mtpContext = std::make_shared<MtpOperationContext>();
+        CHECK_AND_RETURN_RET_LOG(mtpContext != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "mtpContext is nullptr");
+        mtpContext->format = (context->format == 0) ? MTP_FORMAT_ASSOCIATION_CODE : context->format;
+
+        auto payLoadData = std::make_shared<GetObjectPropsSupportedData>(mtpContext);
+        CHECK_AND_RETURN_RET_LOG(payLoadData != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "payLoadData is nullptr");
+        payLoadData->GetObjectProps(*properties);
+    } else {
+        properties->push_back(context->property);
+    }
+    CHECK_AND_RETURN_RET_LOG(properties->size() > 0, MTP_INVALID_OBJECTPROPCODE_CODE, "properties is empty");
+
+    std::string column;
+    for (uint16_t property : *properties) {
+        if (PropColumnMap.find(property) != PropColumnMap.end()) {
+            auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
+            Property prop(property, properType);
+            CHECK_AND_RETURN_RET_LOG(prop.currentValue != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "prop is nullptr");
+
+            prop.handle_ = PTP_IN_MTP_ID;
+            column = PropColumnMap.at(property);
+            if (column.compare(MEDIA_DATA_DB_FORMAT) == 0) {
+                prop.currentValue->bin_.ui16 = MTP_FORMAT_ASSOCIATION_CODE;
+            } else if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
+                prop.currentValue->bin_.ui32 = DEFAULT_PARENT_ROOT;
+            } else if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
+                prop.currentValue->str_ = std::make_shared<std::string>(name);
+            } else {
+                continue;
+            }
+            outProps->push_back(prop);
+        } else if (PropDefaultMap.find(property) != PropDefaultMap.end()) {
+            SetMtpOneDefaultlPropList(PTP_IN_MTP_ID, property, outProps, DEFAULT_STORAGE_ID);
+        } else {
+            MEDIA_DEBUG_LOG("other property:0x%{public}x", property);
+        }
+    }
+    return MTP_SUCCESS;
+}
 } // namespace Media
 } // namespace OHOS

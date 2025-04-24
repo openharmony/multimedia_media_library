@@ -54,7 +54,7 @@ void MtpOperation::Init()
     dataPacketPtr_ = make_shared<MtpPacket>(mtpContextPtr_, mtpDriver_);
     responsePacketPtr_ = make_shared<MtpPacket>(mtpContextPtr_, mtpDriver_);
 
-    operationUtils_ = make_shared<MtpOperationUtils>(mtpContextPtr_);
+    operationUtils_ = make_shared<MtpOperationUtils>(mtpContextPtr_, true);
     responseCode_ = MTP_UNDEFINED_CODE;
 }
 

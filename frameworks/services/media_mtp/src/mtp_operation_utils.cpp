@@ -29,14 +29,12 @@
 #endif
 #include "directory_ex.h"
 #include "iservice_registry.h"
-#include "media_file_utils.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
-#include "mtp_file_observer.h"
 #include "mtp_manager.h"
-#include "mtp_medialibrary_manager.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_context.h"
+#include "mtp_ptp_proxy.h"
 #include "mtp_storage_manager.h"
 #include "mtp_store_observer.h"
 #include "payload_data.h"
@@ -90,20 +88,16 @@ static constexpr uint32_t SEND_OBJECT_FILE_MAX_SIZE = 0xFFFFFFFF;
 constexpr int32_t PATH_TIMEVAL_MAX = 2;
 static bool g_isDevicePropSet = false;
 
-MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context) : context_(context)
+MtpOperationUtils::MtpOperationUtils(const shared_ptr<MtpOperationContext> &context, bool isInit) : context_(context)
 {
-    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    CHECK_AND_RETURN_LOG(saManager != nullptr, "GetSystemAbilityManager failed, saManager is null");
+    if (isInit) {
+        auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+        CHECK_AND_RETURN_LOG(saManager != nullptr, "GetSystemAbilityManager failed, saManager is null");
 
-    auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
-    mtpMedialibraryManager_ = MtpMedialibraryManager::GetInstance();
-    mtpMediaLibrary_ = MtpMediaLibrary::GetInstance();
-    if (!MtpManager::GetInstance().IsMtpMode()) {
-        CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr,
-            "MtpMedialibraryManager failed, mtpMedialibraryManager_ is null");
-        mtpMedialibraryManager_->Init(token, context);
+        auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
+        MtpPtpProxy::GetInstance().Init(token, context);
+        g_isDevicePropSet = false;
     }
-    g_isDevicePropSet = false;
 }
 
 MtpOperationUtils::~MtpOperationUtils()
@@ -159,9 +153,6 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
         data = make_shared<RespCommonData>();
         return CheckErrorCode(errorCode);
     }
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
 
     uint16_t ret = HasStorage(errorCode);
     CHECK_AND_RETURN_RET(ret == MTP_SUCCESS, CheckErrorCode(ret));
@@ -173,19 +164,7 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
         context_->parent = 0;
     }
     shared_ptr<UInt32List> objectHandles = make_shared<UInt32List>();
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        errorCode = mtpMediaLibrary_->GetHandles(context_, objectHandles);
-        if (context_->parent == 0) {
-            string path;
-            string realPath;
-            mtpMediaLibrary_->GetPathByContextParent(context_, path);
-            mtpMediaLibrary_->GetRealPath(path, realPath);
-            MtpFileObserver::GetInstance().AddFileInotify(path, realPath, context_);
-        }
-    } else {
-        errorCode = isMac ? mtpMedialibraryManager_->GetAllHandles(context_, objectHandles) :
-            mtpMedialibraryManager_->GetHandles(context_, objectHandles);
-    }
+    errorCode = MtpPtpProxy::GetInstance().GetHandles(context_, objectHandles, isMac);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS,
         CheckErrorCode(errorCode), "GetObjectHandles GetHandles fail!");
 
@@ -193,13 +172,6 @@ uint16_t MtpOperationUtils::GetObjectHandles(shared_ptr<PayloadData> &data, uint
     getObjectHandles->SetObjectHandles(objectHandles);
     data = getObjectHandles;
     errorCode = MTP_SUCCESS;
-    if (context_->parent != 0) {
-        string path;
-        string realPath;
-        if (GetPathByHandle(context_->parent, path, realPath) != MTP_UNDEFINED_CODE) {
-            MtpFileObserver::GetInstance().AddFileInotify(path, realPath, context_);
-        }
-    }
     return CheckErrorCode(errorCode);
 }
 
@@ -209,19 +181,12 @@ uint16_t MtpOperationUtils::GetObjectInfo(shared_ptr<PayloadData> &data, uint16_
         data = make_shared<RespCommonData>();
         return CheckErrorCode(errorCode);
     }
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
 
     uint16_t ret = HasStorage(errorCode);
     CHECK_AND_RETURN_RET(errorCode == MTP_SUCCESS, CheckErrorCode(ret));
 
     shared_ptr<ObjectInfo> objectInfo = make_shared<ObjectInfo>(context_->handle);
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        errorCode = mtpMediaLibrary_->GetObjectInfo(context_, objectInfo);
-    } else {
-        errorCode = mtpMedialibraryManager_->GetObjectInfo(context_, objectInfo);
-    }
+    errorCode = MtpPtpProxy::GetInstance().GetObjectInfo(context_, objectInfo);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS,
         CheckErrorCode(errorCode), "GetObjectHandles GetObjectInfo fail!");
     shared_ptr<GetObjectInfoData> getObjectInfo = make_shared<GetObjectInfoData>();
@@ -255,20 +220,13 @@ uint16_t MtpOperationUtils::GetObjectPropValue(shared_ptr<PayloadData> &data, ui
 
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL),
         "GetObjectPropValue context_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
 
     int type = MTP_TYPE_UNDEFINED_CODE;
     // GetObjectPropValue may have 3 types of return value, using params to return in one function
     uint64_t int64Value = 0;
     uint128_t int128Value = {0};
     string strValue;
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        mtpMediaLibrary_->GetObjectPropValue(context_, int64Value, int128Value, strValue);
-    } else {
-        mtpMedialibraryManager_->GetObjectPropValue(context_, int64Value, int128Value, strValue);
-    }
+    errorCode = MtpPtpProxy::GetInstance().GetObjectPropValue(context_, int64Value, int128Value, strValue);
     shared_ptr<GetObjectPropValueData> getObjectPropValue = make_shared<GetObjectPropValueData>(context_);
     type = MtpPacketTool::GetObjectPropTypeByPropCode(context_->property);
     getObjectPropValue->SetPropValue(type, int64Value, int128Value, strValue);
@@ -284,14 +242,8 @@ void MtpOperationUtils::DoSetObjectPropValue(int &errorCode)
         errorCode = MTP_ERROR_CONTEXT_IS_NULL;
         return;
     }
-    CHECK_AND_RETURN_LOG(mtpMediaLibrary_ != nullptr, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr, "mtpMedialibraryManager_ is null");
 
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        errorCode = mtpMediaLibrary_->SetObjectPropValue(context_);
-    } else {
-        errorCode = mtpMedialibraryManager_->SetObjectPropValue(context_);
-    }
+    errorCode = MtpPtpProxy::GetInstance().SetObjectPropValue(context_);
     SendEventPacket(context_->handle, MTP_EVENT_OBJECT_ADDED_CODE);
 }
 
@@ -324,17 +276,10 @@ uint16_t MtpOperationUtils::GetObjectPropList(shared_ptr<PayloadData> &data,
 
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL),
         "GetObjectPropList context_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
 
     shared_ptr<vector<Property>> props = make_shared<vector<Property>>();
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        errorCode = mtpMediaLibrary_->GetObjectPropList(context_, props);
-        CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, CheckErrorCode(errorCode), "GetObjectPropList fail!");
-    } else {
-        mtpMedialibraryManager_->GetObjectPropList(context_, props);
-    }
+    errorCode = MtpPtpProxy::GetInstance().GetObjectPropList(context_, props);
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, CheckErrorCode(errorCode), "GetObjectPropList fail!");
 
     shared_ptr<GetObjectPropListData> getObjectPropList = make_shared<GetObjectPropListData>(context_);
     getObjectPropList->SetProps(props);
@@ -376,21 +321,14 @@ uint16_t MtpOperationUtils::SetObjectReferences(shared_ptr<PayloadData> &data)
 uint16_t MtpOperationUtils::GetObjectDataDeal()
 {
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_ERROR_CONTEXT_IS_NULL, "GetObjectDataDeal context_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
 
     int fd = 0;
     int errorCode = 0;
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        if (!mtpMediaLibrary_->IsExistObject(context_)) {
-            SendEventPacket(context_->handle, MTP_EVENT_OBJECT_REMOVED_CODE);
-            return MTP_INVALID_OBJECTHANDLE_CODE;
-        }
-        errorCode = mtpMediaLibrary_->GetFd(context_, fd);
-    } else {
-        errorCode = mtpMedialibraryManager_->GetFd(context_, fd, MEDIA_FILEMODE_READONLY);
+    if (MtpManager::GetInstance().IsMtpMode() && !MtpPtpProxy::GetInstance().IsMtpExistObject(context_)) {
+        SendEventPacket(context_->handle, MTP_EVENT_OBJECT_REMOVED_CODE);
+        return MTP_INVALID_OBJECTHANDLE_CODE;
     }
+    errorCode = MtpPtpProxy::GetInstance().GetReadFd(context_, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "GetObjectDataDeal GetFd fail!");
 
     MtpFileRange object;
@@ -416,8 +354,7 @@ uint16_t MtpOperationUtils::GetObjectDataDeal()
     PreDealFd(result < 0, fd);
     CHECK_AND_RETURN_RET_LOG(result >= 0, MTP_ERROR_INCOMPLETE_TRANSFER,
         "GetObjectDataDeal SendObj error!");
-    int32_t ret = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
-        mtpMedialibraryManager_->CloseFdForGet(context_, fd);
+    int32_t ret = MtpPtpProxy::GetInstance().CloseReadFd(context_, fd);
     CHECK_AND_RETURN_RET_LOG(ret == MTP_SUCCESS, E_ERR, "DealFd CloseFd fail!");
     return MTP_SUCCESS;
 }
@@ -431,8 +368,6 @@ uint16_t MtpOperationUtils::GetObject(shared_ptr<PayloadData> &data, int errorCo
 void MtpOperationUtils::ModifyObjectInfo()
 {
     CHECK_AND_RETURN_LOG(context_ != nullptr, "DoRecevieSendObject context_ is null");
-    CHECK_AND_RETURN_LOG(mtpMediaLibrary_ != nullptr, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr, "mtpMedialibraryManager_ is null");
 
     std::tm tmCreated = {};
     std::tm tmModified = {};
@@ -444,12 +379,7 @@ void MtpOperationUtils::ModifyObjectInfo()
     CHECK_AND_RETURN_LOG(!cond, "get_time failed");
 
     std::string path;
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        mtpMediaLibrary_->GetPathById(context_->handle, path);
-    } else {
-        mtpMedialibraryManager_->GetPathById(context_->handle, path);
-        path = mtpMedialibraryManager_->GetHmdfsPath(path);
-    }
+    MtpPtpProxy::GetInstance().GetModifyObjectInfoPathById(context_->handle, path);
 
     struct timeval times[PATH_TIMEVAL_MAX] = { { 0, 0 }, { 0, 0 } };
     times[0].tv_sec = mktime(&tmCreated);
@@ -462,9 +392,6 @@ void MtpOperationUtils::ModifyObjectInfo()
 int32_t MtpOperationUtils::DoRecevieSendObject()
 {
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_INVALID_PARAMETER_CODE, "DoRecevieSendObject context_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
 
     vector<uint8_t> dataBuffer;
     uint32_t temp = READ_LEN;
@@ -472,8 +399,7 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject Read error!");
 
     int fd = 0;
-    errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetFd(context_, fd, true) :
-        mtpMedialibraryManager_->GetFdByOpenFile(context_, fd);
+    errorCode = MtpPtpProxy::GetInstance().GetWriteFd(context_, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject GetFd fail!");
 
     uint32_t initialData = dataBuffer.size() < HEADER_LEN  ? 0 : dataBuffer.size() - HEADER_LEN;
@@ -510,8 +436,7 @@ int32_t MtpOperationUtils::DoRecevieSendObject()
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_RESPONSE_GENERAL,
         "DoRecevieSendObject fstat error = %{public}d", errno);
 
-    errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
-        mtpMedialibraryManager_->CloseFd(context_, fd);
+    errorCode = MtpPtpProxy::GetInstance().CloseWriteFd(context_, fd);
     CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "DoRecevieSendObject CloseFd fail!");
 
     return MTP_SUCCESS;
@@ -523,26 +448,21 @@ int32_t MtpOperationUtils::RecevieSendObject(MtpFileRange &object, int fd)
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_INVALID_PARAMETER_CODE, "DoRecevieSendObject context_ is null");
     CHECK_AND_RETURN_RET_LOG(context_->mtpDriver != nullptr, MTP_INVALID_PARAMETER_CODE,
         "DoRecevieSendObject context_->mtpDriver is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
 
     int32_t errorCode = context_->mtpDriver->ReceiveObj(object);
     bool cond = (errorCode != RECEVIE_OBJECT_CANCELLED && errorCode != RECEVIE_OBJECT_FAILED);
     CHECK_AND_RETURN_RET(!cond, errorCode);
 
     PreDealFd(errorCode != MTP_SUCCESS, fd);
-    string filePath;
+    string filePath("");
     if (MtpManager::GetInstance().IsMtpMode()) {
-        mtpMediaLibrary_->GetPathById(context_->handle, filePath);
+        MtpPtpProxy::GetInstance().GetMtpPathById(context_->handle, filePath);
         CHECK_AND_RETURN_RET_LOG(!filePath.empty(), MTP_ERROR_TRANSFER_CANCELLED,
             "File path is invalid!");
         int ret = unlink(filePath.c_str());
         CHECK_AND_RETURN_RET_LOG(ret == 0, MTP_ERROR_TRANSFER_CANCELLED, "unlink file fail");
-        mtpMediaLibrary_->DeleteHandlePathMap(filePath, context_->handle);
-    } else {
-        mtpMedialibraryManager_->DeleteCanceledObject(context_->handle);
     }
+    MtpPtpProxy::GetInstance().DeleteCanceledObject(filePath, context_->handle);
     CHECK_AND_RETURN_RET(errorCode != RECEVIE_OBJECT_FAILED, MTP_ERROR_TRANSFER_FAILED);
     return MTP_ERROR_TRANSFER_CANCELLED;
 }
@@ -552,19 +472,13 @@ void MtpOperationUtils::PreDealFd(const bool deal, const int fd)
     if (!deal || fd <= 0) {
         return;
     }
-    CHECK_AND_RETURN_LOG(mtpMediaLibrary_ != nullptr, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_LOG(mtpMedialibraryManager_ != nullptr, "mtpMedialibraryManager_ is null");
-    int32_t ret = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->CloseFd(context_, fd) :
-        mtpMedialibraryManager_->CloseFdForGet(context_, fd);
+    int32_t ret = MtpPtpProxy::GetInstance().CloseReadFd(context_, fd);
     CHECK_AND_PRINT_LOG(ret == MTP_SUCCESS, "DealFd CloseFd fail!");
 }
 
 uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode)
 {
     CHECK_AND_RETURN_RET_LOG(context_ != nullptr, MTP_INVALID_PARAMETER_CODE, "DoRecevieSendObject context_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
 
     if (containerType != DATA_CONTAINER_TYPE) {
         data = make_shared<RespCommonData>();
@@ -575,8 +489,7 @@ uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t con
     CHECK_AND_RETURN_RET(ret == MTP_SUCCESS, CheckErrorCode(ret));
 
     shared_ptr<UInt8List> thumb = make_shared<UInt8List>();
-    errorCode = MtpManager::GetInstance().IsMtpMode() ? mtpMediaLibrary_->GetThumb(context_, thumb) :
-        mtpMedialibraryManager_->GetThumb(context_, thumb);
+    errorCode = MtpPtpProxy::GetInstance().GetThumb(context_, thumb);
     if (errorCode != MTP_SUCCESS) {
         data = make_shared<RespCommonData>();
         return CheckErrorCode(errorCode);
@@ -591,7 +504,7 @@ uint16_t MtpOperationUtils::GetThumb(shared_ptr<PayloadData> &data, uint16_t con
 
 uint16_t MtpOperationUtils::SendObjectInfo(shared_ptr<PayloadData> &data, int &errorCode)
 {
-    if (context_ == nullptr || mtpMediaLibrary_ == nullptr || mtpMedialibraryManager_ == nullptr) {
+    if (context_ == nullptr) {
         MEDIA_ERR_LOG("MtpOperationUtils::SendObjectInfo param is null");
         data = make_shared<RespCommonData>();
         return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
@@ -613,11 +526,7 @@ uint16_t MtpOperationUtils::SendObjectInfo(shared_ptr<PayloadData> &data, int &e
     uint32_t storageID = 0;
     uint32_t parent = 0;
     uint32_t handle = 0;
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        errorCode = mtpMediaLibrary_->SendObjectInfo(context_, storageID, parent, handle);
-    } else {
-        errorCode = mtpMedialibraryManager_->SendObjectInfo(context_, storageID, parent, handle);
-    }
+    errorCode = MtpPtpProxy::GetInstance().SendObjectInfo(context_, storageID, parent, handle);
     if (errorCode != MTP_SUCCESS) {
         MEDIA_ERR_LOG("MtpOperationUtils::SendObjectInfo fail!");
         data = make_shared<RespCommonData>();
@@ -658,15 +567,11 @@ uint16_t MtpOperationUtils::GetObjectPropsSupported(shared_ptr<PayloadData> &dat
 
 uint16_t MtpOperationUtils::DeleteObject(shared_ptr<PayloadData> &data, int &errorCode)
 {
-    if (context_ == nullptr || mtpMediaLibrary_ == nullptr || mtpMedialibraryManager_ == nullptr) {
+    if (context_ == nullptr) {
         errorCode = MTP_ERROR_CONTEXT_IS_NULL;
     } else {
         MEDIA_ERR_LOG("MtpOperationUtils::DeleteObject format=%{public}u", context_->format);
-        if (MtpManager::GetInstance().IsMtpMode()) {
-            errorCode = mtpMediaLibrary_->DeleteObject(context_);
-        } else {
-            errorCode = mtpMedialibraryManager_->DeleteObject(context_);
-        }
+        errorCode = MtpPtpProxy::GetInstance().DeleteObject(context_);
     }
     data = make_shared<RespCommonData>();
     return CheckErrorCode(errorCode);
@@ -674,15 +579,11 @@ uint16_t MtpOperationUtils::DeleteObject(shared_ptr<PayloadData> &data, int &err
 
 uint16_t MtpOperationUtils::MoveObject(shared_ptr<PayloadData> &data, int &errorCode)
 {
-    bool cond = (context_ == nullptr || mtpMediaLibrary_ == nullptr || mtpMedialibraryManager_ == nullptr);
+    bool cond = (context_ == nullptr);
     CHECK_AND_RETURN_RET_LOG(!cond, CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL), "param is null");
 
     uint32_t repeatHandle = 0;
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        errorCode = mtpMediaLibrary_->MoveObject(context_, repeatHandle);
-    } else {
-        errorCode = mtpMedialibraryManager_->MoveObject(context_);
-    }
+    errorCode = MtpPtpProxy::GetInstance().MoveObject(context_, repeatHandle);
 
     data = make_shared<RespCommonData>();
     if (repeatHandle != 0) {
@@ -694,7 +595,7 @@ uint16_t MtpOperationUtils::MoveObject(shared_ptr<PayloadData> &data, int &error
 
 uint16_t MtpOperationUtils::CopyObject(shared_ptr<PayloadData> &data, int &errorCode)
 {
-    if (context_ == nullptr || mtpMediaLibrary_ == nullptr || mtpMedialibraryManager_ == nullptr) {
+    if (context_ == nullptr) {
         MEDIA_ERR_LOG("param is null");
         data = make_shared<RespCommonData>();
         return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
@@ -702,11 +603,7 @@ uint16_t MtpOperationUtils::CopyObject(shared_ptr<PayloadData> &data, int &error
 
     uint32_t objectHandle = 0;
     uint32_t oldHandle = 0;
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        errorCode = mtpMediaLibrary_->CopyObject(context_, objectHandle, oldHandle);
-    } else {
-        errorCode = mtpMedialibraryManager_->CopyObject(context_, objectHandle);
-    }
+    MtpPtpProxy::GetInstance().CopyObject(context_, objectHandle, oldHandle);
 
     shared_ptr<CopyObjectData> copyObject = make_shared<CopyObjectData>();
     copyObject->SetObjectHandle(objectHandle);
@@ -720,22 +617,22 @@ uint16_t MtpOperationUtils::CopyObject(shared_ptr<PayloadData> &data, int &error
 
 uint16_t MtpOperationUtils::GetStorageIDs(shared_ptr<PayloadData> &data, uint16_t containerType, int &errorCode)
 {
-    if (containerType != DATA_CONTAINER_TYPE || context_ == nullptr || mtpMediaLibrary_ == nullptr ||
-        mtpMedialibraryManager_ == nullptr) {
+    if (containerType != DATA_CONTAINER_TYPE || context_ == nullptr) {
         data = make_shared<RespCommonData>();
         return CheckErrorCode(MTP_ERROR_CONTEXT_IS_NULL);
     }
 
     CHECK_AND_RETURN_RET_LOG(context_->sessionOpen != false, CheckErrorCode(MTP_ERROR_SESSION_NOT_OPEN),
         "session isn't open");
+    auto manager = MtpStorageManager::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(manager != nullptr, MTP_PARAMETER_NOT_SUPPORTED_CODE,
+        "MtpStorageManager instance is nullptr");
     if (MtpManager::GetInstance().IsMtpMode()) {
         MtpStoreObserver::AttachContext(context_);
-        mtpMediaLibrary_->GetStorageIds();
+        MtpPtpProxy::GetInstance().GetMtpStorageIds();
     } else {
         auto storage = make_shared<Storage>();
         CHECK_AND_RETURN_RET_LOG(storage != nullptr, E_ERR, "storage is nullptr");
-        auto manager = MtpStorageManager::GetInstance();
-        CHECK_AND_RETURN_RET_LOG(manager != nullptr, E_ERR, "MtpStorageManager instance is nullptr");
         storage->SetStorageID(DEFAULT_STORAGE_ID);
         storage->SetStorageType(MTP_STORAGE_FIXEDRAM);
         storage->SetFilesystemType(MTP_FILESYSTEM_GENERICHIERARCHICAL);
@@ -744,11 +641,11 @@ uint16_t MtpOperationUtils::GetStorageIDs(shared_ptr<PayloadData> &data, uint16_
         storage->SetFreeSpaceInBytes(manager->GetFreeSize(PUBLIC_DOC));
         storage->SetFreeSpaceInObjects(0);
         storage->SetStorageDescription(manager->GetStorageDescription(MTP_STORAGE_FIXEDRAM));
-        MtpStorageManager::GetInstance()->AddStorage(storage);
+        manager->AddStorage(storage);
     }
 
     shared_ptr<GetStorageIdsData> getStorageIdsData = make_shared<GetStorageIdsData>();
-    getStorageIdsData->SetStorages(MtpStorageManager::GetInstance()->GetStorages());
+    getStorageIdsData->SetStorages(manager->GetStorages());
     data = getStorageIdsData;
     errorCode = MTP_SUCCESS;
     return CheckErrorCode(errorCode);
@@ -950,24 +847,7 @@ uint16_t MtpOperationUtils::ObjectEvent(shared_ptr<PayloadData> &data, const int
 
 uint16_t MtpOperationUtils::GetPathByHandle(const uint32_t &handle, string &path, string &realPath)
 {
-    CHECK_AND_RETURN_RET(handle != 0, MTP_UNDEFINED_CODE);
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
-
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        mtpMediaLibrary_->GetPathById(handle, path);
-        mtpMediaLibrary_->GetRealPath(path, realPath);
-        return MTP_OK_CODE;
-    }
-    mtpMedialibraryManager_->GetPathById(handle, path);
-
-    size_t position = path.find("/local");
-    string real = "100";
-    if (position != string::npos) {
-        realPath = path.substr(0, position + 1) + real + path.substr(position, path.size());
-    }
-    MEDIA_DEBUG_LOG("MtpOperationUtils GetPathByHandle new %{private}s", realPath.c_str());
+    MtpPtpProxy::GetInstance().GetPathByHandle(handle, path, realPath);
     return MTP_OK_CODE;
 }
 
@@ -977,26 +857,20 @@ int32_t MtpOperationUtils::GetHandleByPaths(string path, uint32_t &handle)
     if (path.back() == '/') {
         path.pop_back();
     }
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, MTP_INVALID_PARAMETER_CODE, "mtpMediaLibrary_ is null");
-    CHECK_AND_RETURN_RET_LOG(mtpMedialibraryManager_ != nullptr, MTP_INVALID_PARAMETER_CODE,
-        "mtpMedialibraryManager_ is null");
-    CHECK_AND_RETURN_RET(!MtpManager::GetInstance().IsMtpMode(), mtpMediaLibrary_->GetIdByPath(path, handle));
-    return mtpMedialibraryManager_->GetIdByPath(path, handle);
+    return MtpPtpProxy::GetInstance().GetIdByPath(path, handle);
 }
 
 bool MtpOperationUtils::TryAddExternalStorage(const std::string &fsUuid, uint32_t &storageId)
 {
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, false, "mtpMediaLibrary_ is null");
     CHECK_AND_RETURN_RET(!MtpManager::GetInstance().IsMtpMode(),
-        mtpMediaLibrary_->TryAddExternalStorage(fsUuid, storageId));
+        MtpPtpProxy::GetInstance().MtpTryAddExternalStorage(fsUuid, storageId));
     return false;
 }
 
 bool MtpOperationUtils::TryRemoveExternalStorage(const std::string &fsUuid, uint32_t &storageId)
 {
-    CHECK_AND_RETURN_RET_LOG(mtpMediaLibrary_ != nullptr, false, "mtpMediaLibrary_ is null");
     CHECK_AND_RETURN_RET(!MtpManager::GetInstance().IsMtpMode(),
-        mtpMediaLibrary_->TryRemoveExternalStorage(fsUuid, storageId));
+        MtpPtpProxy::GetInstance().MtpTryRemoveExternalStorage(fsUuid, storageId));
     return false;
 }
 

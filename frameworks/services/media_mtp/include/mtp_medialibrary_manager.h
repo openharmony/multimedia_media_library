@@ -20,13 +20,13 @@
 #include "avmetadatahelper.h"
 #include "datashare_helper.h"
 #include "file_asset.h"
+#include "mtp_ptp_const.h"
 #include "mtp_operation_context.h"
 #include "object_info.h"
 #include "property.h"
 
 namespace OHOS {
 namespace Media {
-namespace sf = std::filesystem;
 class MtpMedialibraryManager {
 public:
     MtpMedialibraryManager();
@@ -63,6 +63,8 @@ public:
         std::shared_ptr<UInt8List> &outThumb);
     void DeleteCanceledObject(uint32_t id);
     int32_t GetFdByOpenFile(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
+    int32_t GetCopyObjectPath(uint32_t handle, PathMap &paths);
+    int32_t GetAlbumName(uint32_t fileId, std::string &albumName);
 private:
     int32_t SetObjectInfo(const std::unique_ptr<FileAsset> &fileAsset, std::shared_ptr<ObjectInfo> &outObjectInfo);
     int32_t SetObject(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
@@ -92,6 +94,8 @@ private:
         std::string &movingPhotoDataPath, MediaType &mediaType);
     int32_t InsertCopyObject(const std::string &displayName, const MediaType &mediaType);
     int32_t GetThumbnailFromPath(std::string &path, std::shared_ptr<UInt8List> &outThumb);
+    int32_t GetCopyAlbumObjectPath(uint32_t handle, PathMap &paths);
+    int32_t GetCopyPhotoObjectPath(uint32_t handle, PathMap &paths);
 private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;

@@ -235,6 +235,8 @@ public:
     static uint32_t GetMtpFormatByPath(const std::string &path, uint16_t &outFormat);
     static std::string GetMovingOrEnditSourcePath(const std::string &path, const int32_t &subtype,
         const std::shared_ptr<MtpOperationContext> &context);
+    static int32_t GetGalleryPropList(const std::shared_ptr<MtpOperationContext> &context,
+        shared_ptr<vector<Property>> &outProps, const std::string &name);
 private:
     static int32_t GetPropList(const std::shared_ptr<MtpOperationContext> &context,
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
