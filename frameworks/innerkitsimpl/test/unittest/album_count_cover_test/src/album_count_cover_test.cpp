@@ -793,7 +793,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
     MEDIA_INFO_LOG("album_count_cover_004 end");
 }
 
-
 /**
  * @tc.name: album_count_cover_007
  * @tc.desc: Video album count and cover test
