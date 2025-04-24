@@ -1129,7 +1129,8 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
         values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
         values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
         updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
-        CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR, "update third party photo temp and dirty flag fail.");
+        CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR,
+            "update third party photo temp, dirty flag, watermark type and camera shot key fail.");
         return updateDirtyRows;
     }
 
@@ -1141,7 +1142,8 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
         predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::BURST)));
         values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
         updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
-        CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR, "burst photo update temp and dirty flag fail.");
+        CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR,
+            "burst photo update temp, dirty flag, watermark type and camera shot key fail.");
         return updateDirtyRows;
     }
 
