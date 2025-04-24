@@ -2107,9 +2107,9 @@ void MediaLibraryAssetOperations::UpdateOwnerAlbumIdOnMove(MediaLibraryCommand &
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
 
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        rdbStore, { to_string(targetAlbumId), to_string(oriAlbumId) });
+        rdbStore, { to_string(targetAlbumId), to_string(oriAlbumId) }, false, true);
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        rdbStore, { to_string(targetAlbumId), to_string(oriAlbumId) });
+        rdbStore, { to_string(targetAlbumId), to_string(oriAlbumId) }, false, true);
     MEDIA_INFO_LOG("Move Assets, ori album id is %{public}d, target album id is %{public}d", oriAlbumId, targetAlbumId);
 }
 
