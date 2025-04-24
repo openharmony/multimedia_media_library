@@ -232,36 +232,6 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
     return ANI_OK;
 }
 
-ani_object FileAssetAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz)
-{
-    std::shared_ptr<FileAsset> fileAssetPtr = std::make_shared<FileAsset>();
-    std::unique_ptr<FileAssetAni> nativeFileAssetAni = std::make_unique<FileAssetAni>(fileAssetPtr);
-
-    static const char *className = PAH_ANI_CLASS_PHOTO_ASSET_HANDLE.c_str();
-    ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        ANI_ERR_LOG("Failed to find class: %{public}s", className);
-        ani_object nullobj = nullptr;
-        return nullobj;
-    }
-
-    ani_method ctor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "J:V", &ctor)) {
-        ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
-        ani_object nullobj = nullptr;
-        return nullobj;
-    }
-
-    ani_object fileAsset_object;
-    if (ANI_OK != env->Object_New(cls, ctor, &fileAsset_object,
-        reinterpret_cast<ani_long>(nativeFileAssetAni.release()))) {
-        ANI_ERR_LOG("New FileAsset Fail");
-    }
-    CHECK_COND_RET(BindAniAttributes(env, cls, fileAsset_object) == ANI_OK, nullptr,
-        "fileAsset BindAniAttributes Fail");
-    return fileAsset_object;
-}
-
 shared_ptr<FileAsset> FileAssetAni::GetFileAssetInstance() const
 {
     return fileAssetPtr;
@@ -956,26 +926,13 @@ ani_object FileAssetAni::PhotoAccessHelperGetThumbnail(ani_env *env, ani_object 
     context->size.width = DEFAULT_THUMB_SIZE;
     context->size.height = DEFAULT_THUMB_SIZE;
     if (MediaLibraryAniUtils::IsUndefined(env, size) == ANI_FALSE) {
-        ani_class cls {};
-        if (ANI_OK != env->FindClass(PAH_ANI_CLASS_SIZE.c_str(), &cls)) {
-            return pixelMapAni;
-        }
-        ani_method heightGetter {};
-        ani_method widthGetter {};
-        if (ANI_OK != env->Class_FindMethod(cls, "<get>height", nullptr, &heightGetter)) {
+        ani_int heightValue = 0;
+        ani_int widthValue = 0;
+        if (ANI_OK != env->Object_GetPropertyByName_Int(size, "height", &heightValue)) {
             ANI_ERR_LOG("Class_FindMethod Fail %{public}s", PAH_ANI_CLASS_SIZE.c_str());
         }
-        if (ANI_OK != env->Class_FindMethod(cls, "<get>width", nullptr, &widthGetter)) {
+        if (ANI_OK != env->Object_GetPropertyByName_Int(size, "width", &widthValue)) {
             ANI_ERR_LOG("Class_FindMethod Fail %{public}s", PAH_ANI_CLASS_SIZE.c_str());
-        }
-
-        ani_double heightValue = 0;
-        ani_double widthValue = 0;
-        if (ANI_OK != env->Object_CallMethod_Double(size, heightGetter, &heightValue)) {
-            return pixelMapAni;
-        }
-        if (ANI_OK != env->Object_CallMethod_Double(size, widthGetter, &widthValue)) {
-            return pixelMapAni;
         }
         context->size.width = static_cast<int32_t>(widthValue);
         context->size.height = static_cast<int32_t>(heightValue);

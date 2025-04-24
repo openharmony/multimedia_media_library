@@ -886,14 +886,13 @@ static ani_status ParseArgsDeleteAssets(ani_env *env, ani_object assets, std::ve
     return ANI_ERROR;
 }
 
-static ani_object DeleteAssetsComplete(ani_env *env, std::unique_ptr<MediaAssetChangeRequestAniContext> &context)
+static void DeleteAssetsComplete(ani_env *env, std::unique_ptr<MediaAssetChangeRequestAniContext> &context)
 {
     ani_object errorObj {};
     if (context->error == ERR_DEFAULT) {
         context->HandleError(env, errorObj);
     }
     context.reset();
-    return nullptr;
 }
 
 ani_object MediaAssetChangeRequestAni::DeleteAssets(ani_env *env, [[maybe_unused]] ani_class clazz,
@@ -916,7 +915,8 @@ ani_object MediaAssetChangeRequestAni::DeleteAssets(ani_env *env, [[maybe_unused
     // Delete assets
     if (MediaLibraryAniUtils::IsSystemApp()) {
         DeleteAssetsExecute(env, aniContext);
-        return DeleteAssetsComplete(env, aniContext);
+        DeleteAssetsComplete(env, aniContext);
+        return ReturnAniUndefined(env);
     }
 
 #ifdef HAS_ACE_ENGINE_PART
@@ -948,7 +948,7 @@ ani_object MediaAssetChangeRequestAni::DeleteAssets(ani_env *env, [[maybe_unused
     int32_t sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
     CHECK_COND(env, sessionId != 0, JS_INNER_FAIL);
     callback->SetSessionId(sessionId);
-    AniError::ThrowError(env, JS_INNER_FAIL);
+    return ReturnAniUndefined(env);
 #else
     AniError::ThrowError(env, JS_INNER_FAIL, "ace_engine is not support");
 #endif
@@ -979,8 +979,7 @@ ani_object MediaAssetChangeRequestAni::SetEditData(ani_env *env, ani_object aniO
         !changeRequest->Contains(AssetChangeOperation::ADD_FILTERS)) {
         changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_FILTERS);
     }
-    AniError::ThrowError(env, JS_INNER_FAIL);
-    return nullptr;
+    return ReturnAniUndefined(env);
 }
 
 ani_object MediaAssetChangeRequestAni::SetEffectMode(ani_env *env, ani_object aniObject, ani_enum_item mode)
@@ -1013,8 +1012,7 @@ ani_object MediaAssetChangeRequestAni::SetEffectMode(ani_env *env, ani_object an
     }
     fileAsset->SetMovingPhotoEffectMode(effectMode);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE);
-    AniError::ThrowError(env, JS_INNER_FAIL);
-    return nullptr;
+    return ReturnAniUndefined(env);
 }
 
 static bool CheckMovingPhotoVideo(void* dataBuffer, size_t size)
@@ -1070,8 +1068,7 @@ ani_object MediaAssetChangeRequestAni::AddMovingPhotoVideoResourceByFileUri(ani_
     changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::FILE_URI;
     changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
     changeRequest->addResourceTypes_.push_back(ResourceType::VIDEO_RESOURCE);
-    AniError::ThrowError(env, JS_INNER_FAIL);
-    return nullptr;
+    return ReturnAniUndefined(env);
 }
 
 ani_object MediaAssetChangeRequestAni::AddMovingPhotoVideoResourceByArrayBuffer(ani_env *env, ani_object aniObject,
@@ -1100,8 +1097,7 @@ ani_object MediaAssetChangeRequestAni::AddMovingPhotoVideoResourceByArrayBuffer(
 
     changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
     changeRequest->addResourceTypes_.push_back(ResourceType::VIDEO_RESOURCE);
-    AniError::ThrowError(env, JS_INNER_FAIL);
-    return nullptr;
+    return ReturnAniUndefined(env);
 }
 
 ani_object MediaAssetChangeRequestAni::AddResourceByFileUri(ani_env *env, ani_object aniObject,
@@ -1130,8 +1126,7 @@ ani_object MediaAssetChangeRequestAni::AddResourceByFileUri(ani_env *env, ani_ob
     changeRequest->addResourceMode_ = AddResourceMode::FILE_URI;
     changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
     changeRequest->addResourceTypes_.push_back(GetResourceType(resourceType));
-    AniError::ThrowError(env, JS_INNER_FAIL);
-    return nullptr;
+    return ReturnAniUndefined(env);
 }
 
 ani_object MediaAssetChangeRequestAni::AddResourceByArrayBuffer(ani_env *env, ani_object aniObject,
@@ -1164,8 +1159,7 @@ ani_object MediaAssetChangeRequestAni::AddResourceByArrayBuffer(ani_env *env, an
 
     changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
     changeRequest->addResourceTypes_.push_back(GetResourceType(resourceType));
-    AniError::ThrowError(env, JS_INNER_FAIL);
-    return nullptr;
+    return ReturnAniUndefined(env);
 }
 
 ani_object MediaAssetChangeRequestAni::AddResourceByPhotoProxy(ani_env *env, ani_object aniObject,
@@ -1196,8 +1190,7 @@ ani_object MediaAssetChangeRequestAni::AddResourceByPhotoProxy(ani_env *env, ani
 
     changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
     changeRequest->addResourceTypes_.push_back(GetResourceType(resourceType));
-    AniError::ThrowError(env, JS_INNER_FAIL);
-    return nullptr;
+    return ReturnAniUndefined(env);
 }
 
 void MediaAssetChangeRequestAni::SetNewFileAsset(int32_t id, const string &uri)

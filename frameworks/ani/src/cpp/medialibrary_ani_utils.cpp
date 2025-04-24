@@ -18,6 +18,7 @@
 
 #include <cctype>
 #include "accesstoken_kit.h"
+#include "ani_class_name.h"
 #include "basic/result_set.h"
 #include "datashare_predicates.h"
 #include "file_asset_info_ani.h"
@@ -55,6 +56,25 @@ static constexpr int32_t FIELD_IDX = 0;
 static constexpr int32_t VALUE_IDX = 1;
 static const string EMPTY_STRING = "";
 using json = nlohmann::json;
+
+struct AniArrayOperator {
+    ani_class cls {};
+    ani_method ctorMethod {};
+    ani_method setMethod {};
+};
+
+static ani_status InitAniArrayOperator(ani_env *env, AniArrayOperator &arrayOperator)
+{
+    static const std::string className = "Lescompat/Array;";
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find Lescompat/Array.");
+
+    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "<ctor>", "I:V", &(arrayOperator.ctorMethod)),
+        "Can't find method <ctor> in Lescompat/Array.");
+
+    CHECK_STATUS_RET(env->Class_FindMethod(arrayOperator.cls, "$_set", "ILstd/core/Object;:V",
+        &(arrayOperator.setMethod)), "Can't find method $_set in Lescompat/Array.");
+    return ANI_OK;
+}
 
 ani_boolean MediaLibraryAniUtils::IsArray(ani_env *env, ani_object object)
 {
@@ -438,23 +458,15 @@ ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, st
 ani_status MediaLibraryAniUtils::ToAniInt32Array(ani_env *env, const std::vector<uint32_t> &array,
     ani_object &aniArray)
 {
-    ani_class cls {};
-    static const std::string className = "Lescompat/Array;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array.");
+    AniArrayOperator arrayOperator;
+    CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
-    ani_method arrayConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &arrayConstructor),
-        "Can't find method <ctor> in Lescompat/Array.");
-
-    CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, array.size()), "Call method <ctor> failed.");
-
-    ani_method setMethod {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
-        "Can't find method $_set in Lescompat/Array.");
+    CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
+        "Call method <ctor> failed.");
 
     for (size_t i = 0; i < array.size(); i++) {
         ani_int aniInt = static_cast<ani_int>(array[i]);
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, setMethod, (ani_int)i, aniInt),
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, aniInt),
             "Call method $_set failed.");
     }
     return ANI_OK;
@@ -484,24 +496,16 @@ ani_status MediaLibraryAniUtils::GetStringArray(ani_env *env, ani_object arg, st
 ani_status MediaLibraryAniUtils::ToAniStringArray(ani_env *env, const std::vector<std::string> &array,
     ani_object &aniArray)
 {
-    ani_class cls {};
-    static const std::string className = "Lescompat/Array;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array.");
+    AniArrayOperator arrayOperator;
+    CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
-    ani_method arrayConstructor {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &arrayConstructor),
-        "Can't find method <ctor> in Lescompat/Array.");
-
-    CHECK_STATUS_RET(env->Object_New(cls, arrayConstructor, &aniArray, array.size()), "Call method <ctor> failed.");
-
-    ani_method setMethod {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
-        "Can't find method $_set in Lescompat/Array.");
+    CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
+        "Call method <ctor> failed.");
 
     for (size_t i = 0; i < array.size(); i++) {
         ani_string aniString {};
         CHECK_STATUS_RET(ToAniString(env, array[i], aniString), "ToAniString failed");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, setMethod, (ani_int)i, aniString),
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, aniString),
             "Call method $_set failed.");
     }
     return ANI_OK;
@@ -552,6 +556,16 @@ ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::stri
         CHECK_STATUS_RET(env->Object_CallMethod_Ref(aniMap, setMethod, &setResult, aniKey, aniValue),
             "Call method set fail");
     }
+    return ANI_OK;
+}
+
+ani_status MediaLibraryAniUtils::GetProperty(ani_env *env, ani_object arg, const std::string &propName,
+    uint32_t &propValue)
+{
+    ani_double aniDouble = 0;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, propName.c_str(), &aniDouble),
+        "Object_GetPropertyByName_Double failed.");
+    propValue = static_cast<uint32_t>(aniDouble);
     return ANI_OK;
 }
 
@@ -769,24 +783,16 @@ ani_status MediaLibraryAniUtils::GetArrayFromAssets(ani_env *env, ani_object arg
 ani_status MediaLibraryAniUtils::ToFileAssetInfoAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
     ani_object &aniArray)
 {
-    ani_class cls {};
-    static const std::string className = "Lescompat/Array;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array.");
+    AniArrayOperator arrayOperator;
+    CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
-    ani_method method {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &method),
-        "Can't find method <ctor> in Lescompat/Array.");
-
-    CHECK_STATUS_RET(env->Object_New(cls, method, &aniArray, array.size()), "Call method <ctor> failed.");
-
-    ani_method setMethod {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
-        "Can't find method set in Lescompat/Array.");
+    CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
+        "Call method <ctor> failed.");
 
     for (size_t i = 0; i < array.size(); ++i) {
         ani_object fileAssetObj = FileAssetInfo::ToFileAssetInfoObject(env, std::move(array[i]));
         CHECK_COND_RET(fileAssetObj != nullptr, ANI_ERROR, "CreateFileAssetObj failed");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, setMethod, (ani_int)i, fileAssetObj),
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, fileAssetObj),
             "Call method $_set failed.");
     }
     return ANI_OK;
@@ -795,25 +801,17 @@ ani_status MediaLibraryAniUtils::ToFileAssetInfoAniArray(ani_env *env, std::vect
 ani_status MediaLibraryAniUtils::ToFileAssetAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
     ani_object &aniArray)
 {
-    ani_class cls {};
-    static const std::string className = "Lescompat/Array;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array.");
+    AniArrayOperator arrayOperator;
+    CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
-    ani_method method {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &method),
-        "Can't find method <ctor> in Lescompat/Array.");
-
-    CHECK_STATUS_RET(env->Object_New(cls, method, &aniArray, array.size()), "Call method <ctor> failed.");
-
-    ani_method setMethod {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
-        "Can't find method set in Lescompat/Array.");
+    CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
+        "Call method <ctor> failed.");
 
     for (size_t i = 0; i < array.size(); ++i) {
         FileAssetAni* fileAssetAni = FileAssetAni::CreateFileAsset(env, array[i]);
         ani_object value = FileAssetAni::Wrap(env, fileAssetAni);
         CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAsset failed");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, setMethod, (ani_int)i, value),
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, value),
             "Call method $_set failed.");
     }
     return ANI_OK;
@@ -857,24 +855,16 @@ ani_status MediaLibraryAniUtils::GetPhotoAlbumAniArray(ani_env *env, ani_object 
 ani_status MediaLibraryAniUtils::ToPhotoAlbumAniArray(ani_env *env, std::vector<unique_ptr<PhotoAlbum>> &array,
     ani_object &aniArray)
 {
-    ani_class cls {};
-    static const std::string className = "Lescompat/Array;";
-    CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Array.");
+    AniArrayOperator arrayOperator;
+    CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
-    ani_method method {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<ctor>", "I:V", &method),
-        "Can't find method <ctor> in Lescompat/Array.");
-
-    CHECK_STATUS_RET(env->Object_New(cls, method, &aniArray, array.size()), "Call method <ctor> failed.");
-
-    ani_method setMethod {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "$_set", "ILstd/core/Object;:V", &setMethod),
-        "Can't find method set in Lescompat/Array.");
+    CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
+        "Call method <ctor> failed.");
 
     for (size_t i = 0; i < array.size(); i++) {
         ani_object value = PhotoAlbumAni::CreatePhotoAlbumAni(env, array[i]);
         CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAlbum failed");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, setMethod, (ani_int)i, value),
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, value),
             "Call method $_set failed.");
     }
     return ANI_OK;

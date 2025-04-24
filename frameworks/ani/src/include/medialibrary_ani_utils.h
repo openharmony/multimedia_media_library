@@ -117,6 +117,16 @@
         }                                                           \
     } while (0)
 
+inline ani_object ReturnAniUndefined(ani_env *env)
+{
+    ani_ref result = nullptr;
+    ani_status ret = env->GetUndefined(&result);
+    if (ANI_OK != ret) {
+        OHOS::Media::AniError::ThrowError(env, OHOS::Media::JS_INNER_FAIL);
+    }
+    return static_cast<ani_object>(result);
+}
+
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -268,6 +278,7 @@ public:
     static ani_status GetObjectArray(ani_env *env, ani_object arg, std::vector<ani_object> &array);
     static ani_status ToAniMap(ani_env *env, const std::map<std::string, std::string> &map, ani_object &aniMap);
 
+    static ani_status GetProperty(ani_env *env, ani_object arg, const std::string &propName, uint32_t &propValue);
     static ani_status GetProperty(ani_env *env, ani_object arg, const std::string &propName, std::string &propValue);
     static ani_status GetProperty(ani_env *env, ani_object arg, const std::string &propName, ani_object &propObj);
     static ani_status GetArrayProperty(ani_env *env, ani_object arg, const std::string &propName,

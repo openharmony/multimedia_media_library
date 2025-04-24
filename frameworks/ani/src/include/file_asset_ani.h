@@ -59,7 +59,6 @@ public:
 
     static ani_status UserFileMgrInit(ani_env *env);
     static ani_status PhotoAccessHelperInit(ani_env *env);
-    static ani_object Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz);
     static void Destructor([[maybe_unused]] ani_env env, void *nativeObject, void *finalize_hint);
     static ani_object Wrap(ani_env *env, FileAssetAni *fileAssetAni);
     static FileAssetAni* Unwrap(ani_env *env, ani_object object);
