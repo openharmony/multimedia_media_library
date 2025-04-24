@@ -2873,8 +2873,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
 
     if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
         NapiError::ThrowError(env, isUri ? JS_ERR_PARAMETER_INVALID : OHOS_INVALID_PARAM_CODE,
-                "Exceeded the maximum batch output quantity, cannot be deleted."
-            );
+                "Exceeded the maximum batch output quantity, cannot be deleted.");
             return nullptr;
     }
     vector<string> deleteIds;
