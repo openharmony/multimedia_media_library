@@ -2703,6 +2703,8 @@ static void DeleteFiles(AsyncTaskData *data)
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
+    MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
+        rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
 
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
         taskData->notifyUris_, taskData->bundleName_);
