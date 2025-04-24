@@ -711,6 +711,7 @@ std::string CloneRestoreCVAnalysis::GetNewPhotoUriByUri(const std::string &oldUr
     CHECK_AND_RETURN_RET(oldUri != "", "");
     size_t rightIndex = oldUri.rfind("/");
     CHECK_AND_RETURN_RET(rightIndex != std::string::npos && rightIndex > 0, "");
+    size_t suffixIndex = oldUri.find("?", rightIndex);
     rightIndex = oldUri.rfind("/", rightIndex - 1);
     CHECK_AND_RETURN_RET(rightIndex != std::string::npos && rightIndex > 0, "");
     size_t leftIndex = oldUri.rfind("/", rightIndex - 1);
@@ -719,6 +720,7 @@ std::string CloneRestoreCVAnalysis::GetNewPhotoUriByUri(const std::string &oldUr
     int32_t oldPhotoId = std::atoi((oldUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
     int32_t newPhotoId = cloneHighlight.GetNewHighlightPhotoId(oldPhotoId);
     std::string newUri = cloneHighlight.GetNewHighlightPhotoUri(newPhotoId);
+    CHECK_AND_EXECUTE(suffixIndex == std::string::npos, newUri += oldUri.substr(suffixIndex));
     assetUriMap_.insert(std::make_pair(oldUri, newUri));
     return newUri;
 }
