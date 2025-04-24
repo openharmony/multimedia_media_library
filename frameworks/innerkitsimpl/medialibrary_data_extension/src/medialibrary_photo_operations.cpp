@@ -1019,8 +1019,8 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 #endif
     MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM, false,
-        AlbumOperationType::DELETE_PHOTO);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, { NotifyAlbumType::SYS_ALBUM, false,
+        AlbumOperationType::DELETE_PHOTO, true });
     CHECK_AND_WARN_LOG(static_cast<size_t>(updatedRows) == notifyUris.size(),
         "Try to notify %{public}zu items, but only %{public}d items updated.", notifyUris.size(), updatedRows);
     TrashPhotosSendNotify(notifyUris, albumData);
@@ -1307,8 +1307,8 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
         static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore.");
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, NotifyAlbumType::SYS_ALBUM, false,
-        hiddenState != 0 ? AlbumOperationType::HIDE_PHOTO : AlbumOperationType::UNHIDE_PHOTO);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, notifyUris, { NotifyAlbumType::SYS_ALBUM, false,
+        hiddenState != 0 ? AlbumOperationType::HIDE_PHOTO : AlbumOperationType::UNHIDE_PHOTO, true });
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
 }
@@ -1490,9 +1490,9 @@ void UpdateAlbumOnSystemMoveAssets(const int32_t &oriAlbumId, const int32_t &tar
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) });
+        rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) }, false, true);
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) });
+        rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) }, false, true);
 }
 
 bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
@@ -1800,13 +1800,30 @@ int32_t MediaLibraryPhotoOperations::RenameEditDataDirBySetDisplayName(
     return E_OK;
 }
 
+static int32_t UpdateAlbumDateModified(int32_t albumId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, E_HAS_DB_ERROR);
+    MediaLibraryCommand updateCmd(OperationObject::PHOTO_ALBUM, OperationType::UPDATE);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    ValuesBucket updateValues;
+    updateValues.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    updateCmd.SetValueBucket(updateValues);
+    int32_t rowId = 0;
+    int32_t result = rdbStore->Update(updateCmd, rowId);
+    CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK && rowId > 0, E_HAS_DB_ERROR,
+        "Update date modified failed. Result %{public}d.", result);
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     vector<string> columns = {
         PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_NAME,
         PhotoColumn::MEDIA_TITLE, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_ALL_EXIF,
-        PhotoColumn::PHOTO_DIRTY, PhotoColumn::MEDIA_DATE_TAKEN, PhotoColumn::MEDIA_MIME_TYPE};
+        PhotoColumn::PHOTO_DIRTY, PhotoColumn::MEDIA_DATE_TAKEN, PhotoColumn::MEDIA_MIME_TYPE,
+        PhotoColumn::PHOTO_OWNER_ALBUM_ID};
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, columns);
     CHECK_AND_RETURN_RET(fileAsset != nullptr, E_INVALID_VALUES);
@@ -1832,6 +1849,7 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
         RevertOrientation(fileAsset, currentOrientation);
         return rowId;
     }
+    CHECK_AND_EXECUTE(!isNameChanged, UpdateAlbumDateModified(fileAsset->GetOwnerAlbumId()));
     if (cmd.GetOprnType() == OperationType::SET_USER_COMMENT) {
         errCode = SetUserComment(cmd, fileAsset);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Edit user comment errCode = %{private}d", errCode);
@@ -1841,9 +1859,7 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     HandleUpdateIndex(cmd, to_string(fileAsset->GetId()));
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
     errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
-    if (errCode == E_OK) {
-        return rowId;
-    }
+    CHECK_AND_RETURN_RET(errCode != E_OK, rowId);
     SendFavoriteNotify(cmd, fileAsset, extraUri);
     SendModifyUserCommentNotify(cmd, fileAsset->GetId(), extraUri);
 
@@ -4019,10 +4035,10 @@ int32_t MediaLibraryPhotoOperations::UpdateOwnerAlbumId(MediaLibraryCommand &cmd
     CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(to_string(targetAlbumId), type, subType) ==
         E_SUCCESS, E_INVALID_ARGUMENTS, "invalid album uri");
     CHECK_AND_EXECUTE(!PhotoAlbum::IsUserPhotoAlbum(type, subType), MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) }));
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) }, false, true));
 
     CHECK_AND_EXECUTE(!PhotoAlbum::IsSourceAlbum(type, subType), MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) }));
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), { to_string(targetAlbumId) }, false, true));
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_EXECUTE(watch == nullptr, watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
         NotifyType::NOTIFY_ALBUM_ADD_ASSET, targetAlbumId));

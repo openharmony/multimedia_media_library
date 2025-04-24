@@ -120,6 +120,7 @@ struct UpdateAlbumData {
     int32_t newTotalCount { 0 };
     bool shouldNotify { false };
     bool hasChanged {false};
+    bool shouldUpdateDateModified { false };
 };
 
 struct RefreshAlbumData {
@@ -1106,6 +1107,9 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
         CHECK_AND_RETURN_RET_LOG(fileResultVideo != nullptr, E_HAS_DB_ERROR, "Failed to query fileResultVideo");
         SetImageVideoCount(newCount, fileResultVideo, data, values);
     }
+    if (data.shouldUpdateDateModified) {
+        values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    }
     return E_SUCCESS;
 }
 
@@ -1402,7 +1406,7 @@ static bool CopyAssetIfNeed(int32_t fileId, int32_t albumId,
 }
 
 void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &uris, bool shouldNotify)
+    const vector<string> &uris, bool shouldNotify, bool shouldUpdateDateModified)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateUserAlbumByUri");
@@ -1414,16 +1418,23 @@ void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<MediaLibraryRdb
 
     vector<string> albumIds = QueryAlbumId(rdbStore, uris, PhotoAlbumType::USER);
     if (albumIds.size() > 0) {
-        UpdateUserAlbumInternal(rdbStore, albumIds, shouldNotify);
+        UpdateUserAlbumInternal(rdbStore, albumIds, shouldNotify, shouldUpdateDateModified);
         UpdateUserAlbumHiddenState(rdbStore, albumIds);
     }
 }
 
-void MediaLibraryRdbUtils::UpdateUserAlbumInternal(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &userAlbumIds, bool shouldNotify)
+void MediaLibraryRdbUtils::UpdateUserAlbumInternal(shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const vector<string> &userAlbumIds, bool shouldNotify, bool shouldUpdateDateModified)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateUserAlbumInternal");
+
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdbstore, try again!");
+        rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr,
+            "Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
+    }
 
     vector<string> columns = {
         PhotoAlbumColumns::ALBUM_ID,
@@ -1445,6 +1456,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(const shared_ptr<MediaLibrary
         data.albumImageCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
         data.albumVideoCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
         data.shouldNotify = shouldNotify;
+        data.shouldUpdateDateModified = shouldUpdateDateModified;
         datas.push_back(data);
     }
     albumResult->Close();
@@ -1837,7 +1849,7 @@ static void UpdateSourceAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> 
 }
 
 void MediaLibraryRdbUtils::UpdateCommonAlbumByUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &uris, bool shouldNotify)
+    const vector<string> &uris, bool shouldNotify, bool shouldUpdateDateModified)
 {
     // it will be update all later
     CHECK_AND_RETURN(uris.size() != 0);
@@ -1845,13 +1857,13 @@ void MediaLibraryRdbUtils::UpdateCommonAlbumByUri(const shared_ptr<MediaLibraryR
     tracer.Start("UpdateCommonAlbumByUri");
     vector<string> albumIds = QueryAlbumId(rdbStore, uris);
     if (albumIds.size() > 0) {
-        UpdateCommonAlbumInternal(rdbStore, albumIds, shouldNotify);
+        UpdateCommonAlbumInternal(rdbStore, albumIds, shouldNotify, shouldUpdateDateModified);
         UpdateCommonAlbumHiddenState(rdbStore, albumIds);
     }
 }
 
 void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &uris, bool shouldNotify)
+    const vector<string> &uris, bool shouldNotify, bool shouldUpdateDateModified)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumByUri");
@@ -1863,13 +1875,13 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<MediaLibraryR
 
     vector<string> albumIds = QueryAlbumId(rdbStore, uris, PhotoAlbumType::SOURCE);
     if (albumIds.size() > 0) {
-        UpdateSourceAlbumInternal(rdbStore, albumIds, shouldNotify);
+        UpdateSourceAlbumInternal(rdbStore, albumIds, shouldNotify, shouldUpdateDateModified);
         UpdateSourceAlbumHiddenState(rdbStore, albumIds);
     }
 }
 
 void MediaLibraryRdbUtils::UpdateCommonAlbumInternal(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &albumIds, bool shouldNotify)
+    const vector<string> &albumIds, bool shouldNotify, bool shouldUpdateDateModified)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCommonAlbumInternal");
@@ -1894,6 +1906,7 @@ void MediaLibraryRdbUtils::UpdateCommonAlbumInternal(const shared_ptr<MediaLibra
         data.albumImageCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
         data.albumVideoCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
         data.shouldNotify = shouldNotify;
+        data.shouldUpdateDateModified = shouldUpdateDateModified;
         datas.push_back(data);
     }
     albumResult->Close();
@@ -1901,11 +1914,18 @@ void MediaLibraryRdbUtils::UpdateCommonAlbumInternal(const shared_ptr<MediaLibra
     ForEachRow(rdbStore, datas, false, UpdateCommonAlbumIfNeeded);
 }
 
-void MediaLibraryRdbUtils::UpdateSourceAlbumInternal(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &sourceAlbumIds, bool shouldNotify)
+void MediaLibraryRdbUtils::UpdateSourceAlbumInternal(shared_ptr<MediaLibraryRdbStore> rdbStore,
+    const vector<string> &sourceAlbumIds, bool shouldNotify, bool shouldUpdateDateModified)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumInternal");
+
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdbstore, try again!");
+        rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_LOG(rdbStore != nullptr,
+            "Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
+    }
 
     vector<string> columns = {
         PhotoAlbumColumns::ALBUM_ID,
@@ -1927,6 +1947,7 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumInternal(const shared_ptr<MediaLibra
         data.albumImageCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
         data.albumVideoCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
         data.shouldNotify = shouldNotify;
+        data.shouldUpdateDateModified = shouldUpdateDateModified;
         datas.push_back(data);
     }
     albumResult->Close();
@@ -2132,7 +2153,7 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(const shared_ptr<MediaLibrar
 }
 
 void MediaLibraryRdbUtils::UpdateAllAlbums(shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &uris,
-    NotifyAlbumType type, bool isBackUpAndRestore, AlbumOperationType albumOperationType)
+    const UpdateAllAlbumsData &updateAlbumsData)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateAllAlbums");
@@ -2143,10 +2164,11 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(shared_ptr<MediaLibraryRdbStore> rdbS
             "Fatal error! Failed to get rdbstore, new cloud data is not processed!!");
     }
 
-    MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, albumOperationType, uris, type);
-    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, uris);
-    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, uris);
-    if (!isBackUpAndRestore) {
+    MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, updateAlbumsData.albumOperationType, uris,
+        updateAlbumsData.type);
+    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, uris, false, updateAlbumsData.shouldUpdateDateModified);
+    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, uris, false, updateAlbumsData.shouldUpdateDateModified);
+    if (!updateAlbumsData.isBackUpAndRestore) {
         std::thread([rdbStore, uris]() { MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, uris); }).detach();
     } else {
         MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, uris);
