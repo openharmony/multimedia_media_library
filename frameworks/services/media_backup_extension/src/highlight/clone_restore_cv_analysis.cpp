@@ -720,6 +720,7 @@ std::string CloneRestoreCVAnalysis::GetNewPhotoUriByUri(const std::string &oldUr
     int32_t oldPhotoId = std::atoi((oldUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
     int32_t newPhotoId = cloneHighlight.GetNewHighlightPhotoId(oldPhotoId);
     std::string newUri = cloneHighlight.GetNewHighlightPhotoUri(newPhotoId);
+    
     CHECK_AND_EXECUTE(suffixIndex == std::string::npos, newUri += oldUri.substr(suffixIndex));
     assetUriMap_.insert(std::make_pair(oldUri, newUri));
     return newUri;
