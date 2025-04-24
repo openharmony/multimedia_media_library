@@ -87,6 +87,7 @@ public:
     static ani_status MergeAlbum(ani_env *env, ani_object object, ani_object albumHandle);
     static ani_status SetAlbumName(ani_env *env, ani_object object, ani_string name);
     static ani_status AddAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
+    static ani_status RemoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
     static ani_status RecoverAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
     static ani_status MoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset, ani_object targetAblum);
     static ani_status SetDisplayLevel(ani_env *env, ani_object object, ani_int displayLevel);

@@ -48,6 +48,7 @@ ani_status MediaAlbumChangeRequestAni::Init(ani_env *env)
         ani_native_function {"mergeAlbum", nullptr, reinterpret_cast<void *>(MergeAlbum)},
         ani_native_function {"setAlbumName", nullptr, reinterpret_cast<void *>(SetAlbumName)},
         ani_native_function {"setCoverUri", nullptr, reinterpret_cast<void *>(SetCoverUri)},
+        ani_native_function {"removeAssets", nullptr, reinterpret_cast<void *>(RemoveAssets)},
         ani_native_function {"recoverAssets", nullptr, reinterpret_cast<void *>(RecoverAssets)},
         ani_native_function {"setDisplayLevel", nullptr, reinterpret_cast<void *>(SetDisplayLevel)},
         ani_native_function {"deleteAssets", nullptr, reinterpret_cast<void *>(DeleteAssets)},
@@ -349,6 +350,32 @@ ani_status MediaAlbumChangeRequestAni::MoveAssets(ani_env *env, ani_object objec
     }
     changeRequest->RecordMoveAssets(assetUriArray, targetPhotoAlbum);
     changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::MOVE_ASSETS);
+    return ANI_OK;
+}
+
+ani_status MediaAlbumChangeRequestAni::RemoveAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset)
+{
+    auto aniContext = make_unique<MediaAlbumChangeRequestContext>();
+    aniContext->objectInfo = Unwrap(env, object);
+    CHECK_COND_RET(aniContext->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is nullptr");
+    auto changeRequest = aniContext->objectInfo;
+    auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is null");
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(),
+        photoAlbum->GetPhotoAlbumSubType()), ANI_INVALID_ARGS, "Only user album can be deleted");
+    vector<string> assetUriArray;
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        MediaLibraryAniUtils::GetUriArrayFromAssets(env, arrayPhotoAsset, assetUriArray) == ANI_OK, ANI_INVALID_ARGS,
+        "Failed to get assetUriArray");
+    if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToRemove_)) {
+        AniError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
+            "The previous RemoveAssets operation has contained the same asset");
+        return ANI_OK;
+    }
+    changeRequest->assetsToRemove_.insert(
+        changeRequest->assetsToRemove_.end(), assetUriArray.begin(), assetUriArray.end());
+    changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::REMOVE_ASSETS);
     return ANI_OK;
 }
 

@@ -131,6 +131,8 @@ public:
     static ani_object GetPhotoAccessHelper(ani_env *env, ani_object context);
     static MediaLibraryAni* Unwrap(ani_env *env, ani_object object);
     static void OnThumbnailGenerated(ani_env *env, ani_object callback, void *context, void *data);
+    int32_t GetUserId();
+    void SetUserId(const int32_t &userId);
 
     MediaLibraryAni();
     ~MediaLibraryAni();
@@ -183,6 +185,7 @@ private:
     void UnRegisterNotifyChange(ani_env *env, const std::string &uri, ani_ref ref, ChangeListenerAni &listObj);
     static bool CheckRef(ani_env *env, ani_ref ref, ChangeListenerAni &listObj, bool isOff, const std::string &uri);
     ani_env *env_;
+    int32_t userId_ = -1;
     static std::mutex sOnOffMutex_;
 };
 
@@ -200,6 +203,7 @@ struct MediaLibraryAsyncContext : public AniError {
     bool isDelete;
     bool isCreateByComponent;
     bool isCreateByAgent;
+    bool needSystemApp = false;
     AniAssetType assetType;
     AlbumType albumType;
     MediaLibraryAni *objectInfo;
@@ -250,6 +254,12 @@ struct MediaLibraryAsyncContext : public AniError {
     std::string indexProgress;
     std::shared_ptr<PickerCallBack> pickerCallBack;
     std::vector<std::string> analysisDatas;
+    uint32_t tokenId = 0;
+    std::vector<std::string> albumIds;
+    std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
+    bool isContainsAlbumUri = false;
+    int32_t taskId = -1;
+    bool isFullAnalysis = false;
     ani_object callback;
 };
 } // namespace Media
