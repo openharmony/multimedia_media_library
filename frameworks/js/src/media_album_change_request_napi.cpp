@@ -333,7 +333,7 @@ static napi_value ParseUriArray(napi_env env, napi_value arg, vector<string>& ur
     vector<napi_value> napiValues;
     napi_valuetype valueType = napi_undefined;
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
-    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_string, "Invalid argument type");
     CHECK_NULLPTR_RET(GetUriArray(env, napiValues, uriArray));
@@ -631,7 +631,7 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi
 
     vector<string> assetUriArray;
     if (parameterType == ParameterType::ASSET_URI) {
-        CHECK_COND_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
             "Failed to parse assets");
     } else {
         CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
@@ -682,7 +682,7 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(napi_env env, n
 
     vector<string> assetUriArray;
     if (parameterType == ParameterType::ASSET_URI) {
-        CHECK_COND_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
             "Failed to parse assets");
     } else {
         CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
@@ -732,7 +732,7 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(napi_env env, na
 
     vector<string> assetUriArray;
     if (parameterType == ParameterType::ASSET_URI) {
-        CHECK_COND_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
             "Failed to parse assets");
     } else {
         CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
