@@ -2862,23 +2862,17 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     vector<napi_value> napiValues;
     napi_valuetype valueType = napi_undefined;
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
-    if (isUri) {
-        CHECK_ARGS_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
-    } else {
-        CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
-    }
+    isUri ? CHECK_ARGS_WITH_MESSAGE(env, !napiValues.empty(), "array is empty")
+      : CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_object || valueType == napi_string,
         "Argument must be array of strings of PhotoAsset object");
 
     if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
-        if (isUri){
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID,
-                "Exceeded the maximum batch output quantity, cannot be deleted.");
-        } else {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
-                "Exceeded the maximum batch output quantity, cannot be deleted.");
-        }
+        isUri ? NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID,
+            "Exceeded the maximum batch output quantity, cannot be deleted.")
+            : NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
+            "Exceeded the maximum batch output quantity, cannot be deleted.");
         return nullptr;
     }
     vector<string> deleteIds;
