@@ -2846,7 +2846,7 @@ napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
 }
 
 static napi_value ParseArgsDeleteLocalAssetsPermanently(
-    napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& context)
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& context, bool isUri = false)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
@@ -2862,32 +2862,37 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
     vector<napi_value> napiValues;
     napi_valuetype valueType = napi_undefined;
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
-    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    if (isUri) {
+        CHECK_ARGS_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    }
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_object || valueType == napi_string,
         "Argument must be array of strings of PhotoAsset object");
 
     if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
-            "Exceeded the maximum batch output quantity, cannot be deleted.");
+        if (isUri){
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID,
+                "Exceeded the maximum batch output quantity, cannot be deleted.");
+        } else {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE,
+                "Exceeded the maximum batch output quantity, cannot be deleted.");
+        }
         return nullptr;
     }
     vector<string> deleteIds;
     for (const auto& napiValue : napiValues) {
         if (valueType == napi_string) {
             size_t str_length = 0;
-            if (napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length) != napi_ok) {
-                NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get string length");
-                return nullptr;
-            };
+            CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, napiValue, nullptr, 0, &str_length) == napi_ok,
+                "Failed to get string length");
             std::vector<char> uriBuffer(str_length + 1);
-            if (napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) != napi_ok) {
-                NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to copy string");
-                return nullptr;
-            };
+            CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) == napi_ok,
+                "Failed to copy string");
             std::string uriStr(uriBuffer.data());
             std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(uriStr);
-            CHECK_COND_WITH_MESSAGE(env, !fileId.empty(), "Invalid URI format or empty fileId");
+            CHECK_ARGS_WITH_MESSAGE(env, !fileId.empty(), "Invalid URI format or empty fileId");
             deleteIds.push_back(fileId);
         } else {
             FileAssetNapi* obj = nullptr;
@@ -2955,7 +2960,7 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteLocalAssetsPermanentlyWithUri(na
 {
     NAPI_DEBUG_LOG("enter JSDeleteLocalAssetsPermanentlyWithUri.");
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteLocalAssetsPermanently(env, info, asyncContext),
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteLocalAssetsPermanently(env, info, asyncContext, true),
         "Failed to parse args");
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(
         env, asyncContext, "ChangeRequestDeleteLocalAssetsPermanently",
