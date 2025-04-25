@@ -173,8 +173,8 @@ export namespace photoAccessHelper {
   type QuickImageDataType = image.Picture;
 
   export class MediaAssetManager {
-    static onMediaAssetDataPrepared(data: MediaAssetDataType, map?: Map<string, string>,
-      dataHandler: MediaAssetDataHandler<MediaAssetDataType>): void {
+    static onMediaAssetDataPrepared(data: MediaAssetDataType,
+      dataHandler: MediaAssetDataHandler<MediaAssetDataType>, map?: Map<string, string>): void {
       if (dataHandler !== undefined && dataHandler !== null) {
         dataHandler.onDataPrepared(data, map);
       }

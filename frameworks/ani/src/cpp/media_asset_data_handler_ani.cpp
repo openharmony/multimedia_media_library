@@ -125,7 +125,7 @@ void AniMediaAssetDataHandler::EtsOnDataPrepared(ani_env *env, ani_object arg, a
         return;
     }
     ani_object callback = static_cast<ani_object>(dataHandlerRef_);
-    status = env->Class_CallStaticMethod_Void(cls, etsOnDataPrepared, arg, extraInfo, callback);
+    status = env->Class_CallStaticMethod_Void(cls, etsOnDataPrepared, arg, callback, extraInfo);
     dataHandlerLock.unlock();
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to execure static method: %{public}s, ani status: %{public}d",
