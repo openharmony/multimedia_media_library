@@ -71,7 +71,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION };
+        PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         MEDIA_INFO_LOG("result set is empty");
@@ -93,7 +93,9 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
         static_cast<int32_t>(PhotoPositionType::LOCAL));
     resultSet->Close();
 
-    int ret = MediaLibraryPhotoOperations::ProcessMultistagesVideo(isEdited, isMovingPhoto, data);
+    bool isMovingPhotoEffectMode = GetInt64Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet) > 0;
+    int ret = MediaLibraryPhotoOperations::ProcessMultistagesVideo(isEdited, isMovingPhoto, isMovingPhotoEffectMode,
+        data);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save 110 quality video failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(videoId,

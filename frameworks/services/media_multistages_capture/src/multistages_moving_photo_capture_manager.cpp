@@ -86,8 +86,7 @@ void MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(const std::st
         static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_TO_DELIVER), "moving photo video saving not yet.");
 
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(data);
-    MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, videoPath);
+    MultiStagesVideoCaptureManager::GetInstance().AddVideoInternal(photoId, data, true);
     UpdateMultStagesMovingPhotoVideoTaskStatus(photoId, StageVideoTaskStatus::STAGE_TASK_DELIVERED);
     MEDIA_INFO_LOG("Moving photo mulit stage video task has been delivered");
 }
