@@ -804,9 +804,6 @@ void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUr
     } else {
         watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_REMOVE);
-        for (auto &uri : notifyUris) {
-            watch->Notify(uri, NotifyType::NOTIFY_REMOVE);
-        }
     }
     vector<int64_t> formIds;
     for (const auto &notifyUri : notifyUris) {
