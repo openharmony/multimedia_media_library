@@ -20,7 +20,9 @@
 #include <fcntl.h>
 
 #include "database_adapter.h"
+#include "dfx_utils.h"
 #include "directory_ex.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_command.h"
@@ -51,17 +53,25 @@ MultiStagesVideoCaptureManager& MultiStagesVideoCaptureManager::GetInstance()
 }
 
 void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId,
-    const std::string &filePath)
+    const std::string &filePath, bool isMovingPhoto)
 {
 #ifdef ABILITY_CAMERA_SUPPORT
     MEDIA_INFO_LOG("AddVideoInternal filePath = %{public}s", filePath.c_str());
 
     string absSrcFilePath;
-    if (!PathToRealPath(filePath, absSrcFilePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
+    string videoPath = filePath;
+    if (isMovingPhoto) {
+        videoPath = MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(filePath);
+        if (!MediaFileUtils::IsFileExists(videoPath)) {
+            videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
+        }
+    }
+    if (!PathToRealPath(videoPath, absSrcFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", videoPath.c_str());
         return;
     }
 
+    MEDIA_INFO_LOG("AddVideoInternal, file path: %{public}s", DfxUtils::GetSafePath(absSrcFilePath).c_str());
     const mode_t fileMode = 0644;
     int srcFd = open(absSrcFilePath.c_str(), O_RDONLY);
     if (srcFd < 0) {
@@ -77,8 +87,12 @@ void MultiStagesVideoCaptureManager::AddVideoInternal(const std::string &videoId
         return;
     }
 
-    string tempPath = realDirPath + filePath.substr(filePath.rfind('/'),
-        filePath.rfind('.') - filePath.rfind('/')) + "_tmp" + filePath.substr(filePath.rfind('.'));
+    if (isMovingPhoto) {
+        videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
+    }
+
+    string tempPath = realDirPath + videoPath.substr(videoPath.rfind('/'),
+        videoPath.rfind('.') - videoPath.rfind('/')) + "_tmp" + videoPath.substr(videoPath.rfind('.'));
     MEDIA_INFO_LOG("AddVideoInternal tempPath = %{public}s", tempPath.c_str());
     int dstFd = open(tempPath.c_str(), O_CREAT|O_WRONLY|O_TRUNC, fileMode);
     if (dstFd < 0) {
@@ -147,7 +161,7 @@ void MultiStagesVideoCaptureManager::SyncWithDeferredVideoProcSessionInternal()
         to_string(static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED)) + "))))";
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     vector<string> columns { MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_FILE_PATH,
-                            MEDIA_DATA_DB_DATE_TRASHED, PhotoColumn::PHOTO_SUBTYPE };
+                            MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS };
 
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != 0) {
@@ -159,12 +173,9 @@ void MultiStagesVideoCaptureManager::SyncWithDeferredVideoProcSessionInternal()
     do {
         string videoId = GetStringVal(MEDIA_DATA_DB_PHOTO_ID, resultSet);
         string filePath = GetStringVal(MEDIA_DATA_DB_FILE_PATH, resultSet);
-        if (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) ==
-            static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            filePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
-        }
+        bool isMovingPhoto = GetInt32Val(MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS, resultSet) > 0;
         bool isTrashed = GetInt64Val(MEDIA_DATA_DB_DATE_TRASHED, resultSet) > 0;
-        AddVideoInternal(videoId, filePath);
+        AddVideoInternal(videoId, filePath, isMovingPhoto);
 
         if (isTrashed) {
             RemoveVideo(videoId, true);

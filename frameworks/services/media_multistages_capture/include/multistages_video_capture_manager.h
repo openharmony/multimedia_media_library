@@ -36,7 +36,7 @@ public:
 
     EXPORT void SyncWithDeferredVideoProcSession();
     EXPORT void SyncWithDeferredVideoProcSessionInternal();
-    EXPORT void AddVideoInternal(const std::string &videoId, const std::string &filePath);
+    EXPORT void AddVideoInternal(const std::string &videoId, const std::string &filePath, bool isMovingPhoto = false);
     EXPORT void AddVideo(const std::string &videoId, const std::string &fileId, const std::string &filePath);
     EXPORT void RemoveVideo(const std::string &videoId, const bool restorable);
     EXPORT void RestoreVideo(const std::string &videoId);
