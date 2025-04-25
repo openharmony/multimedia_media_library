@@ -276,18 +276,19 @@ int32_t PhotoDayMonthYearOperation::UpdateAbnormalDayMonthYear(std::vector<std::
     auto needChangedSize = fileIds.size();
     CHECK_AND_RETURN_RET(needChangedSize > 0, NativeRdb::E_OK);
 
-    std::stringstream updateSql;
-    updateSql << UPDATE_DAY_MONTH_YEAR;
+    std::string inClause;
     for (size_t i = 0; i < needChangedSize; ++i) {
         if (i != 0) {
-            updateSql << ", ";
+            inClause += ", ";
         }
-        updateSql << fileIds[i];
+        inClause += fileIds[i];
     }
-    updateSql << " );";
+    MEDIA_INFO_LOG("need update abnormal day month year fileIds: %{public}s", inClause.c_str());
+
+    std::string updateSql = UPDATE_DAY_MONTH_YEAR + inClause + " );";
     int64_t changedRowCount = 0;
 
-    auto errCode = rdbStore->ExecuteForChangedRowCount(changedRowCount, updateSql.str());
+    auto errCode = rdbStore->ExecuteForChangedRowCount(changedRowCount, updateSql);
     CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK, errCode,
         "update abnormal day month year data failed, errCode: %{public}d, needChangedSize: %{public}zu",
         errCode, needChangedSize);
