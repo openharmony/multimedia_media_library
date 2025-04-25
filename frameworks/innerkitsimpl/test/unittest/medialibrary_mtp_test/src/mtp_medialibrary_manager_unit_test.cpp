@@ -23,6 +23,8 @@
 #include "iservice_registry.h"
 #include "media_file_utils.h"
 #include "get_self_permissions.h"
+#include "mtp_ptp_const.h"
+#include "media_mtp_utils.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -1489,6 +1491,110 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_06
 
     mtpMedialibraryManager_->Clear();
     EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetAlbumName
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_062, TestSize.Level1)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    ASSERT_NE(saManager, nullptr);
+    auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID_TEST);
+
+    mtpMedialibraryManager_->dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    ASSERT_NE(mtpMedialibraryManager_->dataShareHelper_, nullptr);
+
+    uint32_t fileId = 1;
+    std::string albumName;
+    int32_t res = mtpMedialibraryManager_->GetAlbumName(fileId, albumName);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetCopyAlbumObjectPath
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_063, TestSize.Level1)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    ASSERT_NE(saManager, nullptr);
+    auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID_TEST);
+
+    mtpMedialibraryManager_->dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    ASSERT_NE(mtpMedialibraryManager_->dataShareHelper_, nullptr);
+
+    uint32_t handle = 1;
+    PathMap paths;
+    int32_t res = mtpMedialibraryManager_->GetCopyAlbumObjectPath(handle, paths);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetCopyPhotoObjectPath
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_064, TestSize.Level1)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    ASSERT_NE(saManager, nullptr);
+    auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID_TEST);
+
+    mtpMedialibraryManager_->dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    ASSERT_NE(mtpMedialibraryManager_->dataShareHelper_, nullptr);
+
+    uint32_t handle = 1;
+    PathMap paths;
+    int32_t res = mtpMedialibraryManager_->GetCopyPhotoObjectPath(handle, paths);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryPTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetCopyObjectPath
+ */
+HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_065, TestSize.Level1)
+{
+    ASSERT_NE(mtpMedialibraryManager_, nullptr);
+
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    ASSERT_NE(saManager, nullptr);
+    auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID_TEST);
+
+    mtpMedialibraryManager_->dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    ASSERT_NE(mtpMedialibraryManager_->dataShareHelper_, nullptr);
+
+    uint32_t handle = COMMON_PHOTOS_OFFSET - 1;
+    PathMap paths;
+    int32_t res = mtpMedialibraryManager_->GetCopyObjectPath(handle, paths);
+    EXPECT_EQ(res, MTP_SUCCESS);
+
+    handle = 2 * COMMON_PHOTOS_OFFSET;
+    res = mtpMedialibraryManager_->GetCopyObjectPath(handle, paths);
+    EXPECT_EQ(res, MTP_SUCCESS);
 }
 } // namespace Media
 } // namespace OHOS

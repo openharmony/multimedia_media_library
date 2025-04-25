@@ -324,5 +324,23 @@ HWTEST_F(MtpEventTest, mtp_event_test_0014, TestSize.Level1)
     ASSERT_NE(mtpEvent->mtpContextPtr_, nullptr);
     mtpEvent->SendEvent(MTP_EVENT_UNDEFINED_CODE);
 }
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SendObjectInfoChanged
+ */
+HWTEST_F(MtpEventTest, mtp_event_test_0015, TestSize.Level1)
+{
+    std::shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<MtpEvent> mtpEvent = make_shared<MtpEvent>(context);
+    ASSERT_NE(mtpEvent, nullptr);
+    std::string path = "/Picture";
+    mtpEvent->SendObjectInfoChanged(path);
+}
 } // namespace Media
 } // namespace OHOS
