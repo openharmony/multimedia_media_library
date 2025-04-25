@@ -56,8 +56,11 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("addAssets", JSAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", JSRemoveAssets),
             DECLARE_NAPI_FUNCTION("moveAssets", JSMoveAssets),
+            DECLARE_NAPI_FUNCTION("moveAssetsWithUri", JSMoveAssetsWithUri),
             DECLARE_NAPI_FUNCTION("recoverAssets", JSRecoverAssets),
+            DECLARE_NAPI_FUNCTION("recoverAssetsWithUri", JSRecoverAssetsWithUri),
             DECLARE_NAPI_FUNCTION("deleteAssets", JSDeleteAssets),
+            DECLARE_NAPI_FUNCTION("deleteAssetsWithUri", JSDeleteAssetsWithUri),
             DECLARE_NAPI_FUNCTION("setAlbumName", JSSetAlbumName),
             DECLARE_NAPI_FUNCTION("setCoverUri", JSSetCoverUri),
             DECLARE_NAPI_FUNCTION("placeBefore", JSPlaceBefore),
@@ -325,21 +328,15 @@ static napi_value GetUriArray(napi_env env, vector<napi_value> &napiValues, vect
     return ret;
 }
 
-static napi_value ParseUriOrAssetArray(napi_env env, napi_value arg, vector<string>& uriArray)
+static napi_value ParseUriArray(napi_env env, napi_value arg, vector<string>& uriArray)
 {
     vector<napi_value> napiValues;
     napi_valuetype valueType = napi_undefined;
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
-    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
-    if (valueType == napi_string) {
-        CHECK_NULLPTR_RET(GetUriArray(env, napiValues, uriArray));
-    } else if (valueType == napi_object) {
-        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetUriArrayFromAssets(env, napiValues, uriArray));
-    } else {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid type");
-        return nullptr;
-    }
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_string, "Invalid argument type");
+    CHECK_NULLPTR_RET(GetUriArray(env, napiValues, uriArray));
     RETURN_NAPI_TRUE(env);
 }
 
@@ -610,7 +607,8 @@ napi_value MediaAlbumChangeRequestNapi::JSRemoveAssets(napi_env env, napi_callba
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi_callback_info info,
+    ParameterType parameterType)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
@@ -632,8 +630,13 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
 
     vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseUriOrAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
-        "Failed to parse assets");
+    if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    }
     auto moveMap = changeRequest->GetMoveMap();
     for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
         if (!CheckDuplicatedAssetArray(assetUriArray, iter->second)) {
@@ -647,7 +650,18 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(env, info, ParameterType::PHOTO_ASSET);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(env, info, ParameterType::ASSET_URI);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(napi_env env, napi_callback_info info,
+    ParameterType parameterType)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
@@ -667,8 +681,13 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callb
         "Only trash album can recover assets");
 
     vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseUriOrAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
-        "Failed to parse assets");
+    if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    }
     if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToRecover_)) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
             "The previous recoverAssets operation has contained the same asset");
@@ -680,7 +699,18 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callb
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(env, info, ParameterType::PHOTO_ASSET);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSRecoverAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(env, info, ParameterType::ASSET_URI);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(napi_env env, napi_callback_info info,
+    ParameterType parameterType)
 {
     NAPI_INFO_LOG("enter");
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -701,8 +731,13 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
         "Only trash album can delete assets permanently");
 
     vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseUriOrAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
-        "Failed to parse assets");
+    if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    }
     if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToDelete_)) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
             "The previous deleteAssets operation has contained the same asset");
@@ -713,6 +748,16 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
     changeRequest->userId_ = photoAlbum->GetUserId();
     changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::DELETE_ASSETS);
     RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(env, info, ParameterType::PHOTO_ASSET);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(env, info, ParameterType::ASSET_URI);
 }
 
 static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> &assetsArray)
