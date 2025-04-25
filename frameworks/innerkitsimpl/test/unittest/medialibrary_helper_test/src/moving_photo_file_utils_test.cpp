@@ -102,6 +102,26 @@ static bool CompareIfContentEquals(const unsigned char originArray[], const stri
     return true;
 }
 
+static bool CompareFileLenEquals(const string& path, const int32_t size)
+{
+    int32_t fd = open(path.c_str(), O_RDONLY);
+    int32_t len = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+    close(fd);
+    return len == size;
+}
+
+static bool CompareIfArrayEquals(const unsigned char originArray[], const unsigned char buf[])
+{
+    int32_t size = sizeof(*buf);
+    for (int i = 0; i < size - 1; i++) {
+        if (originArray[i] != buf[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_ConvertToMovingPhoto_001, TestSize.Level1)
 {
     string dirPath = "/data/test/ConvertToMovingPhoto_001";
@@ -608,6 +628,63 @@ HWTEST_F(MediaLibraryHelperUnitTest, MovingPhotoFileUtils_GetSourceLivePhotoCach
     imagePath = "/storage/cloud/files/Photo/1/IMG_123435213_231.jpg";
     string extraDataPath = "/storage/cloud/1/files/.cache/Photo/1/IMG_123435213_231.jpg/sourceLivePhoto.jpg";
     EXPECT_EQ(MovingPhotoFileUtils::GetSourceLivePhotoCachePath(imagePath, userId), extraDataPath);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, GetMovingPhotoDetailedSize_001, TestSize.Level1)
+{
+    string dirPath = "/data/test/GetMovingPhotoDetailedSize_001";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string livePhotoPath = dirPath + "/" + "livePhoto.jpg";
+    EXPECT_EQ(WriteFileContent(livePhotoPath, FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO)), true);
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    int32_t fd = open(livePhotoPath.c_str(), O_RDONLY);
+    int32_t ret = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
+    EXPECT_EQ(ret, E_OK);
+    close(fd);
+    EXPECT_EQ(imageSize, sizeof(FILE_TEST_JPG));
+    EXPECT_EQ(videoSize, sizeof(FILE_TEST_MP4));
+    EXPECT_EQ(extraDataSize, sizeof(FILE_TEST_EXTRA_DATA));
+    EXPECT_EQ(MediaFileUtils::DeleteDir(dirPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, ConvertToMovingPhoto_004, TestSize.Level1)
+{
+    string dirPath = "/data/test/ConvertToMovingPhoto_004";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string livePhotoPath = dirPath + "/" + "livePhoto.jpg";
+    EXPECT_EQ(WriteFileContent(livePhotoPath, FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO)), true);
+    string imagePath = dirPath + "/" + "image.jpg";
+    string videoPath = dirPath + "/" + "video.mp4";
+    string extraDataPath = dirPath + "/" + "extraData";
+    int32_t fd = open(livePhotoPath.c_str(), O_RDONLY);
+    int32_t ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, imagePath, videoPath, extraDataPath);
+    EXPECT_EQ(ret, E_OK);
+    close(fd);
+    EXPECT_EQ(CompareFileLenEquals(imagePath, sizeof(FILE_TEST_JPG)), true);
+    EXPECT_EQ(CompareFileLenEquals(videoPath, sizeof(FILE_TEST_MP4)), true);
+    EXPECT_EQ(CompareFileLenEquals(extraDataPath, sizeof(FILE_TEST_EXTRA_DATA)), true);
+    EXPECT_EQ(MediaFileUtils::DeleteDir(dirPath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, ConvertToMovingPhoto_005, TestSize.Level1)
+{
+    string dirPath = "/data/test/ConvertToMovingPhoto_005";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
+    string livePhotoPath = dirPath + "/" + "livePhoto.jpg";
+    EXPECT_EQ(WriteFileContent(livePhotoPath, FILE_TEST_LIVE_PHOTO, sizeof(FILE_TEST_LIVE_PHOTO)), true);
+    unsigned char imageArray[100];
+    unsigned char videoArray[100];
+    unsigned char extraDataArray[100];
+    int32_t fd = open(livePhotoPath.c_str(), O_RDONLY);
+    int32_t ret = MovingPhotoFileUtils::ConvertToMovingPhoto(fd, imageArray, videoArray, extraDataArray);
+    EXPECT_EQ(ret, E_OK);
+    close(fd);
+    EXPECT_EQ(CompareIfArrayEquals(imageArray, FILE_TEST_JPG), true);
+    EXPECT_EQ(CompareIfArrayEquals(videoArray, FILE_TEST_MP4), true);
+    EXPECT_EQ(CompareIfArrayEquals(extraDataArray, FILE_TEST_EXTRA_DATA), true);
+    EXPECT_EQ(MediaFileUtils::DeleteDir(dirPath), true);
 }
 } // namespace Media
 } // namespace OHOS

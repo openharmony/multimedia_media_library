@@ -51,7 +51,7 @@ static int32_t CheckDirPathReal(const std::string &filePath)
 
 VideoCompositionCallbackImpl::VideoCompositionCallbackImpl() {}
 
-static void CleanTempFilters(const std::string tempFilters)
+static void CleanTempFilters(const std::string &tempFilters)
 {
     if (!MediaFileUtils::IsFileExists(tempFilters)) {
         return;
@@ -61,7 +61,7 @@ static void CleanTempFilters(const std::string tempFilters)
     }
 }
 
-static int32_t SaveTempFiltersToVideo(const std::string tempFilters, const std::string videoPath)
+static int32_t SaveTempFiltersToVideo(const std::string &tempFilters, const std::string &videoPath)
 {
     if (!MediaFileUtils::IsFileExists(tempFilters)) {
         MEDIA_ERR_LOG("SaveTempFiltersToVideo tempFilters not exists");
@@ -70,14 +70,14 @@ static int32_t SaveTempFiltersToVideo(const std::string tempFilters, const std::
     return rename(tempFilters.c_str(), videoPath.c_str());
 }
 
-static bool HandleAddFiltersError(const std::string sourceVideoPath, const std::string videoPath)
+static bool HandleAddFiltersError(const std::string &sourceVideoPath, const std::string &videoPath)
 {
     if (MediaFileUtils::IsFileExists(videoPath)) {
         MEDIA_ERR_LOG("HandleAddFiltersError videoPath already exists");
         return true;
     }
     if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
-        MEDIA_ERR_LOG("HandleAddFiltersError sourceVideoPath noit exists");
+        MEDIA_ERR_LOG("HandleAddFiltersError sourceVideoPath not exists");
         return false;
     }
     return MediaFileUtils::CopyFileUtil(sourceVideoPath, videoPath);
