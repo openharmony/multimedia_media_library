@@ -30,7 +30,7 @@ public:
 
     OH_MediaAsset* GetMediaAsset(std::string uri, int32_t cameraShotType, std::string burstKey) override;
 
-    std::shared_ptr<OH_MediaAsset> GetOhMediaAsset(const std::string &uri) override;
+    OH_MediaAsset *GetOhMediaAsset(const std::string &uri) override;
 
 private:
     void InitFileAsset(std::shared_ptr<FileAsset> fileAsset);
