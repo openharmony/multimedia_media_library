@@ -578,50 +578,139 @@ void BackupDatabaseUtils::PrintQuerySql(const std::string& querySql)
     MEDIA_INFO_LOG("--------------------");
 }
 
-bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(const std::vector<std::string> &albumNames,
-    const std::vector<std::string> tagIds, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
+int64_t BackupDatabaseUtils::QueryLong(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
+    const std::string &columnName, const std::vector<NativeRdb::ValueObject> &args)
+{
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, 0, "RdbStore is null.");
+    auto resultSet = rdbStore->QuerySql(sql, args);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
+
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        resultSet->Close();
+        return 0;
+    }
+
+    int64_t resultValue = GetInt64Val(columnName, resultSet);
+    resultSet->Close();
+    return resultValue;
+}
+
+int64_t BackupDatabaseUtils::QueryMaxAlbumId(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("RdbStore is null when querying max album_id.");
+        return 0;
+    }
+
+    std::string querySql = "SELECT MAX(" + ANALYSIS_COL_ALBUM_ID + ") AS max_id FROM " + ANALYSIS_ALBUM_TABLE;
+    int64_t maxId = BackupDatabaseUtils::QueryLong(rdbStore, querySql, "max_id");
+    MEDIA_INFO_LOG("QueryMaxAlbumId on target DB before clone returned = %{public}" PRId64, maxId);
+    MEDIA_INFO_LOG("YYDSMAXID%{public}" PRId64, maxId);
+    return maxId;
+}
+
+static bool DeleteDuplicateVisionFaceTags(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::string& selectTagIdsToDeleteSql)
+{
+    if (selectTagIdsToDeleteSql.empty()) {
+        MEDIA_INFO_LOG("DeleteDuplicateVisionFaceTags: No tag IDs to delete.");
+        return true;
+    }
+    std::string deleteFaceTagSql = "DELETE FROM " + VISION_FACE_TAG_TABLE +
+        " WHERE " + ANALYSIS_COL_TAG_ID + " IN (" + selectTagIdsToDeleteSql + ")";
+
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteFaceTagSql);
+    return true;
+}
+
+static bool UpdateDuplicateVisionImageFaces(
+    std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::string& selectTagIdsToDeleteSql)
+{
+    if (selectTagIdsToDeleteSql.empty()) {
+        MEDIA_INFO_LOG("UpdateDuplicateVisionImageFaces: No tag IDs to update.");
+        return true;
+    }
+    std::string imageFaceUpdateWhereClause = FACE_TAG_COL_TAG_ID + " IN (" + selectTagIdsToDeleteSql + ")";
+
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
+            std::make_unique<NativeRdb::AbsRdbPredicates>(VISION_IMAGE_FACE_TABLE);
+    updatePredicates->SetWhereClause(imageFaceUpdateWhereClause);
+
+    int32_t updatedRows = 0;
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutString(FACE_TAG_COL_TAG_ID, "-1");
+
+    int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb, updatedRows, valuesBucket, updatePredicates);
+    bool cond = (updatedRows < 0 || ret < 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "Failed to update tag_id colum value");
+
+    return true;
+}
+
+static bool DeleteDuplicateAnalysisAlbums(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
+    const std::string& finalWhereClause)
+{
+    if (finalWhereClause.empty()) {
+        MEDIA_ERR_LOG("DeleteDuplicateAnalysisAlbums: finalWhereClause is empty, cannot delete.");
+        return false;
+    }
+    std::string deleteAnalysisSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + finalWhereClause;
+
+    BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteAnalysisSql);
+    return true;
+}
+
+bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(int64_t maxAlbumId, const std::vector<std::string> &albumNames,
+    const std::vector<std::string> &tagIds, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)
 {
     std::set<std::string> uniqueAlbums(albumNames.begin(), albumNames.end());
     std::vector<std::string> uniqueAlbumNames(uniqueAlbums.begin(), uniqueAlbums.end());
-    MEDIA_INFO_LOG("unique AlbumName %{public}zu", uniqueAlbumNames.size());
-
-    std::string inClause = BackupDatabaseUtils::JoinSQLValues<string>(uniqueAlbumNames, ", ");
-    std::string tagIdClause;
-    if (!tagIds.empty()) {
-        tagIdClause = "(" + BackupDatabaseUtils::JoinSQLValues<string>(tagIds, ", ") + ")";
+    MEDIA_INFO_LOG("DeleteDuplicatePortraitAlbum: Unique names %{public}zu", uniqueAlbumNames.size());
+    std::string albumNameInClause;
+    if (!uniqueAlbumNames.empty()) {
+        albumNameInClause = ANALYSIS_COL_ALBUM_NAME + " IN (" +
+            BackupDatabaseUtils::JoinSQLValues<string>(uniqueAlbumNames, ", ") + ")";
     }
-    // 删除 VisionFaceTag 表中的记录
-    std::string deleteFaceTagSql = "DELETE FROM " + VISION_FACE_TAG_TABLE +
-                                   " WHERE tag_id IN (SELECT A.tag_id FROM " + ANALYSIS_ALBUM_TABLE + " AS A, " +
-                                   VISION_FACE_TAG_TABLE + " AS B WHERE A.tag_id = B.tag_id AND " +
-                                   ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + "))";
-    ExecuteSQL(mediaLibraryRdb, deleteFaceTagSql);
-
-    std::string imageFaceClause = "tag_id IN (SELECT A.tag_id FROM " + ANALYSIS_ALBUM_TABLE + " AS A, " +
-        VISION_IMAGE_FACE_TABLE + " AS B WHERE A.tag_id = B.tag_id AND " +
-        ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + "))";
-
-    std::unique_ptr<NativeRdb::AbsRdbPredicates> updatePredicates =
-            make_unique<NativeRdb::AbsRdbPredicates>(VISION_IMAGE_FACE_TABLE);
-    updatePredicates->SetWhereClause(imageFaceClause);
-    int32_t deletedRows = 0;
-    NativeRdb::ValuesBucket valuesBucket;
-    valuesBucket.PutString(FACE_TAG_COL_TAG_ID, std::string("-1"));
-
-    int32_t ret = BackupDatabaseUtils::Update(mediaLibraryRdb, deletedRows, valuesBucket, updatePredicates);
-    bool cond = (deletedRows < 0 || ret < 0);
-    CHECK_AND_RETURN_RET_LOG(!cond, false, "Failed to update tag_id colum value");
-
-    /* 删除 AnalysisAlbum 表中的记录 */
-    std::string deleteAnalysisSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE +
-                                    " WHERE " + ANALYSIS_COL_ALBUM_NAME + " IN (" + inClause + ")";
+    std::string tagIdInClause;
     if (!tagIds.empty()) {
-        deleteAnalysisSql += " OR ";
-        deleteAnalysisSql += "(" + ANALYSIS_COL_TAG_ID + " IN " + tagIdClause + ")";
+        tagIdInClause = ANALYSIS_COL_TAG_ID + " IN (" +
+            BackupDatabaseUtils::JoinSQLValues<string>(tagIds, ", ") + ")";
     }
-    ExecuteSQL(mediaLibraryRdb, deleteAnalysisSql);
 
-    return true;
+    std::string analysisAlbumWhereClause;
+    if (!albumNameInClause.empty() && !tagIdInClause.empty()) {
+        analysisAlbumWhereClause = "(" + albumNameInClause + " OR " + tagIdInClause + ")";
+    } else {
+        analysisAlbumWhereClause = !albumNameInClause.empty() ? albumNameInClause : tagIdInClause;
+    }
+    if (analysisAlbumWhereClause.empty()) {
+        MEDIA_INFO_LOG("DeleteDuplicatePortraitAlbum: Effective criteria empty.");
+        return true;
+    }
+
+    std::string albumIdCondition = ANALYSIS_COL_ALBUM_ID + " < " + std::to_string(maxAlbumId);
+    std::string finalWhereClause = "(" + analysisAlbumWhereClause + ") AND " + albumIdCondition;
+    std::string selectTagIdsToDeleteSql = "SELECT A." + ANALYSIS_COL_TAG_ID +
+        " FROM " + ANALYSIS_ALBUM_TABLE + " AS A " + " WHERE " + finalWhereClause;
+
+    bool success = true;
+    success &= DeleteDuplicateVisionFaceTags(mediaLibraryRdb, selectTagIdsToDeleteSql);
+    if (!success) {
+        MEDIA_ERR_LOG("Failed during DeleteDuplicateVisionFaceTags step.");
+    }
+
+    success &= UpdateDuplicateVisionImageFaces(mediaLibraryRdb, selectTagIdsToDeleteSql);
+    if (!success) {
+        MEDIA_ERR_LOG("Failed during UpdateDuplicateVisionImageFaces step.");
+    }
+
+    success &= DeleteDuplicateAnalysisAlbums(mediaLibraryRdb, finalWhereClause);
+    if (!success) {
+        MEDIA_ERR_LOG("Failed during DeleteDuplicateAnalysisAlbums step.");
+    }
+    return success;
 }
 
 int BackupDatabaseUtils::ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql,
