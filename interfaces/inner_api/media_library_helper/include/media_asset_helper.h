@@ -27,7 +27,7 @@ public:
 
     virtual OH_MediaAsset* GetMediaAsset(std::string uri, int32_t cameraShotType, std::string burstKey) = 0;
 
-    virtual std::shared_ptr<OH_MediaAsset> GetOhMediaAsset(const std::string &uri) = 0;
+    virtual OH_MediaAsset *GetOhMediaAsset(const std::string &uri) = 0;
 };
 
 class __attribute__((visibility("default"))) MediaAssetHelperFactory {

@@ -48,35 +48,36 @@ static bool CheckUri(const std::string &uri)
     return uri.substr(0, uriprex.size()) == uriprex;
 }
 
-std::shared_ptr<OH_MediaAsset> MediaAssetHelperImpl::GetOhMediaAsset(const std::string &uri)
+OH_MediaAsset *MediaAssetHelperImpl::GetOhMediaAsset(const std::string &uri)
 {
-    if (!CheckUri(uri)) {
-        MEDIA_ERR_LOG("invalid uri");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(CheckUri(uri), nullptr, "invalid uri");
     if (!UserFileClient::IsValid()) {
+        MEDIA_ERR_LOG("UserFileClient is not valid, executing initialization.");
         UserFileClient::Init();
     }
     std::string fileId = MediaFileUtils::GetIdFromUri(uri);
+    CHECK_AND_RETURN_RET_LOG(!fileId.empty(), nullptr, "Failed to extract file ID from URI: %{public}s", uri.c_str());
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    std::vector<std::string> columns = { PhotoColumn::MEDIA_SIZE,        PhotoColumn::MEDIA_DATE_MODIFIED,
-        PhotoColumn::PHOTO_WIDTH,       PhotoColumn::PHOTO_HEIGHT,
-        PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::MEDIA_DATE_ADDED,
-        PhotoColumn::MEDIA_DATE_TAKEN,  PhotoColumn::MEDIA_DURATION,
-        PhotoColumn::MEDIA_IS_FAV,      PhotoColumn::MEDIA_TITLE };
+    std::vector<std::string> columns = {PhotoColumn::MEDIA_SIZE,
+        PhotoColumn::MEDIA_DATE_MODIFIED,
+        PhotoColumn::PHOTO_WIDTH,
+        PhotoColumn::PHOTO_HEIGHT,
+        PhotoColumn::MEDIA_TITLE,
+        PhotoColumn::PHOTO_ORIENTATION,
+        PhotoColumn::MEDIA_DATE_ADDED,
+        PhotoColumn::MEDIA_DATE_TAKEN,
+        PhotoColumn::MEDIA_DURATION,
+        PhotoColumn::MEDIA_IS_FAV,
+        PhotoColumn::MEDIA_TYPE};
 
     Uri queryUri(PAH_QUERY_PHOTO);
     int errCode;
     auto resultSet = UserFileClient::Query(queryUri, predicates, columns, errCode);
-    if (!TryToGoToFirstRow(resultSet)) {
-        MEDIA_ERR_LOG("try to got to first row failed");
-        return nullptr;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(
+        TryToGoToFirstRow(resultSet), nullptr, "try to go to first row failed, errCode: %{public}d", errCode);
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, nullptr, "create file asset failed");
-
     fileAsset->SetUri(uri);
     fileAsset->SetId(stoi(fileId));
     fileAsset->SetDisplayName(MediaFileUtils::GetFileName(uri));
@@ -90,13 +91,12 @@ std::shared_ptr<OH_MediaAsset> MediaAssetHelperImpl::GetOhMediaAsset(const std::
     fileAsset->SetDuration(GetInt32Val(PhotoColumn::MEDIA_DURATION, resultSet));
     fileAsset->SetFavorite(GetInt32Val(PhotoColumn::MEDIA_IS_FAV, resultSet));
     fileAsset->SetTitle(GetStringVal(PhotoColumn::MEDIA_TITLE, resultSet));
-
+    fileAsset->SetMediaType(static_cast<MediaType>(GetInt32Val(PhotoColumn::MEDIA_TYPE, resultSet)));
+    fileAsset->SetResultNapiType(ResultNapiType::TYPE_MEDIALIBRARY);
     auto mediaAsset = MediaAssetFactory::CreateMediaAsset(fileAsset);
     CHECK_AND_RETURN_RET_LOG(mediaAsset != nullptr, nullptr, "create media asset failed");
-
-    std::shared_ptr<OH_MediaAsset> ohMediaAsset = std::make_shared<OH_MediaAsset>(mediaAsset);
-    CHECK_AND_RETURN_RET_LOG(ohMediaAsset != nullptr, nullptr, "create oh media asset failed");
-
+    auto ohMediaAsset = new OH_MediaAsset(mediaAsset);
+    CHECK_AND_RETURN_RET_LOG(ohMediaAsset != nullptr, nullptr, "create ohMediaAsset failed");
     return ohMediaAsset;
 }
 
