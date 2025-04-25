@@ -34,6 +34,7 @@
 #include "photo_album_column.h"
 #include "album_operation_uri.h"
 #include "get_self_permissions.h"
+#include "mtp_manager.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -968,6 +969,8 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_001, TestSize.Level1)
     mtpDataUtils->SetProperty(column, resultSet, typeOne, prop);
     ResultSetDataType typeTwo = TYPE_INT32;
     mtpDataUtils->SetProperty(column, resultSet, typeTwo, prop);
+    OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
+    mtpDataUtils->SetProperty(MEDIA_DATA_DB_PARENT_ID, resultSet, typeTwo, prop);
     ResultSetDataType typeThree = TYPE_INT64;
     mtpDataUtils->SetProperty(column, resultSet, typeThree, prop);
     column = "MEDIA_DATA_DB_DATE_MODIFIED";
@@ -1404,6 +1407,41 @@ HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_015, TestSize.Level1)
     PropertyValue outPropValue;
     int32_t res = mtpDataUtils->GetPropValueForVideoOfMovingPhoto(path, property, outPropValue);
     EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetGalleryPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_016, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->format = MTP_FORMAT_GIF_CODE;
+    std::shared_ptr<std::vector<Property>> outProps = std::make_shared<std::vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    std::string name = "test";
+    context->property = MTP_PROPERTY_ALL_CODE;
+    int32_t res = mtpDataUtils->GetGalleryPropList(context, outProps, name);
+    EXPECT_EQ(res, MTP_SUCCESS);
+
+    context->format = MTP_FORMAT_MP3_CODE;
+    res = mtpDataUtils->GetGalleryPropList(context, outProps, name);
+    EXPECT_EQ(res, MTP_SUCCESS);
+
+    context->format = MTP_FORMAT_MPEG_CODE;
+    res = mtpDataUtils->GetGalleryPropList(context, outProps, name);
+    EXPECT_EQ(res, MTP_SUCCESS);
+
+    context->property = MTP_PROPERTY_STORAGE_ID_CODE;
+    res = mtpDataUtils->GetGalleryPropList(context, outProps, name);
+    EXPECT_EQ(res, MTP_SUCCESS);
 }
 } // namespace Media
 } // namespace OHOS

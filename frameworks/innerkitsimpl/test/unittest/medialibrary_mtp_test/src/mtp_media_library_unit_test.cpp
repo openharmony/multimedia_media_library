@@ -22,6 +22,7 @@
 #include "mtp_storage_manager.h"
 #include "object_info.h"
 #include "mtp_constants.h"
+#include "mtp_ptp_const.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -67,7 +68,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_001, TestSi
     }
 
     mtpMediaLib_->Clear();
-    EXPECT_EQ(mtpMediaLib_->id_, 1);
+    EXPECT_EQ(mtpMediaLib_->id_, OHOS::Media::HANDLE_DEFAULT_ID::START_ID);
 }
 
 /*
@@ -574,7 +575,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_025, TestSi
     mtpMediaLib_->Clear();
     uint32_t id = 0;
     id = mtpMediaLib_->GetId();
-    EXPECT_EQ(id, 1);
+    EXPECT_EQ(id, OHOS::Media::HANDLE_DEFAULT_ID::START_ID);
 }
 
 /*
@@ -609,8 +610,8 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_027, TestSi
     for(int i = 1; i <= 10; i++) {
         mtpMediaLib_->AddPathToMap(FILE_PATH + std::to_string(i) + ".txt");
     }
-
-    EXPECT_EQ(mtpMediaLib_->id_, 11);
+    uint32_t id = OHOS::Media::HANDLE_DEFAULT_ID::START_ID + 10;
+    EXPECT_EQ(mtpMediaLib_->id_, id);
 }
 
 /*
@@ -1559,7 +1560,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_073, TestSi
 
     std::string path = FILE_PATH + "/11.txt";
     int id = mtpMediaLib_->ObserverAddPathToMap(path);
-    EXPECT_EQ(id, 1);
+    EXPECT_EQ(id, OHOS::Media::HANDLE_DEFAULT_ID::START_ID);
 }
 
 /*
@@ -2404,6 +2405,131 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_109, TestSi
     int32_t outFd = 0;
     int32_t errcode = mtpMediaLib_->GetFd(context, outFd);
     EXPECT_EQ(errcode, MTP_ERROR_STORE_NOT_AVAILABLE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetGalleryObjectInfo
+ */
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_110, TestSize.Level1)
+{
+    ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    context->handle = PTP_IN_MTP_ID;
+    std::shared_ptr<ObjectInfo> outObjectInfo = std::make_shared<ObjectInfo>(context->handle);
+    ASSERT_NE(outObjectInfo, nullptr);
+    std::string name = "test";
+    int32_t res = mtpMediaLib_->GetGalleryObjectInfo(context, outObjectInfo, name);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetGalleryPropValue
+ */
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_111, TestSize.Level1)
+{
+    ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+
+    uint64_t outIntVal = 0;
+    uint128_t outLongVal = {0};
+    std::string outStrVal = "";
+    std::string name = "test";
+
+    context->property = MTP_PROPERTY_PARENT_OBJECT_CODE;
+    int32_t res = mtpMediaLib_->GetGalleryPropValue(context, outIntVal, outLongVal, outStrVal, name);
+    EXPECT_EQ(outIntVal, DEFAULT_PARENT_ROOT);
+    EXPECT_EQ(res, MTP_SUCCESS);
+
+    context->property = MTP_PROPERTY_DISPLAY_NAME_CODE;
+    mtpMediaLib_->GetGalleryPropValue(context, outIntVal, outLongVal, outStrVal, name);
+    EXPECT_EQ(outStrVal, "test");
+
+    context->property = MTP_PROPERTY_KEYWORDS_CODE;
+    res = mtpMediaLib_->GetGalleryPropValue(context, outIntVal, outLongVal, outStrVal, name);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetGalleryObjectPropList
+ */
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_112, TestSize.Level1)
+{
+    ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::shared_ptr<std::vector<Property>> outProps = std::make_shared<std::vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    std::string name = "test";
+
+    context->format = MTP_FORMAT_GIF_CODE;
+    context->property = MTP_PROPERTY_ALL_CODE;
+    int32_t res = mtpMediaLib_->GetGalleryObjectPropList(context, outProps, name);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: CopyGalleryPhoto
+ */
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_113, TestSize.Level1)
+{
+    ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    PathMap paths;
+    uint32_t outObjectHandle = 0;
+
+    context->parent = 0;
+    int32_t res = mtpMediaLib_->CopyGalleryPhoto(context, paths, outObjectHandle);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: CopyGalleryAlbum
+ */
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_114, TestSize.Level1)
+{
+    ASSERT_NE(mtpMediaLib_, nullptr);
+    mtpMediaLib_->Clear();
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::string albumName = "";
+    PathMap paths;
+    uint32_t outObjectHandle = 0;
+
+    context->parent = 0;
+    int32_t res = mtpMediaLib_->CopyGalleryAlbum(context, albumName, paths, outObjectHandle);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
 }
 } // namespace Media
 } // namespace OHOS
