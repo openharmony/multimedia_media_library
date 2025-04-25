@@ -2873,8 +2873,8 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
 
     if (napiValues.size() > BATCH_DELETE_MAX_NUMBER) {
         NapiError::ThrowError(env, isUri ? JS_ERR_PARAMETER_INVALID : OHOS_INVALID_PARAM_CODE,
-                "Exceeded the maximum batch output quantity, cannot be deleted.");
-            return nullptr;
+            "Exceeded the maximum batch output quantity, cannot be deleted.");
+        return nullptr;
     }
     vector<string> deleteIds;
     for (const auto& napiValue : napiValues) {
@@ -2886,8 +2886,7 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
             CHECK_COND_WITH_MESSAGE(env,
                 napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) == napi_ok,
                 "Failed to copy string");
-            std::string uriStr(uriBuffer.data());
-            std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(uriStr);
+            std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(std::string(uriBuffer.data()));
             CHECK_ARGS_WITH_MESSAGE(env, !fileId.empty(), "Invalid URI format or empty fileId");
             deleteIds.push_back(fileId);
         } else {
