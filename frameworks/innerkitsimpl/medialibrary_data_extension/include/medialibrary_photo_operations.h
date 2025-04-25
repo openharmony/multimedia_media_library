@@ -107,7 +107,7 @@ private:
     static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &editData);
     static int32_t DoRevertEdit(std::shared_ptr<FileAsset> &fileAsset);
-    static std::string GetSourceFileFromEditPath(const std::string &path, const int32_t &subType);
+    static std::string GetSourceFileFromEditPath(const std::string &path, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateDbByRevertToOrigin(
         std::shared_ptr<FileAsset> &fileAsset, std::string &path, const std::string &sourcePath);
     static int32_t RenameEditDataDirByRevert(const std::string &editDataDir, const std::string &path);
