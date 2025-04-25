@@ -159,7 +159,7 @@ private:
     bool IsSameFileForClone(const std::string &tableName, FileInfo &fileInfo);
     NativeRdb::ValuesBucket GetInsertValue(const AnalysisAlbumTbl &portraitAlbumInfo);
     int32_t InsertPortraitAlbumByTable(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
-    void InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
+    void InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl, int64_t maxAlbumId);
     void ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         AnalysisAlbumTbl &analysisAlbumTbl);
     std::vector<AnalysisAlbumTbl> QueryPortraitAlbumTbl(int32_t offset,

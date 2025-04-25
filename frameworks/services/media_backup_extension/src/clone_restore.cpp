@@ -2147,6 +2147,7 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     RecordOldPortraitAlbumDfx();
 
+    int64_t maxAlbumId = BackupDatabaseUtils::QueryMaxAlbumId(mediaLibraryRdb_);
     std::string querySql =   "SELECT count(1) AS count FROM " + ANALYSIS_ALBUM_TABLE + " WHERE ";
     std::string whereClause = "(" + SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
         "album_subtype" + " = " + std::to_string(PORTRAIT) + ")";
@@ -2171,7 +2172,7 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
             }
         }
 
-        InsertPortraitAlbum(analysisAlbumTbl);
+        InsertPortraitAlbum(analysisAlbumTbl, maxAlbumId);
     }
 
     LogPortraitCloneDfx();
@@ -2244,7 +2245,7 @@ void CloneRestore::ParseFaceTagResultSet(const std::shared_ptr<NativeRdb::Result
         FACE_TAG_COL_ANALYSIS_VERSION);
 }
 
-void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl)
+void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl, int64_t maxAlbumId)
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
     CHECK_AND_RETURN_LOG(!analysisAlbumTbl.empty(), "analysisAlbumTbl are empty");
@@ -2259,7 +2260,7 @@ void CloneRestore::InsertPortraitAlbum(std::vector<AnalysisAlbumTbl> &analysisAl
     MEDIA_INFO_LOG("Total albums: %{public}zu, Albums with names: %{public}zu, Albums with tagIds: %{public}zu",
                    analysisAlbumTbl.size(), albumNames.size(), tagIds.size());
 
-    CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(albumNames,
+    CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(maxAlbumId, albumNames,
         tagIds, mediaLibraryRdb_), "Batch delete failed.");
 
     int32_t albumRowNum = InsertPortraitAlbumByTable(analysisAlbumTbl);
@@ -2801,7 +2802,7 @@ void CloneRestore::ParseImageFaceResultSet(const std::shared_ptr<NativeRdb::Resu
 
 void CloneRestore::ReportPortraitCloneStat(int32_t sceneCode)
 {
-    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID, "err scencecode %{public}d", sceneCode);
+    CHECK_AND_RETURN_LOG(sceneCode == CLONE_RESTORE_ID, "err scenecode %{public}d", sceneCode);
 
     MEDIA_INFO_LOG("PortraitStat: album %{public}lld, photo %{public}lld, face %{public}lld, cost %{public}lld",
         (long long)migratePortraitAlbumNumber_, (long long)migratePortraitPhotoNumber_,
