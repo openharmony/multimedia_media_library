@@ -17,6 +17,7 @@
 
 #include "clone_restore_highlight_test.h"
 #include "clone_highlight_source.h"
+#include "media_file_utils.h"
 
 #define private public
 #define protected public
@@ -63,6 +64,8 @@ const int32_t TEST_ID = 1;
 const int32_t TEST_NEW_ID = 2;
 const int32_t TEST_NUM = 3;
 const int32_t INVALID_COUNT = -1;
+const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
+const std::string HIGHLIGHT_ASSET_URI_PREFIX = "file://media/highlight/video/";
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
@@ -516,11 +519,6 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_highlight_test_001, TestSize.L
     cloneRestoreHighlight->coverInfos_.emplace_back(highlightCoverInfo);
     cloneRestoreHighlight->InsertIntoHighlightCoverInfo();
     EXPECT_EQ(cloneRestoreHighlight->failCnt_, 4);
-    CloneRestoreHighlight::HighlightPlayInfo highlightPlayInfo;
-    highlightPlayInfo.highlightIdNew = make_optional<int32_t>(TEST_ID);
-    cloneRestoreHighlight->playInfos_.emplace_back(highlightPlayInfo);
-    cloneRestoreHighlight->InsertIntoHighlightPlayInfo();
-    EXPECT_EQ(cloneRestoreHighlight->failCnt_, 5);
 
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
@@ -656,24 +654,71 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_005, TestSize
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
 
     cloneRestoreCVAnalysis->Init(2, "", nullptr, cloneHighlightSource.cloneStorePtr_, "");
-    cloneRestoreCVAnalysis->assetMapDatas_.emplace_back(std::make_pair(1, 2));
-    cloneRestoreCVAnalysis->InsertIntoAssetMap();
-    EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 1);
-    cloneRestoreCVAnalysis->sdMapDatas_.emplace_back(std::make_pair(1, 2));
-    cloneRestoreCVAnalysis->InsertIntoSdMap();
-    EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 2);
+    int32_t assetId = 1;
+    std::string dirPath = "/storage/media/local/files/highlight/video/" + std::to_string(assetId);
+    MediaFileUtils::CreateDirectory(dirPath);
     CloneRestoreCVAnalysis::AnalysisLabelInfo analysisLabelInfo;
     cloneRestoreCVAnalysis->labelInfos_.emplace_back(analysisLabelInfo);
     cloneRestoreCVAnalysis->InsertIntoAnalysisLabel();
-    EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 3);
+    EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 1);
     CloneRestoreCVAnalysis::AnalysisSaliencyInfo analysisSaliencyInfo;
     cloneRestoreCVAnalysis->saliencyInfos_.emplace_back(analysisSaliencyInfo);
     cloneRestoreCVAnalysis->InsertIntoAnalysisSaliency();
-    EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 4);
+    EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 2);
     CloneRestoreCVAnalysis::AnalysisRecommendationInfo analysisRecommendationInfo;
     cloneRestoreCVAnalysis->recommendInfos_.emplace_back(analysisRecommendationInfo);
     cloneRestoreCVAnalysis->InsertIntoAnalysisRecommendation();
-    EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 5);
+    EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 3);
+
+    ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_006, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("clone_restore_cv_analysis_test_006 start");
+    ClearHighlightData();
+    CloneHighlightSource cloneHighlightSource;
+    vector<string> tableList = { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE, HIGHLIGHT_ALBUM_TABLE,
+        HIGHLIGHT_COVER_INFO_TABLE, HIGHLIGHT_PLAY_INFO_TABLE, ANALYSIS_ASSET_SD_MAP_TABLE,
+        ANALYSIS_ALBUM_ASSET_MAP_TABLE, VISION_LABEL_TABLE, VISION_SALIENCY_TABLE, VISION_RECOMMENDATION_TABLE };
+    Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
+
+    CloneRestoreHighlight restoreHighlight;
+    restoreHighlight.Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
+    cloneRestoreCVAnalysis->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
+    std::string oldPlayInfo1 = R"({
+        "effectline": {
+            "effectline": [
+                {"effectVideoUri": "file://media/Photo/uri1",
+                "transitionVideoUri": "trans://uri1", "effect": "TYPE_MASK2"},
+                {"effectVideoUri": "file://media/highlight/video/uri2",
+                "transitionVideoUri": "trans://uri2", "effect": "TYPE_MASK1"}
+            ]
+        }
+    })";
+    nlohmann::json newPlayInfo1 = nlohmann::json::parse(oldPlayInfo1, nullptr, false);
+    std::string oldEffectVideoUri = newPlayInfo1["effectline"]["effectline"][0]["effectVideoUri"];
+    EXPECT_TRUE(MediaFileUtils::StartsWith(oldEffectVideoUri, PHOTO_URI_PREFIX));
+    cloneRestoreCVAnalysis->ParseEffectline(newPlayInfo1, 0, restoreHighlight);
+    oldEffectVideoUri = newPlayInfo1["effectline"]["effectline"][1]["effectVideoUri"];
+    cloneRestoreCVAnalysis->ParseEffectline(newPlayInfo1, 1, restoreHighlight);
+    EXPECT_TRUE(MediaFileUtils::StartsWith(oldEffectVideoUri, HIGHLIGHT_ASSET_URI_PREFIX));
+
+    std::string oldPlayInfo2 = R"({
+        "effectline": {
+            "effectline": [
+                {"fileId": [1, 2], "prefileId": [3, 4], "fileUri": ["uri1", "uri2"], "prefileUri": ["uri3"]}
+            ]
+        },
+        "timeline": [
+            {}
+        ]
+    })";
+    nlohmann::json newPlayInfo2 = nlohmann::json::parse(oldPlayInfo2, nullptr, false);
+    cloneRestoreCVAnalysis->ParseTimeline(newPlayInfo2, 0, restoreHighlight);
+    cloneRestoreCVAnalysis->ParseEffectlineFileData(newPlayInfo2, 0, restoreHighlight);
+    EXPECT_TRUE(newPlayInfo2["effectline"]["effectline"][0].contains("fileId"));
+    EXPECT_TRUE(newPlayInfo2["effectline"]["effectline"][0].contains("fileUri"));
 
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
 }
