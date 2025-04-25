@@ -2683,7 +2683,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertFilters(const std::shared_ptr<FileA
         }
         if (MovingPhotoFileUtils::IsMovingPhoto(subtype,
             fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType())) {
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset, false) == E_OK, E_FAIL,
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToVideoExecute(fileAsset->GetFilePath(), false) == E_OK, E_FAIL,
                 "Failed to add filters to video");
         }
     }
@@ -3095,7 +3095,7 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         if (fileAsset->GetStageVideoTaskStatus() == static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE)) {
             MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(fileAsset->GetPhotoId());
         }
-        return AddFiltersToVideoExecute(fileAsset, true);
+        return AddFiltersToVideoExecute(fileAsset->GetFilePath(), true);
     }
 
     if (IsCameraEditData(cmd)) {
@@ -3255,9 +3255,8 @@ int32_t MediaLibraryPhotoOperations::CopyVideoFile(const string& assetPath, bool
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<FileAsset>& fileAsset, bool isSaveVideo)
+int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string &assetPath, bool isSaveVideo)
 {
-    string assetPath = fileAsset->GetFilePath();
     string editDataCameraPath = MediaLibraryAssetOperations::GetEditDataCameraPath(assetPath);
     if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
         string editData;
@@ -3291,7 +3290,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<F
             return CopyVideoFile(assetPath, false);
         }
         MEDIA_INFO_LOG("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
-        CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(fileAsset, assetPath, true) == E_OK, E_HAS_FS_ERROR,
+        CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(assetPath, true) == E_OK, E_HAS_FS_ERROR,
             "Failed to save source video, path = %{public}s", assetPath.c_str());
         VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData);
         return E_OK;
@@ -3437,11 +3436,10 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const shared_ptr<FileAsset>& fileAsset,
-    const string& assetPath, const bool& isTemp)
+int32_t MediaLibraryPhotoOperations::SaveSourceVideoFile(const string& assetPath, const bool& isTemp)
 {
-    MEDIA_INFO_LOG("Moving photo SaveSourceVideoFile begin, fileId:%{public}d", fileAsset->GetId());
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    MEDIA_INFO_LOG("Moving photo SaveSourceVideoFile begin, assetPath: %{public}s",
+        DfxUtils::GetSafePath(assetPath).c_str());
     string sourceImagePath = GetEditDataSourcePath(assetPath);
     CHECK_AND_RETURN_RET_LOG(!sourceImagePath.empty(), E_INVALID_PATH, "Can not get source image path");
     string videoPath = isTemp ? MediaFileUtils::GetTempMovingPhotoVideoPath(assetPath)
@@ -3484,7 +3482,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCo
     int32_t errCode = E_OK;
     if (fileAsset->GetPhotoEditTime() == 0) { // the asset has not been edited before
         // Save video file in the photo direvtory to the .editdata directory
-        errCode = SaveSourceVideoFile(fileAsset, assetPath, false);
+        errCode = SaveSourceVideoFile(assetPath, false);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
             "Failed to save %{private}s to sourcePath, errCode: %{public}d", assetPath.c_str(), errCode);
     }
@@ -3809,11 +3807,12 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPicture(std::shared_ptr<Media::
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto, const std::string &path)
+int32_t MediaLibraryPhotoOperations::ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto,
+    bool isMovingPhotoEffectMode, const std::string &path)
 {
     MEDIA_INFO_LOG("ProcessMultistagesVideo path:%{public}s, isEdited: %{public}d, isMovingPhoto: %{public}d",
         DfxUtils::GetSafePath(path).c_str(), isEdited, isMovingPhoto);
-    CHECK_AND_RETURN_RET(!isMovingPhoto, FileUtils::SaveMovingPhotoVideo(path));
+    CHECK_AND_RETURN_RET(!isMovingPhoto, FileUtils::SaveMovingPhotoVideo(path, isEdited, isMovingPhotoEffectMode));
     return FileUtils::SaveVideo(path, isEdited);
 }
 
