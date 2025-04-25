@@ -239,10 +239,15 @@ int32_t FileUtils::SaveMovingPhotoVideo(const std::string &filePath, bool isEdit
         return E_ERR;
     }
 
-    int32_t ret = rename(tempPath.c_str(), targetPath.c_str());
-
     MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s",
         DfxUtils::GetSafePath(targetPath).c_str(), DfxUtils::GetSafePath(tempPath).c_str());
+
+    int32_t ret = rename(tempPath.c_str(), targetPath.c_str());
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("video rename failed, errno: %{public}d", errno);
+        return ret;
+    }
+
     string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(filePath);
     if (!isEdited && !isMovingPhotoEffectMode && IsFileExist(editDataCameraPath) && IsFileExist(sourceVideoPath)) {
         ret = MediaLibraryPhotoOperations::AddFiltersToVideoExecute(filePath, false);
