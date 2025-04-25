@@ -584,7 +584,6 @@ int64_t BackupDatabaseUtils::QueryLong(std::shared_ptr<NativeRdb::RdbStore> rdbS
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, 0, "RdbStore is null.");
     auto resultSet = rdbStore->QuerySql(sql, args);
     CHECK_AND_RETURN_RET(resultSet != nullptr, 0);
-
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         resultSet->Close();
         return 0;
@@ -605,7 +604,7 @@ int64_t BackupDatabaseUtils::QueryMaxAlbumId(std::shared_ptr<NativeRdb::RdbStore
     std::string querySql = "SELECT MAX(" + ANALYSIS_COL_ALBUM_ID + ") AS max_id FROM " + ANALYSIS_ALBUM_TABLE;
     int64_t maxId = BackupDatabaseUtils::QueryLong(rdbStore, querySql, "max_id");
     MEDIA_INFO_LOG("QueryMaxAlbumId on target DB before clone returned = %{public}" PRId64, maxId);
-    MEDIA_INFO_LOG("YYDSMAXID%{public}" PRId64, maxId);
+    MEDIA_INFO_LOG("MAXID%{public}" PRId64, maxId);
     return maxId;
 }
 
