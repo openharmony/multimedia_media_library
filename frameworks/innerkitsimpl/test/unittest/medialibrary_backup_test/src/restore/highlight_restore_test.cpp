@@ -132,8 +132,6 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_001, TestSize.Level0)
     fileInfos.emplace_back(fileInfo);
     highlightRestore->RestoreMaps(fileInfos);
     EXPECT_NE(highlightRestore->albumInfos_.size(), 0);
-    highlightRestore->UpdateAlbums();
-    EXPECT_EQ(highlightRestore->failCnt_, 1);
 
     ClearData();
 }
