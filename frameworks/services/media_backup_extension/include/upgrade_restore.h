@@ -44,6 +44,10 @@ public:
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
     void InitGarbageAlbum();
 
+protected:
+    virtual void RestoreAnalysisAlbum();
+    virtual bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
+
 private:
     int32_t GetHighlightCloudMediaCnt();
     void RestoreHighlightAlbums();
@@ -59,7 +63,6 @@ private:
     bool ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         int mediaType = DUAL_MEDIA_TYPE::IMAGE_TYPE);
     bool ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
-    bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     void RestoreFromGallery();
     void RestoreCloudFromGallery();
     void RestoreFromExternal(bool isCamera);

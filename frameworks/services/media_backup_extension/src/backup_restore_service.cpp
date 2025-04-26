@@ -59,24 +59,28 @@ void BackupRestoreService::Init(const RestoreInfo &info)
         return;
     }
     serviceBackupDir_ = info.backupDir;
-    if (info.sceneCode == UPGRADE_RESTORE_ID) {
-        restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName, UPGRADE_RESTORE_ID,
-            GetDualDirName());
-        serviceBackupDir_ = RESTORE_SANDBOX_DIR;
-    } else if (info.sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
-        restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName,
-            DUAL_FRAME_CLONE_RESTORE_ID);
-    } else if (info.sceneCode == I_PHONE_CLONE_RESTORE) {
-        restoreService_ = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE, info.mediaAppName,
-            info.bundleInfo);
-    } else if (info.sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
-        restoreService_ = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE, info.mediaAppName);
-    } else if (info.sceneCode == LITE_PHONE_CLONE_RESTORE) {
-        restoreService_ = std::make_unique<OthersCloneRestore>(LITE_PHONE_CLONE_RESTORE, info.mediaAppName);
-    } else {
-        restoreService_ = std::make_unique<CloneRestore>();
+    switch (info.sceneCode) {
+        case UPGRADE_RESTORE_ID:
+            restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName, info.sceneCode,
+                GetDualDirName());
+            serviceBackupDir_ = RESTORE_SANDBOX_DIR;
+            break;
+        case DUAL_FRAME_CLONE_RESTORE_ID:
+            restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName, info.sceneCode);
+            break;
+        case CLOUD_BACKUP_RESTORE_ID:
+            restoreService_ = std::make_unique<CloudBackupRestore>(info.galleryAppName, info.mediaAppName,
+                info.sceneCode);
+            break;
+        case I_PHONE_CLONE_RESTORE:
+        case OTHERS_PHONE_CLONE_RESTORE:
+        case LITE_PHONE_CLONE_RESTORE:
+            restoreService_ = std::make_unique<OthersCloneRestore>(info.sceneCode, info.mediaAppName);
+            break;
+        default:
+            restoreService_ = std::make_unique<CloneRestore>();
     }
-    restoreService_ -> restoreInfo_ = info.bundleInfo;
+    restoreService_->restoreInfo_ = info.bundleInfo;
 }
 
 void BackupRestoreService::StartRestore(const std::shared_ptr<AbilityRuntime::Context> &context,

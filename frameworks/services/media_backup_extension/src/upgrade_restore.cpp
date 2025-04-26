@@ -168,7 +168,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 bool UpgradeRestore::HasLowQualityImage()
 {
     std::string sql = "SELECT count(1) AS count FROM gallery_media WHERE (local_media_id != -1) AND \
-        (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
+        (COALESCE(storage_id, 0) IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
         garbage_album WHERE type = 1) AND _size = 0 AND photo_quality = 0";
     int count = BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("HasLowQualityImage count:%{public}d", count);
@@ -383,9 +383,8 @@ void UpgradeRestore::RestorePhotoInner()
         InitGarbageAlbum();
         // restore PhotoAlbum
         this->photoAlbumRestore_.Restore();
-        RestoreFromGalleryPortraitAlbum();
-        geoKnowledgeRestore_.RestoreGeoKnowledgeInfos();
-        RestoreHighlightAlbums();
+        // restore AnalysisAlbum
+        RestoreAnalysisAlbum();
         // restore Photos
         RestoreFromGallery();
         if (IsCloudRestoreSatisfied()) {
@@ -1433,6 +1432,13 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
     MEDIA_INFO_LOG("end handle gallery integrity check, cost %{public}lld, size %{public}s.", \
         (long long)(dbIntegrityCheckTime), dbSize.c_str());
     return dbIntegrityCheck;
+}
+
+void UpgradeRestore::RestoreAnalysisAlbum()
+{
+    RestoreFromGalleryPortraitAlbum();
+    geoKnowledgeRestore_.RestoreGeoKnowledgeInfos();
+    RestoreHighlightAlbums();
 }
 } // namespace Media
 } // namespace OHOS
