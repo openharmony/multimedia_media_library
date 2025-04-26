@@ -22,6 +22,9 @@ namespace OHOS {
 namespace Media {
 class CloudBackupRestore : public UpgradeRestore {
 public:
+    CloudBackupRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode) :
+        UpgradeRestore(galleryAppName, mediaAppName, sceneCode) {}
+
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) override;
 
@@ -32,8 +35,8 @@ protected:
     void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType) override;
 
 private:
-    void SetSize(const std::unique_ptr<Metadata> &metadata, FileInfo &info, NativeRdb::ValuesBucket &value);
-    void SetTimeInfo(const std::unique_ptr<Metadata> &metadata, FileInfo &info, NativeRdb::ValuesBucket &value);
+    void SetSize(const std::unique_ptr<Metadata> &data, FileInfo &info, NativeRdb::ValuesBucket &value);
+    void SetTimeInfo(const std::unique_ptr<Metadata> &data, FileInfo &info, NativeRdb::ValuesBucket &value);
 };
 } // namespace Media
 } // namespace OHOS

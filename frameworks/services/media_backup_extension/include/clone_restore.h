@@ -144,7 +144,7 @@ private:
     void RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreAudioBatch(int32_t offset);
-    void InsertPhotoRelated(std::vector<FileInfo> &fileInfos);
+    void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType) override;
     void SetFileIdReference(const std::vector<FileInfo> &fileInfos, std::string &selection,
         std::unordered_map<int32_t, int32_t> &fileIdMap);
     int32_t QueryMapTotalNumber(const std::string &baseQuerySql);

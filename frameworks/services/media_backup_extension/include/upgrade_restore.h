@@ -48,7 +48,6 @@ protected:
     virtual void RestoreAnalysisAlbum();
     virtual bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
 
-private:
     int32_t GetHighlightCloudMediaCnt();
     void RestoreHighlightAlbums();
     void RestorePhoto(void) override;
@@ -127,7 +126,7 @@ private:
     void ProcessCloudGalleryFailedOffsets();
     void ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type);
 
-private:
+protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
     std::shared_ptr<NativeRdb::RdbStore> audioRdb_;

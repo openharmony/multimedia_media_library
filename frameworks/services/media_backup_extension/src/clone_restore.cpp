@@ -665,7 +665,7 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     migrateDatabaseNumber_ += photoRowNum;
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
-    InsertPhotoRelated(fileInfos);
+    InsertPhotoRelated(fileInfos, SourceType::PHOTOS);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
@@ -1980,7 +1980,7 @@ int CloneRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fil
     }
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
-    InsertPhotoRelated(fileInfos);
+    InsertPhotoRelated(fileInfos, SourceType::PHOTOS);
 
     // create dentry file for cloud origin, save failed cloud id
     std::vector<std::string> dentryFailedOrigin;
@@ -2010,7 +2010,7 @@ void CloneRestore::RestoreAudioBatch(int32_t offset)
     MEDIA_INFO_LOG("end restore audio, offset: %{public}d", offset);
 }
 
-void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos)
+void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
     BatchQueryPhoto(fileInfos);

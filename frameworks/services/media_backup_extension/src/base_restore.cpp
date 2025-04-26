@@ -388,7 +388,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         SetValueFromMetaData(fileInfos[i], value);
         if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == OTHERS_PHONE_CLONE_RESTORE ||
             sceneCode == LITE_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE ||
-            sceneCode == UPGRADE_RESTORE_ID) &&
+            sceneCode == UPGRADE_RESTORE_ID || sceneCode == CLOUD_BACKUP_RESTORE_ID) &&
             this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
