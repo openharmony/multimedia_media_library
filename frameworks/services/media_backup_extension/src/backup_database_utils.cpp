@@ -596,25 +596,19 @@ int64_t BackupDatabaseUtils::QueryLong(std::shared_ptr<NativeRdb::RdbStore> rdbS
 
 int64_t BackupDatabaseUtils::QueryMaxAlbumId(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
 {
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("RdbStore is null when querying max album_id.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, 0, "RdbStore is null.");
 
     std::string querySql = "SELECT MAX(" + ANALYSIS_COL_ALBUM_ID + ") AS max_id FROM " + ANALYSIS_ALBUM_TABLE;
     int64_t maxId = BackupDatabaseUtils::QueryLong(rdbStore, querySql, "max_id");
     MEDIA_INFO_LOG("QueryMaxAlbumId on target DB before clone returned = %{public}" PRId64, maxId);
-    MEDIA_INFO_LOG("MAXID%{public}" PRId64, maxId);
     return maxId;
 }
 
 static bool DeleteDuplicateVisionFaceTags(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::string& selectTagIdsToDeleteSql)
 {
-    if (selectTagIdsToDeleteSql.empty()) {
-        MEDIA_INFO_LOG("DeleteDuplicateVisionFaceTags: No tag IDs to delete.");
-        return true;
-    }
+    CHECK_AND_RETURN_RET_LOG(!selectTagIdsToDeleteSql.empty(), true, "No tag IDs to delete.");
+
     std::string deleteFaceTagSql = "DELETE FROM " + VISION_FACE_TAG_TABLE +
         " WHERE " + ANALYSIS_COL_TAG_ID + " IN (" + selectTagIdsToDeleteSql + ")";
 
@@ -650,10 +644,8 @@ static bool UpdateDuplicateVisionImageFaces(
 static bool DeleteDuplicateAnalysisAlbums(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
     const std::string& finalWhereClause)
 {
-    if (finalWhereClause.empty()) {
-        MEDIA_ERR_LOG("DeleteDuplicateAnalysisAlbums: finalWhereClause is empty, cannot delete.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!finalWhereClause.empty(), false, "finalWhereClause is empty, cannot delete.");
+
     std::string deleteAnalysisSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE +
         " WHERE " + finalWhereClause;
 
@@ -690,7 +682,7 @@ bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(int64_t maxAlbumId, const
     }
 
     std::string albumIdCondition = ANALYSIS_COL_ALBUM_ID + " < " + std::to_string(maxAlbumId);
-    std::string finalWhereClause = "(" + analysisAlbumWhereClause + ") AND " + albumIdCondition;
+    std::string finalWhereClause = albumIdCondition + " AND (" + analysisAlbumWhereClause + ")";
     std::string selectTagIdsToDeleteSql = "SELECT A." + ANALYSIS_COL_TAG_ID +
         " FROM " + ANALYSIS_ALBUM_TABLE + " AS A " + " WHERE " + finalWhereClause;
 
