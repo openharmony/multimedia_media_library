@@ -948,6 +948,7 @@ bool UpgradeRestore::HasSameFileForDualClone(FileInfo &fileInfo)
 void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
 {
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t maxAlbumId = BackupDatabaseUtils::QueryMaxAlbumId(mediaLibraryRdb_);
     int32_t totalNumber = QueryPortraitAlbumTotalNumber();
     MEDIA_INFO_LOG("QueryPortraitAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
 
@@ -956,7 +957,7 @@ void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
         std::vector<std::string> tagIds;
         vector<PortraitAlbumInfo> portraitAlbumInfos = QueryPortraitAlbumInfos(offset,
             tagNameToDeleteSelection);
-        CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(tagNameToDeleteSelection,
+        CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(maxAlbumId, tagNameToDeleteSelection,
             tagIds, mediaLibraryRdb_), "Batch delete duplicate portrait album failed.");
         InsertPortraitAlbum(portraitAlbumInfos);
     }
