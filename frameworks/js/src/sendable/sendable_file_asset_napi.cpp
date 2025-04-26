@@ -100,6 +100,12 @@ static const std::string ANALYSIS_NO_RESULTS = "[]";
 static const std::string ANALYSIS_INIT_VALUE = "0";
 static const std::string ANALYSIS_STATUS_ANALYZED = "Analyzed, no results";
 
+const std::string LANGUAGE_ZH = "zh-Hans";
+const std::string LANGUAGE_EN = "en-Latn-US";
+const std::string LANGUAGE_ZH_TR = "zh-Hant";
+
+std::mutex SendableFileAssetNapi::mutex_;
+
 thread_local FileAsset *SendableFileAssetNapi::sFileAsset_ = nullptr;
 shared_ptr<ThumbnailManager> SendableFileAssetNapi::thumbnailManager_ = nullptr;
 
@@ -119,6 +125,7 @@ SendableFileAssetNapi::~SendableFileAssetNapi() = default;
 void SendableFileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint)
 {
     SendableFileAssetNapi *fileAssetObj = reinterpret_cast<SendableFileAssetNapi*>(nativeObject);
+    lock_guard<mutex> lockGuard(mutex_);
     if (fileAssetObj != nullptr) {
         delete fileAssetObj;
         fileAssetObj = nullptr;
@@ -856,6 +863,12 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
     string fileId = to_string(context->objectInfo->GetFileId());
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        //Chinese and English supported. Other languages English default.
+        if (language == LANGUAGE_ZH || language == LANGUAGE_ZH_TR) {
+            language = LANGUAGE_ZH;
+        } else {
+            language = LANGUAGE_EN;
+        }
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
             GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
             PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE + " AND " +
@@ -896,12 +909,12 @@ shared_ptr<FileAsset> SendableFileAssetNapi::GetFileAssetInstance() const
 static int32_t CheckSystemApiKeys(napi_env env, const string &key)
 {
     static const set<string> SYSTEM_API_KEYS = {
-        PhotoColumn::PHOTO_POSITION,
         MediaColumn::MEDIA_DATE_TRASHED,
         MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::PHOTO_USER_COMMENT,
         PhotoColumn::CAMERA_SHOT_KEY,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };

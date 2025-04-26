@@ -22,9 +22,6 @@
 #include <unistd.h>
 #include "album_asset.h"
 #include "datashare_predicates.h"
-#ifdef DISTRIBUTED
-#include "device_manager.h"
-#endif
 #include "directory_ex.h"
 #include "fetch_result.h"
 #include "file_asset.h"
@@ -71,6 +68,7 @@ namespace OHOS {
 namespace Media {
 static const string ASSET_RECYCLE_SUFFIX = "-copy";
 static const string NO_MEDIA_TAG = ".nomedia";
+const char* HAS_DATA = "persist.multimedia.media_analysis_service.hasdata";
 constexpr int32_t OFFSET = 5;
 constexpr int32_t ZERO_ASCII = '0';
 int32_t MediaLibraryObjectUtils::CreateDirWithPath(const string &dirPath)
@@ -852,7 +850,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     return fd;
 }
 
-void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api)
+void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api,
+    bool isCameraShotMovingPhoto, std::shared_ptr<Media::Picture> resultPicture)
 {
     string tableName;
     if (MediaFileUtils::IsFileTablePath(path)) {
@@ -872,7 +871,8 @@ void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return ;
     }
-    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb, api);
+    scanFileCb->SetOriginalPhotoPicture(resultPicture);
+    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb, api, isCameraShotMovingPhoto);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
@@ -1639,9 +1639,15 @@ static int32_t GetRootDirAssetByRelativePath(const string &relativePath, DirAsse
     return E_SUCCESS;
 }
 
-void MediaLibraryObjectUtils::UpdateAnalysisProp(const std::string value)
+void MediaLibraryObjectUtils::TryUpdateAnalysisProp(const std::string value)
 {
-    int ret = SetParameter("persist.multimedia.media_analysis_service.hasdata", value.c_str());
+    char buffer[16];
+    GetParameter(HAS_DATA, NULL, buffer, sizeof(buffer));
+    if (buffer == value) {
+        return;
+    }
+
+    int ret = SetParameter(HAS_DATA, value.c_str());
     if (ret != 0) {
         MEDIA_ERR_LOG("Failed to UpdateAnalysisProp, result:%{public}d", ret);
     }

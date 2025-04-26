@@ -36,6 +36,15 @@ public:
         return;
     }
 
+    void CreateTempUniqueTable(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+    {
+        std::string sql = SQL_TEMP_UNIQUE_TABLE_CREATE;
+        rdbStore->ExecuteSql(sql);
+        sql = SQL_TEMP_UNIQUE_TABLE_INDEX;
+        rdbStore->ExecuteSql(sql);
+        return;
+    }
+
 public:
     const std::string NAME_TEMP_TRIGGERS_TABLE = "temp_triggers";
     const std::string SQL_TEMP_TRIGGERS_TABLE_CREATE = "\
@@ -50,6 +59,14 @@ public:
         BEGIN \
             SELECT 1; \
         END;";
+    const std::string NAME_TEMP_UNIQUE_TABLE = "temp_unique";
+    const std::string SQL_TEMP_UNIQUE_TABLE_CREATE = "\
+        CREATE TABLE IF NOT EXISTS temp_unique \
+        AS \
+        SELECT * FROM PhotoMap;";
+    const std::string SQL_TEMP_UNIQUE_TABLE_INDEX = "\
+        CREATE INDEX temp_unique_example \
+            ON temp_unique (map_ablum);";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_DATATRANSFER_DB_UPGRADE_UTILS_TEST_H

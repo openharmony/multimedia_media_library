@@ -17,6 +17,7 @@
 #define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DFX_REQUEST_POLICY_H
 
 #include <mutex>
+#include <safe_map.h>
 #include <string>
 #include <thread>
 
@@ -50,7 +51,7 @@ private:
     int64_t lastReportTime_ {0};
     volatile bool isReporting_ {false};
     std::mutex shouldReportMutex_;
-    std::unordered_map<std::string, RequestCount> requestCountMap_;
+    SafeMap<std::string, RequestCount> requestCountMap_;
 };
 
 } // namespace Media

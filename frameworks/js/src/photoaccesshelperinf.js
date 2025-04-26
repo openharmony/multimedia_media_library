@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-const photoAccessHelper = requireInternal('file.photoAccessHelper');
+const photoAccessHelper = requireNapi('file.photoAccessHelperNative');
 const bundleManager = requireNapi('bundle.bundleManager');
+const deviceinfo = requireInternal('deviceInfo');
 
 const ARGS_ZERO = 0;
 const ARGS_ONE = 1;
@@ -488,12 +489,12 @@ function getPhotoAccessHelper(context, userId = -1) {
   }
   gContext = context;
   let helper = photoAccessHelper.getPhotoAccessHelper(gContext, userId);
-  if (helper !== undefined) {
+  if (helper !== undefined && helper.constructor.prototype.createDeleteRequest === undefined) {
     console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest and showAssetsCreationDialog');
-    helper.createDeleteRequest = createDeleteRequest;
-    helper.showAssetsCreationDialog = showAssetsCreationDialog;
-    helper.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
-    helper.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
+    helper.constructor.prototype.createDeleteRequest = createDeleteRequest;
+    helper.constructor.prototype.showAssetsCreationDialog = showAssetsCreationDialog;
+    helper.constructor.prototype.createAssetWithShortTermPermission = createAssetWithShortTermPermission;
+    helper.constructor.prototype.requestPhotoUrisReadPermission = requestPhotoUrisReadPermission;
   }
   return helper;
 }
@@ -600,7 +601,28 @@ const PhotoViewMIMETypes = {
   VIDEO_TYPE: 'video/*',
   IMAGE_VIDEO_TYPE: '*/*',
   MOVING_PHOTO_IMAGE_TYPE: 'image/movingPhoto',
+  JPEG_IMAGE_TYPE: 'image/jpeg',
+  GIF_IMAGE_TYPE: 'image/gif',
+  PNG_IMAGE_TYPE: 'image/png',
+  HEIC_IMAGE_TYPE: 'image/heic',
+  HEIF_IMAGE_TYPE: 'image/heif',
+  BMP_IMAGE_TYPE: 'image/bmp',
+  WEBP_IMAGE_TYPE: 'image/webp',
+  AVIF_IMAGE_TYPE: 'image/avif',
+  MP4_VIDEO_TYPE: 'video/mp4',
+  MOV_VIDEO_TYPE: 'video/quicktime',
   INVALID_TYPE: ''
+};
+
+const FilterOperator = {
+  INVALID_OPERATOR: -1,
+  EQUAL_TO:  0,
+  NOT_EQUAL_TO: 1,
+  MORE_THAN: 2,
+  LESS_THAN: 3,
+  MORE_THAN_OR_EQUAL_TO:  4,
+  LESS_THAN_OR_EQUAL_TO: 5,
+  BETWEEN: 6,
 };
 
 const SingleSelectionMode = {
@@ -632,6 +654,16 @@ const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
   [PhotoViewMIMETypes.VIDEO_TYPE, 'FILTER_MEDIA_TYPE_VIDEO'],
   [PhotoViewMIMETypes.IMAGE_VIDEO_TYPE, 'FILTER_MEDIA_TYPE_ALL'],
   [PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE, 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO'],
+  [PhotoViewMIMETypes.JPEG_IMAGE_TYPE, 'JPEG_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.GIF_IMAGE_TYPE, 'GIF_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.PNG_IMAGE_TYPE, 'PNG_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.HEIC_IMAGE_TYPE, 'HEIC_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.HEIF_IMAGE_TYPE, 'HEIF_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.BMP_IMAGE_TYPE, 'BMP_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.WEBP_IMAGE_TYPE, 'WEBP_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.AVIF_IMAGE_TYPE, 'AVIF_IMAGE_TYPE'],
+  [PhotoViewMIMETypes.MP4_VIDEO_TYPE, 'MP4_VIDEO_TYPE'],
+  [PhotoViewMIMETypes.MOV_VIDEO_TYPE, 'MOV_VIDEO_TYPE'],
 ]);
 
 function checkArguments(args) {
@@ -689,9 +721,31 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.themeColor = option.themeColor;
     config.parameters.completeButtonText = option.completeButtonText;
     config.parameters.userId = option.userId;
+    config.parameters.mimeTypeFilter = parseMimeTypeFilter(option.mimeTypeFilter);
+    config.parameters.fileSizeFilter = option.fileSizeFilter;
+    config.parameters.videoDurationFilter = option.videoDurationFilter;
+    config.parameters.isPc = deviceinfo.deviceType === '2in1';
   }
 
   return config;
+}
+
+function parseMimeTypeFilter(filter) {
+  if (!filter) {
+      return undefined;
+  }
+  let o = {};
+  o.mimeTypeArray = [];
+  if (filter.mimeTypeArray) {
+    for (let mimeType of filter.mimeTypeArray) {
+      if (PHOTO_VIEW_MIME_TYPE_MAP.has(mimeType)) {
+        o.mimeTypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+      } else {
+        o.mimeTypeArray.push(mimeType);
+      }
+    }
+  }
+  return o;
 }
 
 function getPhotoPickerSelectResult(args) {
@@ -721,7 +775,7 @@ async function photoPickerSelect(...args) {
   }
 
   const config = parsePhotoPickerSelectOption(args);
-  console.log('[picker] config: ' + JSON.stringify(config));
+  console.log('[picker] config: ' + encrypt(JSON.stringify(config)));
   if (config.parameters.userId && config.parameters.userId > 0) {
     let check = await checkInteractAcrossLocalAccounts();
     if (!check) {
@@ -742,9 +796,9 @@ async function photoPickerSelect(...args) {
       throw getErr(ErrCode.CONTEXT_NO_EXIST);
     }
     let result = await startPhotoPicker(context, config);
-    console.log('[picker] result: ' + JSON.stringify(result));
+    console.log('[picker] result: ' + encrypt(JSON.stringify(result)));
     const selectResult = getPhotoPickerSelectResult(result);
-    console.log('[picker] selectResult: ' + JSON.stringify(selectResult));
+    console.log('[picker] selectResult: ' + encrypt(JSON.stringify(selectResult)));
     if (args.length === ARGS_TWO && typeof args[ARGS_ONE] === 'function') {
       return args[ARGS_ONE](selectResult.error, selectResult.data);
     } else if (args.length === ARGS_ONE && typeof args[ARGS_ZERO] === 'function') {
@@ -779,6 +833,20 @@ async function checkInteractAcrossLocalAccounts() {
   }
 }
 
+function MimeTypeFilter() {
+  this.mimeTypeArray = [];
+}
+
+function FileSizeFilter() {
+  this.filterOperator = -1;
+  this.fileSize = -1;
+}
+
+function VideoDurationFilter() {
+  this.filterOperator = -1;
+  this.videoDuration = -1;
+}
+
 function BaseSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
@@ -809,6 +877,13 @@ function PhotoViewPicker() {
 }
 
 function RecommendationOptions() {
+}
+
+function encrypt(data) {
+  if (!data || data?.indexOf('file:///data/storage/') !== -1) {
+    return '';
+  }
+  return data.replace(/(\/\w+)\./g, '/******.');
 }
 
 class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest {
@@ -878,6 +953,11 @@ export default {
   HighlightUserActionType: photoAccessHelper.HighlightUserActionType,
   RequestPhotoType: photoAccessHelper.RequestPhotoType,
   PhotoViewMIMETypes: PhotoViewMIMETypes,
+  SingleSelectionMode: SingleSelectionMode,
+  MimeTypeFilter: MimeTypeFilter,
+  FileSizeFilter: FileSizeFilter,
+  VideoDurationFilter: VideoDurationFilter,
+  FilterOperator: FilterOperator,
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
   AuthorizationMode: photoAccessHelper.AuthorizationMode,

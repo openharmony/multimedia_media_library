@@ -132,13 +132,10 @@ static void PrintNotifyInfo(NotifyType type, const list<Uri> &uris, const string
     for (auto it : uris) {
         temp += DfxUtils::GetSafeUri(it.ToString()) + ",";
     }
-    if (type == NotifyType::NOTIFY_UPDATE || type == NotifyType::NOTIFY_REMOVE
-        || type == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET) {
-        if (!uri.empty()) {
-            MEDIA_INFO_LOG("album uri is %{public}s", uri.c_str());
-        }
-        MEDIA_INFO_LOG("type is %{public}d, info is %{public}s", static_cast<int>(type), temp.c_str());
+    if (!uri.empty()) {
+        MEDIA_INFO_LOG("album uri is %{public}s", uri.c_str());
     }
+    MEDIA_INFO_LOG("type is %{public}d, info is %{public}s", static_cast<int>(type), temp.c_str());
 }
 
 static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
@@ -390,6 +387,12 @@ static void AddNfListMap(AsyncTaskData *data)
         string typeUri = MediaLibraryDataManagerUtils::GetTypeUriByUri(taskData->uri_);
         AddNotify(taskData->uri_, typeUri, taskData);
     }
+    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
+    if (periodWorker != nullptr && !periodWorker->IsThreadRunning(PeriodTaskType::COMMON_NOTIFY)) {
+        MediaLibraryNotify::counts_.store(0);
+        periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, nullptr);
+        MEDIA_INFO_LOG("common notify thread is started");
+    }
 }
 
 int32_t MediaLibraryNotify::Init()
@@ -407,11 +410,6 @@ int32_t MediaLibraryNotify::Init()
 int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyType, const int albumId,
     const bool hiddenOnly)
 {
-    auto periodWorker = MediaLibraryPeriodWorker::GetInstance();
-    if (periodWorker != nullptr && !periodWorker->IsThreadRunning(PeriodTaskType::COMMON_NOTIFY)) {
-        MediaLibraryNotify::counts_.store(0);
-        periodWorker->StartTask(PeriodTaskType::COMMON_NOTIFY, PushNotification, nullptr);
-    }
     unique_ptr<NotifyTaskWorker> &asyncWorker = NotifyTaskWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");
     auto *taskData = new (nothrow) NotifyTaskData(uri, notifyType, albumId, hiddenOnly);

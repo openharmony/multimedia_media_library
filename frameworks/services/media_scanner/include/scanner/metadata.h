@@ -176,6 +176,9 @@ public:
     void SetBurstCoverLevel(const VariantData &burstCoverLevel);
     int32_t GetBurstCoverLevel() const;
 
+    void SetStageVideoTaskStatus(const VariantData &stageVideoTaskStatus);
+    int32_t GetStageVideoTaskStatus() const;
+
     EXPORT void Init();
     void InitV2();
 
@@ -266,6 +269,8 @@ private:
     std::string detailTime_;
 
     int32_t burstCoverLevel_;
+
+    int32_t stageVideoTaskStatus_;
 };
 } // namespace Media
 } // namespace OHOS

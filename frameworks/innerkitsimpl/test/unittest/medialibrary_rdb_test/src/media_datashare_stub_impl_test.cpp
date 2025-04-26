@@ -25,7 +25,7 @@ using namespace OHOS;
 using namespace testing::ext;
 
 namespace OHOS::Media {
-HWTEST_F(MediaLibraryRdbTest, medialibrary_GetOwner_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialibrary_GetOwner_test_001, TestSize.Level1)
 {
     napi_env env = nullptr;
     shared_ptr<DataShare::MediaDataShareExtAbility> extension;
@@ -34,7 +34,7 @@ HWTEST_F(MediaLibraryRdbTest, medialibrary_GetOwner_test_001, TestSize.Level0)
     EXPECT_EQ(extension, nullptr);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialibrary_GetOwner_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialibrary_GetOwner_test_002, TestSize.Level1)
 {
     const std::unique_ptr<AbilityRuntime::Runtime> runtime;
     AbilityRuntime::MediaDataShareExtAbility* mediaDataShare;

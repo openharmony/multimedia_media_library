@@ -27,7 +27,6 @@
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_rdb_transaction.h"
-#include "medialibrary_sync_operation.h"
 #include "medialibrary_rdb_test.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
@@ -37,6 +36,7 @@
 using namespace std;
 using namespace OHOS;
 using namespace testing::ext;
+using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
@@ -113,7 +113,7 @@ void MediaLibraryRdbTest::SetUp() {}
 
 void MediaLibraryRdbTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -136,7 +136,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_002, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -154,7 +154,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_002, TestSize.Level0)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_003, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -165,7 +165,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_003, TestSize.Level0)
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_004, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -182,7 +182,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Insert_test_004, TestSize.Level0)
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -195,7 +195,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_001, TestSize.Level0)
     EXPECT_NE(queryResultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_002, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -208,7 +208,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Query_test_002, TestSize.Level0)
     EXPECT_EQ(queryResultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -226,7 +226,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_002, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -238,7 +238,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_002, TestSize.Level0)
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -254,7 +254,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_002, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -265,7 +265,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_002, TestSize.Level0)
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_003, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -277,7 +277,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Update_test_003, TestSize.Level0)
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -287,7 +287,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_001, TestSize.Level0)
     EXPECT_NE(queryResultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_002, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -297,7 +297,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_QuerySql_test_002, TestSize.Level0)
     EXPECT_EQ(queryResultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -324,7 +324,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
     trans2.Finish();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -335,17 +335,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level0)
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-#ifdef DISTRIBUTED
-HWTEST_F(MediaLibraryRdbTest, medialib_MediaLibraryRdbStoreObserver_test_001, TestSize.Level0)
-{
-    string bundleName = "medialib_MediaLibraryRdbStoreObserver_test_001";
-    std::shared_ptr<MediaLibraryRdbStoreObserver> test = make_shared<MediaLibraryRdbStoreObserver>(bundleName);
-    EXPECT_NE(test, nullptr);
-}
-#endif
-
-
-HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -355,7 +345,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_002, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -366,7 +356,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSql_test_002, TestSize.Level0)
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_Stop_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Stop_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -387,7 +377,7 @@ inline void PrepareUserAlbum(const string &albumName, const string &relativePath
     }
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_BuildValuesSql_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_BuildValuesSql_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -415,7 +405,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_BuildValuesSql_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_001 begin");
     rdbStorePtr->Init();
@@ -449,7 +439,7 @@ void TransactionTestFunc(shared_ptr<MediaLibraryRdbStore> rdbStorePtr, int* star
     (*endSignal)++;
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_002, TestSize.Level1)
 {
     // test Transcation success
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_002 begin");
@@ -467,7 +457,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_002, TestSize.
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_002 finish");
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_003, TestSize.Level1)
 {
     // test Transcation failed
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_003 begin");
@@ -485,7 +475,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_003, TestSize.
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_003 finish");
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_001, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -496,7 +486,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_001, TestSize.Le
     EXPECT_GE(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_ResetAnalysisTables_test, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_ResetAnalysisTables_test, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -512,7 +502,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ResetAnalysisTables_test, TestSize.Level0
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_ResetSearchTables_test, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_ResetSearchTables_test, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -528,7 +518,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_ResetSearchTables_test, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_GenerateHighlightThumbnail_test, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_GenerateHighlightThumbnail_test, TestSize.Level1)
 {
     if (rdbStorePtr == nullptr) {
         exit(1);
@@ -543,14 +533,14 @@ HWTEST_F(MediaLibraryRdbTest, medialib_GenerateHighlightThumbnail_test, TestSize
     rdbStorePtr->Stop();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_PhotoAlbumNotifyFunc_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_PhotoAlbumNotifyFunc_001, TestSize.Level1)
 {
     vector<string> args = {};
     auto ret = MediaLibraryRdbStore::PhotoAlbumNotifyFunc(args);
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_QueryEditDataExists_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_QueryEditDataExists_001, TestSize.Level1)
 {
     AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
 

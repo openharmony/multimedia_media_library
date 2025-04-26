@@ -147,6 +147,11 @@ public:
     {
         return 0;
     }
+
+    uint32_t GetCloudImageEnhanceFlag() override
+    {
+        return 0;
+    }
 private:
     void *fileDataAddr_ = nullptr;
     int32_t fileSize_ = 0;

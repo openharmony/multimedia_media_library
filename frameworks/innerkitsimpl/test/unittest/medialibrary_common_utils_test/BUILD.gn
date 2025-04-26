@@ -21,12 +21,10 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_common_utils_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
   ]
 
   sources = [
@@ -49,7 +47,6 @@ ohos_unittest("medialibrary_common_utils_test") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
-    "device_manager:devicemanagersdk",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",

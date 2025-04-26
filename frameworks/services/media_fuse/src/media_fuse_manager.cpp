@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #define FUSE_USE_VERSION 34
 #include <fuse.h>
+#include <sys/utsname.h>
 #include "dfx_const.h"
 #include "dfx_reporter.h"
 #include "iservice_registry.h"
@@ -59,7 +60,7 @@ const int32_t URI_SLASH_NUM_API10 = 4;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
 const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int32_t BASE_USER_RANGE = 200000;
-static set<int> readPermSet{0, 1, 3, 4};
+static set<int> readPermSet{0, 1, 2, 3, 4};
 static set<int> writePermSet{2, 3, 4};
 static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },
@@ -82,12 +83,29 @@ MediaFuseManager &MediaFuseManager::GetInstance()
     return instance;
 }
 
+bool MediaFuseManager::CheckDeviceInLinux()
+{
+    struct utsname uts;
+    if (uname(&uts) == -1) {
+        MEDIA_INFO_LOG("uname get failed");
+        return false;
+    }
+    if (strcmp(uts.sysname, "Linux") == 0) {
+        MEDIA_INFO_LOG("uname system is linux");
+        return true;
+    }
+    return false;
+}
+
 void MediaFuseManager::Start()
 {
     int32_t ret = E_OK;
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
 
     CHECK_AND_RETURN_INFO_LOG(fuseDaemon_ == nullptr, "Fuse daemon already started");
+
+    /* init current device is in linux or not */
+    isInLinux_ = CheckDeviceInLinux();
 
     std::string mountpoint;
     ret = MountFuse(mountpoint);
@@ -193,13 +211,15 @@ int32_t MediaFuseManager::DoGetAttr(const char *path, struct stat *stbuf)
 {
     string fileId;
     string target = path;
-#ifdef MEDIALIBRARY_EMULATOR
-    bool cond = (path == nullptr || strlen(path) == 0 ||
-        ((target.find("/Photo") != 0) && (target.find("/image") != 0) && (target != "/")));
-#else
-    bool cond = (path == nullptr || strlen(path) == 0 ||
-        ((target.find("/Photo") != 0) && (target.find("/image") != 0)));
-#endif
+    bool cond;
+    if (isInLinux_) {
+        cond = (path == nullptr || strlen(path) == 0 ||
+            ((target.find("/Photo") != 0) && (target.find("/image") != 0) && (target != "/")));
+    } else {
+        cond = (path == nullptr || strlen(path) == 0 ||
+            ((target.find("/Photo") != 0) && (target.find("/image") != 0)));
+    }
+
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Invalid path, %{private}s", path == nullptr ? "null" : path);
     int32_t ret;
     if (IsFullUri(target) == false) {

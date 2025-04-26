@@ -21,8 +21,6 @@
 
 #include "fetch_result.h"
 #include "get_self_permissions.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "media_file_utils.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_db_const.h"

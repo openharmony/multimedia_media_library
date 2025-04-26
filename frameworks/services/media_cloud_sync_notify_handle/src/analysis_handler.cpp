@@ -98,9 +98,6 @@ static vector<string> GetAlbumIds(const shared_ptr<MediaLibraryRdbStore> rdbStor
 
 void AnalysisHandler::ProcessHandleData(PeriodTaskData *data)
 {
-    if (data == nullptr) {
-        return;
-    }
     CloudSyncHandleData handleData;
     if (GetHandleData(handleData) != E_OK) {
         return;
@@ -111,29 +108,28 @@ void AnalysisHandler::ProcessHandleData(PeriodTaskData *data)
     vector<string> fileIds;
     std::string insertRefreshAlbum;
     if (handleData.orgInfo.type == ChangeType::OTHER) {
-        MEDIA_INFO_LOG("Update the AnalysisAlbum for ChangeType being OTHER");
-        // -1 means that we need update all analysisAlbum
-        insertRefreshAlbum = INSERT_REFRESH_ALBUM + "(-1)";
-    } else {
-        fileIds = GetFileIds(handleData);
-        if (fileIds.empty()) {
-            return;
-        }
-        vector<string> albumIds = GetAlbumIds(rdbStore, fileIds);
-        if (albumIds.empty()) {
-            return;
-        }
-        insertRefreshAlbum = INSERT_REFRESH_ALBUM;
-        int32_t albumSize = static_cast<int32_t>(albumIds.size());
-        for (string albumId: albumIds) {
-            insertRefreshAlbum.append("(" + albumId + "),");
-        }
-        if (insertRefreshAlbum.back() == ',') {
-            insertRefreshAlbum.pop_back();
-        }
-        MEDIA_INFO_LOG("%{public}d files update %{public}d analysis album", static_cast<int32_t>(fileIds.size()),
-            albumSize);
+        MEDIA_INFO_LOG("ChangeType being OTHER, all analysis albums are refreshed directly.");
+        return;
     }
+    fileIds = GetFileIds(handleData);
+    if (fileIds.empty()) {
+        return;
+    }
+    vector<string> albumIds = GetAlbumIds(rdbStore, fileIds);
+    if (albumIds.empty()) {
+        return;
+    }
+    insertRefreshAlbum = INSERT_REFRESH_ALBUM;
+    int32_t albumSize = static_cast<int32_t>(albumIds.size());
+    for (string albumId: albumIds) {
+        insertRefreshAlbum.append("(" + albumId + "),");
+    }
+    if (insertRefreshAlbum.back() == ',') {
+        insertRefreshAlbum.pop_back();
+    }
+    MEDIA_INFO_LOG("%{public}d files update %{public}d analysis album", static_cast<int32_t>(fileIds.size()),
+        albumSize);
+    
     MEDIA_DEBUG_LOG("sql: %{public}s", insertRefreshAlbum.c_str());
     int32_t ret = rdbStore->ExecuteSql(insertRefreshAlbum);
     if (ret != NativeRdb::E_OK) {

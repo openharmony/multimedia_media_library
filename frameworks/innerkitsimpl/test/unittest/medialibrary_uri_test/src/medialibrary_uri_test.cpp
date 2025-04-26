@@ -22,6 +22,7 @@
 #define private public
 #include "thumbnail_uri_utils.h"
 #undef private
+#include "media_file_uri.h"
 
 using namespace std;
 using namespace OHOS;
@@ -30,21 +31,17 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 const std::string TEST_STRING = "GetDateAddedFromUri&";
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void MediaLibraryUriTest::SetUpTestCase(void) {}
 
-void MediaLibraryUriTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MediaLibraryUriTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void MediaLibraryUriTest::SetUp() {}
 
 void MediaLibraryUriTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryUriTest, medialib_ParseFileUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriTest, medialib_ParseFileUri_test_001, TestSize.Level1)
 {
     string uriString = "";
     string outFileId = "";
@@ -54,7 +51,7 @@ HWTEST_F(MediaLibraryUriTest, medialib_ParseFileUri_test_001, TestSize.Level0)
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryUriTest, medialib_ParseThumbnailInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriTest, medialib_ParseThumbnailInfo_test_001, TestSize.Level1)
 {
     string uriString;
     string outFileId;
@@ -85,7 +82,7 @@ HWTEST_F(MediaLibraryUriTest, medialib_ParseThumbnailInfo_test_001, TestSize.Lev
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryUriTest, medialib_GetDateTakenFromUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriTest, medialib_GetDateTakenFromUri_test_001, TestSize.Level1)
 {
     string testDateTaken = "0001";
     string uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL;
@@ -105,7 +102,7 @@ HWTEST_F(MediaLibraryUriTest, medialib_GetDateTakenFromUri_test_001, TestSize.Le
     EXPECT_EQ(output, testDateTaken);
 }
 
-HWTEST_F(MediaLibraryUriTest, medialib_GetFileUriFromUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriTest, medialib_GetFileUriFromUri_test_001, TestSize.Level1)
 {
     string testFileUri = "file://media/Photo/5664/IMG_1705635971_5359";
     string uriString = testFileUri + "&" + THUMBNAIL_OPERN_KEYWORD;

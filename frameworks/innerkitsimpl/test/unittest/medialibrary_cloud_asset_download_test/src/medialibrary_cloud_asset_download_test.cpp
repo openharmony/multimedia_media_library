@@ -49,6 +49,8 @@
 #include "cloud_media_asset_types.h"
 #undef private
 #undef protected
+#include "cloud_media_asset_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -198,7 +200,7 @@ void MediaLibraryCloudAssetDownloadTest::SetUp()
 
 void MediaLibraryCloudAssetDownloadTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_001 Start");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
@@ -218,7 +220,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_001 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_002 Start");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
@@ -236,7 +238,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_002 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_003 Start");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
@@ -253,7 +255,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_003 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_004 Start");
     std::vector<std::string> idVec;
@@ -281,7 +283,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_004 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_005 Start");
     Uri uriStartForce(CMAM_CLOUD_MEDIA_ASSET_TASK_START_FORCE);
@@ -311,7 +313,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_005 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_006 Start");
     Uri uriType(CMAM_CLOUD_MEDIA_ASSET_TASK_STATUS_QUERY);
@@ -325,7 +327,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_006 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_007 Start");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
@@ -342,7 +344,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_007 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_008 Start");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
@@ -375,7 +377,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_008 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_009 Start");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
@@ -392,7 +394,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_009 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_010 Start");
     std::vector<std::string> idVec = { "id1", "id2" };
@@ -409,7 +411,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_010 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_011 Start");
     std::string result = "2,0,0,0,0,0";
@@ -424,7 +426,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_011 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_012, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_012 Start");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
@@ -441,7 +443,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_012 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_013, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_013 Start");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
@@ -460,7 +462,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_013 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_014, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_014 Start");
     CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
@@ -477,7 +479,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_014 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_001 Start");
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
@@ -497,7 +499,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_001 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_002 Start");
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
@@ -517,7 +519,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_002 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_003 Start");
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
@@ -533,7 +535,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_003 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_004 Start");
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
@@ -556,7 +558,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_004 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_005 Start");
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
@@ -572,7 +574,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_005 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_006 Start");
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
@@ -604,7 +606,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_006 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_007 Start");
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();
@@ -624,7 +626,7 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_007 End");
 }
 
-HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("cloud_asset_download_operation_test_008 Start");
     std::shared_ptr<CloudMediaAssetDownloadOperation> operation = CloudMediaAssetDownloadOperation::GetInstance();

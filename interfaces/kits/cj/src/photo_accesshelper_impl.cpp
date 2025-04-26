@@ -44,6 +44,8 @@
 #include "want_params.h"
 #include "want_params_wrapper.h"
 #include "window.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -223,7 +225,7 @@ bool PhotoAccessHelperImpl::CheckWhetherInitSuccess(const sptr<IRemoteObject> &t
 {
     if (!UserFileClient::IsValid()) {
         unique_lock<mutex> helperLock(sUserFileClientMutex_);
-        UserFileClient::Init(token);
+        UserFileClient::Init(token, true);
         if (!UserFileClient::IsValid()) {
             LOGE("UserFileClient creation failed");
             helperLock.unlock();
@@ -502,8 +504,8 @@ shared_ptr<FetchResult<PhotoAlbum>> PhotoAccessHelperImpl::GetAlbums(int32_t typ
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
     if (resultSet == nullptr) {
         LOGE("resultSet == nullptr, errCode is %{public}d", errCode);
-        if (errCode == E_PERMISSION_DENIED) {
-            errCode = MediaLibraryNapiUtils::TransErrorCode("GetAlbums", E_PERMISSION_DENIED);
+        if (errCode == E_PERMISSION_DENIED || errCode == -E_CHECK_SYSTEMAPP_FAIL) {
+            errCode = MediaLibraryNapiUtils::TransErrorCode("GetAlbums", errCode);
         } else {
             errCode = MediaLibraryNapiUtils::TransErrorCode("GetAlbums", E_HAS_DB_ERROR);
         }

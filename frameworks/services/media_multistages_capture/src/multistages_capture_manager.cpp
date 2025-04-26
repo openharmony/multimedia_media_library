@@ -21,6 +21,7 @@
 #include "media_log.h"
 #include "medialibrary_rdbstore.h"
 #include "result_set_utils.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 
@@ -92,7 +93,8 @@ void MultiStagesCaptureManager::RestorePhotos(const NativeRdb::AbsRdbPredicates 
         MEDIA_INFO_LOG("Invalid table name: %{public}s", predicates.GetTableName().c_str());
         return;
     }
-
+    MediaLibraryTracer tracer;
+    tracer.Start("MultiStagesCaptureManager::RestorePhotos");
     NativeRdb::AbsRdbPredicates predicatesNew(predicates.GetTableName());
     string where = predicates.GetWhereClause() + " AND " + PhotoColumn::PHOTO_QUALITY + "=" +
         to_string(static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
@@ -101,10 +103,8 @@ void MultiStagesCaptureManager::RestorePhotos(const NativeRdb::AbsRdbPredicates 
     vector<string> columns { MediaColumn::MEDIA_ID, MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_PHOTO_QUALITY,
         MEDIA_DATA_DB_MEDIA_TYPE };
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicatesNew, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_INFO_LOG("Result set is empty");
-        return;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_INFO_LOG(!cond, "Result set is empty");
 
     do {
         string photoId = GetStringVal(MEDIA_DATA_DB_PHOTO_ID, resultSet);

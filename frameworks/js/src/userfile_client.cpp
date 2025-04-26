@@ -22,6 +22,7 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_helper_container.h"
 #include "media_file_utils.h"
+#include "safe_map.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -32,7 +33,7 @@ namespace Media {
 int32_t UserFileClient::userId_ = -1;
 std::string MULTI_USER_URI_FLAG = "user=";
 std::string USER_STR = "user";
-std::map<int32_t, std::shared_ptr<DataShare::DataShareHelper>> UserFileClient::dataShareHelperMap_ = {};
+SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> UserFileClient::dataShareHelperMap_ = {};
 
 static std::string GetMediaLibraryDataUri(const int32_t userId)
 {
@@ -43,13 +44,31 @@ static std::string GetMediaLibraryDataUri(const int32_t userId)
     return mediaLibraryDataUri;
 }
 
+void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value)
+{
+    std::string uriKey = key + '=';
+    if (uri.find(uriKey) != std::string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == std::string::npos) ? '?' : '&';
+    std::string append = queryMark + key + '=' + value;
+
+    size_t posJ = uri.find('#');
+    if (posJ == std::string::npos) {
+        uri += append;
+    } else {
+        uri.insert(posJ, append);
+    }
+}
+
 static Uri MultiUserUriRecognition(Uri &uri, const int32_t userId)
 {
     if (userId == -1) {
         return uri;
     }
     std::string uriString = uri.ToString();
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriString, USER_STR, to_string(userId));
+    UriAppendKeyValue(uriString, USER_STR, to_string(userId));
     return Uri(uriString);
 }
 
@@ -75,6 +94,7 @@ shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(napi_e
     bool isStageMode = false;
     napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode);
     if (status != napi_ok || !isStageMode) {
+        NAPI_INFO_LOG("status: %{public}d, isStageMode: %{public}d", status, static_cast<int32_t>(isStageMode));
         auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
         if (ability == nullptr) {
             NAPI_ERR_LOG("Failed to get native ability instance");
@@ -161,21 +181,18 @@ sptr<IRemoteObject> UserFileClient::ParseTokenInAbility(napi_env env, napi_callb
 
 bool UserFileClient::IsValid(const int32_t userId)
 {
-    auto it = dataShareHelperMap_.find(userId);
-    if (it == dataShareHelperMap_.end()) {
-        return false;
+    std::shared_ptr<DataShare::DataShareHelper> helper;
+    if (dataShareHelperMap_.Find(userId, helper)) {
+        return helper != nullptr;
     }
-    return it->second != nullptr;
+    return false;
 }
 
 std::shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelperByUser(const int32_t userId)
 {
-    auto it = dataShareHelperMap_.find(userId);
-    if (it == dataShareHelperMap_.end()) {
-        return nullptr;
-    }
-    return it->second;
+    return dataShareHelperMap_.ReadVal(userId);
 }
+
 void UserFileClient::Init(const sptr<IRemoteObject> &token, bool isSetHelper, const int32_t userId)
 {
     if (GetDataShareHelperByUser(userId) == nullptr) {
@@ -184,7 +201,15 @@ void UserFileClient::Init(const sptr<IRemoteObject> &token, bool isSetHelper, co
         if (isSetHelper) {
             MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(dataShareHelper);
         }
-        dataShareHelperMap_[userId] = dataShareHelper;
+        if (dataShareHelper != nullptr) {
+            if (!IsValid(userId)) {
+                dataShareHelperMap_.EnsureInsert(userId, dataShareHelper);
+            } else {
+                NAPI_ERR_LOG("dataShareHelperMap has userId and value");
+            }
+        } else {
+            NAPI_ERR_LOG("Failed to getDataShareHelper, dataShareHelper is null");
+        }
     }
 }
 
@@ -192,7 +217,15 @@ void UserFileClient::Init(napi_env env, napi_callback_info info, const int32_t u
 {
     if (GetDataShareHelperByUser(userId) == nullptr) {
         std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = GetDataShareHelper(env, info, userId);
-        dataShareHelperMap_[userId] = dataShareHelper;
+        if (dataShareHelper != nullptr) {
+            if (!IsValid(userId)) {
+                dataShareHelperMap_.EnsureInsert(userId, dataShareHelper);
+            } else {
+                NAPI_ERR_LOG("dataShareHelperMap has userId and value");
+            }
+        } else {
+            NAPI_ERR_LOG("Failed to getDataShareHelper, dataShareHelper is null");
+        }
     }
 }
 
@@ -200,17 +233,16 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
     std::vector<std::string> &columns, int &errCode, const int32_t userId)
 {
     if (!IsValid(userId)) {
-        NAPI_ERR_LOG("Query fail, helper null");
+        NAPI_ERR_LOG("Query fail, helper null, userId is %{public}d", userId);
         return nullptr;
     }
-    uri = MultiUserUriRecognition(uri, userId);
 
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) &&
-        !uri.ToString().find(MULTI_USER_URI_FLAG)) {
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates) && userId == -1) {
         resultSet = MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode);
     } else {
+        uri = MultiUserUriRecognition(uri, userId);
         DatashareBusinessError businessError;
         resultSet = GetDataShareHelperByUser(userId)->Query(uri, predicates, columns, &businessError);
         errCode = businessError.GetCode();
@@ -232,7 +264,7 @@ std::shared_ptr<NativeRdb::ResultSet> UserFileClient::QueryRdb(Uri &uri,
 int UserFileClient::Insert(Uri &uri, const DataShareValuesBucket &value, const int32_t userId)
 {
     if (!IsValid(userId)) {
-        NAPI_ERR_LOG("insert fail, helper null");
+        NAPI_ERR_LOG("insert fail, helper null, userId is %{public}d", userId);
         return E_FAIL;
     }
     int index = GetDataShareHelperByUser(userId)->Insert(uri, value);
@@ -242,7 +274,7 @@ int UserFileClient::Insert(Uri &uri, const DataShareValuesBucket &value, const i
 int UserFileClient::InsertExt(Uri &uri, const DataShareValuesBucket &value, string &result, const int32_t userId)
 {
     if (!IsValid(userId)) {
-        NAPI_ERR_LOG("insert fail, helper null");
+        NAPI_ERR_LOG("insert fail, helper null, userId is %{public}d", userId);
         return E_FAIL;
     }
     int index = GetDataShareHelperByUser(userId)->InsertExt(uri, value, result);
@@ -252,7 +284,7 @@ int UserFileClient::InsertExt(Uri &uri, const DataShareValuesBucket &value, stri
 int UserFileClient::BatchInsert(Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values)
 {
     if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("Batch insert fail, helper null");
+        NAPI_ERR_LOG("Batch insert fail, helper null, userId is %{public}d", GetUserId());
         return E_FAIL;
     }
     return GetDataShareHelperByUser(GetUserId())->BatchInsert(uri, values);
@@ -261,7 +293,7 @@ int UserFileClient::BatchInsert(Uri &uri, const std::vector<DataShare::DataShare
 int UserFileClient::Delete(Uri &uri, const DataSharePredicates &predicates)
 {
     if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("delete fail, helper null");
+        NAPI_ERR_LOG("delete fail, helper null, userId is %{public}d", GetUserId());
         return E_FAIL;
     }
     return GetDataShareHelperByUser(GetUserId())->Delete(uri, predicates);
@@ -270,7 +302,7 @@ int UserFileClient::Delete(Uri &uri, const DataSharePredicates &predicates)
 void UserFileClient::NotifyChange(const Uri &uri)
 {
     if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("notify change fail, helper null");
+        NAPI_ERR_LOG("notify change fail, helper null, userId is %{public}d", GetUserId());
         return;
     }
     GetDataShareHelperByUser(GetUserId())->NotifyChange(uri);
@@ -279,7 +311,7 @@ void UserFileClient::NotifyChange(const Uri &uri)
 void UserFileClient::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
     if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("register observer fail, helper null");
+        NAPI_ERR_LOG("register observer fail, helper null, userId is %{public}d", GetUserId());
         return;
     }
     GetDataShareHelperByUser(GetUserId())->RegisterObserver(uri, dataObserver);
@@ -288,7 +320,7 @@ void UserFileClient::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbi
 void UserFileClient::UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)
 {
     if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("unregister observer fail, helper null");
+        NAPI_ERR_LOG("unregister observer fail, helper null, userId is %{public}d", GetUserId());
         return;
     }
     GetDataShareHelperByUser(GetUserId())->UnregisterObserver(uri, dataObserver);
@@ -297,7 +329,7 @@ void UserFileClient::UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataA
 int UserFileClient::OpenFile(Uri &uri, const std::string &mode, const int32_t userId)
 {
     if (!IsValid(userId)) {
-        NAPI_ERR_LOG("Open file fail, helper null");
+        NAPI_ERR_LOG("Open file fail, helper null, userId is %{public}d", userId);
         return E_FAIL;
     }
     uri = MultiUserUriRecognition(uri, userId);
@@ -305,20 +337,20 @@ int UserFileClient::OpenFile(Uri &uri, const std::string &mode, const int32_t us
 }
 
 int UserFileClient::Update(Uri &uri, const DataSharePredicates &predicates,
-    const DataShareValuesBucket &value)
+    const DataShareValuesBucket &value, const int32_t userId)
 {
-    if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("update fail, helper null");
+    if (!IsValid(userId)) {
+        NAPI_ERR_LOG("update fail, helper null, userId is %{public}d", userId);
         return E_FAIL;
     }
-    return GetDataShareHelperByUser(GetUserId())->Update(uri, predicates, value);
+    return GetDataShareHelperByUser(userId)->Update(uri, predicates, value);
 }
 
 void UserFileClient::RegisterObserverExt(const Uri &uri,
     shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants)
 {
     if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("register observer fail, helper null");
+        NAPI_ERR_LOG("register observer fail, helper null, userId is %{public}d", GetUserId());
         return;
     }
     GetDataShareHelperByUser(GetUserId())->RegisterObserverExt(uri, std::move(dataObserver), isDescendants);
@@ -327,7 +359,7 @@ void UserFileClient::RegisterObserverExt(const Uri &uri,
 void UserFileClient::UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataShare::DataShareObserver> dataObserver)
 {
     if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("unregister observer fail, helper null");
+        NAPI_ERR_LOG("unregister observer fail, helper null, userId is %{public}d", GetUserId());
         return;
     }
     GetDataShareHelperByUser(GetUserId())->UnregisterObserverExt(uri, std::move(dataObserver));
@@ -336,15 +368,24 @@ void UserFileClient::UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataS
 std::string UserFileClient::GetType(Uri &uri)
 {
     if (!IsValid(GetUserId())) {
-        NAPI_ERR_LOG("get type fail, helper null");
+        NAPI_ERR_LOG("get type fail, helper null, userId is %{public}d", GetUserId());
         return "";
     }
     return GetDataShareHelperByUser(GetUserId())->GetType(uri);
 }
 
+int32_t UserFileClient::UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option)
+{
+    if (!IsValid(GetUserId())) {
+        NAPI_ERR_LOG("JS UserDefineFunc fail, helper null %{public}d", GetUserId());
+        return E_FAIL;
+    }
+    return GetDataShareHelperByUser(GetUserId())->UserDefineFunc(data, reply, option);
+}
+
 void UserFileClient::Clear()
 {
-    UserFileClient::dataShareHelperMap_.clear();
+    dataShareHelperMap_.Clear();
 }
 
 void UserFileClient::SetUserId(const int32_t userId)

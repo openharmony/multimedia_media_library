@@ -40,6 +40,10 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+#define DECLARE_WRITABLE_NAPI_FUNCTION(name, func)                                 \
+    {                                                                              \
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_writable, nullptr \
+    }
 static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
 static const std::string USERFILE_MGR_NAPI_CLASS_NAME = "UserFileManager";
 static const std::string PHOTOACCESSHELPER_NAPI_CLASS_NAME = "PhotoAccessHelper";
@@ -120,8 +124,8 @@ public:
     ~ChangeListenerNapi() {};
 
     void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
-    void QueryRdbAndNotifyChange(uv_loop_s *loop, UvChangeMsg *msg, uv_work_t *work);
-    int UvQueueWork(uv_loop_s *loop, uv_work_t *work);
+    void QueryRdbAndNotifyChange(UvChangeMsg *msg);
+    void UvQueueWork(JsOnChangeCallbackWrapper* wrapper);
     static napi_value SolveOnChange(napi_env env, JsOnChangeCallbackWrapper* wrapper);
     void GetResultSetFromMsg(UvChangeMsg* msg, JsOnChangeCallbackWrapper* wrapper);
     std::shared_ptr<NativeRdb::ResultSet> GetSharedResultSetFromIds(std::vector<string>& Ids, bool isPhoto);
@@ -332,6 +336,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetSharedPhotoAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperSetForceHideSensitiveType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessStartAssetAnalysis(napi_env env, napi_callback_info info);
     
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -442,6 +447,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool isDelete;
     bool isCreateByComponent;
     bool isCreateByAgent;
+    bool needSystemApp = false;
     NapiAssetType assetType;
     AlbumType albumType;
     MediaLibraryNapi *objectInfo;
@@ -498,6 +504,9 @@ struct MediaLibraryAsyncContext : public NapiError {
     uint32_t tokenId;
     std::vector<std::string> albumIds;
     std::unordered_map<int32_t, unique_ptr<PhotoAlbum>> albumMap;
+    bool isContainsAlbumUri = false;
+    int32_t taskId = -1;
+    bool isFullAnalysis = false;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

@@ -37,6 +37,8 @@ public:
         int32_t sourceFileId, std::shared_ptr<CloudEnhancementFileInfo> info,
         std::shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<TransactionOperations> trans = nullptr);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> GetPair(MediaLibraryCommand &cmd);
+    EXPORT static int64_t InsertCloudEnhancementPerm(int32_t sourceFileId, int32_t targetFileId);
+    EXPORT static int32_t QueryAndUpdatePhotos(const std::vector<std::string> &photoIds);
 };
 } // namespace Media
 } // namespace OHOS

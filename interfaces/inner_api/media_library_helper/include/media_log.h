@@ -60,14 +60,21 @@
         }                                              \
     } while (0)
 
-#define CHECK_AND_RETURN_INFO_LOG(cond, fmt, ...)           \
+#define CHECK_AND_RETURN_INFO_LOG(cond, fmt, ...)      \
     do {                                               \
         if (!(cond)) {                                 \
-            MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);         \
+            MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);        \
             return;                                    \
         }                                              \
     } while (0)
 
+#define CHECK_AND_RETURN_RET_INFO_LOG(cond, ret, fmt, ...) \
+    do {                                               \
+        if (!(cond)) {                                 \
+            MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);        \
+            return ret;                                \
+        }                                              \
+    } while (0)
 #define CHECK_AND_PRINT_LOG(cond, fmt, ...)            \
     do {                                               \
         if (!(cond)) {                                 \
@@ -75,18 +82,93 @@
         }                                              \
     } while (0)
 
-#define CHECK_AND_WARN_LOG(cond, fmt, ...)            \
+#define CHECK_AND_WARN_LOG(cond, fmt, ...)             \
     do {                                               \
         if (!(cond)) {                                 \
-            MEDIA_WARN_LOG(fmt, ##__VA_ARGS__);         \
+            MEDIA_WARN_LOG(fmt, ##__VA_ARGS__);        \
         }                                              \
     } while (0)
 
-#define CHECK_AND_RETURN_RET(cond, ret)  \
+#define CHECK_AND_RETURN_RET(cond, ret)                \
     do {                                               \
         if (!(cond)) {                                 \
             return ret;                                \
         }                                              \
     } while (0)
 
+#define CHECK_AND_RETURN_WARN_LOG(cond, fmt, ...)      \
+    do {                                               \
+        if (!(cond)) {                                 \
+            MEDIA_WARN_LOG(fmt, ##__VA_ARGS__);        \
+            return;                                    \
+        }                                              \
+    } while (0)
+
+#define CHECK_AND_RETURN_RET_WARN_LOG(cond, ret, fmt, ...) \
+    do {                                               \
+        if (!(cond)) {                                 \
+            MEDIA_WARN_LOG(fmt, ##__VA_ARGS__);        \
+            return ret;                                \
+        }                                              \
+    } while (0)
+
+#define CHECK_AND_RETURN(cond)                         \
+    do {                                               \
+        if (!(cond)) {                                 \
+            return;                                    \
+        }                                              \
+    } while (0)
+
+#define CHECK_AND_BREAK(cond)                          \
+    if (1) {                                           \
+        if (!(cond)) {                                 \
+            break;                                     \
+        }                                              \
+    } else void (0)
+
+#define CHECK_AND_CONTINUE(cond)                       \
+    if (1) {                                           \
+        if (!(cond)) {                                 \
+            continue;                                  \
+        }                                              \
+    } else void (0)
+
+#define CHECK_AND_CONTINUE_ERR_LOG(cond, fmt, ...)     \
+    if (1) {                                           \
+        if (!(cond)) {                                 \
+            MEDIA_ERR_LOG(fmt, ##__VA_ARGS__);         \
+            continue;                                  \
+        }                                              \
+    } else void (0)
+
+#define CHECK_AND_BREAK_ERR_LOG(cond, fmt, ...)        \
+    if (1) {                                           \
+        if (!(cond)) {                                 \
+            MEDIA_ERR_LOG(fmt, ##__VA_ARGS__);         \
+            break;                                     \
+        }                                              \
+    } else void (0)
+
+#define CHECK_AND_CONTINUE_INFO_LOG(cond, fmt, ...)    \
+    if (1) {                                           \
+        if (!(cond)) {                                 \
+            MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);        \
+            continue;                                  \
+        }                                              \
+    } else void (0)
+
+#define CHECK_AND_BREAK_INFO_LOG(cond, fmt, ...)       \
+    if (1) {                                           \
+        if (!(cond)) {                                 \
+            MEDIA_INFO_LOG(fmt, ##__VA_ARGS__);        \
+            break;                                     \
+        }                                              \
+    } else void (0)
+
+#define CHECK_AND_EXECUTE(cond, cmd)                   \
+    do {                                               \
+        if (!(cond)) {                                 \
+            cmd;                                       \
+        }                                              \
+    } while (0)
 #endif // OHOS_MEDIA_LOG_H

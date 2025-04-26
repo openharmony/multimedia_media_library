@@ -21,6 +21,7 @@
 #include "medialibrary_file_operations.h"
 #undef private
 #include "userfilemgr_uri.h"
+#include "medialibrary_db_const.h"
 
 using namespace std;
 using namespace OHOS;
@@ -183,6 +184,29 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_QueryTrashFiles_t
         ->OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     resultset = MediaLibraryFileOperations::QueryTrashFiles(cmd1);
     EXPECT_EQ((resultset != nullptr), true);
+}
+
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_HandleFileOperation_test_002, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
+    int32_t ret = MediaLibraryFileOperations::HandleFileOperation(cmd);
+    EXPECT_EQ(ret, E_FAIL);
+}
+
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_GetAlbumCapacityOperation_test_002, TestSize.Level0)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY);
+    NativeRdb::ValuesBucket value;
+    NativeRdb::ValueObject valueObject;
+    value.Put(MEDIA_DATA_DB_IS_FAV, valueObject);
+    cmd.SetValueBucket(value);
+    int32_t ret = MediaLibraryFileOperations::GetAlbumCapacityOperation(cmd);
+    EXPECT_EQ(ret, E_FAIL);
+
+    value.Put(MEDIA_DATA_DB_IS_TRASH, valueObject);
+    cmd.SetValueBucket(value);
+    ret = MediaLibraryFileOperations::GetAlbumCapacityOperation(cmd);
+    EXPECT_EQ(ret, E_FAIL);
 }
 }
 }

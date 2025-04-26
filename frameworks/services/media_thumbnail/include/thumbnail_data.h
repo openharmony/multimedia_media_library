@@ -153,6 +153,7 @@ public:
     EXPORT int32_t orientation {0};
     EXPORT int32_t photoHeight {0};
     EXPORT int32_t photoWidth {0};
+    EXPORT int32_t dirty {-1};
     EXPORT uint8_t thumbnailQuality {THUMBNAIL_MID};
 
     // Loaded lcd source can be resized to generate thumbnail in order
@@ -160,7 +161,9 @@ public:
     EXPORT bool isLocalFile {true};
     EXPORT bool isOpeningCloudFile {false};
     EXPORT bool isNeedStoreSize {true};
+    EXPORT bool isRegenerateStage {false};
     EXPORT bool needCheckWaitStatus {false};
+    EXPORT bool needUpdateDb {true};
     EXPORT ThumbnailSource source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
@@ -182,12 +185,14 @@ public:
     EXPORT std::string trigger;
     EXPORT std::string frame;
     EXPORT std::string timeStamp;
+    EXPORT int32_t position;
     EXPORT Size lcdDesiredSize;
     EXPORT Size thumbDesiredSize;
     EXPORT GenerateStats stats;
     EXPORT SourceLoaderOptions loaderOpts;
     EXPORT int64_t thumbnailReady { -1 };
     EXPORT int64_t lcdVisitTime { -1 };
+    EXPORT std::shared_ptr<Picture> originalPhotoPicture = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

@@ -44,6 +44,8 @@ using namespace DataShare;
 const int32_t PERMISSION_DEFAULT = -1;
 const int32_t URI_DEFAULT = 0;
 const int32_t BatchInsertNumber = 5;
+const int32_t EVEN = 2;
+const std::string MEDIA_FILEMODE_READWRITE = "rw";
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
@@ -51,6 +53,14 @@ static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
         return 0;
     }
     return static_cast<int32_t>(*data);
+}
+
+static inline bool FuzzBool(const uint8_t* data, size_t size)
+{
+    if (size == 0) {
+        return false;
+    }
+    return (data[0] % EVEN) == 0;
 }
 
 static inline string FuzzString(const uint8_t *data, size_t size)
@@ -124,11 +134,56 @@ static void BatchInsertFuzzer(const uint8_t* data, size_t size)
         value.Put(Media::AppUriPermissionColumn::FILE_ID, photoId);
         value.Put(Media::AppUriPermissionColumn::PERMISSION_TYPE, FuzzPermissionType(data, size));
         value.Put(Media::AppUriPermissionColumn::URI_TYPE, FuzzUriType(data, size));
+        value.Put(Media::AppUriPermissionColumn::SOURCE_TOKENID, FuzzInt32(data, size));
+        value.Put(Media::AppUriPermissionColumn::TARGET_TOKENID, FuzzInt32(data, size));
         dataShareValues.push_back(value);
     }
     Media::MediaLibraryCommand cmd(Media::OperationObject::APP_URI_PERMISSION_INNER, Media::OperationType::CREATE,
         Media::MediaLibraryApi::API_10);
     Media::UriPermissionOperations::GrantUriPermission(cmd, dataShareValues);
+}
+
+static void HandleUriPermOperationsFuzzer(const uint8_t* data, size_t size)
+{
+    Media::OperationType operationType = FuzzBool(data, size) ? Media::OperationType::DELETE :
+        Media::OperationType::INSERT_PERMISSION;
+    Media::MediaLibraryCommand cmd(Media::OperationObject::APP_URI_PERMISSION_INNER, operationType,
+        Media::MediaLibraryApi::API_10);
+    Media::UriPermissionOperations::HandleUriPermOperations(cmd);
+}
+
+static void InsertBundlePermissionFuzzer(const uint8_t* data, size_t size)
+{
+    int32_t fileId = FuzzInt32(data, size);
+    std::string bundleName = FuzzString(data, size);
+    std::string tableName = FuzzString(data, size);
+    std::string mode;
+    Media::UriPermissionOperations::InsertBundlePermission(fileId, bundleName, mode, tableName);
+}
+
+static void DeleteBundlePermissionFuzzer(const uint8_t* data, size_t size)
+{
+    std::string fileId = FuzzString(data, size);
+    std::string bundleName = FuzzString(data, size);
+    std::string tableName = FuzzString(data, size);
+    Media::UriPermissionOperations::DeleteBundlePermission(fileId, bundleName, tableName);
+}
+
+static void CheckUriPermissionFuzzer(const uint8_t* data, size_t size)
+{
+    std::string fileUri = FuzzString(data, size);
+    std::string mode = FuzzBool(data, size) ? MEDIA_FILEMODE_READWRITE : FuzzString(data, size);
+    Media::UriPermissionOperations::CheckUriPermission(fileUri, mode);
+}
+
+static void UpdateOperationFuzzer(const uint8_t* data, size_t size)
+{
+    Media::MediaLibraryCommand cmd(Media::OperationObject::APP_URI_PERMISSION_INNER, Media::OperationType::UPDATE,
+        Media::MediaLibraryApi::API_10);
+    Media::UriPermissionOperations::UpdateOperation(cmd);
+    std::string funcName = FuzzString(data, size);
+    std::shared_ptr<Media::TransactionOperations> trans = std::make_shared<Media::TransactionOperations>(funcName);
+    Media::UriPermissionOperations::UpdateOperation(cmd, trans);
 }
 
 static void AppUriPermissionOperationsFuzzer(const uint8_t* data, size_t size)
@@ -141,6 +196,11 @@ static void AppUriPermissionOperationsFuzzer(const uint8_t* data, size_t size)
     HandleInsertOperationFuzzer(appId, photoId, permissionType, uriType);
     DeleteOperationFuzzer(appId, photoId);
     BatchInsertFuzzer(data, size);
+    HandleUriPermOperationsFuzzer(data, size);
+    InsertBundlePermissionFuzzer(data, size);
+    DeleteBundlePermissionFuzzer(data, size);
+    CheckUriPermissionFuzzer(data, size);
+    UpdateOperationFuzzer(data, size);
 }
 
 void SetTables()

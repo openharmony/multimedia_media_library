@@ -24,7 +24,9 @@
 #include "media_mtp_utils.h"
 #include "mtp_data_utils.h"
 #include "mtp_constants.h"
+#include "mtp_manager.h"
 #include "mtp_packet_tools.h"
+#include "mtp_ptp_const.h"
 #include "payload_data/get_object_props_supported_data.h"
 #include "payload_data.h"
 #include "rdb_errno.h"
@@ -48,6 +50,7 @@ static constexpr int32_t MOVING_PHOTO_TYPE = 3;
 static constexpr int32_t EDITED_MOVING_TYPE = 4;
 static constexpr int64_t MILLI_TO_SECOND = 1000;
 static const string PARENT = "parent";
+constexpr int32_t PARENT_ROOT_ID = 0;
 
 static const map<uint16_t, string> FormatMap = {
     { 0, MTP_FORMAT_ALL},
@@ -349,10 +352,8 @@ static const map<uint16_t, int32_t> PropDefaultMap = {
 
 int32_t MtpDataUtils::SolveHandlesFormatData(const uint16_t format, std::string &outExtension, MediaType &outMediaType)
 {
-    if (FormatMap.find(format) == FormatMap.end()) {
-        MEDIA_ERR_LOG("Can not find format");
-        return MTP_ERROR_INVALID_OBJECTHANDLE;
-    }
+    CHECK_AND_RETURN_RET_LOG(FormatMap.find(format) != FormatMap.end(), MTP_ERROR_INVALID_OBJECTHANDLE,
+        "Can not find format");
     outExtension = FormatMap.at(format);
     if (FormatAllMap.find(outExtension) != FormatAllMap.end()) {
         outMediaType = FormatAllMap.at(outExtension);
@@ -378,10 +379,8 @@ int32_t MtpDataUtils::SolveSetObjectPropValueData(const shared_ptr<MtpOperationC
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "context is nullptr");
 
-    if (ObjMediaPropTypeMap.find(context->property) == ObjMediaPropTypeMap.end()) {
-        MEDIA_ERR_LOG("Can not support propertyType");
-        return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
-    }
+    bool cond = ObjMediaPropTypeMap.find(context->property) == ObjMediaPropTypeMap.end();
+    CHECK_AND_RETURN_RET_LOG(!cond, MTP_ERROR_INVALID_OBJECTPROP_VALUE, "Can not support propertyType");
     if (ObjMediaPropMap.find(context->property) == ObjMediaPropMap.end()) {
         MEDIA_ERR_LOG("Can not support this property");
         return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
@@ -442,9 +441,7 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
     int count = 0;
     resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(count > 0, MTP_ERROR_INVALID_OBJECTHANDLE, "have no row");
-    if (properties->size() == 0) {
-        return MTP_INVALID_OBJECTPROPCODE_CODE;
-    }
+    CHECK_AND_RETURN_RET(properties->size() != 0, MTP_INVALID_OBJECTPROPCODE_CODE);
     ResultSetDataType idType = TYPE_INT32;
     int32_t handle = 0;
     for (int32_t row = 0; row < count; row++) {
@@ -455,10 +452,7 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
             int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
             string path = GetMovingOrEnditSourcePath(data, subtype, context);
             int32_t parent = GetInt32Val(PARENT, resultSet);
-            if (path.empty()) {
-                MEDIA_ERR_LOG(" MtpDataUtils::GetPropList get sourcePath failed");
-                return E_FAIL;
-            }
+            CHECK_AND_RETURN_RET_LOG(!path.empty(), E_FAIL, "MtpDataUtils::GetPropList get sourcePath failed");
             MovingType movingType;
             movingType.displayName = displayName;
             movingType.parent = static_cast<uint64_t>(parent);
@@ -517,10 +511,7 @@ variant<int32_t, int64_t, std::string> MtpDataUtils::ReturnError(const std::stri
 
 void MtpDataUtils::GetFormatByPath(const std::string &path, uint16_t &outFormat)
 {
-    if (path.empty()) {
-        MEDIA_ERR_LOG("path is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(!path.empty(), "path is nullptr");
     if (MediaFileUtils::IsDirectory(path)) {
         MEDIA_ERR_LOG("path is dir");
         outFormat = MTP_FORMAT_ASSOCIATION_CODE;
@@ -531,7 +522,7 @@ void MtpDataUtils::GetFormatByPath(const std::string &path, uint16_t &outFormat)
     if (slashIndex != std::string::npos) {
         displayName = path.substr(slashIndex + 1);
     }
-    size_t extensionIndex = displayName.find(".");
+    size_t extensionIndex = displayName.rfind(".");
     std::string extension;
     if (extensionIndex != std::string::npos) {
         extension = displayName.substr(extensionIndex);
@@ -557,30 +548,18 @@ int32_t MtpDataUtils::GetFormat(const shared_ptr<DataShare::DataShareResultSet> 
     int status;
     int mediaType;
     status = resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, index);
-    if (status != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetColumnIndex failed");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == NativeRdb::E_OK, E_FAIL, "GetColumnIndex failed");
     resultSet->GetInt(index, mediaType);
     if (mediaType == MEDIA_TYPE_ALBUM) {
         outFormat = MTP_FORMAT_ASSOCIATION_CODE;
         return E_SUCCESS;
     }
     status = resultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, index);
-    if (status != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetColumnIndex failed");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == NativeRdb::E_OK, E_FAIL, "GetColumnIndex failed");
     std::string pathVal;
     status = resultSet->GetString(index, pathVal);
-    if (status != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetString failed");
-        return E_FAIL;
-    }
-    if (pathVal.empty()) {
-        MEDIA_ERR_LOG("path is empty");
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == NativeRdb::E_OK, E_FAIL, "GetString failed");
+    CHECK_AND_RETURN_RET_LOG(!pathVal.empty(), E_FAIL, "path is empty");
     GetFormatByPath(pathVal, outFormat);
     return E_SUCCESS;
 }
@@ -622,6 +601,13 @@ void MtpDataUtils::SetProperty(const std::string &column, const shared_ptr<DataS
             break;
         case TYPE_INT32:
             prop.currentValue->bin_.i32 = get<int32_t>(columnValue);
+            {
+                // if ptp in mtp mode, set parent id to PTP_IN_MTP_ID
+                bool isParent = column.compare(MEDIA_DATA_DB_PARENT_ID) == 0;
+                if (isParent && MtpManager::GetInstance().IsMtpMode() && prop.currentValue->bin_.i32 == 0) {
+                    prop.currentValue->bin_.i32 = PTP_IN_MTP_ID;
+                }
+            }
             break;
         case TYPE_INT64:
             if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
@@ -658,6 +644,11 @@ void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare
 
                 prop.currentValue->bin_.ui16 = format;
                 MEDIA_INFO_LOG("prop.currentValue->bin_.ui16 %{public}u", format);
+            } else if (column.compare(MEDIA_DATA_DB_SIZE) == 0 && GetInt32Val(PARENT, resultSet) != PARENT_ROOT_ID) {
+                string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+                struct stat statInfo;
+                CHECK_AND_RETURN_LOG(stat(filePath.c_str(), &statInfo) == 0, "GetOneRowPropList stat failed");
+                prop.currentValue->bin_.i64 = statInfo.st_size;
             } else {
                 SetProperty(column, resultSet, type, prop);
             }
@@ -668,14 +659,56 @@ void MtpDataUtils::GetOneRowPropList(uint32_t handle, const shared_ptr<DataShare
     }
 }
 
+int32_t MtpDataUtils::GetPropValueForVideoOfMovingPhoto(const std::string &path,
+    const uint32_t property, PropertyValue &outPropValue)
+{
+    CHECK_AND_RETURN_RET_LOG(PropColumnMap.find(property) != PropColumnMap.end(), MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+        "Can not support this property");
+    std::string column = PropColumnMap.at(property);
+    if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
+        outPropValue.outStrVal = std::filesystem::path(path).filename().string();
+        return MTP_SUCCESS;
+    }
+    struct stat statInfo;
+    CHECK_AND_RETURN_RET_LOG(stat(path.c_str(), &statInfo) == 0, MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+        "GetPropValueForMovingMp4 stat failed");
+    if (column.compare(MEDIA_DATA_DB_SIZE) == 0) {
+        outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_size);
+        return MTP_SUCCESS;
+    }
+    if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
+        outPropValue.outStrVal = Strftime("%Y-%m-%d %H:%M:%S", statInfo.st_mtime);
+        return MTP_SUCCESS;
+    }
+    if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
+        outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_ctime);
+    }
+
+    return MTP_SUCCESS;
+}
+
 int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
-    const shared_ptr<DataShare::DataShareResultSet> &resultSet, PropertyValue &outPropValue)
+    const shared_ptr<DataShare::DataShareResultSet> &resultSet, PropertyValue &outPropValue, bool isVideoOfMovingPhoto)
 {
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "resultSet is nullptr");
 
-    if (resultSet->GoToFirstRow() != 0) {
-        return MTP_ERROR_INVALID_OBJECTHANDLE;
+    CHECK_AND_RETURN_RET(resultSet->GoToFirstRow() == 0, MTP_ERROR_INVALID_OBJECTHANDLE);
+    if (isVideoOfMovingPhoto && property != MTP_PROPERTY_PARENT_OBJECT_CODE) {
+        string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        string mp4FilePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
+        return GetPropValueForVideoOfMovingPhoto(mp4FilePath, property, outPropValue);
     }
+
+    if (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        property == MTP_PROPERTY_OBJECT_SIZE_CODE) {
+        string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        struct stat statInfo;
+        CHECK_AND_RETURN_RET_LOG(stat(filePath.c_str(), &statInfo) == 0, MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+            "GetPropValueBySet stat failed");
+        outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_size);
+        return MTP_SUCCESS;
+    }
+
     if (PropColumnMap.find(property) != PropColumnMap.end()) {
         std::string column = PropColumnMap.at(property);
         ResultSetDataType type = ColumnTypeMap.at(column);
@@ -691,7 +724,7 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
             case TYPE_INT64:
                 if (column.compare(MEDIA_DATA_DB_DATE_MODIFIED) == 0) {
                     std::string timeFormat = "%Y-%m-%d %H:%M:%S";
-                    outPropValue.outStrVal = Strftime(timeFormat, get<int64_t>(columnValue));
+                    outPropValue.outStrVal = Strftime(timeFormat, (get<int64_t>(columnValue) / MILLI_TO_SECOND));
                 } else {
                     outPropValue.outIntVal = static_cast<uint64_t>(get<int64_t>(columnValue));
                 }
@@ -843,10 +876,7 @@ void MtpDataUtils::GetMtpOneRowProp(const std::shared_ptr<UInt16List> &propertie
 uint32_t MtpDataUtils::GetMtpFormatByPath(const std::string &path, uint16_t &outFormat)
 {
     outFormat = MTP_FORMAT_UNDEFINED_CODE;
-    if (path.empty()) {
-        MEDIA_ERR_LOG("path is nullptr");
-        return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
-    }
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), MTP_ERROR_INVALID_OBJECTPROP_VALUE, "path is nullptr");
     CHECK_AND_RETURN_RET_LOG(access(path.c_str(), R_OK) == 0, E_ERR, "access failed path[%{public}s]", path.c_str());
     if (std::filesystem::is_directory(path)) {
         outFormat = MTP_FORMAT_ASSOCIATION_CODE;
@@ -854,9 +884,7 @@ uint32_t MtpDataUtils::GetMtpFormatByPath(const std::string &path, uint16_t &out
     }
 
     std::filesystem::path filePath(path);
-    if (!filePath.filename().has_extension()) {
-        return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
-    }
+    CHECK_AND_RETURN_RET(filePath.filename().has_extension(), MTP_ERROR_INVALID_OBJECTPROP_VALUE);
     // ↑ has_extension already checked for file extension
     std::string extension = filePath.filename().extension().c_str();
     for (auto it = FormatMap.begin(); it != FormatMap.end(); it++) {
@@ -889,10 +917,7 @@ void MtpDataUtils::SetMtpProperty(const std::string &column, const std::string &
         return;
     }
     struct stat statInfo;
-    if (stat(path.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("SetMtpProperty stat failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(stat(path.c_str(), &statInfo) == 0, "SetMtpProperty stat failed");
     if (column.compare(MEDIA_DATA_DB_SIZE) == 0) {
         prop.currentValue->bin_.i64 = statInfo.st_size;
         return;
@@ -936,29 +961,20 @@ void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &
     if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
         std::string filename = std::filesystem::path(path).filename();
         size_t filename_pos = filename.find_last_of('.');
-        if (filename_pos == std::string::npos) {
-            MEDIA_ERR_LOG("get file name failed");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(filename_pos != std::string::npos, "get file name failed");
         size_t displayName_pos = displayName.find_last_of('.');
-        if (displayName_pos == std::string::npos) {
-            MEDIA_ERR_LOG("get file name failed");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(displayName_pos != std::string::npos, "get displayName name failed");
         std::string value;
-        if (filename_pos + 1 >= filename.size()) {
-            MEDIA_ERR_LOG("get file name failed");
-            return;
-        }
+        CHECK_AND_RETURN_LOG(filename_pos + 1 < filename.size(), "get fileName failed");
         value = displayName.substr(0, displayName_pos) + "." + filename.substr(filename_pos + 1);
         prop.currentValue->str_ = make_shared<std::string>(value);
     }
+    if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
+        prop.currentValue->bin_.i64 = movingType.parent;
+    }
 
     struct stat statInfo;
-    if (stat(path.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("SetMtpProperty stat failed");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(stat(path.c_str(), &statInfo) == 0, "SetMtpProperty stat failed");
     if (column.compare(MEDIA_DATA_DB_SIZE) == 0) {
         prop.currentValue->bin_.i64 = statInfo.st_size;
     }
@@ -967,9 +983,6 @@ void MtpDataUtils::SetPtpProperty(const std::string &column, const std::string &
     }
     if (column.compare(MEDIA_DATA_DB_DATE_ADDED) == 0) {
         prop.currentValue->bin_.i64 = statInfo.st_ctime;
-    }
-    if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
-        prop.currentValue->bin_.i64 = movingType.parent;
     }
 }
 
@@ -1004,10 +1017,8 @@ string MtpDataUtils::GetMovingOrEnditSourcePath(const std::string &path, const i
 int32_t MtpDataUtils::GetMtpPropValue(const std::string &path,
     const uint32_t property, const uint16_t format, PropertyValue &outPropValue)
 {
-    if (PropColumnMap.find(property) == PropColumnMap.end()) {
-        MEDIA_ERR_LOG("Can not support this property");
-        return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
-    }
+    CHECK_AND_RETURN_RET_LOG(PropColumnMap.find(property) != PropColumnMap.end(), MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+        "Can not support this property");
 
     std::string column = PropColumnMap.at(property);
     if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
@@ -1016,10 +1027,8 @@ int32_t MtpDataUtils::GetMtpPropValue(const std::string &path,
     }
 
     struct stat statInfo;
-    if (stat(path.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("GetMtpPropValue stat failed");
-        return MTP_ERROR_INVALID_OBJECTPROP_VALUE;
-    }
+    CHECK_AND_RETURN_RET_LOG(stat(path.c_str(), &statInfo) == 0, MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+        "GetMtpPropValue stat failed");
     if (column.compare(MEDIA_DATA_DB_SIZE) == 0) {
         outPropValue.outIntVal = static_cast<uint64_t>(statInfo.st_size);
         return MTP_SUCCESS;
@@ -1064,5 +1073,52 @@ void MtpDataUtils::SetMtpOneDefaultlPropList(uint32_t handle,
     outProps->push_back(prop);
 }
 
+int32_t MtpDataUtils::GetGalleryPropList(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<std::vector<Property>> &outProps, const std::string &name)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
+    CHECK_AND_RETURN_RET_LOG(outProps != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "outProps is nullptr");
+    auto properties = std::make_shared<UInt16List>();
+    CHECK_AND_RETURN_RET_LOG(properties != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "properties is nullptr");
+    if (context->property == MTP_PROPERTY_ALL_CODE) {
+        auto mtpContext = std::make_shared<MtpOperationContext>();
+        CHECK_AND_RETURN_RET_LOG(mtpContext != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "mtpContext is nullptr");
+        mtpContext->format = (context->format == 0) ? MTP_FORMAT_ASSOCIATION_CODE : context->format;
+
+        auto payLoadData = std::make_shared<GetObjectPropsSupportedData>(mtpContext);
+        CHECK_AND_RETURN_RET_LOG(payLoadData != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "payLoadData is nullptr");
+        payLoadData->GetObjectProps(*properties);
+    } else {
+        properties->push_back(context->property);
+    }
+    CHECK_AND_RETURN_RET_LOG(properties->size() > 0, MTP_INVALID_OBJECTPROPCODE_CODE, "properties is empty");
+
+    std::string column;
+    for (uint16_t property : *properties) {
+        if (PropColumnMap.find(property) != PropColumnMap.end()) {
+            auto properType = MtpPacketTool::GetObjectPropTypeByPropCode(property);
+            Property prop(property, properType);
+            CHECK_AND_RETURN_RET_LOG(prop.currentValue != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "prop is nullptr");
+
+            prop.handle_ = PTP_IN_MTP_ID;
+            column = PropColumnMap.at(property);
+            if (column.compare(MEDIA_DATA_DB_FORMAT) == 0) {
+                prop.currentValue->bin_.ui16 = MTP_FORMAT_ASSOCIATION_CODE;
+            } else if (column.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
+                prop.currentValue->bin_.ui32 = DEFAULT_PARENT_ROOT;
+            } else if (column.compare(MEDIA_DATA_DB_NAME) == 0) {
+                prop.currentValue->str_ = std::make_shared<std::string>(name);
+            } else {
+                continue;
+            }
+            outProps->push_back(prop);
+        } else if (PropDefaultMap.find(property) != PropDefaultMap.end()) {
+            SetMtpOneDefaultlPropList(PTP_IN_MTP_ID, property, outProps, DEFAULT_STORAGE_ID);
+        } else {
+            MEDIA_DEBUG_LOG("other property:0x%{public}x", property);
+        }
+    }
+    return MTP_SUCCESS;
+}
 } // namespace Media
 } // namespace OHOS

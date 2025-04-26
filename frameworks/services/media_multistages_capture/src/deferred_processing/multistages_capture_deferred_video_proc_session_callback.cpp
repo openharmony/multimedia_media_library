@@ -37,11 +37,13 @@ MultiStagesCaptureDeferredVideoProcSessionCallback::~MultiStagesCaptureDeferredV
 {}
 
 int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::UpdateVideoQuality(
-    const std::string &videoId, bool isSuccess)
+    const std::string &videoId, bool isSuccess, bool isDirtyNeedUpdate)
 {
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     NativeRdb::ValuesBucket updateValues;
-    updateValues.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
+    if (isDirtyNeedUpdate) {
+        updateValues.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_FDIRTY));
+    }
 
     int32_t subType = MultiStagesCaptureManager::QuerySubType(videoId);
     if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
@@ -60,11 +62,7 @@ int32_t MultiStagesCaptureDeferredVideoProcSessionCallback::UpdateVideoQuality(
 void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(const std::string& videoId,
     const sptr<IPCFileDescriptor> ipcFd)
 {
-    if (videoId.empty()) {
-        MEDIA_ERR_LOG("OnProcessVideoDone, videoId is empty");
-        return;
-    }
-
+    CHECK_AND_RETURN_LOG(!videoId.empty(), "OnProcessVideoDone, videoId is empty");
     MEDIA_INFO_LOG("OnProcessVideoDone, videoId: %{public}s", videoId.c_str());
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
@@ -73,7 +71,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::STAGE_VIDEO_TASK_STATUS };
+        PhotoColumn::STAGE_VIDEO_TASK_STATUS, PhotoColumn::PHOTO_POSITION, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         MEDIA_INFO_LOG("result set is empty");
@@ -91,9 +89,13 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    bool isDirtyNeedUpdate = (GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet) !=
+        static_cast<int32_t>(PhotoPositionType::LOCAL));
     resultSet->Close();
 
-    int ret = MediaLibraryPhotoOperations::ProcessMultistagesVideo(isEdited, isMovingPhoto, data);
+    bool isMovingPhotoEffectMode = GetInt64Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet) > 0;
+    int ret = MediaLibraryPhotoOperations::ProcessMultistagesVideo(isEdited, isMovingPhoto, isMovingPhotoEffectMode,
+        data);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save 110 quality video failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(videoId,
@@ -103,7 +105,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
 
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
 
-    UpdateVideoQuality(videoId, true);
+    UpdateVideoQuality(videoId, true, isDirtyNeedUpdate);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(videoId, mediaType);
     MultiStagesCaptureDfxResult::Report(videoId,

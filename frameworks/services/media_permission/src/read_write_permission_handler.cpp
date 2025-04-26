@@ -31,10 +31,56 @@
 #include "sec_comp_kit.h"
 #endif
 #include "userfilemgr_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
+#include "mediatool_uri.h"
 
 using namespace std;
 
 namespace OHOS::Media {
+static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
+    OperationObject::PAH_PHOTO,
+    OperationObject::PAH_ALBUM,
+    OperationObject::PAH_MAP,
+    OperationObject::PAH_FORM_MAP,
+    OperationObject::ANALYSIS_PHOTO_ALBUM,
+    OperationObject::ANALYSIS_PHOTO_MAP,
+    OperationObject::VISION_OCR,
+    OperationObject::VISION_AESTHETICS,
+    OperationObject::VISION_VIDEO_AESTHETICS,
+    OperationObject::VISION_LABEL,
+    OperationObject::VISION_VIDEO_LABEL,
+    OperationObject::VISION_IMAGE_FACE,
+    OperationObject::VISION_VIDEO_FACE,
+    OperationObject::VISION_FACE_TAG,
+    OperationObject::VISION_OBJECT,
+    OperationObject::VISION_RECOMMENDATION,
+    OperationObject::VISION_SEGMENTATION,
+    OperationObject::VISION_COMPOSITION,
+    OperationObject::VISION_SALIENCY,
+    OperationObject::VISION_HEAD,
+    OperationObject::VISION_POSE,
+    OperationObject::VISION_TOTAL,
+    OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
+    OperationObject::GEO_DICTIONARY,
+    OperationObject::GEO_KNOWLEDGE,
+    OperationObject::GEO_PHOTO,
+    OperationObject::PAH_MULTISTAGES_CAPTURE,
+    OperationObject::STORY_ALBUM,
+    OperationObject::STORY_COVER,
+    OperationObject::HIGHLIGHT_DELETE,
+    OperationObject::STORY_PLAY,
+    OperationObject::USER_PHOTOGRAPHY,
+    OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
+    OperationObject::INDEX_CONSTRUCTION_STATUS,
+    OperationObject::MEDIA_APP_URI_PERMISSION,
+    OperationObject::PAH_CLOUD_ENHANCEMENT_OPERATE,
+    OperationObject::ANALYSIS_ASSET_SD_MAP,
+    OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
+    OperationObject::CLOUD_MEDIA_ASSET_OPERATE,
+    OperationObject::ANALYSIS_ADDRESS,
+    OperationObject::TAB_FACARD_PHOTO,
+};
 
 std::string USER_STR = "user";
 static inline bool ContainsFlag(const string &mode, const char flag)
@@ -82,7 +128,7 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
         (SYSTEM_API_URIS.find(uri) != SYSTEM_API_URIS.end())) {
         if (!PermissionUtils::IsSystemApp()) {
             MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-            return E_CHECK_SYSTEMAPP_FAIL;
+            return -E_CHECK_SYSTEMAPP_FAIL;
         }
     }
     return E_SUCCESS;
@@ -139,45 +185,6 @@ static void UnifyOprnObject(MediaLibraryCommand &cmd)
 
 static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool isWrite)
 {
-    static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
-        OperationObject::PAH_PHOTO,
-        OperationObject::PAH_ALBUM,
-        OperationObject::PAH_MAP,
-        OperationObject::PAH_FORM_MAP,
-        OperationObject::ANALYSIS_PHOTO_ALBUM,
-        OperationObject::ANALYSIS_PHOTO_MAP,
-        OperationObject::VISION_OCR,
-        OperationObject::VISION_AESTHETICS,
-        OperationObject::VISION_LABEL,
-        OperationObject::VISION_VIDEO_LABEL,
-        OperationObject::VISION_IMAGE_FACE,
-        OperationObject::VISION_VIDEO_FACE,
-        OperationObject::VISION_FACE_TAG,
-        OperationObject::VISION_OBJECT,
-        OperationObject::VISION_RECOMMENDATION,
-        OperationObject::VISION_SEGMENTATION,
-        OperationObject::VISION_COMPOSITION,
-        OperationObject::VISION_SALIENCY,
-        OperationObject::VISION_HEAD,
-        OperationObject::VISION_POSE,
-        OperationObject::VISION_TOTAL,
-        OperationObject::VISION_ANALYSIS_ALBUM_TOTAL,
-        OperationObject::GEO_DICTIONARY,
-        OperationObject::GEO_KNOWLEDGE,
-        OperationObject::GEO_PHOTO,
-        OperationObject::PAH_MULTISTAGES_CAPTURE,
-        OperationObject::STORY_ALBUM,
-        OperationObject::STORY_COVER,
-        OperationObject::HIGHLIGHT_DELETE,
-        OperationObject::STORY_PLAY,
-        OperationObject::USER_PHOTOGRAPHY,
-        OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
-        OperationObject::INDEX_CONSTRUCTION_STATUS,
-        OperationObject::ANALYSIS_ASSET_SD_MAP,
-        OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
-        OperationObject::TAB_FACARD_PHOTO,
-    };
-
     int32_t err = HandleSecurityComponentPermission(cmd);
     if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         return err;
@@ -314,9 +321,11 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     }
 
     string perm = isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO;
-    err = PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
-    if (err < 0) {
-        return err;
+    if (!PermissionUtils::CheckCallerPermission(perm)) {
+        perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
+        if (!PermissionUtils::CheckCallerPermission(perm)) {
+            return E_PERMISSION_DENIED;
+        }
     }
     UnifyOprnObject(cmd);
     return E_SUCCESS;

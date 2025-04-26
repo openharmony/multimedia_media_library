@@ -37,6 +37,11 @@
 #include "uri.h"
 #include "values_bucket.h"
 #include "vision_column.h"
+#include "cloud_media_asset_uri.h"
+#include "album_operation_uri.h"
+#include "mediatool_uri.h"
+#include "cloud_enhancement_uri.h"
+#include "smart_album_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -94,12 +99,14 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { TAB_OLD_PHOTO, OperationObject::TAB_OLD_PHOTO },
         { TAB_FACARD_PHOTO, OperationObject::TAB_FACARD_PHOTO },
         { CLOUD_MEDIA_ASSET_OPERATE, OperationObject::CLOUD_MEDIA_ASSET_OPERATE},
+        { ASSET_ALBUM_OPERATION, OperationObject::ASSET_ALBUM_OPERATION},
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
         { PAH_ANA_LABEL, OperationObject::VISION_LABEL },
         { PAH_ANA_VIDEO_LABEL, OperationObject::VISION_VIDEO_LABEL },
         { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
+        { PAH_ANA_VIDEO_ATTS, OperationObject::VISION_VIDEO_AESTHETICS },
         { PAH_ANA_TOTAL, OperationObject::VISION_TOTAL },
         { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
         { VISION_VIDEO_FACE_TABLE, OperationObject::VISION_VIDEO_FACE },
@@ -115,6 +122,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_FACE_TAG, OperationObject::VISION_FACE_TAG },
         { PAH_ANA_HEAD, OperationObject::VISION_HEAD },
         { PAH_ANA_POSE, OperationObject::VISION_POSE },
+        { PAH_ANA_FOREGROUND, OperationObject::ANALYSIS_FOREGROUND},
 
         // use in Location Analyse
         { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
@@ -185,6 +193,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
         { OperationObject::VISION_VIDEO_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_LABEL_TABLE } } },
         { OperationObject::VISION_AESTHETICS, { { OperationType::UNKNOWN_TYPE, VISION_AESTHETICS_TABLE } } },
+        { OperationObject::VISION_VIDEO_AESTHETICS,
+        { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_AESTHETICS_TABLE } } },
         { OperationObject::VISION_SALIENCY, { { OperationType::UNKNOWN_TYPE, VISION_SALIENCY_TABLE } } },
         { OperationObject::VISION_OBJECT, { { OperationType::UNKNOWN_TYPE, VISION_OBJECT_TABLE } } },
         { OperationObject::VISION_RECOMMENDATION, { { OperationType::UNKNOWN_TYPE, VISION_RECOMMENDATION_TABLE } } },
@@ -213,6 +223,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::TAB_OLD_PHOTO, { { OperationType::UNKNOWN_TYPE, TabOldPhotosColumn::OLD_PHOTOS_TABLE } }},
         { OperationObject::TAB_FACARD_PHOTO,
         { { OperationType::UNKNOWN_TYPE, TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE } }},
+        { OperationObject::ASSET_ALBUM_OPERATION,
+            { { OperationType::UNKNOWN_TYPE, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE } } },
 
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
@@ -266,6 +278,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { MEDIA_SMARTALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
         { BUNDLE_PERMISSION_INSERT, OperationType::INSERT_PERMISSION },
         { OPRN_CREATE, OperationType::CREATE },
+        { OPRN_SYS_CREATE, OperationType::CREATE },
         { OPRN_CREATE_COMPONENT, OperationType::CREATE },
         { OPRN_DELETE, OperationType::DELETE },
         { OPRN_QUERY, OperationType::QUERY },
@@ -278,6 +291,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_COMPAT_DELETE_PHOTOS, OperationType::COMPAT_ALBUM_DELETE_ASSETS },
         { OPRN_CLOSE, OperationType::CLOSE },
         { OPRN_TRASH, OperationType::TRASH_PHOTO },
+        { OPRN_SYS_TRASH, OperationType::TRASH_PHOTO },
         { OPRN_PENDING, OperationType::UPDATE_PENDING },
         { OPRN_SET_USER_COMMENT, OperationType::SET_USER_COMMENT },
         { OPRN_INDEX, OperationType::INDEX },

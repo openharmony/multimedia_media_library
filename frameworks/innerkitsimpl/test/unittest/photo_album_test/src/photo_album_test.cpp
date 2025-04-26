@@ -289,7 +289,7 @@ void PhotoAlbumTest::TearDown() {}
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_create_album_001, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_001 enter");
     CreatePhotoAlbumAndCheck("photoalbum_create_album_001");
@@ -303,7 +303,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_create_album_002, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_002 enter");
     string albumName = "photoalbum_create_album_002";
@@ -327,7 +327,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_002, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_create_album_003, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_003 enter");
     const vector<string> testAlbumNames = {
@@ -353,7 +353,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_003, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_create_album_004, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_004 enter");
     constexpr size_t displayNameMax = 255;
@@ -376,7 +376,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_004, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_create_album_005, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_005 enter");
     const string albumName = "photoalbum_create_album_005";
@@ -393,7 +393,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_005, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI97YYD
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_create_album_006, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_006 enter");
     const string albumName = "photoalbum_create_album_006";
@@ -431,7 +431,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_006, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI9KEDW
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_create_album_007, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_007 enter");
     const string albumName = "photoalbum_create_album_007";
@@ -478,7 +478,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_007, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6O6FE
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_delete_album_001, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_delete_album_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_delete_album_001 enter");
 
@@ -509,7 +509,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_delete_album_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6P7NG
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_update_album_001, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_update_album_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_update_album_001 enter");
     const string albumName = "photoalbum_update_album_001";
@@ -538,7 +538,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6P7NG
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_update_album_002, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_update_album_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_update_album_002 enter");
     const string albumName = "photoalbum_update_album_002";
@@ -564,7 +564,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_002, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6P7NG
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_update_album_003, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_update_album_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_update_album_003 enter");
     const string albumName = "photoalbum_update_album_003";
@@ -595,7 +595,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_003, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6P7NG
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_update_album_004, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_update_album_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_update_album_004 enter");
     const string albumName = "photoalbum_update_album_004";
@@ -621,7 +621,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_004, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6P7NG
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_order_album_006, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_order_album_006 enter");
 
@@ -647,7 +647,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_006, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6P7NG
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_order_album_007, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_order_album_007 enter");
 
@@ -673,7 +673,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_007, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6P7NG
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_order_album_008, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_order_album_008 enter");
 
@@ -698,7 +698,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_008, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI6P7NG
  */
-HWTEST_F(PhotoAlbumTest, photoalbum_order_album_009, TestSize.Level0)
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_order_album_009 enter");
 

@@ -28,7 +28,6 @@
 #include "iservice_registry.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_album_refresh.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -324,7 +323,7 @@ void NotifyTest::TearDown() {}
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, get_album_id_by_subtype_001, TestSize.Level0)
+HWTEST_F(NotifyTest, get_album_id_by_subtype_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("get_album_id_by_subtype_001 enter");
     CheckGetAlbumIdBySubType(PhotoAlbumSubType::VIDEO, DefaultAlbumId::VIDEO_ALBUM);
@@ -339,7 +338,7 @@ HWTEST_F(NotifyTest, get_album_id_by_subtype_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, get_album_id_by_subtype_002, TestSize.Level0)
+HWTEST_F(NotifyTest, get_album_id_by_subtype_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("get_album_id_by_subtype_002 enter");
     CheckGetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE, DefaultAlbumId::FAVORITE_ALBUM);
@@ -354,7 +353,7 @@ HWTEST_F(NotifyTest, get_album_id_by_subtype_002, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, get_album_id_by_subtype_003, TestSize.Level0)
+HWTEST_F(NotifyTest, get_album_id_by_subtype_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("get_album_id_by_subtype_003 enter");
     CheckGetAlbumIdBySubType(PhotoAlbumSubType::HIDDEN, DefaultAlbumId::HIDDEN_ALBUM);
@@ -369,7 +368,7 @@ HWTEST_F(NotifyTest, get_album_id_by_subtype_003, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, get_album_id_by_subtype_004, TestSize.Level0)
+HWTEST_F(NotifyTest, get_album_id_by_subtype_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("get_album_id_by_subtype_004 enter");
     CheckGetAlbumIdBySubType(PhotoAlbumSubType::TRASH, DefaultAlbumId::TRASH_ALBUM);
@@ -384,7 +383,7 @@ HWTEST_F(NotifyTest, get_album_id_by_subtype_004, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, get_album_id_by_subtype_005, TestSize.Level0)
+HWTEST_F(NotifyTest, get_album_id_by_subtype_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("get_album_id_by_subtype_005 enter");
     CheckGetAlbumIdBySubType(PhotoAlbumSubType::SCREENSHOT, DefaultAlbumId::SCREENSHOTS_ALBUM);
@@ -399,7 +398,7 @@ HWTEST_F(NotifyTest, get_album_id_by_subtype_005, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, get_album_id_by_subtype_006, TestSize.Level0)
+HWTEST_F(NotifyTest, get_album_id_by_subtype_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("get_album_id_by_subtype_006 enter");
     CheckGetAlbumIdBySubType(PhotoAlbumSubType::CAMERA, DefaultAlbumId::CAMERA_ALBUM);
@@ -414,7 +413,7 @@ HWTEST_F(NotifyTest, get_album_id_by_subtype_006, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, asset_on_change_001, TestSize.Level0)
+HWTEST_F(NotifyTest, asset_on_change_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("asset_on_change_001 enter");
     CheckFileNotify(NotifyType::NOTIFY_ADD);
@@ -429,7 +428,7 @@ HWTEST_F(NotifyTest, asset_on_change_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, asset_on_change_002, TestSize.Level0)
+HWTEST_F(NotifyTest, asset_on_change_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("asset_on_change_002 enter");
     CheckFileNotify(NotifyType::NOTIFY_UPDATE);
@@ -444,7 +443,7 @@ HWTEST_F(NotifyTest, asset_on_change_002, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, asset_on_change_003, TestSize.Level0)
+HWTEST_F(NotifyTest, asset_on_change_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("asset_on_change_003 enter");
     CheckFileNotify(NotifyType::NOTIFY_REMOVE);
@@ -459,7 +458,7 @@ HWTEST_F(NotifyTest, asset_on_change_003, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, close_asset_on_change_001, TestSize.Level0)
+HWTEST_F(NotifyTest, close_asset_on_change_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("close_asset_on_change_001 enter");
     CheckCloseAssetNotify(true);
@@ -474,7 +473,7 @@ HWTEST_F(NotifyTest, close_asset_on_change_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, close_asset_on_change_002, TestSize.Level0)
+HWTEST_F(NotifyTest, close_asset_on_change_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("close_asset_on_change_002 enter");
     CheckCloseAssetNotify(false);
@@ -487,7 +486,7 @@ HWTEST_F(NotifyTest, close_asset_on_change_002, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_001, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_001 enter");
     CheckCloudSyncNotify(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX, "1", DataShareObserver::ChangeType::UPDATE);
@@ -500,7 +499,7 @@ HWTEST_F(NotifyTest, cloud_notify_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_002, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_002 enter");
     CheckCloudSyncNotify(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX, "2", DataShareObserver::ChangeType::INSERT);
@@ -513,7 +512,7 @@ HWTEST_F(NotifyTest, cloud_notify_002, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_003, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_003 enter");
     CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "3", DataShareObserver::ChangeType::INSERT);
@@ -526,7 +525,7 @@ HWTEST_F(NotifyTest, cloud_notify_003, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_004, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_004 enter");
     CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "4", DataShareObserver::ChangeType::DELETE);
@@ -539,7 +538,7 @@ HWTEST_F(NotifyTest, cloud_notify_004, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_005, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_005, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_005 enter");
     CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "5", DataShareObserver::ChangeType::INSERT);
@@ -552,7 +551,7 @@ HWTEST_F(NotifyTest, cloud_notify_005, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_006, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_006, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_006 enter");
     CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "6", DataShareObserver::ChangeType::INSERT);
@@ -565,7 +564,7 @@ HWTEST_F(NotifyTest, cloud_notify_006, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_007, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_007 enter");
     CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::INSERT);
@@ -578,7 +577,7 @@ HWTEST_F(NotifyTest, cloud_notify_007, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_008, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_008 enter");
     CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::DELETE);
@@ -591,7 +590,7 @@ HWTEST_F(NotifyTest, cloud_notify_008, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_009, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_009, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_009 enter");
     CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::INSERT);
@@ -604,7 +603,7 @@ HWTEST_F(NotifyTest, cloud_notify_009, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, cloud_notify_010, TestSize.Level0)
+HWTEST_F(NotifyTest, cloud_notify_010, TestSize.Level2)
 {
     MEDIA_INFO_LOG("cloud_notify_010 enter");
     CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::INSERT);
@@ -617,7 +616,7 @@ HWTEST_F(NotifyTest, cloud_notify_010, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level0)
+HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("handle_empty_data_001 enter");
     MediaLibraryUnitTestUtils::InitUnistore();
@@ -642,7 +641,7 @@ HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, handle_empty_data_002, TestSize.Level0)
+HWTEST_F(NotifyTest, handle_empty_data_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("handle_empty_data_002 enter");
     CloudSyncHandleData emptyHandleData;
@@ -659,7 +658,7 @@ HWTEST_F(NotifyTest, handle_empty_data_002, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, handle_empty_data_003, TestSize.Level0)
+HWTEST_F(NotifyTest, handle_empty_data_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("handle_empty_data_003 enter");
     CloudSyncHandleData emptyHandleData;
@@ -676,7 +675,7 @@ HWTEST_F(NotifyTest, handle_empty_data_003, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(NotifyTest, handle_special_change_type_001, TestSize.Level0)
+HWTEST_F(NotifyTest, handle_special_change_type_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("handle_special_change_type_001 enter");
     CloudSyncHandleData specialHandleData;
@@ -687,7 +686,7 @@ HWTEST_F(NotifyTest, handle_special_change_type_001, TestSize.Level0)
     MEDIA_INFO_LOG("handle_special_change_type_001 exit");
 }
 
-HWTEST_F(NotifyTest, HandleDirtyDataFix_test_empty_list, TestSize.Level0)
+HWTEST_F(NotifyTest, HandleDirtyDataFix_test_empty_list, TestSize.Level2)
 {
     MEDIA_INFO_LOG("HandleDirtyDataFix_test_empty_list enter");
     CloudSyncNotifyInfo info;
@@ -701,7 +700,7 @@ HWTEST_F(NotifyTest, HandleDirtyDataFix_test_empty_list, TestSize.Level0)
     MEDIA_INFO_LOG("HandleDirtyDataFix_test_empty_list leave");
 }
 
-HWTEST_F(NotifyTest, HandleDirtyDataFix_test_empty_uri, TestSize.Level0)
+HWTEST_F(NotifyTest, HandleDirtyDataFix_test_empty_uri, TestSize.Level2)
 {
     MEDIA_INFO_LOG("HandleDirtyDataFix_test_empty_uri enter");
     CloudSyncNotifyInfo info;
@@ -719,7 +718,7 @@ HWTEST_F(NotifyTest, HandleDirtyDataFix_test_empty_uri, TestSize.Level0)
     MEDIA_INFO_LOG("HandleDirtyDataFix_test_empty_uri leave");
 }
 
-HWTEST_F(NotifyTest, HandleDirtyDataFix_test_normal_uri, TestSize.Level0)
+HWTEST_F(NotifyTest, HandleDirtyDataFix_test_normal_uri, TestSize.Level2)
 {
     MEDIA_INFO_LOG("HandleDirtyDataFix_test_normal_uri enter");
     CloudSyncNotifyInfo info;
@@ -737,7 +736,7 @@ HWTEST_F(NotifyTest, HandleDirtyDataFix_test_normal_uri, TestSize.Level0)
     MEDIA_INFO_LOG("HandleDirtyDataFix_test_normal_uri leave");
 }
 
-HWTEST_F(NotifyTest, MakeResponsibilityChain_test_empty_list, TestSize.Level0)
+HWTEST_F(NotifyTest, MakeResponsibilityChain_test_empty_list, TestSize.Level2)
 {
     MEDIA_INFO_LOG("MakeResponsibilityChain_test_empty_list enter");
     CloudSyncNotifyInfo info;
@@ -747,7 +746,7 @@ HWTEST_F(NotifyTest, MakeResponsibilityChain_test_empty_list, TestSize.Level0)
     MEDIA_INFO_LOG("MakeResponsibilityChain_test_empty_list leave");
 }
 
-HWTEST_F(NotifyTest, MakeResponsibilityChain_test_empty_uri, TestSize.Level0)
+HWTEST_F(NotifyTest, MakeResponsibilityChain_test_empty_uri, TestSize.Level2)
 {
     MEDIA_INFO_LOG("MakeResponsibilityChain_test_empty_uri enter");
     CloudSyncNotifyInfo info;
@@ -761,7 +760,7 @@ HWTEST_F(NotifyTest, MakeResponsibilityChain_test_empty_uri, TestSize.Level0)
     MEDIA_INFO_LOG("MakeResponsibilityChain_test_empty_uri leave");
 }
 
-HWTEST_F(NotifyTest, MakeResponsibilityChain_test, TestSize.Level0)
+HWTEST_F(NotifyTest, MakeResponsibilityChain_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("MakeResponsibilityChain_test enter");
     CloudSyncNotifyInfo info;

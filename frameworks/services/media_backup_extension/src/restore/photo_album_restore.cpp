@@ -38,15 +38,9 @@ std::vector<PhotoAlbumRestore::GalleryAlbumRowData> PhotoAlbumRestore::GetGaller
     int pageSize = 200;
     do {
         std::vector<NativeRdb::ValueObject> params = {offset, pageSize};
-        if (this->galleryRdb_ == nullptr) {
-            MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(this->galleryRdb_ != nullptr, "Media_Restore: galleryRdb_ is null.");
         auto resultSet = this->galleryRdb_->QuerySql(querySql, params);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "Query resultSql is null.");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             PhotoAlbumRestore::GalleryAlbumRowData albumInfo;
             albumInfo.albumId = GetStringVal(this->GALLERY_ALBUM_ID, resultSet);

@@ -21,10 +21,11 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_backup_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/medialibrary-album"
   include_dirs = [
     "./include",
     "./include/database",
+    "./include/log",
     "./include/report",
     "./include/restore",
     "./include/utils",
@@ -36,6 +37,8 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/config",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/classify",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/geo_dictionary",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/geo_knowledge",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/highlight",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include/log",
@@ -54,6 +57,8 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_file_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/base_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/burst_key_generator.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/classify/clone_restore_classify.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/geo_dictionary/clone_restore_geo_dictionary.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/geo_knowledge/clone_restore_geo.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/geo_knowledge/geo_knowledge_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/highlight/highlight_restore.cpp",
@@ -72,29 +77,43 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/gallery_db_upgrade.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/gallery_media_dao.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/media_library_db_upgrade.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_dao.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photo_album_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_clone.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_dao.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_data_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/restore/tab_old_photos_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/upgrade_restore.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/external_source.cpp",
     "./src/gallery_source.cpp",
+    "./src/log/hi_audit_helper_test.cpp",
+    "./src/log/hi_audit_test.cpp",
+    "./src/log/log_utils_test.cpp",
+    "./src/log/zip_util_test.cpp",
     "./src/medialibrary_backup_test.cpp",
+    "./src/report/gallery_media_count_statistic_test.cpp",
+    "./src/report/photos_count_statistic_test.cpp",
     "./src/report/upgrade_restore_gallery_media_task_test.cpp",
+    "./src/report/upgrade_restore_task_report_test.cpp",
+    "./src/restore/db_upgrade_utils_test.cpp",
+    "./src/restore/highlight_restore_test.cpp",
+    "./src/restore/media_library_db_upgrade_test.cpp",
+    "./src/restore/photo_album_clone_test.cpp",
     "./src/restore/photo_album_dao_test.cpp",
     "./src/restore/photos_clone_test.cpp",
+    "./src/restore/photos_data_handler_test.cpp",
     "./src/restore/photos_restore_test.cpp",
+    "./src/restore/tab_old_photos_restore_test.cpp",
+    "./src/utils/database_utils.cpp",
   ]
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
-
-  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
 
   external_deps = [
     "ability_base:want",
@@ -111,6 +130,7 @@ ohos_unittest("medialibrary_backup_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
+    "e2fsprogs:libext2_uuid",
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",

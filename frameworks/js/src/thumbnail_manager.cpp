@@ -41,6 +41,7 @@
 #include "userfile_manager_types.h"
 #include "uv.h"
 #include "userfile_client.h"
+#include "highlight_column.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -709,21 +710,13 @@ static void HandlePixelCallback(const RequestSharedPtr &request)
     }
 }
 
-static void UvJsExecute(uv_work_t *work)
+static void UvJsExecute(ThumnailUv *uvMsg)
 {
-    // js thread
-    if (work == nullptr) {
-        return;
-    }
-
-    ThumnailUv *uvMsg = reinterpret_cast<ThumnailUv *>(work->data);
     if (uvMsg == nullptr) {
-        delete work;
         return;
     }
     if (uvMsg->request_ == nullptr) {
         delete uvMsg;
-        delete work;
         return;
     }
     do {
@@ -739,7 +732,6 @@ static void UvJsExecute(uv_work_t *work)
     } while (0);
     if (uvMsg->manager_ == nullptr) {
         delete uvMsg;
-        delete work;
         return;
     }
     if (uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_FAST &&
@@ -751,7 +743,6 @@ static void UvJsExecute(uv_work_t *work)
     }
 
     delete uvMsg;
-    delete work;
 }
 
 void ThumbnailManager::NotifyImage(const RequestSharedPtr &request)
@@ -764,34 +755,18 @@ void ThumbnailManager::NotifyImage(const RequestSharedPtr &request)
         return;
     }
 
-    uv_loop_s *loop = nullptr;
-    napi_get_uv_event_loop(request->callback_.env_, &loop);
-    if (loop == nullptr) {
-        DeleteRequestIdFromMap(request->GetUUID());
-        return;
-    }
-
-    uv_work_t *work = new (nothrow) uv_work_t;
-    if (work == nullptr) {
-        DeleteRequestIdFromMap(request->GetUUID());
-        return;
-    }
-
     ThumnailUv *msg = new (nothrow) ThumnailUv(request, this);
     if (msg == nullptr) {
-        delete work;
         DeleteRequestIdFromMap(request->GetUUID());
         return;
     }
-
-    work->data = reinterpret_cast<void *>(msg);
-    int ret = uv_queue_work(loop, work, [](uv_work_t *w) {}, [](uv_work_t *w, int s) {
-        UvJsExecute(w);
-    });
+    std::function<void()> task = [msg, this]() {
+        UvJsExecute(msg);
+    };
+    int ret = napi_send_event(request->callback_.env_, task, napi_eprio_immediate);
     if (ret != 0) {
         NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
         delete msg;
-        delete work;
         return;
     }
     return;

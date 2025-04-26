@@ -28,10 +28,12 @@ const fs = requireNapi('file.fs');
 const fileUri = requireNapi('file.fileuri');
 const bundleManager = requireNapi('bundle.bundleManager');
 const photoAccessHelper = requireNapi('file.photoAccessHelper');
-const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
-const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
-const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
-const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
+const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
+    ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
+    ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
+    ['video/*', 'FILTER_MEDIA_TYPE_VIDEO'],
+    ['image/movingPhoto', 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO']
+]);
 
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
@@ -228,6 +230,9 @@ export class PhotoPickerComponent extends ViewPU {
                     uri: 'multipleselect',
                     targetPage: 'photoPage',
                     filterMediaType: this.convertMIMETypeToFilterType(null === (t = this.pickerOptions) || void 0 === t ? void 0 : t.MIMEType),
+                    mimeTypeFilter: this.parseMimeTypeFilter(null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.mimeTypeFilter),
+                    fileSizeFilter: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.fileSizeFilter,
+                    videoDurationFilter: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.videoDurationFilter,
                     maxSelectNumber: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.maxSelectNumber,
                     isPhotoTakingSupported: null === (n = this.pickerOptions) || void 0 === n ? void 0 : n.isPhotoTakingSupported,
                     isEditSupported: !1,
@@ -306,7 +311,7 @@ export class PhotoPickerComponent extends ViewPU {
             this.handleOtherOnReceive(e);
             console.info('PhotoPickerComponent onReceive: other case');
         }
-        console.info('PhotoPickerComponent onReceive' + JSON.stringify(e));
+        console.info('PhotoPickerComponent onReceive' + this.pickerController.encrypt(JSON.stringify(e)));
     }
 
     handleOtherOnReceive(e) {
@@ -359,7 +364,8 @@ export class PhotoPickerComponent extends ViewPU {
             if (this.proxy) {
                 if ('thumbnail' === n && o === ClickType.SELECTED) {
                     this.proxy.send({ clickConfirm: i.uri, isConfirm: r });
-                    console.info('PhotoPickerComponent onReceive: click confirm: uri = ' + i.uri + 'isConfirm = ' + r);
+                    console.info('PhotoPickerComponent onReceive: click confirm: uri = ' +
+                        this.pickerController.encrypt(i.uri) + 'isConfirm = ' + r);
                 }
                 if ('camera' === n) {
                     this.proxy.send({ enterCamera: r });
@@ -385,7 +391,7 @@ export class PhotoPickerComponent extends ViewPU {
         if (this.onPhotoBrowserChanged) {
             this.onPhotoBrowserChanged(o);
         }
-        console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + o.uri);
+        console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + this.pickerController.encrypt(o.uri));
     }
 
     handleVideoPlayStateChanged(e) {
@@ -410,16 +416,30 @@ export class PhotoPickerComponent extends ViewPU {
         console.info('PhotoPickerComponent onReceive: handleSaveCallback');
     }
 
+    parseMimeTypeFilter(filter) {
+        if (!filter) {
+            return undefined;
+        }
+        let o = {};
+        o.mimeTypeArray = [];
+        if (filter.mimeTypeArray) {
+            for (let mimeType of filter.mimeTypeArray) {
+                if (PHOTO_VIEW_MIME_TYPE_MAP.has(mimeType)) {
+                    o.mimeTypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+                  } else {
+                    o.mimeTypeArray.push(mimeType);
+                }
+            }
+        }
+        return o;
+    }
+
     convertMIMETypeToFilterType(e) {
         let o;
-        if (e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
-            o = FILTER_MEDIA_TYPE_IMAGE;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
-            o = FILTER_MEDIA_TYPE_VIDEO;
-        } else if (e === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
-            o = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
+        if (PHOTO_VIEW_MIME_TYPE_MAP.has(e)) {
+            o = PHOTO_VIEW_MIME_TYPE_MAP.get(e);
         } else {
-            o = FILTER_MEDIA_TYPE_ALL;
+            o = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*');
         }
         console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(o));
         return o;
@@ -444,14 +464,14 @@ let PickerController = class {
                 let e = o;
                 if (e) {
                     this.data = new Map([['SET_SELECTED_URIS', [...e]]]);
-                    console.info('PhotoPickerComponent SET_SELECTED_URIS' + JSON.stringify(e));
+                    console.info('PhotoPickerComponent SET_SELECTED_URIS' + this.encrypt(JSON.stringify(e)));
                 }
             }
         } else if (e === DataType.SET_ALBUM_URI) {
             let e = o;
             if (e !== undefined) {
                 this.data = new Map([['SET_ALBUM_URI', e]]);
-                console.info('PhotoPickerComponent SET_ALBUM_URI' + JSON.stringify(e));
+                console.info('PhotoPickerComponent SET_ALBUM_URI' + this.encrypt(JSON.stringify(e)));
             }
         } else {
             console.info('PhotoPickerComponent setData: other case');
@@ -471,7 +491,7 @@ let PickerController = class {
         let m = o ? o : PhotoBrowserRange.ALL;
         l.photoBrowserRange = m;
         this.data = new Map([['SET_PHOTO_BROWSER_ITEM', l]]);
-        console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM ' + JSON.stringify(l));
+        console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM ' + this.encrypt(JSON.stringify(l)));
     }
 
     exitPhotoBrowser() {
@@ -578,6 +598,13 @@ let PickerController = class {
         m.isVisible = o;
         this.data = new Map([['SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY', m]]);
         console.info('PhotoPickerComponent SET_PHOTO_BROWSER_UI_ELEMENT_VISIBILITY ' + JSON.stringify(m));
+    }
+
+    encrypt(data) {
+        if (!data || data?.indexOf('file:///data/storage/') !== -1) {
+          return '';
+        }
+        return data.replace(/(\/\w+)\./g, '/******.');
     }
 };
 PickerController = __decorate([Observed], PickerController);

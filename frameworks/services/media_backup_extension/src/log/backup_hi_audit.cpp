@@ -21,11 +21,13 @@
 #include <fcntl.h>
 #include <iomanip>
 #include <sstream>
+#include <filesystem>
 #include <sys/time.h>
 #include <unistd.h>
 
 #include "backup_zip_util.h"
 #include "media_log.h"
+#include "media_file_utils.h"
 
 namespace OHOS::Media {
 struct BackupHiAuditConfig {
@@ -63,11 +65,14 @@ BackupHiAudit& BackupHiAudit::GetInstance()
 
 void BackupHiAudit::Init()
 {
-    if (access(HIAUDIT_CONFIG.logPath.c_str(), F_OK) != 0) {
-        int ret = mkdir(HIAUDIT_CONFIG.logPath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
-        if (ret != 0) {
-            MEDIA_ERR_LOG("Failed to create directory %{public}s.", HIAUDIT_CONFIG.logPath.c_str());
+    if (!std::filesystem::exists(HIAUDIT_CONFIG.logPath)) {
+        if (!MediaFileUtils::CreateDirectory(HIAUDIT_CONFIG.logPath)) {
+            MEDIA_ERR_LOG("Create hiaudit log dir  %{public}s failed", HIAUDIT_CONFIG.logPath.c_str());
+            return ;
         }
+        std::filesystem::permissions(HIAUDIT_CONFIG.logPath,
+            std::filesystem::perms::owner_all | std::filesystem::perms::group_all | std::filesystem::perms::others_all,
+            std::filesystem::perm_options::replace);
     }
 
     std::lock_guard<std::mutex> lock(mutex_);
@@ -135,23 +140,19 @@ void BackupHiAudit::GetWriteFilePath()
     close(writeFd_);
     ZipAuditLog();
     CleanOldAuditFile();
-    
+
     writeFd_ = open(HIAUDIT_LOG_NAME.c_str(), O_CREAT | O_TRUNC | O_RDWR,
         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (writeFd_ < 0) {
-        MEDIA_ERR_LOG("fd open error errno: %{public}d", errno);
-    }
-    
+    CHECK_AND_PRINT_LOG(writeFd_ >= 0, "fd open error errno: %{public}d", errno);
+
     writeLogSize_ = 0;
 }
 
 void BackupHiAudit::CleanOldAuditFile()
 {
     DIR* dir = opendir(HIAUDIT_CONFIG.logPath.c_str());
-    if (dir == nullptr) {
-        MEDIA_ERR_LOG("failed open dir, errno: %{public}d.", errno);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dir != nullptr, "failed open dir, errno: %{public}d.", errno);
+
     uint32_t zipFileSize = 0;
     std::string oldestAuditFile;
     struct dirent *ptr = nullptr;

@@ -27,7 +27,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
-#include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_log.h"
@@ -36,6 +35,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
@@ -44,7 +44,6 @@
 #endif
 
 using namespace std;
-using namespace OHOS::DistributedKv;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::AbilityRuntime;
 
@@ -56,9 +55,6 @@ ThumbnailService::ThumbnailService(void)
 {
     rdbStorePtr_ = nullptr;
     rdbPredicatePtr_ = nullptr;
-#ifdef DISTRIBUTED
-    kvStorePtr_ = nullptr;
-#endif
 }
 
 shared_ptr<ThumbnailService> ThumbnailService::GetInstance()
@@ -109,15 +105,9 @@ bool ThumbnailService::CheckSizeValid()
 }
 
 void ThumbnailService::Init(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-#ifdef DISTRIBUTED
-    const shared_ptr<SingleKvStore> &kvStore,
-#endif
     const shared_ptr<Context> &context)
 {
     rdbStorePtr_ = rdbStore;
-#ifdef DISTRIBUTED
-    kvStorePtr_ = kvStore;
-#endif
     context_ = context;
 
     if (!GetDefaultWindowSize(screenSize_)) {
@@ -131,9 +121,6 @@ void ThumbnailService::ReleaseService()
 {
     StopAllWorker();
     rdbStorePtr_ = nullptr;
-#ifdef DISTRIBUTED
-    kvStorePtr_ = nullptr;
-#endif
     context_ = nullptr;
     thumbnailServiceInstance_ = nullptr;
 }
@@ -301,6 +288,7 @@ int32_t ThumbnailService::CreateThumbnailPastDirtyDataFix(const std::string &fil
         "QueryThumbnailDataFromFileId failed, path: %{public}s",
         DfxUtils::GetSafePath(data.path).c_str());
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    data.isLocalFile = true;
     IThumbnailHelper::AddThumbnailGenerateTask(
         IThumbnailHelper::CreateThumbnail, opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::LOW);
     return E_OK;
@@ -323,6 +311,7 @@ int32_t ThumbnailService::CreateLcdPastDirtyDataFix(const std::string &fileId, c
         "QueryThumbnailDataFromFileId failed, path: %{public}s",
         DfxUtils::GetSafePath(data.path).c_str());
     data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
+    data.isLocalFile = true;
     IThumbnailHelper::AddThumbnailGenerateTask(
         IThumbnailHelper::CreateLcd, opts, data, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::LOW);
     return E_OK;
@@ -367,6 +356,36 @@ int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, cons
     return E_OK;
 }
 
+int32_t ThumbnailService::CreateThumbnailFileScanedWithPicture(const std::string &uri, const string &path,
+    std::shared_ptr<Picture> originalPhotoPicture, bool isSync)
+{
+    CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_ERR, "Uri is empty");
+    string fileId;
+    string networkId;
+    string tableName;
+
+    int err = ParseThumbnailParam(uri, fileId, networkId, tableName);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "ParseThumbnailParam failed, err:%{public}d", err);
+
+    std::string dateTaken = ThumbnailUriUtils::GetDateTakenFromUri(uri);
+    std::string dateModified = ThumbnailUriUtils::GetDateModifiedFromUri(uri);
+    std::string fileUri = ThumbnailUriUtils::GetFileUriFromUri(uri);
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .path = path,
+        .table = tableName,
+        .row = fileId,
+        .dateTaken = dateTaken,
+        .dateModified = dateModified,
+        .fileUri = fileUri,
+        .screenSize = screenSize_
+    };
+
+    err = ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(opts, originalPhotoPicture, isSync);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "CreateThumbnailFileScaned failed:%{public}d", err);
+    return E_OK;
+}
+
 void ThumbnailService::InterruptBgworker()
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
@@ -402,13 +421,10 @@ int32_t ThumbnailService::GenerateThumbnailBackground()
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
-#ifdef DISTRIBUTED
-            .kvStore = kvStorePtr_,
-#endif
             .table = tableName
         };
 
-        if ((tableName == PhotoColumn::PHOTOS_TABLE) && ThumbnailUtils::IsSupportGenAstc()) {
+        if ((tableName == PhotoColumn::PHOTOS_TABLE) && ThumbnailImageFrameWorkUtils::IsSupportGenAstc()) {
             // CreateAstcBackground contains thumbnails created.
             err = ThumbnailGenerateHelper::CreateAstcBackground(opts);
             if (err != E_OK) {
@@ -492,9 +508,6 @@ int32_t ThumbnailService::LcdAging()
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
-#ifdef DISTRIBUTED
-            .kvStore = kvStorePtr_,
-#endif
             .table = tableName,
         };
         err = ThumbnailAgingHelper::AgingLcdBatch(opts);
@@ -506,55 +519,39 @@ int32_t ThumbnailService::LcdAging()
     return E_OK;
 }
 
-#ifdef DISTRIBUTED
-int32_t ThumbnailService::LcdDistributeAging(const string &udid)
-{
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
-        .udid = udid
-    };
-    int32_t err = ThumbnailAgingHelper::AgingDistributeLcdBatch(opts);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("AgingDistributeLcdBatch failed : %{public}d", err);
-        return err;
-    }
-    return E_OK;
-}
-
-int32_t ThumbnailService::InvalidateDistributeThumbnail(const string &udid)
-{
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .kvStore = kvStorePtr_,
-        .udid = udid
-    };
-    int32_t err = ThumbnailAgingHelper::InvalidateDistributeBatch(opts);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("InvalidateDistributeBatch failed : %{public}d", err);
-    }
-    return err;
-}
-#endif
-
 bool ThumbnailService::HasInvalidateThumbnail(const std::string &id,
     const std::string &tableName, const std::string &path, const std::string &dateTaken)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
-        .path = path,
         .table = tableName,
         .row = id,
-        .dateTaken = dateTaken,
     };
-    ThumbnailData thumbnailData;
-    if (!ThumbnailUtils::DeleteOriginImage(opts)) {
-        MEDIA_ERR_LOG("failed to delete origin image");
+    ThumbnailData data;
+    data.path = path;
+    data.id = id;
+    data.dateTaken = dateTaken;
+    if (!ThumbnailUtils::DeleteAllThumbFilesAndAstc(opts, data)) {
+        MEDIA_ERR_LOG("Failed to delete thumbnail");
         return false;
     }
-    if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        return MediaLibraryPhotoOperations::HasDroppedThumbnailSize(id);
-    }
+    return true;
+}
+
+bool ThumbnailService::DeleteThumbnailDirAndAstc(const std::string &id,
+    const std::string &tableName, const std::string &path, const std::string &dateTaken)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = tableName,
+        .row = id,
+    };
+    ThumbnailData data;
+    data.path = path;
+    data.id = id;
+    data.dateTaken = dateTaken;
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data), false,
+        "Failed to delete thumbnail");
     return true;
 }
 
@@ -569,9 +566,6 @@ int32_t ThumbnailService::GetAgingDataSize(const int64_t &time, int &count)
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
-#ifdef DISTRIBUTED
-            .kvStore = kvStorePtr_,
-#endif
             .table = tableName,
         };
         int tempCount = 0;
@@ -597,9 +591,6 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
-#ifdef DISTRIBUTED
-            .kvStore = kvStorePtr_,
-#endif
             .table = tableName
         };
         int32_t tempCount = 0;
@@ -666,15 +657,27 @@ bool ThumbnailService::CreateAstcMthAndYear(const std::string &id)
     return true;
 }
 
-void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken)
+bool ThumbnailService::RegenerateThumbnailFromCloud(const string &id)
 {
-    ThumbnailData data;
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .table = PhotoColumn::PHOTOS_TABLE,
-        .row = fileId,
-        .dateTaken = dateTaken
+        .fileId = id,
     };
+    int err = ThumbnailGenerateHelper::RegenerateThumbnailFromCloud(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("RegenerateThumbnailFromCloud failed, err: %{public}d", err);
+        return false;
+    }
+    return true;
+}
+
+void ThumbnailService::DeleteAstcWithFileIdAndDateTaken(const std::string &fileId, const std::string &dateTaken)
+{
+    ThumbnailData data;
+    data.id = fileId;
+    data.dateTaken = dateTaken;
+    ThumbRdbOpt opts;
 
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::DeleteMonthAndYearAstc,
         opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);

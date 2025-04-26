@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_queryperf_unittest") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/medialibrary-album"
 
   include_dirs = [
     "./include",
@@ -70,7 +70,6 @@ ohos_unittest("medialibrary_queryperf_unittest") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {

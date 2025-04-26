@@ -34,6 +34,8 @@ private:
     int32_t GarbageAlbumCheckOrAddType(NativeRdb::RdbStore &store);
     int32_t AddIndexOfGalleryAlbum(NativeRdb::RdbStore &store);
     int32_t AddIndexOfAlbumPlugin(NativeRdb::RdbStore &store);
+    int32_t AddStoryChosenOfGalleryMedia(NativeRdb::RdbStore &store);
+    int32_t CreateRelativeAlbumOfGalleryAlbum(NativeRdb::RdbStore &store);
 
 private:
     // Note: The column photo_quality's default value is 0.
@@ -58,6 +60,15 @@ private:
         ( \
             album_name \
         );";
+    const std::string SQL_GALLERY_MEDIA_TABLE_ADD_STORY_CHOSEN = "\
+        ALTER TABLE gallery_media ADD COLUMN story_chosen INTEGER DEFAULT 1;";
+    const std::string CREATE_RELATE_ALBUM_TBL_SQL = "CREATE TABLE IF NOT EXISTS relative_album ("
+        "relativeBucketId TEXT PRIMARY KEY, "
+        "lPath TEXT NOT NULL);";
+
+    const std::string INSERT_RELATE_ALBUM_TBL_SQL = "INSERT OR REPLACE INTO relative_album "
+        "SELECT relativeBucketId, lPath FROM gallery_album "
+        "WHERE COALESCE(relativeBucketId, '') <> '' GROUP BY relativeBucketId;";
 
 private:
     DbUpgradeUtils dbUpgradeUtils_;

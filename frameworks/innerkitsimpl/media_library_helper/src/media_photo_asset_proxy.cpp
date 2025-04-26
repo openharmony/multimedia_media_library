@@ -91,11 +91,8 @@ PhotoAssetProxy::~PhotoAssetProxy()
 // 调用之前，必须先AddPhotoProxy，否则无法获取FileAsset对象
 unique_ptr<FileAsset> PhotoAssetProxy::GetFileAsset()
 {
-    if (dataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Failed to create Asset, datashareHelper is nullptr");
-        return nullptr;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr,
+        "Failed to create Asset, datashareHelper is nullptr");
     string uri = PAH_QUERY_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri queryUri(uri);
@@ -105,15 +102,10 @@ unique_ptr<FileAsset> PhotoAssetProxy::GetFileAsset()
     vector<string> columns;
 
     auto resultSet = dataShareHelper_->Query(queryUri, predicates, columns, &businessError);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query asset, fileId_: %{public}d", fileId_);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "Failed to query asset, fileId_: %{public}d", fileId_);
     auto fetchResult = make_unique<FetchResult<FileAsset>>(resultSet);
-    if (fetchResult == nullptr) {
-        MEDIA_ERR_LOG("fetchResult is nullptr, %{public}d", fileId_);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(fetchResult != nullptr, nullptr, "fetchResult is nullptr, %{public}d", fileId_);
+
     unique_ptr<FileAsset> fileAsset = fetchResult->GetFirstObject();
     if (fileAsset != nullptr) {
         fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -134,7 +126,7 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
     values.Put(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(mediaType));
     if (cameraShotType_ == CameraShotType::MOVING_PHOTO) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
-        values.Put(PhotoColumn::STAGE_VIDEO_TASK_STATUS, static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE));
+        values.Put(PhotoColumn::STAGE_VIDEO_TASK_STATUS, photoProxy->GetStageVideoTaskStatus());
     }
     if (cameraShotType_ == CameraShotType::BURST) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
@@ -146,6 +138,11 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
+    if (photoProxy->GetCloudImageEnhanceFlag() != static_cast<uint32_t>(CloudEnhancementAvailableType::NOT_SUPPORT) &&
+        photoProxy->GetPhotoId().size() > 0) {
+        values.Put(PhotoColumn::PHOTO_CE_AVAILABLE, static_cast<int32_t>(photoProxy->GetCloudImageEnhanceFlag()));
+        values.Put(PhotoColumn::PHOTO_ID, photoProxy->GetPhotoId());
+    }
 
     if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW ||
         (photoProxy->GetFormat() == PhotoFormat::YUV && subType_ != PhotoSubType::BURST)) {
@@ -159,37 +156,26 @@ DataShare::DataShareValuesBucket PhotoAssetProxy::HandleAssetValues(const sptr<P
 
 void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
 {
-    if (dataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Failed to create Asset, datashareHelper is nullptr");
-        return;
-    }
-    if (photoProxy->GetTitle().empty()) {
-        MEDIA_ERR_LOG("Failed to create Asset, displayName is empty");
-        return;
-    }
-    if (cameraShotType_ == CameraShotType::BURST && photoProxy->GetBurstKey().empty()) {
-        MEDIA_ERR_LOG("Failed to create Asset, burstKey is empty when CameraShotType::BURST");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Failed to create Asset, datashareHelper is nullptr");
+    CHECK_AND_RETURN_LOG(!(photoProxy->GetTitle().empty()), "Failed to create Asset, displayName is empty");
+    bool cond = (cameraShotType_ == CameraShotType::BURST && photoProxy->GetBurstKey().empty());
+    CHECK_AND_RETURN_LOG(!cond, "Failed to create Asset, burstKey is empty when CameraShotType::BURST");
+
     string displayName = photoProxy->GetTitle() + "." + photoProxy->GetExtension();
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    if ((mediaType != MEDIA_TYPE_IMAGE) && (mediaType != MEDIA_TYPE_VIDEO)) {
-        MEDIA_ERR_LOG("Failed to create Asset, invalid file type %{public}d", static_cast<int32_t>(mediaType));
-        return;
-    }
-
+    cond = ((mediaType != MEDIA_TYPE_IMAGE) && (mediaType != MEDIA_TYPE_VIDEO));
+    CHECK_AND_RETURN_LOG(!cond,
+        "Failed to create Asset, invalid file type %{public}d", static_cast<int32_t>(mediaType));
     DataShare::DataShareValuesBucket values = HandleAssetValues(photoProxy, displayName, mediaType);
     string uri = PAH_CREATE_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createUri(uri);
     fileId_ = dataShareHelper_->InsertExt(createUri, values, uri_);
-    if (fileId_ < 0) {
-        MEDIA_ERR_LOG("Failed to create Asset, insert database error!");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(fileId_ >= 0, "Failed to create Asset, insert database error!");
     MEDIA_INFO_LOG(
-        "MultistagesCapture Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s",
-        photoProxy->GetPhotoId().c_str(), fileId_, uri_.c_str(), photoProxy->GetBurstKey().c_str());
+        "MultistagesCapture Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s "
+        "ceAvailable: %{public}u", photoProxy->GetPhotoId().c_str(), fileId_, uri_.c_str(),
+        photoProxy->GetBurstKey().c_str(), photoProxy->GetCloudImageEnhanceFlag());
 }
 
 static bool isHighQualityPhotoExist(string uri)
@@ -242,22 +228,14 @@ int PhotoAssetProxy::SaveImage(int fd, const string &uri, const string &photoId,
 {
     MediaLibraryTracer tracer;
     tracer.Start("SaveImage");
-
-    if (fd <= 0) {
-        MEDIA_ERR_LOG("invalid fd");
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(fd > 0, E_ERR, "invalid fd");
     if (isHighQualityPhotoExist(uri)) {
         MEDIA_INFO_LOG("high quality photo exists, discard low quality photo. photoId: %{public}s", photoId.c_str());
         return E_OK;
     }
 
     int ret = write(fd, output, writeSize);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("write err %{public}d", errno);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, ret, "write err %{public}d", errno);
     MEDIA_INFO_LOG("Save Low Quality file Success, photoId: %{public}s, size: %{public}zu, ret: %{public}d",
         photoId.c_str(), writeSize, ret);
     return E_OK;
@@ -270,10 +248,8 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
 
     void *imageAddr = photoProxy->GetFileDataAddr();
     size_t imageSize = photoProxy->GetFileSize();
-    if (imageAddr == nullptr || imageSize == 0) {
-        MEDIA_ERR_LOG("imageAddr is nullptr or imageSize(%{public}zu)==0", imageSize);
-        return E_ERR;
-    }
+    bool cond = (imageAddr == nullptr || imageSize == 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "imageAddr is nullptr or imageSize(%{public}zu)==0", imageSize);
 
     MEDIA_DEBUG_LOG("start pack PixelMap");
     Media::InitializationOptions opts;
@@ -291,10 +267,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
 
     // encode rgba to jpeg
     auto buffer = new (std::nothrow) uint8_t[pixelSize];
-    if (buffer == nullptr) {
-        MEDIA_ERR_LOG("Failed to new buffer");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr, E_ERR, "Failed to new buffer");
     int64_t packedSize = 0L;
     Media::ImagePacker imagePacker;
     Media::PackOption packOption;
@@ -347,9 +320,7 @@ void PhotoAssetProxy::SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t si
     tracer.Start("ModifyImageProperty");
     ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, latitude > 0.0 ? "N" : "S", fd);
     tracer.Finish();
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("modify image property latitude ref fail %{public}d", ret);
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "modify image property latitude ref fail %{public}d", ret);
     MEDIA_INFO_LOG("Success.");
 }
  
@@ -394,9 +365,7 @@ int32_t PhotoAssetProxy::AddProcessImage(shared_ptr<DataShare::DataShareHelper> 
     valuesBucket.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(photoProxy->GetPhotoQuality()));
 
     int32_t changeRows = dataShareHelper->Update(updateAssetUri, predicates, valuesBucket);
-    if (changeRows < 0) {
-        MEDIA_ERR_LOG("update fail, error: %{public}d", changeRows);
-    }
+    CHECK_AND_PRINT_LOG(changeRows >= 0, "update fail, error: %{public}d", changeRows);
     MEDIA_INFO_LOG("MultistagesCapture photoId: %{public}s, fileId: %{public}d",
         photoProxy->GetPhotoId().c_str(), fileId);
     return changeRows;
@@ -440,6 +409,10 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
     PhotoFormat photoFormat = photoProxy->GetFormat();
     if (photoFormat == PhotoFormat::RGBA) {
         PackAndSaveImage(fd, uri, photoProxy);
+    } else if (photoFormat == PhotoFormat::DNG) {
+        auto ret = SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(),
+            photoProxy->GetFileSize());
+        MEDIA_INFO_LOG("direct save dng file, ret: %{public}d", ret);
     } else {
         SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(), photoProxy->GetFileSize());
     }
@@ -450,20 +423,15 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
 
 void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
 {
-    if (photoProxy == nullptr || dataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("input param invalid, photo proxy is nullptr");
-        return;
-    }
-
+    bool cond = (photoProxy == nullptr || dataShareHelper_ == nullptr);
+    CHECK_AND_RETURN_LOG(!cond, "input param invalid, photo proxy is nullptr");
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAssetProxy::AddPhotoProxy " + photoProxy->GetPhotoId());
     MEDIA_INFO_LOG("MultistagesCapture, photoId: %{public}s", photoProxy->GetPhotoId().c_str());
     tracer.Start("PhotoAssetProxy CreatePhotoAsset");
     CreatePhotoAsset(photoProxy);
-    if (cameraShotType_ == CameraShotType::VIDEO) {
-        MEDIA_INFO_LOG("MultistagesCapture exit for VIDEO");
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(cameraShotType_ != CameraShotType::VIDEO, "MultistagesCapture exit for VIDEO");
+
     if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW ||
         (photoProxy->GetFormat() == PhotoFormat::YUV && subType_ != PhotoSubType::BURST)) {
         AddProcessImage(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(cameraShotType_));
@@ -478,21 +446,15 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
 
     Uri openUri(uri_);
     int fd = dataShareHelper_->OpenFile(openUri, MEDIA_FILEMODE_READWRITE);
-    if (fd < 0) {
-        MEDIA_ERR_LOG("fd.Get() < 0 fd %{public}d status %{public}d", fd, errno);
-        return;
-    }
+    CHECK_AND_RETURN_LOG(fd >= 0, "fd.Get() < 0 fd %{public}d status %{public}d", fd, errno);
     DealWithLowQualityPhoto(dataShareHelper_, fd, uri_, photoProxy);
     MEDIA_INFO_LOG("MultistagesCapture exit");
 }
 
 int32_t PhotoAssetProxy::GetVideoFd()
 {
-    if (dataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
-        return E_ERR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR,
+        "Failed to read video of moving photo, datashareHelper is nullptr");
     string videoUri = uri_;
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, CREATE_MOVING_PHOTO_VIDEO);
     Uri openVideoUri(videoUri);
@@ -504,10 +466,7 @@ int32_t PhotoAssetProxy::GetVideoFd()
 void PhotoAssetProxy::NotifyVideoSaveFinished()
 {
     isMovingPhotoVideoSaved_ = true;
-    if (dataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("datashareHelper is nullptr");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "datashareHelper is nullptr");
     string uriStr = PAH_ADD_FILTERS;
     Uri uri(uriStr);
     DataShare::DataShareValuesBucket valuesBucket;

@@ -530,6 +530,9 @@ napi_value FetchFileResultNapi::JSGetFirstObject(napi_env env, napi_callback_inf
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
 
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetFirstObject");
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
     napi_get_undefined(env, &result);
@@ -578,6 +581,9 @@ napi_value FetchFileResultNapi::JSGetNextObject(napi_env env, napi_callback_info
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
 
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetNextObject");
+
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");
 
@@ -625,6 +631,9 @@ napi_value FetchFileResultNapi::JSGetLastObject(napi_env env, napi_callback_info
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetLastObject");
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, argc <= ARGS_ONE, "requires 1 parameter");

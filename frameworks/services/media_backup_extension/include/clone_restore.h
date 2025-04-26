@@ -34,10 +34,22 @@
 #include "backup_database_utils.h"
 #include "photo_album_clone.h"
 #include "photos_clone.h"
+#include "clone_restore_classify.h"
 #include "clone_restore_geo.h"
+#include "clone_restore_geo_dictionary.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
 
 namespace OHOS {
 namespace Media {
+struct CloudPhotoFileExistFlag {
+    bool isLcdExist {false};
+    bool isThmExist {false};
+    bool isDayAstcExist {false};
+    bool isYearAstcExist {false};
+    bool isExLcdExist {false};
+    bool isExThmExist {false};
+};
 class CloneRestore : public BaseRestore {
 public:
     CloneRestore();
@@ -47,14 +59,25 @@ public:
     int32_t Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade) override;
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) override;
+    NativeRdb::ValuesBucket GetCloudInsertValue(const FileInfo &fileInfo, const std::string &newPath,
+        int32_t sourceType);
     std::string GetBackupInfo() override;
     void StartBackup() override;
     using CoverUriInfo = std::pair<std::string, std::pair<std::string, int32_t>>;
 
+protected:
+    void MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
+        int32_t sceneCode) override;
+    void GetCloudPhotoFileExistFlag(const FileInfo &fileInfo, CloudPhotoFileExistFlag &resultExistFlag);
+    void CloudPhotoFilesVerify(const std::vector<FileInfo> &fileInfos, std::vector<FileInfo> &LCDNotFound,
+        std::vector<FileInfo> &THMNotFound, unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
+
 private:
     void RestorePhoto(void) override;
+    void RestorePhotoForCloud(void);
     void HandleRestData(void) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset, int32_t isRelatedToPhotoMap = 0);
+    std::vector<FileInfo> QueryCloudFileInfos(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         std::string dbName = "") override;
     bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
@@ -64,6 +87,9 @@ private:
     int InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
+    std::vector<NativeRdb::ValuesBucket> GetCloudInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
+        int32_t sourceType) override;
+    int InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType) override;
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AnalysisAlbumTbl> &analysisAlbumTbl);
     int32_t MoveAsset(FileInfo &fileInfo);
     bool IsFilePathExist(const std::string &filePath) const;
@@ -88,7 +114,7 @@ private:
     void BatchNotifyPhoto(const std::vector<FileInfo> &fileInfos);
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AlbumInfo> &albumInfos,
-        const std::string &tableName);
+        std::vector<std::string> &albumIds, const std::string &tableName);
     bool HasSameAlbum(const AlbumInfo &albumInfo, const std::string &tableName);
     void BatchQueryAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
@@ -116,6 +142,7 @@ private:
     std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount, size_t totalSize);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount, int64_t &videoFileMoveCount);
     void RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap = 0);
+    void RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreAudioBatch(int32_t offset);
     void InsertPhotoRelated(std::vector<FileInfo> &fileInfos);
     void SetFileIdReference(const std::vector<FileInfo> &fileInfos, std::string &selection,
@@ -173,16 +200,21 @@ private:
     int32_t MoveEditedData(FileInfo &fileInfo);
     int32_t MoveThumbnail(FileInfo &fileInfo);
     int32_t MoveThumbnailDir(FileInfo &fileInfo);
+    int32_t MoveCloudThumbnailDir(FileInfo &fileInfo);
     int32_t MoveAstc(FileInfo &fileInfo);
     void InitThumbnailStatus();
     bool InitAllKvStore();
     void CloseAllKvStore();
     bool BackupKvStore();
     void GetThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
+    void GetCloudThumbnailInsertValue(const FileInfo &fileInfo, NativeRdb::ValuesBucket &values);
     int32_t GetNoNeedMigrateCount() override;
     void GetAccountValid() override;
     int32_t GetHighlightCloudMediaCnt();
-    void RestoreHighlightAlbums(bool isSyncSwitchOpen);
+    void RestoreHighlightAlbums();
+    void AddToPhotosFailedOffsets(int32_t offset);
+    void ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap = 0);
+    void ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap = 0);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -191,6 +223,14 @@ private:
     template<typename T>
     void PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
         const std::optional<T>& optionalValue, const T& defaultValue);
+    std::string GetThumbnailLocalPath(const string path);
+    void BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
+        unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
+    int32_t CheckThumbReady(const FileInfo &fileInfo,
+        const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
+    int32_t CheckThumbStatus(const FileInfo &fileInfo,
+        const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
+    int32_t CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
@@ -208,17 +248,23 @@ private:
     std::vector<PortraitAlbumDfx> portraitAlbumDfx_;
     PhotoAlbumClone photoAlbumClone_;
     PhotosClone photosClone_;
-    static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = -1;
+    static constexpr int32_t INVALID_COVER_SATISFIED_STATUS = 0;
     bool hasCloneThumbnailDir_{false};
     bool isInitKvstoreSuccess_{false};
     std::shared_ptr<MediaLibraryKvStore> oldMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> oldYearKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newMonthKvStorePtr_ = nullptr;
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
-    std::vector<int> photosFailedOffsets;
+    std::vector<int> photosFailedOffsets_;
+    ffrt::mutex photosFailedMutex_;
+    CloneRestoreClassify cloneRestoreClassify_;
     CloneRestoreGeo cloneRestoreGeo_;
     CloneRestoreHighlight cloneRestoreHighlight_;
     CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;
+    std::atomic<uint64_t> lcdMigrateFileNumber_{0};
+    std::atomic<uint64_t> thumbMigrateFileNumber_{0};
+    std::atomic<uint64_t> migrateCloudSuccessNumber_{0};
+    CloneRestoreGeoDictionary cloneRestoreGeoDictionary_;
 };
 
 template<typename T>

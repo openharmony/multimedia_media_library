@@ -63,7 +63,7 @@ void MediaLibraryHandlerTest::TearDown(void) {}
  * @tc.name      : convert file uri
  * @tc.desc      : convert file uri to mnt path
  */
-HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_001, TestSize.Level1)
 {
     std::string filename = "/data/medialibrary_handler_unittest.txt";
     std::string fileContent = ReadFileToString(filename);
@@ -88,6 +88,91 @@ HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_001, TestSize.Level0)
     uris[1] = "file://media/Photo/999/IMG_31313/IMG_e323123.png";
     ConvertFileUriToMntPath(uris, results);
     EXPECT_TRUE(results.empty());
+}
+
+/**
+ * @tc.number    : MediaLibraryHandler_test_002
+ * @tc.name      : convert file uri
+ * @tc.desc      : convert file uri to mnt path
+ */
+HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_002, TestSize.Level1)
+{
+    auto mediaLibraryHandlerManager = MediaLibraryHandler::GetMediaLibraryHandler();
+
+    vector<string> uris;
+    vector<string> results;
+
+    mediaLibraryHandlerManager->GetDataUris(uris, results);
+
+    uris.push_back("media://photo123");
+    mediaLibraryHandlerManager->GetDataUris(uris, results);
+    EXPECT_TRUE(results.empty());
+
+    mediaLibraryHandlerManager->InitMediaLibraryHandler();
+
+    uris.push_back("file://test");
+    mediaLibraryHandlerManager->GetDataUris(uris, results);
+    EXPECT_TRUE(results.empty());
+
+    uris.push_back("media://photo/abc");
+    mediaLibraryHandlerManager->GetDataUris(uris, results);
+    EXPECT_TRUE(results.empty());
+
+    uris.push_back("media://photo/999");
+    mediaLibraryHandlerManager->GetDataUris(uris, results);
+    EXPECT_TRUE(results.empty());
+    
+    uris.push_back("");
+    mediaLibraryHandlerManager->GetDataUris(uris, results);
+    EXPECT_TRUE(results.empty());
+
+    vector<string> uris_true;
+    uris_true.push_back("media://photo/999");
+    mediaLibraryHandlerManager->GetDataUris(uris_true, results);
+    EXPECT_TRUE(results.empty());
+}
+
+/**
+ * @tc.number    : MediaLibraryHandler_test_003
+ * @tc.name      : convert file uri
+ * @tc.desc      : convert file uri to mnt path
+ */
+HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_003, TestSize.Level1)
+{
+    auto mediaLibraryHandlerManager = MediaLibraryHandler::GetMediaLibraryHandler();
+
+    auto resultSet = make_shared<DataShareResultSet>();
+    int32_t row = 0;
+    int32_t ret = mediaLibraryHandlerManager->CheckResultSet(resultSet, row);
+    EXPECT_NE(ret, 0);
+
+    row = 3;
+    ret = mediaLibraryHandlerManager->CheckResultSet(resultSet, row);
+    EXPECT_NE(ret, 0);
+}
+
+/**
+ * @tc.number    : MediaLibraryHandler_test_003
+ * @tc.name      : convert file uri
+ * @tc.desc      : convert file uri to mnt path
+ */
+HWTEST_F(MediaLibraryHandlerTest, MediaLibraryHandler_test_004, TestSize.Level1)
+{
+    auto mediaLibraryHandlerManager = MediaLibraryHandler::GetMediaLibraryHandler();
+
+    auto resultSet = make_shared<DataShareResultSet>();
+    vector<string> dataUris;
+    vector<string> fileIds;
+    int32_t ret = mediaLibraryHandlerManager->ProcessResultSet(resultSet, dataUris, fileIds);
+    EXPECT_EQ(ret, -200);
+
+    fileIds.push_back("media://photo/999");
+    ret = mediaLibraryHandlerManager->ProcessResultSet(resultSet, dataUris, fileIds);
+    EXPECT_EQ(ret, -200);
+
+    fileIds.push_back("123");
+    ret = mediaLibraryHandlerManager->ProcessResultSet(resultSet, dataUris, fileIds);
+    EXPECT_EQ(ret, -200);
 }
 } // namespace Media
 } // namespace OHOS

@@ -28,7 +28,6 @@
 #include "datashare_values_bucket.h"
 #include "media_datashare_ext_ability.h"
 #include "medialibrary_data_manager.h"
-#include "media_file_ext_ability.h"
 #include "media_datashare_stub_impl.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -39,7 +38,6 @@ using namespace std;
 using namespace AbilityRuntime;
 using namespace DataShare;
 
-using namespace FileAccessFwk;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
     return static_cast<int32_t>(*data);
@@ -255,44 +253,6 @@ static int InitExtention(MediaDataShareExtAbility &extension)
         sceneCode);
 }
 
-class ArkJsRuntime : public AbilityRuntime::JsRuntime {
-public:
-    ArkJsRuntime() {};
-
-    ~ArkJsRuntime() {};
-
-    void StartDebugMode(const DebugOption debugOption) {};
-    void FinishPreload() {};
-    bool LoadRepairPatch(const string& patchFile, const string& baseFile)
-    {
-        return true;
-    };
-    bool NotifyHotReloadPage()
-    {
-        return true;
-    };
-    bool UnLoadRepairPatch(const string& patchFile)
-    {
-        return true;
-    };
-    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
-    {
-        return true;
-    };
-};
-#ifdef FILEEXT
-static inline void CreateFileFuzzer(MediaFileExtAbility &extension, const uint8_t* data, size_t size)
-{
-    Uri fuzzUri = FuzzUri(data, size);
-    extension.CreateFile(FuzzUri(data, size), FuzzString(data, size), fuzzUri);
-}
-
-static inline MediaFileExtAbility FileExtInit()
-{
-    const std::unique_ptr<ArkJsRuntime> runtime;
-    return {(*runtime)};
-}
-#endif
 static inline MediaDataShareExtAbility Init()
 {
     const std::unique_ptr<AbilityRuntime::Runtime> runtime;
@@ -323,10 +283,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::NotifyChangeFuzzer(extension, data, size);
     OHOS::NormalizeUriFuzzer(extension, data, size);
     OHOS::DenormalizeUriFuzzer(extension, data, size);
-#ifdef FILEEXT
-    auto fileExtension = OHOS::FileExtInit();
-    OHOS::CreateFileFuzzer(fileExtension, data, size);
-#endif
     OHOS::StopFuzzer(extension);
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));

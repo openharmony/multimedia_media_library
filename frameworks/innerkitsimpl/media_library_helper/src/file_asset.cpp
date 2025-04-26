@@ -399,11 +399,9 @@ void FileAsset::SetSelfId(const string &selfId)
 
 int32_t FileAsset::GetIsTrash() const
 {
-    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR ||
-        resultNapiType_ == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-        return static_cast<int32_t>(GetInt64Member(MediaColumn::MEDIA_DATE_TRASHED));
-    }
-
+    bool cond = (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR ||
+        resultNapiType_ == ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    CHECK_AND_RETURN_RET(!cond, static_cast<int32_t>(GetInt64Member(MediaColumn::MEDIA_DATE_TRASHED)));
     return GetInt32Member(MEDIA_DATA_DB_IS_TRASH);
 }
 
@@ -627,6 +625,26 @@ void FileAsset::SetIsAuto(int32_t isAuto)
     member_[PhotoColumn::PHOTO_IS_AUTO] = isAuto;
 }
 
+int32_t FileAsset::GetDirty() const
+{
+    return GetInt32Member(MEDIA_DATA_DB_DIRTY);
+}
+
+void FileAsset::SetDirty(int32_t dirty)
+{
+    member_[MEDIA_DATA_DB_DIRTY] = dirty;
+}
+
+std::string FileAsset::GetMediaSuffix() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_MEDIA_SUFFIX);
+}
+
+void FileAsset::SetMediaSuffix(const std::string &mediaSuffix)
+{
+    member_[PhotoColumn::PHOTO_MEDIA_SUFFIX] = mediaSuffix;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
@@ -639,18 +657,15 @@ void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 void FileAsset::RemoveOpenStatus(int32_t fd)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
-    if (openStatusMap_ == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN(openStatusMap_ != nullptr);
     openStatusMap_->erase(fd);
 }
 
 int32_t FileAsset::GetOpenStatus(int32_t fd)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
-    if (openStatusMap_ == nullptr) {
-        return E_INVALID_VALUES;
-    }
+    CHECK_AND_RETURN_RET(openStatusMap_ != nullptr, E_INVALID_VALUES);
+
     if (openStatusMap_->find(fd) != openStatusMap_->end()) {
         return openStatusMap_->at(fd);
     } else {
@@ -737,6 +752,16 @@ string FileAsset::GetAssetJson()
     jsonObject[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
         AppFileService::SandboxHelper::Decode(jsonObject[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
     return jsonObject.dump();
+}
+
+void FileAsset::SetStageVideoTaskStatus(int32_t stageVideoTaskStatus)
+{
+    member_[PhotoColumn::STAGE_VIDEO_TASK_STATUS] = stageVideoTaskStatus;
+}
+
+int32_t FileAsset::GetStageVideoTaskStatus() const
+{
+    return GetInt32Member(PhotoColumn::STAGE_VIDEO_TASK_STATUS);
 }
 }  // namespace Media
 }  // namespace OHOS

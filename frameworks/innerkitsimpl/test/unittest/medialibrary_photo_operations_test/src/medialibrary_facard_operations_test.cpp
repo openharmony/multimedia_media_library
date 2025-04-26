@@ -188,13 +188,13 @@ void MediaLibraryFaCardOperationsTest::SetUp()
 void MediaLibraryFaCardOperationsTest::TearDown()
 {}
  
-HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_001, TestSize.Level1)
 {
     std::map<std::string, std::vector<std::string>> urisMap = MediaLibraryFaCardOperations::GetUris();
     EXPECT_EQ(urisMap.empty(), true);
 }
  
-HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_002, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::TAB_FACARD_PHOTO, OperationType::OPRN_STORE_FORM_ID);
     cmd.SetTableName(TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE);
@@ -206,7 +206,7 @@ HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_002, TestSize.L
     EXPECT_EQ(ret > 0, false);
 }
  
-HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryFaCardOperationsTest, FaCardOperations_test_003, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::TAB_FACARD_PHOTO, OperationType::OPRN_STORE_FORM_ID);
     cmd.SetTableName(TabFaCardPhotosColumn::FACARD_PHOTOS_TABLE);

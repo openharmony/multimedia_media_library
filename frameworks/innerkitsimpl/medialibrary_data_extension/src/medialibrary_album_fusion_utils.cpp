@@ -30,7 +30,6 @@
 #include "metadata.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
-#include "medialibrary_album_refresh.h"
 #include "parameters.h"
 #include "photo_file_operation.h"
 #include "photo_asset_copy_operation.h"
@@ -41,7 +40,6 @@
 #include "medialibrary_rdb_transaction.h"
 #include "photo_album_lpath_operation.h"
 #include "photo_album_update_date_modified_operation.h"
-#include "photo_other_album_trans_operation.h"
 #include "photo_album_copy_meta_data_operation.h"
 
 namespace OHOS::Media {
@@ -286,13 +284,10 @@ int32_t MediaLibraryAlbumFusionUtils::QueryNoMatchedMap(const std::shared_ptr<Me
         int32_t assetId = 0;
         int32_t albumId = 0;
         resultSet->GetColumnIndex(PhotoMap::ALBUM_ID, colIndex);
-        if (resultSet->GetInt(colIndex, albumId) != NativeRdb::E_OK) {
-            return E_HAS_DB_ERROR;
-        }
+        CHECK_AND_RETURN_RET(resultSet->GetInt(colIndex, albumId) == NativeRdb::E_OK, E_HAS_DB_ERROR);
+
         resultSet->GetColumnIndex(PhotoMap::ASSET_ID, colIndex);
-        if (resultSet->GetInt(colIndex, assetId) != NativeRdb::E_OK) {
-            return E_HAS_DB_ERROR;
-        }
+        CHECK_AND_RETURN_RET(resultSet->GetInt(colIndex, assetId) == NativeRdb::E_OK, E_HAS_DB_ERROR);
         AddToMap(notMathedMap, assetId, albumId);
     }
     return E_OK;
@@ -510,10 +505,12 @@ struct MediaAssetCopyInfo {
     bool isCopyThumbnail;
     int32_t ownerAlbumId;
     std::string displayName;
+    bool isCopyDateAdded;
+    bool isCopyCeAvailable;
     MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId,
-        const std::string& displayName = "")
+        const std::string& displayName = "", bool isCopyDateAdded = true, bool isCopyCeAvailable = false)
         : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId),
-        displayName(displayName) {}
+        displayName(displayName), isCopyDateAdded(isCopyDateAdded), isCopyCeAvailable(isCopyCeAvailable) {}
 };
 
 static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -532,6 +529,17 @@ static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& 
     if (dirty == -1 && photoQuality != static_cast<int32_t>(MultiStagesPhotoQuality::LOW)) {
         MEDIA_WARN_LOG("Status error, dirty is -1, cannot upload");
         values.PutInt(PhotoColumn::PHOTO_DIRTY, -1);
+    }
+}
+
+static void HandleCeAvailableValuesBucket(const MediaAssetCopyInfo &copyInfo,
+    shared_ptr<NativeRdb::ResultSet>& resultSet, NativeRdb::ValuesBucket& values)
+{
+    CHECK_AND_RETURN(copyInfo.isCopyCeAvailable);
+    int32_t ceAvailable = -1;
+    GetIntValueFromResultSet(resultSet, PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
+    if (ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::FINISH)) {
+        values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
     }
 }
 
@@ -566,7 +574,12 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
         values.PutInt(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, CLOUD_COPY_DIRTY_FLAG);
     }
+    if (!copyInfo.isCopyDateAdded) {
+        values.Delete(MediaColumn::MEDIA_DATE_ADDED);
+        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
+    }
     HandleLowQualityAssetValuesBucket(resultSet, values);
+    HandleCeAvailableValuesBucket(copyInfo, resultSet, values);
     return E_OK;
 }
 
@@ -726,10 +739,7 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
     GetStringValueFromResultSet(resultSet, MediaColumn::MEDIA_NAME, displayName);
     std::string targetPath = "";
     int32_t err = CopyLocalFile(resultSet, ownerAlbumId, displayName, targetPath, assetId);
-    if (err != E_OK) {
-        MEDIA_INFO_LOG("Failed to copy local file.");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_INFO_LOG(err == E_OK, E_ERR, "Failed to copy local file.");
 
     MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName);
     err = CopyMateData(upgradeStore, resultSet, newAssetId, targetPath, copyInfo);
@@ -739,11 +749,9 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
     }
 
     err = UpdateRelationship(upgradeStore, assetId, newAssetId, ownerAlbumId, true);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("UpdateRelationship fail, assetId: %{public}d, newAssetId: %{public}lld,"
-            "ownerAlbumId: %{public}d, ret = %{public}d", assetId, (long long)newAssetId, ownerAlbumId, err);
-        return E_OK;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_OK, "UpdateRelationship fail, assetId: %{public}d,"
+        " newAssetId: %{public}" PRId64 "ownerAlbumId: %{public}d, ret = %{public}d",
+        assetId, newAssetId, ownerAlbumId, err);
 
     err = PhotoFileOperation().CopyThumbnail(resultSet, targetPath, newAssetId);
     if (err != E_OK && GenerateThumbnail(newAssetId, targetPath, resultSet, false) != E_SUCCESS) {
@@ -773,7 +781,7 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
         return E_ERR;
     }
 
-    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName);
+    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false, true);
     err = CopyMateData(upgradeStore, resultSet, newAssetId, targetPath, copyInfo);
     if (err != E_OK) {
         MEDIA_INFO_LOG("Failed to copy local file.");
@@ -1037,21 +1045,17 @@ int32_t MediaLibraryAlbumFusionUtils::HandleSingleFileCopy(const shared_ptr<Medi
     const std::string QUERY_FILE_META_INFO =
         "SELECT * FROM Photos WHERE file_id = " + to_string(assetId);
     shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_FILE_META_INFO);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_INFO_LOG("Query not matched data fails");
-        return E_DB_FAIL;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_INFO_LOG(!cond, E_DB_FAIL, "Query not matched data fails");
+
     int32_t err = E_OK;
     if (isLocalAsset(resultSet)) {
         err = CopyLocalSingleFile(upgradeStore, ownerAlbumId, resultSet, newAssetId);
     } else {
         err = CopyCloudSingleFile(upgradeStore, assetId, ownerAlbumId, resultSet, newAssetId);
     }
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Copy file fails, is file local : %{public}d, fileId is %{public}d",
-            isLocalAsset(resultSet), assetId);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Copy file fails, is file local : %{public}d,"
+        " fileId is %{public}d", isLocalAsset(resultSet), assetId);
     MEDIA_INFO_LOG("Copy file success, fileId is %{public}d, albumId is %{public}d,"
         "and copyed file id is %{public}" PRId64, assetId, ownerAlbumId, newAssetId);
     return E_OK;
@@ -1095,10 +1099,8 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNotMatchedDataFusion(
         MEDIA_INFO_LOG("ALBUM_FUSE: handle batch clean, offset: %{public}d", offset);
         notMatchedMap.clear();
         int32_t err = QueryNoMatchedMap(upgradeStore, notMatchedMap, true);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Fatal error! Failed to query not matched map data");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(err == NativeRdb::E_OK, "Fatal error! Failed to query not matched map data");
+
         if (notMatchedMap.size() != 0) {
             MEDIA_INFO_LOG("There are %{public}d items need to migrate", (int)notMatchedMap.size());
             HandleNotMatchedDataMigration(upgradeStore, notMatchedMap);
@@ -1158,10 +1160,8 @@ static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upg
     std::shared_ptr<NativeRdb::ResultSet> &resultSet, const int32_t &oldAlbumId, int64_t &newAlbumId)
 {
     MEDIA_INFO_LOG("Begin copy album Meta Data!!!");
-    if (upgradeStore == nullptr || resultSet == nullptr || oldAlbumId == -1) {
-        MEDIA_ERR_LOG("invalid parameter");
-        return E_INVALID_ARGUMENTS;
-    }
+    bool cond = (upgradeStore == nullptr || resultSet == nullptr || oldAlbumId == -1);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_INVALID_ARGUMENTS, "invalid parameter");
     NativeRdb::ValuesBucket values;
     for (auto it = albumColumnTypeMap.begin(); it != albumColumnTypeMap.end(); ++it) {
         std::string columnName = it->first;
@@ -1173,9 +1173,7 @@ static int32_t CopyAlbumMetaData(const std::shared_ptr<MediaLibraryRdbStore> upg
         PhotoAlbumCopyMetaDataOperation()
             .SetRdbStore(upgradeStore)
             .CopyAlbumMetaData(values);
-    if (newAlbumId <= 0) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(newAlbumId > 0, E_HAS_DB_ERROR);
     MEDIA_ERR_LOG("Insert copyed album success,oldAlbumId is = %{public}d newAlbumId is %{public}" PRId64,
         oldAlbumId, newAlbumId);
     return E_OK;
@@ -1384,10 +1382,7 @@ static int32_t MergeScreenShotAlbum(const std::shared_ptr<MediaLibraryRdbStore> 
 static int32_t MergeScreenRecordAlbum(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore,
     shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
-    if (upgradeStore == nullptr) {
-        MEDIA_INFO_LOG("fail to get rdbstore");
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET_INFO_LOG(upgradeStore != nullptr, E_DB_FAIL, "fail to get rdbstore");
     MEDIA_INFO_LOG("Begin merge screenrecord album");
     int32_t oldAlbumId = -1;
     int64_t newAlbumId = -1;
@@ -1481,10 +1476,8 @@ int32_t MediaLibraryAlbumFusionUtils::CompensateLpathForLocalAlbum(
             "priority = COALESCE ((SELECT priority FROM album_plugin WHERE lpath = '" + lpath + "'), 1) "
             "WHERE album_id = " + to_string(album_id);
         int32_t err = upgradeStore->ExecuteSql(UPDATE_COMPENSATE_ALBUM_DATA);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Fatal error! Failed to exec: %{public}s", UPDATE_COMPENSATE_ALBUM_DATA.c_str());
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(err == NativeRdb::E_OK,
+            "Fatal error! Failed to exec: %{public}s", UPDATE_COMPENSATE_ALBUM_DATA.c_str());
     }
     MEDIA_INFO_LOG("End compensate Lpath for local album");
     return E_OK;
@@ -1575,10 +1568,7 @@ void DuplicateDebug(std::shared_ptr<NativeRdb::ResultSet> resultSet, vector<int3
         int32_t colIndex = -1;
         int32_t assetId = 0;
         resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, colIndex);
-        if (resultSet->GetInt(colIndex, assetId) != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("db error");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(resultSet->GetInt(colIndex, assetId) == NativeRdb::E_OK, "db error");
         idArr.push_back(assetId);
     }
 }
@@ -1665,10 +1655,8 @@ int32_t MediaLibraryAlbumFusionUtils::HandleNewCloudDirtyData(const std::shared_
         const std::string QUERY_FILE_META_INFO =
             "SELECT * FROM Photos WHERE file_id = " + to_string(assetId);
         shared_ptr<NativeRdb::ResultSet> resultSet = upgradeStore->QuerySql(QUERY_FILE_META_INFO);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            MEDIA_INFO_LOG("Query not matched data fails");
-            return E_DB_FAIL;
-        }
+        bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+        CHECK_AND_RETURN_RET_INFO_LOG(!cond, E_DB_FAIL, "Query not matched data fails");
         HandleNewCloudDirtyDataImp(upgradeStore, resultSet, restOwnerAlbumIds, assetId);
     }
     return E_OK;
@@ -1768,10 +1756,8 @@ int32_t MediaLibraryAlbumFusionUtils::CleanInvalidCloudAlbumAndData()
         MEDIA_INFO_LOG("DATA_CLEAN: handle batch clean, offset: %{public}d", offset);
         notMatchedMap.clear();
         int32_t err = QueryNoMatchedMap(rdbStore, notMatchedMap, false);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Fatal error! Failed to query not matched map data");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(err == NativeRdb::E_OK, "Fatal error! Failed to query not matched map data");
+
         if (notMatchedMap.size() != 0) {
             MEDIA_INFO_LOG("There are %{public}d items need to migrate", (int)notMatchedMap.size());
             HandleNewCloudDirtyData(rdbStore, notMatchedMap);

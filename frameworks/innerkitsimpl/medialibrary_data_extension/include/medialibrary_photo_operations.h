@@ -60,12 +60,14 @@ public:
     EXPORT static bool HasDroppedThumbnailSize(const std::string& photoId);
     EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
     EXPORT static int32_t ProcessMultistagesPhotoForPicture(bool isEdited, const std::string &path,
-        std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type);
+        std::shared_ptr<Media::Picture> &picture, int32_t fileId, const std::string &mime_type,
+        std::shared_ptr<Media::Picture> &resultPicture, bool &isTakeEffect);
     EXPORT static int32_t Save(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
         const std::string &outputPath, std::string &editdata, const std::string &mime_type);
-    EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId);
+    EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId,
+        std::shared_ptr<Media::Picture> &resultPicture);
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
         bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture);
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
@@ -76,11 +78,11 @@ public:
         std::shared_ptr<AlbumData> AlbumData = nullptr);
     EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris,
         std::shared_ptr<AlbumData> AlbumData = nullptr);
-    EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto, const std::string &path);
+    EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto,
+        bool isMovingPhotoEffectMode, const std::string &path);
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
-    EXPORT static int32_t SaveSourceVideoFile(const std::shared_ptr<FileAsset> &fileAsset,
-        const std::string &assetPath, const bool &isTemp);
-    EXPORT static int32_t AddFiltersToVideoExecute(const std::shared_ptr<FileAsset>& fileAsset, bool isSaveVideo);
+    EXPORT static int32_t SaveSourceVideoFile(const std::string &assetPath, const bool &isTemp);
+    EXPORT static int32_t AddFiltersToVideoExecute(const std::string &assetPath, bool isSaveVideo);
     EXPORT static int32_t DoRevertFilters(const std::shared_ptr<FileAsset> &fileAsset,
         std::string &path, std::string &sourcePath);
     EXPORT static int32_t CopyVideoFile(const std::string& assetPath, bool toSource);
@@ -104,7 +106,11 @@ private:
     static int32_t CommitEditOpenExecute(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &editData);
-    static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t DoRevertEdit(std::shared_ptr<FileAsset> &fileAsset);
+    static std::string GetSourceFileFromEditPath(const std::string &path, const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t UpdateDbByRevertToOrigin(
+        std::shared_ptr<FileAsset> &fileAsset, std::string &path, const std::string &sourcePath);
+    static int32_t RenameEditDataDirByRevert(const std::string &editDataDir, const std::string &path);
     static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
     static void ParseCloudEnhancementEditData(std::string& editData);
     static void CreateThumbnailFileScan(const std::shared_ptr<FileAsset> &fileAsset, std::string &extraUri,
@@ -116,12 +122,14 @@ private:
     static int32_t SaveEditDataCamera(MediaLibraryCommand &cmd, const std::string &assetPath,
         std::string &editData);
     static int32_t SaveSourceAndEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &editData);
-    static int32_t AddFiltersExecute(MediaLibraryCommand& cmd, const std::shared_ptr<FileAsset>& fileAsset,
+    static int32_t AddFiltersExecute(MediaLibraryCommand& cmd, std::shared_ptr<FileAsset>& fileAsset,
         const std::string &cachePath);
     static int32_t SubmitEditCacheExecute(MediaLibraryCommand &cmd,
-        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath, bool isWriteGpsAdvanced);
+        std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath, bool isWriteGpsAdvanced);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
-        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+        std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+    static int32_t ReNameVedioFilePath(
+        const std::string &assetPath, const std::string &sourceImagePath, const std::string &assetVideoPath);
     static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
     static int32_t SubmitEditMovingPhotoExecute(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t GetMovingPhotoCachePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
@@ -131,6 +139,12 @@ private:
         const std::string &cachePath, const std::string &destPath);
     static int32_t UpdateMovingPhotoSubtype(int32_t fileId, int32_t currentPhotoSubType);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
+    static int32_t HandleNeedSetDisplayName(MediaLibraryCommand &cmd,
+        std::shared_ptr<FileAsset> &fileAsset, bool &isNeedScan);
+    static int32_t HandleNeedSetDisplayName(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t RenameEditDataDirBySetDisplayName(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t HandleCacheFile(MediaLibraryCommand& cmd, std::string cachePath);
+    static int32_t HandleCacheFile(MediaLibraryCommand &cmd, int32_t id);
     static int32_t UpdateOrientationAllExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         std::string &currentOrientation);
     static int32_t UpdateOrientationExif(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
@@ -151,6 +165,11 @@ private:
     static int32_t SetVideoEnhancementAttr(MediaLibraryCommand &cmd);
     static int32_t DegenerateMovingPhoto(MediaLibraryCommand &cmd);
     static int32_t UpdateOwnerAlbumId(MediaLibraryCommand &cmd);
+    static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset>& fileAsset,
+        const std::string& id, bool& isMovingPhotoVideo);
+    static int32_t GetTakeEffect(std::shared_ptr<Media::Picture> &picture, std::string &photoId);
+    static int32_t DoRevertAfterAddFiltersFailed(const std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &path, const std::string &sourcePath);
 private:
     static int32_t UpdateExtension(const int32_t &fileId, std::string &mimeType, const int32_t &fileType,
         std::string &oldFilePath);

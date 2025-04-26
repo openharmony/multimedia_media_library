@@ -24,6 +24,16 @@
 #include <vector>
 #include <string>
 #include <variant>
+#include "header_data.h"
+#include "mtp_media_library.h"
+#include "iservice_registry.h"
+#include "media_log.h"
+#include "datashare_helper.h"
+#include "mtp_medialibrary_manager.h"
+#include "userfilemgr_uri.h"
+#include "photo_album_column.h"
+#include "album_operation_uri.h"
+#include "get_self_permissions.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -31,12 +41,55 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 const uint16_t MTP_FORMAT_TEST_CODE = 0x3100;
+static constexpr int STORAGE_MANAGER_UID = 5003;
+shared_ptr<DataShare::DataShareHelper> MtpDataUtilsUnitTest::dataShareHelper_ = nullptr;
+const std::string FILE_PATH = "/storage/media/local/files/Docs/Desktop";
+const std::string PHOTO_PATH = "/storage/media/100/local/files/Docs/Desktop/1.jpg";
+const std::string TEST_BACKUP_PATH = "/data/test/backup/db";
+const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
+const std::string FILE_SUBTYPE = "1";
+const std::string EMPTY_COLUMN_NAME = "0";
+static constexpr int64_t MILLI_TO_SECOND = 1000;
+const std::string OTHER_ALBUM_NAME = "其它";
 
-void MtpDataUtilsUnitTest::SetUpTestCase(void) {}
+void MtpDataUtilsUnitTest::SetUpTestCase(void)
+{
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    uint64_t tokenId = 0;
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MtpDataUtilsUnitTest", perms, tokenId);
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        MEDIA_ERR_LOG("Get system ability mgr failed.");
+        return;
+    }
+    auto token = saManager->GetSystemAbility(STORAGE_MANAGER_UID);
+    if (dataShareHelper_ == nullptr) {
+        dataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    }
+}
 void MtpDataUtilsUnitTest::TearDownTestCase(void) {}
 void MtpDataUtilsUnitTest::SetUp() {}
 void MtpDataUtilsUnitTest::TearDown(void) {}
 
+static std::string CombinedTimeFunction(const std::string &format, time_t curTime)
+{
+    if (format.empty()) {
+        return format;
+    }
+    time_t curTimeTemp = curTime;
+    if (curTimeTemp == 0) {
+        curTimeTemp = time(nullptr);
+    }
+    auto tmPtr = localtime(&curTimeTemp);
+    if (!tmPtr) {
+        return "";
+    }
+    char szDTime[32] = "";
+    (void)strftime(szDTime, sizeof(szDTime), format.c_str(), tmPtr);
+    return szDTime;
+}
 /*
  * Feature: MediaLibraryMTP
  * Function:
@@ -45,7 +98,7 @@ void MtpDataUtilsUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: SolveHandlesFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_001, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_001, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -64,7 +117,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_001, TestS
  * EnvConditions: NA
  * CaseDescription: SolveHandlesFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_002, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_002, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -83,7 +136,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_002, TestS
  * EnvConditions: NA
  * CaseDescription: SolveHandlesFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_003, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_003, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -102,7 +155,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_003, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSendObjectFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_004, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_004, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -120,7 +173,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_004, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSendObjectFormatData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_005, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_005, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -138,7 +191,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_005, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSetObjectPropValueData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_006, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_006, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -159,7 +212,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_006, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSetObjectPropValueData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_007, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_007, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -181,7 +234,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_007, TestS
  * EnvConditions: NA
  * CaseDescription: SolveSetObjectPropValueData
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_008, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_008, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -203,7 +256,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_008, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByformat
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_009, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_009, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -221,7 +274,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_009, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByformat
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_010, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_010, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -239,7 +292,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_010, TestS
  * EnvConditions: NA
  * CaseDescription: GetPropListBySet
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_011, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_011, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -263,7 +316,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_011, TestS
  * EnvConditions: NA
  * CaseDescription: GetPropListBySet
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_012, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_012, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -286,7 +339,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_012, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditOneRowPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_013, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_013, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -316,7 +369,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_013, TestS
  * EnvConditions: NA
  * CaseDescription: ReturnError
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_014, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_014, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -334,7 +387,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_014, TestS
  * EnvConditions: NA
  * CaseDescription: ReturnError
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_015, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_015, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -352,7 +405,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_015, TestS
  * EnvConditions: NA
  * CaseDescription: GetFormatByPath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_016, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_016, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -370,7 +423,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_016, TestS
  * EnvConditions: NA
  * CaseDescription: GetFormatByPath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_018, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_018, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -388,7 +441,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_018, TestS
  * EnvConditions: NA
  * CaseDescription: GetFormat
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_019, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_019, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -407,7 +460,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_019, TestS
  * EnvConditions: NA
  * CaseDescription: GetPropValueBySet
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -415,7 +468,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestS
     PropertyValue outPropValue;
     std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
     ASSERT_NE(resultSet, nullptr);
-    int32_t res = mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue);
+    int32_t res = mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
     EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
 }
 
@@ -427,7 +480,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_020, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByName
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_021, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_021, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -445,7 +498,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_021, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByName
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_022, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_022, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -463,7 +516,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_022, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByName
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_023, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_023, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -481,7 +534,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_023, TestS
  * EnvConditions: NA
  * CaseDescription: GetMediaTypeByName
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_024, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_024, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -499,7 +552,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_024, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_025, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_025, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -523,7 +576,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_025, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_026, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_026, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -546,7 +599,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_026, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_027, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_027, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -568,7 +621,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_027, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropValue
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_028, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_028, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -588,7 +641,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_028, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropValue
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_029, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_029, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -608,7 +661,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_029, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpPropValue
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_030, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_030, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -628,7 +681,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_030, TestS
  * EnvConditions: NA
  * CaseDescription: GetMtpFormatByPath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_034, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_034, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -647,7 +700,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_034, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_036, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_036, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -668,7 +721,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_036, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_037, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_037, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -689,7 +742,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_037, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_038, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_038, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -710,7 +763,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_038, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_039, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_039, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -731,7 +784,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_039, TestS
  * EnvConditions: NA
  * CaseDescription: GetMovingOrEnditSourcePath
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_040, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_040, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -752,7 +805,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_040, TestS
  * EnvConditions: NA
  * CaseDescription: GetOneRowPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_041, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_041, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -778,7 +831,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_041, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_042, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_042, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -798,7 +851,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_042, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_043, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_043, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -818,7 +871,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_043, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_044, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_044, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -838,7 +891,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_044, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_045, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_045, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -858,7 +911,7 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_045, TestS
  * EnvConditions: NA
  * CaseDescription: SetOneDefaultlPropList
  */
-HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_046, TestSize.Level0)
+HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_046, TestSize.Level1)
 {
     std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
     ASSERT_NE(mtpDataUtils, nullptr);
@@ -868,6 +921,489 @@ HWTEST_F(MtpDataUtilsUnitTest, medialibrary_MTP_message_testlevel_0_0_046, TestS
     ASSERT_NE(outProps, nullptr);
     mtpDataUtils->SetOneDefaultlPropList(handle, property, outProps);
     EXPECT_FALSE(outProps->empty());
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetContainerLength
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_header_data_001, TestSize.Level1)
+{
+    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
+    context->format = 0;
+    context->parent = 1;
+    shared_ptr<HeaderData> headerData = make_shared<HeaderData>(context);
+    headerData->Reset();
+    headerData->SetCode(0);
+    headerData->SetContainerType(0);
+    uint32_t len = headerData->GetContainerLength();
+    EXPECT_EQ(len == 0, true);
+    headerData->SetTransactionId(1);
+    uint32_t id = headerData->GetTransactionId();
+    EXPECT_EQ(id == 1, true);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetProperty
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_001, TestSize.Level1)
+{
+    string column = "SetPropert";
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>();
+    Property prop;
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    ResultSetDataType type = TYPE_NULL;
+    mtpDataUtils->SetProperty(column, resultSet, type, prop);
+    ResultSetDataType typeOne = TYPE_STRING;
+    mtpDataUtils->SetProperty(column, resultSet, typeOne, prop);
+    ResultSetDataType typeTwo = TYPE_INT32;
+    mtpDataUtils->SetProperty(column, resultSet, typeTwo, prop);
+    ResultSetDataType typeThree = TYPE_INT64;
+    mtpDataUtils->SetProperty(column, resultSet, typeThree, prop);
+    column = "MEDIA_DATA_DB_DATE_MODIFIED";
+    mtpDataUtils->SetProperty(column, resultSet, typeThree, prop);
+    uint16_t outFormat = 0;
+    mtpDataUtils->GetFormatByPath("", outFormat);
+    string path = "/data";
+    mtpDataUtils->GetFormatByPath(path, outFormat);
+    EXPECT_EQ(outFormat, MTP_FORMAT_ASSOCIATION_CODE);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetMtpProperty
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_002, TestSize.Level1)
+{
+    string column = MEDIA_DATA_DB_NAME;
+    string path = "/data";
+    Property prop;
+    ResultSetDataType type = TYPE_NULL;
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+    column = MEDIA_DATA_DB_SIZE;
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+    column = MEDIA_DATA_DB_DATE_MODIFIED;
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+    column = MEDIA_DATA_DB_DATE_ADDED;
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+    column = MEDIA_DATA_DB_DESCRIPTION;
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+    column = MEDIA_DATA_DB_DURATION;
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+    column = MEDIA_DATA_DB_ARTIST;
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+    column = MEDIA_DATA_DB_ALBUM_NAME;
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+    string MEDIA_DATA_DB_COMPOSER = "composer";
+    column = MEDIA_DATA_DB_COMPOSER;
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+    path = "";
+    mtpDataUtils->SetMtpProperty(column, path, type, prop);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetMtpOneDefaultlPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_003, TestSize.Level1)
+{
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    uint32_t handle = 0;
+    uint16_t property = MTP_PROPERTY_STORAGE_ID_CODE;
+    int32_t storageId = 0;
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    mtpDataUtils->SetMtpOneDefaultlPropList(handle, property, outProps, storageId);
+    property = MTP_PROPERTY_PROTECTION_STATUS_CODE;
+    mtpDataUtils->SetMtpOneDefaultlPropList(handle, property, outProps, storageId);
+    property = MTP_PROPERTY_PERSISTENT_UID_CODE;
+    mtpDataUtils->SetMtpOneDefaultlPropList(handle, property, outProps, storageId);
+    property = MTP_PROPERTY_ALBUM_NAME_CODE;
+    mtpDataUtils->SetMtpOneDefaultlPropList(handle, property, outProps, storageId);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpPropValue
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_004, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::string path = "/data";
+    uint32_t property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
+    uint16_t format = 0;
+    PropertyValue outPropValue;
+    int32_t res = mtpDataUtils->GetMtpPropValue(path, property, format, outPropValue);
+    EXPECT_EQ(res, MTP_SUCCESS);
+    property = MTP_PROPERTY_DATE_MODIFIED_CODE;
+    res = mtpDataUtils->GetMtpPropValue(path, property, format, outPropValue);
+    EXPECT_EQ(res, MTP_SUCCESS);
+    property = MTP_PROPERTY_NAME_CODE;
+    res = mtpDataUtils->GetMtpPropValue(path, property, format, outPropValue);
+    EXPECT_EQ(res, MTP_SUCCESS);
+    property = MTP_PROPERTY_DATE_ADDED_CODE;
+    res = mtpDataUtils->GetMtpPropValue(path, property, format, outPropValue);
+    EXPECT_EQ(res, MTP_SUCCESS);
+    property = MTP_PROPERTY_OBJECT_SIZE_CODE;
+    res = mtpDataUtils->GetMtpPropValue(path, property, format, outPropValue);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetPtpProperty
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_005, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    string column = MEDIA_DATA_DB_PARENT_ID;
+    string path = "";
+    MovingType movingType;
+    movingType.displayName = "test";
+    movingType.parent = 1;
+    Property prop;
+    mtpDataUtils->SetPtpProperty(column, path, movingType, prop);
+    path = "/data";
+    column = MEDIA_DATA_DB_SIZE;
+    mtpDataUtils->SetPtpProperty(column, path, movingType, prop);
+    column = MEDIA_DATA_DB_DATE_MODIFIED;
+    mtpDataUtils->SetPtpProperty(column, path, movingType, prop);
+    column = MEDIA_DATA_DB_DATE_ADDED;
+    mtpDataUtils->SetPtpProperty(column, path, movingType, prop);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_006, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    std::unordered_map<std::string, uint32_t> pathHandles;
+    std::shared_ptr<std::unordered_map<uint32_t, std::string>> handles =
+        std::make_shared<std::unordered_map<uint32_t, std::string>>();
+    ASSERT_NE(handles, nullptr);
+    (*handles)[1] = FILE_PATH + "/" + std::to_string(1) + ".txt";
+    (*handles)[2] = FILE_PATH + "/" + std::to_string(2) + ".txt";
+    mtpDataUtils->GetMtpPropList(handles, pathHandles, context, outProps);
+    context->property  = MTP_PROPERTY_ALL_CODE;
+    mtpDataUtils->GetMtpPropList(handles, pathHandles, context, outProps);
+    context->format = 0;
+    mtpDataUtils->GetMtpPropList(handles, pathHandles, context, outProps);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpOneRowProp
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_007, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<UInt16List> properties = std::make_shared<UInt16List>();
+    ASSERT_NE(properties, nullptr);
+    properties->push_back(MTP_PROPERTY_OBJECT_FORMAT_CODE);
+    properties->push_back(MTP_PROPERTY_PARENT_OBJECT_CODE);
+    properties->push_back(MTP_PROPERTY_NAME_CODE);
+    properties->push_back(MTP_PROPERTY_OBJECT_SIZE_CODE);
+    uint32_t parentId = 1;
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    int32_t storageId = 1;
+    std::unordered_map<uint32_t, std::string> myMap;
+    myMap[1] = FILE_PATH + "/" + std::to_string(1) + ".txt";
+    std::unordered_map<uint32_t, std::string>::iterator it = myMap.begin();
+    mtpDataUtils->GetMtpOneRowProp(properties, parentId, it, outProps, storageId);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetMtpOneRowProp
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_008, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    uint32_t property = MTP_PROPERTY_NAME_CODE;
+    PropertyValue outPropValue;
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    DataShare::DataSharePredicates predicates;
+    vector<string> columns;
+    Uri uri(PAH_QUERY_PHOTO_ALBUM);
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_ID);
+    columns.push_back(PhotoAlbumColumns::ALBUM_NAME + " as " + MEDIA_DATA_DB_NAME);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
+    columns.push_back(EMPTY_COLUMN_NAME + " as " + MEDIA_DATA_DB_PARENT_ID);
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
+    ASSERT_NE(dataShareHelper_, nullptr);
+    resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    std::string albumName = GetStringVal(MEDIA_DATA_DB_NAME, resultSet);
+    ASSERT_EQ(outPropValue.outStrVal, albumName);
+    property = MTP_PROPERTY_DATE_MODIFIED_CODE;
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    int64_t dateModified= GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet);
+    std::string timeFormat = "%Y-%m-%d %H:%M:%S";
+    EXPECT_EQ(outPropValue.outStrVal, CombinedTimeFunction(timeFormat, dateModified / MILLI_TO_SECOND));
+    property = MTP_PROPERTY_DATE_ADDED_CODE;
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    int64_t dateAdded = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_ADDED, resultSet);
+    ASSERT_EQ(outPropValue.outIntVal, dateAdded);
+    property = MTP_PROPERTY_PARENT_OBJECT_CODE;
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    ASSERT_EQ(outPropValue.outIntVal, 0);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetPropList
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_009, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<MtpOperationContext> context = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(context, nullptr);
+    uint32_t property = MTP_PROPERTY_NAME_CODE;
+    PropertyValue outPropValue;
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    mtpDataUtils->GetPropValueBySet(property, resultSet, outPropValue, false);
+    DataShare::DataSharePredicates predicates;
+    vector<string> columns;
+    Uri uri(PAH_QUERY_PHOTO_ALBUM);
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_PARENT_ID);
+    columns.push_back(PhotoAlbumColumns::ALBUM_NAME + " as " + MEDIA_DATA_DB_NAME);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
+    columns.push_back(PHOTO_PATH  + " as " + MEDIA_DATA_DB_FILE_PATH);
+    columns.push_back(FILE_SUBTYPE + " as " + COMPAT_FILE_SUBTYPE);
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
+    ASSERT_NE(dataShareHelper_, nullptr);
+    resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    std::shared_ptr<UInt16List> properties = std::make_shared<UInt16List>();
+    ASSERT_NE(properties, nullptr);
+    properties->push_back(MTP_PROPERTY_OBJECT_FORMAT_CODE);
+    properties->push_back(MTP_PROPERTY_OBJECT_SIZE_CODE);
+    properties->push_back(MTP_PROPERTY_OBJECT_FILE_NAME_CODE);
+    properties->push_back(MTP_PROPERTY_ALBUM_NAME_CODE);
+    properties->push_back(MTP_PROPERTY_PROTECTION_STATUS_CODE);
+    properties->push_back(MTP_PROPERTY_NAME_CODE);
+    std::shared_ptr<vector<Property>> outProps = std::make_shared<vector<Property>>();
+    ASSERT_NE(outProps, nullptr);
+    context->handle = EDITED_PHOTOS_OFFSET - 100;
+    mtpDataUtils->GetPropList(context, resultSet, properties, outProps);
+    context->handle = EDITED_PHOTOS_OFFSET + 100;
+    mtpDataUtils->GetPropList(context, resultSet, properties, outProps);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetFormat
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_010, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    DataShare::DataSharePredicates predicates;
+    vector<string> columns;
+    Uri uri(PAH_QUERY_PHOTO_ALBUM);
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_PARENT_ID);
+    columns.push_back(PhotoAlbumColumns::ALBUM_NAME + " as " + MEDIA_DATA_DB_NAME);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
+    columns.push_back(PHOTO_PATH  + " as " + MEDIA_DATA_DB_FILE_PATH);
+    columns.push_back(FILE_SUBTYPE + " as " + MEDIA_DATA_DB_MEDIA_TYPE);
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
+    ASSERT_NE(dataShareHelper_, nullptr);
+    resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    uint16_t outFormat = 0;
+    mtpDataUtils->GetFormat(resultSet, outFormat);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetFormat
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_011, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    DataShare::DataSharePredicates predicates;
+    vector<string> columns;
+    Uri uri(PAH_QUERY_PHOTO_ALBUM);
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_PARENT_ID);
+    columns.push_back(PhotoAlbumColumns::ALBUM_NAME + " as " + MEDIA_DATA_DB_NAME);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
+    columns.push_back(PHOTO_PATH  + " as " + MEDIA_DATA_DB_FILE_PATH);
+    columns.push_back("7 as " + MEDIA_DATA_DB_MEDIA_TYPE);
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
+    ASSERT_NE(dataShareHelper_, nullptr);
+    resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    uint16_t outFormat = 0;
+    mtpDataUtils->GetFormat(resultSet, outFormat);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetFormat
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_012, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    DataShare::DataSharePredicates predicates;
+    vector<string> columns;
+    Uri uri(PAH_QUERY_PHOTO_ALBUM);
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID + " as " + MEDIA_DATA_DB_PARENT_ID);
+    columns.push_back(PhotoAlbumColumns::ALBUM_NAME + " as " + MEDIA_DATA_DB_NAME);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
+    columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
+    columns.push_back(FILE_SUBTYPE + " as " + MEDIA_DATA_DB_MEDIA_TYPE);
+    predicates.EqualTo(MEDIA_DATA_DB_ALBUM_NAME, OTHER_ALBUM_NAME);
+    ASSERT_NE(dataShareHelper_, nullptr);
+    resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    uint16_t outFormat = 0;
+    mtpDataUtils->GetFormat(resultSet, outFormat);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SetProperty
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_013, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+
+    std::string column = "date_modified";
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet = std::make_shared<DataShare::DataShareResultSet>();
+    ASSERT_NE(resultSet, nullptr);
+    ResultSetDataType type = TYPE_INT64;
+    Property prop;
+    prop.currentValue = std::make_shared<Property::Value>();
+    ASSERT_NE(prop.currentValue, nullptr);
+    prop.currentValue->str_ = nullptr;
+    mtpDataUtils->SetProperty(column, resultSet, type, prop);
+    EXPECT_NE(prop.currentValue->str_, nullptr);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetPropValueForVideoOfMovingPhoto
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_014, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+
+    std::string path = "";
+    uint32_t property = MTP_PROPERTY_OBJECT_FILE_NAME_CODE;
+    PropertyValue outPropValue;
+    int32_t res = mtpDataUtils->GetPropValueForVideoOfMovingPhoto(path, property, outPropValue);
+    EXPECT_EQ(res, MTP_SUCCESS);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: GetPropValueForVideoOfMovingPhoto
+ */
+HWTEST_F(MtpDataUtilsUnitTest, mtp_data_utils_test_015, TestSize.Level1)
+{
+    std::shared_ptr<MtpDataUtils> mtpDataUtils = std::make_shared<MtpDataUtils>();
+    ASSERT_NE(mtpDataUtils, nullptr);
+
+    std::string path = "/storage/media/local/files/Docs";
+    uint32_t property = MTP_PROPERTY_OBJECT_SIZE_CODE;
+    PropertyValue outPropValue;
+    int32_t res = mtpDataUtils->GetPropValueForVideoOfMovingPhoto(path, property, outPropValue);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
 }
 } // namespace Media
 } // namespace OHOS

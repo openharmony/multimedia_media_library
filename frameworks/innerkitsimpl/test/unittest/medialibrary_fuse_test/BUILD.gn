@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_fuse_test") {
-  module_out_path = "media_library/media_library_fuse"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
@@ -30,7 +30,6 @@ ohos_unittest("medialibrary_fuse_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "../medialibrary_unittest_utils/include",
-    "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
   ]
 
   sources = [
@@ -80,7 +79,6 @@ ohos_unittest("medialibrary_fuse_test") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
     "storage_service:storage_manager_sa_proxy",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {

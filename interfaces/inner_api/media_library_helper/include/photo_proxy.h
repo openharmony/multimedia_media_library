@@ -27,6 +27,7 @@ enum class PhotoFormat : int32_t {
     MP4,
     HEIF,
     YUV,
+    DNG,
 };
 
 enum class PhotoQuality : int32_t {
@@ -60,6 +61,11 @@ public:
     virtual double GetLatitude() = 0;
     virtual double GetLongitude() = 0;
     virtual int32_t GetShootingMode() = 0;
+    virtual uint32_t GetCloudImageEnhanceFlag() = 0;
+    virtual int32_t GetStageVideoTaskStatus() // 动态照片是否需要下发分段式视频任务，返回状态枚举值
+    {
+        return 0;
+    }
 };
 } // Media
 } // OHOS

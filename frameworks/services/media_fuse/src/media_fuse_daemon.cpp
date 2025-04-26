@@ -44,7 +44,7 @@ static int Open(const char *path, struct fuse_file_info *fi)
 {
     int fd = -1;
     fuse_context *ctx = fuse_get_context();
-
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
     DfxTimer dfxTimer(
         DfxType::FUSE_OPEN, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), OPEN_FILE_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
@@ -59,7 +59,7 @@ static int Open(const char *path, struct fuse_file_info *fi)
 static int Read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
     fuse_context *ctx = fuse_get_context();
-
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
     DfxTimer dfxTimer(
         DfxType::FUSE_READ, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
@@ -73,7 +73,7 @@ static int Read(const char *path, char *buf, size_t size, off_t offset, struct f
 static int Write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
     fuse_context *ctx = fuse_get_context();
-
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
     DfxTimer dfxTimer(
         DfxType::FUSE_WRITE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
@@ -87,7 +87,7 @@ static int Write(const char *path, const char *buf, size_t size, off_t offset, s
 static int Release(const char *path, struct fuse_file_info *fi)
 {
     fuse_context *ctx = fuse_get_context();
-
+    CHECK_AND_RETURN_RET_LOG(ctx != nullptr, -ENOENT, "get file context failed");
     DfxTimer dfxTimer(
         DfxType::FUSE_RELEASE, static_cast<int32_t>(OperationObject::FILESYSTEM_PHOTO), COMMON_TIME_OUT, true);
     dfxTimer.SetCallerUid(ctx->uid);
@@ -127,40 +127,22 @@ void MediaFuseDaemon::DaemonThread()
     string name("mediaFuseDaemon");
     pthread_setname_np(pthread_self(), name.c_str());
     do {
-        if (fuse_opt_add_arg(&args, "-odebug")) {
-            MEDIA_ERR_LOG("fuse_opt_add_arg failed");
-            break;
-        }
-
+        CHECK_AND_BREAK_ERR_LOG(!fuse_opt_add_arg(&args, "-odebug"), "fuse_opt_add_arg failed");
         fuse_set_log_func([](enum fuse_log_level level, const char *fmt, va_list ap) {
             char *str = nullptr;
-            if (vasprintf(&str, fmt, ap) < 0) {
-                MEDIA_ERR_LOG("FUSE: log failed");
-                return;
-            }
-
+            CHECK_AND_RETURN_LOG(vasprintf(&str, fmt, ap) >= 0, "FUSE: log failed");
             MEDIA_ERR_LOG("FUSE: %{public}s", str);
             free(str);
         });
 
         fuse_default = fuse_new(&args, &high_ops, sizeof(high_ops), nullptr);
-        if (fuse_default == nullptr) {
-            MEDIA_ERR_LOG("fuse_new failed");
-            break;
-        }
-
-        if (fuse_mount(fuse_default, mountpoint_.c_str()) != 0) {
-            MEDIA_ERR_LOG("fuse_mount failed, mountpoint_ = %{private}s", mountpoint_.c_str());
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(fuse_default != nullptr, "fuse_new failed");
+        CHECK_AND_BREAK_ERR_LOG(fuse_mount(fuse_default, mountpoint_.c_str()) == 0,
+            "fuse_mount failed, mountpoint_ = %{private}s", mountpoint_.c_str());
 
         loop_config = fuse_loop_cfg_create();
-        if (loop_config == nullptr) {
-            MEDIA_ERR_LOG("fuse_loop_cfg_create failed");
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(loop_config != nullptr, "fuse_loop_cfg_create failed");
         fuse_loop_cfg_set_max_threads(loop_config, FUSE_CFG_MAX_THREADS);
-
         MEDIA_INFO_LOG("Starting fuse ...");
         fuse_loop_mt(fuse_default, loop_config);
         MEDIA_INFO_LOG("Ending fuse ...");

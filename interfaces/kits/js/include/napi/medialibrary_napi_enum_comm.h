@@ -86,11 +86,11 @@ const std::vector<std::string> analysisAlbumSubType {
 };
 
 const std::vector<std::string> positionTypeEnum {
-    "LOCAL", "CLOUD", "BOTH"
+    "LOCAL", "CLOUD", "LOCAL_AND_CLOUD"
 };
 
 const std::vector<std::string> photoSubTypeEnum {
-    "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO"
+    "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO", "BURST"
 };
 
 const std::vector<std::string> photoPermissionTypeEnum {
@@ -110,7 +110,8 @@ const std::vector<std::string> requestPhotoTypeEnum {
 };
 
 const std::vector<std::string> resourceTypeEnum {
-    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY", "PRIVATE_MOVING_PHOTO_RESOURCE"
+    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY", "PRIVATE_MOVING_PHOTO_RESOURCE",
+    "PRIVATE_MOVING_PHOTO_METADATA"
 };
 
 const std::vector<std::string> dynamicRangeTypeEnum {

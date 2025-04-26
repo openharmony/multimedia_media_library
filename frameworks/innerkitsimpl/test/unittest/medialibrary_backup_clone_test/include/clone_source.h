@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "location_db_sqls.h"
 #include "result_set_utils.h"
 #include "rdb_helper.h"
 #include "backup_const_column.h"
@@ -33,6 +34,9 @@ enum class InsertType {
     IMG_FACE_TBL,
     ANALYSIS_PHOTO_MAP,
     AUDIOS,
+    ANALYSIS_GEO_DICTIONARY,
+    TAB_ANALYSIS_LABEL,
+    TAB_ANALYSIS_VIDEO_LABEL,
 };
 
 const std::string CREATE_FACE_TAG_TBL_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS " + VISION_FACE_TAG_TABLE + " (" +
@@ -96,6 +100,9 @@ public:
     void InsertAudio();
     void InsertFaceTag();
     void InsertImgFaceTbl();
+    void InsertAnalysisGeoDictionary();
+    void InsertTabAnalysisLabel();
+    void InsertTabAnalysisVideoLabel();
     std::shared_ptr<NativeRdb::RdbStore> cloneStorePtr_;
 };
 

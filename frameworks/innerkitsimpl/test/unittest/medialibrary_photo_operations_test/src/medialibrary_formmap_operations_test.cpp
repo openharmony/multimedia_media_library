@@ -177,7 +177,7 @@ void MediaLibraryFormOperationsTest::SetUp()
 void MediaLibraryFormOperationsTest::TearDown()
 {}
 
-HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_001, TestSize.Level1)
 {
     // test for store form operation and remove form operation
     MediaLibraryCommand cmd(OperationObject::PAH_FORM_MAP, OperationType::UPDATE);
@@ -195,7 +195,7 @@ HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_001, TestSize.Le
     EXPECT_EQ(ret > 0, true);
 }
 
-HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_002, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::PAH_FORM_MAP, OperationType::UPDATE);
     cmd.SetTableName(FormMap::FORM_MAP_TABLE);
@@ -213,7 +213,7 @@ HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_002, TestSize.Le
     EXPECT_EQ(res, true);
 }
 
-HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_003, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::PAH_FORM_MAP, OperationType::UPDATE);
     cmd.SetTableName(FormMap::FORM_MAP_TABLE);
@@ -229,7 +229,7 @@ HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_003, TestSize.Le
     EXPECT_EQ(to_string(formIds.front()).c_str(), F0RMID_FOR_TEST);
 }
 
-HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_004, TestSize.Level1)
 {
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "formPhoto_2.jpg");
     string path = MediaLibraryFormMapOperations::GetFilePathById(ToString(fileId));
@@ -249,7 +249,7 @@ HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_004, TestSize.Le
     EXPECT_EQ(to_string(formIds.front()).c_str(), F0RMID_FOR_TEST_TWO);
 }
 
-HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_005, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::PAH_FORM_MAP, OperationType::UPDATE);
     cmd.SetTableName(FormMap::FORM_MAP_TABLE);
@@ -261,7 +261,7 @@ HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_005, TestSize.Le
     EXPECT_EQ(ret, E_GET_PRAMS_FAIL);
 }
 
-HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_006, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::PAH_FORM_MAP, OperationType::UPDATE);
     cmd.SetTableName(FormMap::FORM_MAP_TABLE);
@@ -273,7 +273,7 @@ HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_006, TestSize.Le
     EXPECT_EQ(ret, E_GET_PRAMS_FAIL);
 }
 
-HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_007, TestSize.Level1)
 {
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "formPhoto_3.jpg");
     string path = MediaLibraryFormMapOperations::GetFilePathById(ToString(fileId + 1));
@@ -283,14 +283,14 @@ HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_007, TestSize.Le
     EXPECT_EQ(uri, "");
 }
 
-HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_008, TestSize.Level1)
 {
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "formPhoto_4.jpg");
     bool res = MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::UFM_PHOTO, ToString(fileId + 1));
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_009, TestSize.Level1)
 {
     bool res = MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::PAH_FORM_MAP, F0RMID_NO_SAVE);
     EXPECT_EQ(res, false);

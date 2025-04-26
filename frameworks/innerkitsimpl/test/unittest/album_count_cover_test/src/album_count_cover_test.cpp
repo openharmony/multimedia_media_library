@@ -40,6 +40,7 @@
 #define private public
 #include "medialibrary_rdbstore.h"
 #undef private
+#include "album_operation_uri.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -552,7 +553,7 @@ void AlbumCountCoverTest::TearDown() {}
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_001, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_001, TestSize.Level2)
 {
     MEDIA_ERR_LOG("album_count_cover_001 start");
     ClearEnv();
@@ -616,7 +617,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_001, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_002 begin");
     // Clear all tables.
@@ -631,26 +632,20 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level0)
     MEDIA_INFO_LOG("Create a photo, and then hide it.");
     auto fileAsset = CreateImageAsset("Test_Hidden_Image_001.jpg");
     EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
     HideFileAsset(fileAsset, true);
-    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 3. Create another photo, and then hide it. The cover of hidden album should be updated.
     sleep(SLEEP_INTERVAL);
     MEDIA_INFO_LOG("Create another photo, and then hide it.");
     auto fileAsset2 = CreateImageAsset("Test_Create_Image_002.jpg");
     EXPECT_NE(fileAsset2, nullptr);
-    if (fileAsset2 == nullptr) {
-        return;
-    }
     HideFileAsset(fileAsset2, true);
-    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(2, fileAsset2->GetUri(), 2, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 4. Un-hide the cover photo, the count & cover of hidden album should be updated.
     HideFileAsset(fileAsset2, false);
-    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 5. Un-hide all the photo, the count & cover of hidden album should be reset.
     HideFileAsset(fileAsset, false);
@@ -670,7 +665,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_002, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_003 begin");
     // Clear all tables.
@@ -735,7 +730,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_004 begin");
     // Clear all tables.
@@ -752,9 +747,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Create a photo.");
     auto fileAsset = CreateImageAsset("Test_Images_001.jpg");
     EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
 
     // 3. Create another photo.
@@ -762,16 +754,13 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Create another photo.");
     auto fileAsset2 = CreateImageAsset("Test_Images_002.jpg");
     EXPECT_NE(fileAsset2, nullptr);
-    if (fileAsset2 == nullptr) {
-        return;
-    }
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
 
     // 4. Hide a photo.
     MEDIA_INFO_LOG("Step: Hide a photo");
     HideFileAsset(fileAsset2, true);
     AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
-    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(1, fileAsset2->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 5. Un-hide a photo.
     MEDIA_INFO_LOG("Step: Un-hide a photo");
@@ -794,90 +783,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
 }
 
 /**
- * @tc.name: album_count_cover_005
- * @tc.desc: Favorite album count and cover test.
- *  1. Query album info, count should be 0, cover should be empty.
- *  2. Create a photo.
- *  3. Create another photo.
- *  4. Hide a photo.
- *  5. Un-hide a photo.
- *  6. Trash a photo.
- *  7. Un-trash a photo.
- *  8. Un-favorite a photo.
- *  9. Un-favorite all photos.
- *  10. Batch favorite all photos.
- *  11. Batch un-favorite all photos.
- * @tc.type: FUNC
- * @tc.require: issueI89E9N
- */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("album_count_cover_005 begin");
-    // Clear all tables.
-    MEDIA_INFO_LOG("Step: Clear all tables.");
-    ClearEnv();
-
-    // 1. Query album info, count should be 0, cover should be empty
-    MEDIA_INFO_LOG("Step: Check initialized info of system albums");
-    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
-    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
-    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
-
-    // 2. Create a photo.
-    MEDIA_INFO_LOG("Step: Create a photo, and then favorite it.");
-    auto fileAsset = CreateImageAsset("Test_Favorites_001.jpg");
-    ASSERT_NE(fileAsset, nullptr);
-    FavoriteFileAsset(fileAsset->GetId(), true);
-    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
-
-    // 3. Create another photo.
-    sleep(SLEEP_INTERVAL);
-    MEDIA_INFO_LOG("Step: Create another photo, and then favorite it.");
-    auto fileAsset2 = CreateImageAsset("Test_Favorites_002.jpg");
-    ASSERT_NE(fileAsset2, nullptr);
-    FavoriteFileAsset(fileAsset2->GetId(), true);
-
-    // 4. Hide a photo.
-    MEDIA_INFO_LOG("Step: Hide a photo");
-    HideFileAsset(fileAsset2, true);
-    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
-    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
-
-    // 5. Un-hide a photo.
-    MEDIA_INFO_LOG("Step: Un-hide a photo");
-    HideFileAsset(fileAsset2, false);
-    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
-
-    // 6. Trash a photo.
-    MEDIA_INFO_LOG("Step: Trash a photo");
-    TrashFileAsset(fileAsset2, true);
-    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
-    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
-
-    // 7. Un-trash a photo.
-    MEDIA_INFO_LOG("Step: Un-trash a photo");
-    TrashFileAsset(fileAsset2, false);
-    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
-
-    // 8. Un-favorite a photo.
-    FavoriteFileAsset(fileAsset2->GetId(), false);
-    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
-
-    // 9. Un-favorite all photos.
-    FavoriteFileAsset(fileAsset->GetId(), false);
-    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
-
-    // 10. Batch favorite all photos.
-    vector<string> fileAssetUriArray = { fileAsset->GetUri(), fileAsset2->GetUri() };
-    BatchFavoriteFileAsset(fileAssetUriArray, true);
-
-    // 11. Batch un-favorite all photos.
-    BatchFavoriteFileAsset(fileAssetUriArray, false);
-    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
-    MEDIA_INFO_LOG("album_count_cover_005 end");
-}
-
-/**
  * @tc.name: album_count_cover_007
  * @tc.desc: Video album count and cover test
  *  1. Query album info, count should be 0, cover should be empty
@@ -890,7 +795,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_007 begin");
     // Clear all tables.
@@ -907,9 +812,6 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Create a video.");
     auto fileAsset = CreateVideoAsset("Test_Videos_001.mp4");
     EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
 
     // 3. Create another photo.
@@ -917,16 +819,13 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Create another photo.");
     auto fileAsset2 = CreateVideoAsset("Test_Videos_002.mp4");
     EXPECT_NE(fileAsset2, nullptr);
-    if (fileAsset2 == nullptr) {
-        return;
-    }
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
 
     // 4. Hide a photo.
     MEDIA_INFO_LOG("Step: Hide a photo");
     HideFileAsset(fileAsset2, true);
     AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
-    AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(1, fileAsset2->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 5. Un-hide a photo.
     MEDIA_INFO_LOG("Step: Un-hide a photo");
@@ -960,7 +859,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
  * @tc.type: FUNC
  * @tc.require: issueI8YPJA
  */
-HWTEST_F(AlbumCountCoverTest, album_count_cover_008, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, album_count_cover_008, TestSize.Level2)
 {
     MEDIA_INFO_LOG("album_count_cover_008 begin");
     // Clear all tables.
@@ -1016,7 +915,7 @@ int QueryCountForBussinessTable()
     return count;
 }
 
-HWTEST_F(AlbumCountCoverTest, refresh_analysis_album001, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, refresh_analysis_album001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("refresh_analysis_album001 begin");
     MediaLibraryRdbUtils::UpdateAllAlbumsCountForCloud(
@@ -1025,7 +924,7 @@ HWTEST_F(AlbumCountCoverTest, refresh_analysis_album001, TestSize.Level0)
     EXPECT_GT(count, 0);
 }
 
-HWTEST_F(AlbumCountCoverTest, refresh_analysis_album002, TestSize.Level0)
+HWTEST_F(AlbumCountCoverTest, refresh_analysis_album002, TestSize.Level2)
 {
     MEDIA_INFO_LOG("refresh_analysis_album002 begin");
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);

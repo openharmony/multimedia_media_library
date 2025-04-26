@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_custom_restore_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/medialibrary-album"
 
   include_dirs = [
     "./include",
@@ -84,9 +84,9 @@ ohos_unittest("medialibrary_custom_restore_test") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",
+    "preferences:native_preferences",
     "relational_store:native_rdb",
     "samgr:samgr_proxy",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {

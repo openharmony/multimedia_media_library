@@ -51,7 +51,7 @@ std::shared_ptr<MtpStorageManager> MtpStorageManager::GetInstance()
     if (instance_ == nullptr) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (instance_ == nullptr) {
-            instance_ = std::shared_ptr<MtpStorageManager>(new MtpStorageManager());
+            instance_ = std::make_shared<MtpStorageManager>();
         }
     }
     return instance_;
@@ -62,10 +62,7 @@ int64_t MtpStorageManager::GetTotalSize(const std::string &path)
     std::string p = path.empty() ? PUBLIC_PATH_DATA : path;
     std::error_code ec;
     auto info = std::filesystem::space(p, ec);
-    if (ec.value() != E_OK) {
-        MEDIA_ERR_LOG("GetTotalSize failed, errno: %{public}d", errno);
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(ec.value() == E_OK, 0, "GetTotalSize failed, errno: %{public}d", errno);
 
     return info.capacity;
 }
@@ -75,10 +72,7 @@ int64_t MtpStorageManager::GetFreeSize(const std::string &path)
     std::string p = path.empty() ? PUBLIC_PATH_DATA : path;
     std::error_code ec;
     auto info = std::filesystem::space(p, ec);
-    if (ec.value() != E_OK) {
-        MEDIA_ERR_LOG("GetFreeSize failed, errno: %{public}d", errno);
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(ec.value() == E_OK, 0, "GetFreeSize failed, errno: %{public}d", errno);
 
     return info.available;
 }
@@ -140,13 +134,9 @@ std::string MtpStorageManager::GetSystemLanguage()
 {
     char param[SYSPARA_SIZE] = {0};
     int status = GetParameter(LANGUAGE_KEY.c_str(), "", param, SYSPARA_SIZE);
-    if (status > 0) {
-        return param;
-    }
+    CHECK_AND_RETURN_RET(status <= 0, param);
     status = GetParameter(DEFAULT_LANGUAGE_KEY.c_str(), "", param, SYSPARA_SIZE);
-    if (status > 0) {
-        return param;
-    }
+    CHECK_AND_RETURN_RET(status <= 0, param);
     MEDIA_ERR_LOG("Failed to get system language");
     return "";
 }

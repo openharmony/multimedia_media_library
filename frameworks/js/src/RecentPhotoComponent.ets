@@ -19,6 +19,7 @@ import { BaseItemInfo } from '@ohos.file.PhotoPickerComponent';
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
+const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
 
 @Component
 export struct RecentPhotoComponent {
@@ -61,7 +62,7 @@ export struct RecentPhotoComponent {
   }
 
   private handleOnReceive(wantParam: Record<string, Object>): void {
-    console.info('RecentPhotoComponent OnReceive:' + JSON.stringify(wantParam));
+    console.info('RecentPhotoComponent OnReceive:' + this.encrypt(JSON.stringify(wantParam)));
     let dataType: string = wantParam['dataType'] as string;
     if (dataType === 'checkResult') {
       if (this.onRecentPhotoCheckResult) {
@@ -96,11 +97,20 @@ export struct RecentPhotoComponent {
       filterType = FILTER_MEDIA_TYPE_IMAGE;
     } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
       filterType = FILTER_MEDIA_TYPE_VIDEO;
+    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
+      filterType = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
     } else {
       filterType = FILTER_MEDIA_TYPE_ALL;
     }
-    console.info('RecentPhotoComponent convertMIMETypeToFilterType : ' + JSON.stringify(filterType));
+    console.info('RecentPhotoComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
+  }
+
+  private encrypt(data: string): string {
+    if (!data || data?.indexOf('file:///data/storage/') !== -1) {
+      return '';
+    }
+    return data.replace(/(\/\w+)\./g, '/******.');
   }
 }
 

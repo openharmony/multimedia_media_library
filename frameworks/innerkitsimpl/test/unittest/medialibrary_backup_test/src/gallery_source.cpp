@@ -50,6 +50,23 @@ const string GalleryOpenCall::CREATE_GALLERY_FACE = string("CREATE TABLE IF NOT 
     "scale_width REAL NOT NULL, scale_height REAL NOT NULL, landmarks BLOB, prob REAL, " +
     "yaw REAL NOT NULL, pitch REAL NOT NULL, roll REAL NOT NULL, total_face INTEGER NOT NULL);";
 
+const string GalleryOpenCall::CREATE_T_STORY_ALBUM = string("CREATE TABLE IF NOT EXISTS t_story_album ") +
+    "(story_id TEXT, date TEXT, name TEXT, min_datetaken INTEGER, max_datetaken INTEGER, project_id TEXT, " +
+    "cover_id INTEGER, album_type INTEGER, album_scene INTEGER, typeface_name TEXT, remarks TEXT, " +
+    "generatedtime INTEGER, tv_video_path TEXT, cluster_type TEXT NOT NULL, cluster_sub_type TEXT NOT NULL, " +
+    "cluster_condition TEXT NOT NULL, story_version TEXT NOT NULL, displayable INTEGER NOT NULL, " +
+    "insert_pic_count INTEGER, remove_pic_count INTEGER, share_screenshot_count INTEGER, share_cover_count INTEGER, " +
+    "rename_count INTEGER, change_cover_count INTEGER);";
+
+const string GalleryOpenCall::CREATE_T_STORY_ALBUM_SUGGESTION =
+    string("CREATE TABLE IF NOT EXISTS t_story_album_suggestion") +
+    "(story_id TEXT, suggest_name TEXT, suggest_start_time INTEGER, suggest_end_time INTEGER, cluster_type TEXT);";
+
+const string GalleryOpenCall::CREATE_T_VIDEO_SEMANTIC_ANALYSIS =
+    string("CREATE TABLE IF NOT EXISTS t_video_semantic_analysis") +
+    "(hash TEXT, category_id INTEGER, confidence_probability REAL, sub_category INTEGER, sub_confidence_prob REAL, " +
+    "sub_label INTEGER, sub_label_prob REAL, sub_label_type INTEGER, tracks TEXT);";
+
 int GalleryOpenCall::OnCreate(NativeRdb::RdbStore &store)
 {
     int ret = 0;
@@ -59,6 +76,9 @@ int GalleryOpenCall::OnCreate(NativeRdb::RdbStore &store)
     ret += store.ExecuteSql(CREATE_GALLERY_MERGE_TAG);
     ret += store.ExecuteSql(CREATE_GALLERY_MERGE_FACE);
     ret += store.ExecuteSql(CREATE_GALLERY_FACE);
+    ret += store.ExecuteSql(CREATE_T_STORY_ALBUM);
+    ret += store.ExecuteSql(CREATE_T_STORY_ALBUM_SUGGESTION);
+    ret += store.ExecuteSql(CREATE_T_VIDEO_SEMANTIC_ANALYSIS);
     return ret;
 }
 
@@ -79,12 +99,16 @@ void GallerySource::Init(const string &dbPath)
     InitGalleryMediaThree();
     InitGalleryMediaFour();
     InitGalleryMediaFive();
+    InitGalleryMediaSix();
     InitGarbageAlbum();
     InitGalleryAlbumOne();
     InitGalleryAlbumTwo();
     InitGalleryMergeTag();
     InitGalleryMergeFace();
     InitGalleryFace();
+    InitTStoryAlbum();
+    InitTStoryAlbumSuggestion();
+    InitTVideoSemanticAnalysis();
 }
 
 void GallerySource::InitGalleryMediaOne()
@@ -292,6 +316,21 @@ void GallerySource::InitGalleryMediaFive()
         0, NULL, 0, 1495970415377, 1495970415377, '2024:09:06 17:00:00')");
 }
 
+void GallerySource::InitGalleryMediaSix()
+{
+    // duplicate data with case differences
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(38, 32, ") +
+        "'/storage/emulated/0/A/media/Rocket/test/DUPLICATE_DATA_CASE.mp4', 10865209, 1708600079, 1708600079," +
+        "'DUPLICATE_DATA_CASE', 'NULL', 'DUPLICATE_DATA_CASE.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/DUPLICATE_DATA_CASE.mp4', \
+        0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00')");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(39, 33, ") +
+        "'/storage/emulated/0/A/media/Rocket/test/duplicate_data_case.mp4', 10865209, 1708600079, 1708600079," +
+        "'duplicate_data_case', 'NULL', 'duplicate_data_case.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data_case.mp4', \
+        0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00')");
+}
+
 void GallerySource::InitGarbageAlbum()
 {
     galleryStorePtr_->ExecuteSql(string("INSERT INTO garbage_album VALUES('baidu', '/BaiduMap/cache', ") +
@@ -434,6 +473,29 @@ void GallerySource::InitGalleryFace()
         'ser_274602026436444', 0.4325, 0.4294, 0.0473, 0.0746, \
         x'71030000a70200009e030000a502000086030000bc02000076030000d40200009b030000d3020000', 0, 1.9596, -1.9596, \
         3.9188, 2)")); // 'Y'
+}
+
+void GallerySource::InitTStoryAlbum()
+{
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO t_story_album (story_id, date, name, min_datetaken, \
+        max_datetaken, project_id, cover_id, album_type, album_scene, typeface_name, remarks, generatedtime, \
+        tv_video_path, cluster_type, cluster_sub_type, cluster_condition, story_version, displayable, \
+        insert_pic_count, remove_pic_count, share_screenshot_count, share_cover_count, rename_count, \
+        change_cover_count) VALUES ('1', 'date', 'pic', 1, 2, '123', 123, 321, 0, 'typ_name', 'marks', 10, 'e12', \
+        'clu_type', 'clu_sub_type', 'clu_con', 'version', 1, 2, 3, 4, 5, 6, 7)"));
+}
+
+void GallerySource::InitTStoryAlbumSuggestion()
+{
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO t_story_album_suggestion (story_id, suggest_name, \
+        suggest_start_time, suggest_end_time, cluster_type) VALUES ('1', 'sug_name', 1, 2, 'clu_type')"));
+}
+
+void GallerySource::InitTVideoSemanticAnalysis()
+{
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO t_video_semantic_analysis (hash, category_id, \
+        confidence_probability, sub_category, sub_confidence_prob, sub_label, sub_label_prob, sub_label_type, \
+        tracks) VALUES ('3275', 1, 9827, 103, 9827, 153, 9827, 0, 'beginFrame')"));
 }
 } // namespace Media
 } // namespace OHOS

@@ -20,7 +20,6 @@
 #include "ffrt.h"
 #include "ffrt_inner.h"
 #include "medialibrary_album_fusion_utils.h"
-#include "medialibrary_album_refresh.h"
 
 namespace OHOS {
 namespace Media {
@@ -98,9 +97,7 @@ void MediaLibraryAllAlbumRefreshProcessor::TryRefreshAllAlbums()
             GetNowTimeUs(), lastRefreshAllAlbumsTime_);
         lastRefreshAllAlbumsTime_ = GetNowTimeUs();
     }
-    SyncNotifyInfo info;
-    info.forceRefreshType = ForceRefreshType::CYCLE;
-    AlbumsRefreshManager::GetInstance().AddAlbumRefreshTask(info);
+    MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
     ffrt::submit([this]() { TryRefreshAllAlbums(); },
         ffrt::task_attr().delay(REFRESH_ALL_ALBUMS_INTERVAL));
 }

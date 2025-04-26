@@ -19,6 +19,7 @@
 #include "dfx_cloud_manager.h"
 #include "dfx_utils.h"
 #include "media_file_utils.h"
+#include "media_file_uri.h"
 #include "media_log.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_bundle_manager.h"
@@ -130,6 +131,34 @@ void DfxManager::HandleCommonBehavior(string bundleName, int32_t type)
     dfxCollector_->AddCommonBahavior(bundleName, type);
 }
 
+static string GetDisplayName(const string &coverId, const std::map<std::string, std::string> &displayNames)
+{
+    auto it = std::find_if(displayNames.begin(), displayNames.end(),
+        [&](const std::pair<std::string, std::string> &name) {
+        return name.first == coverId;
+    });
+    string displayName = it == displayNames.end() ? "" : it->second;
+    return DfxUtils::GetSafeDiaplayNameWhenChinese(displayName);
+}
+
+static string GetAlbumName(const string &coverId, const DeleteBehaviorData &deleteBehaviorData)
+{
+    auto itIds = std::find_if(deleteBehaviorData.ownerAlbumIds.begin(), deleteBehaviorData.ownerAlbumIds.end(),
+        [&](const std::pair<std::string, std::string> &ownerAlbumId) {
+            return ownerAlbumId.first == coverId;
+        });
+    if (itIds == deleteBehaviorData.ownerAlbumIds.end()) {
+        return "";
+    }
+    string albumId = itIds->second;
+    auto it = std::find_if(deleteBehaviorData.albumNames.begin(), deleteBehaviorData.albumNames.end(),
+        [&](const std::pair<std::string, std::string> &albumName) {
+            return albumName.first == albumId;
+        });
+    string albumName = it == deleteBehaviorData.albumNames.end() ? "" : it->second;
+    return DfxUtils::GetSafeAlbumNameWhenChinese(albumName);
+}
+
 static void LogDelete(DfxData *data)
 {
     if (data == nullptr) {
@@ -141,19 +170,6 @@ static void LogDelete(DfxData *data)
     int32_t size = taskData->size_;
     std::shared_ptr<DfxReporter> dfxReporter = taskData->dfxReporter_;
     MEDIA_INFO_LOG("id: %{public}s, type: %{public}d, size: %{public}d", id.c_str(), type, size);
-
-    OHOS::Media::AuditLog auditLog;
-    auditLog.isUserBehavior = true;
-    auditLog.cause = "USER BEHAVIOR";
-    auditLog.operationType = "DELETE";
-    auditLog.operationScenario = "io";
-    auditLog.operationCount = 1,
-    auditLog.operationStatus = "running";
-    auditLog.extend = "OK",
-    auditLog.id = id;
-    auditLog.type = type;
-    auditLog.size = size;
-    OHOS::Media::HiAudit::GetInstance().Write(auditLog);
 
     std::vector<std::string> uris = taskData->uris_;
     if (!uris.empty()) {
@@ -167,6 +183,12 @@ static void LogDelete(DfxData *data)
             if (pathPos == string::npos) {
                 continue;
             }
+            string coverId = MediaFileUri::GetPhotoId(uri);
+            string displayName = GetDisplayName(coverId, taskData->deleteBehaviorData_.displayNames);
+            string albumName = GetAlbumName(coverId, taskData->deleteBehaviorData_);
+            AuditLog auditLog = { true, "USER BEHAVIOR", "DELETE", "io", 1, "running", "ok",
+                id, type, size, (halfUri.substr(pathPos + 1)).c_str(), displayName, albumName };
+            HiAudit::GetInstance().Write(auditLog);
             dfxReporter->ReportDeleteBehavior(id, type, halfUri.substr(pathPos + 1));
         }
     }
@@ -177,7 +199,8 @@ void DfxManager::HandleNoPermmison(int32_t type, int32_t object, int32_t error)
     MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, error);
 }
 
-void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::vector<std::string> &uris, string bundleName)
+void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::vector<std::string> &uris, string bundleName,
+    const DeleteBehaviorData &deleteBehaviorData)
 {
     if (bundleName == "") {
         bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
@@ -188,7 +211,7 @@ void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::vector<st
         return;
     }
     string id = bundleName == "" ? to_string(IPCSkeleton::GetCallingUid()) : bundleName;
-    auto *taskData = new (nothrow) DeleteBehaviorTask(id, type, size, uris, dfxReporter_);
+    auto *taskData = new (nothrow) DeleteBehaviorTask(id, type, size, uris, dfxReporter_, deleteBehaviorData);
     if (taskData == nullptr) {
         MEDIA_ERR_LOG("Failed to new taskData");
         return;
@@ -309,6 +332,25 @@ static void HandleStatistic(DfxData *data)
 #endif
 }
 
+static void CheckPhotoError(std::shared_ptr<DfxReporter>& dfxReporter)
+{
+    CHECK_AND_RETURN_INFO_LOG(dfxReporter != nullptr, "E_OK");
+    auto photoCount = DfxDatabaseUtils::QueryPhotoErrorCount();
+    CHECK_AND_RETURN_INFO_LOG(photoCount, "E_OK");
+    MEDIA_ERR_LOG("DFX ReportPhotoError count is %{public}d", photoCount);
+    PhotoErrorCount photoError = { {PhotoErrorType::PHOTO_MISS_TYPE}, {photoCount} };
+    dfxReporter->ReportPhotoError(photoError);
+}
+
+static void HandleCheckTwoDayTask(DfxData *data)
+{
+    CHECK_AND_RETURN_LOG(data != nullptr, "Failed to get data for Handle Check Two Day Task!");
+    auto *taskData = static_cast<StatisticData *>(data);
+    std::shared_ptr<DfxReporter> dfxReporter = taskData->dfxReporter_;
+    CHECK_AND_RETURN_LOG(dfxReporter != nullptr, "Failed to get dfxReporter for Handle Check Two Day Task!");
+    CheckPhotoError(dfxReporter);
+}
+
 void DfxManager::HandleHalfDayMissions()
 {
     if (!isInitSuccess_) {
@@ -338,6 +380,30 @@ void DfxManager::HandleHalfDayMissions()
         dfxWorker_->AddTask(statisticTask);
         int64_t time = MediaFileUtils::UTCTimeSeconds();
         prefs->PutLong(LAST_HALF_DAY_REPORT_TIME, time);
+        prefs->FlushSync();
+    }
+}
+
+void DfxManager::HandleTwoDayMissions()
+{
+    CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    int64_t lastReportTime = prefs->GetLong(LAST_TWO_DAY_REPORT_TIME, 0);
+    if (MediaFileUtils::UTCTimeSeconds() - lastReportTime > TWO_DAY && dfxWorker_ != nullptr) {
+        MEDIA_INFO_LOG("start handle statistic behavior");
+        auto *taskData = new (nothrow) StatisticData(dfxReporter_);
+        CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to alloc async data for Handle Two Day Missions!");
+        auto twoDayTask = make_shared<DfxTask>(HandleCheckTwoDayTask, taskData);
+        CHECK_AND_RETURN_LOG(twoDayTask != nullptr, "Failed to create dfx task.");
+        dfxWorker_->AddTask(twoDayTask);
+        int64_t time = MediaFileUtils::UTCTimeSeconds();
+        prefs->PutLong(LAST_TWO_DAY_REPORT_TIME, time);
         prefs->FlushSync();
     }
 }
@@ -411,6 +477,7 @@ int64_t DfxManager::HandleOneDayReport()
     dfxReporter_->ReportThumbnailError();
     dfxReporter_->ReportAdaptationToMovingPhoto();
     dfxReporter_->ReportPhotoRecordInfo();
+    dfxReporter_->ReportOperationRecordInfo();
     return MediaFileUtils::UTCTimeSeconds();
 }
 

@@ -66,10 +66,10 @@ void PictureManagerThread::Start()
         Stop();
     }
     if (thread_ == nullptr) {
-        thread_ = std::make_unique<std::thread>(&PictureManagerThread::Run, this);
         pauseFlag_ = false;
         stopFlag_ = false;
         state_ = State::RUNNING;
+        thread_ = std::make_unique<std::thread>(&PictureManagerThread::Run, this);
     }
 }
 
@@ -117,8 +117,10 @@ void PictureManagerThread::Run()
             pictureDataOperations_ = new PictureDataOperations();
         }
         pictureDataOperations_->CleanDateForPeriodical();
-        unique_lock<mutex> locker(threadMutex_);
-        condition_.wait_for(locker, std::chrono::seconds(1)); // 实际1S扫描一次
+        {
+            unique_lock<mutex> locker(threadMutex_);
+            condition_.wait_for(locker, std::chrono::seconds(1)); // 实际1S扫描一次
+        }
         int32_t taskSize = pictureDataOperations_->GetPendingTaskSize();
         if (lastPendingTaskSize_ != 0 && taskSize == 0) {
             pauseFlag_ = true;
@@ -127,6 +129,7 @@ void PictureManagerThread::Run()
         }
         lastPendingTaskSize_ = taskSize;
     }
+    MEDIA_INFO_LOG("end thread run:");
 }
 
 void PictureManagerThread::InsertPictureData(const std::string& imageId, sptr<PicturePair>& PicturePair,
@@ -146,12 +149,12 @@ void PictureManagerThread::DeleteDataWithImageId(const std::string& imageId, Pic
 }
 
 std::shared_ptr<Media::Picture> PictureManagerThread::GetDataWithImageId(const std::string& imageId,
-    bool &isHighQualityPicture, bool isCleanImmediately)
+    bool &isHighQualityPicture, bool &isTakeEffect, bool isCleanImmediately)
 {
     MEDIA_DEBUG_LOG("enter ");
     CHECK_AND_RETURN_RET_LOG(pictureDataOperations_ != nullptr, nullptr,
         "GetDataWithImageId failed, pictureDataOperations_ is null");
-    return pictureDataOperations_->GetDataWithImageId(imageId, isHighQualityPicture, isCleanImmediately);
+    return pictureDataOperations_->GetDataWithImageId(imageId, isHighQualityPicture, isTakeEffect, isCleanImmediately);
 }
 
 void PictureManagerThread::SavePictureWithImageId(const std::string& imageId)

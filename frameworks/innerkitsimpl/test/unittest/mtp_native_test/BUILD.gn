@@ -21,7 +21,7 @@ if (media_library_feature_mtp) {
   }
 
   ohos_unittest("mtp_native_test") {
-    module_out_path = "media_library/mtp_native_test"
+    module_out_path = "media_library/media_library-asset"
 
     include_dirs = [
       "./include",

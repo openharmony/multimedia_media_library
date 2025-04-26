@@ -59,6 +59,7 @@
 #include "string_wrapper.h"
 #include "userfile_client.h"
 #include "form_map.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -99,6 +100,7 @@ thread_local napi_ref SendablePhotoAccessHelper::sPositionTypeEnumRef_ = nullptr
 thread_local napi_ref SendablePhotoAccessHelper::sAlbumType_ = nullptr;
 thread_local napi_ref SendablePhotoAccessHelper::sAlbumSubType_ = nullptr;
 thread_local napi_ref SendablePhotoAccessHelper::sMovingPhotoEffectModeEnumRef_ = nullptr;
+thread_local napi_ref SendablePhotoAccessHelper::sDynamicRangeTypeEnumRef_ = nullptr;
 
 SendablePhotoAccessHelper::SendablePhotoAccessHelper()
     : env_(nullptr) {}
@@ -142,6 +144,7 @@ napi_value SendablePhotoAccessHelper::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubtype", CreatePhotoSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("MovingPhotoEffectMode", CreateMovingPhotoEffectModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("DynamicRangeType", CreateDynamicRangeTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -679,10 +682,8 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
     }
 
     tracer.Finish();
-    if (context->work != nullptr) {
-        SendableMediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
-            context->work, *jsContext);
-    }
+    SendableMediaLibraryNapiUtils::InvokeJSAsyncMethodWithoutWork(env, context->deferred, context->callbackRef,
+        *jsContext);
 
     delete context;
 }
@@ -694,7 +695,6 @@ napi_value SendablePhotoAccessHelper::JSRelease(napi_env env, napi_callback_info
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
-    napi_value resource = nullptr;
     int32_t refCount = 1;
 
     MediaLibraryTracer tracer;
@@ -720,12 +720,11 @@ napi_value SendablePhotoAccessHelper::JSRelease(napi_env env, napi_callback_info
 
     NAPI_CALL(env, napi_remove_wrap_sendable(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-    NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRelease", asyncContext);
-
-    status = napi_create_async_work(
-        env, nullptr, resource, [](napi_env env, void *data) {},
-        reinterpret_cast<CompleteCallback>(JSReleaseCompleteCallback),
-        static_cast<void *>(asyncContext.get()), &asyncContext->work);
+    SendablePhotoAccessHelperAsyncContext *context = asyncContext.get();
+    std::function<void()> task = [env, status, context]() {
+        JSReleaseCompleteCallback(env, status, context);
+    };
+    status = napi_send_event(env, task, napi_eprio_immediate);
     if (status != napi_ok) {
         napi_get_undefined(env, &result);
     } else {
@@ -1091,6 +1090,11 @@ napi_value SendablePhotoAccessHelper::CreateMovingPhotoEffectModeEnum(napi_env e
     return CreateNumberEnumProperty(env, movingPhotoEffectModeEnum, sMovingPhotoEffectModeEnumRef_);
 }
 
+napi_value SendablePhotoAccessHelper::CreateDynamicRangeTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, dynamicRangeTypeEnum, sDynamicRangeTypeEnumRef_);
+}
+
 static napi_value GetAlbumFetchOption(napi_env env, unique_ptr<SendablePhotoAccessHelperAsyncContext> &context,
     bool hasCallback)
 {
@@ -1133,6 +1137,39 @@ static bool ParseLocationAlbumTypes(unique_ptr<SendablePhotoAccessHelperAsyncCon
     return true;
 }
 
+static void ApplyTablePrefixToAlbumIdPredicates(DataSharePredicates& predicates)
+{
+    constexpr int32_t fieldIdx = 0;
+    auto& items = predicates.GetOperationList();
+    string targetColumn = "AnalysisAlbum.album_id";
+    std::vector<DataShare::OperationItem> tmpOperations = {};
+    for (const DataShare::OperationItem& item : items) {
+        if (item.singleParams.empty()) {
+            tmpOperations.push_back(item);
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(fieldIdx)) == PhotoAlbumColumns::ALBUM_ID) {
+            DataShare::OperationItem tmpItem = item;
+            tmpItem.singleParams[fieldIdx] = targetColumn;
+            tmpOperations.push_back(tmpItem);
+            continue;
+        }
+        tmpOperations.push_back(item);
+    }
+    predicates = DataSharePredicates(move(tmpOperations));
+}
+
+static void AddHighlightAlbumPredicates(DataSharePredicates& predicates)
+{
+    vector<string> onClause = {
+        ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+        HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+    };
+    predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
+    predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
+    ApplyTablePrefixToAlbumIdPredicates(predicates);
+}
+
 static napi_value ParseAlbumTypes(napi_env env, unique_ptr<SendablePhotoAccessHelperAsyncContext> &context)
 {
     if (context->argc < ARGS_TWO) {
@@ -1172,12 +1209,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<SendablePhotoAccessHe
     }
     if (albumSubType == PhotoAlbumSubType::HIGHLIGHT || albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         context->isHighlightAlbum = albumSubType;
-        vector<string> onClause = {
-            ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-            HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
-        };
-        context->predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
-        context->predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
+        AddHighlightAlbumPredicates(context->predicates);
     }
 
     napi_value result = nullptr;
@@ -1605,9 +1637,12 @@ static void GetCreateUri(SendablePhotoAccessHelperAsyncContext *context, string 
         context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         switch (context->assetType) {
             case TYPE_PHOTO:
-                uri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-                    ((context->isCreateByComponent) ? UFM_CREATE_PHOTO_COMPONENT : UFM_CREATE_PHOTO) :
-                    ((context->isCreateByComponent) ? PAH_CREATE_PHOTO_COMPONENT : PAH_CREATE_PHOTO);
+                if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+                    uri = (context->isCreateByComponent) ? UFM_CREATE_PHOTO_COMPONENT : UFM_CREATE_PHOTO;
+                } else {
+                    uri = (context->isCreateByComponent) ? PAH_CREATE_PHOTO_COMPONENT :
+                        (context->needSystemApp ? PAH_SYS_CREATE_PHOTO : PAH_CREATE_PHOTO);
+                }
                 break;
             case TYPE_AUDIO:
                 uri = (context->isCreateByComponent) ? UFM_CREATE_AUDIO_COMPONENT : UFM_CREATE_AUDIO;
@@ -1688,6 +1723,7 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     NAPI_ASSERT(env, napi_typeof(env, context->argv[ARGS_ZERO], &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) {
         context->isCreateByComponent = false;
+        context->needSystemApp = true;
         if (!SendableMediaLibraryNapiUtils::IsSystemApp()) {
             NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
             return nullptr;

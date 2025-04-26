@@ -24,7 +24,6 @@
 #include "fa_ability_context.h"
 #include "datashare_proxy.h"
 #include "datashare_values_bucket.h"
-#include "medialibrary_sync_operation.h"
 #include "result_set_bridge.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker.h"
@@ -57,7 +56,7 @@ enum CloudReadStatus {
 class ThumbnailSyncStatus {
 public:
     bool CheckSavedFileMap(const std::string &id, ThumbnailType type, const std::string &dateModified);
-    bool UpdateSavedFileMap(const std::string &id, ThumbnailType type, const std::string &dateModified);
+    EXPORT bool UpdateSavedFileMap(const std::string &id, ThumbnailType type, const std::string &dateModified);
     std::condition_variable cond_;
     std::mutex mtx_;
     bool isSyncComplete_{false};
@@ -72,8 +71,8 @@ public:
 using ThumbnailMap = std::map<std::string, std::shared_ptr<ThumbnailSyncStatus>>;
 class ThumbnailWait {
 public:
-    ThumbnailWait(bool release);
-    ~ThumbnailWait();
+    EXPORT ThumbnailWait(bool release);
+    EXPORT ~ThumbnailWait();
 
     WaitStatus InsertAndWait(const std::string &id, ThumbnailType type, const std::string &dateModified);
     WaitStatus CloudInsertAndWait(const std::string &id, CloudLoadType cloudLoadType);
@@ -81,8 +80,8 @@ public:
     void UpdateThumbnailMap();
     void UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, bool isLoadSuccess);
 
-    bool TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType type);
-    bool TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
+    EXPORT bool TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType type);
+    EXPORT bool TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
 
 private:
     void Notify();
@@ -98,7 +97,7 @@ public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
     EXPORT static void CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
-    EXPORT static bool DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
+    EXPORT static bool DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static void CreateLcd(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);
@@ -112,10 +111,10 @@ public:
     EXPORT static void AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
         ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId = 0);
     EXPORT static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
-    EXPORT static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
-    EXPORT static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
+    EXPORT static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
-    EXPORT static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data, WaitStatus &ret);
+    EXPORT static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoCreateAstcMthAndYear(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
@@ -140,6 +139,7 @@ private:
     EXPORT static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool NeedGenerateExFile(ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS

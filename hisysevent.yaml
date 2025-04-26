@@ -139,7 +139,8 @@ MEDIALIB_CLOUDENHANCEMENT_STAT:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: mediaLibrary cloud enhancement task statistics, preserve: true }
   PHOTO_ID: { type: STRING, desc: photo id }
   TOTAL_TIME_COST: { type: UINT64, desc: total time cost of cloud enhancement }
-  COMPLETE_TYPE: { type: STRING, desc: types of cloudenhancement task completion}
+  COMPLETE_TYPE: { type: STRING, desc: types of cloudenhancement task completion }
+  FINISH_TYPE: { type: INT32, desc: type of a finished cloud enhancement task }
 
 MEDIALIB_BACKUP_MEDIA_STAT:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the under transferred media statistic info before Upgrade Restore task, preserve: true }
@@ -167,6 +168,11 @@ MEDIALIB_BACKUP_RESTORE_RESULT:
   DUPLICATE_COUNT: { type: INT32, desc: Number of existing assets of the new device }
   FAILED_COUNT: { type: INT32, desc: Number of assets that fail to be migrated }
   SUCCESS_COUNT: { type: INT32, desc: Number of Successfully Migrated Assets }
+
+MEDIALIB_PHOTO_ERROR_STATISTIC:
+  __BASE: {type: STATISTIC, level: CRITICAL, desc: Statistics on user image faults report abnormal scenarios and numbers, preserve: true}
+  PHOTO_ERROR_TYPE: {type: INT32, arrsize: 5, desc: User image fault type}
+  PHOTO_ERROR_COUNT: {type: INT32, arrsize: 5, desc: Number of user image fault types}
 
 MEDIALIB_CUSTOM_RESTORE:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the data transfer result after Upgrade Restore task, preserve: true }
@@ -199,3 +205,20 @@ MEDIALIB_CLOUD_SYNC_STAT:
   AVG_REF_USERSOURCE_ALBUM_T: { type: INT32, desc: Average time to refresh user and source albums }
   REF_ANALYSIS_ALBUM_C: { type: INT32, desc: Number of analysis albums refreshed }
   AVG_REF_ANALYSIS_ALBUM_T: { type: INT32, desc: Average time to refresh analysis albums }
+
+MEDIALIB_OPRN_CURRENT_INFO:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: mediaLibrary current operation table info }
+  CURRENT_OPT_ADD_COUNT: { type: INT32, desc: current add count }
+  CURRENT_OPT_DELETE_COUNT: { type: INT32, desc: current delete count }
+  CURRENT_OPT_UPDATE_COUNT: { type: INT32, desc: current update count }
+  CURRENT_OPT_TOTAL_COUNT: { type: INT32, desc: current total count }
+  CURRENT_TIME: { type: INT64, desc: current operation handle time }
+
+MEDIALIB_OPRN_CHANGE_INFO:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: mediaLibrary operation table change info }
+  OPT_ADD_COUNT: { type: INT32, desc: add change count }
+  OPT_DELETE_COUNT: { type: INT32, desc: delete change count }
+  OPT_UPDATE_COUNT: { type: INT32, desc: update change count }
+  OPT_TOTAL_COUNT: { type: INT32, desc: total change count }
+  OPT_START_TIME: { type: INT64, desc: operation handle start time }
+  OPT_END_TIME: { type: INT64, desc: operation handle end time }

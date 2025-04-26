@@ -32,6 +32,8 @@ public:
     static std::string JoinStrings(const std::unordered_set<std::string>& strSet, char delimiter);
     static std::unordered_set<std::string> SplitString(const std::string& input, char delimiter);
     static std::string GetSafeAlbumName(const std::string &value);
+    static std::string GetSafeAlbumNameWhenChinese(const std::string &albumName);
+    static std::string GetSafeDiaplayNameWhenChinese(const std::string &displayName);
 
 private:
     static std::string GetSafeDiaplayName(std::string &displayName);

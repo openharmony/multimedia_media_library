@@ -24,6 +24,7 @@ using std::string;
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 static const std::string FRAME_STICKER = "FrameSticker";
 static const std::string INPLACE_STICKER = "InplaceSticker";
 static const std::string TIMING_STICKER = "TimingSticker";
@@ -33,7 +34,7 @@ static const char FILTERS_END = ',';
 static const int32_t MAX_CONCURRENT_NUM = 5;
 static const int32_t START_DISTANCE = 10;
 
-class VideoCompositionCallbackImpl : public CompositionCallback {
+class EXPORT VideoCompositionCallbackImpl : public CompositionCallback {
 public:
     VideoCompositionCallbackImpl();
     virtual ~VideoCompositionCallbackImpl() = default;
@@ -55,7 +56,7 @@ public:
 
     static int32_t CallStartComposite(const std::string& sourceVideoPath, const std::string& videoPath,
         const std::string& effectDescription);
-    static void AddCompositionTask(std::string& assetPath, std::string& editData);
+    static void AddCompositionTask(const std::string& assetPath, std::string& editData);
     static void EraseStickerField(std::string& editData, size_t index, bool isTimingSticker);
 
 private:
@@ -66,6 +67,8 @@ private:
     int32_t inputFileFd_ = 0;
     int32_t outputFileFd_ = 0;
     string videoPath_;
+    string tempFilters_;
+    string sourceVideoPath_;
 };
 
 } // end of namespace

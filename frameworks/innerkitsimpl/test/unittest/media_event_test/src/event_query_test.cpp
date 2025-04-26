@@ -30,13 +30,11 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
 shared_ptr <MediaLibraryRdbStore> rdbStorePtr = nullptr;
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void EventQueryTest::SetUpTestCase(void) {}
-void EventQueryTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void EventQueryTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
 void EventQueryTest::SetUp() {}
@@ -52,7 +50,7 @@ string ReturnUri(string UriType, string MainUri, string SubUri = "")
     }
 }
 
-HWTEST_F(EventQueryTest, medialib_event_Query_test_001, TestSize.Level0)
+HWTEST_F(EventQueryTest, medialib_event_Query_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("medialib_event_Query_test_001::Start");
     vector<string> columns;
@@ -67,7 +65,7 @@ HWTEST_F(EventQueryTest, medialib_event_Query_test_001, TestSize.Level0)
     MEDIA_INFO_LOG("medialib_event_Query_test_001::end");
 }
 
-HWTEST_F(EventQueryTest, medialib_event_QueryRdb_test_001, TestSize.Level0)
+HWTEST_F(EventQueryTest, medialib_event_QueryRdb_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("medialib_event_QueryRdb_test_001::Start");
     DataShare::DataSharePredicates predicates;

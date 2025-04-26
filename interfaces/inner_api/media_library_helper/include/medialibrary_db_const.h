@@ -23,7 +23,9 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 165;
+
+const int32_t MEDIA_RDB_VERSION = 252;
+
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -190,17 +192,30 @@ enum {
     VERSION_ADD_MEDIA_SUFFIX_COLUMN = 162,
     VERSION_UPDATE_SOURCE_PHOTO_ALBUM_TRIGGER_AGAIN = 163,
     VERSION_ADD_MEDIA_IS_RECENT_SHOW_COLUMN = 164,
-    VERSION_CREATE_TAB_FACARD_PHOTOS = 165,
+    VERSION_CREATE_TAB_FACARD_PHOTOS = 165, // ABANDONED
+    VERSION_FIX_SOURCE_ALBUM_CREATE_TRIGGERS_TO_USE_LPATH = 166,
+    VERSION_ADD_ALBUM_PLUGIN_BUNDLE_NAME = 167,
+    VERSION_ADD_FOREGROUND_ANALYSIS = 168,
+    VERSION_HIGHLIGHT_MOVING_PHOTO = 169,
+    VERSION_UPDATE_LOCATION_KNOWLEDGE_INDEX = 170,
+    VERSION_IMAGE_FACE_TAG_ID_INDEX = 171,
+    VERSION_ADD_GROUP_TAG_INDEX = 172,
+    VERSION_ANALYZE_PHOTOS = 173,
+    VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION = 174,
+    VERSION_MDIRTY_TRIGGER_UPLOAD_DETAIL_TIME = 175,
+    VERSION_CREATE_OPERATION_ALBUM_UPDATE_TRIGGER = 176,
+    VERSION_ADD_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX = 177,
+    VERSION_UPDATE_MDIRTY_TRIGGER_FOR_TDIRTY = 178,
+    VERSION_ADD_ALBUM_SUBTYPE_AND_NAME_INDEX = 179,
+    VERSION_FIX_DB_UPGRADE_FROM_API15 = 250,
+    VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION_FOR_SYNC = 251,
+    VERSION_CREATE_TAB_FACARD_PHOTOS_RETRY = 252,
 };
 
 enum {
     MEDIA_API_VERSION_DEFAULT = 8,
     MEDIA_API_VERSION_V9,
     MEDIA_API_VERSION_V10,
-};
-
-const std::vector<std::string> CAMERA_BUNDLE_NAMES = {
-    "com.huawei.hmos.camera"
 };
 
 enum CloudFilePosition {
@@ -213,7 +228,6 @@ const std::string MEDIA_LIBRARY_VERSION = "1.0";
 const int32_t DEVICE_SYNCSTATUSING = 0;
 const int32_t DEVICE_SYNCSTATUS_COMPLETE = 1;
 
-const std::string MEDIA_DATA_DEVICE_PATH = "local";
 const std::string MEDIALIBRARY_TABLE = "Files";
 const std::string SMARTALBUM_TABLE = "SmartAlbum";
 const std::string SMARTALBUM_MAP_TABLE = "SmartMap";
@@ -225,42 +239,6 @@ const std::string MEDIA_DATA_ABILITY_DB_NAME = "media_library.db";
 
 const std::string BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata";
 
-const std::string ML_FILE_SCHEME = "file";
-const std::string ML_FILE_PREFIX = "file://";
-const std::string ML_FILE_URI_PREFIX = "file://media";
-const std::string ML_URI_NETWORKID = "networkid";
-const std::string ML_URI_NETWORKID_EQUAL = "?networkid=";
-const std::string ML_URI_TIME_ID = "&time_id=";
-const std::string ML_URI_OFFSET = "&offset=";
-const std::string ML_URI_DATE_ADDED = "date_added";
-const std::string ML_URI_DATE_TAKEN = "date_taken";
-const std::string ML_URI_DATE_MODIFIED = "date_modified";
-const std::string ML_URI_AUTHORITY = "media";
-const std::string ML_DATA_SHARE_SCHEME = "datashare";
-const std::string MEDIALIBRARY_DATA_ABILITY_PREFIX = "datashare://";
-const std::string MEDIALIBRARY_DATA_URI_IDENTIFIER = "/media";
-const std::string MEDIALIBRARY_MEDIA_PREFIX = MEDIALIBRARY_DATA_ABILITY_PREFIX +
-                                                     MEDIALIBRARY_DATA_URI_IDENTIFIER;
-const std::string MEDIALIBRARY_TYPE_AUDIO_URI = "/audio";
-const std::string MEDIALIBRARY_TYPE_VIDEO_URI = "/video";
-const std::string MEDIALIBRARY_TYPE_IMAGE_URI = "/image";
-const std::string MEDIALIBRARY_TYPE_FILE_URI  =  "/file";
-const std::string MEDIALIBRARY_TYPE_ALBUM_URI  =  "/album";
-const std::string MEDIALIBRARY_TYPE_SMARTALBUM_CHANGE_URI  =  "/smartalbum";
-const std::string MEDIALIBRARY_TYPE_DEVICE_URI  =  "/device";
-const std::string MEDIALIBRARY_TYPE_SMART_URI = "/smart";
-const std::string MEDIALIBRARY_TYPE_HIGHLIGHT_URI = "/highlight";
-
-const std::string AUDIO_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_AUDIO_URI;
-const std::string VIDEO_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_VIDEO_URI;
-const std::string IMAGE_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_IMAGE_URI;
-const std::string FILE_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_FILE_URI;
-const std::string ALBUM_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_ALBUM_URI;
-const std::string HIGHLIGHT_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_HIGHLIGHT_URI;
-
-const std::string URI_TYPE_PHOTO = "Photo";
-const std::string URI_TYPE_AUDIO_V10 = "Audio";
-const std::string URI_TYPE_PHOTO_ALBUM = "PhotoAlbum";
 constexpr int64_t AGING_TIME = 30LL * 60 * 60 * 24 * 1000;
 
 const std::string MEDIA_DATA_DB_ID = "file_id";
@@ -339,19 +317,6 @@ const std::string MEDIA_DATA_DB_ALBUM_NAME = "album_name";
 const std::string MEDIA_DATA_DB_COUNT = "count";
 const std::string MEDIA_DATA_BUNDLENAME = "bundle_name";
 const std::string MEDIA_DATA_DB_IS_LOCAL = "is_local";
-const std::string MEDIA_DATA_DB_HIGHLIGHT = "highlight";
-const std::string MEDIA_DATA_DB_HIGHLIGHT_ID = "id";
-const std::string MEDIA_DATA_DB_HIGHLIGHT_STATUS = "highlight_status";
-
-// highlight
-const std::string MEDIA_DATA_DB_VIDEO_TRACKS = "tracks";
-const std::string MEDIA_DATA_DB_HIGHLIGHT_TRIGGER = "trigger_generate_thumbnail";
-const std::string MEDIA_DATA_DB_KEY_FRAME = "key_frame";
-const std::string MEDIA_DATA_DB_BEGIN_STAMP = "begin_stamp";
-const std::string MEDIA_DATA_DB_TYPE = "type";
-const std::string MEDIA_DATA_DB_INSERT_TYPE = "insert";
-const std::string MEDIA_DATA_DB_UPDATE_TYPE = "update ";
-const std::string MEDIA_DATA_DB_HIGHLIGHT_INDEX = "highlight_id_index";
 
 const std::string MEDIA_DATA_CALLING_UID = "calling_uid";
 
@@ -362,21 +327,15 @@ const std::map<std::string, std::string> DATE_TRANSITION_MAP = {
     { MEDIA_DATA_DB_DATE_TAKEN_MS, MEDIA_DATA_DB_DATE_TAKEN },
 };
 
-// ringtone uri constants
-const std::string MEDIA_DATA_DB_RINGTONE_URI = "ringtone_uri";
 const std::string MEDIA_DATA_DB_ALARM_URI = "alarm_uri";
-const std::string MEDIA_DATA_DB_NOTIFICATION_URI = "notification_uri";
-const std::string MEDIA_DATA_DB_RINGTONE_TYPE = "ringtone_type";
 
 const std::string MEDIA_DATA_DB_PHOTO_ID = "photo_id";
 const std::string MEDIA_DATA_DB_PHOTO_QUALITY = "photo_quality";
-const std::string MEDIA_DATA_DB_FIRST_VISIT_TIME = "first_visit_time";
-const std::string MEDIA_DATA_DB_DEFERRED_PROC_TYPE = "deferred_proc_type";
 const std::string MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS = "stage_video_task_status";
 
 const std::string MEDIA_COLUMN_COUNT = "count(*)";
 const std::string MEDIA_COLUMN_COUNT_1 = "count(1)";
-const std::string MEDIA_COLUMN_COUNT_DISTINCT_FILE_ID = "count(distinct file_id)";
+const std::string MEDIA_SUM_SIZE = "sum(size)";
 
 const std::string PHOTO_INDEX = "photo_index";
 
@@ -386,14 +345,8 @@ const std::string PERMISSION_FILE_ID = "file_id";
 const std::string PERMISSION_MODE = "mode";
 const std::string PERMISSION_TABLE_TYPE = "table_type";
 
-const std::string FILE_TABLE = "file";
 const std::string ALBUM_TABLE = "album";
 const std::string ALBUM_VIEW_NAME = "Album";
-
-const std::string SMARTALBUMMAP_TABLE_NAME = "smartAlbumMap";
-const std::string SMARTALBUMASSETS_VIEW_NAME = "SmartAsset";
-const std::string SMARTALBUMASSETS_ALBUMCAPACITY = "size";
-const std::string SMARTABLUMASSETS_PARENTID = "parentid";
 
 const std::string ASSETMAP_VIEW_NAME = "AssetMap";
 
@@ -420,9 +373,6 @@ const std::string SCREEN_RECORD_ALBUM_NAME = "ScreenRecordings";
 // extension
 const std::string ASSET_EXTENTION = "extention";
 
-// delete_tool
-const std::string DELETE_TOOL_ONLY_DATABASE = "only_db";
-
 // edit param
 const std::string EDIT_DATA_REQUEST = "edit_data_request";  // MEDIA_OPERN_KEYWORD=EDIT_DATA_REQUEST
 const std::string SOURCE_REQUEST = "source_request";        // MEDIA_OPERN_KEYWORD=SOURCE_REQUEST
@@ -439,6 +389,7 @@ const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name
 // moving photo param
 const std::string CREATE_MOVING_PHOTO_VIDEO = "create_video";
 const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
+const std::string OPEN_PRIVATE_MOVING_PHOTO_METADATA = "open_metadata";
 const std::string OPEN_PRIVATE_LIVE_PHOTO = "open_private_live_photo";
 const std::string OPEN_MOVING_PHOTO_VIDEO_CLOUD = "open_moving_photo_video_cloud";
 const std::string NOTIFY_VIDEO_SAVE_FINISHED = "notify_video_save_finished"; // movingPhoto video save finish

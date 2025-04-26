@@ -54,6 +54,7 @@ struct AssetHandler {
     napi_threadsafe_function threadSafeFunc;
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     bool needsExtraInfo = false;
+    bool isError = false;
 
     AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
         const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
@@ -64,6 +65,7 @@ struct RetProgressValue {
     int32_t progress;
     int32_t type;
     std::string errorMsg;
+    RetProgressValue() : progress(0), type(0), errorMsg("") {}
 };
 
 struct ProgressHandler {
@@ -73,7 +75,7 @@ struct ProgressHandler {
     RetProgressValue retProgressValue;
     napi_ref progressRef;
     ProgressHandler(napi_env env, napi_threadsafe_function func, const std::string &requestId,
-        RetProgressValue &retProgressValue, napi_ref progressRef) : env(env), progressFunc(func),
+        napi_ref progressRef) : env(env), progressFunc(func),
         requestId(requestId), progressRef(progressRef) {}
 };
 
@@ -191,6 +193,7 @@ private:
     static void JSCancelRequestExecute(napi_env env, void *data);
     static void JSCancelRequestComplete(napi_env env, napi_status, void *data);
     static bool CreateOnProgressHandlerInfo(napi_env env, unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
+    static void ReleaseSafeFunc(napi_threadsafe_function &progressFunc);
 public:
     std::mutex sMediaAssetMutex_;
     static inline SafeMap<std::string, ProgressHandler*> progressHandlerMap_;

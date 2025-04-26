@@ -32,6 +32,7 @@
 #include "sendable_fetch_file_result_napi.h"
 #include "sendable_file_asset_napi.h"
 #include "userfile_client.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -491,7 +492,8 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
 
 void ConvertColumnsForPortrait(SendablePhotoAlbumNapiAsyncContext *context)
 {
-    if (context == nullptr) {
+    if (context == nullptr || context->objectInfo == nullptr) {
+        NAPI_ERR_LOG("context is null or PhotoAlbumNapi is null");
         return;
     }
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
@@ -504,13 +506,13 @@ void ConvertColumnsForPortrait(SendablePhotoAlbumNapiAsyncContext *context)
 
 void ConvertColumnsForFeaturedSinglePortrait(SendablePhotoAlbumNapiAsyncContext *context)
 {
-    if (context == nullptr) {
+    if (context == nullptr || context->objectInfo == nullptr) {
         return;
     }
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     int portraitAlbumId = 0;
-    if (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::CLASSIFY ||
+    if ((photoAlbum != nullptr && photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::CLASSIFY)||
         photoAlbum->GetAlbumName().compare(to_string(portraitAlbumId)) != 0) {
         return;
     }

@@ -32,14 +32,9 @@ namespace Media {
 using namespace std;
 using namespace testing::ext;
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
-
 void MovingPhotoTest::SetUpTestCase(void) {}
 
-void MovingPhotoTest::TearDownTestCase(void)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MovingPhotoTest::TearDownTestCase(void) {}
 
 void MovingPhotoTest::SetUp(void) {}
 

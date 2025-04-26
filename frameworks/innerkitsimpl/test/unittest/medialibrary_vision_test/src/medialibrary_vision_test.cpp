@@ -47,6 +47,8 @@
 #include "vision_segmentation_column.h"
 #include "vision_total_column.h"
 #include "vision_video_label_column.h"
+#include "vision_video_aesthetics_score_column.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -76,6 +78,7 @@ constexpr int32_t FACE_TEST_FACE_ID = 99;
 constexpr int32_t TAG_IS_ME_NUMBER = 500;
 constexpr int32_t WAIT_TIME = 3;
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 void CleanVisionData()
 {
     DataShare::DataSharePredicates predicates;
@@ -126,6 +129,14 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(faceTagCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
+}
+
+void ClearVideoAestheticsData()
+{
+    DataShare::DataSharePredicates predicates;
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand videoAesCmd(videoAesUri);
+    MediaLibraryDataManager::GetInstance()->Delete(videoAesCmd, predicates);
 }
 
 void ClearVideoFaceData()
@@ -187,6 +198,7 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     ClearPhotos();
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
+    ClearVideoAestheticsData();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
@@ -194,6 +206,7 @@ void MediaLibraryVisionTest::TearDownTestCase(void)
     CleanVisionData();
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
+    ClearVideoAestheticsData();
     MEDIA_INFO_LOG("Vision_Test::End");
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
@@ -204,6 +217,7 @@ void MediaLibraryVisionTest::SetUp(void)
     CleanVisionData();
     ClearVideoFaceData();
     ClearAnalysisAlbumTotalData();
+    ClearVideoAestheticsData();
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
@@ -214,7 +228,85 @@ void MediaLibraryVisionTest::SetUp(void)
 
 void MediaLibraryVisionTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertOcr_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoAes_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertVideoAes_Test_001::Start");
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand cmd(videoAesUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(VIDEO_AESTHETICS_SCORE, 1);
+    valuesBucket.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket.Put(PROB, 2.344);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("Vision_InsertVideoAes_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoAes_Test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_InsertVideoAes_Test_002::Start");
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand cmd(videoAesUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 2);
+    valuesBucket.Put(VIDEO_AESTHETICS_SCORE, 6);
+    valuesBucket.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket.Put(PROB, 2.344);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 2);
+    valuesBucket2.Put(VIDEO_AESTHETICS_SCORE, 6);
+    valuesBucket2.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket2.Put(PROB, 2.344);
+    auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    EXPECT_GT(retVal, 0);
+    EXPECT_LT(retVal2, 0);
+    MEDIA_INFO_LOG("Vision_InsertVideoAes_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateVideoAes_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_UpdateVideoAes_Test_001::Start");
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand cmd(videoAesUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 3);
+    valuesBucket.Put(VIDEO_AESTHETICS_SCORE, 6);
+    valuesBucket.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket.Put(PROB, 2.344);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(VIDEO_AESTHETICS_SCORE, 8);
+    updateValues.Put(VIDEO_AESTHETICS_VERSION, "2.01");
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("3");
+    predicates.In(FILE_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ((retVal == 1), true);
+    MEDIA_INFO_LOG("Vision_UpdateVideoAes_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoAes_Test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Vision_DeleteVideoAes_Test_001::Start");
+    Uri videoAesUri(URI_VIDEO_AESTHETICS);
+    MediaLibraryCommand cmd(videoAesUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 4);
+    valuesBucket.Put(VIDEO_AESTHETICS_SCORE, 6);
+    valuesBucket.Put(VIDEO_AESTHETICS_VERSION, "1.01");
+    valuesBucket.Put(PROB, 2.344);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 4);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ((retVal == 1), true);
+    MEDIA_INFO_LOG("Vision_DeleteVideoAes_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertOcr_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertOcr_Test_001::Start");
     Uri ocrUri(URI_OCR);
@@ -228,7 +320,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertOcr_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_InsertOcr_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertOcr_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertOcr_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertOcr_Test_002::Start");
     Uri ocrUri(URI_OCR);
@@ -245,7 +337,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertOcr_Test_002, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_InsertOcr_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateOcr_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateOcr_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateOcr_Test_001::Start");
     Uri ocrUri(URI_OCR);
@@ -286,7 +378,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateOcr_Test_001, TestSize.Level0)
         ocrTest.c_str(), ocrVersion.c_str());
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteOcr_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteOcr_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteOcr_Test_001::Start");
     Uri ocrUri(URI_OCR);
@@ -309,7 +401,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteOcr_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_DeleteOcr_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertLabel_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertLabel_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertLabel_Test_001::Start");
     Uri labelUri(URI_LABEL);
@@ -327,7 +419,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertLabel_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_InsertLabel_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertLabel_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertLabel_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertLabel_Test_002::Start");
     Uri labelUri(URI_LABEL);
@@ -355,7 +447,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertLabel_Test_002, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_InsertLabel_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateLabel_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateLabel_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateLabel_Test_001::Start");
     Uri labelUri(URI_LABEL);
@@ -382,7 +474,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateLabel_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_UpdateLabel_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteLabel_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteLabel_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteLabel_Test_001::Start");
     Uri labelUri(URI_LABEL);
@@ -409,7 +501,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteLabel_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_DeleteLabel_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoLabel_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoLabel_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertVideoLabel_Test_001::Start");
     Uri videoLabelUri(URI_VIDEO_LABEL);
@@ -431,7 +523,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoLabel_Test_001, TestSize.Leve
     MEDIA_INFO_LOG("Vision_InsertVideoLabel_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoLabel_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoLabel_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertVideoLabel_Test_002::Start");
     Uri videoLabelUri(URI_VIDEO_LABEL);
@@ -467,7 +559,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoLabel_Test_002, TestSize.Leve
     MEDIA_INFO_LOG("Vision_InsertVideoLabel_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoLabel_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoLabel_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteVideoLabel_Test_001::Start");
     Uri videoLabelUri(URI_VIDEO_LABEL);
@@ -502,7 +594,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoLabel_Test_001, TestSize.Leve
     MEDIA_INFO_LOG("Vision_DeleteVideoLabel_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertAes_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertAes_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertAes_Test_001::Start");
     Uri aesUri(URI_AESTHETICS);
@@ -517,7 +609,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertAes_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_InsertAes_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertAes_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertAes_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertAes_Test_002::Start");
     Uri aesUri(URI_AESTHETICS);
@@ -539,7 +631,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertAes_Test_002, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_InsertAes_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateAes_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateAes_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateAes_Test_001::Start");
     Uri aesUri(URI_AESTHETICS);
@@ -562,7 +654,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateAes_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_UpdateAes_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteAes_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteAes_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteAes_Test_001::Start");
     Uri aesUri(URI_AESTHETICS);
@@ -580,7 +672,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteAes_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_DeleteAes_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_Total_Test_001::Start");
     Uri totalUri(URI_TOTAL);
@@ -617,7 +709,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_Total_Test_001::key = %{public}d, value = %{public}d End", status, ocr);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_Total_Test_002::Start");
     Uri totalUri(URI_TOTAL);
@@ -651,7 +743,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_002, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_Total_Test_002::count = %{public}d. End", count);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_Total_Test_003::Start");
     Uri totalUri(URI_TOTAL);
@@ -697,7 +789,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_003, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_Total_Test_003::status = %{public}d End", status);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_Analysis_Album_Total_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_Analysis_Album_Total_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_Analysis_Album_Total_Test_001::Start");
     Uri albumTotalUri(URI_ANALYSIS_ALBUM_TOTAL);
@@ -728,7 +820,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_Analysis_Album_Total_Test_001, TestSize.
     MEDIA_INFO_LOG("Vision_Analysis_Album_Total_Test_001::key = %{public}d End", status);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertFaceImage_Test_001::Start");
     Uri imageFaceUri(URI_IMAGE_FACE);
@@ -773,7 +865,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateImageFace_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateImageFace_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateImageFace_Test_001::Start");
     Uri imageFaceUri(URI_IMAGE_FACE);
@@ -819,7 +911,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateImageFace_Test_001, TestSize.Level
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteImageFace_Test_001::Start");
     Uri imageFaceUri(URI_IMAGE_FACE);
@@ -864,7 +956,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level
     MEDIA_INFO_LOG("Vision_DeleteImageFace_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_QueryImageFace_Test_001::Start");
     Uri imageFaceUri(URI_IMAGE_FACE);
@@ -917,7 +1009,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level0
     EXPECT_EQ(retVal, 2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoFace_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoFace_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertVideoImage_Test_001::Start");
     Uri videoFaceUri(URI_VIDEO_FACE);
@@ -956,7 +1048,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoFace_Test_001, TestSize.Level
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateVideoFace_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateVideoFace_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateVideoFace_Test_001::Start");
     Uri videoFaceUri(URI_VIDEO_FACE);
@@ -997,7 +1089,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateVideoFace_Test_001, TestSize.Level
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoFace_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoFace_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteVideoFace_Test_001::Start");
     Uri videoFaceUri(URI_VIDEO_FACE);
@@ -1037,7 +1129,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteVideoFace_Test_001, TestSize.Level
     MEDIA_INFO_LOG("Vision_DeleteVideoFace_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_QueryVideoFace_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryVideoFace_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_QueryVideoFace_Test_001::Start");
     Uri videoFaceUri(URI_VIDEO_FACE);
@@ -1085,7 +1177,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryVideoFace_Test_001, TestSize.Level0
     EXPECT_EQ(retVal, 2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertFaceTag_Test_001::Start");
     Uri faceTagUri(URI_FACE_TAG);
@@ -1121,7 +1213,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateFaceTag_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateFaceTag_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateFaceTag_Test_001::Start");
     Uri faceTagUri(URI_FACE_TAG);
@@ -1158,7 +1250,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateFaceTag_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteFaceTag_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteFaceTag_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteFaceTag_Test_001::Start");
     Uri faceTagUri(URI_FACE_TAG);
@@ -1188,7 +1280,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteFaceTag_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_DeleteFaceTag_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_QueryFaceTag_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryFaceTag_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_QueryFaceTag_Test_001::Start");
     Uri faceTagUri(URI_FACE_TAG);
@@ -1228,7 +1320,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryFaceTag_Test_001, TestSize.Level0)
     EXPECT_EQ(retVal, 1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertObject_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertObject_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertObject_Test_001::Start");
     Uri objectUri(URI_OBJECT);
@@ -1265,7 +1357,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertObject_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateObject_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateObject_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateObject_Test_001::Start");
     Uri objectUri(URI_OBJECT);
@@ -1299,7 +1391,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateObject_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteObject_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteObject_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteObject_Test_001::Start");
     Uri objectUri(URI_OBJECT);
@@ -1334,7 +1426,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteObject_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_DeleteObject_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_QueryObject_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryObject_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_QueryObject_Test_001::Start");
     Uri objectUri(URI_OBJECT);
@@ -1379,7 +1471,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryObject_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertRecommendation_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertRecommendation_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertRecommendation_Test_001::Start");
     Uri RecommendationUri(URI_RECOMMENDATION);
@@ -1414,7 +1506,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertRecommendation_Test_001, TestSize.
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateRecommendation_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateRecommendation_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateRecommendation_Test_001::Start");
     Uri RecommendationUri(URI_RECOMMENDATION);
@@ -1447,7 +1539,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateRecommendation_Test_001, TestSize.
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteRecommendation_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteRecommendation_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteRecommendation_Test_001::Start");
     Uri RecommendationUri(URI_RECOMMENDATION);
@@ -1480,7 +1572,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteRecommendation_Test_001, TestSize.
     MEDIA_INFO_LOG("Vision_DeleteRecommendation_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_QueryRecommendation_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryRecommendation_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_QueryRecommendation_Test_001::Start");
     Uri RecommendationUri(URI_RECOMMENDATION);
@@ -1523,7 +1615,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryRecommendation_Test_001, TestSize.L
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertComposition_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertComposition_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertComposition_Test_001::Start");
     Uri CompositionUri(URI_COMPOSITION);
@@ -1566,7 +1658,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertComposition_Test_001, TestSize.Lev
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateComposition_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateComposition_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateComposition_Test_001::Start");
     Uri CompositionUri(URI_COMPOSITION);
@@ -1603,7 +1695,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateComposition_Test_001, TestSize.Lev
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteComposition_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteComposition_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteComposition_Test_001::Start");
     Uri CompositionUri(URI_COMPOSITION);
@@ -1644,7 +1736,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteComposition_Test_001, TestSize.Lev
     MEDIA_INFO_LOG("Vision_DeleteComposition_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_QueryComposition_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryComposition_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_QueryComposition_Test_001::Start");
     Uri CompositionUri(URI_COMPOSITION);
@@ -1695,7 +1787,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryComposition_Test_001, TestSize.Leve
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertSegmentation_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertSegmentation_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertSegmentation_Test_001::Start");
     Uri SegmentationUri(URI_SEGMENTATION);
@@ -1724,7 +1816,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertSegmentation_Test_001, TestSize.Le
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateSegmentation_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateSegmentation_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateSegmentation_Test_001::Start");
     Uri SegmentationUri(URI_SEGMENTATION);
@@ -1753,7 +1845,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateSegmentation_Test_001, TestSize.Le
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteSegmentation_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteSegmentation_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteSegmentation_Test_001::Start");
     Uri SegmentationUri(URI_SEGMENTATION);
@@ -1773,7 +1865,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteSegmentation_Test_001, TestSize.Le
     MEDIA_INFO_LOG("Vision_DeleteSegmentation_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_QuerySegmentation_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_QuerySegmentation_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_QuerySegmentation_Test_001::Start");
     Uri SegmentationUri(URI_SEGMENTATION);
@@ -1804,7 +1896,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QuerySegmentation_Test_001, TestSize.Lev
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertSal_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertSal_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertSal_Test_001::Start");
     Uri salUri(URI_SALIENCY);
@@ -1819,7 +1911,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertSal_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_InsertSal_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertSal_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertSal_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertSal_Test_002::Start");
     Uri salUri(URI_SALIENCY);
@@ -1841,7 +1933,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertSal_Test_002, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_InsertSal_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateSal_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateSal_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateSal_Test_001::Start");
     Uri salUri(URI_SALIENCY);
@@ -1865,7 +1957,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateSal_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_UpdateSal_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteSal_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteSal_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteSal_Test_001::Start");
     Uri salUri(URI_SALIENCY);
@@ -1911,7 +2003,7 @@ int32_t InsertAnalysisMap(int32_t albumId, int32_t assetId)
     return MediaLibraryDataManager::GetInstance()->Insert(insertMapCmd, mapValues);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_001::Start");
     auto retVal = CreateAnalysisAlbum("1");
@@ -1931,7 +2023,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_001::count = %{public}d. End", count);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_002::Start");
     auto retVal = CreateAnalysisAlbum("2");
@@ -1949,7 +2041,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_002, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_002::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_003::Start");
     Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
@@ -1991,7 +2083,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_003, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_003::count = %{public}d. End", count);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_001::Start");
     int albumId = CreateAnalysisAlbum("3");
@@ -2000,7 +2092,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Leve
     MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_001::mapId = %{public}d. End", mapId);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_002::Start");
     Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
@@ -2042,7 +2134,7 @@ int32_t CreateSingleImage(string displayname)
     return MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_003::Start");
     int32_t albumId = CreateAnalysisAlbum("5");
@@ -2069,7 +2161,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Leve
     EXPECT_EQ(count, 2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_AnalysisGetPhotoIndex_Test_001::Start");
     int32_t albumId = CreateAnalysisAlbum("testIndex");
@@ -2093,7 +2185,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize
     EXPECT_EQ(index, 2);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_AnalysisGetPhotoIndex_Test_002::Start");
     int32_t albumId = CreateAnalysisAlbum("testIndex");
@@ -2222,7 +2314,7 @@ void InsertTestData()
     }
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_1, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_1, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_DisPlayLevel_1::Start");
     CreatTestImage();
@@ -2242,7 +2334,7 @@ HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_1, TestSize.Lev
     MEDIA_INFO_LOG("Get_Protrait_Album_DisPlayLevel_1::count = %{public}d. End", count);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_2, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_2, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_DisPlayLevel_2::Start");
     Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
@@ -2261,7 +2353,7 @@ HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_2, TestSize.Lev
     MEDIA_INFO_LOG("Get_Protrait_Album_DisPlayLevel_2::count = %{public}d. End", count);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_3, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_3, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_DisPlayLevel_3::Start");
     Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
@@ -2279,7 +2371,7 @@ HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_3, TestSize.Lev
     MEDIA_INFO_LOG("Get_Protrait_Album_DisPlayLevel_3::count = %{public}d. End", count);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_1, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_1, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_IsMe::Start");
     Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
@@ -2311,7 +2403,7 @@ void InsertTotalTest()
     }
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_2, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_2, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_IsMe_2::Start");
     InsertTotalTest();
@@ -2348,7 +2440,7 @@ shared_ptr<DataShare::DataShareResultSet> QueryPortraitAlbumTest(string column, 
     return resultSet;
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_error_test_001::Start");
     auto resultSet = QueryPortraitAlbumTest("user_display2223j344", "2");
@@ -2361,21 +2453,21 @@ HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_001, TestSize.Lev
     }
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_error_test_002::Start");
     auto resultSet = QueryPortraitAlbumTest(USER_DISPLAY_LEVEL, "9");
     EXPECT_EQ(resultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_error_test_002::Start");
     auto resultSet = QueryPortraitAlbumTest(IS_ME, "9");
     EXPECT_EQ(resultSet, nullptr);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_1, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_1, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplayLevel_1::Start");
     Uri setAlbumUri(PAH_PORTRAIT_DISPLAY_LEVLE);
@@ -2393,7 +2485,7 @@ HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_1, TestSize.Level0)
     MEDIA_INFO_LOG("SetDisplayLevel_1::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_2, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_2, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplayLevel_2::Start");
     Uri setAlbumUri(PAH_PORTRAIT_DISPLAY_LEVLE);
@@ -2411,7 +2503,7 @@ HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_2, TestSize.Level0)
     MEDIA_INFO_LOG("SetDisplayLevel_2::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_3, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_3, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplayLevel_3::Start");
     Uri setAlbumUri(PAH_PORTRAIT_DISPLAY_LEVLE);
@@ -2429,7 +2521,7 @@ HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_3, TestSize.Level0)
     MEDIA_INFO_LOG("SetDisplayLevel_3::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_0, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplayLevel_0::Start");
     Uri setAlbumUri(PAH_PORTRAIT_DISPLAY_LEVLE);
@@ -2474,7 +2566,7 @@ int SetDisplayLevelErrorTest(string column, int value)
     return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplayLevel_error_test_001::Start");
     int testDisplayLevel = TEST_COUNT;
@@ -2485,7 +2577,7 @@ HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_001, TestSize.Level0
     MEDIA_INFO_LOG("SetDisplayLevel_error_test_001::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplayLevel_error_test_002::Start");
     int testDisplayLevel = TEST_COUNT;
@@ -2496,7 +2588,7 @@ HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_002, TestSize.Level0
     MEDIA_INFO_LOG("SetDisplayLevel_error_test_002::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplayLevel_error_test_003::Start");
     int ret = SetDisplayLevelErrorTest(USER_DISPLAY_LEVEL, 1);
@@ -2504,7 +2596,7 @@ HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_003, TestSize.Level0
     MEDIA_INFO_LOG("SetDisplayLevel_error_test_002::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplayLevel_error_test_004::Start");
     int testDisplayLevel = TEST_COUNT;
@@ -2513,7 +2605,7 @@ HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_004, TestSize.Level0
     MEDIA_INFO_LOG("SetDisplayLevel_error_test_002::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetAlbumName, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetAlbumName, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumName::Start");
     Uri setAlbumUri(PAH_PORTRAIT_ANAALBUM_ALBUM_NAME);
@@ -2548,7 +2640,7 @@ int SetAlbumNameTest(string albumName, int albumId)
     return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumName_error_test_001::Start");
     int albumId = queryAlbumId("tagId1");
@@ -2558,7 +2650,7 @@ HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_001, TestSize.Level0)
     MEDIA_INFO_LOG("SetAlbumName_error_test_001::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumName_error_test_002::Start");
     int testAlbumId = TEST_COUNT;
@@ -2567,7 +2659,7 @@ HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_002, TestSize.Level0)
     MEDIA_INFO_LOG("SetAlbumName_error_test_002::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumName_error_test_003::Start");
     int albumId = queryAlbumId("tagId1");
@@ -2577,7 +2669,7 @@ HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_003, TestSize.Level0)
     MEDIA_INFO_LOG("SetAlbumName_error_test_003::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumCoverUri::Start");
     Uri setAlbumUri(PAH_PORTRAIT_ANAALBUM_COVER_URI);
@@ -2613,7 +2705,7 @@ int SetCoverUriTest(string coverUri, int albumId)
     return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_001::Start");
     int albumId = queryAlbumId("tagId1");
@@ -2623,7 +2715,7 @@ HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_001, TestSize.Level
     MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_001::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_002::Start");
     int albumId = queryAlbumId("tagId1");
@@ -2633,7 +2725,7 @@ HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_002, TestSize.Level
     MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_002::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_003::Start");
     int albumId = TEST_COUNT;
@@ -2658,7 +2750,7 @@ int SetIsMeTest(int albumId)
     return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetIsMe, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetIsMe, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetIsMe::Start");
     Uri setAlbumUri(PAH_PORTRAIT_IS_ME);
@@ -2669,7 +2761,7 @@ HWTEST_F(MediaLibraryVisionTest, SetIsMe, TestSize.Level0)
     MEDIA_INFO_LOG("SetIsMe::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, SetIsMe_error_test, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, SetIsMe_error_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetIsMe_error_test::Start");
     Uri setAlbumUri(PAH_PORTRAIT_IS_ME);
@@ -2679,7 +2771,7 @@ HWTEST_F(MediaLibraryVisionTest, SetIsMe_error_test, TestSize.Level0)
     MEDIA_INFO_LOG("SetIsMe::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_2_1, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_2_1, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_IsMe_2_1::Start");
     Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
@@ -2715,7 +2807,7 @@ void SetCoverUri(string tagId)
     MEDIA_INFO_LOG("SetCoverUri::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_Test, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_Test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_Test::Start");
     DataShare::DataSharePredicates predicates;
@@ -2752,7 +2844,7 @@ int MergeAlbumTest(int albumId, int targetAlbumId)
     return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_error_test_001::Start");
 
@@ -2762,7 +2854,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_001, TestSize.Level0)
     MEDIA_INFO_LOG("MergeAlbum_error_test_001::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_error_test_002::Start");
 
@@ -2772,7 +2864,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_002, TestSize.Level0)
     MEDIA_INFO_LOG("MergeAlbum_error_test_002::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_error_test_003::Start");
 
@@ -2783,7 +2875,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_003, TestSize.Level0)
     MEDIA_INFO_LOG("MergeAlbum_error_test_003::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_error_test_004::Start");
 
@@ -2794,7 +2886,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_004, TestSize.Level0)
     MEDIA_INFO_LOG("MergeAlbum_error_test_004::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_error_test_005::Start");
 
@@ -2811,7 +2903,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_005, TestSize.Level0)
     SetDisplayLevelTest(USER_DISPLAY_LEVEL, UNFAVORITE_PAGE, targetAlbumId);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_error_test_006::Start");
 
@@ -2825,7 +2917,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_006, TestSize.Level0)
     MEDIA_INFO_LOG("MergeAlbum_error_test_006::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_error_test_007::Start");
 
@@ -2840,7 +2932,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_007, TestSize.Level0)
     SetDisplayLevelTest(USER_DISPLAY_LEVEL, UNFAVORITE_PAGE, albumId);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_error_test_008::Start");
 
@@ -2855,7 +2947,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_008, TestSize.Level0)
     SetDisplayLevelTest(USER_DISPLAY_LEVEL, SECOND_PAGE, albumId);
 }
 
-HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_error_test_009::Start");
 
@@ -2890,7 +2982,7 @@ int dismissAssetsTest(int albumId, vector<string> assetId)
     return MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dismissAsset_Test::Start");
     int albumId = queryAlbumId("tagId1");
@@ -2901,7 +2993,7 @@ HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test, TestSize.Level0)
     MEDIA_INFO_LOG("dismissAsset_Test::deletedRows = %{public}d. End", deletedRows);
 }
 
-HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dismissAsset_Test_error_001::Start");
     int testAlbumId = TEST_COUNT;
@@ -2911,7 +3003,7 @@ HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_001, TestSize.Level0)
     MEDIA_INFO_LOG("dismissAsset_Test_error_001::deletedRows = %{public}d. End", deletedRows);
 }
 
-HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dismissAsset_Test_error_002::Start");
     vector<string> assetId = {"file://media/Photo/1/1/1.jpg"};
@@ -2920,7 +3012,7 @@ HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_002, TestSize.Level0)
     MEDIA_INFO_LOG("dismissAsset_Test_error_002::deletedRows = %{public}d. End", deletedRows);
 }
 
-HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dismissAsset_Test_error_003::Start");
     vector<string> assetId = {"file://media/Photo/1/1/1.jpg"};
@@ -2959,7 +3051,7 @@ int placeToFrontOfTest(int albumId1, int albumId2)
     return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("placeToFrontOf_Test::Start");
     Uri updateAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM);
@@ -2975,7 +3067,7 @@ HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test, TestSize.Level0)
     SetFavorite("tagId4", UNFAVORITE_PAGE);
 }
 
-HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("placeToFrontOf_Test_error_001::Start");
     Uri updateAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM);
@@ -2987,7 +3079,7 @@ HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_001, TestSize.Level0)
     MEDIA_INFO_LOG("placeToFrontOf_Test_error_001::result = %{public}d. End", result);
 }
 
-HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("placeToFrontOf_Test_error_002::Start");
     Uri updateAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM);
@@ -2999,7 +3091,7 @@ HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_002, TestSize.Level0)
     MEDIA_INFO_LOG("placeToFrontOf_Test_error_002::result = %{public}d. End", result);
 }
 
-HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("placeToFrontOf_Test_error_003::Start");
     Uri updateAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM);
@@ -3011,7 +3103,7 @@ HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_003, TestSize.Level0)
     MEDIA_INFO_LOG("placeToFrontOf_Test_error_003::result = %{public}d. End", result);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertHead_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertHead_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertHead_Test_001::Start");
     Uri headUri(URI_HEAD);
@@ -3048,7 +3140,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertHead_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdateHead_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateHead_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdateHead_Test_001::Start");
     Uri headUri(URI_HEAD);
@@ -3082,7 +3174,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateHead_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeleteHead_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteHead_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeleteHead_Test_001::Start");
     Uri headUri(URI_HEAD);
@@ -3117,7 +3209,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteHead_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_DeleteHead_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_QueryHead_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryHead_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_QueryHead_Test_001::Start");
     Uri headUri(URI_HEAD);
@@ -3162,7 +3254,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryHead_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_InsertPose_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertPose_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_InsertPose_Test_001::Start");
     Uri poseUri(URI_POSE);
@@ -3201,7 +3293,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertPose_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_UpdatePose_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdatePose_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_UpdatePose_Test_001::Start");
     Uri poseUri(URI_POSE);
@@ -3237,7 +3329,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdatePose_Test_001, TestSize.Level0)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_DeletePose_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_DeletePose_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_DeletePose_Test_001::Start");
     Uri poseUri(URI_POSE);
@@ -3274,7 +3366,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeletePose_Test_001, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_DeletePose_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_QueryPose_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryPose_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_QueryPose_Test_001::Start");
     Uri poseUri(URI_POSE);
@@ -3362,31 +3454,31 @@ void TestCommitEditByFaceStatus(int32_t fileId, int32_t faceStatus)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, deletePredicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_001::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_NO_NEED_ANALYSIS);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_002::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_RECOGNITION_STATE);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_003::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_FEATURE_STATE);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_004::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_FINISH_STATE);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_005::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_UNCLUSTERED_STATE);

@@ -76,15 +76,11 @@ static bool ParseFileIdFromPredicates(const DataShare::DataSharePredicates &pred
             ++argIndex;
         }
     }
-    if (argIndex >= values.size()) {
-        MEDIA_ERR_LOG("argIndex should less than values size");
-        return false;
-    }
+
+    CHECK_AND_RETURN_RET_LOG(argIndex < values.size(), false, "argIndex should less than values size");
     fileId = values[argIndex];
-    if (!MediaLibraryDataManagerUtils::IsNumber(fileId)) {
-        MEDIA_ERR_LOG("whereArgs fileId=%{public}s is not num", fileId.c_str());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(MediaLibraryDataManagerUtils::IsNumber(fileId), false,
+        "whereArgs fileId=%{public}s is not num", fileId.c_str());
     return true;
 }
 
@@ -132,10 +128,9 @@ int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, Pe
     }
     MEDIA_DEBUG_LOG("isWrite=%{public}d,appId=%{public}s,tokenId=%{public}u,fileId=%{public}s,uriType=%{public}d",
         isWrite, appId.c_str(), tokenId, fileId.c_str(), uriType);
-    if ((appId.empty() && !tokenId) || fileId.empty()) {
-        MEDIA_ERR_LOG("invalid input");
-        return E_INVALID_FILEID;
-    }
+    bool cond = ((appId.empty() && !tokenId) || fileId.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, E_INVALID_FILEID, "invalid input");
+
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause("file_id = ? and (appid = ? or target_tokenId = ?) and uri_type = ?");
     predicates.SetWhereArgs({fileId, appId, to_string(tokenId), to_string(uriType)});

@@ -174,6 +174,11 @@ public:
         return this->isCoverPhoto_;
     }
 
+    uint32_t GetCloudImageEnhanceFlag() override
+    {
+        return 0;
+    }
+
     void SetIsCoverPhoto(bool isCoverPhoto)
     {
         this->isCoverPhoto_ = isCoverPhoto;

@@ -17,6 +17,7 @@
 #include "mtp_media_library.h"
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <shared_mutex>
 #include "mtp_data_utils.h"
 #include "media_file_utils.h"
@@ -45,26 +46,16 @@ const std::string BACKUP_DIR_NAME                    = "/storage/media/local/fil
 const std::string APPDATA_DIR_NAME                   = "/storage/media/local/files/Docs/appdata";
 const std::string DESKTOP_NAME                       = "/storage/media/local/files/Docs/Desktop";
 const std::string PATH_SEPARATOR                     = "/";
-constexpr uint32_t BASE_USER_RANGE                   = 200000;
 constexpr int32_t NORMAL_WIDTH                       = 256;
 constexpr int32_t NORMAL_HEIGHT                      = 256;
 constexpr int32_t COMPRE_SIZE_LEVEL_2                = 204800;
+constexpr int32_t PATH_TIMEVAL_MAX                   = 2;
 const std::string THUMBNAIL_FORMAT                   = "image/jpeg";
 static constexpr uint8_t THUMBNAIL_MID               = 90;
 static std::unordered_map<uint32_t, std::string> handleToPathMap;
 static std::unordered_map<std::string, uint32_t> pathToHandleMap;
 static std::shared_mutex g_mutex;
-enum HANDLE_DEFAULT_ID : uint32_t {
-    DEFAULT_PARENT_ID = 0,
-    START_ID
-};
-
 static std::unordered_map<uint32_t, std::string> storageIdToPathMap;
-enum STORAGE_ID : uint32_t {
-    INNER_STORAGE_ID = 1,
-    SD_START_ID = INNER_STORAGE_ID + 1,
-    SD_END_ID = SD_START_ID + 127
-};
 } // namespace
 
 std::atomic<uint32_t> MtpMediaLibrary::id_ = 0;
@@ -123,9 +114,7 @@ static bool IsHiddenDirectory(const std::string &dir)
         {APPDATA_DIR_NAME, 0},
         {DESKTOP_NAME, 0}
     };
-    if (hiddenDirs.find(dir) == hiddenDirs.end()) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(hiddenDirs.find(dir) != hiddenDirs.end(), false);
     return true;
 }
 
@@ -133,21 +122,57 @@ static bool IsRootPath(const std::string &path)
 {
     CHECK_AND_RETURN_RET_LOG(!path.empty(), false, "path is empty");
     for (const auto &it : storageIdToPathMap) {
-        if (path.compare(it.second) == 0) {
-            return true;
-        }
+        CHECK_AND_RETURN_RET(path.compare(it.second) != 0, true);
     }
     return false;
+}
+
+static void GetStatTime(const std::string &fromPath, const std::string &toPath, bool recursive,
+    std::unordered_map<std::string, std::pair<long, long>> &statTimeMap)
+{
+    std::error_code ec;
+    std::vector<std::string> pathList;
+    pathList.push_back(fromPath);
+    if (recursive && sf::is_directory(fromPath, ec)) {
+        for (const auto& entry : sf::recursive_directory_iterator(fromPath, ec)) {
+            if (ec.value() == MTP_SUCCESS) {
+                pathList.push_back(entry.path().string());
+            }
+        }
+    }
+
+    struct stat statInfo = {};
+    for (const auto &path : pathList) {
+        if (stat(path.c_str(), &statInfo) != 0) {
+            MEDIA_WARN_LOG("stat fromPath:%{public}s failed", path.c_str());
+            continue;
+        }
+        std::string to = path;
+        to.replace(0, fromPath.size(), toPath);
+        statTimeMap[to].first = statInfo.st_ctime;
+        statTimeMap[to].second = statInfo.st_mtime;
+    }
+}
+
+static void SetStatTime(const std::unordered_map<std::string, std::pair<long, long>> &statTimeMap)
+{
+    struct timeval times[PATH_TIMEVAL_MAX] = { { 0, 0 }, { 0, 0 } };
+    for (auto it = statTimeMap.begin(); it != statTimeMap.end(); it++) {
+        times[0].tv_sec = it->second.first;
+        times[1].tv_sec = it->second.second;
+        if (utimes(it->first.c_str(), times) != 0) {
+            MEDIA_WARN_LOG("utimes toPath:%{public}s failed", it->first.c_str());
+        }
+    }
 }
 
 int32_t MtpMediaLibrary::ScanDirNoDepth(const std::string &root, std::shared_ptr<UInt32List> &out)
 {
     CHECK_AND_RETURN_RET_LOG(out != nullptr, E_ERR, "out is nullptr");
     CHECK_AND_RETURN_RET_LOG(access(root.c_str(), R_OK) == 0, E_ERR, "access failed root[%{public}s]", root.c_str());
-    if (!sf::exists(root) || !sf::is_directory(root)) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::ScanDirNoDepth root[%{public}s] is not exists", root.c_str());
-        return E_ERR;
-    }
+    bool cond = (!sf::exists(root) || !sf::is_directory(root));
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR,
+        "MtpMediaLibrary::ScanDirNoDepth root[%{public}s] is not exists", root.c_str());
     std::error_code ec;
     for (const auto& entry : sf::directory_iterator(root, ec)) {
         if (ec.value() != MTP_SUCCESS) {
@@ -178,10 +203,7 @@ void MtpMediaLibrary::AddToHandlePathMap(const std::string &path, const uint32_t
 void MtpMediaLibrary::ModifyHandlePathMap(const std::string &from, const std::string &to)
 {
     auto it = pathToHandleMap.find(from);
-    if (it == pathToHandleMap.end()) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::ModifyHandlePathMap from not found");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(it != pathToHandleMap.end(), "MtpMediaLibrary::ModifyHandlePathMap from not found");
     uint32_t id = it->second;
     pathToHandleMap.erase(it);
     pathToHandleMap.emplace(to, id);
@@ -196,10 +218,7 @@ void MtpMediaLibrary::ModifyHandlePathMap(const std::string &from, const std::st
 void MtpMediaLibrary::ModifyPathHandleMap(const std::string &path, const uint32_t id)
 {
     auto it = pathToHandleMap.find(path);
-    if (it == pathToHandleMap.end()) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::ModifyPathHandleMap from not found");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(it != pathToHandleMap.end(), "MtpMediaLibrary::ModifyPathHandleMap from not found");
 
     uint32_t originalId = it->second;
     pathToHandleMap.erase(it);
@@ -325,10 +344,8 @@ int32_t MtpMediaLibrary::GetHandles(int32_t parentId, std::vector<int> &outHandl
 {
     MEDIA_DEBUG_LOG("MtpMediaLibrary::GetHandles parent[%{public}d]", parentId);
     std::string path("");
-    if (GetPathById(parentId, path) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::GetHandles parent not found");
-        return MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(GetPathById(parentId, path) == MTP_SUCCESS,
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "MtpMediaLibrary::GetHandles parent not found");
     std::shared_ptr<UInt32List> out = std::make_shared<UInt32List>();
     {
         WriteLock lock(g_mutex);
@@ -347,10 +364,9 @@ int32_t MtpMediaLibrary::GetHandles(const std::shared_ptr<MtpOperationContext> &
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "context is nullptr");
     uint32_t parentId = context->parent;
     std::string path("");
-    if (GetPathByContextParent(context, path) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::GetHandles parent[%{public}d] not found", parentId);
-        return MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(GetPathByContextParent(context, path) == MTP_SUCCESS,
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR),
+            "MtpMediaLibrary::GetHandles parent[%{public}d] not found", parentId);
     MEDIA_DEBUG_LOG("MtpMediaLibrary::GetHandles path[%{public}s]", path.c_str());
     int32_t errCode;
     {
@@ -365,9 +381,7 @@ uint32_t MtpMediaLibrary::GetParentId(const std::string &path)
     ReadLock lock(g_mutex);
     auto parentPath = sf::path(path).parent_path().string();
     auto it = pathToHandleMap.find(parentPath);
-    if (it == pathToHandleMap.end()) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET(it != pathToHandleMap.end(), 0);
     return it->second;
 }
 
@@ -379,17 +393,12 @@ uint32_t MtpMediaLibrary::GetSizeFromOfft(const off_t &size)
 int32_t MtpMediaLibrary::GetObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
     std::shared_ptr<ObjectInfo> &outObjectInfo)
 {
-    if (context == nullptr || context->handle <= 0 || outObjectInfo == nullptr) {
-        MEDIA_ERR_LOG("handle error");
-        return MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR);
-    }
+    bool cond = (context == nullptr || context->handle <= 0 || outObjectInfo == nullptr);
+    CHECK_AND_RETURN_RET_LOG(!cond, MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR), "handle error");
     MEDIA_DEBUG_LOG("MtpMediaLibrary::GetObjectInfo storageID[%{public}d]", context->storageID);
     std::string path("");
-    if (GetPathById(context->handle, path) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::GetObjectInfo handle not found");
-        return MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR);
-    }
-
+    CHECK_AND_RETURN_RET_LOG(GetPathById(context->handle, path) == MTP_SUCCESS,
+        MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR), "MtpMediaLibrary::GetObjectInfo handle not found");
     outObjectInfo->handle = context->handle;
     outObjectInfo->name = sf::path(path).filename().string();
     outObjectInfo->parent = GetParentId(path);
@@ -409,10 +418,8 @@ int32_t MtpMediaLibrary::GetObjectInfo(const std::shared_ptr<MtpOperationContext
         outObjectInfo->format = MTP_FORMAT_ASSOCIATION_CODE;
     }
     struct stat statInfo;
-    if (stat(path.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::GetObjectInfo stat failed");
-        return MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(stat(path.c_str(), &statInfo) == 0,
+        MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR), "MtpMediaLibrary::GetObjectInfo stat failed");
     outObjectInfo->size = GetSizeFromOfft(statInfo.st_size);
     outObjectInfo->dateCreated = statInfo.st_ctime;
     outObjectInfo->dateModified = statInfo.st_mtime;
@@ -424,10 +431,8 @@ bool MtpMediaLibrary::IsExistObject(const std::shared_ptr<MtpOperationContext> &
     CHECK_AND_RETURN_RET_LOG(context != nullptr, false, "context is nullptr");
 
     std::string realPath("");
-    if (GetPathById(context->handle, realPath) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::IsExistObject handle not found");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(GetPathById(context->handle, realPath) == MTP_SUCCESS, false,
+        "MtpMediaLibrary::IsExistObject handle not found");
     bool ret = sf::exists(realPath);
     if (!ret) {
         DeleteHandlePathMap(realPath, context->handle);
@@ -441,17 +446,13 @@ int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &conte
     CHECK_AND_RETURN_RET_LOG(context != nullptr,
         MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "context is nullptr");
     std::string realPath("");
-    if (GetPathById(context->handle, realPath) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::GetFd handle not found");
-        return MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(GetPathById(context->handle, realPath) == MTP_SUCCESS,
+        MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "MtpMediaLibrary::GetFd handle not found");
 
     std::error_code ec;
     realPath = sf::weakly_canonical(realPath, ec);
-    if (ec.value() != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::GetFd normalized realPath failed");
-        return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS,
+        MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR), "MtpMediaLibrary::GetFd normalized realPath failed");
 
     int mode = O_RDONLY;
     if (forWrite) {
@@ -460,9 +461,7 @@ int32_t MtpMediaLibrary::GetFd(const std::shared_ptr<MtpOperationContext> &conte
 
     outFd = open(realPath.c_str(), mode);
     MEDIA_INFO_LOG("MTP:file %{public}s fd %{public}d", realPath.c_str(), outFd);
-    if (outFd > 0) {
-        return MtpErrorUtils::SolveGetFdError(E_SUCCESS);
-    }
+    CHECK_AND_RETURN_RET(outFd <= 0, MtpErrorUtils::SolveGetFdError(E_SUCCESS));
     return MtpErrorUtils::SolveGetFdError(E_HAS_FS_ERROR);
 }
 
@@ -567,9 +566,7 @@ void MtpMediaLibrary::CondCloseFd(const bool condition, const int fd)
         return;
     }
     int32_t ret = close(fd);
-    if (ret != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("DealFd CloseFd fail!");
-    }
+    CHECK_AND_PRINT_LOG(ret == MTP_SUCCESS, "DealFd CloseFd fail!");
 }
 
 
@@ -578,10 +575,8 @@ int32_t MtpMediaLibrary::GetThumb(const std::shared_ptr<MtpOperationContext> &co
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_CONTEXT_IS_NULL, "context is nullptr");
     auto it = handleToPathMap.find(context->handle);
-    if (it == handleToPathMap.end()) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::GetThumb handle not found");
-        return MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(it != handleToPathMap.end(), MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR),
+        "MtpMediaLibrary::GetThumb handle not found");
 
     uint16_t format;
     MtpDataUtils::GetMtpFormatByPath(it->second, format);
@@ -600,25 +595,21 @@ int32_t MtpMediaLibrary::SendObjectInfo(const std::shared_ptr<MtpOperationContex
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     std::string doc("");
-    if (GetPathByContextParent(context, doc) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::SendObjectInfo parent not found");
-        return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(GetPathByContextParent(context, doc) == MTP_SUCCESS,
+        MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR),
+            "MtpMediaLibrary::SendObjectInfo parent not found");
 
     std::string path = doc + "/" + context->name;
     if (context->format == MTP_FORMAT_ASSOCIATION_CODE) {
         std::error_code ec;
-        if (!sf::create_directory(path, ec) || ec.value() != MTP_SUCCESS) {
-            MEDIA_ERR_LOG("MtpMediaLibrary::SendObjectInfo create dir failed");
-            return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR);
-        }
+        bool cond = (!sf::create_directory(path, ec) || ec.value() != MTP_SUCCESS);
+        CHECK_AND_RETURN_RET_LOG(!cond, MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR),
+            "MtpMediaLibrary::GetThumb handle not found");
     } else {
         std::error_code ec;
         path = sf::weakly_canonical(path, ec);
-        if (ec.value() != MTP_SUCCESS) {
-            MEDIA_ERR_LOG("MtpMediaLibrary::SendObjectInfo normalized path failed");
-            return MtpErrorUtils::SolveSendObjectInfoError(E_HAS_FS_ERROR);
-        }
+        CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveSendObjectInfoError(E_HAS_FS_ERROR),
+            "MtpMediaLibrary::SendObjectInfo normalized path failed");
     }
     uint32_t outObjectHandle;
     {
@@ -667,6 +658,12 @@ int32_t MtpMediaLibrary::GetIdByPath(const std::string &path, uint32_t &outId)
     if (it != pathToHandleMap.end()) {
         outId = it->second;
         return E_SUCCESS;
+    }
+    for (const auto &it : storageIdToPathMap) {
+        if (path.compare(it.second) == 0) {
+            outId = it.first;
+            return E_SUCCESS;
+        }
     }
     return E_NO_SUCH_FILE;
 }
@@ -753,6 +750,9 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
     // compare the prefix of the two paths
     const auto len = PUBLIC_REAL_PATH_PRE.size();
     bool isSameStorage = from.substr(0, len).compare(to.substr(0, len)) == 0;
+    MEDIA_INFO_LOG("from[%{public}s],to[%{public}s] %{public}d", fromPath.c_str(), toPath.c_str(), isSameStorage);
+    std::unordered_map<std::string, std::pair<long, long>> statTimeMap;
+    GetStatTime(fromPath.string(), toPath.string(), !isSameStorage, statTimeMap);
     {
         WriteLock lock(g_mutex);
         if (isSameStorage) {
@@ -764,12 +764,11 @@ int32_t MtpMediaLibrary::MoveObject(const std::shared_ptr<MtpOperationContext> &
             CrossCopyAfter(isDir, toPath);
             isDir ? sf::remove_all(fromPath, ec) : sf::remove(fromPath, ec);
         }
-
-        MEDIA_INFO_LOG("MTP:MoveObject:from[%{public}s],to[%{public}s]", fromPath.c_str(), toPath.c_str());
         CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveMoveObjectError(E_FAIL),
             "MtpMediaLibrary::MoveObject failed");
         MoveObjectSub(fromPath, toPath, isDir, repeatHandle);
     }
+    SetStatTime(statTimeMap);
     return MTP_SUCCESS;
 }
 
@@ -784,10 +783,9 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
         return MtpErrorUtils::SolveMoveObjectError(E_HAS_DB_ERROR);
     }
 
-    if (!sf::exists(from) || !sf::exists(to)) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::CopyObject handle or parent path not found");
-        return MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR);
-    }
+    bool cond = (!sf::exists(from) || !sf::exists(to));
+    CHECK_AND_RETURN_RET_LOG(!cond, MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
+        "MtpMediaLibrary::CopyObject handle or parent path not found");
     CHECK_AND_RETURN_RET_LOG(sf::is_directory(to), MtpErrorUtils::SolveCopyObjectError(E_HAS_DB_ERROR),
         "MtpMediaLibrary::CopyObject parent path is not dir");
     std::error_code ec;
@@ -795,9 +793,13 @@ int32_t MtpMediaLibrary::CopyObject(const std::shared_ptr<MtpOperationContext> &
     auto toPath = sf::path(to) / sf::path(from).filename();
     CHECK_AND_RETURN_RET_LOG(!sf::exists(toPath, ec), MtpErrorUtils::SolveCopyObjectError(E_FILE_EXIST),
         "MtpMediaLibrary::CopyObject toPath exists");
+    MEDIA_INFO_LOG("from[%{public}s],to[%{public}s]", fromPath.c_str(), toPath.c_str());
+    std::unordered_map<std::string, std::pair<long, long>> statTimeMap;
+    GetStatTime(fromPath.string(), toPath.string(), true, statTimeMap);
     sf::copy(fromPath, toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
     CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MtpErrorUtils::SolveCopyObjectError(E_FAIL),
         "MtpMediaLibrary::CopyObject failed");
+    SetStatTime(statTimeMap);
     {
         WriteLock lock(g_mutex);
         outObjectHandle = AddPathToMap(toPath.string());
@@ -810,10 +812,9 @@ int32_t MtpMediaLibrary::DeleteObject(const std::shared_ptr<MtpOperationContext>
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
     std::string path("");
-    if (GetPathById(context->handle, path) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::DeleteObject handle not found");
-        return MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR);
-    }
+    CHECK_AND_RETURN_RET_LOG(GetPathById(context->handle, path) == MTP_SUCCESS,
+        MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR),
+            "MtpMediaLibrary::DeleteObject handle not found");
     std::error_code ec;
     if (sf::exists(path, ec) == false) {
         DeleteHandlePathMap(path, context->handle);
@@ -845,9 +846,7 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
     variant<int64_t, std::string> colValue;
     int32_t errCode = MtpDataUtils::SolveSetObjectPropValueData(context, colName, colValue);
     CHECK_AND_RETURN_RET_LOG(errCode == 0, errCode, "fail to SolveSetObjectPropValueData");
-    if (colName.compare(MEDIA_DATA_DB_PARENT_ID) == 0) {
-        return MTP_SUCCESS;
-    }
+    CHECK_AND_RETURN_RET(colName.compare(MEDIA_DATA_DB_PARENT_ID) != 0, MTP_SUCCESS);
     std::string path("");
     CHECK_AND_RETURN_RET_LOG(GetPathById(context->handle, path) == MTP_SUCCESS,
         MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
@@ -855,10 +854,9 @@ int32_t MtpMediaLibrary::SetObjectPropValue(const std::shared_ptr<MtpOperationCo
 
     std::error_code ec;
     string to = sf::path(path).parent_path().string() + "/" + get<std::string>(colValue);
-    if (sf::exists(to, ec) || ec.value() != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::SetObjectPropValue rename failed, file/doc exists");
-        return MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR);
-    }
+    bool cond = (sf::exists(to, ec) || ec.value() != MTP_SUCCESS);
+    CHECK_AND_RETURN_RET_LOG(!cond, MtpErrorUtils::SolveObjectPropValueError(E_HAS_DB_ERROR),
+        "MtpMediaLibrary::SetObjectPropValue rename failed, file/doc exists");
     {
         WriteLock lock(g_mutex);
         sf::rename(path, to, ec);
@@ -885,7 +883,7 @@ void MtpMediaLibrary::GetHandles(const uint32_t handle, const std::string &root,
 {
     CHECK_AND_RETURN_LOG(out != nullptr, "out is nullptr");
     auto it = handleToPathMap.find(handle);
-    if (it == handleToPathMap.end()) {
+    if (it == handleToPathMap.end() || access(it->second.c_str(), R_OK) != 0) {
         return;
     }
     out->emplace(handle, it->second);
@@ -947,10 +945,7 @@ int32_t MtpMediaLibrary::GetObjectPropList(const std::shared_ptr<MtpOperationCon
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
     if (context->property == 0) {
-        if (context->groupCode == 0) {
-            MEDIA_ERR_LOG("groupCode error");
-            return MTP_ERROR_PARAMETER_NOT_SUPPORTED;
-        }
+        CHECK_AND_RETURN_RET_LOG(context->groupCode != 0, MTP_ERROR_PARAMETER_NOT_SUPPORTED, "groupCode error");
         MEDIA_ERR_LOG("context property = 0");
         return MTP_ERROR_SPECIFICATION_BY_GROUP_UNSUPPORTED;
     }
@@ -960,10 +955,8 @@ int32_t MtpMediaLibrary::GetObjectPropList(const std::shared_ptr<MtpOperationCon
     }
     MEDIA_DEBUG_LOG("GetObjectPropList handle[0x%{public}x], depth[0x%{public}x] parent[%{public}d]",
         context->handle, context->depth, context->parent);
-    if (!(context->depth == 0 || context->depth == 1)) {
-        MEDIA_ERR_LOG("depth error");
-        return MTP_ERROR_SPECIFICATION_BY_DEPTH_UNSUPPORTED;
-    }
+    bool cond = (context->depth == 0 || context->depth == 1);
+    CHECK_AND_RETURN_RET_LOG(cond, MTP_ERROR_SPECIFICATION_BY_DEPTH_UNSUPPORTED, "depth error");
 
     MEDIA_DEBUG_LOG("GetObjectPropList storageID[%{public}d],format[%{public}d],property[0x%{public}x]",
         context->storageID, context->format, context->property);
@@ -972,10 +965,8 @@ int32_t MtpMediaLibrary::GetObjectPropList(const std::shared_ptr<MtpOperationCon
         WriteLock lock(g_mutex);
         CorrectStorageId(context);
         auto handlesMap = GetHandlesMap(context);
-        if (handlesMap == nullptr || handlesMap->empty()) {
-            MEDIA_ERR_LOG("MtpMediaLibrary::GetObjectPropList out is empty");
-            return errCode;
-        }
+        bool condition = (handlesMap == nullptr || handlesMap->empty());
+        CHECK_AND_RETURN_RET_LOG(!condition, errCode, "MtpMediaLibrary::GetObjectPropList out is empty");
         errCode = MtpDataUtils::GetMtpPropList(handlesMap, pathToHandleMap, context, outProps);
     }
     return errCode;
@@ -1054,10 +1045,8 @@ int32_t MtpMediaLibrary::GetObjectPropValue(const std::shared_ptr<MtpOperationCo
     MEDIA_INFO_LOG("MtpMediaLibrary::GetObjectPropValue handle[%{public}d] property[%{public}d]",
         context->handle, context->property);
     std::string path("");
-    if (GetPathById(context->handle, path) != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::GetObjectPropValue handle not found");
-        return MTP_ERROR_INVALID_OBJECTHANDLE;
-    }
+    CHECK_AND_RETURN_RET_LOG(GetPathById(context->handle, path) == MTP_SUCCESS, MTP_ERROR_INVALID_OBJECTHANDLE,
+        "MtpMediaLibrary::GetObjectPropValue handle not found");
 
     if (MTP_PROPERTY_PARENT_OBJECT_CODE == context->property) {
         outIntVal = GetParentId(path);
@@ -1229,6 +1218,108 @@ void MtpMediaLibrary::ErasePathInfoSub(const std::string &path)
         }
     }
     std::vector<std::string>().swap(erasePaths);
+}
+
+int32_t MtpMediaLibrary::GetGalleryObjectInfo(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<ObjectInfo> &outObjectInfo, const std::string &name)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    bool cond = (context == nullptr || context->handle != PTP_IN_MTP_ID || outObjectInfo == nullptr || name.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, MTP_ERROR_INVALID_OBJECTHANDLE, "parameter error");
+
+    outObjectInfo->handle    = PTP_IN_MTP_ID;
+    outObjectInfo->name      = name;
+    outObjectInfo->parent    = DEFAULT_PARENT_ROOT;
+    outObjectInfo->storageID = INNER_STORAGE_ID;
+    outObjectInfo->format    = MTP_FORMAT_ASSOCIATION_CODE;
+
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMediaLibrary::GetGalleryPropValue(const std::shared_ptr<MtpOperationContext> &context,
+    uint64_t &outIntVal, uint128_t &outLongVal, std::string &outStrVal, const std::string &name)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    bool cond = (context == nullptr || name.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, MTP_ERROR_INVALID_OBJECTHANDLE, "parameter error");
+    MEDIA_DEBUG_LOG("handle[%{public}d] property[%{public}d]", context->handle, context->property);
+
+    if (MTP_PROPERTY_PARENT_OBJECT_CODE == context->property) {
+        outIntVal = DEFAULT_PARENT_ROOT;
+    }
+    if (MTP_PROPERTY_DISPLAY_NAME_CODE == context->property) {
+        outStrVal = name;
+    }
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMediaLibrary::GetGalleryObjectPropList(const std::shared_ptr<MtpOperationContext> &context,
+    std::shared_ptr<std::vector<Property>> &outProps, const std::string &name)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    return MtpDataUtils::GetGalleryPropList(context, outProps, name);
+}
+
+int32_t MtpMediaLibrary::CopyGalleryPhoto(const std::shared_ptr<MtpOperationContext> &context,
+    const PathMap &paths, uint32_t &outObjectHandle)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
+    std::string to("");
+    CHECK_AND_RETURN_RET_LOG(GetPathByContextParent(context, to) == MTP_SUCCESS,
+        MTP_ERROR_INVALID_OBJECTHANDLE, "to not found");
+    CHECK_AND_RETURN_RET_LOG(!paths.empty(), MTP_ERROR_INVALID_OBJECTHANDLE, "from is empty");
+    CHECK_AND_RETURN_RET_LOG(sf::is_directory(to), MTP_ERROR_INVALID_OBJECTHANDLE, "parent path is not dir");
+
+    std::error_code ec;
+    for (const auto &it : paths) {
+        CHECK_AND_CONTINUE_INFO_LOG(sf::exists(it.first, ec), "from path not exists err %{public}d", errno);
+        auto toPath = sf::path(to) / it.second;
+        sf::copy(sf::path(it.first), toPath, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
+        CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MTP_ERROR_PARAMETER_NOT_SUPPORTED, "CopyObject failed");
+
+        {
+            WriteLock lock(g_mutex);
+            outObjectHandle = AddPathToMap(toPath);
+            MEDIA_INFO_LOG("CopyPhoto successful to[%{public}s], handle[%{public}d]", toPath.c_str(), outObjectHandle);
+        }
+    }
+
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMediaLibrary::CopyGalleryAlbum(const std::shared_ptr<MtpOperationContext> &context,
+    const std::string &albumName, const PathMap &paths, uint32_t &outObjectHandle)
+{
+    MEDIA_DEBUG_LOG("MtpMediaLibrary::%{public}s is called", __func__);
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
+    std::string to("");
+    CHECK_AND_RETURN_RET_LOG(GetPathByContextParent(context, to) == MTP_SUCCESS,
+        MTP_ERROR_INVALID_OBJECTHANDLE, "to not found");
+    CHECK_AND_RETURN_RET_LOG(!albumName.empty(), MTP_ERROR_INVALID_OBJECTHANDLE, "albumName is empty");
+
+    std::error_code ec;
+    CHECK_AND_RETURN_RET_LOG(sf::is_directory(to, ec), MTP_ERROR_INVALID_OBJECTHANDLE, "parent path is not dir");
+
+    auto toPath = sf::path(to) / sf::path(albumName);
+    sf::create_directory(toPath, ec);
+    CHECK_AND_RETURN_RET_LOG(ec.value() == MTP_SUCCESS, MTP_ERROR_PARAMETER_NOT_SUPPORTED, "create folder failed");
+
+    {
+        WriteLock lock(g_mutex);
+        outObjectHandle = AddPathToMap(toPath);
+        MEDIA_INFO_LOG("CopyAlbum successful to[%{public}s], handle[%{public}d]", toPath.c_str(), outObjectHandle);
+    }
+
+    CHECK_AND_RETURN_RET_LOG(!paths.empty(), MTP_SUCCESS, "from is empty, empty folder");
+    for (auto it = paths.begin(); it != paths.end(); it++) {
+        CHECK_AND_CONTINUE_INFO_LOG(sf::exists(it->first, ec), "from path not exists err %{public}d", errno);
+        auto toPhoto = toPath / it->second;
+        sf::copy(it->first, toPhoto, sf::copy_options::recursive | sf::copy_options::overwrite_existing, ec);
+        CHECK_AND_CONTINUE_INFO_LOG(ec.value() == MTP_SUCCESS, "CopyGalleryAlbum err %{public}d", errno);
+        MEDIA_DEBUG_LOG("from[%{public}s], to[%{public}s]", it->first.c_str(), toPhoto.c_str());
+    }
+    return MTP_SUCCESS;
 }
 
 } // namespace Media

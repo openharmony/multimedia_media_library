@@ -64,6 +64,8 @@ const int32_t UUID_STR_LENGTH = 37;
 const int32_t MAX_URI_SIZE = 384; // 256 for display name and 128 for relative path
 const int32_t REQUEST_ID_MAX_LEN = 64;
 
+const std::string HIGH_TEMPERATURE = "high_temperature";
+
 thread_local unique_ptr<ChangeListenerNapi> g_multiStagesRequestListObj = nullptr;
 thread_local napi_ref constructor_ = nullptr;
 
@@ -135,17 +137,20 @@ static AssetHandler* CreateAssetHandler(const std::string &photoId, const std::s
     const std::string &uri, const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
 {
     AssetHandler *assetHandler = new AssetHandler(photoId, requestId, uri, handler, func);
-    NAPI_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s, %{public}p.",
-        photoId.c_str(), requestId.c_str(), uri.c_str(), assetHandler);
+    NAPI_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s",
+        photoId.c_str(), requestId.c_str(), uri.c_str());
     return assetHandler;
 }
 
 static void DeleteAssetHandlerSafe(AssetHandler *handler, napi_env env)
 {
     if (handler != nullptr) {
-        NAPI_DEBUG_LOG("[AssetHandler delete] %{public}p.", handler);
         if (handler->dataHandler != nullptr) {
             handler->dataHandler->DeleteNapiReference(env);
+        }
+        if (handler->threadSafeFunc != nullptr) {
+            napi_release_threadsafe_function(handler->threadSafeFunc, napi_tsfn_release);
+            handler->threadSafeFunc = nullptr;
         }
         delete handler;
         handler = nullptr;
@@ -157,10 +162,13 @@ static void DeleteProcessHandlerSafe(ProgressHandler *handler, napi_env env)
     if (handler == nullptr) {
         return;
     }
-    NAPI_DEBUG_LOG("[ProgressHandler delete] %{public}p.", handler);
     if (handler->progressRef != nullptr && env != nullptr) {
         napi_delete_reference(env, handler->progressRef);
         handler->progressRef = nullptr;
+    }
+    if (handler->progressFunc != nullptr) {
+        napi_release_threadsafe_function(handler->progressFunc, napi_tsfn_release);
+        handler->progressFunc = nullptr;
     }
     delete handler;
     handler = nullptr;
@@ -186,6 +194,7 @@ static void InsertInProcessMapRecord(const std::string &requestUri, const std::s
 static void DeleteRecordNoLock(const std::string &requestUri, const std::string &requestId)
 {
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
+    auto uriHightemp = uriLocal + HIGH_TEMPERATURE;
     if (inProcessUriMap.find(uriLocal) == inProcessUriMap.end()) {
         return;
     }
@@ -207,7 +216,12 @@ static void DeleteRecordNoLock(const std::string &requestUri, const std::string 
         UserFileClient::UnregisterObserverExt(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[uriLocal]));
     }
+    if (multiStagesObserverMap.find(uriHightemp) != multiStagesObserverMap.end()) {
+        UserFileClient::UnregisterObserverExt(Uri(uriHightemp),
+            static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[uriHightemp]));
+    }
     multiStagesObserverMap.erase(uriLocal);
+    multiStagesObserverMap.erase(uriHightemp);
 }
 
 static void DeleteInProcessMapRecord(const std::string &requestUri, const std::string &requestId)
@@ -277,9 +291,8 @@ static ProgressHandler* InsertProgressHandler(napi_env env, MediaAssetManagerAsy
     napi_threadsafe_function threadSafeFunc;
     dataHandlerRef = asyncContext->progressHandlerRef;
     threadSafeFunc = asyncContext->onProgressPtr;
-    RetProgressValue retProgressValue;
     ProgressHandler *progressHandler = new ProgressHandler(env, threadSafeFunc, asyncContext->requestId,
-        retProgressValue, dataHandlerRef);
+        dataHandlerRef);
     MediaAssetManagerNapi::progressHandlerMap_.EnsureInsert(asyncContext->requestId, progressHandler);
     NAPI_DEBUG_LOG("InsertProgressHandler");
     return  progressHandler;
@@ -326,10 +339,10 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
     int currentPhotoQuality = HIGH_QUALITY_IMAGE;
     resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
     if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
-        NAPI_DEBUG_LOG("query photo status : lowQuality");
+        NAPI_INFO_LOG("query photo status : lowQuality");
         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
     }
-    NAPI_DEBUG_LOG("query photo status quality: %{public}d", currentPhotoQuality);
+    NAPI_INFO_LOG("query photo status quality: %{public}d", currentPhotoQuality);
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 
@@ -668,13 +681,20 @@ void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env, MediaAssetManager
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(asyncContext->photoUri);
-    NAPI_INFO_LOG("uri: %{public}s, %{public}s", asyncContext->photoUri.c_str(), uriLocal.c_str());
+    auto uriHightemp = uriLocal + HIGH_TEMPERATURE;
+    NAPI_INFO_LOG("MultistagesCapture, uri: %{public}s, %{public}s, uriHighTemp: %{public}s.",
+        asyncContext->photoUri.c_str(), uriLocal.c_str(), uriHightemp.c_str());
     Uri uri(asyncContext->photoUri);
     std::unique_lock<std::mutex> registerLock(registerTaskLock);
     if (multiStagesObserverMap.find(uriLocal) == multiStagesObserverMap.end()) {
         UserFileClient::RegisterObserverExt(Uri(uriLocal),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
         multiStagesObserverMap.insert(std::make_pair(uriLocal, dataObserver));
+    }
+    if (multiStagesObserverMap.find(uriHightemp) == multiStagesObserverMap.end()) {
+        UserFileClient::RegisterObserverExt(Uri(uriHightemp),
+            static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
+        multiStagesObserverMap.insert(std::make_pair(uriHightemp, dataObserver));
     }
     registerLock.unlock();
 
@@ -812,6 +832,7 @@ static int32_t GetPhotoSubtype(napi_env env, napi_value photoAssetArg)
 
 napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("Begin JSRequestImageData");
     if (env == nullptr || info == nullptr) {
         NAPI_ERR_LOG("JSRequestImageData js arg invalid");
         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImageData js arg invalid");
@@ -852,7 +873,7 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
 
 napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("JSRequestImage");
+    NAPI_INFO_LOG("Begin JSRequestImage");
     if (env == nullptr || info == nullptr) {
         NAPI_ERR_LOG("JSRequestImage js arg invalid");
         NapiError::ThrowError(env, JS_INNER_FAIL, "JSRequestImage js arg invalid");
@@ -934,6 +955,15 @@ napi_value MediaAssetManagerNapi::JSRequestEfficientIImage(napi_env env, napi_ca
         JSRequestComplete);
 }
 
+void MediaAssetManagerNapi::ReleaseSafeFunc(napi_threadsafe_function &threadSafeFunc)
+{
+    if (threadSafeFunc == nullptr) {
+        return;
+    }
+    napi_release_threadsafe_function(threadSafeFunc, napi_tsfn_release);
+    threadSafeFunc = nullptr;
+}
+
 bool MediaAssetManagerNapi::CreateOnProgressHandlerInfo(napi_env env,
     unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
 {
@@ -1006,6 +1036,8 @@ napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback
 
 void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is nullptr");
+    NAPI_INFO_LOG("OnHandleRequestImage mode: %{public}d.", static_cast<int32_t>(asyncContext->deliveryMode));
     MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     switch (asyncContext->deliveryMode) {
         case DeliveryMode::FAST:
@@ -1015,6 +1047,7 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
                     asyncContext->photoId, asyncContext->hasReadPermission, asyncContext->userId);
             }
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
+            ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
             break;
         case DeliveryMode::HIGH_QUALITY:
             status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
@@ -1022,8 +1055,10 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
             asyncContext->photoQuality = status;
             if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
                 MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
+                ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
             } else {
                 RegisterTaskObserver(env, asyncContext);
+                ReleaseSafeFunc(asyncContext->onDataPreparedPtr);
             }
             break;
         case DeliveryMode::BALANCED_MODE:
@@ -1033,6 +1068,8 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManager
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
                 RegisterTaskObserver(env, asyncContext);
+            } else {
+                ReleaseSafeFunc(asyncContext->onDataPreparedPtr2);
             }
             break;
         default: {
@@ -1141,8 +1178,11 @@ static napi_value GetNapiValueOfMedia(napi_env env, const std::shared_ptr<NapiMe
         param.isSource = dataHandler->GetSourceMode() == SourceMode::ORIGINAL_MODE;
         MediaAssetManagerNapi::WriteDataToDestPath(param, napiValueOfMedia, dataHandler->GetRequestId());
     } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_MOVING_PHOTO) {
-        napiValueOfMedia = MovingPhotoNapi::NewMovingPhotoNapi(
-            env, dataHandler->GetRequestUri(), dataHandler->GetSourceMode());
+        MovingPhotoParam movingPhotoParam;
+        movingPhotoParam.compatibleMode =  dataHandler->GetCompatibleMode();
+        movingPhotoParam.requestId = dataHandler->GetRequestId();
+        napiValueOfMedia = MovingPhotoNapi::NewMovingPhotoNapi(env, dataHandler->GetRequestUri(),
+            dataHandler->GetSourceMode(), movingPhotoParam, MediaAssetManagerNapi::NotifyOnProgress);
     } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         MediaAssetManagerNapi::GetPictureNapiObject(dataHandler->GetRequestUri(), napiValueOfMedia,
             dataHandler->GetSourceMode() == SourceMode::ORIGINAL_MODE, env, isPicture);
@@ -1197,7 +1237,7 @@ static void SavePicture(std::string &fileUri)
 
 void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *context, void *data)
 {
-    NAPI_DEBUG_LOG("OnDataPrepared");
+    NAPI_INFO_LOG("Begin OnDataPrepared.");
     AssetHandler *assetHandler = reinterpret_cast<AssetHandler *>(data);
     CHECK_NULL_PTR_RETURN_VOID(assetHandler, "assetHandler is nullptr");
     auto dataHandler = assetHandler->dataHandler;
@@ -1231,7 +1271,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         string uri = dataHandler->GetRequestUri();
         SavePicture(uri);
     }
-    napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler, isPicture);
+    napi_value napiValueOfMedia = assetHandler->isError ? nullptr : GetNapiValueOfMedia(env, dataHandler, isPicture);
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         if (isPicture) {
             dataHandler->JsOnDataPrepared(env, napiValueOfMedia, nullptr, napiValueOfInfoMap);
@@ -1375,13 +1415,17 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
     }
     for (auto &uri : changeInfo.uris_) {
         string uriString = uri.ToString();
-        NAPI_DEBUG_LOG("%{public}s", uriString.c_str());
+        NAPI_INFO_LOG("Onchange, before onDataPrepared, uri: %{public}s", uriString.c_str());
         std::string photoId = "";
-        if (MediaAssetManagerNapi::QueryPhotoStatus(fileId_, uriString, photoId, true, -1) !=
+        if (uriString.find(HIGH_TEMPERATURE) == std::string::npos &&
+            MediaAssetManagerNapi::QueryPhotoStatus(fileId_, uriString, photoId, true, -1) !=
             MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
             NAPI_ERR_LOG("requested data not prepared");
             continue;
         }
+        std::string uriHightemp = uriString;
+        auto index = uriString.find(HIGH_TEMPERATURE);
+        uriString = uriString.substr(0, index);
 
         std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
         if (inProcessUriMap.find(uriString) == inProcessUriMap.end()) {
@@ -1394,6 +1438,10 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         }
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
+            if (uriHightemp.find(HIGH_TEMPERATURE) != std::string::npos) {
+                NAPI_INFO_LOG("OnChange receive high_temperature");
+                assetHandler->isError = true;
+            }
             assetHandler->photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
             MediaAssetManagerNapi::NotifyMediaDataPrepared(assetHandler);
         }
@@ -1402,7 +1450,8 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
 
 void MediaAssetManagerNapi::NotifyOnProgress(int32_t type, int32_t progress, std::string requestId)
 {
-    NAPI_DEBUG_LOG("NotifyOnProgress start %{public}d,type %{public}d", progress, type);
+    NAPI_DEBUG_LOG("NotifyOnProgress start %{public}d, type:%{public}d, requestId:%{public}s", progress, type,
+        requestId.c_str());
     ProgressHandler *progressHandler = nullptr;
     if (!MediaAssetManagerNapi::progressHandlerMap_.Find(requestId, progressHandler)) {
         NAPI_ERR_LOG("not find key from map");
@@ -1563,6 +1612,9 @@ static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, cons
     CHECK_COND_WITH_MESSAGE(env,
         ParseArgGetRequestOption(env, argv[PARAM2], context->deliveryMode, context->sourceMode) == napi_ok,
         "Failed to parse request option");
+    CHECK_COND_WITH_MESSAGE(env,
+        ParseArgGetRequestOptionMore(env, argv[PARAM2], context->compatibleMode,
+        context->mediaAssetProgressHandler) == napi_ok, "Failed to parse request option more");
     CHECK_COND_WITH_MESSAGE(env, IsMovingPhoto(fileAssetPtr->GetPhotoSubType(),
         fileAssetPtr->GetMovingPhotoEffectMode(), static_cast<int32_t>(context->sourceMode)),
         "Asset is not a moving photo");
@@ -1598,6 +1650,10 @@ napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callba
         NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
         return nullptr;
     }
+    if (!CreateOnProgressHandlerInfo(env, asyncContext)) {
+        NAPI_ERR_LOG("CreateOnProgressHandlerInfo failed");
+        return nullptr;
+    }
     asyncContext->requestId = GenerateRequestId();
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestMovingPhoto", JSRequestExecute,
@@ -1627,31 +1683,29 @@ void MediaAssetManagerNapi::WriteDataToDestPath(WriteData &writeData, napi_value
         NAPI_ERR_LOG("get source file fd failed %{public}d", srcFd);
         return;
     }
+    UniqueFd uniqueSrcFd(srcFd);
     struct stat statSrc;
-    if (fstat(srcFd, &statSrc) == -1) {
-        close(srcFd);
+    if (fstat(uniqueSrcFd.Get(), &statSrc) == -1) {
         napi_get_boolean(writeData.env, false, &resultNapiValue);
         NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
         return;
     }
     int destFd = GetFdFromSandBoxUri(writeData.destUri);
     if (destFd < 0) {
-        close(srcFd);
         napi_get_boolean(writeData.env, false, &resultNapiValue);
         NAPI_ERR_LOG("get dest fd failed %{public}d", destFd);
         return;
     }
+    UniqueFd uniqueDestFd(destFd);
     NAPI_INFO_LOG("WriteDataToDestPath compatibleMode %{public}d", writeData.compatibleMode);
     if (writeData.compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
         isTranscoderMap_.Insert(requestId, true);
         MediaCallTranscode::RegisterCallback(NotifyOnProgress);
-        MediaCallTranscode::CallTranscodeHandle(writeData.env, srcFd, destFd, resultNapiValue,
+        MediaCallTranscode::CallTranscodeHandle(writeData.env, uniqueSrcFd.Get(), uniqueDestFd.Get(), resultNapiValue,
             statSrc.st_size, requestId);
     } else {
-        SendFile(writeData.env, srcFd, destFd, resultNapiValue, statSrc.st_size);
+        SendFile(writeData.env, uniqueSrcFd.Get(), uniqueDestFd.Get(), resultNapiValue, statSrc.st_size);
     }
-    close(srcFd);
-    close(destFd);
     return;
 }
 
@@ -1762,8 +1816,11 @@ static void JSLoadMovingPhotoComplete(napi_env env, napi_status status, void *da
     jsContext->status = false;
 
     if (context->error == ERR_DEFAULT) {
+        MovingPhotoParam movingPhotoParam;
+        movingPhotoParam.compatibleMode = CompatibleMode::ORIGINAL_FORMAT_MODE;
+        movingPhotoParam.requestId = context->requestId;
         napi_value movingPhoto = MovingPhotoNapi::NewMovingPhotoNapi(env, context->photoUri,
-            SourceMode::EDITED_MODE);
+            SourceMode::EDITED_MODE, movingPhotoParam);
         jsContext->data = movingPhoto;
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
@@ -1855,8 +1912,14 @@ napi_status MediaAssetManagerNapi::CreateOnProgressThreadSafeFunc(napi_env env,
 {
     napi_value workName = nullptr;
     napi_create_string_utf8(env, "ProgressThread", NAPI_AUTO_LENGTH, &workName);
-    napi_status status = napi_create_threadsafe_function(env, context->mediaAssetProgressHandler, NULL, workName, 0, 1,
-        NULL, NULL, NULL, MediaAssetManagerNapi::OnProgress, &progressFunc);
+    napi_status status = napi_ok;
+    if (context->subType == PhotoSubType::MOVING_PHOTO) {
+        status = napi_create_threadsafe_function(env, context->mediaAssetProgressHandler, NULL, workName, 0, 1,
+            NULL, NULL, NULL, MovingPhotoNapi::OnProgress, &progressFunc);
+    } else {
+        status = napi_create_threadsafe_function(env, context->mediaAssetProgressHandler, NULL, workName, 0, 1,
+            NULL, NULL, NULL, MediaAssetManagerNapi::OnProgress, &progressFunc);
+    }
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_create_threadsafe_function fail");
         progressFunc = nullptr;
@@ -1879,6 +1942,9 @@ void MediaAssetManagerNapi::JSRequestExecute(napi_env env, void *data)
         string result;
         valuesBucket.Put("adapted", context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO);
         UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result, context->userId);
+        if (context->compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
+            OnHandleProgress(env, context);
+        }
     }
 }
 

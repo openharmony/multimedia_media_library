@@ -52,6 +52,9 @@ int32_t TransactionOperations::Start(bool isBackup)
     MEDIA_INFO_LOG("Start transaction_, funName is :%{public}s", funcName_.c_str());
     if (isBackup) {
         rdbStore_ = backupRdbStore_;
+        if (rdbStore_ == nullptr) {
+            rdbStore_ = MediaLibraryRdbStore::GetRaw();
+        }
     } else {
         rdbStore_ = MediaLibraryRdbStore::GetRaw();
     }
@@ -215,10 +218,7 @@ int32_t TransactionOperations::ExecuteSql(const std::string &sql, const std::vec
 
 int32_t TransactionOperations::Execute(const std::string &sql, const std::vector<NativeRdb::ValueObject> &args)
 {
-    if (transaction_ == nullptr) {
-        MEDIA_ERR_LOG("transaction is null");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(transaction_ != nullptr, E_HAS_DB_ERROR, "transaction is null");
     auto [ret, value] = transaction_->Execute(sql, args);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Execute failed, ret = %{public}d", ret);
@@ -231,10 +231,7 @@ int32_t TransactionOperations::Execute(const std::string &sql, const std::vector
 int32_t TransactionOperations::ExecuteForLastInsertedRowId(const std::string &sql,
     const std::vector<NativeRdb::ValueObject> &bindArgs)
 {
-    if (transaction_ == nullptr) {
-        MEDIA_ERR_LOG("transaction is null");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(transaction_ != nullptr, E_HAS_DB_ERROR, "transaction_ is null");
     int64_t lastInsertRowId = 0;
     auto [err, valueObject] = transaction_->Execute(sql, bindArgs);
     (void)valueObject.GetLong(lastInsertRowId);
@@ -303,11 +300,7 @@ int32_t TransactionOperations::Update(int32_t &changedRows, NativeRdb::ValuesBuc
 
 int32_t TransactionOperations::Update(MediaLibraryCommand &cmd, int32_t &changedRows)
 {
-    if (transaction_ == nullptr) {
-        MEDIA_ERR_LOG("transaction_ is null");
-        return E_HAS_DB_ERROR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(transaction_ != nullptr, E_HAS_DB_ERROR, "transaction_ is null");
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
             MediaFileUtils::UTCTimeMilliSeconds());
@@ -369,11 +362,7 @@ int32_t TransactionOperations::BatchInsert(MediaLibraryCommand &cmd, int64_t& ou
 int32_t TransactionOperations::Insert(int64_t &rowId, const std::string tableName,
     const NativeRdb::ValuesBucket &values)
 {
-    if (transaction_ == nullptr) {
-        MEDIA_ERR_LOG("transaction_ is null");
-        return E_HAS_DB_ERROR;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(transaction_ != nullptr, E_HAS_DB_ERROR, "transaction_ is null");
     auto [ret, rows] = transaction_->Insert(tableName, values);
     rowId = rows;
     if (ret != NativeRdb::E_OK) {
@@ -420,10 +409,7 @@ static int32_t DoDeleteFromPredicates(const AbsRdbPredicates &predicates,
 
 int32_t TransactionOperations::Delete(MediaLibraryCommand &cmd, int32_t &deletedRows)
 {
-    if (transaction_ == nullptr) {
-        MEDIA_ERR_LOG("transaction_ is null");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(transaction_ != nullptr, E_HAS_DB_ERROR, "transaction_ is null");
     /* local delete */
     int32_t ret = DoDeleteFromPredicates(*(cmd.GetAbsRdbPredicates()), deletedRows, transaction_);
     if (ret != NativeRdb::E_OK) {

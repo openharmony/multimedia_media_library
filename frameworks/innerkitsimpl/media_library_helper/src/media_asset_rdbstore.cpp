@@ -108,9 +108,7 @@ MediaAssetRdbStore::MediaAssetRdbStore()
 {
     MEDIA_INFO_LOG("init visitor rdb");
     CHECK_AND_RETURN_INFO_LOG(rdbStore_ == nullptr, "visitor rdb exists");
-    if (TryGetRdbStore() != NativeRdb::E_OK) {
-        return;
-    }
+    CHECK_AND_RETURN(TryGetRdbStore() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("success to init visitor rdb");
 }
 
@@ -121,10 +119,9 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     uid_t uid = getuid() / BASE_USER_RANGE;
     const string key = MEDIA_LIBRARY_STARTUP_PARAM_PREFIX + to_string(uid);
     auto rdbInitFlag = system::GetBoolParameter(key, false);
-    if (!rdbInitFlag && !isIgnoreSELinux) {
-        MEDIA_ERR_LOG("media library db update not complete, key:%{public}s", key.c_str());
-        return NativeRdb::E_ERROR;
-    }
+    bool cond = (!rdbInitFlag && !isIgnoreSELinux);
+    CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR,
+        "media library db update not complete, key:%{public}s", key.c_str());
 
     string name = MEDIA_DATA_ABILITY_DB_NAME;
     string databaseDir = MEDIA_DB_DIR + "/rdb";
@@ -144,6 +141,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
     config.SetScalarFunction("photo_album_notify_func", 1, PhotoAlbumNotifyFunc);
+    config.SetCollatorLocales("zh_CN");
 
     MediaLibraryDataCallBack rdbDataCallBack;
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
@@ -226,19 +224,14 @@ void AddQueryFilter(AbsRdbPredicates &predicates)
     string filters;
     for (auto &t : joinTables) {
         string filter = GetQueryFilter(t);
-        if (filter.empty()) {
-            continue;
-        }
+        CHECK_AND_CONTINUE(!filter.empty());
         if (filters.empty()) {
             filters += filter;
         } else {
             filters += " AND " + filter;
         }
     }
-    if (filters.empty()) {
-        return;
-    }
-
+    CHECK_AND_RETURN(!filters.empty());
     /* rebuild */
     string queryCondition = predicates.GetWhereClause();
     MEDIA_DEBUG_LOG("queryCondition: %{public}s", queryCondition.c_str());
@@ -251,10 +244,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
     std::vector<std::string>& columns, OperationObject& object, int& errCode)
 {
     auto resultSet = QueryRdb(predicates, columns, object);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("fail to acquire result from visitor query");
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
     auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
     return make_shared<DataShare::DataShareResultSet>(resultSetBridge);
 }
@@ -263,9 +253,7 @@ bool IsNumber(const string& str)
 {
     CHECK_AND_RETURN_RET_LOG(!str.empty(), false, "IsNumber input is empty");
     for (char const& c : str) {
-        if (isdigit(c) == 0) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(isdigit(c) != 0, false);
     }
     return true;
 }
@@ -283,18 +271,22 @@ int32_t GetInt32Val(const string& column, std::shared_ptr<NativeRdb::AbsSharedRe
 
 bool MediaAssetRdbStore::IsQueryGroupPhotoAlbumAssets(const string &albumId)
 {
-    if (albumId.empty() || !IsNumber(albumId)) {
-        return false;
-    }
+    bool cond = (albumId.empty() || !IsNumber(albumId));
+    CHECK_AND_RETURN_RET(!cond, false);
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
     vector<string> columns = {PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE};
     auto resultSet = rdbStore_->Query(predicates, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+    if (resultSet == nullptr) {
+        return false;
+    }
+    if (resultSet->GoToFirstRow() != E_OK) {
+        resultSet->Close();
         return false;
     }
     int32_t albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
     int32_t albumSubtype = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
+    resultSet->Close();
     return albumType == PhotoAlbumType::SMART && albumSubtype == PhotoAlbumSubType::GROUP_PHOTO;
 }
 
@@ -323,56 +315,10 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
     return true;
 }
 
-std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::AddQueryDateTakenTime(
-    std::vector<std::string>& columns)
-{
-    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
-    CHECK_AND_RETURN_RET(it != columns.end(), nullptr);
-    auto itData = find(columns.begin(), columns.end(), MEDIA_DATA_DB_DATE_TAKEN);
-    CHECK_AND_RETURN_RET(itData != columns.end(), nullptr);
-    std::string extraWhereSql = "";
-    auto itForThumbnailVisible = find(columns.begin(), columns.end(), PhotoColumn::PHOTO_THUMBNAIL_VISIBLE);
-    if (itForThumbnailVisible != columns.end()) {
-        extraWhereSql = " AND thumbnail_visible = 1 ";
-    }
-
-    std::string sql = ""
-        "SELECT"
-        "  count( * ) AS count,"
-        "  date_taken,"
-        "  date_day,"
-        "  burst_key,"
-        "  display_name,"
-        "  file_id,"
-        "  media_type,"
-        "  subtype "
-        "FROM"
-        "  Photos "
-        "WHERE"
-        "  sync_status = 0 "
-        "  AND clean_flag = 0 "
-        "  AND date_trashed = 0 "
-        "  AND time_pending = 0 "
-        "  AND hidden = 0 "
-        "  AND is_temp = 0 "
-        "  AND burst_cover_level = 1 " +
-        extraWhereSql +
-        "GROUP BY"
-        "  date_day "
-        "ORDER BY"
-        "  date_day DESC;";
-
-    auto resultSet = rdbStore_->QuerySql(sql);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "fail to acquire result from visitor query");
-    return resultSet;
-}
-
 std::shared_ptr<NativeRdb::ResultSet> MediaAssetRdbStore::QueryRdb(
     const DataShare::DataSharePredicates& predicates, std::vector<std::string>& columns, OperationObject& object)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore_ != nullptr, nullptr, "fail to acquire rdb when query");
-    auto ret = AddQueryDateTakenTime(columns);
-    CHECK_AND_RETURN_RET(ret == nullptr, ret);
     std::string tableName = GetTableNameFromOprnObject(object);
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);
     AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
@@ -425,24 +371,21 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
         int columnIndex = 0;
         int64_t dateTakenTime = 0;
         int fileId = 0;
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) != NativeRdb::E_OK ||
-            resultSet->GetLong(columnIndex, dateTakenTime) != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Fail to get dateTaken");
-            return NativeRdb::E_ERROR;
-        }
-        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) != NativeRdb::E_OK ||
-            resultSet->GetInt(columnIndex, fileId) != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Fail to get fileId");
-            return NativeRdb::E_ERROR;
-        }
+        bool cond = (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_TAKEN, columnIndex) != NativeRdb::E_OK ||
+            resultSet->GetLong(columnIndex, dateTakenTime) != NativeRdb::E_OK);
+        CHECK_AND_RETURN_RET_LOG(!cond, NativeRdb::E_ERROR, "Fail to get dateTaken");
+
+        cond = (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) != NativeRdb::E_OK ||
+            resultSet->GetInt(columnIndex, fileId) != NativeRdb::E_OK);
+        CHECK_AND_RETURN_RET_LOG(!cond,  NativeRdb::E_ERROR, "Fail to get fileId");
 
         std::string timeId;
-        if (!MediaFileUtils::GenerateKvStoreKey(to_string(fileId), to_string(dateTakenTime), timeId)) {
-            MEDIA_ERR_LOG("Fail to generate kvStore key, fileId:%{public}d", fileId);
-            continue;
-        }
+        CHECK_AND_CONTINUE_ERR_LOG(MediaFileUtils::GenerateKvStoreKey(to_string(fileId),
+            to_string(dateTakenTime), timeId),
+            "Fail to generate kvStore key, fileId:%{public}d", fileId);
         batchKeys.emplace_back(std::move(timeId));
     }
+    resultSet->Close();
     return NativeRdb::E_OK;
 }
 

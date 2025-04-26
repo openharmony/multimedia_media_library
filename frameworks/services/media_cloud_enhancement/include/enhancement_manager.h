@@ -40,6 +40,13 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+const std::string PHOTO_OPTION_CLOSE = "close";
+constexpr const char *SETTINGS_DATASHARE_AUTO_OPTION_URI =
+    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true&key=persist.photos.ce.auto.option";
+const std::string SETTINGS_DATASHARE_URI =
+    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true";
+const std::string SETTINGS_DATASHARE_WATER_MARK_URI = SETTINGS_DATASHARE_URI +
+    "&key=persist.photos.ce.watermark.enable";
 class EnhancementManager {
 public:
     EXPORT static EnhancementManager& GetInstance();
@@ -55,7 +62,7 @@ public:
     EXPORT int32_t HandleAddOperation(MediaLibraryCommand &cmd, const bool hasCloudWatermark, int triggerMode = 0);
     EXPORT int32_t AddServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
         const std::string &photoId, const bool hasCloudWatermark, const bool isAuto = false);
-    EXPORT int32_t HandleAutoAddOperation(const bool isReboot = false);
+    EXPORT int32_t HandleAutoAddOperation(bool isReboot = false);
     EXPORT int32_t AddAutoServiceTask(OHOS::MediaEnhance::MediaEnhanceBundleHandle* mediaEnhanceBundle, int32_t fileId,
         const std::string &photoId);
 #endif
@@ -90,12 +97,14 @@ private:
     const EnhancementManager &operator=(const EnhancementManager &manager) = delete;
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
     void GenerateAddServicePredicates(bool isAuto, NativeRdb::RdbPredicates &servicePredicates);
-    void GenerateAddAutoServicePredicates(bool isReboot, NativeRdb::RdbPredicates &servicePredicates);
-    void GenerateCancelOperationPredicates(int32_t fileId, NativeRdb::RdbPredicates &servicePredicates);
-    int32_t HandleNetChangeInner(const bool isWifiStateChanged, const bool isCellularStateChanged);
+    EXPORT void GenerateAddAutoServicePredicates(NativeRdb::RdbPredicates &servicePredicates);
+    EXPORT void GenerateCancelOperationPredicates(int32_t fileId, NativeRdb::RdbPredicates &servicePredicates);
     sptr<PhotosAutoOptionObserver> photosAutoOptionObserver_ = nullptr;
     sptr<PhotosWaterMarkObserver> photosWaterMarkObserver_ = nullptr;
-    bool isAutoTaskEnabled();
+    bool IsAutoTaskEnabled();
+    EXPORT int32_t HandleCancelAllAutoOperation();
+    void ResetProcessingAutoToSupport();
+    bool IsAddOperationEnabled(int32_t triggerMode);
 #endif
     void InitPhotosSettingsMonitor();
     bool isCameraIdle_ = true;

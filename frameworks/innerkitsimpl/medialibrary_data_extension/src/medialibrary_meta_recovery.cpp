@@ -115,17 +115,11 @@ static int32_t RefreshThumbnail()
 static int32_t RefreshAlbumCount()
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("RefreshAlbumCount: failed to get rdb store handler");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "RefreshAlbumCount: failed to get rdb store handler");
 
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
 
     watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
     watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
@@ -305,10 +299,8 @@ void MediaLibraryMetaRecovery::LoadAlbumMaps(const string &path)
     int32_t ret = E_OK;
     std::vector<shared_ptr<PhotoAlbum>> vecPhotoAlbum;
     ret = ReadPhotoAlbumFromFile(path, vecPhotoAlbum);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("read album file failed, path=%{public}s", DfxUtils::GetSafePath(path).c_str());
-        return;
-    }
+    CHECK_AND_RETURN_LOG(ret == E_OK, "read album file failed, path=%{public}s", DfxUtils::GetSafePath(path).c_str());
+
     for (auto it : vecPhotoAlbum) {
         oldAlbumIdToLpath[it->GetAlbumId()] = it->GetLPath();
         MEDIA_INFO_LOG("oldAlbumIdToLpath, json id %{public}d, path=%{public}s", it->GetAlbumId(),
@@ -319,10 +311,8 @@ void MediaLibraryMetaRecovery::LoadAlbumMaps(const string &path)
     vector<string> columns = {PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_LPATH};
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet == nullptr)");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet == nullptr)");
+
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
         string lPath = GetStringVal(PhotoAlbumColumns::ALBUM_LPATH, resultSet);
@@ -365,23 +355,14 @@ int32_t MediaLibraryMetaRecovery::AlbumRecovery(const string &path)
 
     do {
         ret = access(path.c_str(), F_OK | R_OK);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("file is not exist or no read access, path=%{public}s", DfxUtils::GetSafePath(path).c_str());
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK,
+            "file is not exist or no read access, path=%{public}s", DfxUtils::GetSafePath(path).c_str());
 
         ret = ReadPhotoAlbumFromFile(path, vecPhotoAlbum);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("read album file failed, errCode = %{public}d", ret);
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "read album file failed, errCode = %{public}d", ret);
 
         ret = InsertMetadataInDb(vecPhotoAlbum);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("AlbumRecovery: insert album failed, errCode = %{public}d", ret);
-            break;
-        }
-
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "AlbumRecovery: insert album failed, errCode = %{public}d", ret);
         MEDIA_INFO_LOG("AlbumRecovery: photo album is recovered successful");
     } while (false);
 
@@ -455,10 +436,7 @@ int32_t MediaLibraryMetaRecovery::WriteSingleMetaDataById(int32_t rowId)
 
     MEDIA_DEBUG_LOG("WriteSingleMetaDataById : rowId %{public}d", rowId);
     auto asset = MediaLibraryAssetOperations::QuerySinglePhoto(rowId);
-    if (asset == nullptr) {
-        MEDIA_ERR_LOG("QuerySinglePhoto : rowId %{public}d failed", rowId);
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(asset != nullptr, E_HAS_DB_ERROR, "QuerySinglePhoto : rowId %{public}d failed", rowId);
 
     ret = WriteSingleMetaData(*asset);
     if (ret == E_OK) {
@@ -1141,10 +1119,7 @@ int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const FileAsset &fileAsset)
 int32_t MediaLibraryMetaRecovery::InsertMetadataInDb(const std::vector<shared_ptr<PhotoAlbum>> &vecPhotoAlbum)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("GetRdbStore failed, return nullptr)");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "GetRdbStore failed, return nullptr)");
 
     for (auto iter : vecPhotoAlbum) {
         MEDIA_INFO_LOG("InsertMetadataInDb: album name = %{private}s", iter->GetAlbumName().c_str());
@@ -1281,6 +1256,7 @@ int32_t MediaLibraryMetaRecovery::StartAsyncRecovery()
             recoveryState_.exchange(MediaLibraryMetaRecoveryState::STATE_NONE);
         }
         recoveryCostTime_ += recoveryTotalTime;
+        RecoveryStatistic();
     }).detach();
 
     return E_OK;

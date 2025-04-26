@@ -31,6 +31,7 @@
 #include "medialibrary_async_worker.h"
 #include "medialibrary_command.h"
 #include "photo_album.h"
+#include "picture.h"
 #include "value_object.h"
 #include "values_bucket.h"
 #include "medialibrary_rdb_transaction.h"
@@ -117,6 +118,8 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_METADATA_FLAGS, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_IS_AUTO, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_MEDIA_SUFFIX, MEMBER_TYPE_STRING },
+    { PhotoColumn::STAGE_VIDEO_TASK_STATUS, MEMBER_TYPE_INT32 },
 };
 
 typedef struct {
@@ -200,6 +203,18 @@ protected:
 
     EXPORT static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
+    static bool IsSetDisplayName(MediaLibraryCommand &cmd);
+    static bool CheckUriBySetDisplayName(MediaLibraryCommand &cmd);
+    static int32_t ChangeDisplayName(
+        MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset, bool &isNameChanged);
+    static int32_t GetUpdateValuesBucket(
+        MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset, NativeRdb::ValuesBucket &values);
+    static int32_t UpdateDbBySetDisplayName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static bool UpdateFileBySetDisplayName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static bool DeleteThumbByFileId(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
+    static void RevertSetDisplayName(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
+    static void RevertSetDisplayNameByDelete(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
+    static void RevertSetDisplayNameByUpdate(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     EXPORT static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
@@ -229,9 +244,9 @@ protected:
     EXPORT static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode,
         const std::string &fileId, int32_t type = -1);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-        bool isForceScan = false, int32_t fileId = 0);
+        bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
     static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-        bool isForceScan = false, int32_t fileId = 0);
+        bool isForceScan = false, int32_t fileId = 0, std::shared_ptr<Media::Picture> resultPicture = nullptr);
 
     EXPORT static std::string GetEditDataDirPath(const std::string &path);
     EXPORT static std::string GetEditDataPath(const std::string &path);
@@ -261,9 +276,14 @@ private:
         {
             isInvalidateThumb = isInvalidate;
         }
+        void SetOriginalPhotoPicture(std::shared_ptr<Media::Picture> resultPicture)
+        {
+            originalPhotoPicture = resultPicture;
+        }
     private:
         bool isCreateThumbSync = false;
         bool isInvalidateThumb = true;
+        std::shared_ptr<Media::Picture> originalPhotoPicture = nullptr;
     };
 };
 

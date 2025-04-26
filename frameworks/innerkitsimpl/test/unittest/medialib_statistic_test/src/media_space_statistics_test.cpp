@@ -29,6 +29,8 @@
 #include "scanner_utils.h"
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
+#include "media_file_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS;
@@ -58,7 +60,7 @@ int64_t g_oneImageSize = 0;
 int64_t g_oneVideoSize = 0;
 int64_t g_oneAudioSize = 0;
 int64_t g_oneFileSize = 0;
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
 
 static const unsigned char FILE_CONTENT_TXT[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24
@@ -191,7 +193,6 @@ void MediaSpaceStatisticsTest::TearDownTestCase(void)
     }
     ClearAllFile();
     MEDIA_INFO_LOG("TearDownTestCase end");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 // SetUp:Execute before each test case
 void MediaSpaceStatisticsTest::SetUp(void) {}
@@ -435,7 +436,7 @@ string ReturnUri(string type)
  *                 2.call the method to get media size
  *                 3.compare the size
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_001, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_001::Start");
     if (sDataShareHelper_ == nullptr) {
@@ -455,7 +456,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_001, TestSize.Level
  *                 2.call the method to get media size
  *                 3.compare the size
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_002, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_002::Start");
     if (sDataShareHelper_ == nullptr) {
@@ -472,7 +473,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_002, TestSize.Level
  *                 2.call the method to get media size
  *                 3.compare the size
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_003, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::Start");
     if (sDataShareHelper_ == nullptr) {
@@ -489,7 +490,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_003, TestSize.Level
  *                 2.call the method to get media size
  *                 3.compare the size
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::Start");
     if (sDataShareHelper_ == nullptr) {
@@ -506,7 +507,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level
  *                 2.query media size
  *                 3.make sure size is 0
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_006, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_006::Start");
     ClearFile();
@@ -523,7 +524,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_006, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_007, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_007::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_IMAGE, "MediaSpaceStatistics_test_007.jpg", "Pictures/");
@@ -552,7 +553,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_007, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_008, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_008.txt", "Docs/Documents/");
@@ -582,7 +583,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_008, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_009, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_009::Start");
 
@@ -613,7 +614,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_009, TestSize.Level
  * @tc.desc      : 1.get uri from path
  *                 2.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_010, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_010::Start");
     const Uri realUri(ReturnUri("1"));
@@ -639,7 +640,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_010, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_011, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_011::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_011.txt", "Docs/Documents/test1/");
@@ -670,7 +671,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_011, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_012, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_012, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "test.txt", "Docs/Documents/weixin/");
@@ -701,7 +702,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_012, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_013, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_013, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_013::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_AUDIO, "MediaSpaceStatistics_test_013.mp3", "Docs/Download/weixin/");
@@ -732,7 +733,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_013, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_014, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_014, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_014::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_IMAGE, "MediaSpaceStatistics_test_014.jpg", "Camera/weixin/");
@@ -761,7 +762,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_014, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_015, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_015, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_015::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_IMAGE, "MediaSpaceStatistics_test_015.jpg", "Docs/Download/weixin/");
@@ -792,7 +793,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_015, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_016, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_016, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_016::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_016.xxx", "Docs/Download/weixin/");
@@ -823,7 +824,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_016, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_017, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_017, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_017::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_VIDEO, "MediaSpaceStatistics_test_017.mp4", "Videos/");
@@ -852,7 +853,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_017, TestSize.Level
  *                 2.get uri from path
  *                 3.get path from uri
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_018, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_018, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_018::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_AUDIO, "MediaSpaceStatistics_test_018.mp3", "Audios/");
@@ -874,7 +875,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_018, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_018::End");
 }
 
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_019, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_019, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_019::Start");
     string columnName;
@@ -890,7 +891,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_019, TestSize.Level
  * @tc.name      : Get thumbnail by medialibraryManager
  * @tc.desc      : Get thumbnail by medialibraryManager
  */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_020, TestSize.Level0)
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_020, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::Start");
     Uri uri("file://media/Photo/10");

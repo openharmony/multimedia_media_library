@@ -64,6 +64,7 @@ private:
     void HandleLCDSizeTooLarge(const std::list<Uri> &uris);
     void HandleContentSizeIsZero(const std::list<Uri> &uris);
     void HandleAlbumNotFound(const std::list<Uri> &uris);
+    void HandleThumbnailGenerateFailed(const std::list<Uri> &uris);
 };
 } //namespace Media
 } //namespace OHOS

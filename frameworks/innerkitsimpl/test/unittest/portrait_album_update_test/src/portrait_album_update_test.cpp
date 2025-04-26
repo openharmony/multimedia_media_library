@@ -339,7 +339,7 @@ void CheckAlbum(int64_t albumId, int count, int64_t coverId, CoverSatisfiedType 
     EXPECT_EQ(GetIsCoverSatisfied(resultSet), coverSatisfiedType);
 }
 
-HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level0)
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_001 Start");
     const string tagId = "ser_1711000000000000000";
@@ -368,7 +368,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level
     MEDIA_INFO_LOG("portrait_album_update_test_001 End");
 }
 
-HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level0)
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_002 Start");
     const string tagId = "ser_1711000000000000000";
@@ -400,7 +400,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level
     MEDIA_INFO_LOG("portrait_album_update_test_002 End");
 }
 
-HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level0)
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_003 Start");
     const string tagId = "ser_1711000000000000000";
@@ -473,7 +473,7 @@ void TestCoverUpdateByFileIds(int64_t albumId, const vector<PortraitData> &portr
     CheckAlbum(albumId, portraits.size(), portraits[expectedCoverId].fileId, CoverSatisfiedType::DEFAULT_SETTING);
 }
 
-HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_004, TestSize.Level0)
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_004 Start");
     const string tagId = "ser_1711000000000000000";
@@ -486,7 +486,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_004, TestSize.Level
     MEDIA_INFO_LOG("portrait_album_update_test_004 End");
 }
 
-HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_005, TestSize.Level0)
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_005 Start");
     const string tagId = "ser_1711000000000000000";
@@ -502,7 +502,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_005, TestSize.Level
     MEDIA_INFO_LOG("portrait_album_update_test_005 End");
 }
 
-HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_006, TestSize.Level0)
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_006 Start");
     const string tagId = "ser_1711000000000000000";
@@ -515,7 +515,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_006, TestSize.Level
     MEDIA_INFO_LOG("portrait_album_update_test_006 End");
 }
 
-HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_007, TestSize.Level0)
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_007 Start");
     const string tagId = "ser_1711000000000000000";
@@ -545,7 +545,7 @@ void UserSetCoverUriTest(const int64_t albumId, const vector<PortraitData> &port
     EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(operationType, values, dataPredicates), E_OK);
 }
 
-HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_008, TestSize.Level0)
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_008 Start");
     const string tagId = "ser_1711000000000000000";

@@ -37,18 +37,21 @@ struct AuditLog {
     std::string id;
     int32_t type;
     int32_t size;
+    std::string path;
+    std::string displayName;
+    std::string albumName;
 
     const std::string TitleString() const
     {
         return "happenTime, packageName, isForeground, cause, isUserBehavior, operationType, operationScenario, "
-            "operationStatus, operationCount, extend, id, type, size\n";
+            "operationStatus, operationCount, extend, id, type, size, path, displayName, albumName\n";
     }
 
     const std::string ToString() const
     {
         return cause + ", " + std::to_string(isUserBehavior) + ", " + operationType + ", " + operationScenario +
             ", " + operationStatus + ", " + std::to_string(operationCount) + ", " + extend + ", " + id + ", " +
-            std::to_string(type) + ", " + std::to_string(size) + "\n";
+            std::to_string(type) + ", " + std::to_string(size) + ", " + path + ", " + displayName + ", " + albumName;
     }
 };
 

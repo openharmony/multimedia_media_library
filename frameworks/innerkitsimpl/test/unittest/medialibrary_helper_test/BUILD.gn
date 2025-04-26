@@ -21,7 +21,7 @@ group("unittest") {
 }
 
 ohos_unittest("media_library_helper_test") {
-  module_out_path = "media_library/media_library_helper"
+  module_out_path = "media_library/media_library-asset"
 
   include_dirs = [
     "./include",
@@ -32,20 +32,29 @@ ohos_unittest("media_library_helper_test") {
     "${MEDIALIB_UTILS_PATH}/include",
   ]
 
+  cflags = [ "-fno-access-control" ]
+
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/album_asset_test.cpp",
     "./src/dir_asset_test.cpp",
     "./src/fetch_result_test.cpp",
     "./src/file_asset_test.cpp",
+    "./src/media_asset_rdbstore_test.cpp",
+    "./src/media_column_test.cpp",
     "./src/media_file_uri_test.cpp",
     "./src/media_file_utils_test.cpp",
     "./src/media_photo_asset_proxy_test.cpp",
     "./src/media_volume_test.cpp",
+    "./src/medialibrary_kvstore_manager_test.cpp",
+    "./src/medialibrary_kvstore_test.cpp",
+    "./src/medialibrary_kvstore_utils_test.cpp",
     "./src/moving_photo_file_utils_test.cpp",
     "./src/native_album_asset_test.cpp",
     "./src/photo_album_asset_test.cpp",
+    "./src/photo_album_column_test.cpp",
     "./src/photo_file_utils_test.cpp",
+    "./src/photo_query_filter_test.cpp",
     "./src/smart_album_asset_test.cpp",
   ]
 

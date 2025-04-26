@@ -40,7 +40,7 @@ public:
     static int32_t InitReadOnlyRdb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
         const std::string &dbPath, const std::string &bundleName);
     static int32_t QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
-        const std::string &column);
+        const std::string &column, const std::vector<NativeRdb::ValueObject> &args = {});
     static int32_t Update(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &changeRows,
         NativeRdb::ValuesBucket &valuesBucket, std::unique_ptr<NativeRdb::AbsRdbPredicates> &predicates);
     static int32_t Delete(NativeRdb::AbsRdbPredicates &predicates, int32_t &changeRows,
@@ -93,8 +93,6 @@ public:
         const std::vector<NativeRdb::ValueObject> &args = {});
     static void UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::vector<FileIdPair>& fileIdPair);
-    static std::string GetFileIdNewFilterClause(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-        const std::vector<FileIdPair>& fileIdPair);
     static void UpdateFaceAnalysisTblStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void DeleteExistingImageFaceData(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
         const std::vector<FileIdPair>& fileIdPair);
@@ -104,7 +102,7 @@ public:
     static void UpdateGroupTagColumn(const std::vector<TagPairOpt>& updatedPairs,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateFaceGroupTagsUnion(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
-    static void UpdateFaceGroupTagOfDualFrame(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static void UpdateFaceGroupTagOfGallery(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateTagPairs(std::vector<TagPairOpt>& updatedPairs, const std::string& newGroupTag,
         const std::vector<std::string>& tagIds);
     static void UpdateGroupTags(std::vector<TagPairOpt>& updatedPairs,
@@ -112,7 +110,7 @@ public:
     static void UpdateAssociateFileId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::vector<FileInfo> &fileInfos);
     static void BatchUpdatePhotosToLocal(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb,
-        const std::vector<std::string> inColumn);
+        const std::vector<std::string> &inColumn);
     static int32_t BatchInsert(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
         std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
     static std::string CheckDbIntegrity(std::shared_ptr<NativeRdb::RdbStore> rdbStore, int32_t sceneCode,
@@ -141,6 +139,7 @@ private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     static std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static std::string PhotoAlbumNotifyFunc(const std::vector<std::string>& args);
+    static std::string BeginGenerateHighlightThumbnail(const std::vector<std::string>& args);
 };
 
 class RdbCallback : public NativeRdb::RdbOpenCallback {
@@ -229,6 +228,8 @@ std::optional<T> BackupDatabaseUtils::GetOptionalValue(const std::shared_ptr<Nat
         errCode = resultSet->GetDouble(columnIndex, value);
     } else if constexpr (std::is_same_v<T, std::string>) {
         errCode = resultSet->GetString(columnIndex, value);
+    } else if constexpr (std::is_same_v<T, std::vector<uint8_t>>) {
+        errCode = resultSet->GetBlob(columnIndex, value);
     } else {
         static_assert(always_false<T>::value, "Unsupported type for GetOptionalValue");
     }
