@@ -17,6 +17,8 @@
 
 #include "cloud_backup_restore.h"
 
+#include "result_set_utils.h"
+
 namespace OHOS {
 namespace Media {
 bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
@@ -111,20 +113,20 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo.dateTaken));
 }
 
-void CloudBackupRestore::SetSize(const std::unique_ptr<Metadata> &metadata, FileInfo &fileInfo,
+void CloudBackupRestore::SetSize(const std::unique_ptr<Metadata> &data, FileInfo &info,
     NativeRdb::ValuesBucket &value)
 {
     // [basic info]size
     info.fileSize = info.fileSize > 0 ? info.fileSize : data->GetFileSize();
-    value.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
+    value.PutLong(MediaColumn::MEDIA_SIZE, info.fileSize);
 }
 
-void CloudBackupRestore::SetTimeInfo(const std::unique_ptr<Metadata> &metadata, FileInfo &info,
+void CloudBackupRestore::SetTimeInfo(const std::unique_ptr<Metadata> &data, FileInfo &info,
     NativeRdb::ValuesBucket &value)
 {
     // [time info]date_taken, date_modified, date_added
     info.dateTaken = info.dateTaken > 0 ? info.dateTaken : data->GetDateTaken();
-    info.dateModified = info.dateModified > 0 ? info.dateModified : data->GetDateModified();
+    info.dateModified = info.dateModified > 0 ? info.dateModified : data->GetFileDateModified();
     info.firstUpdateTime = info.firstUpdateTime > 0 ? info.firstUpdateTime : info.dateTaken;
 
     value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, info.dateTaken);

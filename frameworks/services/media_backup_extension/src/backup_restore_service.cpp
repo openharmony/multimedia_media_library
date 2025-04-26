@@ -22,6 +22,7 @@
 #include "backup_restore_service.h"
 #include "ffrt_inner.h"
 #include "media_log.h"
+#include "cloud_backup_restore.h"
 #include "clone_restore.h"
 #include "upgrade_restore.h"
 #include "others_clone_restore.h"
