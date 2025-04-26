@@ -119,7 +119,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) AND \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) AND \
             (0 = ? OR media_type = ?) AND \
             (-1 = ? OR 0 = ? AND COALESCE(local_media_id, 0) <> -4 OR 1 = ? AND COALESCE(local_media_id, 0) = -4) AND \
             (-1 = ? OR 0 = ? AND COALESCE(recycleFlag, 0) = 0 OR 1 = ? AND COALESCE(recycleFlag, 0) <> 0) AND \
@@ -260,7 +260,7 @@ private:
             (_size > 0 OR (_size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (storage_id IN (0, 65537) ) \
+            (COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC ;";
 };
 }  // namespace OHOS::Media

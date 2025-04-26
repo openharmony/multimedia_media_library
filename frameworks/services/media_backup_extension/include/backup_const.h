@@ -40,6 +40,7 @@ constexpr int32_t CLONE_RESTORE_ID = 2;
 constexpr int32_t I_PHONE_CLONE_RESTORE = 3;
 constexpr int32_t OTHERS_PHONE_CLONE_RESTORE = 4;
 constexpr int32_t LITE_PHONE_CLONE_RESTORE = 5;
+constexpr int32_t CLOUD_BACKUP_RESTORE_ID = 6;
 constexpr int32_t DEFAULT_RESTORE_ID = -1;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
@@ -645,16 +646,16 @@ const std::string QUERY_GARBAGE_ALBUM = "SELECT type, cache_dir, nick_dir, nick_
 const std::string QUERY_MAX_ID_CAMERA_SCREENSHOT = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND bucket_id IN (-1739773001, 0, 1028075469, 0) AND \
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
+    COALESCE(storage_id, 0) IN (0, 65537) AND _size > 0 "; // only in upgrade external
 
 const std::string QUERY_MAX_ID_OTHERS = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND bucket_id NOT IN (-1739773001, 0, 1028075469, 0) AND \
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
+    COALESCE(storage_id, 0) IN (0, 65537) AND _size > 0 "; // only in upgrade external
 
 const std::string QUERY_MAX_ID_ALL = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
+    COALESCE(storage_id, 0) IN (0, 65537) AND _size > 0 "; // only in upgrade external
 
 const std::string LOCAL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relative_bucket_id IS NULL OR \
     relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) AND _size > 0 \
@@ -666,7 +667,7 @@ const std::string ALL_PHOTOS_WHERE_CLAUSE = "(relative_bucket_id IS NULL OR \
 
 const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY _id ASC ";
 
-const std::string EXCLUDE_SD = " (storage_id IN (0, 65537)) ";
+const std::string EXCLUDE_SD = " COALESCE(storage_id, 0) IN (0, 65537) ";
 
 const std::string DUAL_CLONE_AUDIO_FULL_TABLE = "mediainfo INNER JOIN mediafile ON mediainfo." + AUDIO_DATA +
     " = '/storage/emulated/0'||mediafile.filepath";

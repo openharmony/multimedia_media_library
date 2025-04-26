@@ -1,0 +1,145 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#define MLOG_TAG "MediaLibraryCloudBackupRestore"
+
+#include "cloud_backup_restore.h"
+
+namespace OHOS {
+namespace Media {
+bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    FileInfo &info)
+{
+    // [basic info]display_name, data, media_type, size, title
+    CHECK_AND_RETURN_RET(IsBasicInfoValid(resultSet, info, GALLERY_DB_NAME), false);
+    info.title = GetStringVal(GALLERY_TITLE, resultSet);
+    info.fileIdOld = GetInt32Val(GALLERY_ID, resultSet);
+    info.localMediaId = info.fileIdOld;
+
+    // [album info]source_path, owner_album_id, package_name
+    info.sourcePath = GetStringVal(GALLERY_FILE_DATA, resultSet);
+    info.lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
+    info.lPath = this->photosRestore_.FindlPath(info);
+    info.bundleName = this->photosRestore_.FindBundleName(info);
+    info.packageName = this->photosRestore_.FindPackageName(info);
+
+    // [special type]
+    info.photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
+    info.photoQuality = this->photosRestore_.FindPhotoQuality(info);
+
+    // [time info]date_taken, date_modified, date_added
+    info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
+    info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
+    info.firstUpdateTime = GetInt64Val(EXTERNAL_DATE_ADDED, resultSet) * MSEC_TO_SEC;
+
+    return true;
+}
+
+NativeRdb::ValuesBucket CloudBackupRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
+    int32_t sourceType)
+{
+    NativeRdb::ValuesBucket values;
+    // [basic info]display_name, data, media_type, title
+    values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
+    values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
+    values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
+
+    // [album info]source_path, owner_album_id, package_name
+    values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, this->photosRestore_.FindAlbumId(fileInfo));
+    CHECK_AND_EXECUTE(fileInfo.packageName.empty(),
+        values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, fileInfo.packageName));
+
+    // [special type]
+    values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestore_.FindSubtype(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
+    values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, this->photosRestore_.FindStrongAssociation(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, this->photosRestore_.FindCeAvailable(fileInfo));
+
+    values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
+    return values;
+}
+
+void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
+{
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    SetMetaDataValue(fileInfo, data);
+
+    // [basic info]size
+    SetSize(data, fileInfo, value);
+
+    // [time info]date_taken, date_modified, date_added
+    SetTimeInfo(data, fileInfo, value);
+
+    // [metadata info]
+    value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
+    value.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, data->GetFileExtension());
+    value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
+    value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
+    value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
+    value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
+    value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
+    value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
+    value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
+    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
+    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
+    value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
+    value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
+    value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
+
+    value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, fileInfo.dateTaken));
+    value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, fileInfo.dateTaken));
+    value.PutString(PhotoColumn::PHOTO_DATE_DAY,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo.dateTaken));
+}
+
+void CloudBackupRestore::SetSize(const std::unique_ptr<Metadata> &metadata, FileInfo &fileInfo,
+    NativeRdb::ValuesBucket &value)
+{
+    // [basic info]size
+    info.fileSize = info.fileSize > 0 ? info.fileSize : data->GetFileSize();
+    value.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
+}
+
+void CloudBackupRestore::SetTimeInfo(const std::unique_ptr<Metadata> &metadata, FileInfo &info,
+    NativeRdb::ValuesBucket &value)
+{
+    // [time info]date_taken, date_modified, date_added
+    info.dateTaken = info.dateTaken > 0 ? info.dateTaken : data->GetDateTaken();
+    info.dateModified = info.dateModified > 0 ? info.dateModified : data->GetDateModified();
+    info.firstUpdateTime = info.firstUpdateTime > 0 ? info.firstUpdateTime : info.dateTaken;
+
+    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, info.dateTaken);
+    value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, info.dateModified);
+    value.PutLong(MediaColumn::MEDIA_DATE_ADDED, info.firstUpdateTime);
+}
+
+void CloudBackupRestore::RestoreAnalysisAlbum()
+{
+    return;
+}
+
+void CloudBackupRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType)
+{
+    return;
+}
+} // namespace Media
+} // namespace OHOS

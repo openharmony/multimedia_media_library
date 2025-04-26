@@ -57,7 +57,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_CLOUD_META_QUERY_COUNT = "\
         SELECT COUNT(1) AS count \
@@ -77,7 +77,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE = "\
         SELECT \
@@ -139,7 +139,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC \
         LIMIT ?, ?;";
     const std::string SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE = "\
@@ -200,7 +200,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC \
         LIMIT ?, ?;";
     const std::string SQL_GALLERY_MEDIA_QUERY_NO_NEED_MIGRATE_COUNT = "\
