@@ -798,7 +798,7 @@ void GetIsMeAlbumPredicates(const int32_t value, DataShare::DataSharePredicates 
             return;
         }
         selection = ANALYSIS_ALBUM_TABLE + "." + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) +
-            " GROUP BY " + ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID + " HAVING SUM(CASE WHEN " +
+            " GROUP BY " + ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG + " HAVING SUM(CASE WHEN " +
             PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_FRONT_CAMERA + " = 1 THEN 1 ELSE " +
             " 0 END) > 0 " + " ORDER BY SUM(CASE WHEN " + PhotoColumn::PHOTOS_TABLE + "." +
             PhotoColumn::PHOTO_FRONT_CAMERA + " = 1 THEN 1 ELSE 0 END) DESC ";
