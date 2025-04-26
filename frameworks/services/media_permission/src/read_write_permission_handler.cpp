@@ -175,6 +175,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::INDEX_CONSTRUCTION_STATUS,
         OperationObject::ANALYSIS_ASSET_SD_MAP,
         OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
+        OperationObject::TAB_FACARD_PHOTO,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
@@ -243,7 +244,6 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
         OperationObject::ACTIVE_DEVICE,
         OperationObject::MISCELLANEOUS,
         OperationObject::TAB_OLD_PHOTO,
-        OperationObject::TAB_FACARD_PHOTO,
         OperationObject::CONVERT_PHOTO,
     };
 
