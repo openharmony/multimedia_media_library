@@ -87,10 +87,13 @@ public:
     static void UpdateAnalysisPhotoMapStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static std::vector<std::string> SplitString(const std::string& str, char delimiter);
     static void PrintQuerySql(const std::string& querySql);
-    static bool DeleteDuplicatePortraitAlbum(const std::vector<std::string> &albumNames,
-        const std::vector<std::string> tagIds, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    static int64_t QueryLong(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
+        const std::string &columnName, const std::vector<NativeRdb::ValueObject> &args = {});
+    static int64_t QueryMaxAlbumId(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql,
         const std::vector<NativeRdb::ValueObject> &args = {});
+    static bool DeleteDuplicatePortraitAlbum(int64_t maxAlbumId, const std::vector<std::string> &albumNames,
+        const std::vector<std::string> &tagIds, std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
     static void UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::vector<FileIdPair>& fileIdPair);
     static void UpdateFaceAnalysisTblStatus(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
