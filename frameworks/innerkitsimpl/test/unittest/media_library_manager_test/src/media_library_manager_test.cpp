@@ -37,6 +37,7 @@
 #include "system_ability_definition.h"
 #include "thumbnail_const.h"
 #include "userfilemgr_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS;
@@ -54,7 +55,6 @@ namespace Media {
 const string API_VERSION = "api_version";
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 std::unique_ptr<FileAsset> GetFile(int mediaTypeId);
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 void ClearFile();
 void ClearAllFile();
 void CreateDataHelper(int32_t systemAbilityId);
@@ -73,6 +73,16 @@ uint64_t tokenId = 0;
 int32_t txtIndex = 0;
 int32_t audioIndex = 0;
 int32_t randomNumber = 0;
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+
+struct UriParams {
+    string path;
+    string fileUri;
+    Size size;
+    bool isAstc;
+    DecodeDynamicRange dynamicRange;
+    string user;
+};
 
 static const unsigned char FILE_CONTENT_TXT[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24
@@ -392,7 +402,7 @@ static bool CompareIfArraysEquals(const unsigned char originArray[],
  * @tc.name      : create a test.jpg
  * @tc.desc      : create a image asset to see if error occurs
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_test_001::Start");
     string displayName = "test.jpg";
@@ -415,7 +425,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_001, TestSize.Level0)
  * @tc.desc      : create same name file to see if error occur and
  *               : read image msg to see if equals
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_test_002::Start");
     string displayName = "test2.jpg";
@@ -434,7 +444,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level0)
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
     free(buf);
@@ -447,7 +457,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level0)
  * @tc.desc      : create video file to see if error occur and
  *               : read video msg to see if equals
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_test_003::Start");
     string displayName = "testVideo.mp4";
@@ -465,7 +475,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level0)
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4)), true);
     free(buf);
@@ -477,7 +487,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level0)
  * @tc.name      : create error type asset testVideo.xxx to see if error occurs
  * @tc.desc      : create error type asset to see if error occurs
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_test_004::Start");
     string displayName = "testVideo.xxx";
@@ -493,7 +503,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_004, TestSize.Level0)
  * @tc.desc      : create png image to see if error occur and
  *               : read image msg to see if equals
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_test_005::Start");
     string displayName = "testPNG.png";
@@ -512,7 +522,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_005, TestSize.Level0)
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
-    EXPECT_NE((buf == nullptr), true);
+    ASSERT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
     free(buf);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
@@ -523,7 +533,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_005, TestSize.Level0)
  * @tc.name      : Query astc batch to see if error occurs
  * @tc.desc      : Input uri list to obtain astc bacth
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test_006, TestSize.Level1)
 {
     vector<string> uriBatch;
     vector<vector<uint8_t>> astcBatch;
@@ -556,7 +566,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test_006, Te
  * @tc.name      : Get astc image to see if error occurs
  * @tc.desc      : Input uri to obtain astc
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_test_007, TestSize.Level1)
 {
     string uriStr1 = "file://media/Photo/64/test?oper=thumbnail&width=256&height=256&path=test";
     auto pixelmap1 = mediaLibraryManager->GetAstc(Uri(uriStr1));
@@ -576,7 +586,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_test_007, TestSize
  * @tc.name      : Read video of moving photo to see if error occurs
  * @tc.desc      : Input uri to read video of moving photo
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_008, TestSize.Level1)
 {
     // read invalid uri
     EXPECT_EQ(mediaLibraryManager->ReadMovingPhotoVideo(""), -1);
@@ -597,7 +607,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_008, TestSize.Level0)
     EXPECT_LE(rfd, 0);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_009, TestSize.Level1)
 {
     // read invalid uri
     EXPECT_EQ(mediaLibraryManager->ReadPrivateMovingPhoto(""), -1);
@@ -615,7 +625,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_009, TestSize.Level0)
     mediaLibraryManager->CloseAsset(uri, fd);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 enter");
     auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
@@ -653,7 +663,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 exit");
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_002 enter");
     auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
@@ -666,7 +676,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_002 exit");
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetVideoFd_empty_share, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetVideoFd_empty_share, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GetVideoFd_empty_share enter");
     // empty datashare GetVideoFd will return error
@@ -683,7 +693,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetVideoFd_empty_share, Te
  * WHEN ProtoProxy::GetBurstKey() is xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
  * THEN media_library.db#Photos#burstKey is xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_003 enter");
     auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::BURST, 0, 0);
@@ -729,7 +739,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
  * WHEN ProtoProxy::IsCoverPhoto() is true
  * THEN media_library.db#Photos#burst_cover_level is 1
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 enter");
     auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::BURST, 0, 0);
@@ -768,7 +778,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 exit");
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_NotifyVideoSaveFinished_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_NotifyVideoSaveFinished_test, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_NotifyVideoSaveFinished_test enter");
     auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
@@ -778,7 +788,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_NotifyVideoSaveFinished_te
 }
 
 // Scenario1: Test when uriBatch is empty then GetBatchAstcs returns E_INVALID_URI.
-HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldReturnE, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldReturnE, TestSize.Level1)
 {
     std::vector<std::string> uriBatch;
     std::vector<std::vector<uint8_t>> astcBatch;
@@ -786,21 +796,21 @@ HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldReturnE, TestSize.Level0)
 }
 
 // Scenario2: Test when uriBatch contains ML_URI_OFFSET then GetBatchAstcs calls GetAstcsByOffset.
-HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_001, TestSize.Level1)
 {
     std::vector<std::string> uriBatch = {"/media/ml/uri/offset/1"};
     std::vector<std::vector<uint8_t>> astcBatch;
     EXPECT_EQ(manager.GetBatchAstcs(uriBatch, astcBatch), E_INVALID_URI);
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_002, TestSize.Level1)
 {
     std::vector<std::string> uriBatch = {"/media/ml/uri/offset/1/image?size=100x200"};
     std::vector<std::vector<uint8_t>> astcBatch;
     EXPECT_EQ(manager.GetBatchAstcs(uriBatch, astcBatch), E_INVALID_URI);
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_003, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_003, TestSize.Level1)
 {
     std::vector<std::string> uriBatch = {"/media/ml/uri/offset/1/image?size=32x32"};
     std::vector<std::vector<uint8_t>> astcBatch;
@@ -808,52 +818,52 @@ HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_003, 
 }
 
 // Scenario3: Test when uriBatch does not contain ML_URI_OFFSET then GetBatchAstcs calls GetAstcsBatch.
-HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsBatch_004, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsBatch_004, TestSize.Level1)
 {
     std::vector<std::string> uriBatch = {"/media/ml/uri/1"};
     std::vector<std::vector<uint8_t>> astcBatch;
     EXPECT_EQ(manager.GetBatchAstcs(uriBatch, astcBatch), E_INVALID_URI);
 }
 
-HWTEST_F(MediaLibraryManagerTest, ReadMovingPhotoVideo_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, ReadMovingPhotoVideo_001, TestSize.Level1)
 {
     string uri = "";
     EXPECT_EQ(manager.ReadMovingPhotoVideo(uri), -1);
 }
 
-HWTEST_F(MediaLibraryManagerTest, ReadMovingPhotoVideo_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, ReadMovingPhotoVideo_002, TestSize.Level1)
 {
     string uri = "..;";
     EXPECT_EQ(manager.ReadMovingPhotoVideo(uri), -1);
 }
 
-HWTEST_F(MediaLibraryManagerTest, ReadMovingPhoto_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, ReadMovingPhoto_001, TestSize.Level1)
 {
     string uri = "";
     EXPECT_EQ(manager.ReadPrivateMovingPhoto(uri), -1);
 }
 
-HWTEST_F(MediaLibraryManagerTest, ReadMovingPhoto_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, ReadMovingPhoto_002, TestSize.Level1)
 {
     string uri = "..;";
     EXPECT_EQ(manager.ReadPrivateMovingPhoto(uri), -1);
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_001, TestSize.Level1)
 {
     std::string uri = "";
     std::string result = manager.GetMovingPhotoImageUri(uri);
     EXPECT_EQ(result, "");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_002, TestSize.Level1)
 {
     std::string uri = "mediaLibraryUri";
     std::string result = manager.GetMovingPhotoImageUri(uri);
     EXPECT_EQ(result, uri);
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetUrisByOldUris_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetUrisByOldUris_001, TestSize.Level1)
 {
     std::vector<std::string> uris;
     // test case 1 empty uris will return emty map
@@ -887,7 +897,7 @@ HWTEST_F(MediaLibraryManagerTest, GetUrisByOldUris_001, TestSize.Level0)
     EXPECT_EQ(ret.empty(), false);
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("GetMovingPhotoDateModified_001 enter");
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -917,7 +927,7 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level
     MEDIA_INFO_LOG("GetMovingPhotoDateModified_001 exit");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("GetMovingPhotoDateModified_002 enter");
     int64_t dateModified = mediaLibraryManager->GetMovingPhotoDateModified("");
@@ -936,7 +946,7 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_002, TestSize.Level
  * @tc.name      : grant photo type uri permissions
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_001 enter");
     int64_t srcTokenId = 1;
@@ -966,7 +976,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : grant vidio type uri permissions
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_002 enter");
     int64_t srcTokenId = 1;
@@ -996,7 +1006,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : grant audio type for uri permissions
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_003 enter");
     int64_t srcTokenId = 1;
@@ -1028,7 +1038,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : grant photo 、vidio and audio type mixed uris of permissions
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_004 enter");
     int64_t srcTokenId = 1;
@@ -1085,7 +1095,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : same type but different uri grant different permissions
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_005 enter");
     int64_t srcTokenId = 1;
@@ -1135,7 +1145,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : same type but different uri grant random permissions
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_006 enter");
     int64_t srcTokenId = 1;
@@ -1171,7 +1181,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : grand file type do not match
  * @tc.desc      : check error result
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_007 enter");
     int64_t srcTokenId = 1;
@@ -1194,7 +1204,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : uri number are over size
  * @tc.desc      : check error result
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_008 enter");
     int64_t srcTokenId = 1;
@@ -1214,7 +1224,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : All uris are grant permission and then grant other permissions
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_009 enter");
     int64_t srcTokenId = 1;
@@ -1267,7 +1277,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : All uris are grant rand permission and then grant a same permission type
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_010 enter");
     int64_t srcTokenId = 1;
@@ -1286,14 +1296,16 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
         mediaLibraryExtendManager->GrantPhotoUriPermission(srcTokenId, targetTokenId, Tempuris, permissionType,
             SensitiveType);
     }
+
     permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
     mediaLibraryExtendManager->GrantPhotoUriPermission(srcTokenId, targetTokenId, uris, permissionType, SensitiveType);
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
     QueryUriPermissionTokenIdResult(srcTokenId, targetTokenId, inColumn, TYPE_PHOTOS, queryPhotoResult);
     ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
-        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO));
+        EXPECT_LE(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
     } while (!queryPhotoResult->GoToNextRow());
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_010 exit");
 }
@@ -1303,7 +1315,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : grant uris serial times of permission
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_011 enter");
     int64_t srcTokenId = 1;
@@ -1330,7 +1342,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
     ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
-        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO));
+        EXPECT_LE(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
     } while (!queryPhotoResult->GoToNextRow());
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_011 exit");
 }
@@ -1340,7 +1352,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : uris are mix with all grant permissions
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_012, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_012 enter");
     int64_t srcTokenId = 1;
@@ -1373,12 +1385,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
 
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
-        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO));
+        EXPECT_LE(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
     } while (!queryPhotoResult->GoToNextRow());
 
     do {
         int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPreviliegeResult);
-        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO));
+        EXPECT_LE(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
     } while (!queryPreviliegeResult->GoToNextRow());
 
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_012 exit");
@@ -1389,7 +1401,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : permissionType error
  * @tc.desc      : check error result
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_013, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_013 enter");
     int64_t srcTokenId = 1;
@@ -1420,7 +1432,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : HideSensitiveType Error
  * @tc.desc      : check error result
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_014, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_014 enter");
     int64_t srcTokenId = 1;
@@ -1451,7 +1463,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : Filter not exist photo uri
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_015, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_015 enter");
     int64_t srcTokenId = 1;
@@ -1489,7 +1501,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : Filter not exist audio uri
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_016, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_016 enter");
     int64_t srcTokenId = 1;
@@ -1529,7 +1541,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : Max uri number
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_017, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_017 enter");
     int64_t srcTokenId = 1;
@@ -1564,7 +1576,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
  * @tc.name      : Check only read system permission uri permission results
  * @tc.desc      : Grant system read permission to see CheckPhotoUriPermission results
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_001 enter");
     vector<string> uris;
@@ -1607,7 +1619,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Check has read and wirte system permission uri permission results
  * @tc.desc      : Grant system read and write permission to see CheckPhotoUriPermission results
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_002 enter");
     vector<string> uris;
@@ -1645,7 +1657,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Check no system permission uri permission results
  * @tc.desc      : No system permission and see CheckPhotoUriPermission check results
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_003 enter");
     vector<string> perms;
@@ -1679,7 +1691,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Grant Audio system read permission
  * @tc.desc      : Check uri permission results when has Audio system read permission
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_004 enter");
     vector<string> uris;
@@ -1721,7 +1733,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Grant Audio system write permission
  * @tc.desc      : Check uri permission results when has Audio system wirte permission
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_005 enter");
     vector<string> uris;
@@ -1762,7 +1774,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Grant Audio system read and write permission
  * @tc.desc      : Check uri permission results when has Audio system read and wirte permission
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_006 enter");
     vector<string> uris;
@@ -1804,7 +1816,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Has no system permissions but all uri have grant other permissions
  * @tc.desc      : Check uri permissions results when all uri have grant other permissions
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_007 enter");
     vector<string> perms;
@@ -1826,7 +1838,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
             expectReadResult.push_back(true);
             expectWriteResult.push_back(false);
             expectReadWriteResult.push_back(false);
-        } else if (static_cast<int32_t>(permissionType) == 2) {
+        } else if (static_cast<int32_t>(permissionType) == 1) {
             expectReadResult.push_back(false);
             expectWriteResult.push_back(true);
             expectReadWriteResult.push_back(false);
@@ -1861,7 +1873,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Has no system permissions but part of uri have grant other permissions
  * @tc.desc      : Check uri permissions results when part of have grant other permissions
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_008 enter");
     vector<string> perms;
@@ -1882,7 +1894,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
             expectResult[0].push_back(true);
             expectResult[1].push_back(false);
             expectResult[2].push_back(false);
-        } else if (static_cast<int32_t>(permissionType) == 2) {
+        } else if (static_cast<int32_t>(permissionType) == 1) {
             expectResult[0].push_back(false);
             expectResult[1].push_back(true);
             expectResult[2].push_back(false);
@@ -1916,7 +1928,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Has read system permissions and also uri have grant other permissions
  * @tc.desc      : Check uri permissions results when has system read permission and other permission
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_009 enter");
     vector<string> uris;
@@ -1975,7 +1987,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Has read and write system permissions and also uri have grant other permissions
  * @tc.desc      : Check uri permissions results when has system read and write permission and other permissions
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_010 enter");
     vector<string> uris;
@@ -2019,7 +2031,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : uri numuber are oversize
  * @tc.desc      : check error result
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_011 enter");
     ASSERT_TRUE(tokenId != 0);
@@ -2038,7 +2050,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : file type do not match
  * @tc.desc      : check error result
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_012, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_012 enter");
     ASSERT_TRUE(tokenId != 0);
@@ -2060,7 +2072,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : file check flag do not match
  * @tc.desc      : check error result
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_013, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_013 enter");
     ASSERT_TRUE(tokenId != 0);
@@ -2090,7 +2102,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : grant photo type uri permissions
  * @tc.desc      : check database grant results whether match
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GrantPhotoUriPermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GrantPhotoUriPermission_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryExtendManager_GrantPhotoUriPermission_test_001 enter");
     int src_tokenId = 1;
@@ -2121,7 +2133,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GrantPhotoUriPermiss
  * @tc.name      : HideSensitiveType Error
  * @tc.desc      : check error result
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GrantPhotoUriPermission_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GrantPhotoUriPermission_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryExtendManager_GrantPhotoUriPermission_test_002 enter");
     int src_tokenId = 5;
@@ -2152,7 +2164,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GrantPhotoUriPermiss
  * @tc.name      : Check only read system permission uri permission results
  * @tc.desc      : Grant system read permission to see CheckPhotoUriPermission results
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CheckPhotoUriPermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CheckPhotoUriPermission_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryExtendManager_CheckPhotoUriPermission_test_001 enter");
     vector<string> uris;
@@ -2191,7 +2203,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CheckPhotoUriPermiss
  * @tc.name      : file check flag do not match
  * @tc.desc      : check error result
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CheckPhotoUriPermission_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CheckPhotoUriPermission_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryExtendManager_CheckPhotoUriPermission_test_002 enter");
     ASSERT_TRUE(tokenId != 0);
@@ -2218,7 +2230,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CheckPhotoUriPermiss
  * @tc.name      : cancel permission
  * @tc.desc      : cancel permission success
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CancelPhotoUriPermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CancelPhotoUriPermission_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryExtendManager_CancelPhotoUriPermission_test_001 enter");
     int src_tokenId = 1;
@@ -2245,7 +2257,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CancelPhotoUriPermis
  * @tc.name      : cancel permission
  * @tc.desc      : cancel permission fail
  */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CancelPhotoUriPermission_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CancelPhotoUriPermission_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryExtendManager_CancelPhotoUriPermission_test__002 enter");
     int src_tokenId = 3;
@@ -2256,7 +2268,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CancelPhotoUriPermis
     MEDIA_INFO_LOG("MediaLibraryExtendManager_CancelPhotoUriPermission_test_002 exit");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_001, TestSize.Level1)
 {
     string filePath;
     string file = "/path/to/file";
@@ -2266,7 +2278,7 @@ HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_001, TestSize.Level0)
     EXPECT_EQ(result, E_INVALID_PATH);
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_002, TestSize.Level1)
 {
     string filePath = PRE_PATH_VALUES;
     string file = "/path/to/file";
@@ -2276,7 +2288,7 @@ HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_002, TestSize.Level0)
     EXPECT_EQ(result, E_CHECK_ROOT_DIR_FAIL);
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_001, TestSize.Level1)
 {
     std::string path = "/storage/cloud/";
     Size size;
@@ -2285,7 +2297,7 @@ HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_001, TestSize.Level0)
     EXPECT_EQ(result, "");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_002, TestSize.Level1)
 {
     std::string path = ROOT_MEDIA_DIR;
     Size size;
@@ -2296,7 +2308,7 @@ HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_002, TestSize.Level0)
     EXPECT_EQ(result, ROOT_SANDBOX_DIR + ".thumbs/" + "/LCD.jpg");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_003, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_003, TestSize.Level1)
 {
     std::string path = ROOT_MEDIA_DIR;
     Size size;
@@ -2307,7 +2319,7 @@ HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_003, TestSize.Level0)
     EXPECT_NE(result, ROOT_SANDBOX_DIR + ".thumbs/" + "/LCD.jpg");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_004, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_004, TestSize.Level1)
 {
     std::string path = ROOT_MEDIA_DIR;
     Size size;
@@ -2318,28 +2330,28 @@ HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_004, TestSize.Level0)
     EXPECT_EQ(result, ROOT_SANDBOX_DIR + ".thumbs/" + "/LCD.jpg");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetUriIdPrefix_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetUriIdPrefix_001, TestSize.Level1)
 {
     std::string fileUri = "";
     manager.GetUriIdPrefix(fileUri);
     EXPECT_EQ(fileUri, "");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetUriIdPrefix_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetUriIdPrefix_002, TestSize.Level1)
 {
     std::string fileUri = "/Photo";
     manager.GetUriIdPrefix(fileUri);
     EXPECT_EQ(fileUri, "/Photo");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetUriIdPrefix_003, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetUriIdPrefix_003, TestSize.Level1)
 {
     std::string fileUri = "a/b/Photo";
     manager.GetUriIdPrefix(fileUri);
     EXPECT_EQ(fileUri, "a");
 }
 
-HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_001, TestSize.Level1)
 {
     Size imageSize;
     imageSize.height = 0;
@@ -2349,7 +2361,7 @@ HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_001, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_002, TestSize.Level1)
 {
     Size imageSize;
     imageSize.height = 10;
@@ -2361,7 +2373,7 @@ HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_002, TestSize.Level0)
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_003, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_003, TestSize.Level1)
 {
     Size imageSize;
     imageSize.height = 100;
@@ -2373,21 +2385,21 @@ HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_003, TestSize.Level0)
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryManagerTest, OpenReadOnlyAppSandboxVideo_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, OpenReadOnlyAppSandboxVideo_001, TestSize.Level1)
 {
     string uri;
     auto ret = manager.OpenReadOnlyAppSandboxVideo(uri);
     EXPECT_EQ(ret, -1);
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetSandboxMovingPhotoTime_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, GetSandboxMovingPhotoTime_001, TestSize.Level1)
 {
     string uri;
     auto ret = manager.GetSandboxMovingPhotoTime(uri);
     EXPECT_EQ(ret, -1);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_emptyuris, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_emptyuris, TestSize.Level1)
 {
     string appid = "testApp";
     // empty uris GrantPhotoUriPermission will return E_ERR
@@ -2398,7 +2410,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_em
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_exceedMax, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_exceedMax, TestSize.Level1)
 {
     string appid = "testApp";
     vector<string> uris(URI_SIZE + 1, "testUri");
@@ -2408,7 +2420,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_ex
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_invalid_permission_type, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_invalid_permission_type, TestSize.Level1)
 {
     string appid = "testApp";
     vector<string> uris ={ "testUri" };
@@ -2418,7 +2430,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_in
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_invalid_hide_type, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_invalid_hide_type, TestSize.Level1)
 {
     string appid = "testApp";
     vector<string> uris ={ "testUri" };
@@ -2428,7 +2440,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_in
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_invalid_uris, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_invalid_uris, TestSize.Level1)
 {
     string appid = "testApp";
     vector<string> uris ={ "testUri" };
@@ -2438,7 +2450,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_in
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_normal_uris, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_normal_uris, TestSize.Level1)
 {
     string appid = "testApp";
     vector<string> uris;
@@ -2451,7 +2463,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_no
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_checkinput_failed, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_checkinput_failed, TestSize.Level1)
 {
     uint32_t flag = 1;
     uint32_t tokenId = 1;
@@ -2476,7 +2488,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_ch
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_typeClassify_failed, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_typeClassify_failed, TestSize.Level1)
 {
     uint32_t flag = 1;
     uint32_t tokenId = 1;
@@ -2495,11 +2507,217 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_ty
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_emptyUris, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_emptyUris, TestSize.Level1)
 {
     string uriStr;
     auto pixelMap = mediaLibraryManager->GetAstc(Uri(uriStr));
     EXPECT_EQ(pixelMap, nullptr);
+}
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstcYearAndMonth_test, TestSize.Level1)
+{
+    vector<string> uris;
+    int32_t ret = mediaLibraryManager->GetAstcYearAndMonth(uris);
+    EXPECT_EQ(ret, E_ERR);
+
+    for (int i = 0; i < 5; i++) {
+        uris.push_back(CreatePhotoAsset("test.mp4"));
+    }
+    ret = ret = mediaLibraryManager->GetAstcYearAndMonth(uris);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_ReadPrivateMovingPhoto_test, TestSize.Level1)
+{
+    EXPECT_NE(mediaLibraryExtendManager, nullptr);
+    string uri = "test";
+    EXPECT_EQ(mediaLibraryExtendManager->ReadPrivateMovingPhoto(uri, HideSensitiveType::ALL_DESENSITIZE), E_ERR);
+    uri = "../test/test.txt";
+    EXPECT_EQ(mediaLibraryExtendManager->ReadPrivateMovingPhoto(uri, HideSensitiveType::ALL_DESENSITIZE), E_ERR);
+    uri = CreatePhotoAsset("test.mp4");
+    EXPECT_EQ(mediaLibraryExtendManager->ReadPrivateMovingPhoto(uri, HideSensitiveType::ALL_DESENSITIZE), E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test, TestSize.Level1)
+{
+    EXPECT_NE(mediaLibraryExtendManager, nullptr);
+    string columnName = "file_id";
+    string value = "1";
+    vector<string> columns;
+    EXPECT_NE(mediaLibraryExtendManager->GetResultSetFromDb(columnName, value, columns), nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_InitMediaLibraryManager_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    int32_t ret = 0;
+    string uri = "file://media-test_value";
+    string openMode = "test_value";
+    mediaLibraryManager->InitMediaLibraryManager();
+    ret = mediaLibraryManager->OpenAsset(uri, openMode);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstcYearAndMonth_test_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    std::vector<string> uris;
+    int32_t ret;
+    for (int i = 0; i < 5; i++) {
+        uris.push_back(CreatePhotoAsset("test.mp4"));
+    }
+    ret = mediaLibraryManager->GetAstcYearAndMonth(uris);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryTotalSize_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    int32_t ret;
+    MediaVolume outMediaVolume;
+    ret = mediaLibraryManager->QueryTotalSize(outMediaVolume);
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    std::string columnName = MEDIA_DATA_DB_URI;
+    std::string value = "test";
+    std::vector<string> columns;
+    std::shared_ptr<DataShare::DataShareResultSet> res =
+        mediaLibraryManager->GetResultSetFromDb(columnName, value, columns);
+    EXPECT_EQ(res, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_003, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    std::shared_ptr<DataShareResultSet> ptr = nullptr;
+    std::string columnName = "file_id_test";
+    std::string value = "test";
+    std::vector<string> columns;
+    ptr = mediaLibraryManager->GetResultSetFromDb(columnName, value, columns);
+    EXPECT_NE(ptr, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    std::shared_ptr<DataShareResultSet> resultSet = nullptr;
+    int32_t ret;
+    ret = mediaLibraryManager->CheckResultSet(resultSet);
+    EXPECT_NE(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    vector<string> columns;
+    DataSharePredicates predicates;
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(g_albumMediaType);
+    predicates.SetWhereClause(prefix);
+    Uri queryFileUri(MEDIALIBRARY_DATA_URI);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    ASSERT_NE(sDataShareHelper_, nullptr);
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+    int32_t ret;
+    ret = mediaLibraryManager->CheckResultSet(resultSet);
+    EXPECT_EQ(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    string file = "/path/to/file";
+    Uri fileUri(file);
+    string filePath = "/path/to/testfile";
+    string userId = "100";
+    int32_t ret;
+    ret = mediaLibraryManager->GetFilePathFromUri(fileUri, filePath, userId);
+    EXPECT_NE(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test_002, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    string file = "/path/to/file";
+    Uri fileUri(file);
+    string filePath = "/path/to/testfile";
+    string userId = "100";
+    int32_t ret;
+#define MEDIALIBRARY_COMPATIBILITY
+    ret = mediaLibraryManager->GetFilePathFromUri(fileUri, filePath, userId);
+#undef MEDIALIBRARY_COMPATIBILITY
+    EXPECT_NE(ret, E_SUCCESS);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_OpenThumbnail_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    string uristr = URI_QUERY_PHOTO;
+    string filePath = "/path/to/testfile";
+    Size size;
+    bool isAstc = true;
+    int ret;
+    ret = MediaLibraryManager::OpenThumbnail(uristr, filePath, size, isAstc);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeThumbnail_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    UniqueFd uniqueFd;
+    Size size;
+    DecodeDynamicRange dynamicRange = DecodeDynamicRange::SDR;
+    std::unique_ptr<PixelMap> ret = nullptr;
+    ret = MediaLibraryManager::DecodeThumbnail(uniqueFd, size, dynamicRange);
+    EXPECT_EQ(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryThumbnail_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    UriParams params;
+    params.path = "/path/to/testfile";
+    params.fileUri = "/Photo";
+    params.isAstc = true;
+    std::unique_ptr<PixelMap> ret = nullptr;
+    ret = MediaLibraryManager::QueryThumbnail(params);
+    EXPECT_EQ(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetThumbnail_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    string file = "/path/to/file";
+    Uri fileUri(file);
+    std::unique_ptr<PixelMap> ret = nullptr;
+    ret = mediaLibraryManager->GetThumbnail(fileUri);
+    EXPECT_EQ(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    vector<string> uriBatch;
+    vector<vector<uint8_t>> astcBatch;
+    string beginUri =
+        "file://media/Photo/64/IMG_063/IMG_11311.jpg?oper=astc&width=256&height=256&time_id=00000001";
+    uriBatch.push_back(beginUri);
+    uriBatch.push_back("/media/ml/uri/offset/1");
+    uriBatch.push_back("&offset=");
+    int32_t ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
+    EXPECT_EQ(ret, E_INVALID_URI);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeAstc_test, TestSize.Level0)
+{
+    ASSERT_NE(mediaLibraryManager, nullptr);
+    UniqueFd uniqueFd;
+    unique_ptr<PixelMap> ret = nullptr;
+    ret = MediaLibraryManager::DecodeAstc(uniqueFd);
+    EXPECT_EQ(ret, nullptr);
 }
 } // namespace Media
 } // namespace OHOS

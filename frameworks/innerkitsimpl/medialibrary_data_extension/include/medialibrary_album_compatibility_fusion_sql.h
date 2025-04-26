@@ -26,16 +26,16 @@ namespace Media {
 const std::string CREATE_TEMP_UPGRADE_PHOTO_MAP_TABLE =
     "CREATE TABLE IF NOT EXISTS temp_upgrade_photo_map AS SELECT MIN(map_album) AS map_album, map_asset FROM PhotoMap "
     "INNER JOIN Photos ON PhotoMap.map_asset=Photos.file_id where COALESCE(owner_album_id, 0) = 0 GROUP BY map_asset;";
-
+ 
 const std::string QUERY_MATCHED_COUNT =
     "SELECT COUNT(1) from temp_upgrade_photo_map";
-
+ 
 const std::string QUERY_SUCCESS_MATCHED_COUNT =
     "SELECT COUNT(1) from Photos where owner_album_id != 0";
 
 const std::string CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_MAP_ASSET =
     "CREATE INDEX IF NOT EXISTS unique_temp_upgrade_index_on_map_asset ON temp_upgrade_photo_map (map_asset);";
-
+ 
 const std::string CREATE_UNIQUE_TEMP_UPGRADE_INDEX_ON_PHOTO_MAP =
     "CREATE UNIQUE INDEX IF NOT EXISTS unique_temp_upgrade_index_on_photo_map ON "
     "temp_upgrade_photo_map (map_album, map_asset);";
@@ -66,22 +66,6 @@ const std::string DELETE_MATCHED_RELATIONSHIP_IN_PHOTOMAP_SQL =
 
 const std::string DROP_TEMP_UPGRADE_PHOTO_MAP_TABLE =
     "DROP TABLE IF EXISTS temp_upgrade_photo_map;";
-
-const std::string FILL_ALBUM_ID_FOR_PHOTOS =
-    "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_OWNER_ALBUM_ID + " = " +
-    "(SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
-    " WHERE (" + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
-    " OR bundle_name = NEW.owner_package) AND " +
-    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
-    PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
-    " AND dirty != 4 ORDER BY priority DESC LIMIT 1) WHERE file_id = new.file_id AND new.owner_album_id = 0";
-
-const std::string PHOTO_ALBUM_NOTIFY_FUNC =
-    "SELECT photo_album_notify_func((SELECT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
-    " FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE " + MediaColumn::MEDIA_ID + " = NEW." + MediaColumn::MEDIA_ID + "));";
-
-const std::string CREATE_INSERT_SOURCE_PHOTO_CREATE_SOURCE_ALBUM_TRIGGER = SOURCE_ALBUM_SQL;
 
 const std::string QUERY_NOT_MATCHED_DATA_IN_PHOTOMAP_BY_PAGE =
     "SELECT " + PhotoMap::ASSET_ID + ", " + PhotoMap::ALBUM_ID + " FROM " + PhotoMap::TABLE +

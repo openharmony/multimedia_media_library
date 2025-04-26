@@ -53,7 +53,7 @@ public:
         bool discardable = false);
     bool IsHighQualityPhotoExist(const std::string &uri);
     void DealHighQualityPicture(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
-        bool isEdited = false);
+        bool isEdited = false, bool isTakeEffect = false);
     void DealLowQualityPicture(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
         bool isEdited = false);
     void SaveLowQualityImageInfo(MediaLibraryCommand &cmd);

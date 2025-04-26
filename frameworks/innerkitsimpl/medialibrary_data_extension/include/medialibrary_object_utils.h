@@ -27,6 +27,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "native_album_asset.h"
+#include "picture.h"
 #include "rdb_utils.h"
 #include "uri.h"
 #include "value_object.h"
@@ -53,7 +54,8 @@ public:
         const std::string &dstDirPath);
     EXPORT static int32_t OpenFile(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT static int32_t CloseFile(MediaLibraryCommand &cmd);
-    static void ScanFileAsync(const std::string &path, const std::string &id, MediaLibraryApi api);
+    EXPORT static void ScanFileAsync(const std::string &path, const std::string &id, MediaLibraryApi api,
+        bool isCameraShotMovingPhoto = false, std::shared_ptr<Media::Picture> resultPicture = nullptr);
     static void ScanFileSyncWithoutAlbumUpdate(const std::string &path, const std::string &id, MediaLibraryApi api);
     EXPORT static int32_t GetIdByPathFromDb(const std::string &path);
     static std::string GetPathByIdFromDb(const std::string &id, const bool isDelete = false);
@@ -83,7 +85,7 @@ public:
     EXPORT static void GetDefaultRelativePath(const int32_t mediaType, string &relativePath);
     static void InvalidateThumbnail(const string &id, const string &tableName = MEDIALIBRARY_TABLE,
         const string &path = "");
-    static void UpdateAnalysisProp(const std::string str);
+    static void TryUpdateAnalysisProp(const std::string str);
 
 private:
     static int32_t DeleteEmptyDirsRecursively(int32_t dirId);

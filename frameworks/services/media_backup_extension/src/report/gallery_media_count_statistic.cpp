@@ -24,10 +24,7 @@
 namespace OHOS::Media {
 std::vector<AlbumMediaStatisticInfo> GalleryMediaCountStatistic::Load()
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
-        return {};
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, {}, "galleryRdb_ is nullptr, Maybe init failed.");
     std::vector<AlbumMediaStatisticInfo> infoList = {
         // data-transfer statistic info.
         this->GetAllStatInfo(),
@@ -40,6 +37,7 @@ std::vector<AlbumMediaStatisticInfo> GalleryMediaCountStatistic::Load()
         this->GetSdCardStatInfo(),
         this->GetDuplicateStatInfo(),
         this->GetAppTwinStatInfo(),
+        this->GetOnlyHDCInfo(),
         this->GetLiveStatInfo(),
         this->GetTempInfo(),
         this->GetNotSyncInfo(),
@@ -79,10 +77,7 @@ int32_t GalleryMediaCountStatistic::GetCount(const std::string &query)
 
 int32_t GalleryMediaCountStatistic::QueryGalleryAllCount(SearchCondition searchCondition)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     int32_t mediaType = searchCondition.GetMediaType();
     int32_t hiddenType = searchCondition.GetHiddenType();
     int32_t trashedType = searchCondition.GetTrashedType();
@@ -107,18 +102,13 @@ int32_t GalleryMediaCountStatistic::QueryGalleryAllCount(SearchCondition searchC
         burstType,
         burstType};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_ALL_GALLERY_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
     return GetInt32Val("count", resultSet);
 }
 
 int32_t GalleryMediaCountStatistic::QueryAlbumGalleryCount(SearchCondition searchCondition)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     int32_t mediaType = searchCondition.GetMediaType();
     int32_t hiddenType = searchCondition.GetHiddenType();
     int32_t trashedType = searchCondition.GetTrashedType();
@@ -143,9 +133,7 @@ int32_t GalleryMediaCountStatistic::QueryAlbumGalleryCount(SearchCondition searc
         burstType,
         burstType};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_ALBUM_GALLERY_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -155,10 +143,7 @@ int32_t GalleryMediaCountStatistic::QueryAlbumGalleryCount(SearchCondition searc
  */
 int32_t GalleryMediaCountStatistic::GetGalleryMediaAllRestoreCount(SearchCondition searchCondition)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     int32_t mediaType = searchCondition.GetMediaType();
     int32_t hiddenType = searchCondition.GetHiddenType();
     int32_t trashedType = searchCondition.GetTrashedType();
@@ -188,9 +173,7 @@ int32_t GalleryMediaCountStatistic::GetGalleryMediaAllRestoreCount(SearchConditi
         burstType,
         burstType};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -209,10 +192,7 @@ int32_t GalleryMediaCountStatistic::QueryGalleryCloneCount()
  */
 int32_t GalleryMediaCountStatistic::QueryGallerySdCardCount(SearchCondition searchCondition)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     int32_t mediaType = searchCondition.GetMediaType();
     int32_t hiddenType = searchCondition.GetHiddenType();
     int32_t trashedType = searchCondition.GetTrashedType();
@@ -237,9 +217,7 @@ int32_t GalleryMediaCountStatistic::QueryGallerySdCardCount(SearchCondition sear
         burstType,
         burstType};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_GALLERY_SD_CARD_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -250,10 +228,7 @@ int32_t GalleryMediaCountStatistic::QueryGallerySdCardCount(SearchCondition sear
  */
 int32_t GalleryMediaCountStatistic::QueryAlbumAllVideoCount(SearchCondition searchCondition)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     int32_t mediaType = searchCondition.GetMediaType();
     int32_t hiddenType = searchCondition.GetHiddenType();
     int32_t trashedType = searchCondition.GetTrashedType();
@@ -278,9 +253,7 @@ int32_t GalleryMediaCountStatistic::QueryAlbumAllVideoCount(SearchCondition sear
         burstType,
         burstType};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_GALLERY_MEDIA_ALL_VIDEO_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -291,15 +264,10 @@ int32_t GalleryMediaCountStatistic::QueryAlbumAllVideoCount(SearchCondition sear
  */
 int32_t GalleryMediaCountStatistic::QueryLiveCount(int32_t searchType, int32_t mediaType)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     std::vector<NativeRdb::ValueObject> params = {searchType, mediaType, mediaType};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_LIVE_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -310,15 +278,10 @@ int32_t GalleryMediaCountStatistic::QueryLiveCount(int32_t searchType, int32_t m
  */
 int32_t GalleryMediaCountStatistic::QueryTempCount(int32_t searchType, int32_t mediaType)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return 0;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, 0, "Media_Restore: galleryRdb_ is null.");
     std::vector<NativeRdb::ValueObject> params = {searchType, mediaType, mediaType};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_TEMP_COUNT, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return 0;
-    }
+    CHECK_AND_RETURN_RET((resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK), 0);
     return GetInt32Val("count", resultSet);
 }
 
@@ -330,10 +293,7 @@ int32_t GalleryMediaCountStatistic::QueryTempCount(int32_t searchType, int32_t m
 std::vector<AlbumStatisticInfo> GalleryMediaCountStatistic::QueryAlbumCountByName(
     const std::string &albumName, SearchCondition searchCondition)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return {};
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, {}, "Media_Restore: galleryRdb_ is null.");
     int32_t mediaType = searchCondition.GetMediaType();
     int32_t hiddenType = searchCondition.GetHiddenType();
     int32_t trashedType = searchCondition.GetTrashedType();
@@ -359,9 +319,7 @@ std::vector<AlbumStatisticInfo> GalleryMediaCountStatistic::QueryAlbumCountByNam
         burstType,
         burstType};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_ALBUM_COUNT_BY_NAME, params);
-    if (resultSet == nullptr) {
-        return {};
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, {});
     std::vector<AlbumStatisticInfo> infoList;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         AlbumStatisticInfo info;
@@ -381,10 +339,7 @@ std::vector<AlbumStatisticInfo> GalleryMediaCountStatistic::QueryAlbumCountByNam
 std::vector<AlbumStatisticInfo> GalleryMediaCountStatistic::QueryAlbumCountByLPath(
     const std::string &lPath, SearchCondition searchCondition)
 {
-    if (this->galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: galleryRdb_ is null.");
-        return {};
-    }
+    CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, {}, "Media_Restore: galleryRdb_ is null.");
     int32_t mediaType = searchCondition.GetMediaType();
     int32_t hiddenType = searchCondition.GetHiddenType();
     int32_t trashedType = searchCondition.GetTrashedType();
@@ -410,9 +365,7 @@ std::vector<AlbumStatisticInfo> GalleryMediaCountStatistic::QueryAlbumCountByLPa
         burstType,
         burstType};
     auto resultSet = this->galleryRdb_->QuerySql(this->SQL_QUERY_ALBUM_COUNT_BY_LPATH, params);
-    if (resultSet == nullptr) {
-        return {};
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, {});
     std::vector<AlbumStatisticInfo> infoList;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         AlbumStatisticInfo info;
@@ -440,6 +393,11 @@ int32_t GalleryMediaCountStatistic::QueryGalleryAppTwinDataCount()
         "SELECT count(1) AS count FROM gallery_media WHERE _data LIKE '/storage/emulated/%' AND "
         "CAST (substr(_data, length('/storage/emulated/') + 1, 3) AS INTEGER) BETWEEN 128 AND 147 AND _size > 0";
     return BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
+}
+
+int32_t GalleryMediaCountStatistic::QueryGalleryOnlyHDCDataCount()
+{
+    return BackupDatabaseUtils::QueryInt(galleryRdb_, SQL_ONLY_HDC_META_QUERY_COUNT, CUSTOM_COUNT);
 }
 
 AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetAllStatInfo()
@@ -735,6 +693,31 @@ AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetAppTwinStatInfo()
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
     std::string albumName = "APP_TWIN";
+    std::string lPath = "";
+    int32_t period = 0;  // 0 - BEFORE, 1 - AFTER
+    int32_t dbType = 0;  // 0 - GALLERY, 1 - MEDIA
+    info.albumName = AlbumNameInfo()
+                         .SetAlbumName(albumName)
+                         .SetLPath(lPath)
+                         .SetCostTime(costTime)
+                         .SetPeriod(period)
+                         .SetDbType(dbType)
+                         .ToString();
+    return info;
+}
+
+AlbumMediaStatisticInfo GalleryMediaCountStatistic::GetOnlyHDCInfo()
+{
+    AlbumMediaStatisticInfo info;
+    info.sceneCode = this->sceneCode_;
+    info.taskId = this->taskId_;
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    // build the statistic info.
+    info.totalCount = this->QueryGalleryOnlyHDCDataCount();
+    // build the album name.
+    int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t costTime = endTime - startTime;
+    std::string albumName = "ONLY_HDC";
     std::string lPath = "";
     int32_t period = 0;  // 0 - BEFORE, 1 - AFTER
     int32_t dbType = 0;  // 0 - GALLERY, 1 - MEDIA

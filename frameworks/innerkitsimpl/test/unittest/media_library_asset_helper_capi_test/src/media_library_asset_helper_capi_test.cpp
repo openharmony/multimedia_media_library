@@ -51,7 +51,6 @@ using namespace OHOS::AppExecFwk;
 
 namespace OHOS {
 namespace Media {
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 void ClearAllFile();
 void CreateDataHelper(int32_t systemAbilityId);
@@ -104,7 +103,6 @@ void MediaLibraryAssetHelperCapiTest::TearDownTestCase(void)
     sleep(CLEAN_TIME);
     ClearAllFile();
     MEDIA_INFO_LOG("TearDownTestCase end");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryAssetHelperCapiTest::SetUp(void)
@@ -174,7 +172,7 @@ void SetFileAssetInfo(shared_ptr<FileAsset> fileAsset, int32_t id, int32_t photo
  * @tc.desc: OH_MediaAssetChangeRequest_Create entry parameter is MEDIA_TYPE_IMAGE
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_001, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -193,7 +191,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_001, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_Create entry parameter is MEDIA_TYPE_VIDEO
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_002, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -212,7 +210,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_002, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_Create entry parameter is TYPE_MEDIALIBRARY
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_003, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_MEDIALIBRARY);
@@ -230,7 +228,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_003, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_AddResourceWithBuffer resourceType is MEDIA_LIBRARY_IMAGE_RESOURCE
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_004, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     MediaLibrary_ResourceType resourceType = MediaLibrary_ResourceType::MEDIA_LIBRARY_IMAGE_RESOURCE;
@@ -256,7 +254,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_004, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_AddResourceWithBuffer length is zero
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_005, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     MediaLibrary_ResourceType resourceType = MediaLibrary_ResourceType::MEDIA_LIBRARY_IMAGE_RESOURCE;
@@ -282,7 +280,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_005, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_AddResourceWithBuffer GetPhotoSubType is CAMERA
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_006, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     MediaLibrary_ResourceType resourceType = MediaLibrary_ResourceType::MEDIA_LIBRARY_IMAGE_RESOURCE;
@@ -308,7 +306,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_006, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_AddResourceWithBuffer resourceType is MEDIA_LIBRARY_VIDEO_RESOURCE
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_007, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     MediaLibrary_ResourceType resourceType = MediaLibrary_ResourceType::MEDIA_LIBRARY_VIDEO_RESOURCE;
@@ -338,7 +336,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_007, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto imageFileType is SET_EDIT_DATA
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_008, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -363,7 +361,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_008, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto changeOperation is ADD_FILTERS
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_009, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -390,7 +388,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_009, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto changeOperation is CREATE_FROM_SCRATCH
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_010, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_010, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -417,7 +415,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_010, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto changeOperation is GET_WRITE_CACHE_HANDLER
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_011, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_011, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -444,7 +442,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_011, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto changeOperation is ADD_RESOURCE
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_012, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_012, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -471,7 +469,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_012, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_DiscardCameraPhoto changeOperation is SET_EDIT_DATA
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_013, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_013, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -497,7 +495,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_013, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_DiscardCameraPhoto changeOperation is ADD_FILTERS
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_014, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_014, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -523,7 +521,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_014, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_DiscardCameraPhoto changeOperation is CREATE_FROM_SCRATCH
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_015, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_015, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -549,7 +547,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_015, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_DiscardCameraPhoto changeOperation is GET_WRITE_CACHE_HANDLER
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_016, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_016, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -575,7 +573,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_016, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_DiscardCameraPhoto changeOperation is ADD_RESOURCE
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_017, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_017, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -601,7 +599,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_017, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_DiscardCameraPhoto changeRequest is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_018, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_018, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_MEDIALIBRARY);
@@ -624,7 +622,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_018, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeRequest is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_019, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_019, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_MEDIALIBRARY);
@@ -645,7 +643,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_019, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is CREATE_FROM_SCRATCH
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_020, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_020, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -669,7 +667,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_020, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is SET_EDIT_DATA
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_021, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_021, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -693,7 +691,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_021, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is CREATE_FROM_URI
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_022, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_022, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
@@ -717,7 +715,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_022, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_GetWriteCacheHandler changeOperation is GET_WRITE_CACHE_HANDLER
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_023, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_023, TestSize.Level1)
 {
     string srcDisplayName = "request_image_src.jpg";
     string destDisplayName = "request_image_dest.jpg";
@@ -759,7 +757,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_023, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_AddResourceWithUri resourceType is MEDIA_LIBRARY_VIDEO_RESOURCE
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_024, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_024, TestSize.Level1)
 {
     string srcDisplayName = "request_image_src.jpg";
     string destDisplayName = "request_image_dest.jpg";
@@ -795,7 +793,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_024, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_AddResourceWithUri resourceType is MEDIA_LIBRARY_IMAGE_RESOURCE
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_025, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_025, TestSize.Level1)
 {
     string srcDisplayName = "request_image_src.jpg";
     string destDisplayName = "request_image_dest.jpg";
@@ -831,7 +829,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_025, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_AddResourceWithUri invalid file type
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_026, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_026, TestSize.Level1)
 {
     string srcDisplayName = "request_image_src.jpg";
     string destDisplayName = "request_image_dest.jpg";
@@ -872,7 +870,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_026, TestSize.
  * @tc.desc: OH_MediaAssetChangeRequest_AddResourceWithUri GetPhotoSubType is CAMERA
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_027, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_027, TestSize.Level1)
 {
     string srcDisplayName = "request_image_src.jpg";
     string destDisplayName = "request_image_dest.jpg";
@@ -908,7 +906,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_027, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is ADD_RESOURCE
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_028, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_028, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetId(DEFAULT_ID);
@@ -933,7 +931,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_028, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is GET_WRITE_CACHE_HANDLER
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_029, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_029, TestSize.Level1)
 {
     string displayName = "image_test.jpg";
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
@@ -959,7 +957,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_029, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is ADD_RESOURCE and SAVE_CAMERA_PHOTO
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_030, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_030, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetId(DEFAULT_ID);
@@ -986,7 +984,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_030, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is ADD_RESOURCE return MEDIA_LIBRARY_PARAMETER_ERROR
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_031, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_031, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     fileAsset->SetId(DEFAULT_ID);
@@ -1011,7 +1009,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_031, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is CAMERA
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_032, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_032, TestSize.Level1)
 {
     vector<string> perms;
     perms.push_back("ohos.permission.MEDIA_LOCATION");
@@ -1041,7 +1039,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_032, TestSize.
  * @tc.desc: OH_MediaAccessHelper_ApplyChanges changeOperation is ADD_RESOURCE and CREATE_FROM_URI
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_033, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_033, TestSize.Level1)
 {
     vector<string> perms;
     perms.push_back("ohos.permission.MEDIA_LOCATION");
@@ -1073,7 +1071,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_033, TestSize.
  * @tc.desc: test OH_MediaAssetChangeRequest_Release when movingPhotoVideoDataBuffer_ is not empty
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_034, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_034, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     SetFileAssetInfo(fileAsset, DEFAULT_ID, static_cast<int32_t>(PhotoSubType::CAMERA), OHOS::Media::MEDIA_TYPE_IMAGE);
@@ -1095,7 +1093,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_034, TestSize.
  *           OH_MediaAssetChangeRequest_AddResourceWithBuffer, return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_035, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_035, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     SetFileAssetInfo(fileAsset, DEFAULT_ID, static_cast<int32_t>(PhotoSubType::CAMERA), OHOS::Media::MEDIA_TYPE_IMAGE);
@@ -1124,7 +1122,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_035, TestSize.
  *           return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_036, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_036, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     SetFileAssetInfo(fileAsset, DEFAULT_ID, static_cast<int32_t>(PhotoSubType::CAMERA), OHOS::Media::MEDIA_TYPE_IMAGE);
@@ -1151,7 +1149,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_036, TestSize.
  *           OH_MediaAssetChangeRequest_AddResourceWithBuffer, return MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_037, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_037, TestSize.Level1)
 {
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
     SetFileAssetInfo(fileAsset, DEFAULT_ID, static_cast<int32_t>(PhotoSubType::CAMERA), OHOS::Media::MEDIA_TYPE_IMAGE);
@@ -1179,7 +1177,7 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_037, TestSize.
  *           MEDIA_LIBRARY_OPERATION_NOT_SUPPORTED
  * @tc.type: FUNC
  */
-HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_038, TestSize.Level0)
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_038, TestSize.Level1)
 {
     string srcDisplayName = "request_image_src.jpg";
     std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
@@ -1200,6 +1198,144 @@ HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_038, TestSize.
 
     EXPECT_EQ(OH_MediaAsset_Release(mediaAsset), MEDIA_LIBRARY_OK);
     EXPECT_EQ(OH_MediaAssetChangeRequest_Release(changeRequest), MEDIA_LIBRARY_OK);
+}
+
+/**
+ * @tc.name: media_library_capi_test_039
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto imageFileType is MEDIA_LIBRARY_FILE_VIDEO,
+ *           changeOperation is SET_EDIT_DATA
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_039, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_FILE_VIDEO;
+    AssetChangeOperation changeOperation = AssetChangeOperation::SET_EDIT_DATA;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_040
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto imageFileType is MEDIA_LIBRARY_FILE_VIDEO,
+ *           changeOperation is ADD_FILTERS
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_040, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_FILE_VIDEO;
+    AssetChangeOperation changeOperation = AssetChangeOperation::ADD_FILTERS;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_041
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto imageFileType is MEDIA_LIBRARY_FILE_VIDEO,
+ *           changeOperation is CREATE_FROM_SCRATCH
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_041, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_FILE_VIDEO;
+    AssetChangeOperation changeOperation = AssetChangeOperation::CREATE_FROM_SCRATCH;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_042
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto imageFileType is MEDIA_LIBRARY_FILE_VIDEO,
+ *           changeOperation is GET_WRITE_CACHE_HANDLER
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_042, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_FILE_VIDEO;
+    AssetChangeOperation changeOperation = AssetChangeOperation::GET_WRITE_CACHE_HANDLER;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
+}
+
+/**
+ * @tc.name: media_library_capi_test_043
+ * @tc.desc: OH_MediaAssetChangeRequest_SaveCameraPhoto imageFileType is MEDIA_LIBRARY_FILE_VIDEO,
+ *           changeOperation is ADD_RESOURCE
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaLibraryAssetHelperCapiTest, media_library_capi_test_043, TestSize.Level0)
+{
+    std::shared_ptr<FileAsset> fileAsset = std::make_shared<FileAsset>();
+    fileAsset->SetResultNapiType(OHOS::Media::ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetMediaType(OHOS::Media::MEDIA_TYPE_IMAGE);
+    auto mediaAssetImpl = MediaAssetFactory::CreateMediaAsset(fileAsset);
+    auto* mediaAsset = new OH_MediaAsset(mediaAssetImpl);
+    auto changeRequest = OH_MediaAssetChangeRequest_Create(mediaAsset);
+    ASSERT_NE(changeRequest, nullptr);
+
+    MediaLibrary_ImageFileType imageFileType = MEDIA_LIBRARY_FILE_VIDEO;
+    AssetChangeOperation changeOperation = AssetChangeOperation::ADD_RESOURCE;
+    changeRequest->request_->RecordChangeOperation(changeOperation);
+    uint32_t result = OH_MediaAssetChangeRequest_SaveCameraPhoto(changeRequest, imageFileType);
+    EXPECT_EQ(result, MEDIA_LIBRARY_OK);
+    uint32_t resultChange = OH_MediaAccessHelper_ApplyChanges(changeRequest);
+    EXPECT_EQ(resultChange, MEDIA_LIBRARY_PARAMETER_ERROR);
+
+    OH_MediaAsset_Release(mediaAsset);
+    OH_MediaAssetChangeRequest_Release(changeRequest);
 }
 } // namespace Media
 } // namespace OHOS

@@ -190,6 +190,9 @@ const std::string CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER =
 const std::string IDX_FILEID_FOR_SEARCH_INDEX = "idx_fileid_for_search_index";
 const std::string CREATE_IDX_FILEID_FOR_SEARCH_INDEX = "CREATE INDEX IF NOT EXISTS " +
     IDX_FILEID_FOR_SEARCH_INDEX + " ON " + SEARCH_TOTAL_TABLE + " ( file_id );";
+
+const std::string CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX = "CREATE INDEX IF NOT EXISTS idx_photo_status_for_search_index"
+    " ON " + SEARCH_TOTAL_TABLE + "(" + TBL_SEARCH_PHOTO_STATUS + ")";
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIALIBRARY_SEARCH_COLUMN_H

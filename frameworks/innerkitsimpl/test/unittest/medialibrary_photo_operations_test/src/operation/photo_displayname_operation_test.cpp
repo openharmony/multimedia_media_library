@@ -47,7 +47,7 @@ void PhotoDisplayNameOperationTest::TearDown(void)
     MEDIA_INFO_LOG("TearDown");
 }
 
-HWTEST_F(PhotoDisplayNameOperationTest, rdbstore_nullptr, TestSize.Level0)
+HWTEST_F(PhotoDisplayNameOperationTest, rdbstore_nullptr, TestSize.Level1)
 {
     PhotoAssetInfo photoAssetInfo;
     // Pattern: IMG_3025.jpg

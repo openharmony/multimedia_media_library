@@ -24,14 +24,14 @@
 
 namespace OHOS {
 namespace Media {
-
+#define EXPORT __attribute__ ((visibility ("default")))
 struct CloudSyncNotifyInfo {
     std::list<Uri> uris;
     DataShare::DataShareObserver::ChangeType type;
     const void* data;
 };
 
-class CloudSyncObserver : public DataShare::DataShareObserver {
+class EXPORT CloudSyncObserver : public DataShare::DataShareObserver {
 public:
     CloudSyncObserver() = default;
     ~CloudSyncObserver() = default;
@@ -40,6 +40,7 @@ public:
     void DealPhotoGallery(CloudSyncNotifyInfo &notifyInfo);
     void DealAlbumGallery(CloudSyncNotifyInfo &notifyInfo);
     void DealCloudSync(const ChangeInfo &changeInfo);
+    void DealGalleryDownload(CloudSyncNotifyInfo &notifyInfo);
     void HandleIndex();
 
     /* delayed trigger */

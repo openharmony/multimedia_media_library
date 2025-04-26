@@ -36,10 +36,9 @@ public:
     EXPORT static std::string GetDateModifiedFromUri(const std::string &uri);
     EXPORT static std::string GetFileUriFromUri(const std::string &uri);
 private:
-    static void ParseThumbnailVersion(const std::string &key, const std::string &value, MediaLibraryApi api);
-    static bool IsOriginalImg(const Size &outSize, const std::string &outPath);
-    static bool CheckSize(Size &outSize, const std::string &outPath);
-    static std::string GetTableFromUri(const std::string &uri);
+    EXPORT static bool IsOriginalImg(const Size &outSize, const std::string &outPath);
+    EXPORT static bool CheckSize(Size &outSize, const std::string &outPath);
+    EXPORT static std::string GetTableFromUri(const std::string &uri);
 };
 } // namespace Media
 } // namespace OHOS

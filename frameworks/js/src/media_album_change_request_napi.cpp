@@ -22,6 +22,7 @@
 #include <sstream>
 
 #include "file_asset_napi.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
@@ -33,6 +34,7 @@
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 
@@ -50,13 +52,15 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
         .props = {
             DECLARE_NAPI_STATIC_FUNCTION("createAlbumRequest", JSCreateAlbumRequest),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAlbums", JSDeleteAlbums),
-            DECLARE_NAPI_STATIC_FUNCTION("deleteHighlightAlbums", JSDeleteHighlightAlbums),
             DECLARE_NAPI_FUNCTION("getAlbum", JSGetAlbum),
             DECLARE_NAPI_FUNCTION("addAssets", JSAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", JSRemoveAssets),
             DECLARE_NAPI_FUNCTION("moveAssets", JSMoveAssets),
+            DECLARE_NAPI_FUNCTION("moveAssetsWithUri", JSMoveAssetsWithUri),
             DECLARE_NAPI_FUNCTION("recoverAssets", JSRecoverAssets),
+            DECLARE_NAPI_FUNCTION("recoverAssetsWithUri", JSRecoverAssetsWithUri),
             DECLARE_NAPI_FUNCTION("deleteAssets", JSDeleteAssets),
+            DECLARE_NAPI_FUNCTION("deleteAssetsWithUri", JSDeleteAssetsWithUri),
             DECLARE_NAPI_FUNCTION("setAlbumName", JSSetAlbumName),
             DECLARE_NAPI_FUNCTION("setCoverUri", JSSetCoverUri),
             DECLARE_NAPI_FUNCTION("placeBefore", JSPlaceBefore),
@@ -78,7 +82,6 @@ napi_value MediaAlbumChangeRequestNapi::MediaAnalysisAlbumChangeRequestInit(napi
         .props = {
             DECLARE_NAPI_STATIC_FUNCTION("createAlbumRequest", JSCreateAlbumRequest),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAlbums", JSDeleteAlbums),
-            DECLARE_NAPI_STATIC_FUNCTION("deleteHighlightAlbums", JSDeleteHighlightAlbums),
             DECLARE_NAPI_FUNCTION("getAlbum", JSGetAlbum),
             DECLARE_NAPI_FUNCTION("addAssets", JSAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", JSRemoveAssets),
@@ -203,6 +206,11 @@ map<shared_ptr<PhotoAlbum>, vector<string>, PhotoAlbumPtrCompare> MediaAlbumChan
     return moveMap_;
 }
 
+int32_t MediaAlbumChangeRequestNapi::GetUserId() const
+{
+    return userId_;
+}
+
 void MediaAlbumChangeRequestNapi::RecordMoveAssets(vector<string>& assetArray, shared_ptr<PhotoAlbum>& targetAlbum)
 {
     if (targetAlbum == nullptr || assetArray.empty()) {
@@ -277,6 +285,58 @@ static napi_value ParseAssetArray(napi_env env, napi_value arg, vector<string>& 
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetUriArrayFromAssets(env, napiValues, uriArray));
+    RETURN_NAPI_TRUE(env);
+}
+
+static bool CheckAssetsUri(const string& uri)
+{
+    if (uri.empty()) {
+        NAPI_ERR_LOG("uri is empty, can not get fileId");
+        return false;
+    }
+    MediaFileUri fileUri(uri);
+    if (!fileUri.IsApi10()) {
+        fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
+    }
+    string fileId = fileUri.GetFileId();
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit) || atoi(fileId.c_str()) <= 0) {
+        return false;
+    }
+    return true;
+}
+
+static napi_value GetUriArray(napi_env env, vector<napi_value> &napiValues, vector<string> &values)
+{
+    napi_valuetype valueType = napi_undefined;
+    unique_ptr<char[]> buffer = make_unique<char[]>(PATH_MAX);
+    for (const auto &napiValue : napiValues) {
+        CHECK_ARGS(env, napi_typeof(env, napiValue, &valueType), JS_ERR_PARAMETER_INVALID);
+        CHECK_COND(env, valueType == napi_string, JS_ERR_PARAMETER_INVALID);
+
+        size_t res = 0;
+        CHECK_ARGS(
+            env, napi_get_value_string_utf8(env, napiValue, buffer.get(), PATH_MAX, &res), JS_ERR_PARAMETER_INVALID);
+        string uri = buffer.get();
+        if (!CheckAssetsUri(uri)) {
+            NAPI_ERR_LOG("fileId is invalid, uri is %{public}s", uri.c_str());
+            continue;
+        }
+        values.emplace_back(uri);
+    }
+    napi_value ret = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
+    return ret;
+}
+
+static napi_value ParseUriArray(napi_env env, napi_value arg, vector<string>& uriArray)
+{
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, arg, napiValues));
+    CHECK_ARGS_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_string, "Invalid argument type");
+    CHECK_NULLPTR_RET(GetUriArray(env, napiValues, uriArray));
     RETURN_NAPI_TRUE(env);
 }
 
@@ -363,6 +423,57 @@ napi_value MediaAlbumChangeRequestNapi::JSCreateAlbumRequest(napi_env env, napi_
     return instance;
 }
 
+static napi_value DealWithDeletedAlbumsDefault(napi_env env, vector<napi_value>& napiValues,
+    unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
+{
+    vector<string> deleteIds;
+    for (const auto& napiValue : napiValues) {
+        PhotoAlbumNapi* obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
+        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get album napi object");
+        CHECK_COND_WITH_MESSAGE(env,
+            PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsHighlightAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
+            "Only user and highlight album can be deleted");
+        deleteIds.push_back(to_string(obj->GetAlbumId()));
+    }
+    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+    RETURN_NAPI_TRUE(env);
+}
+
+int32_t GetAlbumIdFromUri(const string &uri, string &albumId)
+{
+    auto startIndex = uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX);
+    if (startIndex != std::string::npos) {
+        albumId.clear();
+        albumId = uri.substr(startIndex + PhotoAlbumColumns::ALBUM_URI_PREFIX.length());
+        if (!all_of(albumId.begin(), albumId.end(), ::isdigit)) {
+            NAPI_ERR_LOG("albumId is not digit, albumId is %{private}s", albumId.c_str());
+            return E_URI_INVALID;
+        }
+    } else {
+        NAPI_ERR_LOG("Photo album uri format error");
+        return E_URI_INVALID;
+    }
+    return E_OK;
+}
+
+napi_value DealWithDeletedAlbumsByUri(napi_env env, vector<napi_value> &napiValues,
+    unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
+{
+    vector<string> deleteIds;
+    vector<string> albumUris;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetStringArray(env, napiValues, albumUris));
+    for (const auto& albumUri : albumUris) {
+        string albumId = "";
+        CHECK_COND_WITH_MESSAGE(env, GetAlbumIdFromUri(albumUri, albumId) == E_OK, "Failed to get albumId");
+        deleteIds.push_back(albumId);
+    }
+
+    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+    RETURN_NAPI_TRUE(env);
+}
+
 static napi_value ParseArgsDeleteAlbums(
     napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
 {
@@ -383,20 +494,15 @@ static napi_value ParseArgsDeleteAlbums(
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
     CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
-    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
 
-    vector<string> deleteIds;
-    for (const auto& napiValue : napiValues) {
-        PhotoAlbumNapi* obj = nullptr;
-        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
-        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get album napi object");
-        CHECK_COND_WITH_MESSAGE(env,
-            PhotoAlbum::IsUserPhotoAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()) ||
-            PhotoAlbum::IsHighlightAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
-            "Only user and highlight album can be deleted");
-        deleteIds.push_back(to_string(obj->GetAlbumId()));
+    if (valueType == napi_object) {
+        CHECK_NULLPTR_RET(DealWithDeletedAlbumsDefault(env, napiValues, context));
+    } else if (valueType == napi_string) {
+        CHECK_NULLPTR_RET(DealWithDeletedAlbumsByUri(env, napiValues, context));
+    } else {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid argument type");
+        return nullptr;
     }
-    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
     RETURN_NAPI_TRUE(env);
 }
 
@@ -443,55 +549,6 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAlbums(napi_env env, napi_callba
     CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse args");
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(
         env, asyncContext, "ChangeRequestDeleteAlbums", DeleteAlbumsExecute, DeleteAlbumsCompleteCallback);
-}
-
-static void DeleteHighlightAlbumsCompleteCallback(napi_env env, napi_status status, void* data)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("JSDeleteHighlightAlbumsCompleteCallback");
-    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    auto jsContext = make_unique<JSAsyncContextOutput>();
-    jsContext->status = false;
-    napi_get_undefined(env, &jsContext->data);
-    napi_get_undefined(env, &jsContext->error);
-    if (context->error == ERR_DEFAULT) {
-        jsContext->status = true;
-    } else {
-        context->HandleError(env, jsContext->error);
-    }
-
-    if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
-            env, context->deferred, context->callbackRef, context->work, *jsContext);
-    }
-    delete context;
-}
-
-static void DeleteHighlightAlbumsExecute(napi_env env, void* data)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("JSDeleteHighlightAlbumsExecute");
-    NAPI_INFO_LOG("Start delete highlight album(s)");
-
-    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
-    Uri deleteAlbumUri(PAH_DELETE_HIGHLIGHT_ALBUM);
-    int ret = UserFileClient::Delete(deleteAlbumUri, context->predicates);
-    if (ret < 0) {
-        context->SaveError(ret);
-        NAPI_ERR_LOG("Failed to delete highlight albums, err: %{public}d", ret);
-        return;
-    }
-    NAPI_INFO_LOG("Delete highlight album(s): %{public}d", ret);
-}
-
-napi_value MediaAlbumChangeRequestNapi::JSDeleteHighlightAlbums(napi_env env, napi_callback_info info)
-{
-    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
-    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse highlight args");
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
-        env, asyncContext, "ChangeRequestDeleteHighlightAlbums",
-        DeleteHighlightAlbumsExecute, DeleteHighlightAlbumsCompleteCallback);
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSAddAssets(napi_env env, napi_callback_info info)
@@ -550,7 +607,8 @@ napi_value MediaAlbumChangeRequestNapi::JSRemoveAssets(napi_env env, napi_callba
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi_callback_info info,
+    ParameterType parameterType)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
@@ -572,8 +630,13 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
 
     vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
-        "Failed to parse assets");
+    if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    }
     auto moveMap = changeRequest->GetMoveMap();
     for (auto iter = moveMap.begin(); iter != moveMap.end(); iter++) {
         if (!CheckDuplicatedAssetArray(assetUriArray, iter->second)) {
@@ -587,7 +650,18 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(env, info, ParameterType::PHOTO_ASSET);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(env, info, ParameterType::ASSET_URI);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(napi_env env, napi_callback_info info,
+    ParameterType parameterType)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
@@ -607,8 +681,13 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callb
         "Only trash album can recover assets");
 
     vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
-        "Failed to parse assets");
+    if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    }
     if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToRecover_)) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
             "The previous recoverAssets operation has contained the same asset");
@@ -620,7 +699,18 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callb
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(env, info, ParameterType::PHOTO_ASSET);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSRecoverAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSRecoverAssetsImplement(env, info, ParameterType::ASSET_URI);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(napi_env env, napi_callback_info info,
+    ParameterType parameterType)
 {
     NAPI_INFO_LOG("enter");
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -641,8 +731,13 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
         "Only trash album can delete assets permanently");
 
     vector<string> assetUriArray;
-    CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
-        "Failed to parse assets");
+    if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    } else {
+        CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
+            "Failed to parse assets");
+    }
     if (!CheckDuplicatedAssetArray(assetUriArray, changeRequest->assetsToDelete_)) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT,
             "The previous deleteAssets operation has contained the same asset");
@@ -650,8 +745,19 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
     }
     changeRequest->assetsToDelete_.insert(
         changeRequest->assetsToDelete_.end(), assetUriArray.begin(), assetUriArray.end());
+    changeRequest->userId_ = photoAlbum->GetUserId();
     changeRequest->albumChangeOperations_.push_back(AlbumChangeOperation::DELETE_ASSETS);
     RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(env, info, ParameterType::PHOTO_ASSET);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsWithUri(napi_env env, napi_callback_info info)
+{
+    return MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(env, info, ParameterType::ASSET_URI);
 }
 
 static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> &assetsArray)
@@ -822,6 +928,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetDisplayLevel(napi_env env, napi_cal
         "Only portrait album can set album display level");
     photoAlbum->SetDisplayLevel(displayLevel);
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::SET_DISPLAY_LEVEL);
+    NAPI_INFO_LOG("Set display level change request, album id: %{public}d, display level: %{public}d",
+        photoAlbum->GetAlbumId(), displayLevel);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
@@ -1197,7 +1305,7 @@ static bool DeleteAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
 
     Uri deleteAssetsUri(PAH_DELETE_PHOTOS);
-    int ret = UserFileClient::Update(deleteAssetsUri, predicates, valuesBucket);
+    int ret = UserFileClient::Update(deleteAssetsUri, predicates, valuesBucket, context.objectInfo->GetUserId());
     context.objectInfo->ClearDeleteAssetArray();
     if (ret < 0) {
         context.SaveError(ret);

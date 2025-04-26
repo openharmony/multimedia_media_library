@@ -17,7 +17,9 @@
 #include "medialibrary_rdb_test.h"
 #include "medialibrary_object_utils.h"
 #define private public
+#define MEDIALIBRARY_MTP_ENABLE
 #include "medialibrary_subscriber.h"
+#undef MEDIALIBRARY_MTP_ENABLE
 #include "moving_photo_processor.h"
 #include "medialibrary_subscriber_database_utils.h"
 #undef private
@@ -30,13 +32,13 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t SLEEP_TIME = 1;
 static constexpr int32_t EVENTTYPE = 7;
-HWTEST_F(MediaLibraryRdbTest, medialib_Subscribe_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Subscribe_test_001, TestSize.Level1)
 {
     bool ret = MedialibrarySubscriber::Subscribe();
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_001, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -49,7 +51,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_001, TestSize.Level0)
     medialibrarySubscriber.AbortCommonEvent();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_002, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -62,7 +64,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_002, TestSize.Level0)
     medialibrarySubscriber.AbortCommonEvent();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_003, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -75,7 +77,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_003, TestSize.Level0)
     medialibrarySubscriber.AbortCommonEvent();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_004, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -88,7 +90,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_004, TestSize.Level0)
     medialibrarySubscriber.AbortCommonEvent();
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level1)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -104,7 +106,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
     sleep(SLEEP_TIME);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::StartProcess();
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false); // no moving photo to process
@@ -112,7 +114,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_MovingPhotoProcessor_test_001, TestSize.L
     EXPECT_EQ(MovingPhotoProcessor::isProcessing_, false);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_QueryThumbAstc_test, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_QueryThumbAstc_test, TestSize.Level1)
 {
     int count = 0;
     shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
@@ -124,7 +126,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_QueryThumbAstc_test, TestSize.Level0)
     MedialibrarySubscriberDatabaseUtils::QueryThumbTotal(count);
 }
 
-HWTEST_F(MediaLibraryRdbTest, medialib_UpdateBackgroundOperationStatus_test, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateBackgroundOperationStatus_test, TestSize.Level1)
 {
     shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
     EXPECT_NE(medialibrarySubscriberPtr, nullptr);
@@ -144,6 +146,150 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateBackgroundOperationStatus_test, Tes
         medialibrarySubscriberPtr->UpdateBackgroundOperationStatus(want, event);
     }
     medialibrarySubscriberPtr->UpdateBackgroundOperationStatus(want, static_cast<StatusEventType>(100));
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_CheckHalfDayMissions_test, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    medialibrarySubscriberPtr->isScreenOff_ = true;
+    medialibrarySubscriberPtr->isCharging_ = true;
+    medialibrarySubscriberPtr->CheckHalfDayMissions();
+    EXPECT_NE(medialibrarySubscriberPtr->isScreenOff_, false);
+    EXPECT_NE(medialibrarySubscriberPtr->isCharging_, false);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_WalCheckPointAsync_test, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    medialibrarySubscriberPtr->isScreenOff_ = true;
+    medialibrarySubscriberPtr->isCharging_ = true;
+    medialibrarySubscriberPtr->WalCheckPointAsync();
+    EXPECT_NE(medialibrarySubscriberPtr->isScreenOff_, false);
+    EXPECT_NE(medialibrarySubscriberPtr->isCharging_, false);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateCloudMediaAssetDownloadStatus_test, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    AAFwk::Want want;
+    StatusEventType statusEventType = StatusEventType::THERMAL_LEVEL_CHANGED;
+    medialibrarySubscriberPtr->UpdateCloudMediaAssetDownloadStatus(want, statusEventType);
+    EXPECT_EQ(medialibrarySubscriberPtr->isCharging_, false);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateCloudMediaAssetDownloadTaskStatus_test_001, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    MedialibrarySubscriber::isCellularNetConnected_ = false;
+    medialibrarySubscriberPtr->UpdateCloudMediaAssetDownloadTaskStatus();
+    EXPECT_EQ(MedialibrarySubscriber::isWifiConnected_, false);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateCloudMediaAssetDownloadTaskStatus_test_002, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    MedialibrarySubscriber::isCellularNetConnected_ = true;
+    medialibrarySubscriberPtr->UpdateCloudMediaAssetDownloadTaskStatus();
+    EXPECT_EQ(MedialibrarySubscriber::isWifiConnected_, false);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_006, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    EventFwk::CommonEventData eventData;
+    string action = EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE;
+    AAFwk::Want want = eventData.GetWant();
+    want.SetAction(action);
+    eventData.SetWant(want);
+    eventData.SetCode(4);
+    medialibrarySubscriberPtr->OnReceiveEvent(eventData);
+    EXPECT_EQ(MedialibrarySubscriber::isWifiConnected_, true);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_007, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    EventFwk::CommonEventData eventData;
+    string action = EventFwk::CommonEventSupport::COMMON_EVENT_CONNECTIVITY_CHANGE;
+    AAFwk::Want want = eventData.GetWant();
+    want.SetAction(action);
+    eventData.SetWant(want);
+#define MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
+    medialibrarySubscriberPtr->OnReceiveEvent(eventData);
+#undef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
+    EXPECT_EQ(MedialibrarySubscriber::isWifiConnected_, true);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_008, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    EventFwk::CommonEventData eventData;
+    string action = EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED;
+    AAFwk::Want want = eventData.GetWant();
+    want.SetAction(action);
+    eventData.SetWant(want);
+    medialibrarySubscriberPtr->OnReceiveEvent(eventData);
+    EXPECT_EQ(MedialibrarySubscriber::isWifiConnected_, true);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_009, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    EventFwk::CommonEventData eventData;
+    string action = EventFwk::CommonEventSupport::COMMON_EVENT_HWID_LOGOUT;
+    AAFwk::Want want = eventData.GetWant();
+    want.SetAction(action);
+    eventData.SetWant(want);
+    medialibrarySubscriberPtr->OnReceiveEvent(eventData);
+    EXPECT_EQ(MedialibrarySubscriber::isWifiConnected_, true);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_GetNowTime_test_001, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    int64_t ret = -1;
+    ret = medialibrarySubscriberPtr->GetNowTime();
+    EXPECT_NE(ret, -1);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_Init_test_001, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    int64_t ret = medialibrarySubscriberPtr->GetNowTime();
+    medialibrarySubscriberPtr->Init();
+    bool ret2 = (ret > medialibrarySubscriberPtr->lockTime_);
+    EXPECT_EQ(medialibrarySubscriberPtr->agingCount_, 0);
+    EXPECT_EQ(ret2, false);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_DoAgingOperation_test_001, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    medialibrarySubscriberPtr->DoAgingOperation();
+    int64_t ret = -1;
+    ret = medialibrarySubscriberPtr->GetNowTime();
+    EXPECT_NE(ret, -1);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_StopThumbnailBgOperation_test_001, TestSize.Level0)
+{
+    shared_ptr<MedialibrarySubscriber> medialibrarySubscriberPtr = make_shared<MedialibrarySubscriber>();
+    ASSERT_NE(medialibrarySubscriberPtr, nullptr);
+    medialibrarySubscriberPtr->StopThumbnailBgOperation();
+    medialibrarySubscriberPtr->GetNowTime();
+    EXPECT_EQ(medialibrarySubscriberPtr->agingCount_, 0);
 }
 } // namespace Media
 } // namespace OHOS

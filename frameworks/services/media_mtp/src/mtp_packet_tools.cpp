@@ -598,10 +598,8 @@ uint32_t MtpPacketTool::GetUInt32(const std::vector<uint8_t> &buffer, size_t &of
 
 bool MtpPacketTool::GetUInt8(const std::vector<uint8_t> &buffer, size_t &offset, uint8_t &value)
 {
-    if (buffer.size() < sizeof(uint8_t) + offset) {
-        MEDIA_ERR_LOG("MtpPacketTool::GetUInt8, size incorrect");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(buffer.size() >= sizeof(uint8_t) + offset, false,
+        "MtpPacketTool::GetUInt8, size incorrect");
 
     value = buffer[offset];
     offset += sizeof(uint8_t);
@@ -610,10 +608,8 @@ bool MtpPacketTool::GetUInt8(const std::vector<uint8_t> &buffer, size_t &offset,
 
 bool MtpPacketTool::GetUInt16(const std::vector<uint8_t> &buffer, size_t &offset, uint16_t &value)
 {
-    if (buffer.size() < sizeof(uint16_t) + offset) {
-        MEDIA_ERR_LOG("MtpPacketTool::GetUInt16, size incorrect");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(buffer.size() >= sizeof(uint16_t) + offset, false,
+        "MtpPacketTool::GetUInt16, size incorrect");
 
     value = (uint32_t)buffer[offset] | ((uint32_t)buffer[offset + OFFSET_1] << BIT_8);
     offset += sizeof(uint16_t);
@@ -622,10 +618,8 @@ bool MtpPacketTool::GetUInt16(const std::vector<uint8_t> &buffer, size_t &offset
 
 bool MtpPacketTool::GetUInt32(const std::vector<uint8_t> &buffer, size_t &offset, uint32_t &value)
 {
-    if (buffer.size() < sizeof(uint32_t) + offset) {
-        MEDIA_ERR_LOG("MtpPacketTool::GetUInt32, size incorrect");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(buffer.size() >= sizeof(uint32_t) + offset, false,
+        "MtpPacketTool::GetUInt32, size incorrect");
 
     value = (uint32_t)buffer[offset] | ((uint32_t)buffer[offset + OFFSET_1] << BIT_8) |
         ((uint32_t)buffer[offset + OFFSET_2] << BIT_16) | ((uint32_t)buffer[offset + OFFSET_3] << BIT_24);
@@ -635,10 +629,8 @@ bool MtpPacketTool::GetUInt32(const std::vector<uint8_t> &buffer, size_t &offset
 
 bool MtpPacketTool::GetUInt64(const std::vector<uint8_t> &buffer, size_t &offset, uint64_t &value)
 {
-    if (buffer.size() < sizeof(uint64_t) + offset) {
-        MEDIA_ERR_LOG("MtpPacketTool::GetUInt64, size incorrect");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(buffer.size() >= sizeof(uint64_t) + offset, false,
+        "MtpPacketTool::GetUInt64, size incorrect");
 
     value = buffer[offset] | (buffer[offset + OFFSET_1] << BIT_8) | (buffer[offset + OFFSET_2] << BIT_16) |
         (buffer[offset + OFFSET_3] << BIT_24) | (static_cast<uint64_t>(buffer[offset + OFFSET_4]) << BIT_32) |
@@ -660,9 +652,7 @@ bool MtpPacketTool::GetUInt128(const std::vector<uint8_t> &buffer, size_t &offse
 bool MtpPacketTool::GetInt8(const std::vector<uint8_t> &buffer, size_t &offset, int8_t &value)
 {
     uint8_t uValue = 0;
-    if (!GetUInt8(buffer, offset, uValue)) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(GetUInt8(buffer, offset, uValue), false);
     value = static_cast<int8_t>(uValue);
     return true;
 }
@@ -670,9 +660,7 @@ bool MtpPacketTool::GetInt8(const std::vector<uint8_t> &buffer, size_t &offset, 
 bool MtpPacketTool::GetInt16(const std::vector<uint8_t> &buffer, size_t &offset, int16_t &value)
 {
     uint16_t uValue = 0;
-    if (!GetUInt16(buffer, offset, uValue)) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(GetUInt16(buffer, offset, uValue), false);
     value = static_cast<int16_t>(uValue);
     return true;
 }
@@ -680,18 +668,14 @@ bool MtpPacketTool::GetInt16(const std::vector<uint8_t> &buffer, size_t &offset,
 bool MtpPacketTool::GetInt32(const std::vector<uint8_t> &buffer, size_t &offset, int32_t &value)
 {
     uint32_t uValue = 0;
-    if (!GetUInt32(buffer, offset, uValue)) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(GetUInt32(buffer, offset, uValue), false);
     value = static_cast<int32_t>(uValue);
     return true;
 }
 bool MtpPacketTool::GetInt64(const std::vector<uint8_t> &buffer, size_t &offset, int64_t &value)
 {
     uint64_t uValue = 0;
-    if (!GetUInt64(buffer, offset, uValue)) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(GetUInt64(buffer, offset, uValue), false);
     value = static_cast<int64_t>(uValue);
     return true;
 }
@@ -763,9 +747,7 @@ std::string MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t 
 bool MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t &offset, std::string &str)
 {
     uint8_t count = 0;
-    if (!GetUInt8(buffer, offset, count)) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(GetUInt8(buffer, offset, count), false);
 
     if (count < 1) {
         str = std::string();
@@ -775,9 +757,7 @@ bool MtpPacketTool::GetString(const std::vector<uint8_t> &buffer, size_t &offset
     std::vector<char16_t> tmpbuf(count);
     uint16_t ch = 0;
     for (int i = 0; ((i < count) && ((offset + sizeof(uint16_t) - 1) < buffer.size())); i++) {
-        if (!GetUInt16(buffer, offset, ch)) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(GetUInt16(buffer, offset, ch), false);
         tmpbuf[i] = ch;
     }
 
@@ -1018,49 +998,31 @@ void MtpPacketTool::Dump(const std::vector<uint8_t> &data, uint32_t offset, uint
 bool MtpPacketTool::DumpClear(size_t loc, std::unique_ptr<char[]> &hexBuf, int hexBufSize,
     std::unique_ptr<char[]> &txtBuf, int txtBufSize)
 {
-    if ((hexBuf == nullptr) || (txtBuf == nullptr)) {
-        return false;
-    }
-
-    if (sprintf_s(hexBuf.get(), hexBufSize, "%08X : ", static_cast<uint32_t>(loc)) == -1) {
-        return false;
-    }
-    if (sprintf_s(txtBuf.get(), txtBufSize, "%s", "") == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(!((hexBuf == nullptr) || (txtBuf == nullptr)), false);
+    CHECK_AND_RETURN_RET(sprintf_s(hexBuf.get(), hexBufSize, "%08X : ", static_cast<uint32_t>(loc)) != -1, false);
+    CHECK_AND_RETURN_RET(sprintf_s(txtBuf.get(), txtBufSize, "%s", "") != -1, false);
     return true;
 }
 
 bool MtpPacketTool::DumpChar(uint8_t u8, std::unique_ptr<char[]> &hexBuf, int hexBufSize,
     std::unique_ptr<char[]> &txtBuf, int txtBufSize)
 {
-    if ((hexBuf == nullptr) || (txtBuf == nullptr)) {
-        return false;
-    }
+    bool cond = ((hexBuf == nullptr) || (txtBuf == nullptr));
+    CHECK_AND_RETURN_RET(!cond, false);
 
     char hexTmp[BIT_4] = {0};
-    if (sprintf_s(hexTmp, sizeof(hexTmp), "%02X", u8) == -1) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(sprintf_s(hexTmp, sizeof(hexTmp), "%02X", u8) != -1, false);
 
     int intData = static_cast<int>(u8);
     char txtTmp[BIT_4] = {0};
     if (isprint(intData)) {
-        if (sprintf_s(txtTmp, sizeof(txtTmp), "%d", intData) == -1) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(sprintf_s(txtTmp, sizeof(txtTmp), "%d", intData) != -1, false);
     } else {
-        if (sprintf_s(txtTmp, sizeof(txtTmp), "%c", '.') == -1) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(sprintf_s(txtTmp, sizeof(txtTmp), "%c", '.') != -1, false);
     }
 
-    if (strcat_s(hexBuf.get(), hexBufSize, hexTmp) != EOK) {
-        return false;
-    }
-    if (strcat_s(txtBuf.get(), txtBufSize, txtTmp) != EOK) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(strcat_s(hexBuf.get(), hexBufSize, hexTmp) == EOK, false);
+    CHECK_AND_RETURN_RET(strcat_s(txtBuf.get(), txtBufSize, txtTmp) == EOK, false);
     return true;
 }
 

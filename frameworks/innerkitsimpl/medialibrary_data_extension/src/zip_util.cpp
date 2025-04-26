@@ -45,15 +45,13 @@ int ZipUtil::AddFileInZip(
 {
     zip_fileinfo zipInfo;
     errno_t result = memset_s(&zipInfo, sizeof(zipInfo), 0, sizeof(zipInfo));
-    if (result != EOK) {
-        MEDIA_ERR_LOG("AddFileInZip memset_s error, file:%{public}s.", srcFile.c_str());
-        return ERROR_MEMSET_STRUCT;
-    }
+    CHECK_AND_RETURN_RET_LOG(result == EOK, ERROR_MEMSET_STRUCT,
+        "AddFileInZip memset_s error, file:%{public}s.", srcFile.c_str());
+
     FILE *srcFp = GetFileHandle(srcFile);
-    if (srcFp == nullptr) {
-        MEDIA_ERR_LOG("get file handle failed:%{public}s, errno: %{public}d.", srcFile.c_str(), errno);
-        return ERROR_GET_HANDLE;
-    }
+    CHECK_AND_RETURN_RET_LOG(srcFp != nullptr, ERROR_GET_HANDLE,
+        "get file handle failed:%{public}s, errno: %{public}d.", srcFile.c_str(), errno);
+
     std::string srcFileName = GetDestFilePath(srcFile, destFileName, keepParentPathStatus);
     zipOpenNewFileInZip64(zipfile, srcFileName.c_str(), &zipInfo, nullptr, 0, nullptr, 0, nullptr,
         Z_DEFLATED, Z_DEFAULT_COMPRESSION, ZIP64);
@@ -80,18 +78,14 @@ int ZipUtil::AddFileInZip(
 FILE* ZipUtil::GetFileHandle(const std::string& file)
 {
     char realPath[PATH_MAX] = {0};
-    if (realpath(file.c_str(), realPath) == nullptr) {
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET(realpath(file.c_str(), realPath) != nullptr, nullptr);
     return fopen(realPath, "rb");
 }
 
 std::string ZipUtil::GetDestFilePath(
     const std::string& srcFile, const std::string& destFilePath, int keepParentPathStatus)
 {
-    if (!destFilePath.empty()) {
-        return destFilePath;
-    }
+    CHECK_AND_RETURN_RET(destFilePath.empty(), destFilePath);
     std::string file = srcFile;
     std::string result = file;
     std::string parentPathName;

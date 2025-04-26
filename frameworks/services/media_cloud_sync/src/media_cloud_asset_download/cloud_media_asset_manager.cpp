@@ -40,9 +40,11 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_notify.h"
+#include "photo_album_column.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
+#include "cloud_media_asset_uri.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -56,11 +58,20 @@ std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetManager::operat
 std::mutex CloudMediaAssetManager::deleteMutex_;
 std::mutex CloudMediaAssetManager::updateMutex_;
 std::atomic<TaskDeleteState> CloudMediaAssetManager::doDeleteTask_ = TaskDeleteState::IDLE;
-static const int32_t BATCH_DELETE_CLOUD_FILE = 200;
-static const int32_t CYCLE_NUMBER = 2000;
+static const int32_t BATCH_LIMIT_COUNT = 200;
+static const int32_t CYCLE_NUMBER = 1024 * 1024;
 static const int32_t SLEEP_FOR_DELETE = 1000;
 static const int32_t BATCH_NOTIFY_CLOUD_FILE = 2000;
 static const std::string DELETE_DISPLAY_NAME = "cloud_media_asset_deleted";
+static const int32_t ALBUM_FROM_CLOUD = 2;
+static const int32_t ZERO_ASSET_OF_ALBUM = 0;
+const std::string SQL_DELETE_EMPTY_CLOUD_ALBUMS = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
+    "( " + PhotoAlbumColumns::ALBUM_IS_LOCAL + " = " + to_string(ALBUM_FROM_CLOUD) + " AND " +
+    PhotoAlbumColumns::ALBUM_ID + " NOT IN ( " +
+        "SELECT DISTINCT " + PhotoColumn::PHOTO_OWNER_ALBUM_ID +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) + " ))" +
+    " OR " + PhotoAlbumColumns::ALBUM_DIRTY + " = " + to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED)) + ";";
 
 CloudMediaAssetManager& CloudMediaAssetManager::GetInstance()
 {
@@ -87,7 +98,7 @@ int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownload
     if (CheckDownloadTypeOfTask(type) != E_OK) {
         return E_ERR;
     }
-
+    operation_->ResetDownloadTryTime();
     switch (operation_->GetTaskStatus()) {
         case CloudMediaAssetTaskStatus::IDLE: {
             return operation_->StartDownloadTask(static_cast<int32_t>(type));
@@ -117,9 +128,10 @@ int32_t CloudMediaAssetManager::StartDownloadCloudAsset(const CloudMediaDownload
 
 int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRecoverCause &cause)
 {
-    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
-        return E_ERR;
-    }
+    bool cond = (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE);
+    CHECK_AND_RETURN_RET(!cond, E_ERR);
+
+    operation_->ResetDownloadTryTime();
     MEDIA_INFO_LOG("enter RecoverDownloadCloudAsset, RecoverCause: %{public}d", static_cast<int32_t>(cause));
     CHECK_AND_RETURN_RET_LOG(operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::DOWNLOADING, E_OK,
         "The task status is download, no need to recover.");
@@ -131,10 +143,9 @@ int32_t CloudMediaAssetManager::RecoverDownloadCloudAsset(const CloudMediaTaskRe
 
 void CloudMediaAssetManager::CheckStorageAndRecoverDownloadTask()
 {
-    if (operation_ == nullptr || operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::PAUSED ||
-        operation_->GetTaskPauseCause() != CloudMediaTaskPauseCause::ROM_LIMIT) {
-        return;
-    }
+    bool cond = (operation_ == nullptr || operation_->GetTaskStatus() != CloudMediaAssetTaskStatus::PAUSED ||
+        operation_->GetTaskPauseCause() != CloudMediaTaskPauseCause::ROM_LIMIT);
+    CHECK_AND_RETURN(!cond);
     MEDIA_INFO_LOG("begin to check storage and recover downloadTask.");
     operation_->CheckStorageAndRecoverDownloadTask();
 }
@@ -205,7 +216,7 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
     MEDIA_INFO_LOG("enter ReadyDataForDelete");
     AbsRdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
     queryPredicates.EqualTo(MediaColumn::MEDIA_NAME, DELETE_DISPLAY_NAME);
-    queryPredicates.Limit(BATCH_DELETE_CLOUD_FILE);
+    queryPredicates.Limit(BATCH_LIMIT_COUNT);
     vector<string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, MediaColumn::MEDIA_DATE_TAKEN};
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -229,9 +240,7 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
 
 static string GetEditDataDirPath(const string &path)
 {
-    if (path.length() < ROOT_MEDIA_DIR.length()) {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(path.length() >= ROOT_MEDIA_DIR.length(), "");
     return MEDIA_EDIT_DATA_DIR + path.substr(ROOT_MEDIA_DIR.length());
 }
 
@@ -264,25 +273,18 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
                 ret, static_cast<int32_t>(fileIds.size()));
             break;
         }
-        bool deleteFlag = true;
+
+        ret = DeleteBatchCloudFile(fileIds);
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "DeleteBatchCloudFile failed!");
         for (size_t i = 0; i < fileIds.size(); i++) {
-            if (DeleteEditdata(paths[i]) != E_OK || !ThumbnailService::GetInstance()->HasInvalidateThumbnail(
+            if (DeleteEditdata(paths[i]) != E_OK || !ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(
                 fileIds[i], PhotoColumn::PHOTOS_TABLE, paths[i], dateTakens[i])) {
                 MEDIA_ERR_LOG("Delete error, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
-                deleteFlag = false;
-                break;
+                continue;
             }
             MEDIA_INFO_LOG("Detele cloud file, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
         }
-        if (!deleteFlag) {
-            MEDIA_ERR_LOG("DeleteEditdata or InvalidateThumbnail failed!");
-            break;
-        }
-        ret = DeleteBatchCloudFile(fileIds);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("DeleteBatchCloudFile failed!");
-            break;
-        }
+        
         fileIds.clear();
         paths.clear();
         dateTakens.clear();
@@ -295,16 +297,12 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
 void CloudMediaAssetManager::DeleteAllCloudMediaAssetsAsync()
 {
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Can not get asyncWorker");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "Can not get asyncWorker");
+
     shared_ptr<MediaLibraryAsyncTask> deleteAsyncTask =
         make_shared<MediaLibraryAsyncTask>(DeleteAllCloudMediaAssetsOperation, nullptr);
-    if (deleteAsyncTask == nullptr) {
-        MEDIA_ERR_LOG("Can not get deleteAsyncTask");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(deleteAsyncTask != nullptr, "Can not get deleteAsyncTask");
+
     asyncWorker->AddTask(deleteAsyncTask, true);
 }
 
@@ -319,7 +317,7 @@ static bool HasDataForUpdate(std::vector<std::string> &updateFileIds)
     AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.NotEqualTo(MediaColumn::MEDIA_NAME, DELETE_DISPLAY_NAME);
     predicates.EqualTo(PhotoColumn::PHOTO_POSITION, to_string(static_cast<int32_t>(PhotoPositionType::CLOUD)));
-    predicates.Limit(BATCH_DELETE_CLOUD_FILE);
+    predicates.Limit(BATCH_LIMIT_COUNT);
     std::vector<std::string> columns = { MediaColumn::MEDIA_ID };
     auto resultSet = rdbStore->Query(predicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "HasDataForUpdate failed. resultSet is null.");
@@ -345,7 +343,7 @@ static int32_t UpdateCloudAssets(const std::vector<std::string> &updateFileIds)
     values.PutString(MediaColumn::MEDIA_NAME, DELETE_DISPLAY_NAME);
     values.PutInt(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NEED_CLEAN));
     values.PutInt(PhotoColumn::PHOTO_DIRTY, -1);
-    values.PutInt(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
+    values.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
     values.PutNull(PhotoColumn::PHOTO_CLOUD_ID);
 
     int32_t changedRows = -1;
@@ -371,18 +369,13 @@ int32_t CloudMediaAssetManager::UpdateCloudMeidaAssets()
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCloudMeidaAssets");
     std::lock_guard<std::mutex> lock(updateMutex_);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateCloudMeidaAssets failed. rdbStore is null.");
 
     int32_t cycleNumber = 0;
     std::vector<std::string> notifyFileIds = {};
     std::vector<std::string> updateFileIds = {};
     while (HasDataForUpdate(updateFileIds) && cycleNumber <= CYCLE_NUMBER) {
         int32_t ret = UpdateCloudAssets(updateFileIds);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("UpdateCloudAssets failed, ret: %{public}d", ret);
-            break;
-        }
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "UpdateCloudAssets failed, ret: %{public}d", ret);
 
         notifyFileIds.insert(notifyFileIds.end(), updateFileIds.begin(), updateFileIds.end());
         updateFileIds.clear();
@@ -398,7 +391,27 @@ int32_t CloudMediaAssetManager::UpdateCloudMeidaAssets()
         NotifyUpdateAssetsChange(notifyFileIds);
         notifyFileIds.clear();
     }
-    CHECK_AND_RETURN_RET_LOG(cycleNumber > 0, E_ERR, "No db data need update.");
+    if (cycleNumber > 0) {
+        MEDIA_INFO_LOG("begin to refresh all albums.");
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_OK, "UpdateAllAlbums failed. rdbStore is null.");
+        MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
+        return E_OK;
+    }
+    return E_ERR;
+}
+
+int32_t CloudMediaAssetManager::DeleteEmptyCloudAlbums()
+{
+    MEDIA_INFO_LOG("start DeleteEmptyCloudAlbums.");
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteEmptyCloudAlbums");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "DeleteEmptyCloudAlbums failed. rdbStore is null");
+
+    int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_EMPTY_CLOUD_ALBUMS);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to delete. ret %{public}d.", ret);
+    MEDIA_INFO_LOG("end DeleteEmptyCloudAlbums. ret %{public}d.", ret);
     return E_OK;
 }
 
@@ -408,9 +421,20 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia()
     MediaLibraryTracer tracer;
     tracer.Start("ForceRetainDownloadCloudMedia");
     int32_t ret = UpdateCloudMeidaAssets();
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "ForceRetainDownloadCloudMedia failed. ret %{public}d.", ret);
-    MediaLibraryAlbumFusionUtils::RefreshAllAlbums();
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateCloudMeidaAssets failed. ret %{public}d.", ret);
+    ret = DeleteEmptyCloudAlbums();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "DeleteEmptyCloudAlbums failed. ret %{public}d.", ret);
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch != nullptr) {
+        MEDIA_INFO_LOG("begin to notify album update.");
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+    }
+
+    MEDIA_INFO_LOG("begin to CleanGalleryDentryFile");
     CloudSyncManager::GetInstance().CleanGalleryDentryFile();
+    MEDIA_INFO_LOG("end to CleanGalleryDentryFile");
+
     TaskDeleteState expect = TaskDeleteState::IDLE;
     if (doDeleteTask_.compare_exchange_strong(expect, TaskDeleteState::ACTIVE_DELETE)) {
         MEDIA_INFO_LOG("start delete cloud media assets task.");
@@ -419,7 +443,7 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia()
         doDeleteTask_.store(TaskDeleteState::ACTIVE_DELETE);
     }
     MEDIA_INFO_LOG("end to ForceRetainDownloadCloudMedia.");
-    return E_OK;
+    return ret;
 }
 
 std::string CloudMediaAssetManager::GetCloudMediaAssetTaskStatus()
@@ -489,9 +513,7 @@ bool CloudMediaAssetManager::SetIsThumbnailUpdate()
 
 int32_t CloudMediaAssetManager::GetTaskStatus()
 {
-    if (operation_ == nullptr) {
-        return static_cast<int32_t>(CloudMediaAssetTaskStatus::IDLE);
-    }
+    CHECK_AND_RETURN_RET(operation_ != nullptr, static_cast<int32_t>(CloudMediaAssetTaskStatus::IDLE));
     return static_cast<int32_t>(operation_->GetTaskStatus());
 }
 
@@ -506,9 +528,8 @@ int32_t CloudMediaAssetManager::GetDownloadType()
 
 bool CloudMediaAssetManager::SetBgDownloadPermission(const bool &flag)
 {
-    if (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE) {
-        return false;
-    }
+    bool cond = (operation_ == nullptr || operation_->GetTaskStatus() == CloudMediaAssetTaskStatus::IDLE);
+    CHECK_AND_RETURN_RET(!cond, false);
     MEDIA_INFO_LOG("Success set isBgDownloadPermission, flag: %{public}d.", static_cast<int32_t>(flag));
     operation_->isBgDownloadPermission_ = flag;
     return true;

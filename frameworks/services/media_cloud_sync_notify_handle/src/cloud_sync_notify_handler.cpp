@@ -49,9 +49,8 @@ static bool IsCloudInsertTaskPriorityHigh()
 
 static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 {
-    if (cloudNotifyInfo.empty()) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(!cloudNotifyInfo.empty(), false);
+
     for (char const& ch : cloudNotifyInfo) {
         if (isdigit(ch) == 0) {
             return false;
@@ -60,13 +59,14 @@ static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
     return true;
 }
 
-static void UpdateCloudAssetDownloadTask(const bool verifyFlag)
+static void UpdateCloudAssetDownloadTask(const std::list<Uri> &uris)
 {
-    CHECK_AND_RETURN_LOG(verifyFlag, "Current status is not suitable for task.");
-    if (!CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate() && CloudSyncUtils::IsCloudSyncSwitchOn() &&
-        CloudSyncUtils::IsCloudDataAgingPolicyOn()) {
-        CloudMediaAssetManager::GetInstance().StartDownloadCloudAsset(CloudMediaDownloadType::DOWNLOAD_GENTLE);
-    }
+    string uriString = uris.front().ToString();
+    auto pos = uriString.find_last_of('/');
+    CHECK_AND_RETURN_LOG(pos != std::string::npos, "Current status is not suitable for SetIsThumbnailUpdate");
+    string idString = uriString.substr(pos + 1);
+    CHECK_AND_RETURN_LOG(IsCloudNotifyInfoValid(idString), "Failed to check idString");
+    CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
 }
 
 void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
@@ -76,7 +76,6 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
         MEDIA_INFO_LOG("current status is not suitable for task");
         return;
     }
-    bool verifyFlag = false;
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto pos = uriString.find_last_of('/');
@@ -88,12 +87,8 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             MEDIA_WARN_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
-        if (!verifyFlag) {
-            verifyFlag = true;
-        }
         ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString, isCloudInsertTaskPriorityHigh);
     }
-    UpdateCloudAssetDownloadTask(verifyFlag);
 }
 
 void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
@@ -167,6 +162,7 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
     switch (type) {
         case ChangeType::INSERT:
             HandleInsertEvent(uris);
+            UpdateCloudAssetDownloadTask(uris);
             break;
         case ChangeType::DELETE:
             HandleDeleteEvent(uris);
@@ -179,6 +175,7 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
 
 void CloudSyncNotifyHandler::HandleDirtyDataFix(const std::list<Uri> &uris, const CloudSyncErrType &errType)
 {
+    MEDIA_INFO_LOG("HandleDirtyDataFix start, err: %{public}d", static_cast<int32_t>(errType));
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
     switch (errType) {
         case CloudSyncErrType::CONTENT_NOT_FOUND:
@@ -198,6 +195,9 @@ void CloudSyncNotifyHandler::HandleDirtyDataFix(const std::list<Uri> &uris, cons
             break;
         case CloudSyncErrType::ALBUM_NOT_FOUND:
             HandleAlbumNotFound(uris);
+            break;
+        case CloudSyncErrType::THM_GENERATE_FAILED:
+            HandleThumbnailGenerateFailed(uris);
             break;
         default:
             MEDIA_ERR_LOG("HandleDirtyDataFix, Unrecognized error type : %{public}d", errType);
@@ -420,6 +420,28 @@ void CloudSyncNotifyHandler::HandleAlbumNotFound(const std::list<Uri> &uris)
         }
     }
     return;
+}
+
+void CloudSyncNotifyHandler::HandleThumbnailGenerateFailed(const std::list<Uri> &uris)
+{
+    for (auto &uri : uris) {
+        std::string uriString = uri.ToString();
+        std::string fileId = GetfileIdFromPastDirtyDataFixUri(uriString);
+        if (fileId == "") {
+            continue;
+        }
+        if (fileId.compare(INVALID_ZERO_ID) == 0 || !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+
+        int32_t err = ThumbnailService::GetInstance()->RegenerateThumbnailFromCloud(fileId);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("RegenerateThumbnailFromCloud failed : %{public}d", err);
+            continue;
+        }
+        MEDIA_INFO_LOG("RegenerateThumbnailFromCloud %{public}s success, uri: ", uriString.c_str());
+    }
 }
 
 void CloudSyncNotifyHandler::MakeResponsibilityChain()

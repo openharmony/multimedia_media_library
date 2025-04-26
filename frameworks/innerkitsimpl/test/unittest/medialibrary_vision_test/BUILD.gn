@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_vision_unittest") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/medialibrary-data"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",

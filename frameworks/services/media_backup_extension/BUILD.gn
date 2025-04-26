@@ -29,6 +29,8 @@ group("media_backup_package") {
 ohos_shared_library("mediabackup") {
   include_dirs = [
     "./include",
+    "./include/classify",
+    "./include/geo_dictionary",
     "./include/geo_knowledge",
     "./include/highlight",
     "./include/log",
@@ -54,7 +56,9 @@ ohos_shared_library("mediabackup") {
     "./src/backup_restore_service.cpp",
     "./src/base_restore.cpp",
     "./src/burst_key_generator.cpp",
+    "./src/classify/clone_restore_classify.cpp",
     "./src/clone_restore.cpp",
+    "./src/geo_dictionary/clone_restore_geo_dictionary.cpp",
     "./src/geo_knowledge/clone_restore_geo.cpp",
     "./src/geo_knowledge/geo_knowledge_restore.cpp",
     "./src/highlight/clone_restore_cv_analysis.cpp",
@@ -83,6 +87,7 @@ ohos_shared_library("mediabackup") {
     "./src/restore/photo_album_restore.cpp",
     "./src/restore/photos_clone.cpp",
     "./src/restore/photos_dao.cpp",
+    "./src/restore/photos_data_handler.cpp",
     "./src/restore/photos_restore.cpp",
     "./src/restore/tab_old_photos_restore.cpp",
     "./src/upgrade_restore.cpp",
@@ -107,6 +112,7 @@ ohos_shared_library("mediabackup") {
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
+    "e2fsprogs:libext2_uuid",
     "ffrt:libffrt",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
@@ -123,8 +129,6 @@ ohos_shared_library("mediabackup") {
     "relational_store:rdb_data_share_adapter",
     "zlib:shared_libz",
   ]
-
-  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
 
   defines = []
 

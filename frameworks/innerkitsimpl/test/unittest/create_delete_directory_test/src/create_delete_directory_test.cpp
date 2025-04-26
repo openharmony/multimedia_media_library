@@ -41,7 +41,6 @@ unsigned char g_fileContentJpg[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b,
     0x20, 0x20, 0x20, 0x50
 };
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void CreateDeleteDirectory::SetUpTestCase()
 {
@@ -50,10 +49,7 @@ void CreateDeleteDirectory::SetUpTestCase()
     MEDIA_INFO_LOG("CreateDeleteDirectory::SetUpTestCase:: Finish");
 }
 
-void CreateDeleteDirectory::TearDownTestCase()
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void CreateDeleteDirectory::TearDownTestCase() {}
 
 void CreateDeleteDirectory::SetUp() {}
 void CreateDeleteDirectory::TearDown(void) {}
@@ -130,7 +126,7 @@ static int32_t TrashDir(string &&testNum)
  * @tc.desc      : 1. create directory: Pictures/test001/
  *                 2. delete directory: Pictures/testDelete
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_001, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_001, TestSize.Level1)
 {
     int32_t createRes = CreateDir("Pictures/test001/");
     ASSERT_GT(createRes, 0);
@@ -146,7 +142,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_001, TestSize.Level0)
  * @tc.desc      : 1. get directory :Pictures
  *                 2. delete directory: Pictures
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_002, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_002::Start");
     int32_t albumId = GetAlbumId("Pictures");
@@ -162,7 +158,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_002, TestSize.Level0)
  * @tc.desc      : 1. get directory :Videos
  *                 2. delete directory: Videos
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_003, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_003::Start");
     int32_t albumId = GetAlbumId("Videos");
@@ -178,7 +174,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_003, TestSize.Level0)
  * @tc.desc      : 1. get directory :Audios
  *                 2. delete directory: Audios
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_004, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_004::Start");
     int32_t albumId = GetAlbumId("Audios");
@@ -194,7 +190,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_004, TestSize.Level0)
  * @tc.desc      : 1. get directory :Documents
  *                 2. delete directory: Documents
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_005, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_005::Start");
     int32_t albumId = GetAlbumId("Documents");
@@ -210,7 +206,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_005, TestSize.Level0)
  * @tc.desc      : 1. get directory :Download
  *                 2. delete directory: Download
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_006, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_006::Start");
     int32_t albumId = GetAlbumId("Download");
@@ -227,7 +223,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_006, TestSize.Level0)
  *                 2. create directory: Pictures/test007/ fail
  *                 3. delete directory: Pictures/test007/
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_007, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_007::Start");
     int32_t resFirst = CreateDir("Pictures/test007/");
@@ -248,7 +244,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_007, TestSize.Level0)
  *                 2. delete directory :Pictures/test008
  *                 3. delete directory: Pictures/test008
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_008, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_008::Start");
     int32_t resCreate = CreateDir("Pictures/test008/");
@@ -268,7 +264,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_008, TestSize.Level0)
  *                 2. create directory: Videos/test009/
  *                 3. delete directory: Videos/test009/
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_009, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_009::Start");
     int32_t resFirst = CreateDir("Videos/test009/");
@@ -289,7 +285,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_009, TestSize.Level0)
  *                 2. delete directory :Videos/test010
  *                 3. delete directory: Videos/test010
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_010, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_010::Start");
     int32_t resCreate = CreateDir("Videos/test010/");
@@ -309,7 +305,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_010, TestSize.Level0)
  *                 2. create directory: Audios/test011/
  *                 3. delete directory: Audios/test011/
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_011, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_011, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_011::Start");
     int32_t resFirst = CreateDir("Audios/test011/");
@@ -329,7 +325,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_011, TestSize.Level0)
  *                 2. delete directory :Audios/test012
  *                 3. delete directory: Audios/test012
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_012, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_012, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_012::Start");
     int32_t resCreate = CreateDir("Audios/test012/");
@@ -349,7 +345,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_012, TestSize.Level0)
  *                 2. create directory: Documents/test013/
  *                 3. delete directory: Documents/test013/
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_013, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_013, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_013::Start");
     int32_t resFirst = CreateDir("Documents/test013/");
@@ -370,7 +366,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_013, TestSize.Level0)
  *                 2. delete directory :Documents/test014
  *                 3. delete directory: Documents/test014
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_014, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_014, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_014::Start");
     int32_t resCreate = CreateDir("Documents/test014/");
@@ -390,7 +386,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_014, TestSize.Level0)
  *                 2. create directory: Download/test015/
  *                 3. delete directory: Download/test015/
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_015, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_015, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_015::Start");
     int32_t resFirst = CreateDir("Download/test015/");
@@ -411,7 +407,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_015, TestSize.Level0)
  *                 2. delete directory :Download/test016
  *                 3. delete directory: Download/test016
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_016, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_016, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_016::Start");
     int32_t resCreate = CreateDir("Download/test016/");
@@ -429,7 +425,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_016, TestSize.Level0)
  * @tc.name      : directory_test_017
  * @tc.desc      : 1. create directory parameter is ""
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_017, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_017, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_017::Start");
     int32_t createRes = CreateDir("");
@@ -441,7 +437,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_017, TestSize.Level0)
  * @tc.name      : directory_test_018
  * @tc.desc      : 1. create directory parameter illegal : test_018
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_018, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_018, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_018::Start");
     int32_t createRes = CreateDir("test_018");
@@ -453,7 +449,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_018, TestSize.Level0)
  * @tc.name      : directory_test_019
  * @tc.desc      : 1. delete directory parameter dose not exist
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_019, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_019, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_019::Start");
     string uri = "not_exist";
@@ -466,7 +462,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_019, TestSize.Level0)
  * @tc.name      : directory_test_020
  * @tc.desc      : 1. dir trash
  */
-HWTEST_F(CreateDeleteDirectory, directory_test_020, TestSize.Level0)
+HWTEST_F(CreateDeleteDirectory, directory_test_020, TestSize.Level1)
 {
     MEDIA_INFO_LOG("directory_test_020::Start");
     int32_t trashRes = TrashDir("directory_test_020");

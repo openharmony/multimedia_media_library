@@ -363,6 +363,7 @@ public:
     static napi_status GetStringArray(napi_env env, napi_value arg, std::vector<std::string> &array);
     static void UriAddTableName(std::string &uri, const std::string tableName);
     static std::string GetFileIdFromUri(const std::string &uri);
+    static std::string GetUserIdFromUri(const std::string &uri);
     static int32_t GetFileIdFromPhotoUri(const std::string &uri);
     static MediaType GetMediaTypeFromUri(const std::string &uri);
     template <class AsyncContext>
@@ -438,6 +439,9 @@ public:
 
     static void CreateNapiErrorObject(napi_env env, napi_value &errorObj, const int32_t errCode,
         const std::string errMsg);
+
+    static void InvokeJSAsyncMethodWithoutWork(napi_env env, napi_deferred deferred, napi_ref callbackRef,
+        const JSAsyncContextOutput &asyncContext);
 
     static void InvokeJSAsyncMethod(napi_env env, napi_deferred deferred, napi_ref callbackRef, napi_async_work work,
         const JSAsyncContextOutput &asyncContext);

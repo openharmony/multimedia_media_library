@@ -71,6 +71,8 @@ void Metadata::InitV2()
         &Metadata::SetBurstCoverLevel);
     memberFuncMap_[PhotoColumn::PHOTO_OWNER_ALBUM_ID] = make_pair(ResultSetDataType::TYPE_INT32,
         &Metadata::SetAlbumId);
+    memberFuncMap_[PhotoColumn::STAGE_VIDEO_TASK_STATUS] = make_pair(ResultSetDataType::TYPE_INT32,
+        &Metadata::SetStageVideoTaskStatus);
 }
 
 void Metadata::Init()
@@ -609,6 +611,16 @@ void Metadata::SetBurstCoverLevel(const VariantData &burstCoverLevel)
 int32_t Metadata::GetBurstCoverLevel() const
 {
     return burstCoverLevel_;
+}
+
+void Metadata::SetStageVideoTaskStatus(const VariantData &stageVideoTaskStatus)
+{
+    stageVideoTaskStatus_ = std::get<int32_t>(stageVideoTaskStatus);
+}
+
+int32_t Metadata::GetStageVideoTaskStatus() const
+{
+    return stageVideoTaskStatus_;
 }
 } // namespace Media
 } // namespace OHOS

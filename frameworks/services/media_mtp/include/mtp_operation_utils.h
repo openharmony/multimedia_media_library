@@ -17,14 +17,12 @@
 #include <memory>
 #include <vector>
 #include "mtp_operation_context.h"
-#include "mtp_media_library.h"
 #include "payload_data.h"
 namespace OHOS {
 namespace Media {
-class MtpMedialibraryManager;
 class MtpOperationUtils {
 public:
-    explicit MtpOperationUtils(const std::shared_ptr<MtpOperationContext> &context);
+    explicit MtpOperationUtils(const std::shared_ptr<MtpOperationContext> &context, bool isInit = false);
     ~MtpOperationUtils();
 
     uint16_t GetRespCommonData(std::shared_ptr<PayloadData> &data, int errorCode);
@@ -64,6 +62,7 @@ public:
     static int32_t GetBatteryLevel();
     static std::string GetPropertyInner(const std::string &property, const std::string &defValue);
     static bool SetPropertyInner(const std::string &property, const std::string &value);
+    static void SetIsDevicePropSet();
 
 private:
     uint16_t CheckErrorCode(int errorCode);
@@ -71,10 +70,9 @@ private:
     void SendEventPacket(uint32_t objectHandle, uint16_t eventCode);
     uint16_t HasStorage(int &errorCode);
     int32_t RecevieSendObject(MtpFileRange &object, int fd);
+    void ModifyObjectInfo();
 
     std::shared_ptr<MtpOperationContext> context_;
-    std::shared_ptr<MtpMedialibraryManager> mtpMedialibraryManager_;
-    std::shared_ptr<MtpMediaLibrary> mtpMediaLibrary_;
 };
 } // namespace Media
 } // namespace OHOS

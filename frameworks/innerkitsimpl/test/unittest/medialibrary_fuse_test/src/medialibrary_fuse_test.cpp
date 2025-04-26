@@ -46,8 +46,6 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "uri.h"
@@ -58,6 +56,7 @@
 #include "permission_utils.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_object_utils.h"
+#include "parameter.h"
 #define FUSE_USE_VERSION 34
 #include <fuse.h>
 
@@ -74,6 +73,8 @@ namespace OHOS {
 namespace Media {
 
 static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
+static const char* PARAM_PRODUCT_MODEL = "const.product.model";
+static constexpr int32_t PARAM_PRODUCT_MODEL_LENGTH = 512;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unordered_map<string, bool> fuseTestPermsMap = {
@@ -186,6 +187,15 @@ void ClearAndRestart()
     SetTables();
 }
 
+std::string GetSystemProductModel()
+{
+    char param[PARAM_PRODUCT_MODEL_LENGTH] = {0};
+    if (GetParameter(PARAM_PRODUCT_MODEL, "", param, PARAM_PRODUCT_MODEL_LENGTH) > 0) {
+        return param;
+    }
+    return "";
+}
+
 void MediaLibraryFuseTest::SetUpTestCase()
 {
     MediaFuseManager::GetInstance();
@@ -229,6 +239,77 @@ int32_t GetPathFromFileId(string &path, const string &fileId)
     return 0;
 }
 
+string GetFilePath(int fileId)
+{
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
+        return "";
+    }
+
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("can not get rdbstore");
+        return "";
+    }
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get file Path");
+        return "";
+    }
+    string path = GetStringVal(PhotoColumn::MEDIA_FILE_PATH, resultSet);
+    return path;
+}
+
+int32_t MakePhotoUnpending(int fileId, bool isMovingPhoto = false)
+{
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
+        return E_INVALID_FILEID;
+    }
+
+    string path = GetFilePath(fileId);
+    if (path.empty()) {
+        MEDIA_ERR_LOG("Get path failed");
+        return E_INVALID_VALUES;
+    }
+    int32_t errCode = MediaFileUtils::CreateAsset(path);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Can not create asset");
+        return errCode;
+    }
+
+    if (isMovingPhoto) {
+        string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
+        errCode = MediaFileUtils::CreateAsset(videoPath);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Can not create video asset");
+            return errCode;
+        }
+    }
+
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("can not get rdbstore");
+        return E_HAS_DB_ERROR;
+    }
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    ValuesBucket values;
+    values.PutLong(PhotoColumn::MEDIA_TIME_PENDING, 0);
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    int32_t changedRows = -1;
+    errCode = g_rdbStore->Update(cmd, changedRows);
+    if (errCode != E_OK || changedRows <= 0) {
+        MEDIA_ERR_LOG("Update pending failed, errCode = %{public}d, changeRows = %{public}d",
+            errCode, changedRows);
+        return errCode;
+    }
+
+    return E_OK;
+}
+
 int32_t CreatePhotoApi10(int mediaType, const string &displayName)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
@@ -241,6 +322,11 @@ int32_t CreatePhotoApi10(int mediaType, const string &displayName)
     if (ret < 0) {
         MEDIA_ERR_LOG("Create Photo failed, errCode=%{public}d", ret);
         return ret;
+    }
+
+    int32_t errCode = MakePhotoUnpending(ret);
+    if (errCode != E_OK) {
+        return errCode;
     }
     return ret;
 }
@@ -289,9 +375,7 @@ bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms, co
     return true;
 }
 
-void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api) {}
-
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -305,10 +389,10 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_001, TestSize.Level0)
     GetPathFromFileId(path, fileId);
     int fd = -1;
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
-    EXPECT_EQ(err, E_ERR);
+    EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -326,7 +410,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_002, TestSize.Level0)
     EXPECT_EQ(err, E_ERR);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_003");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -348,10 +432,10 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_003, TestSize.Level0)
     ret = TestInsert(dataShareValue);
     EXPECT_EQ(ret, 0);
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
-    EXPECT_EQ(err, E_ERR);
+    EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_004");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -374,10 +458,10 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_004, TestSize.Level0)
     ret = TestInsert(dataShareValue);
     EXPECT_EQ(ret, 0);
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
-    EXPECT_EQ(err, E_ERR);
+    EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_open_test_005");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -400,10 +484,10 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_open_test_005, TestSize.Level0)
     ret = TestInsert(dataShareValue);
     EXPECT_EQ(ret, 0);
     int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
-    EXPECT_EQ(err, E_ERR);
+    EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_close_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -411,16 +495,28 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_001, TestSize.Level0
         MEDIA_ERR_LOG("create photo failed,photoId=%{public}d", photoId);
         return;
     }
-    MEDIA_INFO_LOG("creat photo succ");
-    string fileId = to_string(photoId);
+
     string path;
+    string fileId = to_string(photoId);
     GetPathFromFileId(path, fileId);
-    int fd = 1;
-    int32_t err = MediaFuseManager::GetInstance().DoRelease(path.c_str(), fd);
+
+    OHOS::DataShare::DataShareValuesBucket dataShareValue;
+    dataShareValue.Put(AppUriPermissionColumn::APP_ID, "fuse_test_appid_001");
+    dataShareValue.Put(AppUriPermissionColumn::FILE_ID, photoId);
+    dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_PERSIST_READ);
+    dataShareValue.Put(AppUriPermissionColumn::TARGET_TOKENID, "1");
+    auto ret = TestInsert(dataShareValue);
+    EXPECT_EQ(ret, 0);
+
+    int fd = 0;
+    int32_t err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_RDONLY, fd);
+    EXPECT_EQ(err, E_OK);
+
+    err = MediaFuseManager::GetInstance().DoRelease(path.c_str(), fd);
     EXPECT_EQ(err, E_OK);
 }
 
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd MediaLibrary_fuse_close_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -438,7 +534,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_fuse_close_test_002, TestSize.Level0
 }
 
 // Test database operation failures
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_PrepareUniqueNumberTable_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_PrepareUniqueNumberTable_test_001, TestSize.Level1)
 {
     // Test when g_rdbStore is nullptr
     g_rdbStore = nullptr;
@@ -451,7 +547,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_PrepareUniqueNumberTable_test_001, T
 }
  
 // Test different media types
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CreatePhoto_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CreatePhoto_test_001, TestSize.Level1)
 {
     // Test video creation
     int32_t videoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "video.mp4");
@@ -463,7 +559,7 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CreatePhoto_test_001, TestSize.Level
 }
  
 // Test permission combinations
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Permission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Permission_test_001, TestSize.Level1)
 {
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
     EXPECT_GE(photoId, E_OK);
@@ -485,11 +581,11 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Permission_test_001, TestSize.Level0
     fuseTestPermsMap[PERM_READ_IMAGEVIDEO] = false;
  
     err = MediaFuseManager::GetInstance().DoOpen(path.c_str(), O_WRONLY, fd);
-    EXPECT_EQ(err, E_ERR);
+    EXPECT_EQ(err, E_OK);
 }
  
 // Test invalid paths
-HWTEST_F(MediaLibraryFuseTest, MediaLibrary_InvalidPath_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_InvalidPath_test_001, TestSize.Level1)
 {
     int fd = -1;
  
@@ -500,6 +596,18 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_InvalidPath_test_001, TestSize.Level
     // Test with invalid path format
     err = MediaFuseManager::GetInstance().DoOpen("/invalid/path/format", O_RDONLY, fd);
     EXPECT_EQ(err, E_ERR);
+}
+
+// Test system device model
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CheckDevice_test_001, TestSize.Level1)
+{
+    bool isLinux = MediaFuseManager::GetInstance().CheckDeviceInLinux();
+
+    string deviceModel = GetSystemProductModel();
+    MEDIA_INFO_LOG("media library check device model:%{public}s", deviceModel.c_str());
+    // klv(HYM-W5821) and rk(HH-SCDAYU200) are linux kernel
+    bool isLinuxSys = (deviceModel == "HYM-W5821") || (deviceModel == "HH-SCDAYU200");
+    EXPECT_EQ(isLinux, isLinuxSys);
 }
 } // namespace Media
 } // namespace OHOS

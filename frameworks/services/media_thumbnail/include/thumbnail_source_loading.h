@@ -141,6 +141,11 @@ public:
     static const std::unordered_map<SourceState, SourceState> CLOUD_SOURCE_LOADING_STATES;
 
     /*
+     * Define source loading states sequence for creating thumbnails from cloud origin photo.
+     */
+    static const std::unordered_map<SourceState, SourceState> CLOUD_ORIGIN_SOURCE_LOADING_STATES;
+
+    /*
      * Define source loading states sequence for creating thumbnails on demand.
      */
     static const std::unordered_map<SourceState, SourceState> ALL_SOURCE_LOADING_STATES;
@@ -176,7 +181,7 @@ public:
         IsSizeLargeEnough = nullptr;
     };
     ~SourceLoader() = default;
-    bool RunLoading();
+    EXPORT bool RunLoading();
 
 private:
     EXPORT void SetCurrentStateFunction();
@@ -187,6 +192,9 @@ private:
     EXPORT bool GeneratePictureSource(std::unique_ptr<ImageSource> &imageSource, const Size &targetSize);
     EXPORT bool GeneratePixelMapSource(std::unique_ptr<ImageSource> &imageSource, const Size &sourceSize,
         const Size &targetSize);
+    EXPORT bool CreateSourceFromOriginalPhotoPicture();
+    EXPORT bool CreateSourceWithWholeOriginalPicture();
+    EXPORT bool CreateSourceWithOriginalPictureMainPixel();
 
     bool IsFinal();
 

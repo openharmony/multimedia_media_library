@@ -94,6 +94,7 @@ bool MtpPacket::IsNeedDataPhase(uint16_t operationCode)
         case MTP_OPERATION_SEND_OBJECT_INFO_CODE:
         case MTP_OPERATION_SEND_OBJECT_CODE:
         case MTP_OPERATION_GET_DEVICE_PROP_DESC_CODE:
+        case MTP_OPERATION_GET_DEVICE_PROP_VALUE_CODE:
         case MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE:
         case MTP_OPERATION_GET_OBJECT_PROPS_SUPPORTED_CODE:
         case MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE:
@@ -165,16 +166,10 @@ int MtpPacket::Write()
 int MtpPacket::Parser()
 {
     int errorCode = ParserHead();
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("ParserHead fail err: %{public}d", errorCode);
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "ParserHead fail err: %{public}d", errorCode);
 
     errorCode = ParserPayload();
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("ParserPayload fail err: %{public}d", errorCode);
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "ParserPayload fail err: %{public}d", errorCode);
     return MTP_SUCCESS;
 }
 
@@ -187,33 +182,22 @@ int MtpPacket::Maker(bool isPayload)
     headerData_->SetContainerLength(writeSize_);
 
     int errorCode = MakeHead();
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MakeHead fail err: %{public}d", errorCode);
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "MakeHead fail err: %{public}d", errorCode);
 
     errorCode = MakerPayload();
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("MakeHead fail err: %{public}d", errorCode);
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "MakeHead fail err: %{public}d", errorCode);
     return MTP_SUCCESS;
 }
 
 int MtpPacket::ParserHead()
 {
-    if (readSize_ <= 0) {
-        MEDIA_ERR_LOG("ParserHead fail readSize_ <= 0");
-        return MTP_ERROR_PACKET_INCORRECT;
-    }
+    CHECK_AND_RETURN_RET_LOG(readSize_ > 0, MTP_ERROR_PACKET_INCORRECT, "ParserHead fail readSize_ <= 0");
     if (headerData_ == nullptr) {
         headerData_ = make_shared<HeaderData>(context_);
     }
     int errorCode = headerData_->Parser(readBuffer_, readSize_);
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("PacketHeader Parser fail err: %{public}d", errorCode);
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "PacketHeader Parser fail err: %{public}d",
+        errorCode);
     return MTP_SUCCESS;
 }
 
@@ -222,61 +206,34 @@ int MtpPacket::ParserPayload()
     CHECK_AND_RETURN_RET_LOG(headerData_ != nullptr, MTP_ERROR_PACKET_INCORRECT,
         "ParserPayload failed, headerData_ is nullptr");
 
-    if (readSize_ <= 0) {
-        MEDIA_ERR_LOG("ParserPayload fail readSize_ <= 0");
-        return MTP_ERROR_PACKET_INCORRECT;
-    }
-    if (headerData_->GetCode() == 0) {
-        MEDIA_ERR_LOG("GetOperationCode fail");
-        return MTP_ERROR_PACKET_INCORRECT;
-    }
-
-    if (headerData_->GetContainerType() == 0) {
-        MEDIA_ERR_LOG("GetOperationCode fail");
-        return MTP_ERROR_PACKET_INCORRECT;
-    }
+    CHECK_AND_RETURN_RET_LOG(readSize_ > 0, MTP_ERROR_PACKET_INCORRECT, "ParserPayload fail readSize_ <= 0");
+    CHECK_AND_RETURN_RET_LOG(headerData_->GetCode() != 0, MTP_ERROR_PACKET_INCORRECT, "GetOperationCode fail");
+    CHECK_AND_RETURN_RET_LOG(headerData_->GetContainerType() != 0, MTP_ERROR_PACKET_INCORRECT, "GetOperationCode fail");
 
     payloadData_ = PacketPayloadFactory::CreatePayload(context_,
         headerData_->GetCode(), headerData_->GetContainerType());
-    if (payloadData_ == nullptr) {
-        MEDIA_ERR_LOG("payloadData_ is nullptr");
-        return MTP_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(payloadData_ != nullptr, MTP_FAIL, "payloadData_ is nullptr");
 
     int errorCode = payloadData_->Parser(readBuffer_, readSize_);
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("PacketHeader Parser fail err: %{public}d", errorCode);
-    }
+    CHECK_AND_PRINT_LOG(errorCode == MTP_SUCCESS, "PacketHeader Parser fail err: %{public}d", errorCode);
     return errorCode;
 }
 
 int MtpPacket::MakeHead()
 {
-    if (headerData_ == nullptr) {
-        MEDIA_ERR_LOG("headerData_ is null!");
-        return MTP_SUCCESS;
-    }
+    CHECK_AND_RETURN_RET_LOG(headerData_ != nullptr, MTP_SUCCESS, "headerData_ is null!");
 
     int errorCode = headerData_->Maker(writeBuffer_);
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("HeaderData Make fail err: %{public}d", errorCode);
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "HeaderData Make fail err: %{public}d", errorCode);
     return MTP_SUCCESS;
 }
 
 int MtpPacket::MakerPayload()
 {
-    if (payloadData_ == nullptr) {
-        MEDIA_ERR_LOG("payloadData_ is null!");
-        return MTP_SUCCESS;
-    }
+    CHECK_AND_RETURN_RET_LOG(payloadData_ != nullptr, MTP_SUCCESS, "payloadData_ is null!");
 
     int errorCode = payloadData_->Maker(writeBuffer_);
-    if (errorCode != MTP_SUCCESS) {
-        MEDIA_ERR_LOG("PayloadData Make fail err: %{public}d", errorCode);
-        return errorCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, errorCode, "PayloadData Make fail err: %{public}d", errorCode);
     return MTP_SUCCESS;
 }
 

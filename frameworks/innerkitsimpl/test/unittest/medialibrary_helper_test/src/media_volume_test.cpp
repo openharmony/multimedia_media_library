@@ -28,35 +28,35 @@ namespace OHOS {
 namespace Media {
 const int FILE_DATA_SIZE = 4;
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_GetAudiosSize_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_GetAudiosSize_Test_001, TestSize.Level1)
 {
     MediaVolume mediaVolume;
     int64_t ret = mediaVolume.GetAudiosSize();
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_GetFilesSize_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_GetFilesSize_Test_001, TestSize.Level1)
 {
     MediaVolume mediaVolume;
     int64_t ret = mediaVolume.GetFilesSize();
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_GetImagesSize_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_GetImagesSize_Test_001, TestSize.Level1)
 {
     MediaVolume mediaVolume;
     int64_t ret = mediaVolume.GetImagesSize();
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_GetVideosSize_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_GetVideosSize_Test_001, TestSize.Level1)
 {
     MediaVolume mediaVolume;
     int64_t ret = mediaVolume.GetVideosSize();
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_SetSize_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_SetSize_Test_001, TestSize.Level1)
 {
     MediaVolume mediaVolume;
     int mediaType = MEDIA_TYPE_AUDIO;

@@ -414,7 +414,7 @@ void CheckAlbum(int64_t albumId, int count, int64_t coverId, bool isCoverSatisfi
     EXPECT_EQ(GetIsCoverSatisfied(resultSet), isCoverSatisfied);
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_no_album_id, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_no_album_id, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_no_album_id::Start");
     OperationType operationType = OperationType::GROUP_ALBUM_NAME;
@@ -424,7 +424,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_no_album
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_no_album_id End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_no_album_name, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_no_album_name, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_no_album_name::Start");
     OperationType operationType = OperationType::GROUP_ALBUM_NAME;
@@ -436,7 +436,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_no_album
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_no_album_name End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_album_name_empty, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_album_name_empty, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_album_name_empty::Start");
     OperationType operationType = OperationType::GROUP_ALBUM_NAME;
@@ -449,7 +449,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_album_na
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_album_name_empty End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_update_err, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_update_err, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_update_err::Start");
     OperationType operationType = OperationType::GROUP_ALBUM_NAME;
@@ -463,7 +463,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_update_e
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_update_err End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_update_succ, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_update_succ, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_update_succ::Start");
     OperationType operationType = OperationType::GROUP_ALBUM_NAME;
@@ -482,7 +482,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_update_s
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_update_succ End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_no_coverUri_id, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_no_coverUri_id, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_no_coverUri_id::Start");
     OperationType operationType = OperationType::GROUP_COVER_URI;
@@ -492,7 +492,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_no_coverU
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_no_coverUri_id End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_no_coverUri, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_no_coverUri, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_no_coverUri::Start");
     OperationType operationType = OperationType::GROUP_COVER_URI;
@@ -503,7 +503,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_no_coverU
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_no_coverUri End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_coverUri_empty, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_coverUri_empty, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_coverUri_empty::Start");
     OperationType operationType = OperationType::GROUP_COVER_URI;
@@ -515,7 +515,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_coverUri_
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_coverUri_empty End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_update_err, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_update_err, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_update_err::Start");
     OperationType operationType = OperationType::GROUP_COVER_URI;
@@ -528,7 +528,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_update_er
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_update_err End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_update_succ, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_update_succ, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_update_succ::Start");
     OperationType operationType = OperationType::GROUP_COVER_URI;
@@ -545,7 +545,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_update_su
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_update_succ End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_no_album_id, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_no_album_id, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DismissGroupPhotoAlbum_no_album_id::Start");
     OperationType operationType = OperationType::DISMISS;
@@ -555,7 +555,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_no_album
     MEDIA_INFO_LOG("DismissGroupPhotoAlbum_no_album_id End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_update_err, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_update_err, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DismissGroupPhotoAlbum_update_err::Start");
     OperationType operationType = OperationType::DISMISS;
@@ -567,7 +567,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_update_e
     MEDIA_INFO_LOG("DismissGroupPhotoAlbum_update_err End");
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_update_succ, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_update_succ, TestSize.Level1)
 {
     MEDIA_INFO_LOG("DismissGroupPhotoAlbum_update_succ::Start");
     OperationType operationType = OperationType::DISMISS;
@@ -624,7 +624,7 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbumInfoByFileId(int32_t fileId)
     return resultSet;
 }
 
-HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdatePortraitAlbumCoverSatisfied, TestSize.Level0)
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdatePortraitAlbumCoverSatisfied, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdatePortraitAlbumCoverSatisfied Start");
     ClearTables();
@@ -655,6 +655,118 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdatePortraitAlbumCoverSatisfi
 
     ClearTables();
     MEDIA_INFO_LOG("UpdatePortraitAlbumCoverSatisfied End");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum_test_001, TestSize.Level0)
+{
+    Uri uri("");
+    MediaLibraryCommand cmd(uri);
+    std::string whereClause = "ALBUM_TYPE =? AND ALBUM_SUBTYPE =?";
+    std::vector<std::string> whereArgs = {"1", "2"};
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    std::vector<std::string> columns = {
+        "ALBUM_ID",
+        "ALBUM_TYPE",
+        "ALBUM_SUBTYPE",
+        "IS_REMOVED",
+        "IS_ME",
+        "RENAME_OPERATION",
+        "TAG_ID",
+    };
+    auto result = MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    EXPECT_NE(result, nullptr);
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum_test_002, TestSize.Level0)
+{
+    Uri uri("");
+    MediaLibraryCommand cmd(uri);
+    std::string whereClause = "";
+    std::vector<std::string> whereArgs = {"1", "2"};
+    cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
+    std::vector<std::string> columns = {
+        "ALBUM_ID",
+        "ALBUM_TYPE",
+        "ALBUM_SUBTYPE",
+        "IS_REMOVED",
+        "IS_ME",
+        "RENAME_OPERATION",
+        "TAG_ID",
+    };
+    auto result = MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    EXPECT_NE(result, nullptr);
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdateMergeGroupAlbumsInfo_test_002, TestSize.Level0)
+{
+    MergeAlbumInfo info = {
+        100,
+        "tag1",
+        0,
+        0,
+        "cover100.jpg",
+        0,
+        0,
+        0,
+        0,
+        "Album1",
+        static_cast<uint8_t>(CoverSatisfiedType::NO_SETTING),
+        "tag1",
+    };
+    MergeAlbumInfo info2 = {
+        101,
+        "tag2",
+        0,
+        0,
+        "cover101.jpg",
+        0,
+        0,
+        0,
+        0,
+        "Album2",
+        static_cast<uint8_t>(CoverSatisfiedType::DEFAULT_SETTING),
+        "tag2",
+    };
+    std::vector<MergeAlbumInfo> mergeAlbumInfo = {info, info2};
+    int32_t result = MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(mergeAlbumInfo);
+    EXPECT_EQ(result, E_OK);
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_Unknown_Type, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetGroupPhotoAlbumName_no_album_id::Start");
+    OperationType operationType = OperationType::UNKNOWN_TYPE;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates dataPredicates;
+    EXPECT_EQ(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_ERR);
+    MEDIA_INFO_LOG("SetGroupPhotoAlbumName_no_album_id End");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdateGroupPhotoAlbumById_test_001, TestSize.Level0)
+{
+    int32_t albumId = 0;
+    MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(albumId);
+    albumId = -1;
+    MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(albumId);
+    albumId = 1;
+    MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(albumId);
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetAnalysisAlbumOrderPosition_test_001, TestSize.Level0)
+{
+    const std::string ORDER_POSITION = "ORDER_POSITION";
+    const std::string ALBUM_ID = "ALBUM_ID";
+    NativeRdb::ValuesBucket values;
+    values.Put(ORDER_POSITION, "5");
+    MediaLibraryCommand cmd(
+        OperationObject::ANALYSIS_PHOTO_ALBUM,
+        OperationType::UPDATE,
+        values
+    );
+    int32_t result = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
+    EXPECT_NE(result, E_OK);
 }
 } // namespace Media
 } // namespace OHOS

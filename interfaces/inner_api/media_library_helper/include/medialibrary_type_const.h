@@ -67,7 +67,8 @@ enum class CloudSyncErrType : int32_t {
     LCD_NOT_FOUND,
     LCD_SIZE_IS_TOO_LARGE,
     CONTENT_SIZE_IS_ZERO,
-    ALBUM_NOT_FOUND
+    ALBUM_NOT_FOUND,
+    THM_GENERATE_FAILED,
 };
 
 enum PrivateAlbumType {
@@ -102,7 +103,8 @@ enum class DirtyType : int32_t {
     TYPE_DELETED,
     TYPE_RETRY,
     TYPE_SDIRTY,
-    TYPE_COPY
+    TYPE_COPY,
+    TYPE_TDIRTY
 };
 
 enum class CloudEnhancementAvailableType : int32_t {
@@ -151,6 +153,7 @@ enum class StrongAssociationType : int32_t {
 };
 
 enum class SyncStatusType : int32_t {
+    TYPE_BACKUP = -1, // Only for clone! Set backup data invisible before moving
     TYPE_VISIBLE = 0,
     TYPE_DOWNLOAD,
     TYPE_UPLOAD,
@@ -192,6 +195,12 @@ enum class StageVideoTaskStatus : int32_t {
     STAGE_TASK_DELIVERED,
     STAGE_TASK_FAIL,
     STAGE_TASK_SUCCESS,
+};
+
+enum class FirstStageModifyType : int32_t {
+    NOT_MODIFIED = 0,
+    EDITED,
+    TRASHED,
 };
 
 constexpr int32_t DEFAULT_INT32 = 0;
@@ -281,49 +290,15 @@ const std::string HMDFS = "/mnt/hmdfs/";
 const std::string CLOUD_MERGE_VIEW = "/account/cloud_merge_view/files/";
 const std::string CUSTOM_RESTORE_VALUES = "custom_restore";
 
-const std::vector<std::string> PRESET_ROOT_DIRS = {
-    CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
-    PHOTO_BUCKET + "/", AUDIO_BUCKET + "/", BACKUP_DATA_DIR_VALUE, EDIT_DATA_DIR_VALUE + "/",
-    BACKUP_SINGLE_DATA_DIR_VALUE, CACHE_DIR_VALUE, CUSTOM_RESTORE_VALUES
-};
-
-const std::vector<std::string> E_POLICY_DIRS = {
-    ROOT_MEDIA_DIR + CAMERA_DIR_VALUES,
-    ROOT_MEDIA_DIR + VIDEO_DIR_VALUES,
-    ROOT_MEDIA_DIR + PIC_DIR_VALUES,
-    ROOT_MEDIA_DIR + PHOTO_BUCKET,
-    ROOT_MEDIA_DIR + BACKUP_SINGLE_DATA_DIR_VALUE,
-    ROOT_MEDIA_DIR + THUMB_DIR_VALUE,
-    ROOT_MEDIA_DIR + CACHE_DIR_VALUE,
-    ROOT_MEDIA_DIR + EDIT_DATA_DIR_VALUE,
-};
-
 const int TRASH_ALBUM_ID_VALUES = 2;
 const int FAVOURITE_ALBUM_ID_VALUES = 1;
-const int TRASH_ALBUM_TYPE_VALUES = 2;
 const int FAVOURITE_ALBUM_TYPE_VALUES = 1;
-const std::string TRASH_ALBUM_NAME_VALUES = "TrashAlbum";
 const std::string FAVOURTIE_ALBUM_NAME_VALUES = "FavoritAlbum";
 
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
 static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
 
-const std::string PHOTO_OPTION_WLAN_ONLY = "WLAN only";
-const std::string PHOTO_OPTION_WLAN_AND_NETWORK = "WLAN and networks";
-const std::string PHOTO_OPTION_CLOSE = "close";
-
-constexpr const char *SETTINGS_DATA_EXT_URI = "datashare:///com.ohos.settingsdata.DataAbility";
-constexpr const char *SETTINGS_DATASHARE_AUTO_OPTION_URI =
-    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true&key=persist.photos.ce.auto.option";
-const std::string SETTINGS_DATASHARE_URI =
-    "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true";
-const std::string SETTINGS_DATASHARE_WATER_MARK_URI = SETTINGS_DATASHARE_URI +
-    "&key=persist.photos.ce.watermark.enable";
-const std::string SETTING_KEY = "KEYWORD";
-const std::string SETTING_VALUE = "VALUE";
-const std::string WATER_MARK_ENABLED = "true";
-constexpr int PHOTOS_STORAGE_MANAGER_ID = 5003;
 } // namespace OHOS
 } // namespace Media
 

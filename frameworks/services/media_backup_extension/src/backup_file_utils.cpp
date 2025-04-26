@@ -152,9 +152,7 @@ string BackupFileUtils::ConvertLowQualityPath(int32_t sceneCode, const std::stri
         displayName.replace(dotPos, displayName.length() - dotPos, ".camera");
     }
     size_t pos = result.find(relativePath);
-    if (pos == string::npos) {
-        return result;
-    }
+    CHECK_AND_RETURN_RET(pos != string::npos, result);
     string publicPath = result.substr(0, pos + 1);
     result = publicPath + LOW_QUALITY_PATH + displayName;
     return result;
@@ -165,21 +163,15 @@ void BackupFileUtils::ParseResolution(const std::string &resolution, int32_t &wi
 {
     //default 0
     width = 0, height = 0;
-    if (resolution.empty()) {
-        return;
-    }
+    CHECK_AND_RETURN(!resolution.empty());
     size_t delimiter_pos = resolution.find('x');
-    if (delimiter_pos == std::string::npos) {
-        return;
-    }
+    CHECK_AND_RETURN(delimiter_pos != std::string::npos);
     std::string width_str = resolution.substr(0, delimiter_pos);
     std::string height_str = resolution.substr(delimiter_pos + 1);
     width = std::atoi(width_str.c_str());
     height = std::atoi(height_str.c_str());
-    if (width == 0 || height == 0) {
-        width = 0;
-        height = 0;
-    }
+    bool cond = (width == 0 || height == 0);
+    CHECK_AND_EXECUTE(!cond,  height = width = 0);
 }
 
 int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
@@ -278,11 +270,8 @@ int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, 
         bool ret = MediaFileUtils::CreateDirectory(localDirPath);
         errCode = ret? E_OK: E_CHECK_DIR_FAIL;
     }
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Create Dir Failed! localDirPath=%{private}s", localDirPath.c_str());
-        return errCode;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Create Dir Failed! localDirPath=%{private}s",
+        localDirPath.c_str());
     filePath = dirPath + "/" + realName;
     return E_OK;
 }
@@ -343,15 +332,12 @@ int32_t BackupFileUtils::CreatePath(int32_t mediaType, const std::string &displa
 int32_t BackupFileUtils::PreparePath(const std::string &path)
 {
     size_t index = path.rfind("/");
-    if (index == std::string::npos || index == path.length() - 1) {
-        MEDIA_ERR_LOG("Parse directory path failed: %{private}s", path.c_str());
-        return E_CHECK_DIR_FAIL;
-    }
+    bool cond = (index == std::string::npos || index == path.length() - 1);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_CHECK_DIR_FAIL, "Parse directory path failed: %{private}s", path.c_str());
     std::string dirPath = path.substr(0, index);
-    if (!MediaFileUtils::IsFileExists(dirPath) && !MediaFileUtils::CreateDirectory(dirPath)) {
-        MEDIA_ERR_LOG("Directory path doesn't exist and was created failed: %{public}s", dirPath.c_str());
-        return E_CHECK_DIR_FAIL;
-    }
+    cond = (!MediaFileUtils::IsFileExists(dirPath) && !MediaFileUtils::CreateDirectory(dirPath));
+    CHECK_AND_RETURN_RET_LOG(!cond, E_CHECK_DIR_FAIL,
+        "Directory path doesn't exist and was created failed: %{public}s", dirPath.c_str());
     return E_OK;
 }
 
@@ -438,15 +424,10 @@ int32_t BackupFileUtils::IsLowQualityImage(std::string &filePath, int32_t sceneC
     }
     MEDIA_INFO_LOG("Low quality image! file: %{public}s", garbledFilePath.c_str());
     filePath = realPath;
-    if (statInfo.st_mode & S_IFDIR) {
-        MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
-        return E_FAIL;
-    }
-    if (statInfo.st_size <= 0) {
-        MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
-            (long long)statInfo.st_size);
-        return E_FAIL;
-    }
+    bool cond = (statInfo.st_mode & S_IFDIR);
+    CHECK_AND_RETURN_RET_LOG(!cond, E_FAIL, "Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
+    CHECK_AND_RETURN_RET_LOG(statInfo.st_size > 0, E_FAIL, "Invalid file (%{public}s), get size (%{public}lld) <= 0",
+        garbledFilePath.c_str(), (long long)statInfo.st_size);
     return E_OK;
 }
 
@@ -469,11 +450,8 @@ int32_t BackupFileUtils::IsFileValid(std::string &filePath, int32_t sceneCode,
         MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
         return E_FAIL;
     }
-    if (statInfo.st_size <= 0) {
-        MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
-            (long long)statInfo.st_size);
-        return E_FAIL;
-    }
+    CHECK_AND_RETURN_RET_LOG(statInfo.st_size > 0, E_FAIL, "Invalid file (%{public}s), get size (%{public}lld) <= 0",
+        garbledFilePath.c_str(), (long long)statInfo.st_size);
     return E_OK;
 }
 
@@ -481,22 +459,16 @@ std::string BackupFileUtils::GetDetailsPath(int32_t sceneCode, const std::string
     const std::unordered_map<std::string, FailedFileInfo> &failedFiles, size_t limit)
 {
     std::string detailsPath = RESTORE_FAILED_FILES_PATH + "_" + type + ".txt";
-    if (MediaFileUtils::IsFileExists(detailsPath) && !MediaFileUtils::DeleteFile(detailsPath)) {
-        MEDIA_ERR_LOG("%{public}s exists and delete failed", detailsPath.c_str());
-        return "";
-    }
-    if (failedFiles.empty() || limit == 0) {
-        return "";
-    }
-    if (MediaFileUtils::CreateAsset(detailsPath) != E_SUCCESS) {
-        MEDIA_ERR_LOG("Create %{public}s failed", detailsPath.c_str());
-        return "";
-    }
+    bool cond = (MediaFileUtils::IsFileExists(detailsPath) && !MediaFileUtils::DeleteFile(detailsPath));
+    CHECK_AND_RETURN_RET_LOG(!cond, "", "%{public}s exists and delete failed", detailsPath.c_str());
+    cond = (failedFiles.empty() || limit == 0);
+    CHECK_AND_RETURN_RET(!cond, "");
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(detailsPath) == E_SUCCESS, "",
+        "Create %{public}s failed", detailsPath.c_str());
+
     std::string failedFilesStr = GetFailedFilesStr(sceneCode, failedFiles, limit);
-    if (!MediaFileUtils::WriteStrToFile(detailsPath, failedFilesStr)) {
-        MEDIA_ERR_LOG("Write to %{public}s failed", detailsPath.c_str());
-        return "";
-    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(detailsPath, failedFilesStr), "",
+        "Write to %{public}s failed", detailsPath.c_str());
     return detailsPath;
 }
 
@@ -522,17 +494,14 @@ void BackupFileUtils::CreateDataShareHelper(const sptr<IRemoteObject> &token)
 {
     if (token != nullptr) {
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-        if (sDataShareHelper_ == nullptr) {
-            MEDIA_ERR_LOG("generate thumbnails after restore failed, the sDataShareHelper_ is nullptr.");
-        }
+        CHECK_AND_PRINT_LOG(sDataShareHelper_ != nullptr,
+            "generate thumbnails after restore failed, the sDataShareHelper_ is nullptr.");
     }
 }
 
 void BackupFileUtils::GenerateThumbnailsAfterRestore(int32_t restoreAstcCount)
 {
-    if (sDataShareHelper_ == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN(sDataShareHelper_ != nullptr);
     std::string updateUri = PAH_GENERATE_THUMBNAILS_RESTORE;
     MediaFileUtils::UriAppendKeyValue(updateUri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(updateUri);
@@ -540,9 +509,7 @@ void BackupFileUtils::GenerateThumbnailsAfterRestore(int32_t restoreAstcCount)
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(RESTORE_REQUEST_ASTC_GENERATE_COUNT, restoreAstcCount);
     int result = sDataShareHelper_->Update(uri, emptyPredicates, valuesBucket);
-    if (result < 0) {
-        MEDIA_ERR_LOG("generate thumbnails after restore failed, the sDataShareHelper_ update error");
-    }
+    CHECK_AND_PRINT_LOG(result >= 0, "generate thumbnails after restore failed, the sDataShareHelper_ update error");
 }
 
 std::vector<std::string> BackupFileUtils::GetFailedFilesList(int32_t sceneCode,
@@ -550,9 +517,7 @@ std::vector<std::string> BackupFileUtils::GetFailedFilesList(int32_t sceneCode,
 {
     std::vector<std::string> failedFilesList;
     for (const auto &iter : failedFiles) {
-        if (limit == 0) {
-            break;
-        }
+        CHECK_AND_BREAK(limit != 0);
         failedFilesList.push_back(GetFailedFile(sceneCode, iter.first, iter.second));
         limit--;
     }
@@ -605,9 +570,8 @@ void BackupFileUtils::DeleteSdDatabase(const std::string &prefix)
         if (!MediaFileUtils::IsFileExists(sdDbPath)) {
             continue;
         }
-        if (!MediaFileUtils::DeleteFile(sdDbPath)) {
-            MEDIA_ERR_LOG("Delete Sd database %{public}s failed, errno: %{public}d", sdDb.c_str(), errno);
-        }
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(sdDbPath),
+            "Delete Sd database %{public}s failed, errno: %{public}d", sdDb.c_str(), errno);
     }
 }
 
@@ -731,10 +695,8 @@ bool BackupFileUtils::HandleRotateImage(const std::string &sourceFile,
 {
     uint32_t err = E_OK;
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(sourceFile, err);
-    if (err != E_OK || imageSource == nullptr) {
-        MEDIA_ERR_LOG("LoadImageSource error: %{public}d, errno: %{public}d", err, errno);
-        return false;
-    }
+    bool cond = (err != E_OK || imageSource == nullptr);
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "LoadImageSource error: %{public}d, errno: %{public}d", err, errno);
     if (imageSource->IsHdrImage()) {
         return BackupFileUtils::HandleHdrImage(std::move(imageSource), targetPath, degrees, isLcd);
     } else {
@@ -746,10 +708,9 @@ unique_ptr<ImageSource> BackupFileUtils::LoadImageSource(const std::string &file
 {
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(file, opts, err);
-    if (err != E_OK || !imageSource) {
-        MEDIA_ERR_LOG("Failed to LoadImageSource, file exists: %{public}d", MediaFileUtils::IsFileExists(file));
-        return imageSource;
-    }
+    bool cond = (err != E_OK || !imageSource);
+    CHECK_AND_RETURN_RET_LOG(!cond, imageSource,
+        "Failed to LoadImageSource, file exists: %{public}d", MediaFileUtils::IsFileExists(file));
     return imageSource;
 }
 
@@ -761,27 +722,22 @@ bool BackupFileUtils::HandleHdrImage(std::unique_ptr<ImageSource> imageSource,
     pictOpts.desireAuxiliaryPictures = {AuxiliaryPictureType::GAINMAP};
     uint32_t err = E_OK;
     auto picturePtr = imageSource->CreatePicture(pictOpts, err);
-    if (err != E_OK || picturePtr == nullptr) {
-        MEDIA_ERR_LOG("Failed to CreatePicture failed, err: %{public}d", err);
-        return false;
-    }
+    bool cond = (err != E_OK || picturePtr == nullptr);
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "Failed to CreatePicture failed, err: %{public}d", err);
+
     std::shared_ptr<Picture> picture = std::move(picturePtr);
     auto pixelMap = picture->GetMainPixel();
     auto gainMap = picture->GetGainmapPixelMap();
     CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "Failed to CreatePicture, main pixelMap is nullptr.");
     CHECK_AND_RETURN_RET_LOG(gainMap != nullptr, false, "Failed to CreatePicture, gainmap is nullptr.");
-    if (pixelMap->GetWidth() * pixelMap->GetHeight() == 0) {
-        MEDIA_ERR_LOG("Failed to CreatePicture, pixelMap size invalid, width: %{public}d, height: %{public}d",
-            pixelMap->GetWidth(), pixelMap->GetHeight());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(pixelMap->GetWidth() * pixelMap->GetHeight() != 0, false,
+        "Failed to CreatePicture, pixelMap size invalid, width: %{public}d, height: %{public}d",
+        pixelMap->GetWidth(), pixelMap->GetHeight());
     pixelMap->rotate(static_cast<float>(degrees));
     gainMap->rotate(static_cast<float>(degrees));
 
     if (isLcd) {
-        if (!EncodePicture(*picture, targetPath + LCD_FILE_NAME)) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(EncodePicture(*picture, targetPath + LCD_FILE_NAME), false);
         return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
     }
     return EncodePicture(*picture, targetPath + THM_FILE_NAME);
@@ -816,9 +772,7 @@ bool BackupFileUtils::HandleSdrImage(std::unique_ptr<ImageSource> imageSource,
     CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "CreatePixelMap err: %{public}d", err);
     pixelMap->rotate(static_cast<float>(degrees));
     if (isLcd) {
-        if (!EncodePixelMap(*pixelMap, targetPath + LCD_FILE_NAME)) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(EncodePixelMap(*pixelMap, targetPath + LCD_FILE_NAME), false);
         return ScalePixelMap(*pixelMap, *imageSource, targetPath + THM_FILE_NAME);
     }
     return EncodePixelMap(*pixelMap, targetPath + THM_FILE_NAME);
@@ -828,22 +782,16 @@ bool BackupFileUtils::ScalePixelMap(PixelMap &pixelMap, ImageSource &imageSource
 {
     ImageInfo imageInfo;
     uint32_t err = imageSource.GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to Get ImageInfo");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed to Get ImageInfo");
+
     int targetWidth = imageInfo.size.height;
     int targetHeight = imageInfo.size.width;
-    if (!ThumbnailUtils::ResizeThumb(targetWidth, targetHeight)) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(ThumbnailUtils::ResizeThumb(targetWidth, targetHeight), false);
     Size targetSize{targetWidth, targetHeight};
     PostProc postProc;
-    if (!postProc.ScalePixelMapEx(targetSize, pixelMap, Media::AntiAliasingOption::HIGH)) {
-        MEDIA_ERR_LOG("ScalePixelMapEx failed, targetSize: %{public}d * %{public}d",
-            targetSize.width, targetSize.height);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(postProc.ScalePixelMapEx(targetSize, pixelMap, Media::AntiAliasingOption::HIGH),
+        false, "ScalePixelMapEx failed, targetSize: %{public}d * %{public}d",
+        targetSize.width, targetSize.height);
     return EncodePixelMap(pixelMap, outFile);
 }
 

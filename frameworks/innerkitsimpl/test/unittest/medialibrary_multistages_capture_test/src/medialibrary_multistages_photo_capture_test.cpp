@@ -37,6 +37,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "values_bucket.h"
+#include "picture_adapter.h"
 #define private public
 #define protected public
 #include "exif_utils.h"
@@ -439,39 +440,39 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, dfx_request_policy_set_policy_
     string callingPackageName = "com.examples.photos";
     requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::HIGH_QUALITY_MODE);
     // It will definitely be reported for the first time
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 0);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.Size(), 0);
 
     requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::HIGH_QUALITY_MODE);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 1);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].highQualityCount, 1);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.Size(), 1);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.ReadVal(callingPackageName).highQualityCount, 1);
 
     requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::HIGH_QUALITY_MODE);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 1);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].highQualityCount, 2);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.Size(), 1);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.ReadVal(callingPackageName).highQualityCount, 2);
 
     requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::BALANCE_MODE);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 1);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].highQualityCount, 2);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].balanceQualityCount, 1);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.Size(), 1);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.ReadVal(callingPackageName).highQualityCount, 2);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.ReadVal(callingPackageName).balanceQualityCount, 1);
 
     requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::FAST_MODE);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 1);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].highQualityCount, 2);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].balanceQualityCount, 1);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].emergencyQualityCount, 1);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.Size(), 1);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.ReadVal(callingPackageName).highQualityCount, 2);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.ReadVal(callingPackageName).balanceQualityCount, 1);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.ReadVal(callingPackageName).emergencyQualityCount, 1);
 
     // add another caller request
     string callingPackageName2 = "com.examples.camera";
     requestPolicyInstance.SetPolicy(callingPackageName2, RequestPolicy::HIGH_QUALITY_MODE);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 2);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName2].highQualityCount, 1);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.Size(), 2);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.ReadVal(callingPackageName2).highQualityCount, 1);
 
     // Simulate scenarios exceeding 24 hours
     requestPolicyInstance.lastReportTime_ -= (24 * 60 * 60 * 1000L + 1);
     requestPolicyInstance.SetPolicy(callingPackageName2, RequestPolicy::FAST_MODE);
-    EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 0);
+    EXPECT_EQ(requestPolicyInstance.requestCountMap_.Size(), 0);
 
-    requestPolicyInstance.requestCountMap_.clear();
+    requestPolicyInstance.requestCountMap_.Clear();
     MEDIA_INFO_LOG("dfx_request_policy_set_policy_002 End");
 }
 
@@ -620,6 +621,30 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, session_callback_on_error_001,
     MEDIA_INFO_LOG("session_callback_on_error_001 End");
 }
 
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, session_callback_on_error_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("session_callback_on_error_002 Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureDeferredPhotoProcSessionCallback *callback =
+        new MultiStagesCaptureDeferredPhotoProcSessionCallback();
+    callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_IMAGE_PROC_ABNORMAL);
+
+    vector<string> columns = { PhotoColumn::PHOTO_QUALITY };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    ASSERT_NE(g_rdbStore, nullptr);
+
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+
+    callback->NotifyIfTempFile(resultSet, true);
+    delete callback;
+    MEDIA_INFO_LOG("session_callback_on_error_002 End");
+}
+
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, deferred_proc_adapter_null_session_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 Start");
@@ -656,11 +681,25 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, file_utils_save_file_001, Test
     const string testFileName = "/data/test/test.jpg";
     char testOutput[] = "test.jpg";
     FileUtils::SaveImage(testFileName, (void*)testOutput, sizeof(testOutput));
+    FileUtils::SaveMovingPhotoVideo(testFileName, false, false);
 
     EXPECT_EQ(FileUtils::IsFileExist(testFileName), true);
     EXPECT_EQ(FileUtils::IsFileExist(testFileName + ".tmp"), false);
     EXPECT_EQ(FileUtils::DeleteFile(testFileName), 0);
     MEDIA_INFO_LOG("file_utils_save_file_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, file_utils_save_file_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("file_utils_save_file_002 Start");
+    const string testFileName = "/data/test/test.jpg";
+    std::shared_ptr<Media::Picture> picture;
+    bool isEdited = false;
+    bool isLowQualityPicture = false;
+    auto result = FileUtils::SavePicture(testFileName,
+        picture, isEdited, isLowQualityPicture);
+
+    EXPECT_EQ(result, -1);
 }
 
 HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, manager_add_image_001, TestSize.Level1)
@@ -738,9 +777,9 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, ProcessAndSaveHighQualityImage
 
     MultiStagesCaptureDeferredPhotoProcSessionCallback * callback =
         new MultiStagesCaptureDeferredPhotoProcSessionCallback();
-    shared_ptr<Media::Picture> picture = make_shared<Media::Picture>();
-    shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
-    picture->SetMainPixel(pixelMap);
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    std::shared_ptr<CameraStandard::PictureIntf> picture = std::make_shared<CameraStandard::PictureAdapter>();
+    picture->Create(surfaceBuffer);
 
     callback->OnProcessImageDone(PHOTO_ID_FOR_TEST, picture, true);
     callback->OnProcessImageDone(to_string(fileId), picture, false);
@@ -784,14 +823,10 @@ HWTEST_F(MediaLibraryMultiStagesPhotoCaptureTest, OnDeliveryLowQualityImage_test
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
 
-    shared_ptr<Media::Picture> picture;
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    std::shared_ptr<CameraStandard::PictureIntf> picture = std::make_shared<CameraStandard::PictureAdapter>();
     callback->OnDeliveryLowQualityImage(to_string(fileId), picture);
-
-    picture = make_shared<Media::Picture>();
-    callback->OnDeliveryLowQualityImage(to_string(fileId), picture);
-
-    shared_ptr<PixelMap> pixelMap = make_shared<PixelMap>();
-    picture->SetMainPixel(pixelMap);
+    picture->Create(surfaceBuffer);
     callback->OnDeliveryLowQualityImage(to_string(fileId), picture);
     callback->OnDeliveryLowQualityImage("fileId", picture);
     delete callback;

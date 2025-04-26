@@ -14,8 +14,11 @@
  */
 #define MLOG_TAG "VisionOperation"
 
+#include <ctime>
+#include <cmath>
 #include <thread>
 #include "media_analysis_helper.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
@@ -30,6 +33,7 @@
 #include "vision_column.h"
 #include "vision_total_column.h"
 #include "vision_recommendation_column.h"
+#include "user_photography_info_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -221,6 +225,69 @@ int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &c
         MEDIA_ERR_LOG("UpdateAnalysisDataForEdit fail");
     }
     return E_SUCCESS;
+}
+
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(
+    MediaLibraryCommand &cmd)
+{
+    std::shared_ptr<ForegroundAnalysisMeta> cvInfo = nullptr;
+    int32_t errCode = InitForegroundAnalysisMeta(cmd, cvInfo);
+    if (errCode != NativeRdb::E_OK) {
+        return nullptr;
+    }
+    errCode = cvInfo->GenerateOpType(cmd);
+    if (errCode != NativeRdb::E_OK) {
+        return nullptr;
+    }
+    cvInfo->StartAnalysisService();
+    return ForegroundAnalysisMeta::QueryByErrorCode(NativeRdb::E_OK);
+}
+
+int32_t MediaLibraryVisionOperations::InitForegroundAnalysisMeta(MediaLibraryCommand &cmd,
+    std::shared_ptr<ForegroundAnalysisMeta> &infoPtr)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        return E_ERR;
+    }
+    RdbPredicates predicates(USER_PHOTOGRAPHY_INFO_TABLE);
+    vector<string> column = {
+        FRONT_INDEX_LIMIT, FRONT_INDEX_MODIFIED, FRONT_INDEX_COUNT, FRONT_CV_MODIFIED, FRONT_CV_COUNT
+    };
+    auto result = rdbStore->Query(predicates, column);
+    if (result == nullptr) {
+        return E_ERR;
+    }
+    infoPtr = make_shared<ForegroundAnalysisMeta>(result);
+    result->Close();
+    return E_OK;
+}
+
+int32_t MediaLibraryVisionOperations::GenerateAndSubmitForegroundAnalysis(const std::string &assetUri,
+    MediaType mediaType)
+{
+    int errCode = E_OK;
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        MEDIA_INFO_LOG("ignore media type:%{public}d", mediaType);
+        return errCode;
+    }
+    std::string uriStr = PAH_QUERY_ANA_FOREGROUND;
+    MediaFileUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TYPE,
+        std::to_string(AnalysisType::ANALYSIS_SEARCH_INDEX));
+    MediaFileUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TASK_ID,
+        std::to_string(ForegroundAnalysisMeta::GetIncTaskId()));
+    Uri uri(uriStr);
+    MediaLibraryCommand cmd(uri);
+    DataShare::DataSharePredicates predicates;
+    std::string photoUri = assetUri;
+    std::string fileId = MediaLibraryDataManagerUtils::GetFileIdFromPhotoUri(photoUri);
+    if (!fileId.empty()) {
+        std::vector<std::string> fileIds = { fileId };
+        predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
+    }
+    std::vector<string> columns;
+    MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    return errCode;
 }
 }
 }

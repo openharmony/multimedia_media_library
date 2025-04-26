@@ -18,6 +18,7 @@
 
 #include "search_column.h"
 #include "vision_aesthetics_score_column.h"
+#include "vision_video_aesthetics_score_column.h"
 #include "vision_album_column.h"
 #include "vision_column_comm.h"
 #include "vision_column.h"
@@ -88,6 +89,14 @@ const std::string CREATE_TAB_ANALYSIS_AESTHETICS = "CREATE TABLE IF NOT EXISTS "
     AESTHETICS_VERSION + " TEXT, " +
     PROB + " REAL, " +
     ANALYSIS_VERSION + " TEXT)";
+
+const std::string CREATE_TAB_VIDEO_ANALYSIS_AESTHETICS = "CREATE TABLE IF NOT EXISTS " +
+    VISION_VIDEO_AESTHETICS_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT UNIQUE, " +
+    VIDEO_AESTHETICS_SCORE + " INT, " +
+    VIDEO_AESTHETICS_VERSION + " TEXT, " +
+    PROB + " REAL)";
 
 const std::string CREATE_TAB_ANALYSIS_SALIENCY_DETECT = "CREATE TABLE IF NOT EXISTS " + VISION_SALIENCY_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -419,7 +428,8 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
     " INSERT INTO " + VISION_TOTAL_TABLE +" (" + FILE_ID + ", " + STATUS + ", " + OCR + ", " + AESTHETICS_SCORE + ", " +
     LABEL + ", " + FACE + ", " + OBJECT + ", " + RECOMMENDATION + ", " + SEGMENTATION + ", " + COMPOSITION + "," +
     SALIENCY + ", " + HEAD + ", " + POSE + ") " +
-    " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" + " END;";
+    " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" +
+    " END;";
 
 const std::string DROP_INSERT_VISION_TRIGGER = "DROP TRIGGER IF EXISTS insert_vision_trigger";
 const std::string DROP_UPDATE_VISION_TRIGGER = "DROP TRIGGER IF EXISTS update_vision_trigger";
@@ -532,6 +542,10 @@ const std::string IMAGE_FACE_INDEX = "image_face_index";
 const std::string CREATE_IMAGE_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + IMAGE_FACE_INDEX + " ON " +
     VISION_IMAGE_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
 
+const std::string IMAGE_FACE_TAG_ID_INDEX = "tag_id_index";
+const std::string CREATE_IMAGE_FACE_TAG_ID_INDEX = "CREATE INDEX IF NOT EXISTS " + IMAGE_FACE_TAG_ID_INDEX +
+    " ON " + VISION_IMAGE_FACE_TABLE + " (" + TAG_ID + ")" + " WHERE " + TAG_ID + " LIKE " + "'ser%'";
+
 const std::string VIDEO_FACE_INDEX = "video_face_index";
 const std::string CREATE_VIDEO_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + VIDEO_FACE_INDEX + " ON " +
     VISION_VIDEO_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
@@ -599,6 +613,9 @@ const std::string UPDATE_VIDEO_LABEL_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABL
 const std::string UPDATE_SEARCH_INDEX_FOR_VIDEO = "UPDATE " + SEARCH_TOTAL_TABLE + " SET " + TBL_SEARCH_PHOTO_STATUS +
     " = 2, " + TBL_SEARCH_CV_STATUS + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " +
     PhotoColumn::PHOTOS_TABLE + " WHERE media_type = 2)";
+const std::string MAP_ASSET_INDEX = "map_asset_index";
+const std::string CREATE_ANALYSIS_PHOTO_MAP_MAP_ASSET_INDEX = "CREATE INDEX IF NOT EXISTS " + MAP_ASSET_INDEX + " ON " +
+    ANALYSIS_PHOTO_MAP_TABLE + " (" + MAP_ASSET + ")";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_DB_SQLS_H

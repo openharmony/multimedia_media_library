@@ -20,6 +20,7 @@
 #include <string>
 
 #include "backup_const.h"
+#include "backup_database_utils.h"
 #include "media_log.h"
 #include "nlohmann/json.hpp"
 #include "rdb_store.h"
@@ -37,6 +38,8 @@ public:
     int32_t GetNewHighlightPhotoId(int32_t oldId);
     std::string GetNewHighlightPhotoUri(int32_t newId);
     bool IsCloneHighlight();
+    std::string GetDefaultPlayInfo();
+    void UpdateHighlightStatus(const std::vector<int32_t> &highlightIds);
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket &values, const std::string &columnName,
@@ -45,6 +48,10 @@ public:
     template<typename T>
     static void PutIfInIntersection(NativeRdb::ValuesBucket &values, const std::string &columnName,
         const std::optional<T> &optionalValue, const std::unordered_set<std::string> &intersection);
+
+    template<typename T>
+    static void GetIfInIntersection(const std::string &columnName, std::optional<T> &optionalValue,
+        const std::unordered_set<std::string> &intersection, std::shared_ptr<NativeRdb::ResultSet> resultSet);
 
 private:
     struct AnalysisAlbumInfo {
@@ -122,7 +129,7 @@ private:
         std::optional<int32_t> isMuted;
         std::optional<int32_t> isFavorite;
         std::optional<std::string> theme;
-        std::optional<int64_t> pinTime;
+        std::optional<int32_t> useSubtitle;
 
         std::string ToString() const
         {
@@ -214,13 +221,13 @@ private:
     void GetAnalysisAlbumInfos();
     void GetAnalysisRowInfo(AnalysisAlbumInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoAnalysisAlbum();
-    void GetAnalysisInsertValue(NativeRdb::ValuesBucket &value, const AnalysisAlbumInfo &info,
-        const std::unordered_set<std::string> &intersection);
+    void GetAnalysisInsertValue(NativeRdb::ValuesBucket &value, const AnalysisAlbumInfo &info);
     int32_t GetMaxAlbumId(const std::string &tableName, const std::string &idName);
-    void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
-    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo);
-    void UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo,
-        const int32_t &oldAlbumId);
+    void GetPhotoMapInfos(const std::vector<FileInfo> &fileInfos);
+    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const std::vector<FileInfo> &fileInfos);
+    void UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
+        std::shared_ptr<NativeRdb::ResultSet> resultSet, std::unordered_map<int32_t, FileInfo> &fileInfoMap);
+    void InsertAnalysisPhotoMap(std::vector<NativeRdb::ValuesBucket> &values);
     int32_t BatchInsertWithRetry(const std::string &tableName, const std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
     NativeRdb::ValuesBucket GetMapInsertValue(int32_t albumId, int32_t fileId, std::optional<int32_t> &order);
@@ -228,8 +235,8 @@ private:
     void GetHighlightNewAlbumId(HighlightAlbumInfo &info);
     void GetHighlightRowInfo(HighlightAlbumInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoHighlightAlbum();
-    void GetHighlightInsertValue(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info,
-        const std::unordered_set<std::string> &intersection);
+    void GetHighlightInsertValue(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info);
+    void PutTempHighlightStatus(NativeRdb::ValuesBucket &value, const HighlightAlbumInfo &info);
     void MoveHighlightCovers();
     void MoveHighlightWordart(const AnalysisAlbumInfo &info, const std::string &srcDir);
     void MoveHighlightGround(const AnalysisAlbumInfo &info, const std::string &srcDir);
@@ -238,17 +245,21 @@ private:
     void GetCoverRowInfo(HighlightCoverInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void GetCoverGroundSourceInfo(HighlightCoverInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoHighlightCoverInfo();
-    void GetCoverInsertValue(NativeRdb::ValuesBucket &value, const HighlightCoverInfo &info,
-        const std::unordered_set<std::string> &intersection);
+    void GetCoverInsertValue(NativeRdb::ValuesBucket &value, const HighlightCoverInfo &info);
     void GetHighlightPlayInfos();
     void GetPlayRowInfo(HighlightPlayInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void InsertIntoHighlightPlayInfo();
-    void GetPlayInsertValue(NativeRdb::ValuesBucket &value, const HighlightPlayInfo &info,
-        const std::unordered_set<std::string> &intersection);
+    void GetPlayInsertValue(NativeRdb::ValuesBucket &value, const HighlightPlayInfo &info);
     std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
     void ReportCloneRestoreHighlightTask();
     bool IsMapColumnOrderExist();
     void HighlightDeduplicate(const HighlightAlbumInfo &info);
+    std::vector<NativeRdb::ValueObject> GetHighlightDuplicateIds(const HighlightAlbumInfo &info,
+        std::string &duplicateAlbumName, std::unordered_set<int32_t> &duplicateAnalysisAlbumIdSet);
+    void UpdateHighlightDuplicateRows(const std::vector<NativeRdb::ValueObject> &changeIds,
+        const std::string &duplicateAlbumName);
+    void DeleteAnalysisDuplicateRows(const std::unordered_set<int32_t> &duplicateAnalysisAlbumIdSet,
+        const std::string &duplicateAlbumName);
 
 private:
     int32_t sceneCode_{-1};
@@ -261,7 +272,6 @@ private:
     std::vector<HighlightAlbumInfo> highlightInfos_;
     std::vector<HighlightCoverInfo> coverInfos_;
     std::vector<HighlightPlayInfo> playInfos_;
-    std::vector<int32_t> oldAlbumIds_;
     std::string coverPath_;
     std::string musicDir_;
     std::string garblePath_;
@@ -269,7 +279,8 @@ private:
     SafeMap<int32_t, std::string> photoUriMap_;
     std::mutex counterMutex_;
     std::unordered_map<std::string, int32_t> albumPhotoCounter_;
-    int32_t failCnt_{0};
+    std::unordered_map<std::string, std::unordered_set<std::string>> intersectionMap_;
+    int64_t failCnt_{0};
     bool isMapOrder_{false};
     bool isCloneHighlight_{false};
 };
@@ -297,6 +308,16 @@ void CloneRestoreHighlight::PutIfInIntersection(NativeRdb::ValuesBucket& values,
 {
     if (intersection.count(columnName) > 0) {
         PutIfPresent<T>(values, columnName, optionalValue);
+        return;
+    }
+}
+
+template<typename T>
+void CloneRestoreHighlight::GetIfInIntersection(const std::string &columnName, std::optional<T> &optionalValue,
+    const std::unordered_set<std::string> &intersection, std::shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    if (intersection.count(columnName) > 0) {
+        optionalValue = BackupDatabaseUtils::GetOptionalValue<T>(resultSet, columnName);
         return;
     }
 }

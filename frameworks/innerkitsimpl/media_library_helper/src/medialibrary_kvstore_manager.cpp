@@ -68,9 +68,7 @@ std::shared_ptr<MediaLibraryKvStore> MediaLibraryKvStoreManager::GetKvStore(
 {
     RegisterTimer(roleType, valueType);
     KvStoreSharedPtr ptr;
-    if (kvStoreMap_.Find(valueType, ptr)) {
-        return ptr;
-    }
+    CHECK_AND_RETURN_RET(!kvStoreMap_.Find(valueType, ptr), ptr);
 
     InitKvStore(roleType, valueType);
     kvStoreMap_.Find(valueType, ptr);
@@ -145,17 +143,13 @@ bool MediaLibraryKvStoreManager::InitMonthAndYearKvStore(const KvStoreRoleType& 
 bool MediaLibraryKvStoreManager::IsKvStoreValid(const KvStoreValueType &valueType)
 {
     KvStoreSharedPtr ptr;
-    if (kvStoreMap_.Find(valueType, ptr)) {
-        return true;
-    }
+    CHECK_AND_RETURN_RET(!kvStoreMap_.Find(valueType, ptr), true);
 
     ptr = std::make_shared<MediaLibraryKvStore>();
     int32_t status = ptr->Init(KvStoreRoleType::OWNER, valueType, KV_STORE_OWNER_DIR);
-    if (status == static_cast<int32_t>(Status::DATA_CORRUPTED)) {
-        MEDIA_ERR_LOG("KvStore is invalid and needs to be deleted, status %{public}d, type %{public}d",
-            status, valueType);
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(status != static_cast<int32_t>(Status::DATA_CORRUPTED), false,
+        "KvStore is invalid and needs to be deleted, status %{public}d, type %{public}d",
+        status, valueType);
 
     if (status == E_OK && ptr != nullptr) {
         ptr->Close();
@@ -176,10 +170,7 @@ std::shared_ptr<MediaLibraryKvStore> MediaLibraryKvStoreManager::GetSingleKvStor
 {
     KvStoreSharedPtr ptr = std::make_shared<MediaLibraryKvStore>();
     int32_t status = ptr->InitSingleKvstore(roleType, storeId, baseDir);
-    if (status != E_OK) {
-        MEDIA_ERR_LOG("Init kvStore failed, status %{public}d", status);
-        return nullptr;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == E_OK, nullptr, "Init kvStore failed, status %{public}d", status);
     return ptr;
 }
 
@@ -188,23 +179,14 @@ int32_t MediaLibraryKvStoreManager::CloneKvStore(const std::string &oldKvStoreId
 {
     KvStoreSharedPtr oldKvStore = std::make_shared<MediaLibraryKvStore>();
     int32_t status = oldKvStore->InitSingleKvstore(KvStoreRoleType::OWNER, oldKvStoreId, oldBaseDir);
-    if (status != E_OK) {
-        MEDIA_ERR_LOG("Init old kvStore failed, status %{public}d", status);
-        return status;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == E_OK, status, "Init old kvStore failed, status %{public}d", status);
 
     KvStoreSharedPtr newKvStore = std::make_shared<MediaLibraryKvStore>();
     status = newKvStore->InitSingleKvstore(KvStoreRoleType::OWNER, newKvStoreId, newBaseDir);
-    if (status != E_OK) {
-        MEDIA_ERR_LOG("Init new kvStore failed, status %{public}d", status);
-        return status;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == E_OK, status, "Init new kvStore failed, status %{public}d", status);
 
     status = oldKvStore->PutAllValueToNewKvStore(newKvStore);
-    if (status != E_OK) {
-        MEDIA_ERR_LOG("Clone kvstore failed, status %{public}d", status);
-        return status;
-    }
+    CHECK_AND_RETURN_RET_LOG(status == E_OK, status, "Clone kvstore failed, status %{public}d", status);
     return E_OK;
 }
 } // namespace OHOS::Media

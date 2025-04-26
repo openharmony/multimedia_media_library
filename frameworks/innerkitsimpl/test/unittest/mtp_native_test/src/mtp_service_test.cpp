@@ -19,7 +19,7 @@ using namespace std;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-HWTEST_F(MtpNativeTest, mtp_service_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_service_test_001, TestSize.Level1)
 {
     MtpService mtpService;
     mtpService.Init();

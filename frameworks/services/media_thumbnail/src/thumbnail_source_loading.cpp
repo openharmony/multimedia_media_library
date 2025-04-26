@@ -15,6 +15,7 @@
 
 #include "thumbnail_source_loading.h"
 
+#include <charconv>
 #include <fcntl.h>
 
 #include "dfx_manager.h"
@@ -25,6 +26,7 @@
 #include "media_file_utils.h"
 #include "medialibrary_tracer.h"
 #include "post_proc.h"
+#include "thumbnail_image_framework_utils.h"
 #include "thumbnail_utils.h"
 #include "thumbnail_const.h"
 
@@ -51,6 +53,11 @@ const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_SOURCE_LO
     { SourceState::BEGIN, SourceState::CLOUD_THUMB },
     { SourceState::CLOUD_THUMB, SourceState::CLOUD_LCD },
     { SourceState::CLOUD_LCD, SourceState::CLOUD_ORIGIN },
+    { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
+};
+
+const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_ORIGIN_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::CLOUD_ORIGIN },
     { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
 };
 
@@ -209,16 +216,14 @@ Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desire
     float desiredScale = static_cast<float>(thumbDesiredSize.height) / static_cast<float>(thumbDesiredSize.width);
     float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
     float scale = 1.0f;
+    Size thumbDecodeSize = thumbDesiredSize;
     if (sourceScale - desiredScale <= EPSILON) {
-        scale = (float)thumbDesiredSize.height / sourceSize.height;
+        scale = min((float)thumbDesiredSize.height / sourceSize.height, 1.0f);
+        thumbDecodeSize.width = static_cast<int32_t> (scale * sourceSize.width);
     } else {
-        scale = (float)thumbDesiredSize.width / sourceSize.width;
+        scale = min((float)thumbDesiredSize.width / sourceSize.width, 1.0f);
+        thumbDecodeSize.height = static_cast<int32_t> (scale * sourceSize.height);
     }
-    scale = scale < 1.0f ? scale : 1.0f;
-    Size thumbDecodeSize = {
-        static_cast<int32_t> (scale * sourceSize.width),
-        static_cast<int32_t> (scale * sourceSize.height),
-    };
 
     width = sourceSize.width;
     height = sourceSize.height;
@@ -257,7 +262,7 @@ int32_t ParseDesiredMinSide(const ThumbnailType &type)
         default:
             break;
     }
-    return INT32_MAX_VALUE_LENGTH;
+    return std::numeric_limits<int32_t>::max();
 }
 
 void SwitchToNextState(ThumbnailData &data, SourceState &state)
@@ -291,11 +296,33 @@ unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
     return imageSource;
 }
 
+int64_t SafeStoll(const std::string &str)
+{
+    int64_t value;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+
+    if (ec != std::errc()) {
+        MEDIA_ERR_LOG("Failed to convert string to int64_t: %{public}s", str.c_str());
+        return 0;
+    }
+    return value;
+}
+
 bool SourceLoader::CreateVideoFramePixelMap()
 {
     MediaLibraryTracer tracer;
     tracer.Start("CreateVideoFramePixelMap");
-    return ThumbnailUtils::LoadVideoFile(data_, desiredSize_);
+    int64_t timeStamp = AV_FRAME_TIME;
+    if (!data_.tracks.empty()) {
+        int64_t timeStamp = SafeStoll(data_.timeStamp);
+        timeStamp = timeStamp * MS_TRANSFER_US;
+    }
+    if (state_ == SourceState::CLOUD_ORIGIN && timeStamp != AV_FRAME_TIME) {
+        MEDIA_ERR_LOG("Avoid reading specific frame from cloud video, path %{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
+        return false;
+    }
+    return ThumbnailUtils::LoadVideoFrame(data_, desiredSize_, timeStamp);
 }
 
 void SourceLoader::SetCurrentStateFunction()
@@ -391,8 +418,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
     // When encode picture, if mainPixel width or height is odd, hardware encode would fail.
     // For the safety of encode process, only those of even desiredSize are allowed to generate througth picture.
-    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage() &&
-        data_.lcdDesiredSize.width % 2 == 0 && data_.lcdDesiredSize.height % 2 == 0;
+    bool shouldGeneratePicture = data_.loaderOpts.isHdr && imageSource->IsHdrImage();
     bool isGenerateSucceed = shouldGeneratePicture ?
         GeneratePictureSource(imageSource, targetSize) : GeneratePixelMapSource(imageSource, sourceSize, targetSize);
     if (!isGenerateSucceed && shouldGeneratePicture) {
@@ -429,7 +455,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
 bool SourceLoader::CreateSourcePixelMap()
 {
-    if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO) {
+    if (data_.mediaType == MEDIA_TYPE_VIDEO) {
         return CreateVideoFramePixelMap();
     }
 
@@ -452,8 +478,106 @@ bool SourceLoader::CreateSourcePixelMap()
     return true;
 }
 
+bool SourceLoader::CreateSourceFromOriginalPhotoPicture()
+{
+    CHECK_AND_RETURN_RET_LOG(data_.originalPhotoPicture != nullptr, false, "OriginalPhotoPicture is nullptr");
+    if (data_.loaderOpts.decodeInThumbSize ||
+        !ThumbnailImageFrameWorkUtils::IsSupportCopyPixelMap(data_.originalPhotoPicture->GetMainPixel())) {
+        data_.originalPhotoPicture = nullptr;
+        return false;
+    }
+
+    int32_t orientation = 0;
+    int32_t err = ThumbnailImageFrameWorkUtils::GetPictureOrientation(
+        data_.originalPhotoPicture, orientation);
+    CHECK_AND_WARN_LOG(err == E_OK, "SourceLoader Failed to get picture orientation, path: %{public}s",
+        DfxUtils::GetSafePath(data_.path).c_str());
+
+    bool isCreateSource = false;
+    if (data_.originalPhotoPicture->GetGainmapPixelMap() == nullptr) {
+        isCreateSource = CreateSourceWithOriginalPictureMainPixel();
+    } else {
+        isCreateSource = CreateSourceWithWholeOriginalPicture();
+    }
+    CHECK_AND_RETURN_RET_LOG(isCreateSource, false, "Create source failed");
+    if (data_.orientation == 0 && orientation > 0) {
+        data_.orientation = orientation;
+    }
+    if (data_.mediaType == MEDIA_TYPE_VIDEO) {
+        data_.orientation = 0;
+    }
+    return true;
+}
+
+bool SourceLoader::CreateSourceWithWholeOriginalPicture()
+{
+    CHECK_AND_RETURN_RET_LOG(data_.originalPhotoPicture != nullptr, false, "OriginalPhotoPicture is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateSourceWithWholeOriginalPicture");
+
+    std::shared_ptr<Picture> picture = ThumbnailImageFrameWorkUtils::CopyPictureSource(data_.originalPhotoPicture);
+    data_.originalPhotoPicture = nullptr;
+    CHECK_AND_RETURN_RET_LOG(picture != nullptr, false, "CopyPictureSource failed");
+    auto pixelMap = picture->GetMainPixel();
+    auto gainMap = picture->GetGainmapPixelMap();
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr && gainMap != nullptr, false,
+        "PixelMap or gainMap is nullptr");
+    CHECK_AND_RETURN_RET_LOG(pixelMap->GetWidth() * pixelMap->GetHeight() != 0, false,
+        "Picture is invalid");
+
+    Size originSize = { .width = pixelMap->GetWidth(),
+                        .height = pixelMap->GetHeight() };
+    Size targetSize = ConvertDecodeSize(data_, originSize, desiredSize_);
+
+    float widthScale = (1.0f * targetSize.width) / pixelMap->GetWidth();
+    float heightScale = (1.0f * targetSize.height) / pixelMap->GetHeight();
+    pixelMap->resize(widthScale, heightScale);
+    gainMap->resize(widthScale, heightScale);
+    data_.source.SetPicture(picture);
+
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, data_.mediaType, originSize.width,
+        originSize.height);
+    return true;
+}
+
+bool SourceLoader::CreateSourceWithOriginalPictureMainPixel()
+{
+    CHECK_AND_RETURN_RET_LOG(data_.originalPhotoPicture != nullptr, false, "OriginalPhotoPicture is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateSourceWithOriginalPictureMainPixel");
+    auto mainPixel = data_.originalPhotoPicture->GetMainPixel();
+    CHECK_AND_RETURN_RET_LOG(mainPixel != nullptr, false, "Main pixel is nullptr");
+    MEDIA_INFO_LOG("Main pixelMap format:%{public}d isHdr:%{public}d allocatorType:%{public}d, "
+        "size: %{public}d * %{public}d", mainPixel->GetPixelFormat(), mainPixel->IsHdr(),
+        mainPixel->GetAllocatorType(), mainPixel->GetWidth(), mainPixel->GetHeight());
+
+    std::shared_ptr<PixelMap> pixelMap = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(mainPixel);
+    mainPixel = nullptr;
+    data_.originalPhotoPicture = nullptr;
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "Copy main pixel failed");
+    CHECK_AND_RETURN_RET_LOG(pixelMap->GetWidth() * pixelMap->GetHeight() != 0, false,
+        "PixelMap is invalid");
+
+    Size originSize = { .width = pixelMap->GetWidth(),
+                        .height = pixelMap->GetHeight() };
+    Size targetSize = ConvertDecodeSize(data_, originSize, desiredSize_);
+
+    float widthScale = (1.0f * targetSize.width) / pixelMap->GetWidth();
+    float heightScale = (1.0f * targetSize.height) / pixelMap->GetHeight();
+    pixelMap->resize(widthScale, heightScale);
+    data_.source.SetPixelMap(pixelMap);
+
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, data_.mediaType, originSize.width,
+        originSize.height);
+    return true;
+}
+
 bool SourceLoader::RunLoading()
 {
+    if (data_.originalPhotoPicture != nullptr && CreateSourceFromOriginalPhotoPicture()) {
+        return true;
+    }
+
     if (data_.loaderOpts.loadingStates.empty()) {
         MEDIA_ERR_LOG("source loading run loading failed, the given states is empty");
         return false;
@@ -587,7 +711,7 @@ bool LocalOriginSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 std::string CloudThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     std::string tmpPath = data.orientation != 0 ?
-        GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX) : GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
+        GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX) : GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!IsCloudSourceAvailable(tmpPath)) {
         return "";
@@ -641,10 +765,9 @@ bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 std::string CloudOriginSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
-        // avoid opening cloud origin video file.
-        MEDIA_ERR_LOG("avoid opening cloud origin video file path:%{public}s",
+        MEDIA_ERR_LOG("Opening cloud origin video file, path:%{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
-        return "";
+        return data.path;
     }
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!IsCloudSourceAvailable(data.path)) {

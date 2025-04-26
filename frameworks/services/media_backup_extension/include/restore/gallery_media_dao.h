@@ -44,8 +44,8 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN gallery_album AS album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
@@ -64,9 +64,9 @@ private:
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN gallery_album AS album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
-        WHERE (local_media_id == -1) AND \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
+        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \
@@ -83,6 +83,8 @@ private:
         SELECT \
             _id, \
             local_media_id, \
+            localThumbPath, \
+            localBigThumbPath, \
             _data, \
             _display_name, \
             description, \
@@ -114,17 +116,18 @@ private:
             resolution, \
             CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
                 THEN gallery_album.lPath \
-                ELSE album_v2.lPath \
+                ELSE relative_album.lPath \
             END AS lPath, \
             latitude, \
             longitude, \
             story_id, \
-            portrait_id \
+            portrait_id, \
+            story_chosen \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN gallery_album AS album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
         WHERE (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
@@ -176,16 +179,17 @@ private:
             resolution, \
             CASE WHEN COALESCE(gallery_album.lPath, '') <> '' \
                 THEN gallery_album.lPath \
-                ELSE album_v2.lPath \
+                ELSE relative_album.lPath \
             END AS lPath, \
             story_id, \
-            portrait_id \
+            portrait_id, \
+            story_chosen \
         FROM gallery_media \
             LEFT JOIN gallery_album \
             ON gallery_media.albumId=gallery_album.albumId \
-            LEFT JOIN gallery_album AS album_v2 \
-            ON gallery_media.relative_bucket_id = album_v2.relativeBucketId \
-        WHERE (local_media_id == -1) AND \
+            LEFT JOIN relative_album \
+            ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
+        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \

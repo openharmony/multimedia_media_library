@@ -29,7 +29,8 @@ enum class DirtyTypes : int32_t {
     TYPE_DELETED,
     TYPE_RETRY,
     TYPE_SDIRTY,
-    TYPE_COPY
+    TYPE_COPY,
+    TYPE_TDIRTY
 };
 
 enum class MetadataFlags : int32_t {
@@ -189,6 +190,12 @@ public:
     // table name
     static const std::string PHOTOS_TABLE EXPORT;
     static const std::string HIGHLIGHT_TABLE EXPORT;
+    static const std::string TAB_OLD_PHOTOS_TABLE EXPORT;
+    static const std::string TAB_ASSET_AND_ALBUM_OPERATION_TABLE EXPORT;
+
+    // path
+    static const std::string FILES_CLOUD_DIR EXPORT;
+    static const std::string FILES_LOCAL_DIR EXPORT;
 
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE EXPORT;
@@ -316,37 +323,6 @@ public:
 
     // create table sql
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;
-};
-
-
-
-class PhotoQueryFilter {
-public:
-    enum class Option {
-        CUSTOM_FILTER,
-        FILTER_VISIBLE,
-        FILTER_HIDDEN,
-        FILTER_TRASHED,
-    };
-
-    enum class ConfigType {
-        INCLUDE,
-        EXCLUDE,
-        IGNORE,
-    };
-
-    struct Config {
-        ConfigType hiddenConfig = ConfigType::EXCLUDE;
-        ConfigType trashedConfig = ConfigType::EXCLUDE;
-        ConfigType tempConfig = ConfigType::EXCLUDE;
-        ConfigType pendingConfig = ConfigType::EXCLUDE;
-        ConfigType burstCoverOnly = ConfigType::INCLUDE;
-        ConfigType syncStatusConfig = ConfigType::EXCLUDE;
-        ConfigType cleanFlagConfig = ConfigType::EXCLUDE;
-    };
-
-    static std::string GetSqlWhereClause(const PhotoQueryFilter::Option option) EXPORT;
-    static std::string GetSqlWhereClause(const PhotoQueryFilter::Config& config) EXPORT;
 };
 
 } // namespace OHOS::Media

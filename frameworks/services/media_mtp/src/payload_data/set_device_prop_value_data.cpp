@@ -80,7 +80,7 @@ void SetDevicePropValueData::PaserPropValue(const std::vector<uint8_t> &buffer, 
 
     switch (propertyCode) {
         case MTP_DEVICE_PROPERTY_DEVICE_FRIENDLY_NAME_CODE:
-            if (!MtpOperationUtils::SetPropertyInner("persist.device.name", value)) {
+            if (!MtpOperationUtils::SetPropertyInner("const.product.name", value)) {
                 MEDIA_ERR_LOG("PaserPropValue SetPropertyInner fail");
             }
             break;
@@ -88,7 +88,7 @@ void SetDevicePropValueData::PaserPropValue(const std::vector<uint8_t> &buffer, 
             // This function will be completed later
             break;
         case MTP_DEVICE_PROPERTY_SESSION_INITIATOR_VERSION_INFO_CODE:
-            // This function will be completed later
+            MtpOperationUtils::SetIsDevicePropSet();
             break;
         default:
             MEDIA_INFO_LOG("property do not find");

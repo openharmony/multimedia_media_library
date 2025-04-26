@@ -28,7 +28,6 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 const std::map<string, string> g_testExt2MimeType = {
     { "wrf", "video/x-webex" },
     { "mov", "video/quicktime" },
@@ -264,20 +263,17 @@ const std::map<string, MediaType> g_testMimeType2MediaType = {
 
 void MimeTypeTest::SetUpTestCase() {}
 
-void MimeTypeTest::TearDownTestCase()
-{
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
-}
+void MimeTypeTest::TearDownTestCase() {}
 void MimeTypeTest::SetUp() {}
 void MimeTypeTest::TearDown(void) {}
 
-HWTEST_F(MimeTypeTest, MimeTypeTest_InitMimeTypeMap_Test_001, TestSize.Level0)
+HWTEST_F(MimeTypeTest, MimeTypeTest_InitMimeTypeMap_Test_001, TestSize.Level1)
 {
     auto ret = MimeTypeUtils::InitMimeTypeMap();
     ASSERT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromExtension_Test_001, TestSize.Level0)
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromExtension_Test_001, TestSize.Level1)
 {
     auto ret = MimeTypeUtils::InitMimeTypeMap();
     ASSERT_EQ(ret, E_OK);
@@ -291,7 +287,7 @@ HWTEST_F(MimeTypeTest, MimeTypeTest_GetMimeTypeFromExtension_Test_001, TestSize.
     }
 }
 
-HWTEST_F(MimeTypeTest, MimeTypeTest_GetMediaTypeFromMimeType_Test_001, TestSize.Level0)
+HWTEST_F(MimeTypeTest, MimeTypeTest_GetMediaTypeFromMimeType_Test_001, TestSize.Level1)
 {
     auto ret = MimeTypeUtils::InitMimeTypeMap();
     ASSERT_EQ(ret, E_OK);

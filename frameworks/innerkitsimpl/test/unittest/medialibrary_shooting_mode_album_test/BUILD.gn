@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_shootingmode_album_test") {
-  module_out_path = "media_library/medialibrary_shooting_mode_album_test"
+  module_out_path = "media_library/medialibrary-album"
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",
@@ -62,7 +62,6 @@ ohos_unittest("medialibrary_shootingmode_album_test") {
     "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {

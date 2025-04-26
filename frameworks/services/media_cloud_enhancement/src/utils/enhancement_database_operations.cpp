@@ -27,6 +27,9 @@
 #include "result_set_utils.h"
 #include "rdb_utils.h"
 #include "photo_album_column.h"
+#include "media_app_uri_permission_column.h"
+#include "media_library_extend_manager.h"
+#include "moving_photo_file_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -35,8 +38,9 @@ using namespace OHOS::RdbDataShareAdapter;
 namespace OHOS {
 namespace Media {
 static const int32_t MAX_UPDATE_RETRY_TIMES = 5;
+const size_t UPDATE_BATCH_SIZE = 200;
 
-std::shared_ptr<ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryCommand &cmd,
+std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryCommand &cmd,
     RdbPredicates &servicePredicates, const vector<string> &columns)
 {
     RdbPredicates clientPredicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
@@ -51,7 +55,7 @@ std::shared_ptr<ResultSet> EnhancementDatabaseOperations::Query(MediaLibraryComm
     return MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
 }
 
-std::shared_ptr<ResultSet> EnhancementDatabaseOperations::BatchQuery(MediaLibraryCommand &cmd,
+std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::BatchQuery(MediaLibraryCommand &cmd,
     const vector<string> &columns, unordered_map<int32_t, string> &fileId2Uri)
 {
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
@@ -93,8 +97,11 @@ int32_t EnhancementDatabaseOperations::Update(ValuesBucket &rdbValues, AbsRdbPre
     return E_OK;
 }
 
-static void HandleDateAdded(const int64_t dateAdded, const MediaType type, ValuesBucket &outValues)
+static void HandleDateAdded(const MediaType type, ValuesBucket &outValues,
+    shared_ptr<NativeRdb::ResultSet> resultSet)
 {
+    int64_t dateAdded = GetInt64Val(PhotoColumn::MEDIA_DATE_ADDED, resultSet);
+    int64_t dateTaken = GetInt64Val(PhotoColumn::MEDIA_DATE_TAKEN, resultSet);
     outValues.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
     if (type != MEDIA_TYPE_PHOTO) {
         return;
@@ -105,7 +112,7 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
-    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateAdded);
+    outValues.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
 }
 
 static void SetOwnerAlbumId(ValuesBucket &assetInfo, shared_ptr<NativeRdb::ResultSet> resultSet)
@@ -127,17 +134,10 @@ static void SetSupportedWatermarkType(int32_t sourceFileId, ValuesBucket &assetI
     assetInfo.PutInt(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType);
 }
 
-int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd,
-    const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info,
-    shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<TransactionOperations> trans)
+static void SetBasicAttributes(MediaLibraryCommand &cmd, const FileAsset &fileAsset,
+    ValuesBucket &assetInfo, shared_ptr<NativeRdb::ResultSet> resultSet)
 {
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
-    CHECK_AND_RETURN_RET_LOG(fileAsset.GetPath().empty() || !MediaFileUtils::IsFileExists(fileAsset.GetPath()),
-        E_FILE_EXIST, "file %{private}s exists now", fileAsset.GetPath().c_str());
     const string& displayName = fileAsset.GetDisplayName();
-    int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
-    ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
     string extension = ScannerUtils::GetFileExtension(displayName);
     assetInfo.PutString(MediaColumn::MEDIA_MIME_TYPE,
@@ -148,21 +148,51 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
-    HandleDateAdded(nowTime, MEDIA_TYPE_PHOTO, assetInfo);
-    // Set subtype if source image is moving photo
-    assetInfo.PutInt(MediaColumn::MEDIA_HIDDEN, info->hidden);
-    if (info->subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
-        int32_t dirty = GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet);
-        if (dirty < 0) {
-            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
-        }
-    }
+}
+
+static void SetCloudEnhancementAttributes(int32_t sourceFileId, ValuesBucket &assetInfo)
+{
     assetInfo.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE,
         static_cast<int32_t>(CloudEnhancementAvailableType::FINISH));
     assetInfo.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION,
         static_cast<int32_t>(StrongAssociationType::CLOUD_ENHANCEMENT));
     assetInfo.PutInt(PhotoColumn::PHOTO_ASSOCIATE_FILE_ID, sourceFileId);
+}
+
+static void SetSpecialAttributes(ValuesBucket &assetInfo, shared_ptr<CloudEnhancementFileInfo> info,
+    shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    // Set hidden
+    assetInfo.PutInt(MediaColumn::MEDIA_HIDDEN, info->hidden);
+    // Set subtype if source image is moving photo
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+    int32_t originalSubtype = GetInt32Val(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, resultSet);
+    if (MovingPhotoFileUtils::IsMovingPhoto(info->subtype, effectMode, originalSubtype)) {
+        assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, info->subtype);
+        assetInfo.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
+        assetInfo.PutInt(PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, originalSubtype);
+        MEDIA_INFO_LOG("subtype:%{public}d, moving_photo_effect_mode:%{public}d, original_subtype:%{public}d",
+            info->subtype, effectMode, originalSubtype);
+        int32_t dirty = GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet);
+        if (dirty < 0) {
+            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, dirty);
+        }
+    }
+}
+
+int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibraryCommand &cmd,
+    const FileAsset &fileAsset, int32_t sourceFileId, shared_ptr<CloudEnhancementFileInfo> info,
+    shared_ptr<NativeRdb::ResultSet> resultSet, std::shared_ptr<TransactionOperations> trans)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
+    CHECK_AND_RETURN_RET_LOG(fileAsset.GetPath().empty() || !MediaFileUtils::IsFileExists(fileAsset.GetPath()),
+        E_FILE_EXIST, "file %{private}s exists now", fileAsset.GetPath().c_str());
+    ValuesBucket assetInfo;
+    SetBasicAttributes(cmd, fileAsset, assetInfo, resultSet);
+    HandleDateAdded(MEDIA_TYPE_PHOTO, assetInfo, resultSet);
+    SetSpecialAttributes(assetInfo, info, resultSet);
+    SetCloudEnhancementAttributes(sourceFileId, assetInfo);
     SetOwnerAlbumId(assetInfo, resultSet);
     SetSupportedWatermarkType(sourceFileId, assetInfo, resultSet);
     cmd.SetValueBucket(assetInfo);
@@ -178,6 +208,61 @@ int32_t EnhancementDatabaseOperations::InsertCloudEnhancementImageInDb(MediaLibr
         "Insert into db failed, errCode = %{public}d", errCode);
     MEDIA_INFO_LOG("insert success, rowId = %{public}d", (int)outRowId);
     return static_cast<int32_t>(outRowId);
+}
+
+int64_t EnhancementDatabaseOperations::InsertCloudEnhancementPerm(int32_t sourceFileId,
+    int32_t targetFileId)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "get rdb store failed");
+    RdbPredicates queryPredicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    queryPredicates.EqualTo(AppUriPermissionColumn::FILE_ID, sourceFileId);
+    queryPredicates.And();
+    queryPredicates.EqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
+        static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
+    vector<string> columns = { AppUriPermissionColumn::APP_ID,
+        AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::DATE_MODIFIED,
+        AppUriPermissionColumn::SOURCE_TOKENID, AppUriPermissionColumn::TARGET_TOKENID };
+    auto resultSet = MediaLibraryRdbStore::StepQueryWithoutCheck(queryPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        E_HAS_DB_ERROR, "cannot get permission from origin photo: %{public}d", sourceFileId);
+    string appId = GetStringVal(AppUriPermissionColumn::APP_ID, resultSet);
+    int32_t uriType = GetInt32Val(AppUriPermissionColumn::URI_TYPE, resultSet);
+    int64_t dateModified = GetInt64Val(AppUriPermissionColumn::DATE_MODIFIED, resultSet);
+    int64_t sourceTokenId = GetInt64Val(AppUriPermissionColumn::SOURCE_TOKENID, resultSet);
+    int64_t targetTokenId = GetInt64Val(AppUriPermissionColumn::TARGET_TOKENID, resultSet);
+    resultSet->Close();
+
+    int64_t outRowId = -1;
+    RdbPredicates checkPredicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
+    checkPredicates.EqualTo(AppUriPermissionColumn::FILE_ID, targetFileId);
+    checkPredicates.EqualTo(AppUriPermissionColumn::URI_TYPE, uriType);
+    checkPredicates.EqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
+        static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
+    checkPredicates.EqualTo(AppUriPermissionColumn::DATE_MODIFIED, dateModified);
+    checkPredicates.EqualTo(AppUriPermissionColumn::SOURCE_TOKENID, sourceTokenId);
+    checkPredicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, targetTokenId);
+    resultSet = MediaLibraryRdbStore::StepQueryWithoutCheck(checkPredicates, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        MEDIA_INFO_LOG("cloud enhancement permission record has already exists: %{public}d", targetFileId);
+        return outRowId;
+    }
+
+    ValuesBucket valueBucket;
+    valueBucket.PutString(AppUriPermissionColumn::APP_ID, appId);
+    valueBucket.PutInt(AppUriPermissionColumn::FILE_ID, targetFileId);
+    valueBucket.PutInt(AppUriPermissionColumn::URI_TYPE, uriType);
+    valueBucket.PutInt(AppUriPermissionColumn::PERMISSION_TYPE,
+        static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
+    valueBucket.PutLong(AppUriPermissionColumn::DATE_MODIFIED, dateModified);
+    valueBucket.PutLong(AppUriPermissionColumn::SOURCE_TOKENID, sourceTokenId);
+    valueBucket.PutLong(AppUriPermissionColumn::TARGET_TOKENID, targetTokenId);
+
+    int32_t errCode = MediaLibraryRdbStore::InsertInternal(outRowId,
+        AppUriPermissionColumn::APP_URI_PERMISSION_TABLE, valueBucket);
+    CHECK_AND_PRINT_LOG(errCode == E_OK, "insert permission failed: %{public}d", errCode);
+    MEDIA_INFO_LOG("Add permission for cloud enhancement photo success: %{public}d", targetFileId);
+    return outRowId;
 }
 
 bool IsEditedTrashedHidden(const std::shared_ptr<NativeRdb::ResultSet> &ret)
@@ -246,6 +331,58 @@ std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::GetPair(Med
     }
     MEDIA_INFO_LOG("PhotoAsset is edited or trashed or hidden");
     return nullptr;
+}
+
+int32_t EnhancementDatabaseOperations::QueryAndUpdatePhotos(const std::vector<std::string> &photoIds)
+{
+    CHECK_AND_RETURN_RET_LOG(photoIds.size() > 0, NativeRdb::E_OK, "photoIds is emtpy");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is nullptr");
+
+    std::string photoIdList =
+        accumulate(photoIds.begin() + 1, photoIds.end(), photoIds[0], [](const string &a, const string &b) {
+            return a + ", " + b;
+        });
+    std::string querySql = "SELECT file_id FROM Photos WHERE (ce_available = 0 AND photo_id IN (" + photoIdList +
+                           ")) OR (ce_available = 1 AND photo_id NOT IN (" + photoIdList + "));";
+
+    auto resultSet = rdbStore->QueryByStep(querySql);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, NativeRdb::E_ERROR, "query by step failed");
+
+    std::vector<std::string> needUpdateFileIds;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        needUpdateFileIds.push_back(GetStringVal(PhotoColumn::MEDIA_ID, resultSet));
+    }
+    resultSet->Close();
+    auto needChange = needUpdateFileIds.size();
+    CHECK_AND_RETURN_RET_LOG(needChange > 0, NativeRdb::E_OK, "needUpdateFileIds is emtpy");
+
+    int32_t ret = NativeRdb::E_OK;
+    int64_t totalChanged = 0;
+    for (size_t start = 0; start < needChange; start += UPDATE_BATCH_SIZE) {
+        size_t end = std::min(start + UPDATE_BATCH_SIZE, needChange);
+        std::stringstream updateSql;
+        updateSql << "UPDATE Photos SET ce_available = NOT ( ce_available ) WHERE file_id IN ( ";
+        for (size_t i = start; i < end; ++i) {
+            if (i != start) {
+                updateSql << ", ";
+            }
+            updateSql << needUpdateFileIds[i];
+        }
+        updateSql << " );";
+        int64_t changedRowCount = 0;
+        auto errCode = rdbStore->ExecuteForChangedRowCount(changedRowCount, updateSql.str());
+        if (errCode != NativeRdb::E_OK) {
+            ret = errCode;
+            MEDIA_ERR_LOG("execute for changed row count failed, errCode: %{public}d", errCode);
+        } else {
+            totalChanged += changedRowCount;
+            MEDIA_INFO_LOG("changed row count: %{public}" PRId64, changedRowCount);
+        }
+    }
+
+    MEDIA_INFO_LOG("need change: %{public}zu, total changed: %{public}" PRId64, needChange, totalChanged);
+    return ret;
 }
 } // namespace Media
 } // namespace OHOS

@@ -26,7 +26,6 @@
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_rdb_transaction.h"
-#include "medialibrary_sync_operation.h"
 #include "medialibrary_rdb_callback_test.h"
 #include "rdbstore_mock.h"
 #define private public
@@ -109,7 +108,7 @@ void MediaLibraryRdbCallbackTest::SetUp() {}
 
 void MediaLibraryRdbCallbackTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryRdbCallbackTest, MediaLibraryDataCallback_OnUpgrade_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbCallbackTest, MediaLibraryDataCallback_OnUpgrade_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryDataCallback_OnUpgrade_001 begin");
     MediaLibraryDataCallBack callback;
@@ -119,7 +118,7 @@ HWTEST_F(MediaLibraryRdbCallbackTest, MediaLibraryDataCallback_OnUpgrade_001, Te
     MEDIA_INFO_LOG("MediaLibraryDataCallback_OnUpgrade_001 end");
 }
 
-HWTEST_F(MediaLibraryRdbCallbackTest, MediaLibraryDataCallback_OnUpgrade_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbCallbackTest, MediaLibraryDataCallback_OnUpgrade_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryDataCallback_OnUpgrade_002 begin");
     MediaLibraryDataCallBack callback;

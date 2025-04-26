@@ -29,6 +29,7 @@
 #include "result_set_utils.h"
 #include "uri.h"
 #include "vision_db_sqls_more.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -160,7 +161,7 @@ void MediaLibraryAlbumOperationTest::SetUp(void)
 
 void MediaLibraryAlbumOperationTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryAlbumOperationTest, portrait_set_display_level_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, portrait_set_display_level_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("portrait_set_display_level_001::Start");
     Uri uri(PAH_PORTRAIT_DISPLAY_LEVLE);
@@ -180,49 +181,49 @@ int HandleAnalysisPhotoAlbumTest(const OperationType &opType)
     return MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates);
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_Displaylevel, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_Displaylevel, TestSize.Level1)
 {
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_Displaylevel::Start");
     EXPECT_NE(HandleAnalysisPhotoAlbumTest(OperationType::PORTRAIT_DISPLAY_LEVEL), E_OK);
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_Displaylevel End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_MergeAlbum, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_MergeAlbum, TestSize.Level1)
 {
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_MergeAlbum::Start");
     EXPECT_NE(HandleAnalysisPhotoAlbumTest(OperationType::PORTRAIT_MERGE_ALBUM), E_OK);
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_MergeAlbum End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_SetIsMe, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_SetIsMe, TestSize.Level1)
 {
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_SetIsMe::Start");
     EXPECT_NE(HandleAnalysisPhotoAlbumTest(OperationType::PORTRAIT_IS_ME), E_OK);
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_SetIsMe End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_SetAlbumName, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_SetAlbumName, TestSize.Level1)
 {
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_SetAlbumName::Start");
     EXPECT_NE(HandleAnalysisPhotoAlbumTest(OperationType::PORTRAIT_ALBUM_NAME), E_OK);
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_SetAlbumName End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_SetCoverUri, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_SetCoverUri, TestSize.Level1)
 {
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_SetCoverUri::Start");
     EXPECT_NE(HandleAnalysisPhotoAlbumTest(OperationType::PORTRAIT_COVER_URI), E_OK);
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_SetCoverUri End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_Others, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, HandleAnalysisPhotoAlbum_Others, TestSize.Level1)
 {
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_Others::Start");
     EXPECT_NE(HandleAnalysisPhotoAlbumTest(OperationType::UNKNOWN_TYPE), E_OK);
     MEDIA_INFO_LOG("HandleAnalysisPhotoAlbum_Others End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_CheckDisplayLevel_false, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_CheckDisplayLevel_false, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_CheckDisplayLevel_false::Start");
     NativeRdb::ValuesBucket values;
@@ -233,7 +234,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_CheckDisplayLevel_false
     MEDIA_INFO_LOG("SetDisplaylevel_CheckDisplayLevel_false End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_WhereArgs_Size_0, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_WhereArgs_Size_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_WhereArgs_Size_0::Start");
     NativeRdb::ValuesBucket values;
@@ -244,7 +245,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_WhereArgs_Size_0, TestS
     MEDIA_INFO_LOG("SetDisplaylevel_WhereArgs_Size_0 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_AlbumId_less_0, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_AlbumId_less_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_AlbumId_less_0::Start");
     NativeRdb::ValuesBucket values;
@@ -256,7 +257,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_AlbumId_less_0, TestSiz
     MEDIA_INFO_LOG("SetDisplaylevel_AlbumId_less_0 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_FirstPage_RDB_ERROR, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_FirstPage_RDB_ERROR, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_FirstPage::Start");
     NativeRdb::ValuesBucket values;
@@ -283,7 +284,7 @@ void InsertAlbumTestData(string coverUri, int count, string tagId)
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_FirstPage_RDB_OK, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_FirstPage_RDB_OK, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_FirstPage_RDB_OK::Start");
     NativeRdb::ValuesBucket values;
@@ -296,7 +297,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_FirstPage_RDB_OK, TestS
     MEDIA_INFO_LOG("SetDisplaylevel_FirstPage_RDB_OK End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Second_Page_RDB_OK, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Second_Page_RDB_OK, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_Second_Page_RDB_OK::Start");
     NativeRdb::ValuesBucket values;
@@ -309,7 +310,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Second_Page_RDB_OK, Tes
     MEDIA_INFO_LOG("SetDisplaylevel_Second_Page_RDB_OK End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_null, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_null, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_null::Start");
     NativeRdb::ValuesBucket values;
@@ -322,7 +323,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Favorite_Page_ObtainAlb
     MEDIA_INFO_LOG("SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_null End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_0, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_0::Start");
     NativeRdb::ValuesBucket values;
@@ -334,7 +335,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Favorite_Page_ObtainAlb
     MEDIA_INFO_LOG("SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_0 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_OK, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_OK, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_OK::Start");
     NativeRdb::ValuesBucket values;
@@ -347,7 +348,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_Favorite_Page_ObtainAlb
     MEDIA_INFO_LOG("SetDisplaylevel_Favorite_Page_ObtainAlbumOrder_Result_OK End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_null, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_null, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_null::Start");
     NativeRdb::ValuesBucket values;
@@ -360,7 +361,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_UnFavorite_Page_ObtainA
     MEDIA_INFO_LOG("SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_null End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_0, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_0::Start");
     NativeRdb::ValuesBucket values;
@@ -372,7 +373,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_UnFavorite_Page_ObtainA
     MEDIA_INFO_LOG("SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_0 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_OK, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_OK, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_OK::Start");
     NativeRdb::ValuesBucket values;
@@ -385,7 +386,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetDisplaylevel_UnFavorite_Page_ObtainA
     MEDIA_INFO_LOG("SetDisplaylevel_UnFavorite_Page_ObtainAlbumOrder_Result_OK End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetAlbumId_ERR, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetAlbumId_ERR, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetAlbumId_ERR::Start");
     NativeRdb::ValuesBucket values;
@@ -395,7 +396,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetAlbumId_ERR, TestSize.Lev
     MEDIA_INFO_LOG("MergeAlbum_GetAlbumId_ERR End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetAlbumId_less_0, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetAlbumId_less_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetAlbumId_less_0::Start");
     NativeRdb::ValuesBucket values;
@@ -406,7 +407,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetAlbumId_less_0, TestSize.
     MEDIA_INFO_LOG("MergeAlbum_GetAlbumId_less_0 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetTargetAlbumId_less_0, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetTargetAlbumId_less_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetTargetAlbumId_less_0::Start");
     NativeRdb::ValuesBucket values;
@@ -418,7 +419,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetTargetAlbumId_less_0, Tes
     MEDIA_INFO_LOG("MergeAlbum_GetTargetAlbumId_less_0 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_Curr_Equal_Target, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_Curr_Equal_Target, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_Curr_Equal_Target::Start");
     NativeRdb::ValuesBucket values;
@@ -430,7 +431,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_Curr_Equal_Target, TestSize.
     MEDIA_INFO_LOG("MergeAlbum_Curr_Equal_Target End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumInfo_result_null, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumInfo_result_null, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumInfo_result_null::Start");
     NativeRdb::ValuesBucket values;
@@ -443,7 +444,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumInfo_result_nul
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumInfo_result_null End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumInfo_result_0, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumInfo_result_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumInfo_result_0::Start");
     NativeRdb::ValuesBucket values;
@@ -456,7 +457,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumInfo_result_0, 
 }
 
 HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_ParseFileIdFromCoverUri_uri_size_0,
-    TestSize.Level0)
+    TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumCoverUri_ParseFileIdFromCoverUri_uri_size_0::Start");
     NativeRdb::ValuesBucket values;
@@ -471,7 +472,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_ParseF
 }
 
 HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_ParseFileIdFromCoverUri_uri_size_10,
-    TestSize.Level0)
+    TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumCoverUri_ParseFileIdFromCoverUri_uri_size_10::Start");
     NativeRdb::ValuesBucket values;
@@ -486,7 +487,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_ParseF
 }
 
 HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_ParseFileIdFromCoverUri_uri_size_01,
-    TestSize.Level0)
+    TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumCoverUri_ParseFileIdFromCoverUri_uri_size_01::Start");
     NativeRdb::ValuesBucket values;
@@ -500,7 +501,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_ParseF
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumCoverUri_ParseFileIdFromCoverUri_uri_size_01 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_result_null, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_result_null, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumInfo_GetMergeAlbumCoverUri_result_null::Start");
     NativeRdb::ValuesBucket values;
@@ -515,7 +516,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_result
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumInfo_GetMergeAlbumCoverUri_result_null End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_result_0, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_GetMergeAlbumCoverUri_result_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_GetMergeAlbumCoverUri_result_0::Start");
     NativeRdb::ValuesBucket values;
@@ -590,7 +591,7 @@ void InsertMergeTestData(AlbumColumn &curColumn, AlbumColumn &targetColumn)
     }
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_00, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_00, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_isme_00::Start");
     CreatTestImage();
@@ -612,7 +613,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_0
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_isme_00 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_01, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_01, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_isme_01::Start");
     CreatTestImage();
@@ -635,7 +636,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_0
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_isme_01 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_10, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_10, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_isme_10::Start");
     CreatTestImage();
@@ -658,7 +659,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_isme_1
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_isme_10 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumName_00, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumName_00, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_albumName_00::Start");
     CreatTestImage();
@@ -680,7 +681,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumN
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_albumName_00 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumName_10, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumName_10, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_albumName_10::Start");
     CreatTestImage();
@@ -703,7 +704,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumN
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_albumName_10 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumName_01, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumName_01, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_albumName_01::Start");
     CreatTestImage();
@@ -726,7 +727,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumN
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_albumName_01 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumName_11, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumName_11, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_albumName_11::Start");
     CreatTestImage();
@@ -750,7 +751,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_albumN
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_albumName_11 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_first_first_level, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_first_first_level, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_first_first_level::Start");
     CreatTestImage();
@@ -776,7 +777,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_first_
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_first_first_level End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_second_second_level, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_second_second_level, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_second_second_level::Start");
     CreatTestImage();
@@ -802,7 +803,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_second
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_second_second_level End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_unfavorite_unfavorite_level, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_unfavorite_unfavorite_level, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_unfavorite_unfavorite_level::Start");
     CreatTestImage();
@@ -828,7 +829,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_unfavo
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_unfavorite_unfavorite_level End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favorite_favorite_level, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favorite_favorite_level, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_favorite_favorite_level::Start");
     CreatTestImage();
@@ -855,7 +856,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favori
 }
 
 HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favorite_favorite_level_rank_01,
-    TestSize.Level0)
+    TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_favorite_favorite_level_rank_01::Start");
     CreatTestImage();
@@ -884,7 +885,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favori
 }
 
 HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favorite_favorite_level_rank_10,
-    TestSize.Level0)
+    TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_favorite_favorite_level_rank_10::Start");
     CreatTestImage();
@@ -912,7 +913,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favori
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_favorite_favorite_level_rank_10 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_one_favorite_level_rank_10, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_one_favorite_level_rank_10, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_one_favorite_level_rank_10::Start");
     CreatTestImage();
@@ -940,7 +941,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_one_fa
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_one_favorite_level_rank_10 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favorite_one_level_rank_10, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favorite_one_level_rank_10, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_favorite_one_level_rank_10::Start");
     CreatTestImage();
@@ -968,7 +969,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_favori
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_favorite_one_level_rank_10 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_first_one_level_rank_10, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_first_one_level_rank_10, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_first_one_level_rank_10::Start");
     CreatTestImage();
@@ -996,7 +997,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_first_
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_first_one_level_rank_10 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo__one_first_level_rank_10, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo__one_first_level_rank_10, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo__one_first_level_rank_10::Start");
     CreatTestImage();
@@ -1024,7 +1025,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo__one_f
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo__one_first_level_rank_10 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_second_second_level_rank_10, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_second_second_level_rank_10, TestSize.Level1)
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_second_second_level_rank_10::Start");
     CreatTestImage();
@@ -1050,7 +1051,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, MergeAlbum_UpdateMergeAlbumsInfo_second
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeAlbumsInfo_second_second_level_rank_10 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_No_albumId, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_No_albumId, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetIsMe_No_albumId::Start");
     OperationType operationType = OperationType::PORTRAIT_IS_ME;
@@ -1060,7 +1061,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_No_albumId, TestSize.Level0)
     MEDIA_INFO_LOG("SetIsMe_No_albumId End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_result_null, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_result_null, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_result_null::Start");
     OperationType operationType = OperationType::PORTRAIT_IS_ME;
@@ -1072,7 +1073,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_result_null, Test
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_result_null End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_result_0, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_result_0, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_result_0::Start");
     OperationType operationType = OperationType::PORTRAIT_IS_ME;
@@ -1083,7 +1084,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_result_0, TestSiz
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_result_0 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_count_more_0_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_count_more_0_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_count_more_0_001::Start");
     AlbumColumn targetColumn;
@@ -1102,7 +1103,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_count_more_0_001,
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_count_more_0_001 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_count_more_0_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_count_more_0_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_count_more_0_002::Start");
     AlbumColumn targetColumn;
@@ -1120,7 +1121,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_count_more_0_002,
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_count_more_0_002 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_favorite_level, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_favorite_level, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_favorite_level::Start");
     AlbumColumn targetColumn;
@@ -1139,7 +1140,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_favorite_level, T
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_favorite_level End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_not_favorite_level, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_not_favorite_level, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_not_favorite_level::Start");
     AlbumColumn targetColumn;
@@ -1158,7 +1159,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetIsMe_SetMyOldAlbum_not_favorite_leve
     MEDIA_INFO_LOG("SetIsMe_SetMyOldAlbum_not_favorite_level End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_no_album_id, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_no_album_id, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumName_no_album_id::Start");
     OperationType operationType = OperationType::PORTRAIT_ALBUM_NAME;
@@ -1168,7 +1169,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_no_album_id, TestSize.Leve
     MEDIA_INFO_LOG("SetAlbumName_no_album_id End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_no_album_name, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_no_album_name, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumName_no_album_name::Start");
     OperationType operationType = OperationType::PORTRAIT_ALBUM_NAME;
@@ -1180,7 +1181,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_no_album_name, TestSize.Le
     MEDIA_INFO_LOG("SetAlbumName_no_album_name End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_album_name_empty, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_album_name_empty, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumName_album_name_empty::Start");
     OperationType operationType = OperationType::PORTRAIT_ALBUM_NAME;
@@ -1193,7 +1194,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_album_name_empty, TestSize
     MEDIA_INFO_LOG("SetAlbumName_album_name_empty End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_update_err, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_update_err, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumName_update_err::Start");
     OperationType operationType = OperationType::PORTRAIT_ALBUM_NAME;
@@ -1207,7 +1208,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_update_err, TestSize.Level
     MEDIA_INFO_LOG("SetAlbumName_update_err End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_update_succ, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_update_succ, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetAlbumName_update_succ::Start");
     OperationType operationType = OperationType::PORTRAIT_ALBUM_NAME;
@@ -1227,7 +1228,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetAlbumName_update_succ, TestSize.Leve
     MEDIA_INFO_LOG("SetAlbumName_update_succ End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_no_coverUri_id, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_no_coverUri_id, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetCoverUri_no_coverUri_id::Start");
     OperationType operationType = OperationType::PORTRAIT_COVER_URI;
@@ -1237,7 +1238,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_no_coverUri_id, TestSize.Le
     MEDIA_INFO_LOG("SetCoverUri_no_coverUri_id End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_no_coverUri, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_no_coverUri, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetCoverUri_no_coverUri::Start");
     OperationType operationType = OperationType::PORTRAIT_COVER_URI;
@@ -1248,7 +1249,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_no_coverUri, TestSize.Level
     MEDIA_INFO_LOG("SetCoverUri_no_coverUri End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_coverUri_empty, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_coverUri_empty, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetCoverUri_coverUri_empty::Start");
     OperationType operationType = OperationType::PORTRAIT_COVER_URI;
@@ -1260,7 +1261,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_coverUri_empty, TestSize.Le
     MEDIA_INFO_LOG("SetCoverUri_coverUri_empty End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_update_err, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_update_err, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetCoverUri_update_err::Start");
     OperationType operationType = OperationType::PORTRAIT_COVER_URI;
@@ -1273,7 +1274,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_update_err, TestSize.Level0
     MEDIA_INFO_LOG("SetCoverUri_update_err End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_update_succ, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_update_succ, TestSize.Level1)
 {
     MEDIA_INFO_LOG("SetCoverUri_update_succ::Start");
     OperationType operationType = OperationType::PORTRAIT_COVER_URI;
@@ -1289,6 +1290,161 @@ HWTEST_F(MediaLibraryAlbumOperationTest, SetCoverUri_update_succ, TestSize.Level
     InsertAlbumTestData(targetColumn);
     EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(operationType, values, dataPredicates), E_OK);
     MEDIA_INFO_LOG("SetCoverUri_update_succ End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_RenewDeletedPhotoAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_001::Start");
+    int32_t test_id = 10;
+    int32_t ret = -1;
+    NativeRdb::ValuesBucket values;
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>("test1");
+    ASSERT_NE(trans, nullptr);
+    ret = MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(test_id, values, trans);
+    EXPECT_NE(ret, -1);
+    MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_DeleteHighlightAlbums_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_DeleteHighlightAlbums_test_001::Start");
+    int32_t ret = -1;
+    NativeRdb::RdbPredicates predicates("test");
+    ret = MediaLibraryAlbumOperations::DeleteHighlightAlbums(predicates);
+    EXPECT_NE(ret, -1);
+    MEDIA_INFO_LOG("Maot_DeleteHighlightAlbums_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_QueryPhotoAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_QueryPhotoAlbum_test_001::Start");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    vector<string> columns;
+    EXPECT_NE(MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns), nullptr);
+    MEDIA_INFO_LOG("Maot_QueryPhotoAlbum_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_GetLPathFromSourcePath_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_GetLPathFromSourcePath_test_001::Start");
+    int32_t ret = -1;
+    std::string sourcePath = "/storage/emulated/0/Documents/File.txt";
+    std::string lPath = "test";
+    int32_t mediaType = 0;
+    ret = MediaLibraryAlbumOperations::GetLPathFromSourcePath(sourcePath, lPath, mediaType);
+    EXPECT_NE(ret, -1);
+    MEDIA_INFO_LOG("Maot_GetLPathFromSourcePath_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_RecoverAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_RecoverAlbum_test_001::Start");
+    bool isUserAlbum = false;
+    std::string assetId = "/storage/emulated/1/Documents/File.txt";
+    std::string lPath = "/storage/emulated/0/Documents/File.txt";
+    int64_t newAlbumId = 0;
+    MediaLibraryAlbumOperations::RecoverAlbum(assetId, lPath, isUserAlbum, newAlbumId);
+    EXPECT_EQ(isUserAlbum, false);
+    MEDIA_INFO_LOG("Maot_RecoverAlbum_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_001::Start");
+    OperationType opType = OperationType::HIGHLIGHT_ALBUM_NAME;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_NE(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_002::Start");
+    OperationType opType = OperationType::HIGHLIGHT_COVER_URI;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_NE(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_002 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_003::Start");
+    OperationType opType = OperationType::HIGHLIGHT_SUBTITLE;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_NE(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_003 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_004::Start");
+    OperationType opType = OperationType::GROUP_COVER_URI;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_NE(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_004 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandleAnalysisPhotoAlbum_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_005::Start");
+    OperationType opType = OperationType::SET_LOCATION;
+    int32_t ret;
+    NativeRdb::ValuesBucket values;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
+    std::shared_ptr<int> countPtr;
+    ret = MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(opType, values, predicates, countPtr);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandleAnalysisPhotoAlbum_test_005 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandlePhotoAlbumOperations_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_001::Start");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    int ret;
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    cmd.oprnType_ = OperationType::SET_LOCATION;
+    ret = MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(cmd);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_001 End");
+}
+
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_RenewDeletedPhotoAlbum_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_002::Start");
+    int32_t id = 1;
+    NativeRdb::ValuesBucket albumValues;
+    std::shared_ptr<TransactionOperations> trans = make_shared<TransactionOperations>("test");
+    ASSERT_NE(trans, nullptr);
+    int32_t ret = MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(id, albumValues, trans);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+
+    trans = nullptr;
+    ret = MediaLibraryAlbumOperations::RenewDeletedPhotoAlbum(id, albumValues, trans);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_002 End");
 }
 } // namespace Media
 } // namespace OHOS

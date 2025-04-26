@@ -24,7 +24,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckCallerPermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckCallerPermission_test_001, TestSize.Level1)
 {
     string permission = "";
     bool ret = PermissionUtils::CheckCallerPermission(permission);
@@ -34,13 +34,13 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckCallerPermission_test_001, T
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSysBundleManager_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSysBundleManager_test_001, TestSize.Level1)
 {
     auto ret = PermissionUtils::GetSysBundleManager();
     EXPECT_NE(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_not_in_cache_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_not_in_cache_001, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     int uid = 1;
@@ -49,7 +49,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_not_in_cac
     EXPECT_EQ(bundleName, "");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_002, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_002, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     int uid = 1;
@@ -60,7 +60,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_0
     EXPECT_EQ(bundleName, "com.test.demo");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_003, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_003, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     int uid1 = 1;
@@ -75,7 +75,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_0
     EXPECT_EQ(bundleName, "com.test.demo");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_004, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_004, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo", "", ""});
@@ -86,7 +86,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_0
     EXPECT_EQ(bundleNameActual, "com.test.demo2");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_not_in_cache_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_not_in_cache_001, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     int uid = 1;
@@ -95,7 +95,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_not_in_ca
     EXPECT_EQ(packageName, "");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_002, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_002, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     int uid = 1;
@@ -109,7 +109,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_
     EXPECT_EQ(packageNameActual, packageName);
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_003, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_003, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo1", "demo1", ""});
@@ -122,7 +122,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_
     EXPECT_EQ(packageNameActual, "demo1");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_004, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_004, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo1", "demo1", ""});
@@ -133,7 +133,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_
     EXPECT_EQ(packageNameActual, "demo2");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_not_in_cache_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_not_in_cache_001, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     int uid = 1;
@@ -142,7 +142,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_not_in_cache_00
     EXPECT_EQ(appId, "");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_003, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_003, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo1", "demo1", "demo1.appid"});
@@ -155,7 +155,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_003, T
     EXPECT_EQ(appIdActual, "demo2.appid");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_004, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_004, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo1", "demo1", "demo1.appid"});
@@ -166,7 +166,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_004, T
     EXPECT_EQ(appIdActual, "demo2.appid");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_than_capacity_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_than_capacity_001, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     string name = "";
@@ -180,7 +180,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_tha
     EXPECT_EQ(packageNameActual, "demo5");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, permission_utils_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, permission_utils_test_001, TestSize.Level1)
 {
     PermissionUtils::ClearBundleInfoInCache();
     vector<string> perms = {"perm1", "perm2"};

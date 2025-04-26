@@ -18,6 +18,7 @@
 #include <vector>
 #include <sstream>
 
+#include "backup_database_utils.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
@@ -39,9 +40,8 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileInAlbum(const FileInfo &fileInfo
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
 
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return rowData;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, rowData);
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
@@ -64,9 +64,8 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithoutAlbum(const FileInfo &fil
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
 
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return rowData;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, rowData);
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
@@ -81,15 +80,12 @@ PhotosDao::PhotosBasicInfo PhotosDao::GetBasicInfo()
 {
     PhotosDao::PhotosBasicInfo basicInfo = {0, 0};
     std::string querySql = this->SQL_PHOTOS_BASIC_INFO;
-    if (this->mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Media_Restore: mediaLibraryRdb_ is null.");
-        return basicInfo;
-    }
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, basicInfo,
+        "Media_Restore: mediaLibraryRdb_ is null.");
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_WARN_LOG("Media_Restore: GetBasicInfo resultSet is null. querySql: %{public}s", querySql.c_str());
-        return basicInfo;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET_WARN_LOG(!cond, basicInfo,
+        "Media_Restore: GetBasicInfo resultSet is null. querySql: %{public}s", querySql.c_str());
     basicInfo.maxFileId = GetInt32Val("max_file_id", resultSet);
     basicInfo.count = GetInt32Val("count", resultSet);
     MEDIA_INFO_LOG("Media_Restore: max_file_id: %{public}d, count: %{public}d", basicInfo.maxFileId, basicInfo.count);
@@ -113,17 +109,15 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFile(const FileInfo &fileInfo, const
         return rowData;
     }
     rowData = this->FindSameFileInAlbum(fileInfo, maxFileId);
-    if (!rowData.data.empty() || rowData.fileId != 0) {
-        return rowData;
-    }
+    bool cond = (!rowData.data.empty() || rowData.fileId != 0);
+    CHECK_AND_RETURN_RET(!cond, rowData);
+
     rowData = this->FindSameFileBySourcePath(fileInfo, maxFileId);
-    if (!rowData.data.empty() || rowData.fileId != 0) {
-        MEDIA_WARN_LOG("Media_Restore: FindSameFile - find Photos by sourcePath, "
-                       "DB Info: %{public}s, Object: %{public}s",
-            this->ToString(rowData).c_str(),
-            this->ToString(fileInfo).c_str());
-        return rowData;
-    }
+    cond = (!rowData.data.empty() || rowData.fileId != 0);
+    CHECK_AND_RETURN_RET_WARN_LOG(!cond, rowData,
+        "Media_Restore: FindSameFile - find Photos by sourcePath, "
+        "DB Info: %{public}s, Object: %{public}s",
+        this->ToString(rowData).c_str(), this->ToString(fileInfo).c_str());
     return rowData;
 }
 
@@ -143,9 +137,8 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileBySourcePath(const FileInfo &fil
     CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
 
     auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return rowData;
-    }
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, rowData);
     rowData.fileId = GetInt32Val("file_id", resultSet);
     rowData.data = GetStringVal("data", resultSet);
     rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
@@ -176,5 +169,28 @@ std::string PhotosDao::ToLower(const std::string &str)
     std::transform(
         str.begin(), str.end(), std::back_inserter(lowerStr), [](unsigned char c) { return std::tolower(c); });
     return lowerStr;
+}
+
+int32_t PhotosDao::GetDirtyFilesCount()
+{
+    std::vector<NativeRdb::ValueObject> params = { static_cast<int32_t>(SyncStatusType::TYPE_BACKUP) };
+    return BackupDatabaseUtils::QueryInt(mediaLibraryRdb_, SQL_PHOTOS_GET_DIRTY_FILES_COUNT, "count", params);
+}
+
+std::vector<PhotosDao::PhotosRowData> PhotosDao::GetDirtyFiles(int32_t offset)
+{
+    std::vector<PhotosDao::PhotosRowData> rowDataList;
+    std::vector<NativeRdb::ValueObject> params = { static_cast<int32_t>(SyncStatusType::TYPE_BACKUP),
+        offset, QUERY_COUNT };
+    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, SQL_PHOTOS_GET_DIRTY_FILES, params);
+    CHECK_AND_RETURN_RET(resultSet != nullptr, rowDataList);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        PhotosDao::PhotosRowData rowData;
+        rowData.data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        rowData.fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        rowDataList.emplace_back(rowData);
+    }
+    resultSet->Close();
+    return rowDataList;
 }
 }  // namespace OHOS::Media

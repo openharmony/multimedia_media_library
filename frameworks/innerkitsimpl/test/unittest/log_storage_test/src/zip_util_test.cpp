@@ -33,7 +33,7 @@ void ZipUtilTest::SetUp(void) {}
 
 void ZipUtilTest::TearDown(void) {}
 
-HWTEST_F(ZipUtilTest, Create_Zip_Test_001, testing::ext::TestSize.Level0)
+HWTEST_F(ZipUtilTest, Create_Zip_Test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("Create_Zip_Test_001 begin");
     std::string filePath = "/data/storage/el2/log/test.zip";
@@ -43,7 +43,7 @@ HWTEST_F(ZipUtilTest, Create_Zip_Test_001, testing::ext::TestSize.Level0)
     MEDIA_INFO_LOG("Create_Zip_Test_001 end");
 }
  
-HWTEST_F(ZipUtilTest, Create_Zip_Test_002, testing::ext::TestSize.Level0)
+HWTEST_F(ZipUtilTest, Create_Zip_Test_002, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("Create_Zip_Test_002 begin");
     std::string filePath = "/data/storage/el2/log/test.csv";

@@ -257,7 +257,7 @@ int64_t PermissionUtils::GetMainTokenId(const string &appId, int64_t &tokenId)
         MEDIA_ERR_LOG("Get bundle name failed");
         return err;
     }
-    int uid = getuid();
+    int32_t uid = static_cast<int32_t>(getuid());
     int32_t userId = uid / BASE_USER_RANGE;
     OHOS::AppExecFwk::BundleInfo bundleInfo;
     err = bundleMgr_->GetBundleInfoV9(bundleName,

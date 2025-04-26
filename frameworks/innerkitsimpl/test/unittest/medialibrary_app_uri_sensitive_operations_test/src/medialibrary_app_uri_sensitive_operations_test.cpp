@@ -52,8 +52,6 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "media_file_ext_ability.h"
-#include "media_file_extention_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "uri.h"
@@ -73,8 +71,6 @@ namespace OHOS {
 namespace Media {
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-
-static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 
 void CleanTestTables()
 {
@@ -212,7 +208,6 @@ void MediaLibraryAppUriSensitiveOperationsTest::TearDownTestCase()
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
     this_thread::sleep_for(chrono::seconds(1));
     MEDIA_INFO_LOG("Clean is finish");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
 void MediaLibraryAppUriSensitiveOperationsTest::SetUp()
@@ -257,7 +252,7 @@ int TestInsert(DataShareValuesBucket &dataShareValue)
 /**
  * normal, update
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_001");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -293,7 +288,7 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
 /**
  * no sensitiveType
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_002");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -316,7 +311,7 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
 /**
  * not valid
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_003, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_003");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -340,7 +335,7 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
 /**
  * no appid
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_004, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_004");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -367,7 +362,7 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
 /**
  * no fileId
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_005, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_005");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -392,7 +387,7 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
 /**
  * no permissionType
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_006, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_006, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_006");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -416,7 +411,7 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
 /**
  * extra column fail
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_007, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_007, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_007");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -452,7 +447,7 @@ int TestDelete(OHOS::DataShare::DataSharePredicates &dataSharePredicate)
 /**
  * cancel a data.
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_008, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_008, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_008");
     int32_t photoId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -492,7 +487,7 @@ int TestBatchInsert(std::vector<DataShare::DataShareValuesBucket> &dataShareValu
 /**
  * batch insert two.
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_009, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_009, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_009");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -525,7 +520,7 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
 /**
  * batch insert two no sensitiveType.
  */
-HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_0010, TestSize.Level0)
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12_test_0010, TestSize.Level1)
 {
     MEDIA_INFO_LOG("start tdd app_uri_sensitive_oprn_api12_test_0010");
     int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -550,6 +545,62 @@ HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, app_uri_sensitive_oprn_api12
     EXPECT_EQ(ret, MediaLibraryAppUriSensitiveOperations::ERROR);
 
     MEDIA_INFO_LOG("end tdd app_uri_sensitive_oprn_api12_test_0010");
+}
+
+/**
+ * BeForceSensitive_test.
+ */
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, Mausot_BeForceSensitive_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd Mausot_BeForceSensitive_test_001");
+    MediaLibraryCommand cmd(OperationObject::MEDIA_APP_URI_PERMISSION, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    std::vector<DataShare::DataShareValuesBucket> dataShareValues;
+    bool ret = false;
+    int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
+    for (int i = 0; i < 2; ++i) {
+        OHOS::DataShare::DataShareValuesBucket dataShareValue;
+        dataShareValue.Put(AppUriSensitiveColumn::APP_ID, "appidBatch01");
+        dataShareValue.Put(AppUriSensitiveColumn::FILE_ID, photoIds[i]);
+        dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE,
+            AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
+        dataShareValue.Put(AppUriSensitiveColumn::URI_TYPE, AppUriSensitiveColumn::URI_PHOTO);
+        dataShareValues.push_back(dataShareValue);
+    }
+    ret = MediaLibraryAppUriSensitiveOperations::BeForceSensitive(cmd, dataShareValues);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("end tdd Mausot_BeForceSensitive_test_001");
+}
+
+/**
+ * BeForceSensitive_test.
+ */
+HWTEST_F(MediaLibraryAppUriSensitiveOperationsTest, Mausot_BeForceSensitive_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start tdd Mausot_BeForceSensitive_test_002");
+    MediaLibraryCommand cmd(OperationObject::MEDIA_APP_URI_PERMISSION, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    bool ret = false;
+    int32_t photoId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    int32_t photoId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    std::vector<int32_t> photoIds = { photoId1, photoId2 };
+    std::vector<DataShare::DataShareValuesBucket> dataShareValues;
+    for (int i = 0; i < 2; ++i) {
+        OHOS::DataShare::DataShareValuesBucket dataShareValue;
+        dataShareValue.Put(AppUriSensitiveColumn::APP_ID, "appidBatch01");
+        dataShareValue.Put(AppUriSensitiveColumn::FILE_ID, photoIds[i]);
+        dataShareValue.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE,
+            AppUriSensitiveColumn::SENSITIVE_ALL_DESENSITIZE);
+        dataShareValue.Put(AppUriPermissionColumn::PERMISSION_TYPE,
+            AppUriPermissionColumn::PERMISSION_TEMPORARY_READ);
+        dataShareValue.Put(AppUriSensitiveColumn::URI_TYPE, AppUriSensitiveColumn::URI_PHOTO);
+        dataShareValues.push_back(dataShareValue);
+    }
+    ret = MediaLibraryAppUriSensitiveOperations::BeForceSensitive(cmd, dataShareValues);
+    EXPECT_EQ(ret, false);
+    MEDIA_INFO_LOG("end tdd Mausot_BeForceSensitive_test_002");
 }
 } // namespace Media
 } // namespace OHOS

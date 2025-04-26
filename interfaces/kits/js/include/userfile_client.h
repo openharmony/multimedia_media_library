@@ -19,12 +19,14 @@
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
 #include "napi_base_context.h"
+#include "message_parcel.h"
 #include "napi_error.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "napi_remote_object.h"
 #include "rdb_store.h"
 #include "uri.h"
+#include "safe_map.h"
 
 namespace OHOS {
 namespace Media {
@@ -53,7 +55,7 @@ public:
     EXPORT static void UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
     EXPORT static int OpenFile(Uri &uri, const std::string &mode, const int32_t userId = -1);
     EXPORT static int Update(Uri &uri, const DataShare::DataSharePredicates &predicates,
-        const DataShare::DataShareValuesBucket &value);
+        const DataShare::DataShareValuesBucket &value, const int32_t userId = -1);
     EXPORT static void RegisterObserverExt(const Uri &uri,
         std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants);
     EXPORT static void UnregisterObserverExt(const Uri &uri,
@@ -62,6 +64,7 @@ public:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryRdb(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns);
     EXPORT static std::string GetType(Uri &uri);
+    EXPORT static int32_t UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option);
     EXPORT static void SetUserId(const int32_t userId);
     EXPORT static int32_t GetUserId();
     EXPORT static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelperByUser(const int32_t userId);
@@ -70,7 +73,7 @@ private:
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info,
         const int32_t userId = -1);
     static int32_t userId_;
-    static std::map<int32_t, std::shared_ptr<DataShare::DataShareHelper>> dataShareHelperMap_;
+    static SafeMap<int32_t, std::shared_ptr<DataShare::DataShareHelper>> dataShareHelperMap_;
 };
 }
 }

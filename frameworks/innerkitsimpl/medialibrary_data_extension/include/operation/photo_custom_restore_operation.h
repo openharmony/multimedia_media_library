@@ -43,6 +43,8 @@ struct RestoreTaskInfo {
     std::string sourceDir;
     int64_t beginTime;
     int64_t endTime;
+    int32_t imageAlbumId;
+    int32_t videoAlbumId;
 };
 
 struct FileInfo {
@@ -107,11 +109,12 @@ private:
     vector<FileInfo> SetDestinationPath(vector<FileInfo> &restoreFiles, UniqueNumber &uniqueNumber);
     void GetAssetRootDir(int32_t mediaType, string &rootDirPath);
     vector<FileInfo> BatchInsert(
-        RestoreTaskInfo &restoreTaskInfo, vector<FileInfo> &restoreFiles, int32_t &sameFileNum);
+        RestoreTaskInfo &restoreTaskInfo, vector<FileInfo> &restoreFiles, int32_t &sameFileNum, bool isFirst);
     NativeRdb::ValuesBucket GetInsertValue(RestoreTaskInfo &restoreTaskInfo, FileInfo &fileInfo);
     int32_t FillMetadata(std::unique_ptr<Metadata> &data);
     int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
     int32_t RenameFiles(vector<FileInfo> &restoreFiles);
+    int32_t BatchUpdateTimePending(vector<FileInfo> &restoreFiles);
     int32_t UpdatePhotoAlbum(RestoreTaskInfo &restoreTaskInfo, FileInfo fileInfo);
     void SendNotifyMessage(RestoreTaskInfo &restoreTaskInfo, int32_t notifyType, int32_t errCode, int32_t fileNum,
         const UniqueNumber &uniqueNumber);
@@ -126,7 +129,7 @@ private:
     void ReportCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
     int32_t MoveLivePhoto(const string &originFilePath, const string &filePath);
     void DeleteDatabaseRecord(const string &filePath);
-    int32_t GetAlbumUriBySubType(int32_t subType, string &albumUri);
+    int32_t GetAlbumInfoBySubType(int32_t subType, string &albumUri, int32_t &albumId);
 
 private:
     std::atomic<bool> isRunning_{false};

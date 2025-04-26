@@ -88,12 +88,15 @@ public:
     EXPORT static bool IsDirEmpty(const std::string &path);
     EXPORT static bool CreateFile(const std::string &filePath);
     EXPORT static bool DeleteFile(const std::string &fileName);
+    EXPORT static std::string GetThumbDir(const std::string &photoPath, int32_t userId = -1);
+    EXPORT static std::string AppendUserId(const std::string& path, int32_t userId = -1);
     EXPORT static bool DeleteDir(const std::string &dirName);
     EXPORT static std::string GetFileName(const std::string &filePath);
     EXPORT static std::string GetParentPath(const std::string &path);
     EXPORT static std::string GetTitleFromDisplayName(const std::string &displayName);
     EXPORT static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
-    EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath);
+    EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath,
+        bool isSupportCrossPolicy = false);
     EXPORT static bool CopyDirAndDelSrc(const std::string &srcPath, const std::string &destPath,
         unsigned short curRecursionDepth = 0);
     EXPORT static bool CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile);
@@ -104,10 +107,12 @@ public:
     EXPORT static bool RenameDir(const std::string &oldPath, const std::string &newPath);
     EXPORT static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);
     EXPORT static int32_t CheckAlbumName(const std::string &albumName);
+    EXPORT static int32_t CheckHighlightSubtitle(const std::string &highlightSubtitle);
     EXPORT static int32_t CheckDentryName(const std::string &dentryName);
-    EXPORT static int32_t CheckDisplayName(const std::string &displayName);
+    EXPORT static int32_t CheckDisplayName(const std::string &displayName, const bool compatibleCheckTitle = false);
+    EXPORT static int32_t CheckTitle(const std::string& title);
+    EXPORT static int32_t CheckTitleCompatible(const std::string& title);
     EXPORT static int32_t CheckFileDisplayName(const std::string &displayName);
-    EXPORT static int32_t CheckTitleName(const std::string &title);
     EXPORT static std::string GetFileAssetUri(const std::string &fileAssetData, const std::string &displayName,
         const int32_t &fileId);
     EXPORT static int32_t CheckRelativePath(const std::string &relativePath);
@@ -123,6 +128,7 @@ public:
     EXPORT static MediaType GetMediaType(const std::string &filePath);
     EXPORT static MediaType GetMediaTypeNotSupported(const std::string &filePath);
     EXPORT static std::string SplitByChar(const std::string &str, const char split);
+    EXPORT static std::string UnSplitByChar(const std::string &str, const char split);
     EXPORT static std::string GetExtensionFromPath(const std::string &path);
     EXPORT static int32_t OpenFile(const std::string &path, const std::string &mode,
         const std::string &clientbundleName = "");
@@ -182,6 +188,7 @@ public:
     EXPORT static void SetDeletionRecord(int fd, const std::string &fileName);
     EXPORT static void BackupPhotoDir();
     EXPORT static void RecoverMediaTempDir();
+    EXPORT static std::vector<std::string> GetFileNameFromDir(const std::string &dirName);
     EXPORT static std::string DesensitizePath(const std::string &path);
     EXPORT static void CheckDirStatus(const std::unordered_set<std::string> &dirCheckSet, const std::string &dir);
     EXPORT static int32_t CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir);
@@ -200,6 +207,9 @@ public:
     EXPORT static void StatDirSize(const std::string& rootPath, size_t& totalSize);
     EXPORT static std::string GetMimeTypeFromDisplayName(const std::string &displayName);
     EXPORT static std::string DesensitizeUri(const std::string &fileUri);
+    EXPORT static bool DeleteFileOrFolder(const std::string &path, bool isFile);
+    EXPORT static std::string GetReplacedPathByPrefix(const std::string srcPrefix, const std::string dstPrefix,
+        const std::string &path);
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
     static int32_t RemoveDirectory(const std::string &path);

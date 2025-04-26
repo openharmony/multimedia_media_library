@@ -23,6 +23,7 @@ const BaseItemInfo = requireNapi('file.PhotoPickerComponent').BaseItemInfo;
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
+const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
 
 export class RecentPhotoComponent extends ViewPU {
     constructor(j3, k3, l3, m3 = -1, n3 = undefined, o3) {
@@ -98,7 +99,7 @@ export class RecentPhotoComponent extends ViewPU {
         Row.pop();
     }
     handleOnReceive(p2) {
-        console.info('RecentPhotoComponent OnReceive:' + JSON.stringify(p2));
+        console.info('RecentPhotoComponent OnReceive:' + this.encrypt(JSON.stringify(p2)));
         let q2 = p2.dataType;
         if (q2 === 'checkResult') {
             if (this.onRecentPhotoCheckResult) {
@@ -129,22 +130,28 @@ export class RecentPhotoComponent extends ViewPU {
             }
         }
     }
-    convertMIMETypeToFilterType(n2) {
-        let o2;
-        if (n2 === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
-            o2 = FILTER_MEDIA_TYPE_IMAGE;
+    convertMIMETypeToFilterType(e) {
+        let o;
+        if (e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
+            o = FILTER_MEDIA_TYPE_IMAGE;
+        } else if (e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
+            o = FILTER_MEDIA_TYPE_VIDEO;
+        } else if (e === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
+            o = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
+        } else {
+            o = FILTER_MEDIA_TYPE_ALL;
         }
-        else if (n2 === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
-            o2 = FILTER_MEDIA_TYPE_VIDEO;
-        }
-        else {
-            o2 = FILTER_MEDIA_TYPE_ALL;
-        }
-        console.info('RecentPhotoComponent convertMIMETypeToFilterType : ' + JSON.stringify(o2));
-        return o2;
+        console.info('RecentPhotoComponent convertMIMETypeToFilterType: ' + JSON.stringify(o));
+        return o;
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    encrypt(data) {
+        if (!data || data?.indexOf('file:///data/storage/') !== -1) {
+          return '';
+        }
+        return data.replace(/(\/\w+)\./g, '/******.');
     }
 }
 

@@ -45,6 +45,11 @@ enum class AlbumChangeOperation {
     SET_ORDER_POSITION,
 };
 
+enum class ParameterType {
+    PHOTO_ASSET,
+    ASSET_URI,
+};
+
 struct PhotoAlbumPtrCompare {
     bool operator()(const std::shared_ptr<PhotoAlbum>& album, const std::shared_ptr<PhotoAlbum>& albumCmp) const
     {
@@ -75,6 +80,7 @@ public:
     std::vector<std::string> GetDismissAssetArray() const;
     std::vector<std::pair<std::string, int32_t>> GetIdOrderPositionPairs() const;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> GetMoveMap() const;
+    int32_t GetUserId() const;
     void RecordMoveAssets(std::vector<std::string>& assetArray, std::shared_ptr<PhotoAlbum>& targetAlbum);
     void ClearAddAssetArray();
     void ClearRemoveAssetArray();
@@ -91,12 +97,20 @@ private:
     EXPORT static napi_value JSGetAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSCreateAlbumRequest(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDeleteAlbums(napi_env env, napi_callback_info info);
-    EXPORT static napi_value JSDeleteHighlightAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSAddAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSRemoveAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSMoveAssetsImplement(napi_env env, napi_callback_info info,
+        ParameterType parameterType);
     EXPORT static napi_value JSMoveAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSMoveAssetsWithUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSRecoverAssetsImplement(napi_env env, napi_callback_info info,
+        ParameterType parameterType);
     EXPORT static napi_value JSRecoverAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSRecoverAssetsWithUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSDeleteAssetsImplement(napi_env env, napi_callback_info info,
+        ParameterType parameterType);
     EXPORT static napi_value JSDeleteAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSDeleteAssetsWithUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSPlaceBefore(napi_env env, napi_callback_info info);
@@ -122,6 +136,7 @@ private:
     std::vector<std::string> assetsToRecover_;
     std::vector<std::string> assetsToDelete_;
     std::vector<std::string> dismissAssets_;
+    int32_t userId_ = -1;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> moveMap_;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
     std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;

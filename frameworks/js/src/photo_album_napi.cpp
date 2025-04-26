@@ -27,6 +27,7 @@
 #include "photo_map_column.h"
 #include "result_set_utils.h"
 #include "userfile_client.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -38,6 +39,7 @@ thread_local napi_ref PhotoAlbumNapi::photoAccessConstructor_ = nullptr;
 static const string PHOTO_ALBUM_CLASS = "UserFileMgrPhotoAlbum";
 static const string PHOTOACCESS_PHOTO_ALBUM_CLASS = "PhotoAccessPhotoAlbum";
 static const string COUNT_GROUP_BY = "count(*) AS count";
+std::mutex PhotoAlbumNapi::mutex_;
 
 struct TrashAlbumExecuteOpt {
     napi_env env;
@@ -101,7 +103,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("latitude", JSGetLatitude),
             DECLARE_NAPI_GETTER("longitude", JSGetLongitude),
             DECLARE_NAPI_GETTER("lpath", JSGetAlbumLPath),
-            DECLARE_NAPI_GETTER("dateModified", JSGetDateModified),
+            DECLARE_NAPI_GETTER("dateModified", JSGetDateModifiedSystem),
             DECLARE_NAPI_GETTER("dateAdded", JSGetDateAdded),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
@@ -295,6 +297,7 @@ napi_value PhotoAlbumNapi::PhotoAlbumNapiConstructor(napi_env env, napi_callback
 void PhotoAlbumNapi::PhotoAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalizeHint)
 {
     auto *album = reinterpret_cast<PhotoAlbumNapi*>(nativeObject);
+    lock_guard<mutex> lockGuard(mutex_);
     if (album != nullptr) {
         delete album;
         album = nullptr;
@@ -549,8 +552,25 @@ napi_value PhotoAlbumNapi::JSGetDateModified(napi_env env, napi_callback_info in
     return jsResult;
 }
 
+napi_value PhotoAlbumNapi::JSGetDateModifiedSystem(napi_env env, napi_callback_info info)
+{
+    CHECK_COND_LOG_THROW_RETURN_RET(env, MediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
+        "Get dateModified permission denied: not a system app", nullptr,
+        "Get album dateModified failed: not a system app");
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int64(env, obj->GetDateModified(), &jsResult),
+        JS_INNER_FAIL);
+    return jsResult;
+}
+
+
 napi_value PhotoAlbumNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
 {
+    CHECK_COND_LOG_THROW_RETURN_RET(env, MediaLibraryNapiUtils::IsSystemApp(), JS_ERR_PERMISSION_DENIED,
+        "Get dateAdded permission denied: not a system app", nullptr, "Get album dateAdded failed: not a system app");
     PhotoAlbumNapi *obj = nullptr;
     CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
 

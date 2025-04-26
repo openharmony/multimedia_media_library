@@ -22,6 +22,7 @@
 #include "medialibrary_db_const.h"
 #include "media_log.h"
 #include "userfile_manager_types.h"
+#include "highlight_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -151,6 +152,11 @@ const std::string PhotoColumn::PHOTO_DATE_DAY_FORMAT = "%Y%m%d";
 const std::string PhotoColumn::PHOTO_DETAIL_TIME_FORMAT = "%Y:%m:%d %H:%M:%S";
 
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
+const std::string PhotoColumn::TAB_OLD_PHOTOS_TABLE = "tab_old_photos";
+const std::string PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE = "tab_asset_and_album_operation";
+
+const std::string PhotoColumn::FILES_CLOUD_DIR = "/storage/cloud/files/";
+const std::string PhotoColumn::FILES_LOCAL_DIR = "/storage/media/local/files/";
 
 const std::string PhotoColumn::HIGHLIGHT_TABLE = "tab_analysis_video_label";
 const std::string PhotoColumn::MEDIA_DATA_DB_HIGHLIGHT_TRIGGER = "trigger_generate_thumbnail";
@@ -260,7 +266,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     STAGE_VIDEO_TASK_STATUS + " INT NOT NULL DEFAULT 0, " +
     PHOTO_IS_AUTO + " INT NOT NULL DEFAULT 0, " +
     PHOTO_MEDIA_SUFFIX + " TEXT, " +
-    PHOTO_IS_RECENT_SHOW + " INT DEFAULT 0) ";
+    PHOTO_IS_RECENT_SHOW + " INT NOT NULL DEFAULT 1) ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -414,7 +420,8 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
                         " AND OLD." + PhotoColumn::PHOTO_POSITION + " = 1 AND is_caller_self_func() = 'true'" +
                         " BEGIN DELETE FROM " + PhotoColumn::PHOTOS_TABLE +
-                        " WHERE " + PhotoColumn::MEDIA_ID + " = old." + PhotoColumn::MEDIA_ID + "; END;";
+                        " WHERE " + PhotoColumn::MEDIA_ID + " = old." + PhotoColumn::MEDIA_ID + ";" +
+                        " END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_fdirty_trigger AFTER UPDATE ON " +
@@ -433,7 +440,8 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.position <> 1" +
                         " AND new.date_modified = old.date_modified AND ( old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) + " OR old.dirty =" +
-                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SDIRTY)) +
+                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SDIRTY)) + " OR old.dirty =" +
+                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_TDIRTY)) +
                         ") AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
                         " AND " + PhotoColumn::CheckUploadPhotoColumns() +
                         " BEGIN " +
@@ -513,7 +521,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
 {
-    if (columnName == "count(*)") {
+    if (columnName == MEDIA_COLUMN_COUNT) {
         return true;
     }
     return (PHOTO_COLUMNS.find(columnName) != PHOTO_COLUMNS.end()) ||
@@ -550,6 +558,7 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         PHOTO_DATE_YEAR,
         PHOTO_DATE_MONTH,
         PHOTO_DATE_DAY,
+        PHOTO_DETAIL_TIME,
         PHOTO_SHOOTING_MODE,
         PHOTO_SHOOTING_MODE_TAG,
         PHOTO_OWNER_ALBUM_ID,
@@ -674,61 +683,6 @@ const std::string PhotoColumn::PHOTOS_QUERY_FILTER =
     MediaColumn::MEDIA_TIME_PENDING + " = 0" + " AND " +
     PhotoColumn::PHOTO_IS_TEMP + " = 0" + " AND " +
     PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 ";
-
-std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Option option)
-{
-    PhotoQueryFilter::Config config {};
-    switch (option) {
-        case PhotoQueryFilter::Option::FILTER_VISIBLE:
-            return GetSqlWhereClause(config);
-            break;
-        case PhotoQueryFilter::Option::FILTER_HIDDEN:
-            config.hiddenConfig = PhotoQueryFilter::ConfigType::INCLUDE;
-            return GetSqlWhereClause(config);
-            break;
-        case PhotoQueryFilter::Option::FILTER_TRASHED:
-            config.trashedConfig = PhotoQueryFilter::ConfigType::INCLUDE;
-            return GetSqlWhereClause(config);
-            break;
-        default:
-            MEDIA_ERR_LOG("Invalid option: %{public}d", static_cast<int>(option));
-            return "";
-            break;
-    }
-}
-
-std::string PhotoQueryFilter::GetSqlWhereClause(const PhotoQueryFilter::Config &config)
-{
-    string whereClause = "";
-    if (config.syncStatusConfig != ConfigType::IGNORE) {
-        whereClause += "sync_status = " + string(config.syncStatusConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.cleanFlagConfig != ConfigType::IGNORE) {
-        whereClause += " AND clean_flag = " + string(config.cleanFlagConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.pendingConfig != ConfigType::IGNORE) {
-        if (config.pendingConfig == ConfigType::INCLUDE) {
-            whereClause += " AND time_pending > 0";
-        } else {
-            whereClause += " AND time_pending = 0";
-        }
-    }
-    if (config.tempConfig != ConfigType::IGNORE) {
-        whereClause += " AND is_temp = " + string(config.tempConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.hiddenConfig != ConfigType::IGNORE) {
-        whereClause += " AND hidden = " + string(config.hiddenConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.trashedConfig != ConfigType::IGNORE) {
-        whereClause += " AND date_trashed = " + string(config.trashedConfig == ConfigType::INCLUDE ? "1" : "0");
-    }
-    if (config.burstCoverOnly != ConfigType::IGNORE) {
-        whereClause += " AND burst_cover_level = " +
-            string(config.burstCoverOnly == ConfigType::INCLUDE ? "1" : "0");
-    }
-
-    return whereClause;
-}
 
 }  // namespace Media
 }  // namespace OHOS

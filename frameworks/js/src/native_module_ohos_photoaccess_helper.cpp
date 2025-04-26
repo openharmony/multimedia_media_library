@@ -27,11 +27,6 @@
 #include "native_module_ohos_medialibrary.h"
 #include "photo_proxy_napi.h"
 
-extern const char _binary_photoaccesshelperinf_js_start[];
-extern const char _binary_photoaccesshelperinf_js_end[];
-extern const char _binary_photoaccesshelperinf_abc_start[];
-extern const char _binary_photoaccesshelperinf_abc_end[];
-
 namespace OHOS {
 namespace Media {
 /*
@@ -59,30 +54,6 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     CloudMediaAssetManagerNapi::Init(env, exports);
     CloudMediaAssetStatusNapi::Init(env, exports);
     return exports;
-}
-
-extern "C" __attribute__((visibility("default"))) void NAPI_file_photoAccessHelper_GetJSCode(const char** buf,
-    int* bufLen)
-{
-    if (buf != nullptr) {
-        *buf = _binary_photoaccesshelperinf_js_start;
-    }
-
-    if (bufLen != nullptr) {
-        *bufLen = _binary_photoaccesshelperinf_js_end - _binary_photoaccesshelperinf_js_start;
-    }
-}
-
-extern "C" __attribute__((visibility("default"))) void NAPI_file_photoAccessHelper_GetABCCode(const char** buf,
-    int* bufLen)
-{
-    if (buf != nullptr) {
-        *buf = _binary_photoaccesshelperinf_abc_start;
-    }
-
-    if (bufLen != nullptr) {
-        *bufLen = _binary_photoaccesshelperinf_abc_end - _binary_photoaccesshelperinf_abc_start;
-    }
 }
 
 /*

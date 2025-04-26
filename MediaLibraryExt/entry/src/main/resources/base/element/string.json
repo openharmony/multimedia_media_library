@@ -1,0 +1,96 @@
+{
+  "string": [
+    {
+      "name": "entry_desc",
+      "value": "description"
+    },
+    {
+      "name": "MainAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "MainAbility_label",
+      "value": "label"
+    },
+    {
+      "name": "description_serviceability",
+      "value": "description_serviceability"
+    },
+    {
+      "name": "permission_distributed_datasync",
+      "value": "Allows medialibrary obtained distributed_account during cloning"
+    },
+    {
+      "name": "permission_used_stats",
+      "value": "Allows the app to read media file information from the user's external storage"
+    },
+    {
+      "name": "permission_read_media",
+      "value": "Allows the app to read media file information from the user's external storage"
+    },
+    {
+      "name": "permission_write_media",
+      "value": "Allows the app to read and write media file information from the user's external storage"
+    },
+    {
+      "name": "permission_start_abilites_from_background",
+      "value": "Allows the app to launch in the background or access other components"
+    },
+    {
+      "name": "permission_cloudfile_sync",
+      "value": "Allows applications to obtain device-cloud synchronization capabilitiess"
+    },
+    {
+      "name": "permission_proxy_authorization_uri",
+      "value": "Allow the application proxy to grant URIs"
+    },
+    {
+      "name": "permission_get_bundle_info_privileged",
+      "value": "Allows querying of the app's basic information and other sensitive information"
+    },
+    {
+      "name": "permission_access_rdb_and_kvdb",
+      "value": "Allows querying rdb and fetch astc from kvdb"
+    },
+    {
+      "name": "permission_read_cloud_sync_config",
+      "value": "Allows read cloud sync config"
+    },
+    {
+      "name": "permission_get_appkey2",
+      "value": "Allows read media after screenlock"
+    },
+    {
+      "name": "permission_read_imagevideo",
+      "value": "Allows read image video"
+    },
+    {
+      "name": "permission_get_wifi_info",
+      "value": "Allow MedialibrarySubscriber to obtain wifi information"
+    },
+    {
+      "name": "permission_get_app_state",
+      "value": "Allow MedialibraryAppStateObserver to get app stop status"
+    },
+    {
+      "name": "permission_grant_short_term_write",
+      "value": "Allow app short term write image video"
+    },
+    {
+      "name": "permission_manage_usb_config",
+      "value": "Allow app manage usb config"
+    },
+    {
+      "name": "permission_file_access_manager",
+      "value": "Allow app read write sd card"
+    },
+    {
+      "name": "permission_storage_manager",
+      "value": "Allow app use sdcard mount/umount broadcast"
+    },
+    {
+      "name": "permission_get_network_info",
+      "value": "Allow app to get network info"
+    }
+  ]
+}

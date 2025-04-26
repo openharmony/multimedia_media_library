@@ -57,7 +57,7 @@ struct SyncNotifyInfo {
     std::unordered_set<std::string> uriIds;
     bool notifyAssets;
     bool notifyAlbums;
-    int32_t refershResult;
+    int32_t refreshResult;
     ForceRefreshType forceRefreshType = ForceRefreshType::NONE;
 };
 

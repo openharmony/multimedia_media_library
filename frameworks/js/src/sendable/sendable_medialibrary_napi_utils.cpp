@@ -46,6 +46,7 @@
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
 #include "userfilemgr_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -597,7 +598,7 @@ int SendableMediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
     NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to napi error code
     if (error <= E_COMMON_START && error >= E_COMMON_END) {
-        error = JS_INNER_FAIL;
+        error = (error == -E_CHECK_SYSTEMAPP_FAIL) ? E_CHECK_SYSTEMAPP_FAIL : JS_INNER_FAIL;
     } else if (trans2JsError.count(error)) {
         error = trans2JsError.at(error);
     }
@@ -637,6 +638,33 @@ void SendableMediaLibraryNapiUtils::CreateNapiErrorObject(napi_env env, napi_val
                 NAPI_DEBUG_LOG("napi_create_error success");
             }
         }
+    }
+}
+
+void SendableMediaLibraryNapiUtils::InvokeJSAsyncMethodWithoutWork(napi_env env, napi_deferred deferred,
+    napi_ref callbackRef, const SendableJSAsyncContextOutput &asyncContext)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("InvokeJSAsyncMethod");
+
+    napi_value retVal;
+    napi_value callback = nullptr;
+
+    /* Deferred is used when JS Callback method expects a promise value */
+    if (deferred) {
+        if (asyncContext.status) {
+            napi_resolve_deferred(env, deferred, asyncContext.data);
+        } else {
+            napi_reject_deferred(env, deferred, asyncContext.error);
+        }
+    } else {
+        napi_value result[ARGS_TWO];
+        result[PARAM0] = asyncContext.error;
+        result[PARAM1] = asyncContext.data;
+        napi_get_reference_value(env, callbackRef, &callback);
+        napi_call_function(env, nullptr, callback, ARGS_TWO, result, &retVal);
+        napi_delete_reference(env, callbackRef);
+        callbackRef = nullptr;
     }
 }
 
@@ -810,7 +838,7 @@ napi_value SendableMediaLibraryNapiUtils::AddAssetColumns(napi_env env, vector<s
     for (const auto &column : fetchColumn) {
         if (column == PENDING_STATUS) {
             validFetchColumns.insert(MediaColumn::MEDIA_TIME_PENDING);
-        } else if (isValidColumn(column)) {
+        } else if (isValidColumn(column) || (column == MEDIA_SUM_SIZE && IsSystemApp())) {
             validFetchColumns.insert(column);
         } else if (column == MEDIA_DATA_DB_URI) {
             continue;

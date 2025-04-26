@@ -18,6 +18,7 @@
 #include "smart_album_asset.h"
 #include "medialibrary_db_const.h"
 #include "userfilemgr_uri.h"
+#include "media_file_uri.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -32,7 +33,7 @@ namespace Media {
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, SmartAlbumAsset_SetGet_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, SmartAlbumAsset_SetGet_Test_001, TestSize.Level1)
 {
     SmartAlbumAsset smartAlbumAsset;
 

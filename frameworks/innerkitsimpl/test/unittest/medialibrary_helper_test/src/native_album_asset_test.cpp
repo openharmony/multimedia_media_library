@@ -19,6 +19,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_type_const.h"
 #include "userfilemgr_uri.h"
+#include "media_file_uri.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -33,7 +34,7 @@ namespace Media {
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_SetGet_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_SetGet_Test_001, TestSize.Level1)
 {
     NativeAlbumAsset nativeAlbumAsset;
 
@@ -78,7 +79,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_SetGet_Test_001, TestSize.
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_CreateAlbumAsset_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_CreateAlbumAsset_Test_001, TestSize.Level1)
 {
     NativeAlbumAsset nativeAlbumAsset;
     string albumPath = "/data/test/native_createalbumasset_001";
@@ -95,7 +96,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_CreateAlbumAsset_Test_001,
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_DeleteAlbumAsset_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_DeleteAlbumAsset_Test_001, TestSize.Level1)
 {
     NativeAlbumAsset nativeAlbumAsset;
     string albumPath = "/data/test/native_deletealbumasset_001";
@@ -112,7 +113,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_DeleteAlbumAsset_Test_001,
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_001, TestSize.Level1)
 {
     NativeAlbumAsset nativeAlbumAsset;
     string albumPath = "/data/test/native_deletealbumasset_001";
@@ -130,7 +131,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_001,
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_ModifyAlbumAsset_Test_002, TestSize.Level1)
 {
     NativeAlbumAsset nativeAlbumAsset;
     string albumPath = "native_deletealbumasset_002";

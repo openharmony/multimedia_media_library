@@ -20,6 +20,8 @@
 
 #include "ability_context_impl.h"
 #include "app_mgr_interface.h"
+#include "cloud_sync_utils.h"
+#include "cpu_utils.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_app_uri_permission_operations.h"
@@ -37,10 +39,29 @@
 #include "media_analysis_helper.h"
 #include "background_cloud_file_processor.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_album_refresh.h"
+#include "scanner_utils.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
+#include "database_adapter.h"
+#include "userfile_manager_types.h"
+#include "medialibrary_operation.h"
+#include "datashare_helper.h"
+
+#define private public
+#include "medialibrary_common_utils.h"
+#include "permission_utils.h"
+#include "photo_file_utils.h"
+#undef private
 
 namespace OHOS {
 using namespace std;
+const int32_t EVEN = 2;
+const std::string ROOT_MEDIA_DIR = "/storage/cloud/files/";
+const std::string DISPLAY_NAME = "IMG_20250306_202859.jpg";
+const std::string FILE_HIDDEN = ".FileHidden/";
+static const int32_t E_ERR = -1;
+static const string PHOTOS_TABLE = "Photos";
+std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 
 static inline string FuzzString(const uint8_t *data, size_t size)
 {
@@ -55,19 +76,77 @@ static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
     return static_cast<int32_t>(*data);
 }
 
+static inline bool FuzzBool(const uint8_t* data, size_t size)
+{
+    if (size == 0) {
+        return false;
+    }
+    return (data[0] % EVEN) == 0;
+}
+
 static inline Uri FuzzUri(const uint8_t *data, size_t size)
 {
     return Uri(FuzzString(data, size));
 }
 
-static int Init()
+static inline Media::CpuAffinityType FuzzCpuAffinityType(const uint8_t *data, size_t size)
+{
+    int32_t value = FuzzInt32(data, size);
+    if (value >= static_cast<int32_t>(Media::CpuAffinityType::CPU_IDX_0) &&
+        value <= static_cast<int32_t>(Media::CpuAffinityType::CPU_IDX_11)) {
+        return static_cast<Media::CpuAffinityType>(value);
+    }
+    return Media::CpuAffinityType::CPU_IDX_DEFAULT;
+}
+
+static inline Media::MediaLibraryCommand FuzzMediaLibraryCmd(const uint8_t *data, size_t size)
+{
+    return Media::MediaLibraryCommand(FuzzUri(data, size));
+}
+
+static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
+{
+    if (g_rdbStore == nullptr) {
+        return E_ERR;
+    }
+    NativeRdb::ValuesBucket values;
+    values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
+    values.PutString(Media::PhotoColumn::PHOTO_LAST_VISIT_TIME, FuzzString(data, size));
+    int64_t fileId = 0;
+    g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
+    return static_cast<int32_t>(fileId);
+}
+
+void SetTables()
+{
+    vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
+    for (auto &createTableSql : createTableSqlList) {
+        CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "g_rdbStore is null.");
+        int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed.", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success.", createTableSql.c_str());
+    }
+}
+static void Init()
 {
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     abilityContextImpl->SetStageContext(stageContext);
     int32_t sceneCode = 0;
-    return Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl, abilityContextImpl,
-        sceneCode);
+    auto ret = Media::MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(abilityContextImpl,
+        abilityContextImpl, sceneCode);
+    CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibrary Mgr failed, ret: %{public}d.", ret);
+    auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr.");
+        return;
+    }
+    g_rdbStore = rdbStore;
+    SetTables();
 }
 
 static void CommandTest(const uint8_t *data, size_t size)
@@ -270,14 +349,20 @@ static void MediaLibraryManagerTest(const uint8_t *data, size_t size)
     Media::MediaLibraryDataManagerUtils::GetTypeUriByUri(str);
 }
 
-static void MultistageTest(const uint8_t *data, size_t size)
+static void MultistageAdapterTest(const uint8_t *data, size_t size)
 {
-    Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(FuzzString(data, size));
+    Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd(data, size);
+    Media::DatabaseAdapter::Update(cmd);
+    MEDIA_INFO_LOG("MultistageAdapterTest");
 }
 
-static void RefreshAlbumTest()
+static void MultistageTest(const uint8_t *data, size_t size)
 {
-    Media::RefreshAlbums(true);
+    std::string photoId = FuzzString(data, size);
+    int32_t fileId = InsertAsset(data, size, photoId);
+    MEDIA_INFO_LOG("fileId: %{public}d.", fileId);
+    Media::MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId);
+    MEDIA_INFO_LOG("MultistageTest");
 }
 
 static void ActiveAnalysisTest()
@@ -288,6 +373,10 @@ static void ActiveAnalysisTest()
         static_cast<int32_t>(Media::MediaAnalysisProxy::ActivateServiceType::START_SERVICE_OCR), fileIds);
     Media::MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
         static_cast<int32_t>(Media::MediaAnalysisProxy::ActivateServiceType::START_SERVICE_OCR), fileIds);
+    Media::MediaAnalysisHelper::AsyncStartMediaAnalysisService(
+        static_cast<int32_t>(Media::MediaAnalysisProxy::ActivateServiceType::START_SERVICE_OCR), fileIds);
+    Media::MediaAnalysisHelper::StartPortraitCoverSelectionAsync(fileIds.at(0));
+    (void)Media::MediaAnalysisHelper::ParseGeoInfo(fileIds, true);
 }
 
 static void CloudDownloadTest()
@@ -297,8 +386,54 @@ static void CloudDownloadTest()
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
     Media::BackgroundCloudFileProcessor::StopTimer();
 }
-} // namespace OHOS
 
+static void CpuUtilsTest(const uint8_t *data, size_t size)
+{
+    Media::CpuUtils::SlowDown();
+    Media::CpuAffinityType cpuAffinityType = FuzzCpuAffinityType(data, size);
+    Media::CpuUtils::SetSelfThreadAffinity(cpuAffinityType);
+    Media::CpuUtils::ResetSelfThreadAffinity();
+    Media::CpuUtils::ResetCpu();
+}
+
+static void CommonUtilsTest(const uint8_t *data, size_t size)
+{
+    std::string str = FuzzString(data, size);
+    Media::MediaLibraryCommonUtils::CanConvertStrToInt32(str);
+}
+
+static void CloudSyncUtilsTest()
+{
+    Media::CloudSyncUtils::IsUnlimitedTrafficStatusOn();
+    Media::CloudSyncUtils::IsCloudSyncSwitchOn();
+    Media::CloudSyncUtils::IsCloudDataAgingPolicyOn();
+}
+
+static void ScannerUtilsTest(const uint8_t *data, size_t size)
+{
+    std::string pathOrDisplayName = FuzzBool(data, size) ? DISPLAY_NAME : FuzzString(data, size);
+    Media::ScannerUtils::GetFileExtension(pathOrDisplayName);
+
+    std::string path = FuzzBool(data, size) ? "" : FuzzString(data, size);
+    Media::ScannerUtils::IsDirectory(path);
+    Media::ScannerUtils::IsRegularFile(path);
+
+    path = FuzzBool(data, size) ? FILE_HIDDEN : FuzzString(data, size);
+    Media::ScannerUtils::IsFileHidden(path);
+
+    std::string dir = FuzzString(data, size);
+    Media::ScannerUtils::GetRootMediaDir(dir);
+
+    std::string displayName = FuzzString(data, size);
+    Media::ScannerUtils::GetFileTitle(displayName);
+
+    path = FuzzBool(data, size) ? FILE_HIDDEN : FuzzString(data, size);
+    Media::ScannerUtils::IsDirHidden(path, true);
+
+    path = FuzzBool(data, size) ? ROOT_MEDIA_DIR + "Pictures": FuzzString(data, size);
+    Media::ScannerUtils::CheckSkipScanList(path);
+}
+} // namespace OHOS
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
@@ -319,9 +454,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::AppPermissionTest(data, size);
     OHOS::AppStateTest();
     OHOS::MediaLibraryManagerTest(data, size);
+    OHOS::MultistageAdapterTest(data, size);
     OHOS::MultistageTest(data, size);
-    OHOS::RefreshAlbumTest();
     OHOS::ActiveAnalysisTest();
     OHOS::CloudDownloadTest();
+    OHOS::CpuUtilsTest(data, size);
+    OHOS::CommonUtilsTest(data, size);
+    OHOS::CloudSyncUtilsTest();
+    OHOS::ScannerUtilsTest(data, size);
     return 0;
 }

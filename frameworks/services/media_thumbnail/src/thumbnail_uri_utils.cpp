@@ -27,6 +27,7 @@
 #include "medialibrary_errno.h"
 #include "thumbnail_const.h"
 #include "userfile_manager_types.h"
+#include "highlight_column.h"
 
 using namespace std;
 

@@ -28,9 +28,12 @@
 #include "media_unique_number_column.h"
 #include "medialibrary_db_const.h"
 #include "vision_db_sqls_more.h"
+#include "smart_album_column.h"
 
 namespace OHOS {
 namespace Media {
+
+const std::string FILE_TABLE = "file";
 
 const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " (" +
                                        MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -323,7 +326,7 @@ const std::string CREATE_ASSET_UNIQUE_NUMBER_TABLE = "CREATE TABLE IF NOT EXISTS
     ASSET_MEDIA_TYPE + " TEXT, " + UNIQUE_NUMBER + " INT DEFAULT 0) ";
 
 const std::string CREATE_ALBUM_REFRESH_TABLE = "CREATE TABLE IF NOT EXISTS " + ALBUM_REFRESH_TABLE + " ("
-    + REFRESHED_ALBUM_ID + " INT PRIMARY KEY)";
+    + REFRESH_ALBUM_ID + " INT PRIMARY KEY)";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MEDIALIBRARY_DB_CONST_SQLS_H

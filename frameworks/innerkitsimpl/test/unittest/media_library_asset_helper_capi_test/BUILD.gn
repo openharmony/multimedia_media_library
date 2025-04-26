@@ -21,10 +21,8 @@ group("unittest") {
 }
 
 ohos_unittest("media_library_asset_helper_capi_test") {
-  module_out_path = "media_library/media_library_asset_helper_capi_test"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
     "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
@@ -70,7 +68,6 @@ ohos_unittest("media_library_asset_helper_capi_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
-    "device_manager:devicemanagersdk",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",

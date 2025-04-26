@@ -71,32 +71,34 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_ALL_EXIF, TYPE_STRING },
         { PhotoColumn::PHOTO_USER_COMMENT, TYPE_STRING },
         { PHOTO_INDEX, TYPE_INT32 },
-        { MEDIA_DATA_DB_COUNT, TYPE_INT32},
-        { PhotoColumn::PHOTO_DATE_YEAR, TYPE_STRING},
-        { PhotoColumn::PHOTO_DATE_MONTH, TYPE_STRING},
-        { PhotoColumn::PHOTO_DATE_DAY, TYPE_STRING},
-        { PhotoColumn::PHOTO_SHOOTING_MODE, TYPE_STRING},
-        { PhotoColumn::PHOTO_SHOOTING_MODE_TAG, TYPE_STRING},
+        { MEDIA_DATA_DB_COUNT, TYPE_INT32 },
+        { PhotoColumn::PHOTO_DATE_YEAR, TYPE_STRING },
+        { PhotoColumn::PHOTO_DATE_MONTH, TYPE_STRING },
+        { PhotoColumn::PHOTO_DATE_DAY, TYPE_STRING },
+        { PhotoColumn::PHOTO_SHOOTING_MODE, TYPE_STRING },
+        { PhotoColumn::PHOTO_SHOOTING_MODE_TAG, TYPE_STRING },
         { PhotoColumn::PHOTO_LAST_VISIT_TIME, TYPE_INT64 },
-        { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, TYPE_INT32},
-        { PhotoColumn::PHOTO_LCD_SIZE, TYPE_STRING},
-        { PhotoColumn::PHOTO_THUMB_SIZE, TYPE_STRING},
-        { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32},
-        { PhotoColumn::PHOTO_FRONT_CAMERA, TYPE_STRING},
+        { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, TYPE_INT32 },
+        { PhotoColumn::PHOTO_LCD_SIZE, TYPE_STRING },
+        { PhotoColumn::PHOTO_THUMB_SIZE, TYPE_STRING },
+        { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32 },
+        { PhotoColumn::PHOTO_FRONT_CAMERA, TYPE_STRING },
         { PhotoColumn::PHOTO_COVER_POSITION, TYPE_INT64 },
+        { PhotoColumn::PHOTO_ORIGINAL_SUBTYPE, TYPE_INT32 },
         { PhotoColumn::PHOTO_BURST_COVER_LEVEL, TYPE_INT32 },
         { PhotoColumn::PHOTO_BURST_KEY, TYPE_STRING },
-        { PhotoColumn::PHOTO_CE_AVAILABLE, TYPE_INT32},
+        { PhotoColumn::PHOTO_CE_AVAILABLE, TYPE_INT32 },
         { PhotoColumn::PHOTO_THUMBNAIL_READY, TYPE_INT64 },
         { PhotoColumn::PHOTO_DETAIL_TIME, TYPE_STRING },
         { PhotoColumn::PHOTO_OWNER_ALBUM_ID, TYPE_INT32 },
         { PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, TYPE_INT32 },
-        { PhotoColumn::SUPPORTED_WATERMARK_TYPE, TYPE_INT32},
-        { PhotoColumn::PHOTO_QUALITY, TYPE_INT32},
-        { PhotoColumn::PHOTO_CLOUD_ID, TYPE_STRING},
-        { PhotoColumn::PHOTO_IS_AUTO, TYPE_INT32},
-        { PhotoColumn::PHOTO_MEDIA_SUFFIX, TYPE_STRING},
-        { PhotoColumn::PHOTO_IS_RECENT_SHOW, TYPE_INT32},
+        { PhotoColumn::SUPPORTED_WATERMARK_TYPE, TYPE_INT32 },
+        { PhotoColumn::PHOTO_QUALITY, TYPE_INT32 },
+        { PhotoColumn::PHOTO_CLOUD_ID, TYPE_STRING },
+        { PhotoColumn::PHOTO_IS_AUTO, TYPE_INT32 },
+        { PhotoColumn::PHOTO_MEDIA_SUFFIX, TYPE_STRING },
+        { PhotoColumn::PHOTO_IS_RECENT_SHOW, TYPE_INT32 },
+        { MEDIA_SUM_SIZE, TYPE_INT64 },
     };
     return RESULT_TYPE_MAP;
 }
@@ -147,9 +149,8 @@ template <class T>
 int32_t FetchResult<T>::GetCount()
 {
     int32_t count = 0;
-    if (resultset_ == nullptr || resultset_->GetRowCount(count) != NativeRdb::E_OK) {
-        return 0;
-    }
+    bool cond = (resultset_ == nullptr || resultset_->GetRowCount(count) != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, 0);
     return count < 0 ? 0 : count;
 }
 
@@ -243,22 +244,11 @@ int32_t FetchResult<T>::GetUserId()
 template <class T>
 unique_ptr<T> FetchResult<T>::GetObjectAtPosition(int32_t index)
 {
-    if (resultset_ == nullptr) {
-        MEDIA_ERR_LOG("rs is null");
-        return nullptr;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(resultset_ != nullptr, nullptr, "rs is null");
     int32_t count = GetCount();
-    if ((index < 0) || (index > (count - 1))) {
-        MEDIA_ERR_LOG("index not proper");
-        return nullptr;
-    }
-
-    if (resultset_->GoToRow(index) != 0) {
-        MEDIA_ERR_LOG("failed to go to row at index pos");
-        return nullptr;
-    }
-
+    bool cond = ((index < 0) || (index > (count - 1)));
+    CHECK_AND_RETURN_RET_LOG(!cond, nullptr, "index not proper");
+    CHECK_AND_RETURN_RET_LOG(resultset_->GoToRow(index) == 0, nullptr, "failed to go to row at index pos");
     return GetObject();
 }
 
@@ -269,7 +259,6 @@ unique_ptr<T> FetchResult<T>::GetFirstObject()
         MEDIA_DEBUG_LOG("resultset is null|first row failed");
         return nullptr;
     }
-
     return GetObject();
 }
 
@@ -430,10 +419,9 @@ void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
 template<class T>
 void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
-    if ((resultset_ == nullptr) && (resultSet == nullptr)) {
-        MEDIA_ERR_LOG("SetFileAsset fail, result is nullptr");
-        return;
-    }
+    bool cond = ((resultset_ == nullptr) && (resultSet == nullptr));
+    CHECK_AND_RETURN_LOG(!cond, "SetFileAsset fail, result is nullptr");
+
     vector<string> columnNames;
     if (resultSet != nullptr) {
         resultSet->GetAllColumnNames(columnNames);
@@ -512,11 +500,8 @@ unique_ptr<T> FetchResult<T>::GetObject()
 template <class T>
 unique_ptr<T> FetchResult<T>::GetObjectFromRdb(shared_ptr<NativeRdb::ResultSet> &resultSet, int idx)
 {
-    if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != 0) || (resultSet->GoTo(idx))) {
-        MEDIA_ERR_LOG("resultset is null|first row failed");
-        return nullptr;
-    }
-
+    bool cond = ((resultSet == nullptr) || (resultSet->GoToFirstRow() != 0) || (resultSet->GoTo(idx)));
+    CHECK_AND_RETURN_RET_LOG(!cond, nullptr, "resultset is null|first row failed");
     return GetObject(resultSet);
 }
 

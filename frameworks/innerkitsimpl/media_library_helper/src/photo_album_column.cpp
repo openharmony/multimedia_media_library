@@ -85,8 +85,7 @@ const std::string LOCATION_COVER_URI =
 
 // default fetch columns
 const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
-    ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED,
-    ALBUM_DATE_ADDED
+    ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED
 };
 
 // location default fetch columns
@@ -109,6 +108,7 @@ const string PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX = "file://media/Analys
 const string PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX = "file://cloudsync/PhotoAlbum/";
 const string PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX = "file://cloudsync/gallery/PhotoAlbum/";
 const string PhotoAlbumColumns::PHOTO_GALLERY_CLOUD_SYNC_INFO_URI_PREFIX = "file://cloudsync/gallery/cloudSyncInfo/";
+const string PhotoAlbumColumns::PHOTO_GALLERY_DOWNLOAD_URI_PREFIX = "file://cloudsync/gallery/download/";
 
 // Create tables
 const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
@@ -152,7 +152,8 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER =
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
     " AND old." + ALBUM_DIRTY + " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) +
     " AND is_caller_self_func() = 'true' BEGIN DELETE FROM " + TABLE +
-    " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
+    " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func();" +
+    " END;";
 
 const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
     "CREATE TRIGGER IF NOT EXISTS album_modify_trigger AFTER UPDATE ON " + TABLE +
@@ -163,7 +164,8 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
     " AND " + PhotoAlbumColumns::CheckUploadPhotoAlbumColumns() +
     " BEGIN UPDATE " + TABLE + " SET dirty = " +
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
-    " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
+    " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func();" +
+    " END;";
 
 const std::string PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER =
         " CREATE TRIGGER IF NOT EXISTS update_order_trigger AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
@@ -225,6 +227,8 @@ void PhotoAlbumColumns::GetPortraitAlbumPredicates(const int32_t albumId, RdbPre
     clauses = { onClause };
     predicates.InnerJoin(tempTable)->On(clauses);
     SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.Distinct();
     return;
 }
@@ -235,6 +239,7 @@ void PhotoAlbumColumns::GetAnalysisAlbumPredicates(const int32_t albumId,
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     SetDefaultPredicatesCondition(predicates, 0, hiddenState, 0, false);
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
 }

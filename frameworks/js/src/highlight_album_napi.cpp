@@ -36,6 +36,8 @@
 #include "story_play_info_column.h"
 #include "user_photography_info_column.h"
 #include "vision_photo_map_column.h"
+#include "highlight_column.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 
@@ -63,6 +65,7 @@ napi_value HighlightAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getHighlightResource", JSGetHighlightResource),
             DECLARE_NAPI_FUNCTION("getOrderPosition", JSGetOrderPosition),
             DECLARE_NAPI_FUNCTION("setSubTitle", JSSetHighlightSubtitle),
+            DECLARE_NAPI_STATIC_FUNCTION("deleteHighlightAlbums", JSDeleteHighlightAlbums),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -647,9 +650,10 @@ napi_value HighlightAlbumNapi::JSSetHighlightSubtitle(napi_env env, napi_callbac
     unique_ptr<HighlightAlbumNapiAsyncContext> asyncContext = make_unique<HighlightAlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->subtitle),
-        JS_ERR_PARAMETER_INVALID);
+        OHOS_INVALID_PARAM_CODE);
 
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckAlbumName(asyncContext->subtitle) == E_OK, "Invalid subtitle");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckHighlightSubtitle(asyncContext->subtitle) == E_OK,
+        "Invalid highlight subtitle");
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
     CHECK_COND_WITH_MESSAGE(env,
@@ -659,6 +663,95 @@ napi_value HighlightAlbumNapi::JSSetHighlightSubtitle(napi_env env, napi_callbac
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSSetHighlightSubtitle",
         JSSetHighlightSubtitleExecute, JSSetHighlightSubtitleCompleteCallback);
+}
+
+static void DeleteHighlightAlbumsCompleteCallback(napi_env env, napi_status status, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeleteHighlightAlbumsCompleteCallback");
+    int32_t deleteAlbumFailed = 1;
+    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    napi_get_undefined(env, &jsContext->data);
+    napi_get_undefined(env, &jsContext->error);
+    if (context->error == ERR_DEFAULT) {
+        napi_create_int32(env, E_SUCCESS, &jsContext->data);
+        jsContext->status = true;
+    } else {
+        napi_create_int32(env, deleteAlbumFailed, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void DeleteHighlightAlbumsExecute(napi_env env, void* data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeleteHighlightAlbumsExecute");
+    NAPI_INFO_LOG("Start delete highlight album(s)");
+
+    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
+    Uri deleteAlbumUri(PAH_DELETE_HIGHLIGHT_ALBUM);
+    int ret = UserFileClient::Delete(deleteAlbumUri, context->predicates);
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Failed to delete highlight albums, err: %{public}d", ret);
+        return;
+    }
+    NAPI_INFO_LOG("Delete highlight album(s): %{public}d", ret);
+}
+
+static napi_value ParseArgsDeleteHighlightAlbums(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+ 
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
+        "Failed to get args");
+    CHECK_COND(env, MediaAlbumChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
+ 
+    vector<napi_value> napiValues;
+    napi_valuetype valueType = napi_undefined;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+ 
+    vector<string> deleteIds;
+    for (const auto& napiValue : napiValues) {
+        PhotoAlbumNapi* obj = nullptr;
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
+        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Failed to get album napi object");
+        CHECK_COND_WITH_MESSAGE(env,
+            PhotoAlbum::IsHighlightAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
+            "Only highlight album can be deleted");
+        deleteIds.push_back(to_string(obj->GetAlbumId()));
+    }
+    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+    RETURN_NAPI_TRUE(env);
+}
+
+napi_value HighlightAlbumNapi::JSDeleteHighlightAlbums(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteHighlightAlbums(env, info, asyncContext),
+        "Failed to parse highlight args");
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "ChangeRequestDeleteHighlightAlbums",
+        DeleteHighlightAlbumsExecute, DeleteHighlightAlbumsCompleteCallback);
 }
 
 shared_ptr<PhotoAlbum> HighlightAlbumNapi::GetPhotoAlbumInstance() const

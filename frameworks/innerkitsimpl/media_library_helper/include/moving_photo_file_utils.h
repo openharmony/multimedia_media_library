@@ -35,6 +35,13 @@ public:
     EXPORT static int32_t ConvertToMovingPhoto(const std::string &livePhotoPath,
         const std::string &movingPhotoImagePath, const std::string &movingPhotoVideoPath,
         const std::string &extraDataPath);
+    EXPORT static int32_t GetMovingPhotoDetailedSize(const int32_t fd,
+        int64_t &imageSize, int64_t &videoSize, int64_t &extraDataSize);
+    EXPORT static int32_t ConvertToMovingPhoto(const int32_t fd,
+        const std::string &movingPhotoImagePath, const std::string &movingPhotoVideoPath,
+        const std::string &extraDataPath);
+    EXPORT static int32_t ConvertToMovingPhoto(const int32_t fd,
+        void *imageArrayBuffer, void *videoArrayBuffer, void *extraDataArrayBuffer);
     EXPORT static int32_t ConvertToLivePhoto(const std::string &movingPhotoImagepath, int64_t coverPosition,
         std::string &livePhotoPath, int32_t userId = -1);
     EXPORT static int32_t ConvertToSourceLivePhoto(const std::string &movingPhotoImagepath,
@@ -58,8 +65,9 @@ public:
     EXPORT static bool IsLivePhoto(const std::string &path);
     EXPORT static int32_t GetLivePhotoSize(int32_t fd, int64_t &liveSize);
     EXPORT static int32_t GetExtraDataLen(const std::string &imagePath, const std::string &videoPath,
-        uint32_t frameIndex, int64_t coverPosition, off_t &fileSize);
+        uint32_t frameIndex, int64_t coverPosition, off_t &fileSize, bool isCameraShotMovingPhoto = false);
     EXPORT static uint32_t GetFrameIndex(int64_t time, const int32_t fd);
+    EXPORT static size_t GetMovingPhotoSize(const std::string &imagePath, int32_t userId = -1);
 };
 } // namespace OHOS::Media
 

@@ -84,13 +84,8 @@ void BackupRestoreService::StartRestore(const std::shared_ptr<AbilityRuntime::Co
 {
     MEDIA_INFO_LOG("Start restore service: %{public}d", info.sceneCode);
     Init(info);
-    if (restoreService_ == nullptr) {
-        MEDIA_ERR_LOG("Create media restore service failed.");
-        return;
-    }
-    if (context != nullptr) {
-        BackupFileUtils::CreateDataShareHelper(context->GetToken());
-    }
+    CHECK_AND_RETURN_LOG(restoreService_ != nullptr, "Create media restore service failed.");
+    CHECK_AND_EXECUTE(context == nullptr, BackupFileUtils::CreateDataShareHelper(context->GetToken()));
     restoreService_->StartRestore(serviceBackupDir_, UPGRADE_FILE_DIR);
 }
 
@@ -104,9 +99,7 @@ void BackupRestoreService::StartRestoreEx(const std::shared_ptr<AbilityRuntime::
         restoreExInfo = "";
         return;
     }
-    if (context != nullptr) {
-        BackupFileUtils::CreateDataShareHelper(context->GetToken());
-    }
+    CHECK_AND_EXECUTE(context == nullptr, BackupFileUtils::CreateDataShareHelper(context->GetToken()));
     restoreService_->StartRestoreEx(serviceBackupDir_, UPGRADE_FILE_DIR, restoreExInfo);
 }
 
@@ -147,10 +140,7 @@ void BackupRestoreService::StartBackup(int32_t sceneCode, const std::string &gal
         return;
     }
     Init({CLONE_RESTORE_ID, galleryAppName, mediaAppName, "", ""});
-    if (restoreService_ == nullptr) {
-        MEDIA_ERR_LOG("Create media backup service failed.");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(restoreService_ != nullptr, "Create media backup service failed.");
     restoreService_->StartBackup();
 }
 } // namespace Media

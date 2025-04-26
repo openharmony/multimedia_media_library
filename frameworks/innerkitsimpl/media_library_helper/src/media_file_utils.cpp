@@ -48,6 +48,7 @@
 #include "ptp_medialibrary_manager_uri.h"
 #include "string_ex.h"
 #include "userfilemgr_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 
@@ -60,6 +61,7 @@ const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
 constexpr unsigned short MAX_RECURSION_DEPTH = 4;
 constexpr size_t DEFAULT_TIME_SIZE = 32;
+constexpr int32_t CROSS_POLICY_ERR = 18;
 const int32_t HMFS_MONITOR_FL = 2;
 const int32_t INTEGER_MAX_LENGTH = 10;
 const std::string LISTENING_BASE_PATH = "/storage/media/local/files/";
@@ -86,6 +88,7 @@ const int64_t THRESHOLD = 512;
 const std::string DATA_PATH = "/data/storage/el2/base";
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
+const std::string MEDIA_DATA_DEVICE_PATH = "local";
 
 static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIME_TYPE_MAP = {
     { "application/epub+zip", { "epub" } },
@@ -155,44 +158,14 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "image/x-sony-arw", { "arw" } },
     { "image/jpeg", { "jpg", "jpeg", "jpe" } },
     { "image/png", { "png" } },
-    { "image/svg+xml", { "svg" } },
+    { "image/svg+xml", { "svg", "svgz" } },
     { "image/x-dcraw", { "raw" } },
-    { "video/3gpp2", { "3gpp2", "3gp2", "3g2" } },
-    { "video/3gpp", { "3gpp", "3gp" } },
-    { "video/mp4", { "m4v", "f4v", "mp4v", "mpeg4", "mp4" }},
-    { "video/mp2t", { "m2ts", "mts"} },
-    { "video/mp2ts", { "ts" } },
-    { "video/vnd.youtube.yt", { "yt" } },
-    { "video/x-webex", { "wrf" } },
-    { "video/mpeg", { "mpeg", "mpeg2", "mpv2", "mp2v", "m2v", "m2t", "mpeg1", "mpv1", "mp1v", "m1v", "mpg" } },
-    { "video/quicktime", { "mov" } },
-    { "video/x-matroska", { "mkv" } },
-    { "video/webm", { "webm" } },
-    { "video/H264", { "h264" } },
-    { "video/x-flv", { "flv" } },
-    { "video/avi", { "avi" } },
-    { "text/comma-separated-values", { "csv" } },
-    { "text/plain", { "diff", "po", "txt" } },
-    { "text/rtf", { "rtf" } },
-    { "text/text", { "phps", "m3u", "m3u8" } },
-    { "text/xml", { "xml" } },
-    { "text/x-vcard", { "vcf" } },
-    { "text/x-c++hdr", { "hpp", "h++", "hxx", "hh" } },
-    { "text/x-c++src", { "cpp", "c++", "cxx", "cc" } },
-    { "text/css", { "css" } },
-    { "text/html", { "html", "htm", "shtml"} },
-    { "text/markdown", { "md", "markdown" } },
-    { "text/x-java", { "java" } },
-    { "text/x-python", { "py" } }
-};
-
-static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXTRA_MIME_TYPE_MAP = {
     { "image/ief", { "ief" } },
     { "image/jp2", { "jp2", "jpg2" } },
     { "image/ipm", { "ipm" } },
+    { "image/jpm", { "jpm" } },
     { "image/ipx", { "jpx", "jpf" } },
     { "image/pcx", { "pcx" } },
-    { "image/svg+xml", { "svgz" } },
     { "image/tiff", { "tiff", "tif" } },
     { "image/vnd.divu", { "djvu", "djv" } },
     { "image/vnd.wap.wbmp", { "wbmp" } },
@@ -217,14 +190,26 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXT
     { "image/x-xbitmap", { "xbm" } },
     { "image/x-xpixmap", { "xpm" } },
     { "image/x-xwindowdump", { "xwd" } },
+    { "video/3gpp2", { "3gpp2", "3gp2", "3g2" } },
+    { "video/3gpp", { "3gpp", "3gp" } },
+    { "video/mp4", { "m4v", "f4v", "mp4v", "mpeg4", "mp4" } },
+    { "video/mp2t", { "m2ts", "mts"} },
+    { "video/mp2ts", { "ts" } },
+    { "video/vnd.youtube.yt", { "yt" } },
+    { "video/x-webex", { "wrf" } },
+    { "video/mpeg", { "mpe", "mpeg", "mpeg2", "mpv2", "mp2v", "m2v", "m2t", "mpeg1", "mpv1", "mp1v", "m1v", "mpg" } },
+    { "video/quicktime", { "mov", "qt" } },
+    { "video/x-matroska", { "mkv", "mpv" } },
+    { "video/webm", { "webm" } },
+    { "video/H264", { "h264" } },
+    { "video/x-flv", { "flv" } },
+    { "video/avi", { "avi" } },
     { "video/x-pn-realvideo", { "rmvb" } },
     { "video/annodex", { "axv" } },
     { "video/dl", { "dl" } },
-    { "video/dv", { "dif" } },
+    { "video/dv", { "dif", "dv" } },
     { "video/fli", { "fli" } },
     { "video/gl", { "gl" } },
-    { "video/mpeg", { "mpe" } },
-    { "video/quicktime", { "qt" } },
     { "video/ogg", { "ogv" } },
     { "video/vnd.mpegurl", { "mxu" } },
     { "video/x-la-asf", { "lsf",  "lsx" } },
@@ -235,7 +220,22 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXT
     { "video/x-ms-wmx", { "wmx" } },
     { "video/x-ms-wvx", { "wvx" } },
     { "video/x-sgi-movie", { "movie" } },
-    { "video/x-matroska", { "mpv" } },
+    { "text/comma-separated-values", { "csv" } },
+    { "text/plain", { "diff", "po", "txt" } },
+    { "text/rtf", { "rtf" } },
+    { "text/text", { "phps", "m3u", "m3u8" } },
+    { "text/xml", { "xml" } },
+    { "text/x-vcard", { "vcf" } },
+    { "text/x-c++hdr", { "hpp", "h++", "hxx", "hh" } },
+    { "text/x-c++src", { "cpp", "c++", "cxx", "cc" } },
+    { "text/css", { "css" } },
+    { "text/html", { "html", "htm", "shtml"} },
+    { "text/markdown", { "md", "markdown" } },
+    { "text/x-java", { "java" } },
+    { "text/x-python", { "py" } }
+};
+
+static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_EXTRA_MIME_TYPE_MAP = {
     { "audio/3gpp", { "3gpp" } },
     { "audio/midi", { "mid", "midi", "kar" } },
     { "audio/basic", { "au" } },
@@ -508,6 +508,28 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
     return errRet;
 }
 
+static bool CheckPhotoPath(const string& photoPath)
+{
+    return photoPath.length() >= ROOT_MEDIA_DIR.length() && MediaFileUtils::StartsWith(photoPath, ROOT_MEDIA_DIR);
+}
+
+string MediaFileUtils::GetThumbDir(const string &photoPath, int32_t userId)
+{
+    if (!CheckPhotoPath(photoPath)) {
+        return "";
+    }
+    return AppendUserId(ROOT_MEDIA_DIR, userId) + ".thumbs/" + photoPath.substr(ROOT_MEDIA_DIR.length());
+}
+
+string MediaFileUtils::AppendUserId(const string& path, int32_t userId)
+{
+    if (userId < 0 || !StartsWith(path, ROOT_MEDIA_DIR)) {
+        return path;
+    }
+
+    return "/storage/cloud/" + to_string(userId) + "/files/" + path.substr(ROOT_MEDIA_DIR.length());
+}
+
 bool MediaFileUtils::CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile)
 {
     bool fileExist = IsFileExists(destFile);
@@ -564,9 +586,8 @@ bool MediaFileUtils::CopyDirAndDelSrc(const std::string &srcPath, const std::str
     }
     struct dirent* entry;
     while ((entry = readdir(srcDir))!= nullptr) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
+        bool cond = (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0);
+        CHECK_AND_CONTINUE(!cond);
         string srcSubPath = srcPath + SLASH_STR + (entry->d_name);
         string destSubPath = destPath + SLASH_STR + (entry->d_name);
         if (entry->d_type == DT_DIR) {
@@ -599,6 +620,30 @@ void MediaFileUtils::BackupPhotoDir()
     }
 }
 
+std::vector<std::string> MediaFileUtils::GetFileNameFromDir(const std::string &dirName)
+{
+    std::vector<std::string> fileNames;
+    if (!IsDirEmpty(dirName)) {
+        DIR *dir = opendir((dirName).c_str());
+        if (dir == nullptr) {
+            MEDIA_ERR_LOG("Error opening temp directory, errno: %{public}d", errno);
+            return {};
+        }
+
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            // filter . && .. dir
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+            std::string fileName = entry->d_name;
+            fileNames.push_back(fileName);
+        }
+        closedir(dir);
+    }
+    return fileNames;
+}
+
 void MediaFileUtils::RecoverMediaTempDir()
 {
     string recoverPath = ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + PHOTO_BUCKET;
@@ -629,14 +674,17 @@ void MediaFileUtils::RecoverMediaTempDir()
     }
 }
 
-bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
+bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath, bool isSupportCrossPolicy)
 {
     bool errRet = false;
-
-    if (IsFileExists(oldPath) && !IsFileExists(newPath)) {
-        errRet = (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
+    if (!IsFileExists(oldPath) || IsFileExists(newPath)) {
+        return errRet;
     }
 
+    errRet = (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
+    if (!errRet && isSupportCrossPolicy && errno == CROSS_POLICY_ERR) {
+        errRet = CopyFileAndDelSrc(oldPath, newPath);
+    }
     return errRet;
 }
 
@@ -878,7 +926,7 @@ static inline bool RegexCheck(const string &str, const string &regexStr)
     return regex_search(str, express);
 }
 
-static inline int32_t CheckTitle(const string &title)
+int32_t MediaFileUtils::CheckTitle(const string &title)
 {
     if (title.empty()) {
         MEDIA_ERR_LOG("Title is empty.");
@@ -893,10 +941,14 @@ static inline int32_t CheckTitle(const string &title)
     return E_OK;
 }
 
-int32_t MediaFileUtils::CheckTitleName(const string &title)
-    {
-        return CheckTitle(title);
-    }
+int32_t MediaFileUtils::CheckTitleCompatible(const string& title)
+{
+    CHECK_AND_RETURN_RET_LOG(!title.empty(), -EINVAL, "Title is empty.");
+    static const string titleRegexCheck = R"([\.\\/:*?"'`<>|{}\[\]])";
+    CHECK_AND_RETURN_RET_LOG(!RegexCheck(title, titleRegexCheck), -EINVAL,
+        "Failed to check title regex: %{private}s", title.c_str());
+    return E_OK;
+}
 
 std::string MediaFileUtils::GetFileAssetUri(const std::string &fileAssetData, const std::string &displayName,
     const int32_t &fileId)
@@ -913,7 +965,7 @@ std::string MediaFileUtils::GetFileAssetUri(const std::string &fileAssetData, co
     return baseUri + "/Photo/" + std::to_string(fileId) + "/" + fileNameInData + "/" + displayName;
 }
 
-int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
+int32_t MediaFileUtils::CheckDisplayName(const string &displayName, const bool compatibleCheckTitle)
 {
     int err = CheckStringSize(displayName, DISPLAYNAME_MAX);
     if (err < 0) {
@@ -925,6 +977,11 @@ int32_t MediaFileUtils::CheckDisplayName(const string &displayName)
     string title = GetTitleFromDisplayName(displayName);
     if (title.empty()) {
         return -EINVAL;
+    }
+
+    if (compatibleCheckTitle) {
+        // 为了向前兼容，此处进行老版本的title校验
+        return CheckTitleCompatible(title);
     }
     return CheckTitle(title);
 }
@@ -938,7 +995,7 @@ int32_t MediaFileUtils::CheckFileDisplayName(const string &displayName)
     if (displayName.at(0) == '.') {
         return -EINVAL;
     }
-    static const string TITLE_REGEX_CHECK = R"([\\/:*?"<>|])";
+    static const string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
     if (RegexCheck(displayName, TITLE_REGEX_CHECK)) {
         MEDIA_ERR_LOG("Failed to check displayName regex: %{private}s", displayName.c_str());
         return -EINVAL;
@@ -1081,6 +1138,18 @@ int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
     return E_OK;
 }
 
+int32_t MediaFileUtils::CheckHighlightSubtitle(const string &highlightSubtitle)
+{
+    size_t size = highlightSubtitle.length();
+    CHECK_AND_RETURN_RET_LOG(size <= DISPLAYNAME_MAX, -ENAMETOOLONG,
+        "Highlight subtitle string size check failed: size is %{public}zu", highlightSubtitle.length());
+
+    static const string ALBUM_NAME_REGEX = R"([\.\\/:*?"'`<>|{}\[\]])";
+    CHECK_AND_RETURN_RET_LOG(!RegexCheck(highlightSubtitle, ALBUM_NAME_REGEX), -EINVAL,
+        "Failed to check album name regex: %{private}s", highlightSubtitle.c_str());
+    return E_OK;
+}
+
 int32_t MediaFileUtils::CheckDentryName(const string &dentryName)
 {
     int err = CheckStringSize(dentryName, DISPLAYNAME_MAX);
@@ -1167,13 +1236,10 @@ string MediaFileUtils::StrCreateTimeSafely(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";
     struct tm localTm;
-    if (localtime_noenv_r(&time, &localTm) == nullptr) {
-        MEDIA_ERR_LOG("localtime_noenv_r error: %{public}d", errno);
-        return strTime;
-    }
-    if (strftime(strTime, sizeof(strTime), format.c_str(), &localTm) == 0) {
-        MEDIA_ERR_LOG("strftime error: %{public}d", errno);
-    }
+    CHECK_AND_RETURN_RET_LOG(localtime_noenv_r(&time, &localTm) != nullptr, strTime,
+        "localtime_noenv_r error: %{public}d", errno);
+    CHECK_AND_PRINT_LOG(strftime(strTime, sizeof(strTime), format.c_str(), &localTm) != 0,
+        "strftime error: %{public}d", errno);
     return strTime;
 }
 
@@ -1185,9 +1251,7 @@ std::string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, in
 
     if (localtime_noenv_r(&times, &localTm) == nullptr) {
         MEDIA_ERR_LOG("localtime_noenv_r error: %{public}d", errno);
-        if (time < 0) {
-            MEDIA_ERR_LOG("Time value is negative: %{public}lld", static_cast<long long>(time));
-        }
+        CHECK_AND_PRINT_LOG(time >= 0, "Time value is negative: %{public}lld", static_cast<long long>(time));
         return strTime;
     }
 
@@ -1272,6 +1336,12 @@ string MediaFileUtils::SplitByChar(const string &str, const char split)
 {
     size_t splitIndex = str.find_last_of(split);
     return (splitIndex == string::npos) ? ("") : (str.substr(splitIndex + 1));
+}
+
+string MediaFileUtils::UnSplitByChar(const string &str, const char split)
+{
+    size_t splitIndex = str.find_last_of(split);
+    return (splitIndex == string::npos) ? ("") : (str.substr(0, splitIndex));
 }
 
 string MediaFileUtils::GetExtensionFromPath(const string &path)
@@ -1449,11 +1519,8 @@ int32_t MediaFileUtils::OpenAsset(const string &filePath, const string &mode)
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
         return E_INVALID_PATH;
     }
-    if (absFilePath.empty()) {
-        MEDIA_ERR_LOG("Failed to obtain the canonical path for source path %{private}s %{public}d",
-                      filePath.c_str(), errno);
-        return E_INVALID_PATH;
-    }
+    CHECK_AND_RETURN_RET_LOG(!absFilePath.empty(), E_INVALID_PATH,
+        "Failed to obtain the canonical path for source path %{private}s %{public}d", filePath.c_str(), errno);
 
     MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     return open(absFilePath.c_str(), flags);
@@ -1832,7 +1899,7 @@ string MediaFileUtils::Encode(const string &uri)
     const unordered_set<char> uriCompentsSet = {
         ';', ',', '/', '?', ':', '@', '&',
         '=', '+', '$', '-', '_', '.', '!',
-        '~', '*', '(', ')', '\''
+        '~', '*', '(', ')'
     };
     const int32_t encodeLen = 2;
     ostringstream outPutStream;
@@ -2317,5 +2384,19 @@ std::string MediaFileUtils::DesensitizeUri(const std::string &fileUri)
     size_t slashIndex = result.rfind('/');
     CHECK_AND_RETURN_RET(slashIndex != std::string::npos, result);
     return result.replace(slashIndex + 1, result.length() - slashIndex - 1, "*");
+}
+
+bool MediaFileUtils::DeleteFileOrFolder(const std::string &path, bool isFile)
+{
+    CHECK_AND_RETURN_RET(MediaFileUtils::IsFileExists(path), true);
+    return isFile ? MediaFileUtils::DeleteFile(path) : MediaFileUtils::DeleteDir(path);
+}
+
+std::string MediaFileUtils::GetReplacedPathByPrefix(const std::string srcPrefix, const std::string dstPrefix,
+    const std::string &path)
+{
+    std::string replacedPath = path;
+    replacedPath.replace(0, srcPrefix.length(), dstPrefix);
+    return replacedPath;
 }
 } // namespace OHOS::Media

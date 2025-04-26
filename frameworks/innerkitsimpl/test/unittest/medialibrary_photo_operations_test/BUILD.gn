@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_photo_operations_test") {
-  module_out_path = "media_library/medialibrary_photo_operations_test"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "./include/operation",
@@ -44,6 +44,8 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_asset_copy_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_burst_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_displayname_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_mimetype_operation.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/operation/photo_owner_album_id_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_lpath_operation.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/photo_album_operation/photo_album_merge_operation.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
@@ -61,7 +63,11 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "./src/operation/photo_asset_copy_operation_test.cpp",
     "./src/operation/photo_burst_operation_test.cpp",
     "./src/operation/photo_displayname_operation_test.cpp",
+    "./src/operation/photo_mimetype_operation_test.cpp",
+    "./src/operation/photo_owner_album_id_operation_test.cpp",
+    "./src/operation/video_composition_callback_imp_test.cpp",
     "./src/photo_album_operation/photo_album_lpath_operation_test.cpp",
+    "./src/photo_album_operation/photo_album_merge_operation_test.cpp",
   ]
 
   deps = [
@@ -85,6 +91,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
+    "e2fsprogs:libext2_uuid",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
@@ -94,7 +101,6 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   defines = []

@@ -55,10 +55,7 @@ constexpr int32_t ALBUM_IS_REMOVED = 1;
 static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value,
     std::shared_ptr<TransactionOperations> trans)
 {
-    if (trans == nullptr) {
-        MEDIA_ERR_LOG("transactionOperations is null");
-        return -EINVAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(trans != nullptr, -EINVAL, "transactionOperations is null");
     /**
      * Build insert sql:
      * INSERT INTO AnalysisPhotoMap (map_album, map_asset, order_position) SELECT
@@ -79,13 +76,9 @@ static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value,
             " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = ? ));";
     bool isValid = false;
     int32_t albumId = value.Get(PhotoMap::ALBUM_ID, isValid);
-    if (!isValid) {
-        return -EINVAL;
-    }
+    CHECK_AND_RETURN_RET(isValid, -EINVAL);
     int32_t assetId = value.Get(PhotoMap::ASSET_ID, isValid);
-    if (!isValid) {
-        return -EINVAL;
-    }
+    CHECK_AND_RETURN_RET(isValid, -EINVAL);
     const int defaultValue = -1;
     int32_t orderPosition = value.Get(ORDER_POSITION, isValid);
     if (!isValid) {
@@ -115,7 +108,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         }
 
         changedRows = MediaLibraryRdbUtils::UpdateOwnerAlbumId(rdbStore, values, updateIds);
-        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { to_string(albumId) });
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { to_string(albumId) }, false, true);
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
             to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::CLOUD_ENHANCEMENT)
@@ -151,18 +144,13 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
 static int32_t GetPortraitAlbumIds(const string &albumId, vector<string> &portraitAlbumIds)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "uniStore is nullptr! failed query album order");
     const std::string queryPortraitAlbumIds = "SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
         GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
         " WHERE " + ALBUM_ID + " = " + albumId + " AND " + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) +")";
 
     auto resultSet = uniStore->QuerySql(queryPortraitAlbumIds);
-    if (resultSet == nullptr) {
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET(resultSet != nullptr, E_DB_FAIL);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         portraitAlbumIds.push_back(to_string(GetInt32Val(ALBUM_ID, resultSet)));
     }
@@ -172,15 +160,12 @@ static int32_t GetPortraitAlbumIds(const string &albumId, vector<string> &portra
 int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValuesBucket> &values)
 {
     MEDIA_INFO_LOG("Add highlight assets start");
-    if (values.empty()) {
-        return E_DB_FAIL;
-    }
+    CHECK_AND_RETURN_RET(!values.empty(), E_DB_FAIL);
 
     bool isValid = false;
     int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
-    if (!isValid || albumId <= 0) {
-        return E_DB_FAIL;
-    }
+    bool cond = (!isValid || albumId <= 0);
+    CHECK_AND_RETURN_RET(!cond, E_DB_FAIL);
 
     MEDIA_INFO_LOG("Add highlight assets, id is %{puiblic}d", albumId);
     vector<string> uris;
@@ -199,17 +184,11 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
 
     int64_t outRowId = -1;
     int32_t ret = MediaLibraryRdbStore::BatchInsert(outRowId, ANALYSIS_PHOTO_MAP_TABLE, insertValues);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Batch insert highlight assets fail, err = %{public}d", ret);
-        return ret;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, ret, "Batch insert highlight assets fail, err = %{public}d", ret);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { to_string(albumId) });
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, E_HAS_DB_ERROR);
 
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { to_string(albumId) });
     auto watch = MediaLibraryNotify::GetInstance();
     for (auto uri : uris) {
         watch->Notify(MediaFileUtils::Encode(uri), NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
@@ -220,9 +199,7 @@ int32_t PhotoMapOperations::AddHighlightPhotoAssets(const vector<DataShareValues
 int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesBucket> &values)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (rdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, E_HAS_DB_ERROR);
     if (values.empty()) {
         return 0;
     }
@@ -243,10 +220,8 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
         return NativeRdb::E_OK;
     };
     err = trans->RetryTrans(func);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("AddAnaLysisPhotoAssets: trans retry fail!, ret:%{public}d", err);
-        return err;
-    }
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "AddAnaLysisPhotoAssets: trans retry fail!, ret:%{public}d", err);
+
     bool isValid = false;
     std::vector<string> albumIdList;
     for (const auto &value : values) {
@@ -295,9 +270,7 @@ int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<str
             MEDIA_ERR_LOG("RdbStore is nullptr");
         } else {
             int32_t updateHighlight = MediaLibraryRdbUtils::UpdateHighlightPlayInfo(rdbStore, albumId);
-            if (updateHighlight < 0) {
-                MEDIA_ERR_LOG("Update highlight playinfo fail");
-            }
+            CHECK_AND_PRINT_LOG(updateHighlight >= 0, "Update highlight playinfo fail");
         }
     }
     vector<string> updateAlbumIds;
@@ -386,7 +359,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     CHECK_AND_RETURN_RET_LOG(deleteRow > 0, deleteRow,
         "Update Removed Asset to Trash failed, ret: %{public}d", deleteRow);
 
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { strAlbumId });
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { strAlbumId }, false, true);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, {
         to_string(PhotoAlbumSubType::IMAGE), to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::FAVORITE), to_string(PhotoAlbumSubType::TRASH),
@@ -400,9 +373,8 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
         int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-        if (trashAlbumId <= 0) {
-            MEDIA_ERR_LOG("Trash album id error: %{public}d, trash album notification unavailable", trashAlbumId);
-        }
+        CHECK_AND_PRINT_LOG(trashAlbumId > 0,
+            "Trash album id error: %{public}d, trash album notification unavailable", trashAlbumId);
         for (size_t i = 0; i < uriWhereArgs.size(); i++) {
             watch->Notify(MediaFileUtils::Encode(uriWhereArgs[i]), NotifyType::NOTIFY_REMOVE);
             watch->Notify(MediaFileUtils::Encode(uriWhereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
@@ -418,16 +390,15 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 
 bool IsQueryGroupPhotoAlbumAssets(const string &albumId, string &tagId, int32_t &isRemoved)
 {
-    if (albumId.empty() || !MediaLibraryDataManagerUtils::IsNumber(albumId)) {
-        return false;
-    }
+    bool cond = (albumId.empty() || !MediaLibraryDataManagerUtils::IsNumber(albumId));
+    CHECK_AND_RETURN_RET(!cond, false);
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
     vector<string> columns = {PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE, TAG_ID, IS_REMOVED};
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        return false;
-    }
+    cond = (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK);
+    CHECK_AND_RETURN_RET(!cond, false);
+
     int32_t albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
     int32_t albumSubtype = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
     tagId = GetStringVal(TAG_ID, resultSet);
@@ -479,9 +450,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(cons
     string tagId;
     int32_t isRemoved;
     if (IsQueryGroupPhotoAlbumAssets(albumId, tagId, isRemoved)) {
-        if (isRemoved == ALBUM_IS_REMOVED) {
-            return nullptr;
-        }
+        CHECK_AND_RETURN_RET(isRemoved != ALBUM_IS_REMOVED, nullptr);
         return QueryGroupPhotoAlbumAssets(albumId, tagId, columns);
     }
     return MediaLibraryRdbStore::QueryWithFilter(rdbPredicate, columns);

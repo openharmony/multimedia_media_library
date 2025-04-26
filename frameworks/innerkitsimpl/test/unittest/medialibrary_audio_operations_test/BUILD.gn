@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_audio_operations_test") {
-  module_out_path = "media_library/medialibrary_audio_operations_test"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",
@@ -29,6 +29,8 @@ ohos_unittest("medialibrary_audio_operations_test") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
   ]
+
+  cflags = [ "-fno-access-control" ]
 
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
@@ -62,7 +64,6 @@ ohos_unittest("medialibrary_audio_operations_test") {
     "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   sanitize = {

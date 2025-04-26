@@ -51,7 +51,7 @@ static const string PROP_VALUE = "01.jpg";
  * @tc.name      : mtp_native_test_001
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_001, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -78,7 +78,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_001, TestSize.Level0)
  * @tc.name      : mtp_native_test_002
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_002, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_002, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -105,7 +105,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_002, TestSize.Level0)
  * @tc.name      : mtp_native_test_003
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_003, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_003, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -133,7 +133,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_003, TestSize.Level0)
  * @tc.name      : mtp_native_test_004
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_004, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_004, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -161,7 +161,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_004, TestSize.Level0)
  * @tc.name      : mtp_native_test_005
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_005, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_005, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -188,7 +188,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_005, TestSize.Level0)
  * @tc.name      : mtp_native_test_006
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_006, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_006, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -215,7 +215,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_006, TestSize.Level0)
  * @tc.name      : mtp_native_test_007
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_007, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_007, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -243,7 +243,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_007, TestSize.Level0)
  * @tc.name      : mtp_native_test_008
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_008, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_008, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -270,7 +270,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_008, TestSize.Level0)
  * @tc.name      : mtp_native_test_009
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_009, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_009, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -297,7 +297,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_009, TestSize.Level0)
  * @tc.name      : mtp_native_test_010
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_010, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_010, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -325,7 +325,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_010, TestSize.Level0)
  * @tc.name      : mtp_native_test_011
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_011, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_011, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -352,7 +352,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_011, TestSize.Level0)
  * @tc.name      : mtp_native_test_012
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_012, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_012, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -379,7 +379,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_012, TestSize.Level0)
  * @tc.name      : mtp_native_test_013
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_013, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_013, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -407,7 +407,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_013, TestSize.Level0)
  * @tc.name      : mtp_native_test_014
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_014, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_014, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -434,7 +434,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_014, TestSize.Level0)
  * @tc.name      : mtp_native_test_015
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_015, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_015, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -461,7 +461,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_015, TestSize.Level0)
  * @tc.name      : mtp_native_test_016
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_016, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_016, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -489,7 +489,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_016, TestSize.Level0)
  * @tc.name      : mtp_native_test_020
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_020, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_020, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -516,7 +516,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_020, TestSize.Level0)
  * @tc.name      : mtp_native_test_021
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_021, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_021, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -543,7 +543,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_021, TestSize.Level0)
  * @tc.name      : mtp_native_test_022
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_022, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_022, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -570,7 +570,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_022, TestSize.Level0)
  * @tc.name      : mtp_native_test_023
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_023, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_023, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -597,7 +597,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_023, TestSize.Level0)
  * @tc.name      : mtp_native_test_024
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_024, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_024, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -624,7 +624,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_024, TestSize.Level0)
  * @tc.name      : mtp_native_test_025
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_025, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_025, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -651,7 +651,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_025, TestSize.Level0)
  * @tc.name      : mtp_native_test_026
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_026, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_026, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -677,7 +677,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_026, TestSize.Level0)
  * @tc.name      : mtp_native_test_027
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_027, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_027, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -704,7 +704,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_027, TestSize.Level0)
  * @tc.name      : mtp_native_test_028
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_028, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_028, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -731,7 +731,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_028, TestSize.Level0)
  * @tc.name      : mtp_native_test_029
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_029, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_029, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -758,7 +758,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_029, TestSize.Level0)
  * @tc.name      : mtp_native_test_030
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_030, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_030, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -785,7 +785,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_030, TestSize.Level0)
  * @tc.name      : mtp_native_test_031
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_031, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_031, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -812,7 +812,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_031, TestSize.Level0)
  * @tc.name      : mtp_native_test_032
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_032, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_032, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -839,7 +839,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_032, TestSize.Level0)
  * @tc.name      : mtp_native_test_033
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_033, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_033, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -866,7 +866,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_033, TestSize.Level0)
  * @tc.name      : mtp_native_test_034
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_034, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_034, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -894,7 +894,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_034, TestSize.Level0)
  * @tc.name      : mtp_native_test_035
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_035, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_035, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -922,7 +922,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_035, TestSize.Level0)
  * @tc.name      : mtp_native_test_036
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_036, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_036, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -950,7 +950,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_036, TestSize.Level0)
  * @tc.name      : mtp_native_test_037
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_037, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_037, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -978,7 +978,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_037, TestSize.Level0)
  * @tc.name      : mtp_native_test_038
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_038, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_038, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1006,7 +1006,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_038, TestSize.Level0)
  * @tc.name      : mtp_native_test_039
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_039, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_039, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1034,7 +1034,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_039, TestSize.Level0)
  * @tc.name      : mtp_native_test_040
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_040, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_040, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1062,7 +1062,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_040, TestSize.Level0)
  * @tc.name      : mtp_native_test_041
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_041, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_041, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1090,7 +1090,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_041, TestSize.Level0)
  * @tc.name      : mtp_native_test_042
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_042, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_042, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1118,7 +1118,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_042, TestSize.Level0)
  * @tc.name      : mtp_native_test_043
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_043, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_043, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1146,7 +1146,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_043, TestSize.Level0)
  * @tc.name      : mtp_native_test_044
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_044, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_044, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1174,7 +1174,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_044, TestSize.Level0)
  * @tc.name      : mtp_native_test_045
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_045, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_045, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1202,7 +1202,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_045, TestSize.Level0)
  * @tc.name      : mtp_native_test_046
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_046, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_046, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1230,7 +1230,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_046, TestSize.Level0)
  * @tc.name      : mtp_native_test_047
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_047, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_047, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1258,7 +1258,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_047, TestSize.Level0)
  * @tc.name      : mtp_native_test_048
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_048, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_048, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().
     GetSystemAbilityManager();
@@ -1286,7 +1286,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_048, TestSize.Level0)
  * @tc.name      : mtp_native_test_049
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_049, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_049, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1313,7 +1313,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_049, TestSize.Level0)
  * @tc.name      : mtp_native_test_050
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_050, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_050, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1339,7 +1339,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_050, TestSize.Level0)
  * @tc.name      : mtp_native_test_051
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_051, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_051, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1366,7 +1366,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_051, TestSize.Level0)
  * @tc.name      : mtp_native_test_052
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_052, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_052, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1393,7 +1393,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_052, TestSize.Level0)
  * @tc.name      : mtp_native_test_053
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_053, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_053, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1420,7 +1420,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_053, TestSize.Level0)
  * @tc.name      : mtp_native_test_054
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_054, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_054, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1447,7 +1447,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_054, TestSize.Level0)
  * @tc.name      : mtp_native_test_055
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_055, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_055, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1474,7 +1474,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_055, TestSize.Level0)
  * @tc.name      : mtp_native_test_058
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_058, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_058, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1501,7 +1501,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_058, TestSize.Level0)
  * @tc.name      : mtp_native_test_059
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_059, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_059, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1528,7 +1528,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_059, TestSize.Level0)
  * @tc.name      : mtp_native_test_060
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_060, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_060, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1552,7 +1552,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_060, TestSize.Level0)
  * @tc.name      : mtp_native_test_061
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_061, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_061, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1576,7 +1576,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_061, TestSize.Level0)
  * @tc.name      : mtp_native_test_064
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_064, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_064, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1598,7 +1598,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_064, TestSize.Level0)
  * @tc.name      : mtp_native_test_065
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_065, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_065, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1620,7 +1620,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_065, TestSize.Level0)
  * @tc.name      : mtp_native_test_066
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_066, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_066, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1642,7 +1642,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_066, TestSize.Level0)
  * @tc.name      : mtp_native_test_067
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_067, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_067, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1664,7 +1664,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_067, TestSize.Level0)
  * @tc.name      : mtp_native_test_068
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_068, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_068, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1686,7 +1686,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_068, TestSize.Level0)
  * @tc.name      : mtp_native_test_069
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_069, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_069, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1708,7 +1708,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_069, TestSize.Level0)
  * @tc.name      : mtp_native_test_070
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_070, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_070, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1728,7 +1728,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_070, TestSize.Level0)
  * @tc.name      : mtp_native_test_071
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_071, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_071, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1748,7 +1748,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_071, TestSize.Level0)
  * @tc.name      : mtp_native_test_072
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_072, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_072, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1768,7 +1768,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_072, TestSize.Level0)
  * @tc.name      : mtp_native_test_073
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_073, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_073, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1788,7 +1788,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_073, TestSize.Level0)
  * @tc.name      : mtp_native_test_074
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_074, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_074, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1809,7 +1809,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_074, TestSize.Level0)
  * @tc.name      : mtp_native_test_075
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_075, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_075, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1830,7 +1830,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_075, TestSize.Level0)
  * @tc.name      : mtp_native_test_076
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_076, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_076, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1851,7 +1851,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_076, TestSize.Level0)
  * @tc.name      : mtp_native_test_077
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_077, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_077, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1872,7 +1872,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_077, TestSize.Level0)
  * @tc.name      : mtp_native_test_078
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_078, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_078, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1889,7 +1889,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_078, TestSize.Level0)
  * @tc.name      : mtp_native_test_079
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_079, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_079, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1906,7 +1906,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_079, TestSize.Level0)
  * @tc.name      : mtp_native_test_080
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_080, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_080, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1927,7 +1927,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_080, TestSize.Level0)
  * @tc.name      : mtp_native_test_081
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_081, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_081, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1948,7 +1948,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_081, TestSize.Level0)
  * @tc.name      : mtp_native_test_082
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_082, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_082, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1969,7 +1969,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_082, TestSize.Level0)
  * @tc.name      : mtp_native_test_083
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_083, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_083, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -1990,7 +1990,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_083, TestSize.Level0)
  * @tc.name      : mtp_native_test_084
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_084, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_084, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2011,7 +2011,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_084, TestSize.Level0)
  * @tc.name      : mtp_native_test_085
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_085, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_085, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2042,7 +2042,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_085, TestSize.Level0)
  * @tc.name      : mtp_native_test_086
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_086, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_086, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2073,7 +2073,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_086, TestSize.Level0)
  * @tc.name      : mtp_native_test_087
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_087, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_087, TestSize.Level1)
 {
     MtpMedialibraryManager mtpMedialibraryManager;
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
@@ -2094,7 +2094,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_087, TestSize.Level0)
  * @tc.name      : mtp_native_test_088
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_088, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_088, TestSize.Level1)
 {
     MtpMedialibraryManager mtpMedialibraryManager;
     shared_ptr<ObjectInfo> outObjectInfo = make_shared<ObjectInfo>(0);
@@ -2115,7 +2115,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_088, TestSize.Level0)
  * @tc.name      : mtp_native_test_089
  * @tc.desc      : 1.
  */
-HWTEST_F(MtpNativeTest, mtp_native_test_089, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_native_test_089, TestSize.Level1)
 {
     auto mtpMedialibraryManager = MtpMedialibraryManager::GetInstance();
     int32_t id = 0;
@@ -2137,7 +2137,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_089, TestSize.Level0)
  * @tc.name      : mtp_header_data_001
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_header_data_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_header_data_001, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     context->format = 0;
@@ -2160,7 +2160,7 @@ HWTEST_F(MtpNativeTest, mtp_header_data_001, TestSize.Level0)
  * @tc.name      : mtp_driver_001
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_driver_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_driver_001, TestSize.Level1)
 {
     shared_ptr<MtpDriver> mtpDriver = make_shared<MtpDriver>();
     int ret = mtpDriver->OpenDriver();
@@ -2204,7 +2204,7 @@ HWTEST_F(MtpNativeTest, mtp_driver_001, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_property_001
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_property_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_001, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2229,7 +2229,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_property_001, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_property_002
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_property_002, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_002, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2254,7 +2254,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_property_002, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_property_003
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_property_003, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_003, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2279,7 +2279,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_property_003, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_property_004
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_property_004, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_004, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2304,7 +2304,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_property_004, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_property_005
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_property_005, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_005, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2329,7 +2329,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_property_005, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_property_006
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_property_006, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_006, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2354,7 +2354,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_property_006, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_property_007
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_property_007, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_007, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2379,7 +2379,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_property_007, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_property_008
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_property_008, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_property_008, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2406,7 +2406,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_property_008, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_001
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_001, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2459,7 +2459,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_001, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_002
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_002, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_002, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2484,7 +2484,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_002, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_003
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_003, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_003, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2512,7 +2512,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_003, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_004
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_004, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_004, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);
@@ -2562,7 +2562,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_004, TestSize.Level0)
  * @tc.name      : mtp_operation_utils_007
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_operation_utils_007, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_operation_utils_007, TestSize.Level1)
 {
     shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
     shared_ptr<MtpOperationUtils> mtpOperUtils = make_shared<MtpOperationUtils>(context);
@@ -2614,7 +2614,7 @@ HWTEST_F(MtpNativeTest, mtp_operation_utils_007, TestSize.Level0)
  * @tc.name      : mtp_medialibrary_manager_001
  * @tc.desc      :
  */
-HWTEST_F(MtpNativeTest, mtp_medialibrary_manager_001, TestSize.Level0)
+HWTEST_F(MtpNativeTest, mtp_medialibrary_manager_001, TestSize.Level1)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     auto remoteObj = saManager->GetSystemAbility(TEST_UID);

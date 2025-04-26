@@ -19,6 +19,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_type_const.h"
 #include "userfilemgr_uri.h"
+#include "media_file_uri.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -38,7 +39,7 @@ void MediaLibraryHelperUnitTest::TearDown(void) {}
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_SetGet_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_SetGet_Test_001, TestSize.Level1)
 {
     unique_ptr<AlbumAsset> albumAsset = make_unique<AlbumAsset>();
 

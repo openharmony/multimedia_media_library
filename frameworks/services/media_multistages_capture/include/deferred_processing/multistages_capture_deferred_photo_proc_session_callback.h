@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace Media {
+class Picture;
 #define EXPORT __attribute__ ((visibility ("default")))
 class MultiStagesCaptureDeferredPhotoProcSessionCallback : public CameraStandard::IDeferredPhotoProcSessionCallback {
 public:
@@ -34,20 +35,22 @@ public:
 
     void OnProcessImageDone(const std::string &imageId, const uint8_t *addr, const long bytes,
         uint32_t cloudImageEnhanceFlag) override;
-    void OnProcessImageDone(const std::string &imageId, std::shared_ptr<Media::Picture> picture,
+    void OnProcessImageDone(const std::string &imageId, std::shared_ptr<CameraStandard::PictureIntf> picture,
         uint32_t cloudImageEnhanceFlag) override;
-    void OnDeliveryLowQualityImage(const std::string &imageId, std::shared_ptr<Media::Picture> picture) override;
+    void OnDeliveryLowQualityImage(const std::string &imageId,
+        std::shared_ptr<CameraStandard::PictureIntf> picture) override;
     EXPORT void OnError(const std::string &imageId, const CameraStandard::DpsErrorCode error) override;
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
 
 private:
     EXPORT int32_t UpdatePhotoQuality(const std::string &photoId);
-    EXPORT void UpdateCEAvailable(const std::string &photoId, uint32_t cloudImageEnhanceFlag);
+    EXPORT void UpdateCEAvailable(const std::string &photoId, uint32_t cloudImageEnhanceFlag, int32_t modifyType = 0);
     EXPORT void GetCommandByImageId(const std::string &imageId, MediaLibraryCommand &cmd);
-    EXPORT void UpdateHighQualityPictureInfo(const std::string &imageId, uint32_t cloudImageEnhanceFlag);
-    EXPORT void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    EXPORT void UpdateHighQualityPictureInfo(const std::string &imageId, uint32_t cloudImageEnhanceFlag,
+        int32_t modifyType = 0);
+    EXPORT void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet, bool isError = false);
     EXPORT void ProcessAndSaveHighQualityImage(const std::string& imageId, std::shared_ptr<Media::Picture> picture,
-        std::shared_ptr<NativeRdb::ResultSet> resultSet, uint32_t cloudImageEnhanceFlag);
+        std::shared_ptr<NativeRdb::ResultSet> resultSet, uint32_t cloudImageEnhanceFlag, int32_t modifyType = 0);
 };
 } // namespace Media
 } // namespace OHOS

@@ -20,13 +20,12 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_multistages_capture_test") {
-  module_out_path = "media_library/medialibrary_multistages_capture_test"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-    "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
     "${MEDIALIB_THIRD_PARTY_PATH}/googletest/googletest/include",
   ]
 
@@ -60,13 +59,13 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "image_framework:image_native",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
-    "user_file_service:file_access_extension_ability_kit",
   ]
 
   if (defined(global_parts_info) &&

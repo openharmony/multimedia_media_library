@@ -22,6 +22,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_smartalbum_operations_test.h"
+#include "smart_album_column.h"
 
 using namespace std;
 using namespace OHOS;

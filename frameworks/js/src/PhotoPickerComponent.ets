@@ -18,10 +18,17 @@ import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { bundleManager } from '@kit.AbilityKit';
 
-const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
-const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
-const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
-const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
+const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
+    ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
+    ['image/*', 'FILTER_MEDIA_TYPE_IMAGE'],
+    ['video/*', 'FILTER_MEDIA_TYPE_VIDEO'],
+    ['image/movingPhoto', 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO']
+])
+
+interface MimeTypeFilter {
+  mimeTypeArray: string[],
+  filterType: number
+}
 
 @Component
 export struct PhotoPickerComponent {
@@ -157,6 +164,9 @@ export struct PhotoPickerComponent {
             uri: "multipleselect",
             targetPage: "photoPage",
             filterMediaType: this.convertMIMETypeToFilterType(this.pickerOptions?.MIMEType),
+            mimeTypeFilter: this.parseMimeTypeFilter(this.pickerOptions?.mimeTypeFilter),
+            fileSizeFilter: this.pickerOptions?.fileSizeFilter,
+            videoDurationFilter: this.pickerOptions?.videoDurationFilter,
             maxSelectNumber: this.pickerOptions?.maxSelectNumber as number,
             isPhotoTakingSupported: this.pickerOptions?.isPhotoTakingSupported as boolean,
             isEditSupported: false,
@@ -239,7 +249,7 @@ export struct PhotoPickerComponent {
       this.handleOtherOnReceive(wantParam);
       console.info('PhotoPickerComponent onReceive: other case');
     }
-    console.info('PhotoPickerComponent onReceive' + JSON.stringify(wantParam));
+    console.info('PhotoPickerComponent onReceive' + this.pickerController.encrypt(JSON.stringify(wantParam)));
   }
 
   private handleOtherOnReceive(wantParam: Record<string, Object>): void {
@@ -307,8 +317,8 @@ export struct PhotoPickerComponent {
       if (this.proxy) {
         if (itemType === 'thumbnail' && clickType === ClickType.SELECTED) {
           this.proxy.send({ 'clickConfirm': itemInfo.uri, 'isConfirm': result });
-          console.info('PhotoPickerComponent onReceive: click confirm: uri = ' + itemInfo.uri + 'isConfirm = ' +
-            result);
+          console.info('PhotoPickerComponent onReceive: click confirm: uri = ' +
+            this.pickerController.encrypt(itemInfo.uri) + 'isConfirm = ' + result);
         }
         if (itemType === 'camera') {
           this.proxy.send({ 'enterCamera': result });
@@ -342,7 +352,8 @@ export struct PhotoPickerComponent {
     if (this.onPhotoBrowserChanged) {
       this.onPhotoBrowserChanged(browserItemInfo);
     }
-    console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + browserItemInfo.uri);
+    console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' +
+      this.pickerController.encrypt(browserItemInfo.uri));
   }
 
   private handleVideoPlayStateChange(wantParam: Record<string, Object>): void {
@@ -371,16 +382,34 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onReceive: handleSaveCallback');
   }
 
+  parseMimeTypeFilter(filter?: photoAccessHelper.MimeTypeFilter): object | undefined {
+    if (!filter) {
+      return undefined;
+    }
+    let MimeTypeFilterObj: photoAccessHelper.MimeTypeFilter = {
+      mimeTypeArray: [],
+    };
+    if (filter.mimeTypeArray) {
+      for (let mimeType of filter.mimeTypeArray) {
+        if (PHOTO_VIEW_MIME_TYPE_MAP.has(mimeType)) {
+          o.mimeTypeArray.push(PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType));
+        } else {
+          o.mimeTypeArray.push(mimeType);
+        }
+      }
+    }
+    return MimeTypeFilterObj;
+  }
+
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
     let filterType: string;
-    if (mimeType === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
-      filterType = FILTER_MEDIA_TYPE_IMAGE;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
-      filterType = FILTER_MEDIA_TYPE_VIDEO;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
-      filterType = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
+    if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
+    if (PHOTO_VIEW_MIME_TYPE_MAP.has(filterType)) {
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get(mimeType);
     } else {
-      filterType = FILTER_MEDIA_TYPE_ALL;
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*);
+      filterType = PHOTO_VIEW_MIME_TYPE_MAP.get('*/*);
     }
     console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
@@ -411,14 +440,14 @@ export class PickerController {
         let uriLists: Array<string> = data as Array<string>;
         if (uriLists) {
           this.data = new Map([['SET_SELECTED_URIS', [...uriLists]]]);
-          console.info('PhotoPickerComponent SET_SELECTED_URIS' + JSON.stringify(uriLists));
+          console.info('PhotoPickerComponent SET_SELECTED_URIS' + this.encrypt(JSON.stringify(uriLists)));
         }
       }
     } else if (type === DataType.SET_ALBUM_URI) {
       let albumUri: string = data as string;
       if (albumUri !== undefined) {
         this.data = new Map([['SET_ALBUM_URI', albumUri]]);
-        console.info('PhotoPickerComponent SET_ALBUM_URI' + JSON.stringify(albumUri));
+        console.info('PhotoPickerComponent SET_ALBUM_URI' + this.encrypt(JSON.stringify(albumUri)));
       }
     } else {
       console.info('PhotoPickerComponent setData: other case');
@@ -438,7 +467,7 @@ export class PickerController {
     let newPhotoBrowserRange = photoBrowserRange ? photoBrowserRange : PhotoBrowserRange.ALL;
     photoBrowserRangeInfo.photoBrowserRange = newPhotoBrowserRange;
     this.data = new Map([['SET_PHOTO_BROWSER_ITEM', photoBrowserRangeInfo]]);
-    console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM' + JSON.stringify(photoBrowserRangeInfo));
+    console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM' + this.encrypt(JSON.stringify(photoBrowserRangeInfo)));
   }
 
   exitPhotoBrowser() {
@@ -547,6 +576,13 @@ export class PickerController {
         this.saveCallbackMap.delete(date);
       }
     }
+  }
+
+  encrypt(data) {
+    if (!data || data?.indexOf('file:///data/storage/') !== -1) {
+      return '';
+    }
+    return data.replace(/(\/\w+)\./g, '/******.');
   }
 }
 

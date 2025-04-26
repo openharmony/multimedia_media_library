@@ -49,11 +49,13 @@ static inline string FuzzString(const uint8_t *data, size_t size)
 
 static void MediaLibraryMetaRecoverTest(const uint8_t *data, size_t size)
 {
+    std::shared_ptr<Media::MediaLibraryMetaRecovery> mediaLibraryMetaRecovery =
+        std::make_shared<Media::MediaLibraryMetaRecovery>();
     Media::MediaLibraryMetaRecovery::DeleteMetaDataByPath(FuzzString(data, size));
     Media::MediaLibraryMetaRecovery::GetInstance().StatisticSave();
     Media::MediaLibraryMetaRecovery::GetInstance().StatisticReset();
     Media::MediaLibraryMetaRecovery::GetInstance().RecoveryStatistic();
-    Media::MediaLibraryMetaRecovery::GetInstance().StatisticRestore();
+    mediaLibraryMetaRecovery->StartAsyncRecovery();
     Media::MediaLibraryMetaRecovery::GetInstance().ResetAllMetaDirty();
     std::set<int32_t> status;
     Media::MediaLibraryMetaRecovery::GetInstance().ReadMetaStatusFromFile(status);
@@ -64,7 +66,6 @@ static void MediaLibraryMetaRecoverTest(const uint8_t *data, size_t size)
         Media::MediaLibraryMetaRecovery::GetInstance().GetDataType(name);
     }
     Media::MediaLibraryMetaRecovery::GetInstance().SetRdbRebuiltStatus(FuzzInt32(data, size));
-    Media::MediaLibraryMetaRecovery::GetInstance().StartAsyncRecovery();
     Media::MediaLibraryMetaRecovery::GetInstance().StopCloudSync();
     Media::MediaLibraryMetaRecovery::GetInstance().RestartCloudSync();
     Media::MediaLibraryMetaRecovery::GetInstance().CheckRecoveryState();

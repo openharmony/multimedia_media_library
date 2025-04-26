@@ -305,7 +305,7 @@ int32_t MovingPhotoImpl::RequestContentToArrayBuffer()
     }
     memset_s(arrayBufferData_, fileSize, 0, fileSize);
 
-    size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), arrayBufferData_, fileSize));
+    ssize_t readBytes = read(uniqueFd.Get(), arrayBufferData_, fileSize);
     if (readBytes != fileSize) {
         MEDIA_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, error: %{public}d",
             readBytes, fileSize, errno);

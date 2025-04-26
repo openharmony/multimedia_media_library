@@ -20,12 +20,14 @@
 #include <securec.h>
 
 #include "media_log.h"
+#include "mtp_manager.h"
 #include "ptp_album_handles.h"
 #include "photo_album_column.h"
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "result_set_utils.h"
 #include "media_file_uri.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 
@@ -33,6 +35,7 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t RESERVE_ALBUM = 10;
 constexpr int32_t PARENT_ID = 0;
+constexpr int32_t PARENT_ID_IN_MTP = 500000000;
 constexpr int32_t DELETE_LIMIT_TIME = 5000;
 constexpr int32_t ERR_NUM = -1;
 constexpr int32_t MAX_PARCEL_LEN_LIMIT = 5000;
@@ -42,19 +45,21 @@ const string IS_LOCAL = "2";
 const std::string HIDDEN_ALBUM = ".hiddenAlbum";
 const string POSITION = "2";
 const string INVALID_FILE_ID = "-1";
+constexpr uint64_t DELAY_MS = 5000;
 bool startsWith(const std::string& str, const std::string& prefix)
 {
-    if (prefix.size() > str.size() || prefix.empty() || str.empty()) {
-        MEDIA_ERR_LOG("MtpMediaLibrary::StartsWith prefix size error");
-        return false;
-    }
+    bool cond = (prefix.size() > str.size() || prefix.empty() || str.empty());
+    CHECK_AND_RETURN_RET_LOG(!cond, false, "MtpMediaLibrary::StartsWith prefix size error");
 
     for (size_t i = 0; i < prefix.size(); ++i) {
-        if (str[i] != prefix[i]) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(str[i] == prefix[i], false);
     }
     return true;
+}
+
+static inline int32_t GetParentId()
+{
+    return MtpManager::GetInstance().IsMtpMode() ? PARENT_ID_IN_MTP : PARENT_ID;
 }
 
 void MediaSyncObserver::SendEventPackets(uint32_t objectHandle, uint16_t eventCode)
@@ -83,7 +88,7 @@ void MediaSyncObserver::SendEventPacketAlbum(uint32_t objectHandle, uint16_t eve
     MtpPacketTool::PutUInt32(outBuffer, event.length);
     MtpPacketTool::PutUInt16(outBuffer, EVENT_CONTAINER_TYPE);
     MtpPacketTool::PutUInt16(outBuffer, eventCode);
-    MtpPacketTool::PutUInt32(outBuffer, PARENT_ID);
+    MtpPacketTool::PutUInt32(outBuffer, context_->transactionID);
     MtpPacketTool::PutUInt32(outBuffer, objectHandle);
 
     event.data = outBuffer;
@@ -97,9 +102,7 @@ static bool IsNumber(const string& str)
 {
     CHECK_AND_RETURN_RET_LOG(!str.empty(), false, "IsNumber input is empty");
     for (char const& c : str) {
-        if (isdigit(c) == 0) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(isdigit(c) != 0, false);
     }
     return true;
 }
@@ -179,6 +182,46 @@ vector<string> MediaSyncObserver::GetAllDeleteHandles()
     return handlesResult;
 }
 
+void MediaSyncObserver::StartDelayInfoThread()
+{
+    CHECK_AND_RETURN_LOG(!isRunningDelay_.load(), "MediaSyncObserver delay thread is already running");
+    isRunningDelay_.store(true);
+    delayThread_ = std::thread([&] { DelayInfoThread(); });
+}
+
+void MediaSyncObserver::StopDelayInfoThread()
+{
+    isRunningDelay_.store(false);
+    cvDelay_.notify_all();
+    if (delayThread_.joinable()) {
+        delayThread_.join();
+    }
+}
+
+void MediaSyncObserver::DelayInfoThread()
+{
+    while (isRunningDelay_.load()) {
+        DelayInfo delayInfo;
+        {
+            std::unique_lock<std::mutex> lock(mutexDelay_);
+            cvDelay_.wait(lock, [&] { return !delayQueue_.empty() || !isRunningDelay_.load(); });
+            if (!isRunningDelay_.load()) {
+                std::queue<DelayInfo>().swap(delayQueue_);
+                MEDIA_INFO_LOG("delay thread is stopped");
+                break;
+            }
+            delayInfo = delayQueue_.front();
+            delayQueue_.pop();
+        }
+        auto now = std::chrono::steady_clock::now();
+        if (now < delayInfo.tp) {
+            std::this_thread::sleep_until(delayInfo.tp);
+        }
+        SendEventPackets(delayInfo.objectHandle, delayInfo.eventCode);
+        SendEventPacketAlbum(delayInfo.objectHandleAlbum, delayInfo.eventCodeAlbum);
+    }
+}
+
 void MediaSyncObserver::AddPhotoHandle(int32_t handle)
 {
     CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr, "Mtp AddPhotoHandle fail to get datasharehelper");
@@ -199,15 +242,27 @@ void MediaSyncObserver::AddPhotoHandle(int32_t handle)
     int32_t ownerAlbumId = GetInt32Val(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet);
     int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        SendEventPackets(handle + COMMON_MOVING_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
-        SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+        DelayInfo delayInfo = {
+            .objectHandle = handle + COMMON_MOVING_OFFSET,
+            .eventCode = MTP_EVENT_OBJECT_ADDED_CODE,
+            .objectHandleAlbum = ownerAlbumId,
+            .eventCodeAlbum = MTP_EVENT_OBJECT_INFO_CHANGED_CODE,
+            .tp = std::chrono::steady_clock::now() + std::chrono::milliseconds(DELAY_MS)
+        };
+        {
+            std::lock_guard<std::mutex> lock(mutexDelay_);
+            if (isRunningDelay_.load()) {
+                delayQueue_.push(delayInfo);
+            }
+        }
+        cvDelay_.notify_all();
     }
     auto albumHandles = PtpAlbumHandles::GetInstance();
     if (!albumHandles->FindHandle(ownerAlbumId)) {
         albumHandles->AddHandle(ownerAlbumId);
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_ADDED_CODE);
         SendEventPacketAlbum(ownerAlbumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
-        SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+        SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
     }
 }
 
@@ -376,7 +431,7 @@ void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<
                 }
                 SendEventPacketAlbum(albumId, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             }
-            SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             break;
         case static_cast<int32_t>(NotifyType::NOTIFY_REMOVE):
             MEDIA_DEBUG_LOG("MtpMediaLibrary ALBUM REMOVE");
@@ -384,7 +439,7 @@ void MediaSyncObserver::SendEventToPTP(ChangeType changeType, const std::vector<
                 albumHandles->RemoveHandle(albumId);
                 SendEventPacketAlbum(albumId, MTP_EVENT_OBJECT_REMOVED_CODE);
             }
-            SendEventPacketAlbum(PARENT_ID, MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
+            SendEventPacketAlbum(GetParentId(), MTP_EVENT_OBJECT_INFO_CHANGED_CODE);
             break;
         default:
             break;
@@ -399,10 +454,7 @@ bool MediaSyncObserver::ParseNotifyData(const ChangeInfo &changeInfo, vector<str
     }
     MEDIA_DEBUG_LOG("changeInfo.size_ is %{public}d.", changeInfo.size_);
     uint8_t *parcelData = static_cast<uint8_t *>(malloc(changeInfo.size_));
-    if (parcelData == nullptr) {
-        MEDIA_ERR_LOG("parcelData malloc failed");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(parcelData != nullptr, false, "parcelData malloc failed");
     if (memcpy_s(parcelData, changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
         MEDIA_ERR_LOG("parcelData copy parcel data failed");
         free(parcelData);
@@ -416,21 +468,12 @@ bool MediaSyncObserver::ParseNotifyData(const ChangeInfo &changeInfo, vector<str
         return false;
     }
     uint32_t len = 0;
-    if (!parcel->ReadUint32(len)) {
-        MEDIA_ERR_LOG("Failed to read sub uri list length");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(!(!parcel->ReadUint32(len)), false, "Failed to read sub uri list length");
     MEDIA_DEBUG_LOG("read sub uri list length: %{public}u .", len);
-    if (len > MAX_PARCEL_LEN_LIMIT) {
-        MEDIA_ERR_LOG("len length exceed the limit.");
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(len <= MAX_PARCEL_LEN_LIMIT, false, "len length exceed the limit.");
     for (uint32_t i = 0; i < len; i++) {
         string subUri = parcel->ReadString();
-        if (subUri.empty()) {
-            MEDIA_ERR_LOG("Failed to read sub uri");
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(!subUri.empty(), false, "Failed to read sub uri");
         MEDIA_DEBUG_LOG("notify data subUri string %{public}s.", subUri.c_str());
         MediaFileUri fileUri(subUri);
         string fileId = fileUri.GetFileId();
@@ -527,10 +570,7 @@ void MediaSyncObserver::OnChange(const ChangeInfo &changeInfo)
         ChangeInfo changeInfoCopy = changeInfo;
         if (changeInfo.data_ != nullptr && changeInfo.size_ > 0) {
             changeInfoCopy.data_ = malloc(changeInfo.size_);
-            if (changeInfoCopy.data_ == nullptr) {
-                MEDIA_ERR_LOG("changeInfoCopy.data_ is nullptr.");
-                return;
-            }
+            CHECK_AND_RETURN_LOG(changeInfoCopy.data_ != nullptr, "changeInfoCopy.data_ is nullptr.");
             if (memcpy_s(const_cast<void*>(changeInfoCopy.data_),
                 changeInfo.size_, changeInfo.data_, changeInfo.size_) != 0) {
                 MEDIA_ERR_LOG("changeInfoCopy copy data failed");
@@ -550,11 +590,13 @@ void MediaSyncObserver::StartNotifyThread()
     CHECK_AND_RETURN_LOG(!isRunning_.load(), "MediaSyncObserver notify thread is already running");
     isRunning_.store(true);
     notifythread_ = std::thread([this] {this->ChangeNotifyThread();});
+    StartDelayInfoThread();
 }
 
 void MediaSyncObserver::StopNotifyThread()
 {
     MEDIA_INFO_LOG("stop notify thread");
+    StopDelayInfoThread();
     isRunning_.store(false);
     cv_.notify_all();
     {

@@ -28,40 +28,62 @@
 using namespace OHOS::NativeRdb;
 
 namespace OHOS::Media {
-const int32_t BATCH_QUERY_NUMBER = 200;
+const int32_t BATCH_QUERY_NUMBER = 1000;
+const std::string PREFIX_IMAGE = "image/";
+const std::string COLUMN_COUNT = "count(*)";
+
+static int32_t GetCountOfAllAssets(int32_t &assetsCount)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "GetCountOfAllAssets failed. rdbStore is null.");
+    std::vector<std::string> columns = { COLUMN_COUNT };
+    AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "GetCountOfAllAssets failed. rdbStore is null.");
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        assetsCount = GetInt32Val(COLUMN_COUNT, resultSet);
+        return E_OK;
+    }
+    return E_ERR;
+}
 
 int32_t PhotoMimetypeOperation::UpdateInvalidMimeType()
 {
     MEDIA_INFO_LOG("enter UpdateInvalidMimeType.");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "HasDataForUpdate failed. rdbStore is null.");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "HasDataForUpdate failed. rdbStore is null.");
+    int32_t assetsCount = 0;
+    CHECK_AND_RETURN_RET_LOG(GetCountOfAllAssets(assetsCount) == E_OK, E_ERR, "Failed to GetCountOfAllAssets.");
 
     AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
     predicates.NotLike(MediaColumn::MEDIA_MIME_TYPE, "image/%");
-    predicates.Limit(BATCH_QUERY_NUMBER);
     const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_NAME };
 
-    while (MedialibrarySubscriber::IsCurrentStatusOn()) {
+    int32_t startCount = 0;
+    while (MedialibrarySubscriber::IsCurrentStatusOn() && startCount < assetsCount) {
+        predicates.Limit(startCount, BATCH_QUERY_NUMBER);
         auto resultSet = rdbStore->Query(predicates, columns);
         CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "UpdateMimeType failed. resultSet is null.");
+
         std::unordered_map<std::string, std::vector<std::string>> invalidMimeTypeMap;
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSet);
             std::string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
             std::string mimeType = MediaFileUtils::GetMimeTypeFromDisplayName(displayName);
-            if (fileId.empty() || mimeType.empty()) {
-                MEDIA_WARN_LOG("fileId: %{public}s, displayName: %{public}s.", fileId.c_str(), displayName.c_str());
+            if (fileId.empty() || mimeType.empty() || !MediaFileUtils::StartsWith(mimeType, PREFIX_IMAGE)) {
+                MEDIA_WARN_LOG("Invalid, fileId: %{public}s, mimeType: %{public}s.", fileId.c_str(), mimeType.c_str());
                 continue;
             }
             invalidMimeTypeMap[mimeType].emplace_back(fileId);
         }
         resultSet->Close();
-        if (invalidMimeTypeMap.empty()) {
-            break;
+        if (!invalidMimeTypeMap.empty()) {
+            CHECK_AND_RETURN_RET_LOG(HandleUpdateInvalidMimeType(rdbStore, invalidMimeTypeMap) == E_OK, E_ERR,
+                "Failed to HandleUpdateInvalidMimeType.");
         }
-        CHECK_AND_RETURN_RET_LOG(HandleUpdateInvalidMimeType(rdbStore, invalidMimeTypeMap) == E_OK, E_ERR,
-            "Failed to HandleUpdateInvalidMimeType.");
+        startCount += BATCH_QUERY_NUMBER;
     }
     MEDIA_INFO_LOG("end UpdateInvalidMimeType.");
     return E_OK;
@@ -77,7 +99,7 @@ int32_t PhotoMimetypeOperation::HandleUpdateInvalidMimeType(const std::shared_pt
         values.Put(MediaColumn::MEDIA_MIME_TYPE, invalidPair.first);
         AbsRdbPredicates predicates = AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
         predicates.In(MediaColumn::MEDIA_ID, invalidPair.second);
-        int32_t totalCount = invalidPair.second.size();
+        int32_t totalCount = static_cast<int32_t>(invalidPair.second.size());
         int32_t changedRows = -1;
         int32_t ret = rdbStore->Update(changedRows, values, predicates);
         if (ret != E_OK || changedRows != totalCount) {

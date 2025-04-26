@@ -21,15 +21,12 @@ group("unittest") {
 }
 
 ohos_unittest("medialibrary_rdb_test") {
-  module_out_path = "media_library/medialibraryextention"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",
     "../get_self_permissions/include",
     "${MEDIALIB_CLOUD_SYNC_PATH}/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/devices_info_interact",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
@@ -37,6 +34,8 @@ ohos_unittest("medialibrary_rdb_test") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
   ]
+
+  cflags = [ "-fno-access-control" ]
 
   sources = [
     "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp",
@@ -46,6 +45,7 @@ ohos_unittest("medialibrary_rdb_test") {
     "./src/medialibrary_dir_operations_test.cpp",
     "./src/medialibrary_rdb_test.cpp",
     "./src/medialibrary_subscriber_test.cpp",
+    "./src/moving_photo_processor_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
@@ -67,7 +67,6 @@ ohos_unittest("medialibrary_rdb_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
-    "device_manager:devicemanagersdk",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",

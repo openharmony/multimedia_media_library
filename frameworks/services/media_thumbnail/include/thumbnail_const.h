@@ -119,13 +119,14 @@ const std::string DEFAULT_EXIF_ORIENTATION = "1";
 
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";     // The size fit to screen
 const std::string THUMBNAIL_THUMB_SUFFIX = "THM";   // The size which height is 256 and width is 256
-const std::string THUMBNAIL_THUMBASTC_SUFFIX = "THM_ASTC";
+const std::string THUMBNAIL_THUMB_ASTC_SUFFIX = "THM_ASTC";
 const std::string THUMBNAIL_MTH_SUFFIX = "MTH";     // The size which height is 128 and width is 128
 const std::string THUMBNAIL_YEAR_SUFFIX = "YEAR";   // The size which height is 64 and width is 64
 const std::string THUMBNAIL_LCD_EX_SUFFIX = "THM_EX/LCD";
 const std::string THUMBNAIL_THUMB_EX_SUFFIX = "THM_EX/THM";
 
 const std::string FILE_URI_PREX = "file://";
+const std::string LOCAL_MEDIA_PREFIX = "/storage/media/local/files/";
 
 const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
 
@@ -218,7 +219,7 @@ static std::string GetThumbSuffix(ThumbnailType type)
         case ThumbnailType::THUMB:
             return THUMBNAIL_THUMB_SUFFIX;
         case ThumbnailType::THUMB_ASTC:
-            return THUMBNAIL_THUMBASTC_SUFFIX;
+            return THUMBNAIL_THUMB_ASTC_SUFFIX;
         case ThumbnailType::LCD:
             return THUMBNAIL_LCD_SUFFIX;
         default:
@@ -234,7 +235,7 @@ static std::string GetKeyFrameThumbSuffix(int32_t type)
         case KEY_FRAME_THM:
             return THUMBNAIL_THUMB_SUFFIX;
         case KEY_FRAME_THM_ASTC:
-            return THUMBNAIL_THUMBASTC_SUFFIX;
+            return THUMBNAIL_THUMB_ASTC_SUFFIX;
         default:
             return "";
     }

@@ -51,6 +51,8 @@
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
 #include "userfilemgr_uri.h"
+#include "album_operation_uri.h"
+#include "data_secondary_directory_uri.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -58,6 +60,7 @@ using namespace OHOS::DataShare;
 namespace OHOS {
 namespace Media {
 static const string EMPTY_STRING = "";
+static const string MULTI_USER_URI_FLAG = "user=";
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -269,6 +272,22 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
     }
 
     return id;
+}
+
+string MediaLibraryNapiUtils::GetUserIdFromUri(const string &uri)
+{
+    string userId = "-1";
+    string str = uri;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    if (pos != string::npos) {
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == string::npos) {
+            end = str.length();
+        }
+        userId = str.substr(pos, end - pos);
+    }
+    return userId;
 }
 
 int32_t MediaLibraryNapiUtils::GetFileIdFromPhotoUri(const string &uri)
@@ -728,7 +747,7 @@ int MediaLibraryNapiUtils::TransErrorCode(const string &Name, int error)
     NAPI_ERR_LOG("interface: %{public}s, server errcode:%{public}d ", Name.c_str(), error);
     // Transfer Server error to napi error code
     if (error <= E_COMMON_START && error >= E_COMMON_END) {
-        error = JS_INNER_FAIL;
+        error = (error == -E_CHECK_SYSTEMAPP_FAIL) ? E_CHECK_SYSTEMAPP_FAIL : JS_INNER_FAIL;
     } else if (error == E_PERMISSION_DENIED) {
         error = OHOS_PERMISSION_DENIED_CODE;
     } else if (trans2JsError.count(error)) {
@@ -770,6 +789,33 @@ void MediaLibraryNapiUtils::CreateNapiErrorObject(napi_env env, napi_value &erro
                 NAPI_DEBUG_LOG("napi_create_error success");
             }
         }
+    }
+}
+
+void MediaLibraryNapiUtils::InvokeJSAsyncMethodWithoutWork(napi_env env, napi_deferred deferred, napi_ref callbackRef,
+    const JSAsyncContextOutput &asyncContext)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("InvokeJSAsyncMethod");
+
+    napi_value retVal;
+    napi_value callback = nullptr;
+
+    /* Deferred is used when JS Callback method expects a promise value */
+    if (deferred) {
+        if (asyncContext.status) {
+            napi_resolve_deferred(env, deferred, asyncContext.data);
+        } else {
+            napi_reject_deferred(env, deferred, asyncContext.error);
+        }
+    } else {
+        napi_value result[ARGS_TWO];
+        result[PARAM0] = asyncContext.error;
+        result[PARAM1] = asyncContext.data;
+        napi_get_reference_value(env, callbackRef, &callback);
+        napi_call_function(env, nullptr, callback, ARGS_TWO, result, &retVal);
+        napi_delete_reference(env, callbackRef);
+        callbackRef = nullptr;
     }
 }
 
@@ -947,7 +993,7 @@ napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<st
     for (const auto &column : fetchColumn) {
         if (column == PENDING_STATUS) {
             validFetchColumns.insert(MediaColumn::MEDIA_TIME_PENDING);
-        } else if (isValidColumn(column)) {
+        } else if (isValidColumn(column) || (column == MEDIA_SUM_SIZE && IsSystemApp())) {
             validFetchColumns.insert(column);
         } else if (column == MEDIA_DATA_DB_URI) {
             continue;
@@ -1753,7 +1799,11 @@ napi_value MediaLibraryNapiUtils::GetUriArrayFromAssets(
             NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
             continue;
         }
-        values.push_back(GetUriFromAsset(obj));
+        std::string uri = GetUriFromAsset(obj);
+        if (obj->GetUserId() != -1) {
+            MediaLibraryNapiUtils::UriAppendKeyValue(uri, "user", to_string(obj->GetUserId()));
+        }
+        values.push_back(uri);
     }
     napi_value ret = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);

@@ -81,6 +81,7 @@
 #include "vision_total_column.h"
 #include "vision_video_label_column.h"
 #include "vision_multi_crop_column.h"
+#include "album_operation_uri.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -98,6 +99,12 @@ static const std::string MEDIA_FILEMODE = "mode";
 static const std::string ANALYSIS_NO_RESULTS = "[]";
 static const std::string ANALYSIS_INIT_VALUE = "0";
 static const std::string ANALYSIS_STATUS_ANALYZED = "Analyzed, no results";
+
+const std::string LANGUAGE_ZH = "zh-Hans";
+const std::string LANGUAGE_EN = "en-Latn-US";
+const std::string LANGUAGE_ZH_TR = "zh-Hant";
+
+std::mutex FileAssetNapi::mutex_;
 
 thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
 thread_local std::shared_ptr<FileAsset> FileAssetNapi::sFileAsset_ = nullptr;
@@ -135,6 +142,7 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
 {
     FileAssetNapi *fileAssetObj = reinterpret_cast<FileAssetNapi*>(nativeObject);
     if (fileAssetObj != nullptr) {
+        lock_guard<mutex> lockGuard(mutex_);
         delete fileAssetObj;
         fileAssetObj = nullptr;
     }
@@ -454,6 +462,11 @@ std::string FileAssetNapi::GetFileUri() const
 int32_t FileAssetNapi::GetFileId() const
 {
     return fileAssetPtr->GetId();
+}
+
+int32_t FileAssetNapi::GetUserId() const
+{
+    return fileAssetPtr->GetUserId();
 }
 
 Media::MediaType FileAssetNapi::GetMediaType() const
@@ -1283,7 +1296,7 @@ static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
             return false;
         }
         if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
-            if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
+            if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName(), true) != E_OK) {
                 context->error = JS_E_DISPLAYNAME;
                 return false;
             }
@@ -1292,6 +1305,11 @@ static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
                 context->error = JS_E_DISPLAYNAME;
                 return false;
             }
+        }
+    } else {
+        if (MediaFileUtils::CheckTitleCompatible(context->objectPtr->GetTitle()) != E_OK) {
+            context->error = JS_E_DISPLAYNAME;
+            return false;
         }
     }
     return true;
@@ -1585,13 +1603,13 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
 #endif
     Uri closeAssetUri(closeUri);
     bool isValid = false;
+    int32_t mediaFd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
     if (!isValid) {
         context->error = ERR_INVALID_OUTPUT;
         NAPI_ERR_LOG("getting fd is invalid");
         return;
     }
 
-    int32_t mediaFd = context->valuesBucket.Get(MEDIA_FILEDESCRIPTOR, isValid);
     if (!CheckFileOpenStatus(context, mediaFd)) {
         return;
     }
@@ -1937,7 +1955,7 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
             argc -= 1;
         }
     }
-
+    
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
@@ -2148,6 +2166,12 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
     string fileId = to_string(context->objectInfo->GetFileId());
     if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
         string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        //Chinese and English supported. Other languages English default.
+        if (language == LANGUAGE_ZH || language == LANGUAGE_ZH_TR) {
+            language = LANGUAGE_ZH;
+        } else {
+            language = LANGUAGE_EN;
+        }
         vector<string> onClause = { PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID + " = " +
             GEO_KNOWLEDGE_TABLE + "." + FILE_ID + " AND " +
             GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \'" + language + "\'" };
@@ -2837,7 +2861,6 @@ shared_ptr<FileAsset> FileAssetNapi::GetFileAssetInstance() const
 static int32_t CheckSystemApiKeys(napi_env env, const string &key)
 {
     static const set<string> SYSTEM_API_KEYS = {
-        PhotoColumn::PHOTO_POSITION,
         MediaColumn::MEDIA_DATE_TRASHED,
         MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::PHOTO_USER_COMMENT,
@@ -2846,6 +2869,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::SUPPORTED_WATERMARK_TYPE,
         PhotoColumn::PHOTO_IS_AUTO,
         PhotoColumn::PHOTO_IS_RECENT_SHOW,
+        PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };
@@ -3001,6 +3025,9 @@ static inline int64_t GetCompatDate(const string inputKey, const int64_t date)
 
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrGet");
+
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
@@ -3180,6 +3207,9 @@ static void UserFileMgrFavoriteExecute(napi_env env, void *data)
 
 napi_value FileAssetNapi::UserFileMgrFavorite(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrFavorite");
+
     auto asyncContext = make_unique<FileAssetAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isFavorite),
@@ -3348,6 +3378,9 @@ static void JSGetAnalysisDataCompleteCallback(napi_env env, napi_status status, 
 
 napi_value FileAssetNapi::UserFileMgrOpen(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrOpen");
+
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsUserFileMgrOpen(env, info, asyncContext, false));
     if (asyncContext->objectInfo->fileAssetPtr == nullptr) {
@@ -3461,6 +3494,9 @@ static void UserFileMgrCloseCallbackComplete(napi_env env, napi_status status, v
 
 napi_value FileAssetNapi::UserFileMgrClose(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrClose");
+
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsUserFileMgrClose(env, info, asyncContext));
     if (asyncContext->objectInfo->fileAssetPtr == nullptr) {
@@ -4096,7 +4132,7 @@ napi_value FileAssetNapi::PhotoAccessHelperCloneAsset(napi_env env, napi_callbac
 
     string extension = MediaFileUtils::SplitByChar(fileAsset->GetDisplayName(), '.');
     string displayName = title + "." + extension;
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName) == E_OK, "Input title is invalid");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName, true) == E_OK, "Input title is invalid");
 
     asyncContext->title = title;
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "CloneAssetHandlerExecute",

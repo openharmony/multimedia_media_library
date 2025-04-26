@@ -39,6 +39,7 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
+const uint8_t PACKOPTION_QUALITY = 95;
 FileUtils::FileUtils() {}
 
 FileUtils::~FileUtils() {}
@@ -164,6 +165,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     packOption.needsPackProperties = true;
     packOption.desiredDynamicRange = EncodeDynamicRange::AUTO;
     packOption.isEditScene = false;
+    packOption.quality = PACKOPTION_QUALITY;
     size_t lastSlash = path.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", path.c_str());
@@ -213,33 +215,43 @@ int32_t FileUtils::SaveVideo(const std::string &filePath, bool isEdited)
     return rename(tempPath.c_str(), targetPath.c_str());
 }
 
-int32_t FileUtils::SaveMovingPhotoVideo(const std::string &filePath)
+int32_t FileUtils::SaveMovingPhotoVideo(const std::string &filePath, bool isEdited, bool isMovingPhotoEffectMode)
 {
     string tempPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(
         filePath.substr(0, filePath.rfind('.')) + "_tmp" + filePath.substr(filePath.rfind('.')));
     string targetPath;
 
     string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
-    string editVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(
+    string sourceVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(
         MediaLibraryAssetOperations::GetEditDataSourcePath(filePath));
 
     if (!IsFileExist(tempPath)) {
         MEDIA_ERR_LOG("file not exist: %{public}s", DfxUtils::GetSafePath(tempPath).c_str());
+        return E_ERR;
     }
 
-    if (IsFileExist(editVideoPath)) {
-        targetPath = editVideoPath;
+    if (IsFileExist(sourceVideoPath)) {
+        targetPath = sourceVideoPath;
     } else if (IsFileExist(videoPath)) {
         targetPath = videoPath;
     } else {
         MEDIA_ERR_LOG("file not exist: %{public}s", DfxUtils::GetSafePath(filePath).c_str());
+        return E_ERR;
     }
+
+    int32_t ret = rename(tempPath.c_str(), targetPath.c_str());
 
     MEDIA_INFO_LOG("video rename targetPath: %{public}s, tempPath: %{public}s",
         DfxUtils::GetSafePath(targetPath).c_str(), DfxUtils::GetSafePath(tempPath).c_str());
-    return rename(tempPath.c_str(), targetPath.c_str());
+    string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(filePath);
+    if (!isEdited && !isMovingPhotoEffectMode && IsFileExist(editDataCameraPath) && IsFileExist(sourceVideoPath)) {
+        ret = MediaLibraryPhotoOperations::AddFiltersToVideoExecute(filePath, false);
+        MEDIA_INFO_LOG("MediaLibraryPhotoOperations AddFiltersToVideoExecute ret: %{public}d", ret);
+    }
+    MEDIA_INFO_LOG("SaveMovingPhotoVideo end ret: %{public}d", ret);
+    return ret;
 }
- 
+
 int32_t FileUtils::DeleteTempVideoFile(const std::string &filePath)
 {
     MEDIA_INFO_LOG("filePath: %{public}s", filePath.c_str());

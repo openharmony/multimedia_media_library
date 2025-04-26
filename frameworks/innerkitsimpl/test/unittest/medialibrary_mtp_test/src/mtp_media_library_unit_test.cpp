@@ -59,7 +59,7 @@ void MtpMediaLibraryUnitTest::TearDown(void) {}
  * EnvConditions: NA
  * CaseDescription: AddPathToMap Clear Init
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_001, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_001, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     for (int i = 1; i <= 10; i++) {
@@ -78,7 +78,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_001, TestSi
  * EnvConditions: NA
  * CaseDescription: ObserverAddPathToMap ScanDirNoDepth GetHandles
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_002, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_002, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -104,7 +104,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_002, TestSi
  * EnvConditions: NA
  * CaseDescription: GetHandles GetPathById ScanDirNoDepth
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_003, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_003, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -135,7 +135,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_003, TestSi
  * EnvConditions: NA
  * CaseDescription: GetFd
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_004, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_004, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -159,7 +159,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_004, TestSi
  * EnvConditions: NA
  * CaseDescription: SendObjectInfo
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_007, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_007, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -186,7 +186,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_007, TestSi
  * EnvConditions: NA
  * CaseDescription: GetIdByPath
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_008, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_008, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -207,7 +207,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_008, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveObject
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_009, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_009, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -231,7 +231,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_009, TestSi
  * EnvConditions: NA
  * CaseDescription: CopyObject
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_010, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_010, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -256,7 +256,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_010, TestSi
  * EnvConditions: NA
  * CaseDescription: DeleteObject
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_011, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_011, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -279,7 +279,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_011, TestSi
  * EnvConditions: NA
  * CaseDescription: SetObjectPropValue
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_012, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_012, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -302,7 +302,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_012, TestSi
  * EnvConditions: NA
  * CaseDescription: GetHandlesMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_013, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_013, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -329,7 +329,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_013, TestSi
  * EnvConditions: NA
  * CaseDescription: GetObjectPropList
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_014, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_014, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -357,7 +357,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_014, TestSi
  * EnvConditions: NA
  * CaseDescription: GetObjectPropValue
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_015, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_015, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -384,7 +384,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_015, TestSi
  * EnvConditions: NA
  * CaseDescription: GetRealPath
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_016, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_016, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -401,7 +401,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_016, TestSi
  * EnvConditions: NA
  * CaseDescription: GetStorageIds
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_017, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_017, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -418,7 +418,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_017, TestSi
  * EnvConditions: NA
  * CaseDescription: DeleteHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_018, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_018, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -441,7 +441,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_018, TestSi
  * EnvConditions: NA
  * CaseDescription: ObserverDeletePathToMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_019, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_019, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -463,7 +463,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_019, TestSi
  * EnvConditions: NA
  * CaseDescription: AddToHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_020, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_020, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -482,7 +482,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_020, TestSi
  * EnvConditions: NA
  * CaseDescription: ModifyHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_021, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_021, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -504,7 +504,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_021, TestSi
  * EnvConditions: NA
  * CaseDescription: ModifyPathHandleMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_022, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_022, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -527,7 +527,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_022, TestSi
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_023, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_023, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -546,7 +546,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_023, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_024, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_024, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -568,7 +568,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_024, TestSi
  * EnvConditions: NA
  * CaseDescription: GetId
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_025, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_025, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -585,7 +585,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_025, TestSi
  * EnvConditions: NA
  * CaseDescription: GetParentId
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_026, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_026, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -602,7 +602,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_026, TestSi
  * EnvConditions: NA
  * CaseDescription: AddPathToMap Clear Init
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_027, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_027, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -621,7 +621,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_027, TestSi
  * EnvConditions: NA
  * CaseDescription: GetHandles
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_028, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_028, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -647,7 +647,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_028, TestSi
  * EnvConditions: NA
  * CaseDescription: GetHandles
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_029, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_029, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -678,7 +678,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_029, TestSi
  * EnvConditions: NA
  * CaseDescription: ModifyHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_031, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_031, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -704,7 +704,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_031, TestSi
  * EnvConditions: NA
  * CaseDescription: ModifyPathHandleMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_032, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_032, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -729,7 +729,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_032, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_033, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_033, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -760,7 +760,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_033, TestSi
  * EnvConditions: NA
  * CaseDescription: GetIdByPath
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_034, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_034, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -782,7 +782,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_034, TestSi
  * EnvConditions: NA
  * CaseDescription: GetIdByPath
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_035, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_035, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -803,7 +803,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_035, TestSi
  * EnvConditions: NA
  * CaseDescription: GetSizeFromOfft
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_036, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_036, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -820,7 +820,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_036, TestSi
  * EnvConditions: NA
  * CaseDescription: GetFd
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_037, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_037, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -846,7 +846,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_037, TestSi
  * EnvConditions: NA
  * CaseDescription: GetRealPath
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_038, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_038, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -865,7 +865,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_038, TestSi
  * EnvConditions: NA
  * CaseDescription: CloseFd
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_039, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_039, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -892,7 +892,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_039, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveObject
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_040, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_040, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -923,7 +923,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_040, TestSi
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_041, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_041, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -950,7 +950,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_041, TestSi
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_042, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_042, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -966,27 +966,9 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_042, TestSi
  * SubFunction: NA
  * FunctionPoints: NA
  * EnvConditions: NA
- * CaseDescription: CompressImage
- */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_045, TestSize.Level0)
-{
-    ASSERT_NE(mtpMediaLib_, nullptr);
-    mtpMediaLib_->Clear();
-    OHOS::Media::PixelMap pixelMap;
-    std::vector<uint8_t> data;
-    bool res = mtpMediaLib_->CompressImage(pixelMap, data);
-    EXPECT_FALSE(res);
-}
-
-/*
- * Feature: MediaLibraryMTP
- * Function:
- * SubFunction: NA
- * FunctionPoints: NA
- * EnvConditions: NA
  * CaseDescription: MoveObjectSub
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_046, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_046, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1010,7 +992,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_046, TestSi
  * EnvConditions: NA
  * CaseDescription: GetThumb
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_047, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_047, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1036,7 +1018,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_047, TestSi
  * EnvConditions: NA
  * CaseDescription: CloseFd
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_048, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_048, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1060,7 +1042,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_048, TestSi
  * EnvConditions: NA
  * CaseDescription: GetVideoThumb
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_049, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_049, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1085,7 +1067,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_049, TestSi
  * EnvConditions: NA
  * CaseDescription: GetPictureThumb
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_050, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_050, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1110,7 +1092,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_050, TestSi
  * EnvConditions: NA
  * CaseDescription: ScanDirWithType
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_051, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_051, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1130,7 +1112,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_051, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveRepeatDirHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_052, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_052, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1154,7 +1136,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_052, TestSi
  * EnvConditions: NA
  * CaseDescription: ScanDirTraverseWithType
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_053, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_053, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1174,7 +1156,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_053, TestSi
  * EnvConditions: NA
  * CaseDescription: ErasePathInfo
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_055, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_055, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1197,7 +1179,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_055, TestSi
  * EnvConditions: NA
  * CaseDescription: GetExternalStorages
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_056, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_056, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1216,7 +1198,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_056, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveRepeatDirHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_057, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_057, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1243,7 +1225,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_057, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveObjectSub
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_058, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_058, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1267,7 +1249,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_058, TestSi
  * EnvConditions: NA
  * CaseDescription: ScanDirWithType
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_059, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_059, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1288,7 +1270,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_059, TestSi
  * EnvConditions: NA
  * CaseDescription: ErasePathInfo
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_060, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_060, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1311,7 +1293,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_060, TestSi
  * EnvConditions: NA
  * CaseDescription: GetParentId
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_061, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_061, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1332,7 +1314,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_061, TestSi
  * EnvConditions: NA
  * CaseDescription: GetParentId
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_062, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_062, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1354,7 +1336,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_062, TestSi
  * EnvConditions: NA
  * CaseDescription: ModifyHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_063, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_063, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1378,7 +1360,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_063, TestSi
  * EnvConditions: NA
  * CaseDescription: ModifyPathHandleMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_064, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_064, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1402,7 +1384,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_064, TestSi
  * EnvConditions: NA
  * CaseDescription: ScanDirNoDepth
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_065, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_065, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1423,7 +1405,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_065, TestSi
  * EnvConditions: NA
  * CaseDescription: ScanDirNoDepth
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_066, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_066, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1443,7 +1425,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_066, TestSi
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_067, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_067, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1462,7 +1444,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_067, TestSi
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_068, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_068, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1481,7 +1463,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_068, TestSi
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_069, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_069, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1500,7 +1482,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_069, TestSi
  * EnvConditions: NA
  * CaseDescription: StartsWith
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_070, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_070, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1519,7 +1501,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_070, TestSi
  * EnvConditions: NA
  * CaseDescription: DeleteHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_071, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_071, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1543,7 +1525,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_071, TestSi
  * EnvConditions: NA
  * CaseDescription: DeleteHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_072, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_072, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1567,7 +1549,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_072, TestSi
  * EnvConditions: NA
  * CaseDescription: ObserverAddPathToMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_073, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_073, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1588,7 +1570,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_073, TestSi
  * EnvConditions: NA
  * CaseDescription: ObserverAddPathToMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_074, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_074, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1609,7 +1591,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_074, TestSi
  * EnvConditions: NA
  * CaseDescription: ObserverDeletePathToMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_075, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_075, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1629,7 +1611,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_075, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_076, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_076, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1653,7 +1635,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_076, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_077, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_077, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1675,7 +1657,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_077, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_078, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_078, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1695,7 +1677,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_078, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_079, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_079, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1717,7 +1699,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_079, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_080, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_080, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1739,7 +1721,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_080, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_081, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_081, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1762,7 +1744,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_081, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_082, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_082, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1782,7 +1764,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_082, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_083, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_083, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1807,7 +1789,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_083, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_084, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_084, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1838,7 +1820,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_084, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_085, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_085, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1868,7 +1850,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_085, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_086, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_086, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1895,7 +1877,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_086, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_087, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_087, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1922,7 +1904,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_087, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_088, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_088, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1949,7 +1931,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_088, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_089, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_089, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1970,7 +1952,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_089, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_090, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_090, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -1997,7 +1979,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_090, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_091, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_091, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2024,7 +2006,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_091, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_092, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_092, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2047,7 +2029,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_092, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_093, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_093, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2067,7 +2049,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_093, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_094, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_094, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2099,7 +2081,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_094, TestSi
  * EnvConditions: NA
  * CaseDescription: Branch
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_095, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_095, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2127,7 +2109,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_095, TestSi
  * EnvConditions: NA
  * CaseDescription: AddToHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_097, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_097, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2151,7 +2133,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_097, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveRepeatDirHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_098, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_098, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2175,7 +2157,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_098, TestSi
  * EnvConditions: NA
  * CaseDescription: MoveRepeatDirHandlePathMap
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_099, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_099, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2199,7 +2181,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_099, TestSi
  * EnvConditions: NA
  * CaseDescription: GetHandles
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_100, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_100, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2221,7 +2203,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_100, TestSi
  * EnvConditions: NA
  * CaseDescription: GetHandles
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_101, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_101, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2244,7 +2226,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_101, TestSi
  * EnvConditions: NA
  * CaseDescription: GetHandles
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_102, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_102, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2270,7 +2252,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_102, TestSi
  * EnvConditions: NA
  * CaseDescription: GetHandles
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_103, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_103, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2296,7 +2278,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_103, TestSi
  * EnvConditions: NA
  * CaseDescription: GetHandles
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_104, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_104, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2319,7 +2301,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_104, TestSi
  * EnvConditions: NA
  * CaseDescription: GetObjectInfo
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_105, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_105, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2339,7 +2321,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_105, TestSi
  * EnvConditions: NA
  * CaseDescription: GetObjectInfo
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_106, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_106, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2366,7 +2348,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_106, TestSi
  * EnvConditions: NA
  * CaseDescription: GetFd CondCloseFd
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_107, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_107, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2388,7 +2370,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_107, TestSi
  * EnvConditions: NA
  * CaseDescription: GetFd CondCloseFd
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_108, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_108, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();
@@ -2410,7 +2392,7 @@ HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_108, TestSi
  * EnvConditions: NA
  * CaseDescription: GetFd CondCloseFd
  */
-HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_109, TestSize.Level0)
+HWTEST_F(MtpMediaLibraryUnitTest, medialibrary_MTP_message_testlevel_109, TestSize.Level1)
 {
     ASSERT_NE(mtpMediaLib_, nullptr);
     mtpMediaLib_->Clear();

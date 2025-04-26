@@ -214,7 +214,7 @@ void ShootingModeAlbumTest::TearDown() {}
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(ShootingModeAlbumTest, photoalbum_create_ShootingMode_album_001, TestSize.Level0)
+HWTEST_F(ShootingModeAlbumTest, photoalbum_create_ShootingMode_album_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_001 enter");
     auto ret = CreateShootingModeAlbum();
@@ -236,7 +236,7 @@ HWTEST_F(ShootingModeAlbumTest, photoalbum_create_ShootingMode_album_001, TestSi
  * @tc.desc: query shooting mode albums and check if number matches
  * @tc.type: FUNC
  */
-HWTEST_F(ShootingModeAlbumTest, query_shooting_mode_album_001, TestSize.Level0)
+HWTEST_F(ShootingModeAlbumTest, query_shooting_mode_album_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("query_shooting_mode_album_001 enter");
     Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);

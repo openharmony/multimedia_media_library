@@ -47,7 +47,8 @@ const std::string LIVE_PHOTO_VERSION_AND_FRAME_NUM = "VersionAndFrameNum";
 constexpr int32_t HEX_BASE = 16;
 constexpr int64_t AUTO_PLAY_DURATION_MS = 600;
 
-static string GetVersionPositionTag(uint32_t frame, bool hasExtraData, const string& data = "")
+static string GetVersionPositionTag(uint32_t frame, bool hasExtraData,
+    const string& data = "", bool isCameraShotMovingPhoto = false)
 {
     string buffer;
     bool hasCinemagraph{false};
@@ -61,7 +62,7 @@ static string GetVersionPositionTag(uint32_t frame, bool hasExtraData, const str
     } else if (hasExtraData) {
         return buffer;
     } else {
-        buffer += "v3_f";
+        buffer += isCameraShotMovingPhoto ? "v6_f" : "v3_f";
     }
     buffer += to_string(frame);
     if (hasCinemagraph) {
@@ -82,7 +83,7 @@ static string GetDurationTag(int64_t coverPosition, const string& data = "")
         MEDIA_WARN_LOG("coverPosition data err %{public}" PRId64, coverPosition);
     }
     string buffer;
-    if (data.size() != 0) {
+    if (data.size() != 0 && !MediaFileUtils::StartsWith(data, "0:0")) {
         buffer += data;
     } else {
         if (frame < AUTO_PLAY_DURATION_MS) {
@@ -140,7 +141,8 @@ static int32_t WriteContentTofile(const UniqueFd& destFd, const UniqueFd& srcFd)
         return E_ERR;
     }
     char buffer[BUFFER_LENGTH];
-    ssize_t bytesRead, bytesWritten;
+    ssize_t bytesRead = 0;
+    ssize_t bytesWritten = 0;
     while ((bytesRead = read(srcFd.Get(), buffer, BUFFER_LENGTH)) > 0) {
         bytesWritten = write(destFd.Get(), buffer, bytesRead);
         if (bytesWritten != bytesRead) {
@@ -168,11 +170,10 @@ static int32_t AddStringToFile(const UniqueFd& destFd, const string& temp)
 
 static string GetExtraData(const UniqueFd& fd, off_t fileSize, off_t offset, off_t needSize)
 {
-    if (fileSize < 0 || offset < 0 || needSize < 0) {
-        MEDIA_ERR_LOG("failed to check fileSize: %{public}" PRId64 ", offset: %{public}" PRId64
-                      ", needSize: %{public}" PRId64, fileSize, offset, needSize);
-        return "";
-    }
+    bool cond = (fileSize < 0 || offset < 0 || needSize < 0);
+    CHECK_AND_RETURN_RET_LOG(!cond, "", "failed to check fileSize: %{public}" PRId64
+        ", offset: %{public}" PRId64 ", needSize: %{public}" PRId64, fileSize, offset, needSize);
+
     off_t readPosition = fileSize >= offset ? fileSize - offset : 0;
     if (lseek(fd.Get(), readPosition, SEEK_SET) == E_ERR) {
         MEDIA_ERR_LOG("failed to lseek extra file errno: %{public}d", errno);
@@ -271,7 +272,7 @@ static int32_t WriteExtraData(const string& extraPath, const UniqueFd& livePhoto
 }
 
 int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const string& videoPath,
-    uint32_t frameIndex, int64_t coverPosition, off_t &fileSize)
+    uint32_t frameIndex, int64_t coverPosition, off_t &fileSize, bool isCameraShotMovingPhoto)
 {
     string absImagePath;
     if (!PathToRealPath(imagePath, absImagePath)) {
@@ -296,7 +297,7 @@ int32_t MovingPhotoFileUtils::GetExtraDataLen(const string& imagePath, const str
         MEDIA_ERR_LOG("failed to open extra data, errno:%{public}d", errno);
         return E_ERR;
     }
-    if (AddStringToFile(extraDataFd, GetVersionPositionTag(frameIndex, false)) == E_ERR) {
+    if (AddStringToFile(extraDataFd, GetVersionPositionTag(frameIndex, false, "", isCameraShotMovingPhoto)) == E_ERR) {
         MEDIA_ERR_LOG("write version position tag err");
         return E_ERR;
     }
@@ -518,11 +519,11 @@ int32_t MovingPhotoFileUtils::GetLivePhotoSize(int32_t fd, int64_t &liveSize)
     return E_OK;
 }
 
-static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath, int64_t sizeToSend, off_t &offset)
+static int32_t SendLivePhoto(const int32_t &livePhotoFd, const string &destPath, int64_t sizeToSend, off_t &offset)
 {
     struct stat64 statSrc {};
-    CHECK_AND_RETURN_RET_LOG(livePhotoFd.Get() >= 0, livePhotoFd.Get(), "Failed to check src fd of live photo");
-    CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd.Get(), &statSrc) == 0, E_HAS_FS_ERROR,
+    CHECK_AND_RETURN_RET_LOG(livePhotoFd >= 0, livePhotoFd, "Failed to check src fd of live photo");
+    CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd, &statSrc) == 0, E_HAS_FS_ERROR,
         "Failed to get file state of live photo, errno = %{public}d", errno);
     off_t totalSize = statSrc.st_size;
     CHECK_AND_RETURN_RET_LOG(sizeToSend <= totalSize - offset, E_INVALID_LIVE_PHOTO, "Failed to check sizeToSend");
@@ -543,7 +544,7 @@ static int32_t SendLivePhoto(const UniqueFd &livePhotoFd, const string &destPath
     }
 
     while (sizeToSend > 0) {
-        ssize_t sent = sendfile(destFd.Get(), livePhotoFd.Get(), &offset, sizeToSend);
+        ssize_t sent = sendfile(destFd.Get(), livePhotoFd, &offset, sizeToSend);
         if (sent < 0) {
             MEDIA_ERR_LOG("Failed to sendfile with errno=%{public}d", errno);
             return sent;
@@ -557,28 +558,59 @@ static bool IsValidHexInteger(const string &hexStr)
 {
     constexpr int32_t HEX_INT_LENGTH = 8;
     if (hexStr.length() > HEX_INT_LENGTH) {
+        MEDIA_ERR_LOG("hexStr length > HEX_INT_LENGTH");
         return false;
     }
-    uint64_t num = stoull(hexStr, nullptr, HEX_BASE);
-    if (num > numeric_limits<uint32_t>::max()) {
+    char* end = nullptr;
+    errno = 0;
+    uint64_t num = std::strtoull(hexStr.c_str(), &end, HEX_BASE);
+    if (errno == ERANGE || end == nullptr || end == hexStr.c_str() || *end != '\0') {
+        MEDIA_ERR_LOG("strtoull exec error");
+        return false;
+    }
+    int32_t maxInteger = numeric_limits<int32_t>::max();
+    if (num > static_cast<uint64_t>(maxInteger)) {
+        MEDIA_ERR_LOG("num > int32_t.max, num: %{public}llu", static_cast<unsigned long long>(num));
         return false;
     }
     return true;
 }
 
-static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataSize, int64_t maxFileSize)
+static int32_t ReadLivePhoto(const int32_t &fd, void *buffer, off_t needSize, off_t offset)
+{
+    if (buffer == nullptr) {
+        return E_OK;
+    }
+
+    if (lseek(fd, offset, SEEK_SET) == E_ERR) {
+        MEDIA_ERR_LOG("failed to lseek extra file errno: %{public}d", errno);
+        return E_ERR;
+    }
+    memset_s(buffer, needSize + 1, 0, needSize + 1);
+    while (needSize > 0) {
+        ssize_t bytesRead = read(fd, buffer, needSize);
+        if (bytesRead < 0) {
+            MEDIA_ERR_LOG("Failed to read from live photo, errno=%{public}d", errno);
+            return bytesRead;
+        }
+        needSize -= bytesRead;
+    }
+    return E_OK;
+}
+
+static int32_t GetExtraDataSize(int32_t livePhotoFd, int64_t &extraDataSize, int64_t maxFileSize)
 {
     struct stat64 st;
-    CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd.Get(), &st) == 0, E_HAS_FS_ERROR,
+    CHECK_AND_RETURN_RET_LOG(fstat64(livePhotoFd, &st) == 0, E_HAS_FS_ERROR,
         "Failed to get file state of live photo, errno:%{public}d", errno);
     int64_t totalSize = st.st_size;
     CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo, total size is %{public}" PRId64, totalSize);
 
     char versionTag[VERSION_TAG_LEN + 1] = {0};
-    CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd.Get(), -MIN_STANDARD_SIZE, SEEK_END) != -1, E_HAS_FS_ERROR,
+    CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd, -MIN_STANDARD_SIZE, SEEK_END) != -1, E_HAS_FS_ERROR,
         "Failed to lseek version tag, errno:%{public}d", errno);
-    CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), versionTag, VERSION_TAG_LEN) != -1, E_HAS_FS_ERROR,
+    CHECK_AND_RETURN_RET_LOG(read(livePhotoFd, versionTag, VERSION_TAG_LEN) != -1, E_HAS_FS_ERROR,
         "Failed to read version tag, errno:%{public}d", errno);
 
     uint32_t version = 0;
@@ -599,9 +631,9 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
     CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE + CINEMAGRAPH_INFO_SIZE_LEN, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo with cinemagraph, total size is %{public}" PRId64, totalSize);
     char cinemagraphSize[CINEMAGRAPH_INFO_SIZE_LEN] = {0};
-    CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd.Get(), -(MIN_STANDARD_SIZE + CINEMAGRAPH_INFO_SIZE_LEN), SEEK_END) != -1,
+    CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd, -(MIN_STANDARD_SIZE + CINEMAGRAPH_INFO_SIZE_LEN), SEEK_END) != -1,
         E_HAS_FS_ERROR, "Failed to lseek cinemagraph size, errno:%{public}d", errno);
-    CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), cinemagraphSize, CINEMAGRAPH_INFO_SIZE_LEN) != -1, E_HAS_FS_ERROR,
+    CHECK_AND_RETURN_RET_LOG(read(livePhotoFd, cinemagraphSize, CINEMAGRAPH_INFO_SIZE_LEN) != -1, E_HAS_FS_ERROR,
         "Failed to read cinemagraph size, errno:%{public}d", errno);
     stringstream cinemagraphSizeStream;
     for (int32_t i = 0; i < CINEMAGRAPH_INFO_SIZE_LEN; i++) {
@@ -650,7 +682,7 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
     int64_t liveSize = atoi(liveTag + LIVE_TAG.length());
     int64_t imageSize = totalSize - liveSize - LIVE_TAG_LEN - PLAY_INFO_LEN;
     int64_t extraDataSize = 0;
-    int32_t err = GetExtraDataSize(livePhotoFd, extraDataSize, totalSize - imageSize);
+    int32_t err = GetExtraDataSize(livePhotoFd.Get(), extraDataSize, totalSize - imageSize);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, E_INVALID_LIVE_PHOTO,
         "Failed to get size of extra data, err:%{public}" PRId64, extraDataSize);
     int64_t videoSize = totalSize - imageSize - extraDataSize;
@@ -659,18 +691,92 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
     off_t offset = 0;
     bool isSameImagePath = livePhotoPath.compare(movingPhotoImagePath) == 0;
     string tempImagePath = isSameImagePath ? movingPhotoImagePath + ".temp" : movingPhotoImagePath;
-    CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, tempImagePath, imageSize, offset)) == E_OK, err,
+    CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd.Get(), tempImagePath, imageSize, offset)) == E_OK, err,
         "Failed to copy image of live photo");
-    CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, movingPhotoVideoPath, videoSize, offset)) == E_OK, err,
-        "Failed to copy video of live photo");
+    CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd.Get(), movingPhotoVideoPath, videoSize, offset)) == E_OK,
+        err, "Failed to copy video of live photo");
     if (!extraDataPath.empty()) {
-        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, extraDataPath, extraDataSize, offset)) == E_OK, err,
-            "Failed to copy extra data of live photo");
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd.Get(), extraDataPath, extraDataSize, offset)) == E_OK,
+            err, "Failed to copy extra data of live photo");
     }
     if (isSameImagePath) {
         err = rename(tempImagePath.c_str(), movingPhotoImagePath.c_str());
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to rename image:%{public}d, errno:%{public}d", err, errno);
     }
+    return E_OK;
+}
+
+int32_t MovingPhotoFileUtils::GetMovingPhotoDetailedSize(const int32_t fd,
+    int64_t &imageSize, int64_t &videoSize, int64_t &extraDataSize)
+{
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, E_HAS_FS_ERROR, "fd is invalid");
+    struct stat64 st;
+    CHECK_AND_RETURN_RET_LOG(fstat64(fd, &st) == 0, E_HAS_FS_ERROR,
+        "Failed to get file state of live photo, errno:%{public}d", errno);
+    int64_t totalSize = st.st_size;
+    CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE, E_INVALID_LIVE_PHOTO,
+        "Failed to check live photo, total size is %{public}" PRId64, totalSize);
+    char liveTag[LIVE_TAG_LEN + 1] = {0};
+    CHECK_AND_RETURN_RET_LOG(lseek(fd, -LIVE_TAG_LEN, SEEK_END) != -1, E_HAS_FS_ERROR,
+        "Failed to lseek live tag, errno:%{public}d", errno);
+    CHECK_AND_RETURN_RET_LOG(read(fd, liveTag, LIVE_TAG_LEN) != -1, E_HAS_FS_ERROR,
+        "Failed to read live tag, errno:%{public}d", errno);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::StartsWith(liveTag, LIVE_TAG), E_INVALID_VALUES, "Invalid live photo");
+
+    int64_t liveSize = atoi(liveTag + LIVE_TAG.length());
+    imageSize = totalSize - liveSize - LIVE_TAG_LEN - PLAY_INFO_LEN;
+    int32_t err = GetExtraDataSize(fd, extraDataSize, totalSize - imageSize);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, E_INVALID_LIVE_PHOTO,
+        "Failed to get size of extra data, err:%{public}" PRId64, extraDataSize);
+    videoSize = totalSize - imageSize - extraDataSize;
+    CHECK_AND_RETURN_RET_LOG(imageSize > 0 && videoSize > 0, E_INVALID_LIVE_PHOTO,
+        "Failed to check live photo, image size:%{public}" PRId64 "video size:%{public}" PRId64, imageSize, videoSize);
+    return E_OK;
+}
+
+int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const int32_t fd, const string &movingPhotoImagePath,
+    const string &movingPhotoVideoPath, const string &extraDataPath)
+{
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, E_HAS_FS_ERROR, "fd is invalid");
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    int32_t err = GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to get detailed size of moving photo");
+    off_t offset = 0;
+    if (!movingPhotoImagePath.empty()) {
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(fd, movingPhotoImagePath, imageSize, offset)) == E_OK, err,
+            "Failed to copy image of live photo");
+    }
+    if (!movingPhotoVideoPath.empty()) {
+        offset = imageSize;
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(fd, movingPhotoVideoPath, videoSize, offset)) == E_OK, err,
+            "Failed to copy video of live photo");
+    }
+    if (!extraDataPath.empty()) {
+        offset = imageSize + videoSize;
+        CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(fd, extraDataPath, extraDataSize, offset)) == E_OK, err,
+            "Failed to copy extra data of live photo");
+    }
+    return E_OK;
+}
+
+int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const int32_t fd, void *imageArrayBuffer,
+    void *videoArrayBuffer, void *extraDataArrayBuffer)
+{
+    CHECK_AND_RETURN_RET_LOG(fd >= 0, E_HAS_FS_ERROR, "fd is invalid");
+    int64_t imageSize = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    int32_t err = GetMovingPhotoDetailedSize(fd, imageSize, videoSize, extraDataSize);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to get detailed size of moving photo");
+    CHECK_AND_RETURN_RET_LOG((err = ReadLivePhoto(fd, imageArrayBuffer, imageSize, 0)) == E_OK, err,
+        "Failed to copy image of live photo");
+    CHECK_AND_RETURN_RET_LOG((err = ReadLivePhoto(fd, videoArrayBuffer, videoSize, imageSize)) == E_OK, err,
+        "Failed to copy video of live photo");
+    CHECK_AND_RETURN_RET_LOG(
+        (err = ReadLivePhoto(fd, extraDataArrayBuffer, extraDataSize, imageSize + videoSize)) == E_OK, err,
+        "Failed to copy extra data of live photo");
     return E_OK;
 }
 
@@ -848,5 +954,19 @@ bool MovingPhotoFileUtils::IsGraffiti(int32_t subtype, int32_t originalSubtype)
 {
     return subtype == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
            originalSubtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+}
+
+size_t MovingPhotoFileUtils::GetMovingPhotoSize(const std::string &imagePath, int32_t userId)
+{
+    string movingPhotoImagePath = AppendUserId(imagePath, userId);
+    string movingPhotoVideoPath = GetMovingPhotoVideoPath(imagePath, userId);
+    string movingPhotoExtraDataPath = GetMovingPhotoExtraDataPath(imagePath, userId);
+    size_t imageSize = 0;
+    size_t videoSize = 0;
+    size_t extraDataSize = 0;
+    (void)MediaFileUtils::GetFileSize(movingPhotoImagePath, imageSize);
+    (void)MediaFileUtils::GetFileSize(movingPhotoVideoPath, videoSize);
+    (void)MediaFileUtils::GetFileSize(movingPhotoExtraDataPath, extraDataSize);
+    return imageSize + videoSize + extraDataSize;
 }
 } // namespace OHOS::Media
