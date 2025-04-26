@@ -23,6 +23,8 @@
 namespace OHOS {
 namespace Media {
 
+#define EXPORT __attribute__ ((visibility ("default")))
+
 struct AlbumFusionDfxDataPoint {
     int64_t albumFusionTag;
     int64_t reportTimeStamp;
@@ -97,7 +99,7 @@ public:
     void ReportAdaptationToMovingPhoto();
     static int32_t ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,
         const int32_t& totalDownload);
-    static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
+    EXPORT static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
     void ReportPhotoRecordInfo();
     static int32_t ReportMedialibraryAPI(const std::string& callerPackage, const std::string& saveUri);
     static int32_t ReportAlbumFusion(const AlbumFusionDfxDataPoint& reportData);
