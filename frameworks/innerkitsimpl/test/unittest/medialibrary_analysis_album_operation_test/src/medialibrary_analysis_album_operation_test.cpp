@@ -768,5 +768,39 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetAnalysisAlbumOrderPosition_t
     int32_t result = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
     EXPECT_NE(result, E_OK);
 }
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, UpdateGroupPhotoAlbumById_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start UpdateGroupPhotoAlbumById_test");
+    ClearTables();
+    shared_ptr<FileAsset> parent;
+    shared_ptr<FileAsset> album;
+    auto ret = MediaLibraryUnitTestUtils::CreateAlbum("testAlbum", parent, album);
+    ASSERT_TRUE(ret);
+    MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(album->GetId());
+    MEDIA_INFO_LOG("end UpdateGroupPhotoAlbumById_test");
+}
+
+HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetAnalysisAlbumOrderPosition_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start SetAnalysisAlbumOrderPosition_test");
+    ASSERT_TRUE(g_rdbStore);
+    ClearTables();
+    string sqlStr = "INSERT INTO AnalysisPhotoMap (map_album, map_asset, order_position) VALUES (1, 2 ,3)";
+    auto ret = g_rdbStore->ExecuteSql(sqlStr);
+    EXPECT_EQ(ret, E_OK);
+
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_MAP, OperationType::UPDATE_ORDER, MediaLibraryApi::API_10);
+    ret = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
+    EXPECT_NE(ret, E_OK);
+
+    ValuesBucket values;
+    values.PutInt(ORDER_POSITION, 1);
+    cmd.GetAbsRdbPredicates()->EqualTo(ORDER_POSITION, to_string(3));
+    cmd.SetValueBucket(values);
+    ret = MediaLibraryAnalysisAlbumOperations::SetAnalysisAlbumOrderPosition(cmd);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end  SetAnalysisAlbumOrderPosition_test");
+}
 } // namespace Media
 } // namespace OHOS

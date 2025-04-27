@@ -547,5 +547,37 @@ HWTEST_F(MediaLibraryRdbTest, medialib_QueryEditDataExists_001, TestSize.Level1)
     auto ret = MediaLibraryRdbStore::QueryEditDataExists(predicates);
     EXPECT_EQ(ret, nullptr);
 }
+
+HWTEST_F(MediaLibraryRdbTest, medialib_ExecuteSqls_test, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("start medialib_ExecuteSqls_test");
+    ASSERT_TRUE(rdbStorePtr);
+    rdbStorePtr->Init();
+
+    MediaLibraryRdbStore::CreateBurstIndex(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateBurstDirty(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateReadyOnThumbnailUpgrade(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateDateTakenToMillionSecond(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateDateTakenIndex(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateDateTakenAndDetalTime(rdbStorePtr);
+    MediaLibraryRdbStore::ClearAudios(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateIndexForCover(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateLcdStatusNotUploaded(rdbStorePtr);
+    MediaLibraryRdbStore::AddReadyCountIndex(rdbStorePtr);
+    MediaLibraryRdbStore::RevertFixDateAddedIndex(rdbStorePtr);
+    MediaLibraryRdbStore::AddAlbumIndex(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateLocationKnowledgeIdx(rdbStorePtr);
+    MediaLibraryRdbStore::AddAlbumSubtypeAndNameIdx(rdbStorePtr);
+    MediaLibraryRdbStore::AddCloudEnhancementAlbumIndex(rdbStorePtr);
+    MediaLibraryRdbStore::AddPhotoDateAddedIndex(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateLatitudeAndLongitudeDefaultNull(rdbStorePtr);
+    MediaLibraryRdbStore::UpdatePhotoQualityCloned(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateMdirtyTriggerForTdirty(rdbStorePtr);
+    auto ret =  MediaLibraryRdbStore::ReconstructMediaLibraryStorageFormat(rdbStorePtr);
+    MediaLibraryRdbStore::UpdateMediaTypeAndThumbnailReadyIdx(rdbStorePtr);
+
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("end medialib_ExecuteSqls_test");
+}
 } // namespace Media
 } // namespace OHOS
