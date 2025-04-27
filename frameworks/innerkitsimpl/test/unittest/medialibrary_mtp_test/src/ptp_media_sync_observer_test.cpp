@@ -69,6 +69,8 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_001, TestSize.Lev
     std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
     ASSERT_NE(mediaSyncObserver, nullptr);
     mediaSyncObserver->SendEventPackets(MTP_FORMAT_TEST_CODE_2, MTP_FORMAT_TEST_CODE);
+    mediaSyncObserver->context_ = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(mediaSyncObserver->context_, nullptr);
     mediaSyncObserver->SendEventPacketAlbum(MTP_FORMAT_TEST_CODE_2, MTP_FORMAT_TEST_CODE);
 
     int32_t res = mediaSyncObserver->GetAddEditAlbumHandle(HANDLE_TEST);
@@ -249,6 +251,10 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_010, TestSize.Lev
     if (albumHandles == nullptr) {
         albumHandles->AddHandle(1);
     }
+
+    mediaSyncObserver->context_ = std::make_shared<MtpOperationContext>();
+    ASSERT_NE(mediaSyncObserver->context_, nullptr);
+
     std::vector<int32_t> albumIds = {1, 2, 3, 4, 5};
     mediaSyncObserver->SendEventToPTP(OHOS::DataShare::DataShareObserver::ChangeType::INSERT, albumIds);
     mediaSyncObserver->SendEventToPTP(OHOS::DataShare::DataShareObserver::ChangeType::DELETE, albumIds);
@@ -296,6 +302,62 @@ HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_014, TestSize.Lev
 
     int32_t res = mediaSyncObserver->GetAddEditAlbumHandle(HANDLE_TEST);
     EXPECT_EQ(res, ERR_NUM);
+}
+
+/*
+ * Feature: ptp_media_sync_observer.cpp
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: ParseNotifyData
+ */
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_015, TestSize.Level1)
+{
+    std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
+    ASSERT_NE(mediaSyncObserver, nullptr);
+    DataShare::DataShareObserver::ChangeInfo changeInfo;
+    changeInfo.data_ = nullptr;
+    vector<string> fileIds = {"file_001", "file_002", "file_003"};
+    bool res = mediaSyncObserver->ParseNotifyData(changeInfo, fileIds);
+    EXPECT_FALSE(res);
+
+    changeInfo.size_ = 0;
+    size_t size = 5;
+    changeInfo.data_ = malloc(size);
+    ASSERT_NE(changeInfo.data_, nullptr);
+    res = mediaSyncObserver->ParseNotifyData(changeInfo, fileIds);
+    free(const_cast<void*>(changeInfo.data_));
+    changeInfo.data_ = nullptr;
+    EXPECT_FALSE(res);
+
+    changeInfo.size_ = 1;
+    changeInfo.data_ = malloc(changeInfo.size_);
+    ASSERT_NE(changeInfo.data_, nullptr);
+    res = mediaSyncObserver->ParseNotifyData(changeInfo, fileIds);
+    free(const_cast<void*>(changeInfo.data_));
+    changeInfo.data_ = nullptr;
+    EXPECT_FALSE(res);
+}
+
+/*
+ * Feature: ptp_media_sync_observer.cpp
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: HandleMovePhotoEvent
+ */
+HWTEST_F(PtpMediaSyncObserverUnitTest, ptp_media_sync_observer_016, TestSize.Level1)
+{
+    std::shared_ptr<MediaSyncObserver> mediaSyncObserver = std::make_shared<MediaSyncObserver>();
+    ASSERT_NE(mediaSyncObserver, nullptr);
+    DataShare::DataShareObserver::ChangeInfo changeInfo;
+    changeInfo.changeType_ = DataShare::DataShareObserver::ChangeType::INSERT;
+    mediaSyncObserver->HandleMovePhotoEvent(changeInfo);
+
+    changeInfo.changeType_ = DataShare::DataShareObserver::ChangeType::DELETE;
+    mediaSyncObserver->HandleMovePhotoEvent(changeInfo);
 }
 } // namespace Media
 } // namespace OHOS

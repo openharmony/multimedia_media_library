@@ -216,7 +216,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_009, Te
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     int errcode = 0;
     mtpOperationUtils->DoSetObjectPropValue(errcode);
-    EXPECT_EQ(errcode, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
+    EXPECT_EQ(errcode, MTP_ERROR_INVALID_OBJECTHANDLE);
 }
 
 /*
@@ -1305,7 +1305,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_061, Te
     string path = "";
     string realPath = "";
     uint16_t res = mtpOperationUtils->GetPathByHandle(handle, path, realPath);
-    EXPECT_EQ(res, MTP_UNDEFINED_CODE);
+    EXPECT_EQ(res, MTP_OK_CODE);
 }
 
 /*

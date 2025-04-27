@@ -147,7 +147,7 @@ int32_t MtpPtpProxy::SetObjectPropValue(Context &context)
     if (context->handle < PTP_IN_MTP_ID) {
         return g_mtpMedialibraryManager->SetObjectPropValue(context);
     } else if (context->handle == PTP_IN_MTP_ID) {
-        MEDIA_INFO_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
+        MEDIA_WARN_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
         return MTP_ERROR_ACCESS_DENIED;
     } else {
         return g_mtpMediaLibrary->SetObjectPropValue(context);
@@ -201,7 +201,7 @@ int32_t MtpPtpProxy::GetReadFd(Context &context, int32_t &fd)
     if (context->handle < PTP_IN_MTP_ID) {
         return g_mtpMedialibraryManager->GetFd(context, fd, FILEMODE_READONLY);
     } else if (context->handle == PTP_IN_MTP_ID) {
-        MEDIA_INFO_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
+        MEDIA_WARN_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
         return MTP_ERROR_ACCESS_DENIED;
     } else {
         return g_mtpMediaLibrary->GetFd(context, fd);
@@ -261,7 +261,7 @@ int32_t MtpPtpProxy::GetWriteFd(Context &context, int32_t &fd)
     CHECK_AND_RETURN_RET(IsMtpMode(), g_mtpMedialibraryManager->GetFdByOpenFile(context, fd));
 
     if (context->handle <= PTP_IN_MTP_ID) {
-        MEDIA_INFO_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
+        MEDIA_WARN_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
         return MTP_ERROR_ACCESS_DENIED;
     }
     return g_mtpMediaLibrary->GetFd(context, fd, true);
@@ -283,7 +283,7 @@ void MtpPtpProxy::DeleteCanceledObject(const std::string &path, const uint32_t h
 
     CHECK_AND_RETURN_RET(IsMtpMode(), g_mtpMedialibraryManager->DeleteCanceledObject(handle));
 
-    CHECK_AND_RETURN(handle > PTP_IN_MTP_ID);
+    CHECK_AND_RETURN_LOG(handle > PTP_IN_MTP_ID, "MTP_ERROR_ACCESS_DENIED");
     return g_mtpMediaLibrary->DeleteHandlePathMap(path, handle);
 }
 
@@ -301,7 +301,7 @@ int32_t MtpPtpProxy::GetThumb(Context &context, std::shared_ptr<UInt8List> &outT
     if (context->handle < PTP_IN_MTP_ID) {
         return g_mtpMedialibraryManager->GetThumb(context, outThumb);
     } else if (context->handle == PTP_IN_MTP_ID) {
-        MEDIA_INFO_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
+        MEDIA_WARN_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
         return MTP_ERROR_ACCESS_DENIED;
     } else {
         return g_mtpMediaLibrary->GetThumb(context, outThumb);
@@ -321,7 +321,7 @@ int32_t MtpPtpProxy::SendObjectInfo(Context &context, uint32_t &storageID, uint3
 
     bool isToPtp = context->parent <= PTP_IN_MTP_ID && context->parent != DEFAULT_PARENT_ROOT;
     if (isToPtp) {
-        MEDIA_INFO_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
+        MEDIA_WARN_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
         return MTP_ERROR_ACCESS_DENIED;
     }
     return g_mtpMediaLibrary->SendObjectInfo(context, storageID, parent, handle);
@@ -340,7 +340,7 @@ int32_t MtpPtpProxy::DeleteObject(Context &context)
 
     bool isPtp = context->handle <= PTP_IN_MTP_ID && context->handle != DEFAULT_PARENT_ROOT;
     if (isPtp) {
-        MEDIA_INFO_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
+        MEDIA_WARN_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
         return MTP_ERROR_ACCESS_DENIED;
     }
     return g_mtpMediaLibrary->DeleteObject(context);
@@ -361,7 +361,7 @@ int32_t MtpPtpProxy::MoveObject(Context &context, uint32_t &repeatHandle)
     bool isFromPtp = context->handle <= PTP_IN_MTP_ID && context->handle != DEFAULT_PARENT_ROOT;
     bool isToPtp = context->parent <= PTP_IN_MTP_ID && context->parent != DEFAULT_PARENT_ROOT;
     if (isFromPtp || isToPtp) {
-        MEDIA_INFO_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
+        MEDIA_WARN_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
         return MTP_ERROR_ACCESS_DENIED;
     }
     return g_mtpMediaLibrary->MoveObject(context, repeatHandle);
@@ -383,7 +383,7 @@ int32_t MtpPtpProxy::CopyObject(Context &context, uint32_t &outObjectHandle, uin
     bool isFromPtpRoot = context->handle == PTP_IN_MTP_ID;
     bool isToPtp = context->parent <= PTP_IN_MTP_ID && context->parent != DEFAULT_PARENT_ROOT;
     if (isFromPtpRoot || isToPtp) {
-        MEDIA_INFO_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
+        MEDIA_WARN_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
         return MTP_ERROR_ACCESS_DENIED;
     }
     // copy from ptp to mtp
@@ -446,7 +446,7 @@ int32_t MtpPtpProxy::GetPathByHandle(uint32_t handle, std::string &path, std::st
     size_t position = path.find(PATH_LOCAL_STR);
     std::string real = std::to_string(getuid() / BASE_USER_RANGE);
     if (position != std::string::npos) {
-        realPath = path.substr(0, position + 1) + real + path.substr(position, path.size());
+        realPath = path.substr(0, position + 1) + real + path.substr(position);
     }
     MEDIA_DEBUG_LOG("GetPathByHandle new %{private}s", realPath.c_str());
     return MTP_SUCCESS;
