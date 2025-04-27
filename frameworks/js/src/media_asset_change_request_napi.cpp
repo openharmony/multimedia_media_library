@@ -2524,8 +2524,8 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
 static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     auto changeOperations = context.assetChangeOperations;
-    bool containsSaveCameraPhoto = std::find(changeOpreations.begin(), changeOpreations.end(),
-        AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOpreations.end();
+    bool containsSaveCameraPhoto = std::find(changeOperations.begin(), changeOperations.end(),
+        AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOperations.end();
     if (containsSaveCameraPhoto) {
         NAPI_INFO_LOG("set camera shot key will execute by save camera photo.");
         return true;
@@ -2711,8 +2711,8 @@ static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& conte
 static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     auto changeOperations = context.assetChangeOperations;
-    bool containsSaveCameraPhoto = std::find(changeOpreations.begin(), changeOpreations.end(),
-        AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOpreations.end();
+    bool containsSaveCameraPhoto = std::find(changeOperations.begin(), changeOperations.end(),
+        AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOperations.end();
     if (containsSaveCameraPhoto) {
         NAPI_INFO_LOG("set supported watermark type will execute by save camera photo.");
         return true;
