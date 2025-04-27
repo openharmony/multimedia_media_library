@@ -48,6 +48,7 @@ private:
         const std::string &queryColumn, int32_t &value);
     static int32_t QueryDouble(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,
         const std::string &queryColumn, double &value);
+    static bool CheckChargingAndScreenOff();
 };
 } // namespace Media
 } // namespace OHOS

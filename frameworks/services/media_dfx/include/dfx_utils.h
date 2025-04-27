@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIA_DFX_UTILS_H
 #define OHOS_MEDIA_DFX_UTILS_H
 
+#include <codecvt>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -34,6 +35,8 @@ public:
     static std::string GetSafeAlbumName(const std::string &value);
     static std::string GetSafeAlbumNameWhenChinese(const std::string &albumName);
     static std::string GetSafeDiaplayNameWhenChinese(const std::string &displayName);
+    static std::u16string Str8ToStr16(const std::string &inputStr);
+    static std::string Str16ToStr8(const std::u16string &inputStr);
 
 private:
     static std::string GetSafeDiaplayName(std::string &displayName);
