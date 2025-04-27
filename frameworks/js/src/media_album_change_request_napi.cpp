@@ -52,6 +52,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
         .props = {
             DECLARE_NAPI_STATIC_FUNCTION("createAlbumRequest", JSCreateAlbumRequest),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAlbums", JSDeleteAlbums),
+            DECLARE_NAPI_STATIC_FUNCTION("deleteAlbumsWithUri", JSDeleteAlbumsWithUri),
             DECLARE_NAPI_FUNCTION("getAlbum", JSGetAlbum),
             DECLARE_NAPI_FUNCTION("addAssets", JSAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", JSRemoveAssets),
@@ -466,7 +467,7 @@ napi_value DealWithDeletedAlbumsByUri(napi_env env, vector<napi_value> &napiValu
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetStringArray(env, napiValues, albumUris));
     for (const auto& albumUri : albumUris) {
         string albumId = "";
-        CHECK_COND_WITH_MESSAGE(env, GetAlbumIdFromUri(albumUri, albumId) == E_OK, "Failed to get albumId");
+        CHECK_ARGS_WITH_MESSAGE(env, GetAlbumIdFromUri(albumUri, albumId) == E_OK, "Failed to get albumId");
         deleteIds.push_back(albumId);
     }
 
@@ -544,6 +545,14 @@ static void DeleteAlbumsCompleteCallback(napi_env env, napi_status status, void*
 }
 
 napi_value MediaAlbumChangeRequestNapi::JSDeleteAlbums(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse args");
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "ChangeRequestDeleteAlbums", DeleteAlbumsExecute, DeleteAlbumsCompleteCallback);
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSDeleteAlbumsWithUri(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse args");
