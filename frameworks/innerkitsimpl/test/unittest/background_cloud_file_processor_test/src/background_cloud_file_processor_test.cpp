@@ -480,5 +480,48 @@ HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_StartTimerStopTimer_Test_001, T
     EXPECT_EQ(BackgroundCloudFileProcessor::stopTimerId_, 0);
     MEDIA_INFO_LOG("Bcfpt_StartTimerStopTimer_Test_001 End");
 }
+
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_OnDownloadProcessTest_VacantObj, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Bcfpt_OnDownloadProcessTest_VacantObj Start");
+    auto callBack = make_shared<BackgroundCloudFileDownloadCallback>();
+    ASSERT_TRUE(callBack);
+
+    DownloadProgressObj progress;
+    progress.state = DownloadProgressObj::Status::COMPLETED;
+    progress.downloadErrorType = DownloadProgressObj::DownloadErrorType::NO_ERROR;
+    callBack->OnDownloadProcess(progress);
+
+    progress.state = DownloadProgressObj::Status::FAILED;
+    callBack->OnDownloadProcess(progress);
+    progress.state = DownloadProgressObj::Status::STOPPED;
+    callBack->OnDownloadProcess(progress);
+    MEDIA_INFO_LOG("Bcfpt_OnDownloadProcessTest_VacantObj End");
+}
+
+HWTEST_F(BackgroundCloudFileProcessorTest, Bcfpt_OnDownloadProcessTest_NormalObj, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("Bcfpt_OnDownloadProcessTest_NormalObj Start");
+    BackgroundCloudFileProcessor::downloadId_ = 30;
+    BackgroundCloudFileProcessor::downloadResult_ = {
+        {"file1", BackgroundCloudFileProcessor::INIT},
+        {"file2", BackgroundCloudFileProcessor::SUCCESS},
+        {"file3", BackgroundCloudFileProcessor::NETWORK_UNAVAILABLE}
+    };
+
+    auto callBack = make_shared<BackgroundCloudFileDownloadCallback>();
+    ASSERT_TRUE(callBack);
+    DownloadProgressObj progress;
+    progress.downloadId = 30;
+    progress.path = "file1";
+    progress.state =  DownloadProgressObj::Status::COMPLETED;
+    callBack->OnDownloadProcess(progress);
+
+    progress.state = DownloadProgressObj::Status::FAILED;
+    callBack->OnDownloadProcess(progress);
+    progress.state = DownloadProgressObj::Status::STOPPED;
+    callBack->OnDownloadProcess(progress);
+    MEDIA_INFO_LOG("Bcfpt_OnDownloadProcessTest_NormalObj End");
+}
 } // namespace Media
 } // namespace OHOS

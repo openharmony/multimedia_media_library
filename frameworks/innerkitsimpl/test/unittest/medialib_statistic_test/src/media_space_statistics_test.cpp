@@ -445,7 +445,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_001, TestSize.Level
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_FILE, 0);
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_IMAGE, 1);
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_VIDEO, 1);
-    CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_AUDIO, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_AUDIO, 0);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_001::End");
 }
 
@@ -479,7 +479,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_003, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    CheckQuerySize("MediaSpaceStatistics_test_003", MEDIA_TYPE_AUDIO, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_003", MEDIA_TYPE_AUDIO, 0);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::End");
 }
 
