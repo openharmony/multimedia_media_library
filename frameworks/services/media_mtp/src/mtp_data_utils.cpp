@@ -1118,5 +1118,14 @@ int32_t MtpDataUtils::GetGalleryPropList(const std::shared_ptr<MtpOperationConte
     }
     return MTP_SUCCESS;
 }
+
+bool MtpDataUtils::IsNumber(const string& str)
+{
+    CHECK_AND_RETURN_RET_LOG(!str.empty(), false, "IsNumber input is empty");
+    for (char const& c : str) {
+        CHECK_AND_RETURN_RET(isdigit(c) != 0, false);
+    }
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
