@@ -52,6 +52,7 @@ constexpr int32_t POSITION_LOCAL_FLAG = 1;
 constexpr int32_t POSITION_CLOUD_FLAG = 2;
 constexpr int32_t POSITION_BOTH_FLAG = 3;
 constexpr int32_t CLOUD_COPY_DIRTY_FLAG = 7;
+constexpr int32_t PHOTO_HIDDEN_FLAG = 1;
 
 constexpr int32_t TIME_STAMP_OFFSET = 5;
 const std::string ALBUM_FUSION_FLAG = "multimedia.medialibrary.cloneFlag";
@@ -929,7 +930,7 @@ int32_t MediaLibraryAlbumFusionUtils::CloneSingleAsset(const int64_t &assetId, c
     string newFileAssetUri = MediaFileUtils::GetFileAssetUri(GetStringVal(MediaColumn::MEDIA_FILE_PATH, newResultSet),
         displayName, newAssetId);
     int32_t isHidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, newResultSet);
-    if (isHidden == 1) {
+    if (isHidden == PHOTO_HIDDEN_FLAG) {
         MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);
     }
     SendNewAssetNotify(newFileAssetUri, rdbStore);
