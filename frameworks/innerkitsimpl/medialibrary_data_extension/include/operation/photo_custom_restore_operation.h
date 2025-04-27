@@ -43,6 +43,8 @@ struct RestoreTaskInfo {
     std::string sourceDir;
     int64_t beginTime;
     int64_t endTime;
+    int32_t imageAlbumId;
+    int32_t videoAlbumId;
 };
 
 struct FileInfo {
@@ -127,7 +129,7 @@ private:
     void ReportCustomRestoreTask(RestoreTaskInfo &restoreTaskInfo);
     int32_t MoveLivePhoto(const string &originFilePath, const string &filePath);
     void DeleteDatabaseRecord(const string &filePath);
-    int32_t GetAlbumUriBySubType(int32_t subType, string &albumUri);
+    int32_t GetAlbumInfoBySubType(int32_t subType, string &albumUri, int32_t &albumId);
 
 private:
     std::atomic<bool> isRunning_{false};
