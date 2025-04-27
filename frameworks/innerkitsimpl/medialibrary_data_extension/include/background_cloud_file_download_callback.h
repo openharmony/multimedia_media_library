@@ -24,7 +24,7 @@ namespace Media {
 using namespace FileManagement::CloudSync;
 class BackgroundCloudFileProcessor;
 
-class BackgroundCloudFileDownloadCallback : public CloudDownloadCallback {
+class EXPORT BackgroundCloudFileDownloadCallback : public CloudDownloadCallback {
 public:
     BackgroundCloudFileDownloadCallback() {}
     ~BackgroundCloudFileDownloadCallback() {}
