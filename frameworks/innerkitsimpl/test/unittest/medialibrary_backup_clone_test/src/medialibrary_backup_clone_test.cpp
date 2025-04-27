@@ -1042,6 +1042,28 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileIn
     EXPECT_TRUE(othersClone->photoInfos_.empty());
 }
 
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_006");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    struct stat st;
+    othersClone->SetFileInfosInCurrentDir("filePath/0000000000000000000_BURST000_COVER.jpg", st);
+    EXPECT_EQ(othersClone->photoInfos_[0].isBurst, static_cast<int32_t>(BurstCoverLevelType::COVER));
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_SetFileInfosInCurrentDir_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_SetFileInfosInCurrentDir_007");
+
+    unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
+        "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
+    struct stat st;
+    othersClone->SetFileInfosInCurrentDir("filePath/0000000000000000000_BURST000.jpg", st);
+    EXPECT_EQ(othersClone->photoInfos_[0].isBurst, static_cast<int32_t>(BurstCoverLevelType::MEMBER));
+}
+
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_UpDateFileModifiedTime_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_UpDateFileModifiedTime_001");
