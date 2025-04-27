@@ -67,7 +67,6 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
-constexpr int32_t AFTER_AGR_SIZE = 2;
 constexpr int32_t THAN_AGR_SIZE = 1;
 constexpr int32_t MERGE_ALBUM_COUNT = 2;
 constexpr int32_t E_INDEX = -1;
@@ -595,14 +594,11 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
         MEDIA_ERR_LOG("Update trashed asset failed");
         return E_HAS_DB_ERROR;
     }
-    predicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
-    predicates.EndWrap();
     int deleteRow = MediaLibraryRdbStore::Delete(predicates);
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
     const vector<string> &notifyUris = predicates.GetWhereArgs();
-    size_t count = notifyUris.size() - AFTER_AGR_SIZE;
+    size_t count = notifyUris.size();
     for (size_t i = 0; i < count; i++) {
         if (deleteRow > 0) {
             watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
