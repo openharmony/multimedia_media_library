@@ -16,7 +16,6 @@
 #include "dfx_utils.h"
 
 #include <chrono>
-#include <codecvt>
 #include <iomanip>
 #include <sstream>
 
@@ -33,6 +32,10 @@ namespace {
     constexpr int32_t LENGTH_TWO   = 2;
     constexpr int32_t LENGTH_THREE = 3;
 }
+
+static const char *UTF16_CERROR = "__CONVERSION_ERROR__";
+static const char16_t *g_utf8Cerror = u"__CONVERSION_ERROR__";
+
 vector<string> DfxUtils::Split(string &input, const string &pattern)
 {
     vector<string> result;
@@ -199,12 +202,34 @@ string DfxUtils::GetSafeAlbumName(const string& albumName)
     return safeAlbumName;
 }
 
+std::u16string DfxUtils::Str8ToStr16(const std::string &inputStr)
+{
+    if (inputStr.empty()) {
+        return u"";
+    }
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert(UTF16_CERROR, g_utf8Cerror);
+    std::u16string result = convert.from_bytes(inputStr);
+    return result == g_utf8Cerror ? u"" : result;
+}
+
+std::string DfxUtils::Str16ToStr8(const std::u16string &inputStr)
+{
+    if (inputStr.empty()) {
+        return "";
+    }
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert(UTF16_CERROR, g_utf8Cerror);
+    std::string result = convert.to_bytes(inputStr);
+    return result == UTF16_CERROR ? "" : result;
+}
+
 string DfxUtils::GetSafeAlbumNameWhenChinese(const string &albumName)
 {
     CHECK_AND_RETURN_RET_LOG(!albumName.empty(), "", "input albumName is empty");
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
-    std::u16string wideStr = converter.from_bytes(albumName);
+    std::u16string wideStr = Str8ToStr16(albumName);
     uint32_t length = wideStr.size();
+    if (length <= 0) {
+        return GARBLE;
+    }
     std::u16string safeAlbumName;
     if (length <= GARBLE_SMALL) {
         safeAlbumName = wideStr.substr(length - GARBLE_LAST_ONE);
@@ -213,7 +238,7 @@ string DfxUtils::GetSafeAlbumNameWhenChinese(const string &albumName)
     } else {
         safeAlbumName = wideStr.substr(length - GARBLE_LAST_TWO);
     }
-    return GARBLE + converter.to_bytes(safeAlbumName);
+    return GARBLE + Str16ToStr8(safeAlbumName);
 }
 
 string DfxUtils::GetSafeDiaplayNameWhenChinese(const string &displayName)
@@ -228,9 +253,11 @@ string DfxUtils::GetSafeDiaplayNameWhenChinese(const string &displayName)
     }
     string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
     CHECK_AND_RETURN_RET_LOG(!title.empty(), "", "input title is empty");
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
-    std::u16string wideStr = converter.from_bytes(title);
+    std::u16string wideStr = Str8ToStr16(title);
     uint32_t length = wideStr.size();
+    if (length <= 0) {
+        return GARBLE + extension;
+    }
     std::u16string safeTitle;
     if (length <= GARBLE_SMALL) {
         safeTitle = wideStr.substr(length - GARBLE_LAST_ONE);
@@ -239,8 +266,8 @@ string DfxUtils::GetSafeDiaplayNameWhenChinese(const string &displayName)
     } else {
         safeTitle = wideStr.substr(length - GARBLE_LAST_TWO);
     }
-
-    return GARBLE + converter.to_bytes(safeTitle) + extension;
+ 
+    return GARBLE + Str16ToStr8(safeTitle) + extension;
 }
 } // namespace Media
 } // namespace OHOS

@@ -24,9 +24,13 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
+#include "moving_photo_file_utils.h"
 #include "result_set_utils.h"
 #include "photo_album_column.h"
 #include "photo_file_utils.h"
+#include "preferences.h"
+#include "preferences_helper.h"
+#include "power_efficiency_manager.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -37,7 +41,7 @@ const std::string DFX_OPT_TYPE = "opt_type";
 const std::string OPT_ADD_VALUE = "1";
 const std::string OPT_DEL_VALUE = "2";
 const std::string OPT_UPDATE_VALUE = "3";
-const int32_t BATCH_QUERY_NUMBER = 200;
+const int32_t BATCH_QUERY_PHOTO_NUMBER = 300;
 
 int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, int32_t position)
 {
@@ -401,8 +405,27 @@ static shared_ptr<NativeRdb::ResultSet> QueryPhotoFilePath(
 {
     string querySql = "SELECT " + MediaColumn::MEDIA_FILE_PATH + " FROM " + PhotoColumn::PHOTOS_TABLE +
         " WHERE " + PhotoColumn::PHOTO_POSITION + " = 1" +
-        " LIMIT " + std::to_string(offset) + ", " + std::to_string(BATCH_QUERY_NUMBER);
+        " LIMIT " + std::to_string(offset) + ", " + std::to_string(BATCH_QUERY_PHOTO_NUMBER);
     return rdbStore->QuerySql(querySql);
+}
+
+bool DfxDatabaseUtils::CheckChargingAndScreenOff()
+{
+    bool bFlag = PowerEfficiencyManager::IsChargingAndScreenOff();
+    if (!bFlag) {
+        return bFlag;
+    }
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return bFlag;
+    }
+    int64_t time = MediaFileUtils::UTCTimeSeconds() - TWO_DAY;
+    prefs->PutLong(LAST_TWO_DAY_REPORT_TIME, time);
+    prefs->FlushSync();
+    return bFlag;
 }
 
 int32_t DfxDatabaseUtils::QueryPhotoErrorCount()
@@ -419,11 +442,16 @@ int32_t DfxDatabaseUtils::QueryPhotoErrorCount()
     int32_t count = 0;
     if (resultCount->GoToNextRow() == NativeRdb::E_OK) {
         count = GetInt32Val("count", resultCount);
+        MEDIA_INFO_LOG("position == one ,count: %{public}d", count);
     }
     resultCount->Close();
     CHECK_AND_RETURN_RET_LOG(count > 0, E_OK, "Failed to get count");
     int32_t photoCount = 0;
-    for (int32_t offset = 0; offset < count; offset += BATCH_QUERY_NUMBER) {
+    for (int32_t offset = 0; offset < count; offset += BATCH_QUERY_PHOTO_NUMBER) {
+        if (!CheckChargingAndScreenOff()) {
+            MEDIA_ERR_LOG("Charging and screen off");
+            return E_OK;
+        }
         auto resultSet = QueryPhotoFilePath(rdbStore, offset);
         CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
