@@ -376,7 +376,7 @@ int32_t MtpPtpProxy::CopyObject(Context &context, uint32_t &outObjectHandle, uin
     CHECK_AND_RETURN_RET_LOG(g_mtpMedialibraryManager != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE,
         "g_mtpMedialibraryManager is null");
 
-    CHECK_AND_RETURN_RET(IsMtpMode(), g_mtpMedialibraryManager->CopyObject(context, outObjectHandle));
+    CHECK_AND_RETURN_RET(IsMtpMode(), g_mtpMedialibraryManager->CopyObject(context, outObjectHandle, false));
 
     // context->handle: from, context->parent: to
     // disable copy to mtp and disable copy from mtp root (gallery)
