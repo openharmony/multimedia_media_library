@@ -908,7 +908,9 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
 
     const std::string updateSql = "UPDATE Photos"
         " SET source_path = CASE"
-        " WHEN SubPhotos.owner_album_id != 0 AND PhotoAlbum.album_id IS NULL THEN Photos.source_path"
+        " WHEN SubPhotos.owner_album_id != 0 AND PhotoAlbum.album_id IS NULL AND ("
+        " Photos.source_path != '' AND Photos.source_path IS NOT NULL )"
+        " THEN Photos.source_path"
         " ELSE ( SELECT"
         " '/storage/emulated/0' || COALESCE(PhotoAlbum.lpath, '/Pictures/其它') || '/' || SubPhotos.display_name "
         " FROM Photos AS SubPhotos "
