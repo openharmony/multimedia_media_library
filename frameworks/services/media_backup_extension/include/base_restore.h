@@ -147,6 +147,7 @@ protected:
     void GetUpdateTotalCount();
     void GetUpdateAllAlbumsCount();
     std::string GetUpgradeEnhance();
+    void ProcessBurstPhotos(int32_t maxId);
     void GetUpdateUniqueNumberCount();
     void RestoreThumbnail();
     std::string GetRestoreTotalInfo();

@@ -74,6 +74,7 @@ static constexpr uint32_t ASCII_CHAR_LENGTH = 8;
 static constexpr uint32_t DECODE_NAME_IDX = 4;
 static constexpr uint32_t DECODE_SURFIX_IDX = 5;
 static constexpr uint32_t DECODE_TIME_IDX = 3;
+static constexpr uint32_t IOS_BURST_CODE_LEN = 19;
 
 static std::string GetPhoneName()
 {
@@ -250,6 +251,9 @@ NativeRdb::ValuesBucket OthersCloneRestore::GetInsertValue(const FileInfo &fileI
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.dateTrashed);
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestore_.FindSubtype(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
+    values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
     return values;
 }
 
@@ -355,6 +359,27 @@ void OthersCloneRestore::AddAudioFile(FileInfo &tmpInfo)
     audioInfos_.emplace_back(tmpInfo);
 }
 
+int32_t CheckBurstAndGetKey(const std::string &displayName, std::string &burstKey)
+{
+    size_t burstPos = displayName.find("_BURST");
+    if (burstPos == std::string::npos) {
+        return 0;
+    }
+    size_t burstStartPos = (burstPos >= IOS_BURST_CODE_LEN) ? burstPos - IOS_BURST_CODE_LEN : 0;
+    burstKey = displayName.substr(burstStartPos, burstPos - burstStartPos);
+    if (displayName.find("COVER") != std::string::npos) {
+        return static_cast<int32_t>(BurstCoverLevelType::COVER);
+    }
+    return static_cast<int32_t>(BurstCoverLevelType::MEMBER);
+}
+
+void CloneIosBurstPhoto(FileInfo &fileInfo)
+{
+    std::string burstKey = fileInfo.burstKey;
+    fileInfo.isBurst = CheckBurstAndGetKey(fileInfo.displayName, burstKey);
+    fileInfo.burstKey = burstKey;
+}
+
 void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struct stat &statInfo)
 {
     FileInfo tmpInfo;
@@ -371,6 +396,9 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
     tmpInfo.fileType = MediaFileUtils::GetMediaType(tmpInfo.displayName);
     tmpInfo.fileSize = statInfo.st_size;
     tmpInfo.dateModified = MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim);
+    if (sceneCode_ == I_PHONE_CLONE_RESTORE) {
+        CloneIosBurstPhoto(tmpInfo);
+    }
     if (tmpInfo.fileType == MediaType::MEDIA_TYPE_IMAGE) {
         std::regex pattern(R"(.*_enhanced(\.[^.]+)$)");
         if (std::regex_match(file, pattern)) {
@@ -537,6 +565,7 @@ void OthersCloneRestore::RestorePhoto()
             }, { &offset }, {}, ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    ProcessBurstPhotos(this->photosRestore_.GetMaxFileId());
 }
 
 void OthersCloneRestore::InsertPhoto(std::vector<FileInfo> &fileInfos)

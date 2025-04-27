@@ -51,6 +51,12 @@ public:
         return this->photosDao_.FindSameFile(fileInfo, maxFileId);
     }
 
+    int32_t GetMaxFileId()
+    {
+        int32_t maxFileId = this->photosBasicInfo_.maxFileId;
+        return maxFileId;
+    }
+
     std::shared_ptr<NativeRdb::ResultSet> GetGalleryMedia(
         int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage);
     std::shared_ptr<NativeRdb::ResultSet> GetCloudGalleryMedia(
