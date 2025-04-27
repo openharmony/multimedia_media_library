@@ -142,6 +142,7 @@ private:
     EXPORT std::shared_ptr<ThumbnailService> thumbnailService_;
     int32_t RevertPendingByFileId(const std::string &fileId);
     int32_t DeleteInRdbPredicates(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
+    int32_t DeleteInRdbPredicatesMore(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     int32_t DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     int32_t UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
         const DataShare::DataSharePredicates &predicates);

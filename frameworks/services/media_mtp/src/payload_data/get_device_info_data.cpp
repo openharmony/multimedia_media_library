@@ -76,33 +76,6 @@ static const uint16_t Operations[] = {
     MTP_OPERATION_GET_OBJECT_PROP_LIST_CODE,
 };
 
-static const uint16_t OperationsPtp[] = {
-    MTP_OPERATION_GET_DEVICE_INFO_CODE,
-    MTP_OPERATION_OPEN_SESSION_CODE,
-    MTP_OPERATION_CLOSE_SESSION_CODE,
-    MTP_OPERATION_GET_STORAGE_IDS_CODE,
-    MTP_OPERATION_GET_STORAGE_INFO_CODE,
-    MTP_OPERATION_GET_NUM_OBJECTS_CODE,
-    MTP_OPERATION_GET_OBJECT_HANDLES_CODE,
-    MTP_OPERATION_GET_OBJECT_INFO_CODE,
-    MTP_OPERATION_GET_OBJECT_CODE,
-    MTP_OPERATION_GET_THUMB_CODE,
-    MTP_OPERATION_SEND_OBJECT_INFO_CODE,
-    MTP_OPERATION_SEND_OBJECT_CODE,
-    MTP_OPERATION_RESET_DEVICE_CODE,
-    MTP_OPERATION_GET_DEVICE_PROP_DESC_CODE,
-    MTP_OPERATION_GET_DEVICE_PROP_VALUE_CODE,
-    MTP_OPERATION_SET_DEVICE_PROP_VALUE_CODE,
-    MTP_OPERATION_RESET_DEVICE_PROP_VALUE_CODE,
-    MTP_OPERATION_COPY_OBJECT_CODE,
-    MTP_OPERATION_GET_PARTIAL_OBJECT_CODE,
-    MTP_OPERATION_GET_OBJECT_PROPS_SUPPORTED_CODE,
-    MTP_OPERATION_GET_OBJECT_PROP_DESC_CODE,
-    MTP_OPERATION_GET_OBJECT_PROP_VALUE_CODE,
-    MTP_OPERATION_SET_OBJECT_PROP_VALUE_CODE,
-    MTP_OPERATION_GET_OBJECT_PROP_LIST_CODE,
-};
-
 const int EXTENSION_ID = 6;
 GetDeviceInfoData::GetDeviceInfoData(std::shared_ptr<MtpOperationContext> &context)
     : PayloadData(context), functionalMode_(0), serialNum_("0")
@@ -147,11 +120,7 @@ int GetDeviceInfoData::Maker(std::vector<uint8_t> &outBuffer)
     MtpPacketTool::PutUInt16(outBuffer, vendorExtensionVersion_);
     MtpPacketTool::PutString(outBuffer, vendorExtensionDesc_);
     MtpPacketTool::PutUInt16(outBuffer, functionalMode_);
-    if (MtpManager::GetInstance().IsMtpMode()) {
-        MtpPacketTool::PutAUInt16(outBuffer, Operations, sizeof(Operations) / sizeof(uint16_t));
-    } else {
-        MtpPacketTool::PutAUInt16(outBuffer, OperationsPtp, sizeof(OperationsPtp) / sizeof(uint16_t));
-    }
+    MtpPacketTool::PutAUInt16(outBuffer, Operations, sizeof(Operations) / sizeof(uint16_t));
     MtpPacketTool::PutAUInt16(outBuffer, Events, sizeof(Events) / sizeof(uint16_t));
     MtpPacketTool::PutAUInt16(outBuffer, DeviceProperties, sizeof(DeviceProperties) / sizeof(uint16_t));
     MtpPacketTool::PutAUInt16(outBuffer, CaptureFormats, sizeof(CaptureFormats) / sizeof(uint16_t));

@@ -47,7 +47,8 @@ public:
     int32_t GetPathById(const int32_t id, std::string &outPath);
     int32_t GetIdByPath(const std::string &path, uint32_t &outId);
     int32_t MoveObject(const std::shared_ptr<MtpOperationContext> &context);
-    int32_t CopyObject(const std::shared_ptr<MtpOperationContext> &context, uint32_t &outObjectHandle);
+    int32_t CopyObject(const std::shared_ptr<MtpOperationContext> &context, uint32_t &outObjectHandle,
+        bool isForMove = false);
     int32_t DeleteObject(const std::shared_ptr<MtpOperationContext> &context);
     int32_t SetObjectPropValue(const std::shared_ptr<MtpOperationContext> &context);
     int32_t CloseFd(const std::shared_ptr<MtpOperationContext> &context, int32_t fd);
@@ -65,7 +66,12 @@ public:
     int32_t GetFdByOpenFile(const std::shared_ptr<MtpOperationContext> &context, int32_t &outFd);
     int32_t GetCopyObjectPath(uint32_t handle, PathMap &paths);
     int32_t GetAlbumName(uint32_t fileId, std::string &albumName);
+    int32_t DeletePhoto(const std::shared_ptr<MtpOperationContext> &context, bool isForMove = false);
+    int32_t DeleteAlbum(const std::shared_ptr<MtpOperationContext> &context);
 private:
+    int32_t GetPhotoName(const std::shared_ptr<MtpOperationContext> &context);
+    int32_t SetPhotoObjectPropValue(const std::shared_ptr<MtpOperationContext> &context, std::string& colValueStr);
+    int32_t SetAlbumObjectPropValue(const std::shared_ptr<MtpOperationContext> &context, std::string& colValueStr);
     int32_t SetObjectInfo(const std::unique_ptr<FileAsset> &fileAsset, std::shared_ptr<ObjectInfo> &outObjectInfo);
     int32_t SetObject(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         const std::shared_ptr<MtpOperationContext> &context, std::shared_ptr<ObjectInfo> &outObjectInfo);
@@ -78,6 +84,8 @@ private:
         bool isHandle);
     std::shared_ptr<DataShare::DataShareResultSet> GetPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
         bool isHandle);
+    std::shared_ptr<DataShare::DataShareResultSet> GetPhotosInfoForMove(
+        const std::shared_ptr<MtpOperationContext> &context);
     int32_t GetAlbumCloud();
     int32_t GetAlbumCloudDisplay(std::vector<std::string> &ownerAlbumIds);
     int32_t HaveMovingPhotesHandle(const std::shared_ptr<DataShare::DataShareResultSet> resultSet,
@@ -101,6 +109,7 @@ private:
     static std::shared_ptr<MtpMedialibraryManager> instance_;
     static std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
     static sptr<IRemoteObject> getThumbToken_;
+    std::set<uint32_t> deletedMovingPhotoHandles_;
 };
 } // namespace Media
 } // namespace OHOS
