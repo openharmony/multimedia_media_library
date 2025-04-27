@@ -424,7 +424,7 @@ static void GrantPermissionPrepareHandle(MediaLibraryCommand &cmd, const std::ve
 }
 
 // SubscribeAppState && add tokenid to cache
-static void DoSubcribeForAppStop(const std::vector<DataShare::DataShareValuesBucket> &values)
+static void DoSubscribeForAppStop(const std::vector<DataShare::DataShareValuesBucket> &values)
 {
     if (values.size() == 0) {
         MEDIA_WARN_LOG("values is empty");
@@ -439,7 +439,7 @@ static void DoSubcribeForAppStop(const std::vector<DataShare::DataShareValuesBuc
     }
     int permissionTypeParam = -1;
     if (valueBucket.GetObject(AppUriPermissionColumn::PERMISSION_TYPE, valueObject)) {
-        permissionTypeParam = valueObject;
+        valueObject.GetInt(permissionTypeParam);
     }
     if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
         AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
@@ -464,7 +464,7 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     if (ValueBucketCheck(values) != E_OK || rdbStore == nullptr) {
         return E_ERR;
     }
-    DoSubcribeForAppStop(values);
+    DoSubscribeForAppStop(values);
     GrantPermissionPrepareHandle(cmd, values, dbOperation, resultSet);
     for (size_t i = 0; i < values.size(); i++) {
         int32_t fileId = GetFileId(values.at(i), isValid);
