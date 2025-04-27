@@ -350,5 +350,113 @@ HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0018, TestSize.Level1)
     mtpFileObserver->EraseFromWatchMap(path);
     EXPECT_FALSE(MtpFileObserver::watchMap_.empty());
 }
+
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: DealWatchMap
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0019, TestSize.Level1)
+{
+    inotify_event event;
+    event.mask = 0x40000200;
+    std::string path = "/file/Docs";
+
+    MtpFileObserver::watchMap_.insert(std::pair<int, std::string>(1, "/file/Docs/1.jpg"));
+    MtpFileObserver::watchMap_.insert(std::pair<int, std::string>(1, "/file/Docs/"));
+
+    MtpFileObserver::DealWatchMap(event, path);
+    EXPECT_FALSE(MtpFileObserver::watchMap_.empty());
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: DealWatchMap
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0020, TestSize.Level1)
+{
+    inotify_event event;
+    event.mask = 0x40000040;
+    std::string path = "/file/Docs";
+
+    MtpFileObserver::DealWatchMap(event, path);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: DealWatchMap
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0021, TestSize.Level1)
+{
+    inotify_event event;
+    event.mask = 0x40000080;
+    std::string path = "/file/Docs";
+
+    MtpFileObserver::DealWatchMap(event, path);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: DealWatchMap
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0022, TestSize.Level1)
+{
+    inotify_event event;
+    event.mask = 0x40000000;
+    std::string path = "/file/Docs";
+
+    MtpFileObserver::DealWatchMap(event, path);
+}
+
+/*
+ * Feature: MediaLibraryMTP
+ * Function:
+ * SubFunction: NA
+ * FunctionPoints: NA
+ * EnvConditions: NA
+ * CaseDescription: SendEvent
+ */
+HWTEST_F(MtpFileObserverTest, mtp_file_observer_test_0023, TestSize.Level1)
+{
+    inotify_event event;
+    std::string path = "/file/Docs";
+    ContextSptr context = std::make_shared<MtpOperationContext>();
+
+    ASSERT_NE(context, nullptr);
+    event.mask = 0x00000100;
+    MtpFileObserver::SendEvent(event, path, context);
+
+    ASSERT_NE(context, nullptr);
+    event.mask = 0x00000080;
+    MtpFileObserver::SendEvent(event, path, context);
+
+    ASSERT_NE(context, nullptr);
+    event.mask = 0x00000200;
+    MtpFileObserver::SendEvent(event, path, context);
+
+    ASSERT_NE(context, nullptr);
+    event.mask = 0x00000040;
+    MtpFileObserver::SendEvent(event, path, context);
+
+    ASSERT_NE(context, nullptr);
+    event.mask = 0x00000008;
+    MtpFileObserver::SendEvent(event, path, context);
+}
 } // namespace Media
 } // namespace OHOS
