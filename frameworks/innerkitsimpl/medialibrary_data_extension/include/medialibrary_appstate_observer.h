@@ -15,6 +15,8 @@
 #ifndef MEDIALIBRARY_APPSTATE_OBSERVER_H
 #define MEDIALIBRARY_APPSTATE_OBSERVER_H
 
+#include "safe_map.h"
+
 #include "app_mgr_interface.h"
 #include "application_state_observer_stub.h"
 
@@ -40,8 +42,7 @@ class MedialibraryAppStateObserverManager {
 
     private:
         sptr<IAppMgr> GetAppManagerInstance();
-        std::map<int64_t, bool> revokeMap_;
-        std::mutex revokeMapMutex_;
+        SafeMap<int64_t, bool> revokeMap_;
 };
 
 class MedialibraryAppStateObserver : public AppExecFwk::ApplicationStateObserverStub {
@@ -53,7 +54,7 @@ class MedialibraryAppStateObserver : public AppExecFwk::ApplicationStateObserver
         void OnAppStarted(const AppStateData &appStateData) override;
 
     private:
-        void Wait4Revoke(int64_t tokenId);
+        void WaitAndRevoke(int64_t tokenId);
 };
 }  // namespace Media
 }  // namespace OHOS
