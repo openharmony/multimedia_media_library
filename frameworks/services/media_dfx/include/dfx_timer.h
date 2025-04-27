@@ -20,12 +20,15 @@
 
 namespace OHOS {
 namespace Media {
+
+#define EXPORT __attribute__ ((visibility ("default")))
+
 class DfxTimer {
 public:
-    DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport);
-    ~DfxTimer();
+    EXPORT DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport);
+    EXPORT ~DfxTimer();
     void End();
-    void SetCallerUid(int32_t uid);
+    EXPORT void SetCallerUid(int32_t uid);
 
 private:
     int32_t type_;

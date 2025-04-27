@@ -609,5 +609,28 @@ HWTEST_F(MediaLibraryFuseTest, MediaLibrary_CheckDevice_test_001, TestSize.Level
     bool isLinuxSys = (deviceModel == "HYM-W5821") || (deviceModel == "HH-SCDAYU200");
     EXPECT_EQ(isLinux, isLinuxSys);
 }
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_Start_Fuse_test_001, TestSize.Level1) {
+    std::string mountpoint = "/mnt/test_fuse";
+    MediaFuseDaemon daemon(mountpoint);
+
+    int32_t ret = daemon.StartFuse();
+    EXPECT_EQ(ret, E_OK);
+    MediaFuseManager::GetInstance().Start();
+    MediaFuseManager::GetInstance().UMountFuse();
+    MediaFuseManager::GetInstance().Stop();
+}
+
+HWTEST_F(MediaLibraryFuseTest, MediaLibrary_DoGetAttr_test_001, TestSize.Level1) {
+    std::string path = "/mnt/data/100/media_fuse/Photo/1/IMG_1743563768_000/0000.jpg";
+
+    struct stat stbuf;
+    (void)memset_s(&stbuf, sizeof(stbuf), 0, sizeof(stbuf));
+    int32_t ret = stat(path.c_str(), &stbuf);
+    EXPECT_EQ(ret, E_ERR);
+
+    ret = MediaFuseManager::GetInstance().DoGetAttr(path.c_str(), &stbuf);
+    EXPECT_EQ(ret, E_ERR);
+}
 } // namespace Media
 } // namespace OHOS
