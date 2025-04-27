@@ -57,7 +57,7 @@ public:
         const std::vector<std::string> &columns);
     EXPORT static void UpdateGroupPhotoAlbumById(int32_t albumId);
     EXPORT static void UpdatePortraitAlbumCoverSatisfied(int32_t fileId);
-    static int32_t SetAnalysisAlbumOrderPosition(MediaLibraryCommand &cmd);
+    EXPORT static int32_t SetAnalysisAlbumOrderPosition(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS
