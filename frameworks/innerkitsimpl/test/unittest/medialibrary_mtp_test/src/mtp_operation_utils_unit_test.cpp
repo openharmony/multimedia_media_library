@@ -216,7 +216,7 @@ HWTEST_F(MtpOperationUtilsUnitTest, medialibrary_MTP_message_testlevel_0_009, Te
     OHOS::Media::MtpManager::GetInstance().mtpMode_ = OHOS::Media::MtpManager::MtpMode::MTP_MODE;
     int errcode = 0;
     mtpOperationUtils->DoSetObjectPropValue(errcode);
-    EXPECT_EQ(errcode, MTP_ERROR_INVALID_OBJECTHANDLE);
+    EXPECT_EQ(errcode, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
 }
 
 /*

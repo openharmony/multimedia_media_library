@@ -297,6 +297,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_notify.cpp",
     "src/medialibrary_object_utils.cpp",
     "src/medialibrary_photo_operations.cpp",
+    "src/medialibrary_ptp_operations.cpp",
     "src/medialibrary_rdbstore.cpp",
     "src/medialibrary_restore.cpp",
     "src/medialibrary_search_operations.cpp",

@@ -86,6 +86,7 @@ ohos_shared_library("media_mtp") {
     "src/property.cpp",
     "src/ptp_album_handles.cpp",
     "src/ptp_media_sync_observer.cpp",
+    "src/ptp_special_handles.cpp",
     "src/storage.cpp",
   ]
 

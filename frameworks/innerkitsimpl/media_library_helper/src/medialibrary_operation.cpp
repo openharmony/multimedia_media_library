@@ -153,6 +153,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
         { PTP_OPERATION, OperationObject::PTP_OPERATION },
+        { PTP_ALBUM_OPERATION, OperationObject::PTP_ALBUM_OPERATION },
     };
     return oprnObjMap;
 }
@@ -244,6 +245,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::CLOUD_MEDIA_ASSET_OPERATE, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::PTP_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } }},
         { OperationObject::HIGHLIGHT_DELETE, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_ALBUM_TABLE } }},
+        { OperationObject::PTP_ALBUM_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
     };
     return tableNameMap;
 }

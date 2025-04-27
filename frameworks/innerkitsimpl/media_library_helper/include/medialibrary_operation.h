@@ -111,6 +111,7 @@ enum class EXPORT OperationObject : uint32_t {
     MTH_AND_YEAR_ASTC,
     ANALYSIS_FOREGROUND,
     ASSET_ALBUM_OPERATION,
+    PTP_ALBUM_OPERATION,
 };
 
 enum class EXPORT OperationType : uint32_t {
