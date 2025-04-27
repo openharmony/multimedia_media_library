@@ -151,6 +151,24 @@ int32_t InsertCloudAssetINDb(int64_t &fileId, std::string &data)
     return ret;
 }
 
+int32_t InsertCloudAndLocalAssetINDb(int64_t &fileId, std::string &data)
+{
+    int64_t timestamp = GetTimestamp();
+    string title = GetTitle(timestamp);
+    string displayName = title + ".jpg";
+    data = "/storage/cloud/files/photo/1/" + title + ".jpg";
+    ValuesBucket valuesBucket;
+    valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, data);
+    valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
+    valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
+    valuesBucket.PutInt(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE));
+    valuesBucket.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD));
+    int32_t ret = g_rdbStore->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("InsertCloudAndLocalAsset fileId is %{public}s", to_string(fileId).c_str());
+    return ret;
+}
+
 int32_t SetPosition(const int64_t fileId)
 {
     ValuesBucket valuesBucket;
@@ -477,6 +495,41 @@ HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_0
     ret = instance.SetBgDownloadPermission(true);
     EXPECT_EQ(ret, true);
     MEDIA_INFO_LOG("cloud_asset_download_manager_test_014 End");
+}
+
+HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_manager_test_015, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("cloud_asset_download_manager_test_015 Start");
+    CloudMediaAssetManager &instance =  CloudMediaAssetManager::GetInstance();
+    int32_t ret = instance.UpdateCloudMediaAssets();
+    EXPECT_EQ(ret, E_ERR);
+
+    int64_t fileId1 = 0;
+    std::string data1 = "";
+    ret = InsertCloudAssetINDb(fileId1, data1);
+    EXPECT_EQ(ret, E_OK);
+
+    int64_t fileId2 = 0;
+    std::string data2 = "";
+    ret = InsertCloudAssetINDb(fileId2, data2);
+    EXPECT_EQ(ret, E_OK);
+
+    ret = instance.UpdateCloudMediaAssets();
+    EXPECT_EQ(ret, E_OK);
+    ret = instance.DeleteEmptyCloudAlbums();
+    EXPECT_EQ(ret, E_OK);
+    ret = instance.UpdateLocalAlbums();
+    EXPECT_EQ(ret, E_OK);
+    
+    ret = instance.UpdateBothLocalAndCloudAssets();
+    EXPECT_EQ(ret, E_OK);
+    int64_t fileId3 = 0;
+    std::string data3 = "";
+    ret = InsertCloudAndLocalAssetINDb(fileId3, data3);
+    EXPECT_EQ(ret, E_OK);
+    ret = instance.UpdateBothLocalAndCloudAssets();
+    EXPECT_EQ(ret, E_OK);
+    MEDIA_INFO_LOG("cloud_asset_download_manager_test_015 End");
 }
 
 HWTEST_F(MediaLibraryCloudAssetDownloadTest, cloud_asset_download_operation_test_001, TestSize.Level1)

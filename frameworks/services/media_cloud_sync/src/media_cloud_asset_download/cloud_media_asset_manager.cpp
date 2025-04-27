@@ -58,7 +58,7 @@ std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetManager::operat
 std::mutex CloudMediaAssetManager::deleteMutex_;
 std::mutex CloudMediaAssetManager::updateMutex_;
 std::atomic<TaskDeleteState> CloudMediaAssetManager::doDeleteTask_ = TaskDeleteState::IDLE;
-static const int32_t BATCH_LIMIT_COUNT = 200;
+static const int32_t BATCH_LIMIT_COUNT = 500;
 static const int32_t CYCLE_NUMBER = 1024 * 1024;
 static const int32_t SLEEP_FOR_DELETE = 1000;
 static const int32_t BATCH_NOTIFY_CLOUD_FILE = 2000;
@@ -238,13 +238,13 @@ int32_t CloudMediaAssetManager::ReadyDataForDelete(std::vector<std::string> &fil
     return E_OK;
 }
 
-static string GetEditDataDirPath(const string &path)
+std::string CloudMediaAssetManager::GetEditDataDirPath(const std::string &path)
 {
     CHECK_AND_RETURN_RET(path.length() >= ROOT_MEDIA_DIR.length(), "");
     return MEDIA_EDIT_DATA_DIR + path.substr(ROOT_MEDIA_DIR.length());
 }
 
-static int32_t DeleteEditdata(const std::string &path)
+int32_t CloudMediaAssetManager::DeleteEditdata(const std::string &path)
 {
     string editDataDirPath = GetEditDataDirPath(path);
     CHECK_AND_RETURN_RET_LOG(!editDataDirPath.empty(), E_ERR, "Cannot get editPath, path: %{private}s", path.c_str());
@@ -277,14 +277,12 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsOperation(AsyncTaskData *d
         ret = DeleteBatchCloudFile(fileIds);
         CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "DeleteBatchCloudFile failed!");
         for (size_t i = 0; i < fileIds.size(); i++) {
-            if (DeleteEditdata(paths[i]) != E_OK || !ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(
-                fileIds[i], PhotoColumn::PHOTOS_TABLE, paths[i], dateTakens[i])) {
-                MEDIA_ERR_LOG("Delete error, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
-                continue;
-            }
             MEDIA_INFO_LOG("Detele cloud file, path: %{public}s.", MediaFileUtils::DesensitizePath(paths[i]).c_str());
+            CHECK_AND_PRINT_LOG(DeleteEditdata(paths[i]) == E_OK, "DeleteEditdata error.");
+            CHECK_AND_PRINT_LOG(ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(fileIds[i],
+                PhotoColumn::PHOTOS_TABLE, paths[i], dateTakens[i]), "DeleteThumbnailDirAndAstc error.");
         }
-        
+ 
         fileIds.clear();
         paths.clear();
         dateTakens.clear();
@@ -306,7 +304,7 @@ void CloudMediaAssetManager::DeleteAllCloudMediaAssetsAsync()
     asyncWorker->AddTask(deleteAsyncTask, true);
 }
 
-static bool HasDataForUpdate(std::vector<std::string> &updateFileIds)
+bool CloudMediaAssetManager::HasDataForUpdate(std::vector<std::string> &updateFileIds)
 {
     if (!updateFileIds.empty()) {
         MEDIA_WARN_LOG("updateFileIds is not null");
@@ -331,7 +329,7 @@ static bool HasDataForUpdate(std::vector<std::string> &updateFileIds)
     return true;
 }
 
-static int32_t UpdateCloudAssets(const std::vector<std::string> &updateFileIds)
+int32_t CloudMediaAssetManager::UpdateCloudAssets(const std::vector<std::string> &updateFileIds)
 {
     CHECK_AND_RETURN_RET_LOG(!updateFileIds.empty(), E_ERR, "updateFileIds is null.");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -350,10 +348,11 @@ static int32_t UpdateCloudAssets(const std::vector<std::string> &updateFileIds)
     int32_t ret = rdbStore->Update(changedRows, values, predicates);
     CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows > 0), E_ERR,
         "Failed to UpdateCloudAssets, ret: %{public}d, updateRows: %{public}d", ret, changedRows);
+    MEDIA_INFO_LOG("UpdateCloudAssets successfully. ret: %{public}d, updateRows: %{public}d", ret, changedRows);
     return E_OK;
 }
 
-static void NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds)
+void CloudMediaAssetManager::NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds)
 {
     CHECK_AND_RETURN_LOG(!notifyFileIds.empty(), "notifyFileIds is null.");
     auto watch = MediaLibraryNotify::GetInstance();
@@ -364,10 +363,10 @@ static void NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileI
     }
 }
 
-int32_t CloudMediaAssetManager::UpdateCloudMeidaAssets()
+int32_t CloudMediaAssetManager::UpdateCloudMediaAssets()
 {
     MediaLibraryTracer tracer;
-    tracer.Start("UpdateCloudMeidaAssets");
+    tracer.Start("UpdateCloudMediaAssets");
     std::lock_guard<std::mutex> lock(updateMutex_);
 
     int32_t cycleNumber = 0;
@@ -379,13 +378,12 @@ int32_t CloudMediaAssetManager::UpdateCloudMeidaAssets()
 
         notifyFileIds.insert(notifyFileIds.end(), updateFileIds.begin(), updateFileIds.end());
         updateFileIds.clear();
-        if (notifyFileIds.size() == BATCH_NOTIFY_CLOUD_FILE) {
+        if (notifyFileIds.size() >= BATCH_NOTIFY_CLOUD_FILE) {
             NotifyUpdateAssetsChange(notifyFileIds);
             notifyFileIds.clear();
         }
 
         cycleNumber++;
-        MEDIA_INFO_LOG("cycleNumber is %{public}d", cycleNumber);
     }
     if (notifyFileIds.size() > 0) {
         NotifyUpdateAssetsChange(notifyFileIds);
@@ -408,10 +406,105 @@ int32_t CloudMediaAssetManager::DeleteEmptyCloudAlbums()
     tracer.Start("DeleteEmptyCloudAlbums");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "DeleteEmptyCloudAlbums failed. rdbStore is null");
-
+    
     int32_t ret = rdbStore->ExecuteSql(SQL_DELETE_EMPTY_CLOUD_ALBUMS);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "Failed to delete. ret %{public}d.", ret);
     MEDIA_INFO_LOG("end DeleteEmptyCloudAlbums. ret %{public}d.", ret);
+    return E_OK;
+}
+
+bool CloudMediaAssetManager::HasLocalAndCloudAssets(std::vector<std::string> &updateFileIds)
+{
+    if (!updateFileIds.empty()) {
+        MEDIA_WARN_LOG("updateFileIds is not null");
+        updateFileIds.clear();
+    }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false,
+        "HasLocalAndCloudAssets failed. rdbStore is null.");
+    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION,
+        to_string(static_cast<int32_t>(PhotoPositionType::LOCAL_AND_CLOUD)));
+    predicates.Or();
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, to_string(static_cast<int32_t>(DirtyType::TYPE_NEW)));
+    predicates.And();
+    predicates.IsNotNull(PhotoColumn::PHOTO_CLOUD_ID);
+    predicates.EndWrap();
+    predicates.Limit(BATCH_LIMIT_COUNT);
+
+    std::vector<std::string> columns = { MediaColumn::MEDIA_ID };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false,
+        "HasLocalAndCloudAssets failed. resultSet is null.");
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string fileId = GetStringVal(MediaColumn::MEDIA_ID, resultSet);
+        updateFileIds.emplace_back(fileId);
+    }
+    resultSet->Close();
+    CHECK_AND_RETURN_RET_LOG(updateFileIds.size() > 0, false, "the size of updateFileIds 0.");
+    return true;
+}
+
+int32_t CloudMediaAssetManager::UpdateLocalAndCloudAssets(const std::vector<std::string> &updateFileIds)
+{
+    CHECK_AND_RETURN_RET_LOG(!updateFileIds.empty(), E_ERR, "updateFileIds is null.");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateLocalAndCloudAssets failed. rdbStore is null.");
+    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.In(MediaColumn::MEDIA_ID, updateFileIds);
+
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    values.PutLong(PhotoColumn::PHOTO_CLOUD_VERSION, 0);
+    values.PutNull(PhotoColumn::PHOTO_CLOUD_ID);
+    values.PutInt(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(PhotoPositionType::LOCAL));
+
+    int32_t changedRows = -1;
+    int32_t ret = rdbStore->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows >= 0), E_ERR,
+        "Failed to UpdateLocalAndCloudAssets, ret: %{public}d, updateRows: %{public}d", ret, changedRows);
+    MEDIA_INFO_LOG("UpdateLocalAndCloudAssets successfully. ret: %{public}d, updateRows: %{public}d", ret, changedRows);
+    return E_OK;
+}
+
+int32_t CloudMediaAssetManager::UpdateBothLocalAndCloudAssets()
+{
+    MEDIA_INFO_LOG("start UpdateBothLocalAndCloudAssets.");
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateBothLocalAndCloudAssets");
+
+    int32_t cycleNumber = 0;
+    std::vector<std::string> updateFileIds = {};
+    while (HasLocalAndCloudAssets(updateFileIds) && cycleNumber <= CYCLE_NUMBER) {
+        int32_t ret = UpdateLocalAndCloudAssets(updateFileIds);
+        CHECK_AND_BREAK_ERR_LOG(ret == E_OK, "UpdateBothLocalAndCloudAssets failed, ret: %{public}d", ret);
+        updateFileIds.clear();
+        cycleNumber++;
+    }
+    MEDIA_INFO_LOG("end UpdateBothLocalAndCloudAssets.");
+    return E_OK;
+}
+
+int32_t CloudMediaAssetManager::UpdateLocalAlbums()
+{
+    MEDIA_INFO_LOG("start UpdateLocalAlbums.");
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateLocalAlbums");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "UpdateLocalAlbums failed. rdbStore is null");
+
+    AbsRdbPredicates predicates = AbsRdbPredicates(PhotoAlbumColumns::TABLE);
+    ValuesBucket values;
+    values.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    values.PutNull(PhotoAlbumColumns::ALBUM_CLOUD_ID);
+
+    int32_t changedRows = E_HAS_DB_ERROR;
+    int32_t ret = rdbStore->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && changedRows >= 0), E_ERR,
+        "Failed to UpdateLocalAlbums, ret: %{public}d, changedRows: %{public}d", ret, changedRows);
+    MEDIA_INFO_LOG("UpdateLocalAlbums successfully. ret %{public}d. changedRows %{public}d", ret, changedRows);
     return E_OK;
 }
 
@@ -420,17 +513,25 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia()
     MEDIA_INFO_LOG("enter ForceRetainDownloadCloudMedia.");
     MediaLibraryTracer tracer;
     tracer.Start("ForceRetainDownloadCloudMedia");
-    int32_t ret = UpdateCloudMeidaAssets();
-    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateCloudMeidaAssets failed. ret %{public}d.", ret);
-    ret = DeleteEmptyCloudAlbums();
-    CHECK_AND_PRINT_LOG(ret == E_OK, "DeleteEmptyCloudAlbums failed. ret %{public}d.", ret);
 
+    int32_t updateRet = UpdateCloudMediaAssets();
+    CHECK_AND_PRINT_LOG(updateRet == E_OK, "UpdateCloudMediaAssets failed. ret %{public}d.", updateRet);
+    int32_t ret = DeleteEmptyCloudAlbums();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "DeleteEmptyCloudAlbums failed. ret %{public}d.", ret);
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch != nullptr) {
         MEDIA_INFO_LOG("begin to notify album update.");
         watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
     }
 
+    ret = UpdateBothLocalAndCloudAssets();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "UpdateBothLocalAndCloudAssets failed. ret %{public}d.", ret);
+    ret = UpdateLocalAlbums();
+    CHECK_AND_PRINT_LOG(ret == E_OK, "UpdateLocalAlbums failed. ret %{public}d.", ret);
+    if (updateRet != E_OK) {
+        MEDIA_WARN_LOG("end to ForceRetainDownloadCloudMedia, updateRet: %{public}d.", updateRet);
+        return updateRet;
+    }
     MEDIA_INFO_LOG("begin to CleanGalleryDentryFile");
     CloudSyncManager::GetInstance().CleanGalleryDentryFile();
     MEDIA_INFO_LOG("end to CleanGalleryDentryFile");
