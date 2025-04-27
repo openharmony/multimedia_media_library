@@ -2375,19 +2375,25 @@ void ResetOcrInfo(const int32_t &fileId)
         "Update ocr info failed, ret = %{public}d, file id is %{public}d", ret, fileId);
 }
 
-std::string MediaLibraryPhotoOperations::GetSourceFileFromEditPath(const std::string &path, const int32_t &subtype)
+std::string MediaLibraryPhotoOperations::GetSourceFileFromEditPath(const std::string &path,
+    const std::shared_ptr<FileAsset> &fileAsset)
 {
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("fileAsset is nullptr");
+        return "";
+    }
     std::string sourcePath;
     string parentPath = GetEditDataDirPath(path);
     std::vector<string> fileNames = MediaFileUtils::GetFileNameFromDir(parentPath);
     if (fileNames.empty()) {
         return "";
     }
+    bool isMovingPhoto = MovingPhotoFileUtils::IsMovingPhoto(
+        fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetOriginalSubType());
     // 这里处理动态照片，动态照片editdata下存在两个source文件，source.jpg\source.mp4，此处要取出jpg，跳过mp4
     for (auto &filename : fileNames) {
         if (MediaFileUtils::UnSplitByChar(filename, '.') == "source") {
-            if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
-                MediaFileUtils::SplitByChar(filename, '.') == "mp4") {
+            if (isMovingPhoto && MediaFileUtils::SplitByChar(filename, '.') == "mp4") {
                 continue;
             }
             return parentPath + "/" + filename;
@@ -2480,7 +2486,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(std::shared_ptr<FileAsset> &fi
     }
 
     // 由于displayname可能被修改过，source文件cmd后缀与其上级目录后缀可能不相同，所以要检索EditDataDir目录下source文件
-    string sourcePath = GetSourceFileFromEditPath(path, subtype);
+    string sourcePath = GetSourceFileFromEditPath(path, fileAsset);
     string editDataDir = GetEditDataDirPath(path);
     CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Cannot get source path, id=%{public}d", fileId);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourcePath), E_NO_SUCH_FILE, "Can not get source file");
@@ -2953,7 +2959,8 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         vector<string> fileAssetColumns = {PhotoColumn::MEDIA_ID, PhotoColumn::PHOTO_DIRTY,
             PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_MIME_TYPE, PhotoColumn::MEDIA_TITLE,
             PhotoColumn::PHOTO_MEDIA_SUFFIX, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME,
-            PhotoColumn::PHOTO_ID, PhotoColumn::MEDIA_NAME };
+            PhotoColumn::PHOTO_ID, PhotoColumn::MEDIA_NAME, PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+            PhotoColumn::PHOTO_ORIGINAL_SUBTYPE };
         shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
             PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, fileAssetColumns);
         CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
@@ -3509,7 +3516,8 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
         PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
         PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_DIRTY, PhotoColumn::MEDIA_TITLE,
-        PhotoColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_MEDIA_SUFFIX, MediaColumn::MEDIA_TYPE };
+        PhotoColumn::MEDIA_MIME_TYPE, PhotoColumn::PHOTO_MEDIA_SUFFIX, MediaColumn::MEDIA_TYPE,
+        PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_ORIGINAL_SUBTYPE };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
