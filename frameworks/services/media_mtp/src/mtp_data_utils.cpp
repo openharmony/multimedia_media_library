@@ -443,7 +443,6 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
     CHECK_AND_RETURN_RET_LOG(count > 0, MTP_ERROR_INVALID_OBJECTHANDLE, "have no row");
     CHECK_AND_RETURN_RET(properties->size() != 0, MTP_INVALID_OBJECTPROPCODE_CODE);
     ResultSetDataType idType = TYPE_INT32;
-    int32_t handle = 0;
     for (int32_t row = 0; row < count; row++) {
         resultSet->GoToRow(row);
         if (context->handle > EDITED_PHOTOS_OFFSET) {
@@ -458,10 +457,9 @@ int32_t MtpDataUtils::GetPropList(const std::shared_ptr<MtpOperationContext> &co
             movingType.parent = static_cast<uint64_t>(parent);
             GetMovingOrEnditOneRowPropList(properties, path, context, outProps, movingType);
         } else {
-            handle = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, resultSet, idType));
             MEDIA_INFO_LOG("GetPropList %{public}d",
                 get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_ID, resultSet, idType)));
-            GetOneRowPropList(static_cast<uint32_t>(handle), resultSet, properties, outProps);
+            GetOneRowPropList(static_cast<uint32_t>(context->handle), resultSet, properties, outProps);
         }
     }
     return MTP_SUCCESS;

@@ -41,6 +41,7 @@
 #include "pixel_map.h"
 #include "ptp_album_handles.h"
 #include "ptp_medialibrary_manager_uri.h"
+#include "ptp_special_handles.h"
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
 #include "mediatool_uri.h"
@@ -91,6 +92,7 @@ std::vector<std::string> g_photoColumns = {
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::MEDIA_DATE_MODIFIED,
     PhotoColumn::PHOTO_THUMB_SIZE,
+    PhotoColumn::PHOTO_BURST_KEY,
 };
 const std::string ZERO = "0";
 } // namespace
@@ -163,6 +165,17 @@ void MtpMedialibraryManager::Clear()
     }
     mediaPhotoObserver_ = nullptr;
     dataShareHelper_ = nullptr;
+    deletedMovingPhotoHandles_.clear();
+    auto ptpSpecialHandles = PtpSpecialHandles::GetInstance();
+    CHECK_AND_RETURN_LOG(ptpSpecialHandles != nullptr, "fail to get ptpSpecialHandles");
+    ptpSpecialHandles->ClearDeletedHandles();
+}
+
+static uint32_t HandleConvertToAdded(uint32_t key)
+{
+    auto ptpSpecialHandles = PtpSpecialHandles::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(ptpSpecialHandles != nullptr, key, "ptpSpecialHandles is nullptr");
+    return ptpSpecialHandles->HandleConvertToAdded(key);
 }
 
 int32_t MtpMedialibraryManager::GetHandles(int32_t parentId, vector<int> &outHandles, MediaType mediaType)
@@ -275,7 +288,7 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetAlbumInfo(
     columns.push_back(EMPTY_COLUMN_NAME + " as " + MEDIA_DATA_DB_SIZE);
     columns.push_back(PhotoAlbumColumns::ALBUM_DATE_ADDED);
     if (!isHandle) {
-        predicates.EqualTo(MEDIA_DATA_DB_ALBUM_ID, to_string(context->handle));
+        predicates.EqualTo(MEDIA_DATA_DB_ALBUM_ID, to_string(HandleConvertToAdded(context->handle)));
         return dataShareHelper_->Query(uri, predicates, columns);
     }
     vector<string> ownerAlbumIds;
@@ -322,6 +335,19 @@ std::shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetOwnerA
     return dataShareHelper_->Query(uri, predicates, columns);
 }
 
+shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfoForMove(
+    const shared_ptr<MtpOperationContext> &context)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, nullptr, "context is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, nullptr,
+        "MtpMedialibraryManager::GetPhotosInfo fail to get datasharehelper");
+    Uri uri(PAH_QUERY_PHOTO);
+    DataShare::DataSharePredicates predicates;
+    int32_t file_id = static_cast<int32_t>(context->handle % COMMON_PHOTOS_OFFSET);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(file_id));
+    return dataShareHelper_->Query(uri, predicates, g_photoColumns);
+}
+
 shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
     const shared_ptr<MtpOperationContext> &context, bool isHandle)
 {
@@ -349,7 +375,7 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
                 ->EndWrap();
         }
     } else {
-        int32_t file_id = static_cast<int32_t>(context->handle % COMMON_PHOTOS_OFFSET);
+        int32_t file_id = static_cast<int32_t>(HandleConvertToAdded(context->handle) % COMMON_PHOTOS_OFFSET);
         predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(file_id));
     }
     return dataShareHelper_->Query(uri, predicates, g_photoColumns);
@@ -545,7 +571,7 @@ int32_t MtpMedialibraryManager::SetObject(const std::shared_ptr<DataShare::DataS
             MEDIA_ERR_LOG("MtpMedialibraryManager::SetObject get sourcePath failed");
             return MtpErrorUtils::SolveGetObjectInfoError(E_NO_SUCH_FILE);
         }
-        outObjectInfo->handle = context->handle;
+        outObjectInfo->handle = HandleConvertToAdded(context->handle);
         outObjectInfo->name = GetMovingPhotoVideoDisplayName(displayName, sourcePath);
         outObjectInfo->parent = GetInt32Val(MediaColumn::MEDIA_PARENT_ID, resultSet);
         outObjectInfo->storageID = context->storageID;
@@ -580,7 +606,7 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
     } else {
         outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
     }
-    outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
+    outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetOwnerAlbumId());
     outObjectInfo->dateCreated = fileAsset->GetDateAdded() / MILLI_TO_SECOND;
     outObjectInfo->dateModified = fileAsset->GetDateModified() / MILLI_TO_SECOND;
     outObjectInfo->storageID = DEFAULT_STORAGE_ID;
@@ -653,7 +679,7 @@ int32_t MtpMedialibraryManager::GetFdByOpenFile(const shared_ptr<MtpOperationCon
     MEDIA_DEBUG_LOG("GetFdByOpenFile  handle::%{public}u", context->handle);
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
         MtpErrorUtils::SolveGetFdError(E_HAS_DB_ERROR), "fail to get datasharehelper");
-    uint32_t id = context->handle % COMMON_PHOTOS_OFFSET;
+    uint32_t id = HandleConvertToAdded(context->handle) % COMMON_PHOTOS_OFFSET;
     string uri = URI_MTP_OPERATION + "/" + to_string(id);
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri openUri(uri);
@@ -942,23 +968,39 @@ int32_t MtpMedialibraryManager::SendObjectInfo(const std::shared_ptr<MtpOperatio
     uint32_t &outStorageID, uint32_t &outParent, uint32_t &outHandle)
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
-    DataShare::DataShareValuesBucket valuesBucket;
-    MediaType mediaType;
-    int errCode = MtpDataUtils::GetMediaTypeByName(context->name, mediaType);
-    CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to GetMediaTypeByName");
-    bool cond = ((mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) || context->parent == uint32_t(-1));
-    CHECK_AND_RETURN_RET_LOG(!cond, MTP_ERROR_INVALID_OBJECTHANDLE, "file type not support");
-    string uri = MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + MEDIA_FILEOPRN_CREATEASSET;
-    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri createFileUri(uri);
-    valuesBucket.Put(MEDIA_DATA_DB_NAME, context->name);
-    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
-    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
-        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
-    int outRowId = dataShareHelper_->Insert(createFileUri, valuesBucket);
-    CHECK_AND_RETURN_RET_LOG(outRowId > 0,
-        MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR), "fail to create assset");
-    outHandle = static_cast<uint32_t>(outRowId + COMMON_PHOTOS_OFFSET);
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpMedialibraryManager::SendObjectInfo");
+    if (context->parent == 0 || context->parent == MTP_ALL_HANDLE_ID) {
+        CHECK_AND_RETURN_RET_LOG(context->format == MTP_FORMAT_ASSOCIATION_CODE,
+            MTP_ERROR_INVALID_OBJECTHANDLE, "file type not support");
+        Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PTP_ALBUM_OPERATION + "/" + OPRN_CREATE);
+        DataShare::DataShareValuesBucket valuesBucket;
+        valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, context->name);
+        CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+            MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+        int outRowId = dataShareHelper_->Insert(createAlbumUri, valuesBucket);
+        CHECK_AND_RETURN_RET_LOG(outRowId > 0,
+            MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR), "fail to create album");
+        outHandle = static_cast<uint32_t>(outRowId);
+    } else {
+        DataShare::DataShareValuesBucket valuesBucket;
+        MediaType mediaType;
+        int errCode = MtpDataUtils::GetMediaTypeByName(context->name, mediaType);
+        CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to GetMediaTypeByName");
+        bool cond = ((mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO));
+        CHECK_AND_RETURN_RET_LOG(!cond, MTP_ERROR_INVALID_OBJECTHANDLE, "file type not support");
+        string uri = MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + MEDIA_FILEOPRN_CREATEASSET;
+        MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri createFileUri(uri);
+        valuesBucket.Put(MEDIA_DATA_DB_NAME, context->name);
+        valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+        CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+            MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+        int outRowId = dataShareHelper_->Insert(createFileUri, valuesBucket);
+        CHECK_AND_RETURN_RET_LOG(outRowId > 0,
+            MtpErrorUtils::SolveSendObjectInfoError(E_HAS_DB_ERROR), "fail to create assset");
+        outHandle = static_cast<uint32_t>(outRowId + COMMON_PHOTOS_OFFSET);
+    }
     outStorageID = DEFAULT_STORAGE_ID;
     outParent = context->parent;
     return MtpErrorUtils::SolveSendObjectInfoError(E_SUCCESS);
@@ -967,7 +1009,40 @@ int32_t MtpMedialibraryManager::SendObjectInfo(const std::shared_ptr<MtpOperatio
 int32_t MtpMedialibraryManager::MoveObject(const std::shared_ptr<MtpOperationContext> &context)
 {
     CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
-    return MtpErrorUtils::SolveCloseFdError(MTP_STORE_READ_ONLY);
+    if (context->handle < COMMON_PHOTOS_OFFSET) {
+        MEDIA_DEBUG_LOG("move album is invalid");
+        return MTP_ERROR_INVALID_OBJECTHANDLE;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpMedialibraryManager::MoveObject");
+    shared_ptr<DataShare::DataShareResultSet> resultSet = GetPhotosInfo(context, false);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet is nullptr");
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        MTP_ERROR_INVALID_OBJECTHANDLE, "have no handles");
+    int errorCode;
+    int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    uint32_t objectHandle = 0;
+    if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        subType == static_cast<int32_t>(PhotoSubType::BURST)) {
+        errorCode = CopyObject(context, objectHandle, true);
+        CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_INVALID_OBJECTHANDLE, "CopyObject failed");
+        errorCode = DeletePhoto(context, true);
+        CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_INVALID_OBJECTHANDLE, "DeletePhoto failed");
+    } else {
+        DataShare::DataSharePredicates predicates;
+        predicates.EqualTo(PhotoColumn::MEDIA_ID,
+            to_string(HandleConvertToAdded(context->handle) % COMMON_PHOTOS_OFFSET));
+        int32_t albumId = GetInt32Val(PARENT, resultSet);
+        predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
+        DataShare::DataShareValuesBucket valuesBuckets;
+        valuesBuckets.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, static_cast<int32_t>(context->parent));
+        string uri = MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + OPRN_BATCH_UPDATE_OWNER_ALBUM_ID;
+        MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri moveAssetsUri(uri);
+        errorCode = dataShareHelper_->Update(moveAssetsUri, predicates, valuesBuckets);
+        CHECK_AND_RETURN_RET_LOG(errorCode > 0, MtpErrorUtils::SolveGetHandlesError(errorCode), "Update is fail");
+    }
+    return MTP_SUCCESS;
 }
 
 int32_t MtpMedialibraryManager::GetFileAssetFromPhotosInfo(const std::shared_ptr<MtpOperationContext> &context,
@@ -1001,7 +1076,7 @@ int32_t MtpMedialibraryManager::GetMovingPhotoVideoPath(const std::string &dataP
     }
     displayName.resize(indexPos);
     displayName += MOVING_PHOTO_SUFFIX;
-    MEDIA_DEBUG_LOG("MTP CopyObjectMovingPhotoFix moving displayName:%{public}s", displayName.c_str());
+    MEDIA_DEBUG_LOG("MTP CopyObjectMovingPhotoFix moving displayName:%{private}s", displayName.c_str());
     return MTP_SUCCESS;
 }
 
@@ -1052,7 +1127,7 @@ int32_t MtpMedialibraryManager::CopyAndDumpFile(const std::shared_ptr<MtpOperati
 }
 
 int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationContext> &context,
-    uint32_t &outObjectHandle)
+    uint32_t &outObjectHandle, bool isForMove)
 {
     CHECK_AND_RETURN_RET_LOG((context != nullptr) && (context->parent != 0),
         MTP_ERROR_INVALID_OBJECTHANDLE, "context is invailed");
@@ -1084,22 +1159,154 @@ int32_t MtpMedialibraryManager::CopyObject(const std::shared_ptr<MtpOperationCon
     std::shared_ptr<MtpOperationContext> newFileContext = std::make_shared<MtpOperationContext>();
     newFileContext->handle = static_cast<uint32_t>(insertId) + COMMON_PHOTOS_OFFSET;
     newFileContext->parent = context->parent;
+    if (isForMove) {
+        auto ptpSpecialHandles = PtpSpecialHandles::GetInstance();
+        CHECK_AND_RETURN_RET_LOG(ptpSpecialHandles != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+            "ptpSpecialHandles is nullptr");
+        ptpSpecialHandles->AddHandleToMap(context->handle, newFileContext->handle);
+    }
     errCode = CopyAndDumpFile(newFileContext, movingPhotoDataPath, oldFileAsset);
     CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, errCode, "fail to CopyObjectSub");
     outObjectHandle = newFileContext->handle;
     return MTP_SUCCESS;
 }
 
-int32_t MtpMedialibraryManager::DeleteObject(const std::shared_ptr<MtpOperationContext> &context)
+static int32_t CheckRenameSuffix(const std::shared_ptr<MtpOperationContext> &context,
+    const std::string& colValueStr)
 {
-    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
-    return MtpErrorUtils::SolveCloseFdError(MTP_STORE_READ_ONLY);
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
+    std::string renameStr = colValueStr;
+    std::string originalStr = context->name;
+
+    size_t renamePos = renameStr.rfind('.');
+    size_t originalPos = originalStr.rfind('.');
+    CHECK_AND_RETURN_RET_LOG(renamePos != std::string::npos && originalPos != std::string::npos,
+        MTP_ERROR_INVALID_OBJECTPROP_VALUE, "suffix is null");
+    CHECK_AND_RETURN_RET_LOG(renameStr.substr(renamePos) == originalStr.substr(originalPos),
+        MTP_ERROR_INVALID_OBJECTPROP_VALUE, "suffix is not equal");
+
+    return MTP_SUCCESS;
+}
+
+static int32_t CheckVideoOfMovingPhotoSuffix(const std::string& name, std::string& colValueStr)
+{
+    size_t colValueSuffixPoint = colValueStr.rfind('.');
+    CHECK_AND_RETURN_RET_LOG(colValueSuffixPoint != std::string::npos,
+        MTP_ERROR_INVALID_OBJECTPROP_VALUE, "colValueStr suffix is null");
+    std::string colValueSuffix = colValueStr.substr(colValueSuffixPoint);
+    if (colValueSuffix == MOVING_PHOTO_SUFFIX) {
+        size_t nameSuffixPoint = name.rfind('.');
+        CHECK_AND_RETURN_RET_LOG(nameSuffixPoint != std::string::npos,
+            MTP_ERROR_INVALID_OBJECTPROP_VALUE, "name suffix is null");
+        std::string nameSuffix = name.substr(nameSuffixPoint);
+        colValueStr = colValueStr.substr(0, colValueSuffixPoint) + nameSuffix;
+    }
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMedialibraryManager::GetPhotoName(const std::shared_ptr<MtpOperationContext> &context)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_QUERY);
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_NAME);
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID,
+        to_string(HandleConvertToAdded(context->handle) % COMMON_PHOTOS_OFFSET));
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    auto resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
+        MtpErrorUtils::SolveDeleteObjectError(E_NO_SUCH_FILE), "fail to get albummInfo");
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        MtpErrorUtils::SolveDeleteObjectError(E_SUCCESS), "have no handles");
+    context->name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    resultSet->Close();
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMedialibraryManager::SetPhotoObjectPropValue(const std::shared_ptr<MtpOperationContext> &context,
+    std::string& colValueStr)
+{
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(colValueStr) == E_OK,
+        MTP_ERROR_INVALID_OBJECTPROP_VALUE, "violate the naming rules");
+    CHECK_AND_RETURN_RET_LOG(GetPhotoName(context) == MTP_SUCCESS,
+        MTP_ERROR_INVALID_OBJECTPROP_VALUE, "get photo name fail");
+    CHECK_AND_RETURN_RET_LOG(CheckVideoOfMovingPhotoSuffix(context->name, colValueStr) == MTP_SUCCESS,
+        MTP_ERROR_INVALID_OBJECTPROP_VALUE, "get photo name fail");
+    CHECK_AND_RETURN_RET_LOG(CheckRenameSuffix(context, colValueStr) == MTP_SUCCESS,
+        MTP_ERROR_INVALID_OBJECTPROP_VALUE, "rename media asset fail");
+    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + OPRN_UPDATE);
+    DataSharePredicates predicates;
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_NAME, colValueStr);
+    valuesBucket.Put(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(colValueStr));
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(context->handle % COMMON_PHOTOS_OFFSET));
+
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    int32_t changedRows = dataShareHelper_->Update(updateAssetUri, predicates, valuesBucket);
+    CHECK_AND_RETURN_RET_LOG(changedRows > 0,
+        MtpErrorUtils::SolveCloseFdError(E_HAS_DB_ERROR), "fail to update file");
+
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMedialibraryManager::SetAlbumObjectPropValue(const std::shared_ptr<MtpOperationContext> &context,
+    std::string& colValueStr)
+{
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(colValueStr) == E_OK,
+        MTP_ERROR_INVALID_OBJECTPROP_VALUE, "violate the naming rules");
+    DataSharePredicates predicates;
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, colValueStr);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(HandleConvertToAdded(context->handle)));
+
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + PTP_ALBUM_OPERATION + "/" + OPRN_ALBUM_SET_NAME);
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    int32_t errCode = dataShareHelper_->Update(uri, predicates, valuesBucket);
+    CHECK_AND_RETURN_RET_LOG(errCode > 0,
+        MtpErrorUtils::SolveCloseFdError(E_HAS_DB_ERROR), "fail to update albumName");
+    Uri queryUri(PAH_QUERY_PHOTO_ALBUM);
+    vector<string> columns;
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID);
+    DataSharePredicates queryPredicates;
+    queryPredicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, colValueStr);
+    auto resultSet = dataShareHelper_->Query(queryUri, queryPredicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
+        MtpErrorUtils::SolveDeleteObjectError(E_NO_SUCH_FILE), "fail to get albummInfo");
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        MtpErrorUtils::SolveDeleteObjectError(E_SUCCESS), "have no handles");
+    int32_t newAlbumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    resultSet->Close();
+    auto ptpSpecialHandles = PtpSpecialHandles::GetInstance();
+    CHECK_AND_RETURN_RET_LOG(ptpSpecialHandles != nullptr, MTP_ERROR_INVALID_OBJECTPROP_VALUE,
+        "ptpSpecialHandles is nullptr");
+    ptpSpecialHandles->AddHandleToMap(context->handle, newAlbumId);
+
+    return MTP_SUCCESS;
 }
 
 int32_t MtpMedialibraryManager::SetObjectPropValue(const std::shared_ptr<MtpOperationContext> &context)
 {
-    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
-    return MtpErrorUtils::SolveCloseFdError(MTP_STORE_READ_ONLY);
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "context is nullptr");
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpMedialibraryManager::SetObjectPropValue");
+    std::string colName("");
+    std::variant<int64_t, std::string> colValue;
+    int32_t errCode = MtpDataUtils::SolveSetObjectPropValueData(context, colName, colValue);
+    CHECK_AND_RETURN_RET_LOG(errCode == 0, errCode, "fail to SolveSetObjectPropValueData");
+    CHECK_AND_RETURN_RET_LOG(colName.compare(MEDIA_DATA_DB_PARENT_ID) != 0, E_INVALID_FILEID, "colName is invaild");
+    CHECK_AND_RETURN_RET_LOG(std::get_if<std::string>(&colValue) != nullptr, E_INVALID_FILEID, "colName is invaild");
+    CHECK_AND_RETURN_RET_LOG(std::get<std::string>(colValue) != "", E_INVALID_FILEID, "colName is invaild");
+    std::string colValueStr = std::get<std::string>(colValue);
+    if (context->handle > COMMON_PHOTOS_OFFSET) {
+        return SetPhotoObjectPropValue(context, colValueStr);
+    } else {
+        return SetAlbumObjectPropValue(context, colValueStr);
+    }
+    return MTP_SUCCESS;
 }
 
 int32_t MtpMedialibraryManager::CloseFdForGet(const std::shared_ptr<MtpOperationContext> &context, int32_t fd)
@@ -1123,12 +1330,12 @@ int32_t MtpMedialibraryManager::CloseFd(const shared_ptr<MtpOperationContext> &c
         return MtpErrorUtils::SolveCloseFdError(errCode);
     }
     shared_ptr<FileAsset> fileAsset;
-    errCode = GetAssetById(context->handle, fileAsset);
+    errCode = GetAssetById(HandleConvertToAdded(context->handle), fileAsset);
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS,
         MtpErrorUtils::SolveCloseFdError(errCode), "fail to GetAssetById");
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_URI, MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + MEDIA_FILEOPRN_CLOSEASSET +
-        "/" + to_string(context->handle - COMMON_PHOTOS_OFFSET));
+        "/" + to_string(HandleConvertToAdded(context->handle) - COMMON_PHOTOS_OFFSET));
     MEDIA_INFO_LOG("CloseFd %{public}s, FilePath  %{public}s", fileAsset->GetUri().c_str(),
         fileAsset->GetFilePath().c_str());
     Uri closeAssetUri(MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + MEDIA_FILEOPRN_CLOSEASSET);
@@ -1196,6 +1403,100 @@ int32_t MtpMedialibraryManager::GetObjectPropValue(const shared_ptr<MtpOperation
     return errCode;
 }
 
+int32_t MtpMedialibraryManager::DeleteAlbum(const std::shared_ptr<MtpOperationContext> &context)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr,
+        MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR), "context is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    int32_t errCode = E_ERR;
+    DataShare::DataSharePredicates predicates;
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + PTP_ALBUM_OPERATION + "/" + OPRN_DELETE;
+    Uri uri(deleteUri);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(HandleConvertToAdded(context->handle)));
+    string queryUriStr = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_QUERY;
+    Uri queryUri(queryUriStr);
+    std::vector<string> columns;
+    columns.push_back(PhotoAlbumColumns::ALBUM_ID);
+    columns.push_back(PhotoAlbumColumns::ALBUM_TYPE);
+    auto resultSet = dataShareHelper_->Query(queryUri, predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, MtpErrorUtils::SolveDeleteObjectError(E_ERR),
+        "resultSet is nullptr");
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        MtpErrorUtils::SolveDeleteObjectError(E_ERR), "resultSet is nullptr");
+    int32_t albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
+    resultSet->Close();
+    if (albumType == static_cast<int32_t>(PhotoAlbumType::SOURCE)) {
+        MEDIA_DEBUG_LOG("can not delete source photo album");
+        return MtpErrorUtils::SolveDeleteObjectError(E_ERR);
+    }
+    errCode = dataShareHelper_->Delete(uri, predicates);
+    CHECK_AND_RETURN_RET_LOG(errCode == MTP_SUCCESS, MtpErrorUtils::SolveDeleteObjectError(E_ERR), "Delete album fail");
+    return MTP_SUCCESS;
+}
+
+int32_t MtpMedialibraryManager::DeleteObject(const std::shared_ptr<MtpOperationContext> &context)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr,
+        MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR), "context is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    MEDIA_INFO_LOG("MtpMedialibraryManager::DeleteObject handle:%{public}d, parent:%{public}d",
+        context->handle, context ->parent);
+    MediaLibraryTracer tracer;
+    tracer.Start("MTP MtpMedialibraryManager::DeleteObject");
+    if (context->handle < COMMON_PHOTOS_OFFSET) {
+        int32_t errCode = DeleteAlbum(context);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, MtpErrorUtils::SolveDeleteObjectError(errCode),
+            "MtpMedialibraryManager::DeleteAlbum failed!");
+        return MtpErrorUtils::SolveCloseFdError(E_SUCCESS);
+    }
+    int32_t errCode = DeletePhoto(context, false);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, MtpErrorUtils::SolveDeleteObjectError(errCode),
+        "MtpMedialibraryManager::DeletePhoto failed!");
+    return MtpErrorUtils::SolveDeleteObjectError(E_SUCCESS);
+}
+
+int32_t MtpMedialibraryManager::DeletePhoto(const std::shared_ptr<MtpOperationContext> &context, bool isForMove)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr,
+        MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR), "context is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
+        MtpErrorUtils::SolveDeleteObjectError(E_HAS_DB_ERROR), "fail to get datasharehelper");
+    string deleteUri = MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + OPRN_DELETE;
+    MediaFileUtils::UriAppendKeyValue(deleteUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(deleteUri);
+    shared_ptr<DataShare::DataShareResultSet> resultSet;
+    uint32_t actualHandle = 0;
+    DataShare::DataSharePredicates predicates;
+    if (isForMove) {
+        resultSet = GetPhotosInfoForMove(context);
+        actualHandle = context->handle;
+    } else {
+        resultSet = GetPhotosInfo(context, false);
+        actualHandle = HandleConvertToAdded(context->handle);
+    }
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, static_cast<int32_t>(actualHandle % COMMON_PHOTOS_OFFSET));
+
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, MTP_ERROR_INVALID_OBJECTHANDLE, "fail to getSet");
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
+        MTP_ERROR_INVALID_OBJECTHANDLE, "have no row");
+
+    int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    resultSet->Close();
+    if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        deletedMovingPhotoHandles_.insert(actualHandle);
+        if (deletedMovingPhotoHandles_.count((actualHandle % COMMON_PHOTOS_OFFSET) + COMMON_PHOTOS_OFFSET) == 0 ||
+            deletedMovingPhotoHandles_.count((actualHandle % COMMON_PHOTOS_OFFSET) + COMMON_MOVING_OFFSET) == 0) {
+            return MtpErrorUtils::SolveCloseFdError(E_SUCCESS);
+        }
+    }
+    int32_t ret = dataShareHelper_->Delete(uri, predicates);
+    MEDIA_DEBUG_LOG("MtpMedialibraryManager::DeletePhoto ret:%{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(ret >= 0, MtpErrorUtils::SolveDeleteObjectError(E_ERR), "delete photo fail");
+    return E_SUCCESS;
+}
+
 void MtpMedialibraryManager::DeleteCanceledObject(uint32_t id)
 {
     CHECK_AND_RETURN_LOG(dataShareHelper_ != nullptr,
@@ -1207,7 +1508,7 @@ void MtpMedialibraryManager::DeleteCanceledObject(uint32_t id)
     DataShare::DataShareValuesBucket valuesBucketTrashed;
     valuesBucketTrashed.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     DataShare::DataSharePredicates predicatesTrashed;
-    predicatesTrashed.EqualTo(MediaColumn::MEDIA_ID, to_string(id - COMMON_PHOTOS_OFFSET));
+    predicatesTrashed.EqualTo(MediaColumn::MEDIA_ID, to_string(HandleConvertToAdded(id) - COMMON_PHOTOS_OFFSET));
     dataShareHelper_->Update(trashAssetUri, predicatesTrashed, valuesBucketTrashed);
     MEDIA_INFO_LOG("Update file date_trashed SUCCESS");
 
@@ -1215,7 +1516,7 @@ void MtpMedialibraryManager::DeleteCanceledObject(uint32_t id)
     MediaFileUtils::UriAppendKeyValue(deleteUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri deleteUri(deleteUriStr);
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(id - COMMON_PHOTOS_OFFSET));
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(HandleConvertToAdded(id) - COMMON_PHOTOS_OFFSET));
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, DATE_UNTRASHED);
     dataShareHelper_->Update(deleteUri, predicates, valuesBucket);

@@ -173,7 +173,7 @@ HWTEST_F(MtpPtpProxyTest, MtpPtpProxy_Test_004, TestSize.Level1)
 
     context->handle = 0;
     int32_t res = mtpPtpProxy.SetObjectPropValue(context);
-    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTHANDLE);
+    EXPECT_EQ(res, MTP_ERROR_INVALID_OBJECTPROP_VALUE);
 
     context->handle = PTP_IN_MTP_ID;
     res = mtpPtpProxy.SetObjectPropValue(context);

@@ -70,6 +70,7 @@
 #include "medialibrary_meta_recovery.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_operation_record.h"
+#include "medialibrary_ptp_operations.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_restore.h"
@@ -797,6 +798,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
         case OperationObject::ANALYSIS_PHOTO_ALBUM:
         case OperationObject::PHOTO_ALBUM:
+        case OperationObject::PTP_ALBUM_OPERATION:
             return MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(cmd);
         case OperationObject::FILESYSTEM_DIR:
             return MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -1107,9 +1109,24 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
             return MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(rdbPredicate);
         }
         default:
+            return DeleteInRdbPredicatesMore(cmd, rdbPredicate);
+    }
+    return DeleteInRdbPredicatesAnalysis(cmd, rdbPredicate);
+}
+
+int32_t MediaLibraryDataManager::DeleteInRdbPredicatesMore(MediaLibraryCommand &cmd,
+    NativeRdb::RdbPredicates &rdbPredicate)
+{
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::PTP_OPERATION: {
+            return MediaLibraryPtpOperations::DeletePtpPhoto(rdbPredicate);
+        }
+        case OperationObject::PTP_ALBUM_OPERATION: {
+            return MediaLibraryPtpOperations::DeletePtpAlbum(rdbPredicate);
+        }
+        default:
             break;
     }
-
     return DeleteInRdbPredicatesAnalysis(cmd, rdbPredicate);
 }
 
@@ -1298,6 +1315,7 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             break;
         }
         case OperationObject::PHOTO_ALBUM:
+        case OperationObject::PTP_ALBUM_OPERATION:
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
