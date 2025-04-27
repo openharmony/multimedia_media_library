@@ -237,6 +237,7 @@ public:
         const std::shared_ptr<MtpOperationContext> &context);
     static int32_t GetGalleryPropList(const std::shared_ptr<MtpOperationContext> &context,
         shared_ptr<vector<Property>> &outProps, const std::string &name);
+    static bool IsNumber(const std::string& str);
 private:
     static int32_t GetPropList(const std::shared_ptr<MtpOperationContext> &context,
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
