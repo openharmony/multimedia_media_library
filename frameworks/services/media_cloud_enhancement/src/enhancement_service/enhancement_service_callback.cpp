@@ -330,7 +330,7 @@ void EnhancementServiceCallback::UpdateAlbumsForCloudEnhancement()
         CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
         MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, AlbumOperationType::DEFAULT,
             needUpdateUris, NotifyAlbumType::SYS_ALBUM);
-        MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, needUpdateUris, sourceAlbumNotify);
+        MediaLibraryRdbUtils::UpdateCommonAlbumByUri(rdbStore, needUpdateUris, true);
         needUpdateUris.clear();
     } else {
         MEDIA_INFO_LOG("no uris need to update albums");
