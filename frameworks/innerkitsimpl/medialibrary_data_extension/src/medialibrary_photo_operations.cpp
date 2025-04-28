@@ -906,20 +906,24 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
         }
     }
 
-    const std::string updateSql = "UPDATE Photos"
-        " SET source_path = CASE"
-        " WHEN SubPhotos.owner_album_id != 0 AND PhotoAlbum.album_id IS NULL AND ("
-        " Photos.source_path != '' AND Photos.source_path IS NOT NULL )"
-        " THEN Photos.source_path"
-        " ELSE ( SELECT"
-        " '/storage/emulated/0' || COALESCE(PhotoAlbum.lpath, '/Pictures/其它') || '/' || SubPhotos.display_name "
-        " FROM Photos AS SubPhotos "
-        " LEFT JOIN PhotoAlbum ON SubPhotos.owner_album_id = PhotoAlbum.album_id "
-        " WHERE SubPhotos.file_id = Photos.file_id"
-        " LIMIT 1"
-        " )"
-        " END"
-        " WHERE file_id IN (" + inClause + ")";
+    const std::string updateSql = "UPDATE Photos "
+        "SET source_path = ("
+            "SELECT "
+                "CASE "
+                    "WHEN PhotoAlbum.lpath IS NOT NULL THEN "
+                        "'/storage/ /0' || PhotoAlbum.lpath || '/' || SubPhotos.display_name "
+                    "WHEN PhotoAlbum.lpath IS NULL AND (SubPhotos.owner_album_id = 0 "
+                        "OR Photos.source_path IS NULL OR Photos.source_path = '') THEN "
+                        "'/storage/emulated/0/Pictures/其它/' || SubPhotos.display_name "
+                    "ELSE "
+                        "Photos.source_path "
+                "END "
+            "FROM Photos AS SubPhotos "
+            "LEFT JOIN PhotoAlbum ON SubPhotos.owner_album_id = PhotoAlbum.album_id "
+            "WHERE SubPhotos.file_id = Photos.file_id "
+            "LIMIT 1 "
+        ") "
+        "WHERE file_id IN (" + inClause + ") ";
     std::thread([=] {
         int32_t result = rdbStore->ExecuteSql(updateSql);
         CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Failed to update source path, error code: %{private}d",
