@@ -683,6 +683,8 @@ bool BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(int64_t maxAlbumId, const
 
     std::string albumIdCondition = ANALYSIS_COL_ALBUM_ID + " < " + std::to_string(maxAlbumId);
     std::string finalWhereClause = albumIdCondition + " AND (" + analysisAlbumWhereClause + ")";
+    finalWhereClause += " AND (album_type = 4096 AND album_subtype = 4102)";
+
     std::string selectTagIdsToDeleteSql = "SELECT A." + ANALYSIS_COL_TAG_ID +
         " FROM " + ANALYSIS_ALBUM_TABLE + " AS A " + " WHERE " + finalWhereClause;
 
