@@ -1101,7 +1101,7 @@ static int32_t UpdateDirtyWithoutIsTemp(RdbPredicates &predicates)
     return updateDirtyRows;
 }
 
-static int32_t UpdateThirdPartyPhotoDirtyFlag(ValuesBucket &value, RdbPredicates &predicates,
+static int32_t UpdateThirdPartyPhotoDirtyFlag(ValuesBucket &values, RdbPredicates &predicates,
     int32_t &updateDirtyRows)
 {
     values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
