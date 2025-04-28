@@ -1120,6 +1120,8 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
         predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
         values.Put(PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey);
     }
+    MEDIA_INFO_LOG("MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
+        supportedWatermarkType, cameraShotKey.c_str());
     int32_t updateDirtyRows = 0;
     if (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))) {
         // Only third-party app save photo, it will bring dirty flag
