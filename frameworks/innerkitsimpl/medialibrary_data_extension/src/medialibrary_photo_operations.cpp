@@ -923,7 +923,7 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
             "WHERE SubPhotos.file_id = Photos.file_id "
             "LIMIT 1 "
         ") "
-        "WHERE file_id IN (" + inClause + ") ";
+        "WHERE file_id IN (" + inClause + ")";
     std::thread([=] {
         int32_t result = rdbStore->ExecuteSql(updateSql);
         CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Failed to update source path, error code: %{private}d",
