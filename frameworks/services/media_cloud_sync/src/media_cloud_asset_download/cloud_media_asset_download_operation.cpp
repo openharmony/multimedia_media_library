@@ -277,7 +277,7 @@ CloudMediaAssetDownloadOperation::DownloadFileData CloudMediaAssetDownloadOperat
     return data;
 }
 
-void CloudMediaAssetDownloadOperation::StartFileCacheFailed(const int64_t batchNum, const int64_t batchSize)
+void CloudMediaAssetDownloadOperation::StartFileCacheFailed()
 {
     downloadId_ = DOWNLOAD_ID_DEFAULT;
     if (isCache_) {
@@ -297,25 +297,16 @@ void CloudMediaAssetDownloadOperation::StartFileCacheFailed(const int64_t batchN
     SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
 }
 
-void CloudMediaAssetDownloadOperation::StartBatchDownload(const int64_t batchNum, const int64_t batchSize)
+void CloudMediaAssetDownloadOperation::StartBatchDownload()
 {
-    std::thread([this, batchNum, batchSize]() {
+    std::thread([this]() {
         this_thread::sleep_for(chrono::milliseconds(SLEEP_FOR_LOCK));
         int32_t ret = cloudSyncManager_.get().StartFileCache(dataForDownload_.pathVec, downloadId_,
             FieldKey::FIELDKEY_CONTENT, downloadCallback_);
-        if (ret == CLOUD_E_RDB || ret == CLOUD_E_PATH_NOT_FOUND) {
-            MEDIA_INFO_LOG("failed to StartFileCache, ret: %{public}d, downloadId_: %{public}s.",
-                ret, to_string(downloadId_).c_str());
-            StartFileCacheFailed(batchNum, batchSize);
-            return;
-        }
         if (ret != E_OK || downloadId_ == DOWNLOAD_ID_DEFAULT) {
             MEDIA_ERR_LOG("failed to StartFileCache, ret: %{public}d, downloadId_: %{public}s.",
                 ret, to_string(downloadId_).c_str());
-            downloadId_ = DOWNLOAD_ID_DEFAULT;
-            cacheForDownload_ = dataForDownload_;
-            ClearData(dataForDownload_);
-            SetTaskStatus(Status::PAUSE_FOR_CLOUD_ERROR);
+            StartFileCacheFailed();
             return;
         }
         MEDIA_INFO_LOG("Success, downloadId: %{public}d, downloadNum: %{public}d, isCache: %{public}d.",
@@ -353,7 +344,7 @@ int32_t CloudMediaAssetDownloadOperation::SubmitBatchDownload(
     }
     dataForDownload_ = data;
 
-    StartBatchDownload(data.batchCountNeedDownload, data.batchSizeNeedDownload);
+    StartBatchDownload();
     return E_OK;
 }
 
