@@ -262,8 +262,8 @@ static void CloudMediaAssetDownloadOperationFuzzer(const uint8_t *data, size_t s
     operation->isThumbnailUpdate_ = FuzzBool(data, size);
     operation->InitDownloadTaskInfo();
     CloudMediaAssetDownloadOperation::DownloadFileData downloadFileData = operation->ReadyDataForBatchDownload();
-    operation->StartFileCacheFailed(FuzzInt64(data, size), FuzzInt64(data, size));
-    operation->StartBatchDownload(FuzzInt64(data, size), FuzzInt64(data, size));
+    operation->StartFileCacheFailed();
+    operation->StartBatchDownload();
     operation->SubmitBatchDownload(downloadFileData, FuzzBool(data, size));
     operation->InitStartDownloadTaskStatus(FuzzBool(data, size));
     operation->DoRelativedRegister();
