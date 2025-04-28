@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "medialibrary_db_const.h"
 #define MLOG_TAG "ObjectUtils"
 
 #include "medialibrary_object_utils.h"
@@ -40,7 +41,6 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_smartalbum_map_operations.h"
