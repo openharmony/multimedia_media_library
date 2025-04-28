@@ -2568,9 +2568,9 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     auto changeOpreations = context.assetChangeOperations;
     bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::ADD_RESOURCE) != changeOpreations.end();
-    bool containsSetSupportedWatermarkType = std::find(changeOpreations.begin(), changeOpreations.end(),
+    bool iscontainsSetSupportedWatermarkType = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::SET_SUPPORTED_WATERMARK_TYPE) != changeOpreations.end();
-    bool containsSetCameraShotKey = std::find(changeOpreations.begin(), changeOpreations.end(),
+    bool iscontainsSetCameraShotKey = std::find(changeOpreations.begin(), changeOpreations.end(),
         AssetChangeOperation::SET_CAMERA_SHOT_KEY) != changeOpreations.end();
     std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
     if (containsAddResource && !MediaLibraryNapiUtils::IsSystemApp()) {
@@ -2596,11 +2596,11 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     Uri uri(uriStr);
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
-    if (containsSetSupportedWatermarkType) {
+    if (iscontainsSetSupportedWatermarkType) {
         predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
         valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
     }
-    if (containsSetCameraShotKey) {
+    if (iscontainsSetCameraShotKey) {
         predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
         valuesBucket.Put(PhotoColumn::CAMERA_SHOT_KEY, fileAsset->GetCameraShotKey());
     }
