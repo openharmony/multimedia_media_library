@@ -6154,6 +6154,11 @@ static napi_value ParseArgsUpdateGalleryFormInfo(napi_env env, napi_callback_inf
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
         maxArgs) == napi_ok, "Failed to get object info");
  
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     CHECK_COND_WITH_MESSAGE(env, ParseUpdateGalleryFormInfoOption(env, context->argv[ARGS_ZERO], *context) == napi_ok,
         "Parse formInfo Option failed");
  
@@ -6169,7 +6174,12 @@ static napi_value ParseArgsSaveGalleryFormInfo(napi_env env, napi_callback_info 
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
         maxArgs) == napi_ok, "Failed to get object info");
- 
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     CHECK_COND_WITH_MESSAGE(env, ParseSaveGalleryFormInfoOption(env, context->argv[ARGS_ZERO], *context) == napi_ok,
         "Parse formInfo Option failed");
  
@@ -6262,7 +6272,12 @@ static napi_value ParseArgsRemoveGalleryFormInfo(napi_env env, napi_callback_inf
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
         maxArgs) == napi_ok, "Failed to get object info");
- 
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     bool present = false;
     CHECK_COND_WITH_MESSAGE(env, napi_has_named_property(env, context->argv[ARGS_ZERO], "formId", &present) == napi_ok,
         "Failed to get object info");
