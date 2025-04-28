@@ -1098,24 +1098,45 @@ static int32_t UpdateDirtyWithoutIsTemp(RdbPredicates &predicates)
     return updateDirtyRows;
 }
 
+static int32_t UpdateThirdPartyPhotoDirtyFlag(ValuesBucket &values, RdbPredicates &predicates,
+    int32_t &updateDirtyRows)
+{
+    values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
+    CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR,
+        "update third party photo temp, dirty flag, watermark type and camera shot key fail.");
+    return updateDirtyRows;
+}
+
 static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &fileId)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-
+    ValuesBucket &cmdValues = cmd.GetValueBucket();
+    int32_t supportedWatermarkType = 0;
+    string cameraShotKey;
+    if (MediaLibraryAssetOperations::GetInt32FromValuesBucket(cmdValues,
+        PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType)) {
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+        values.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType);
+    }
+    if (MediaLibraryAssetOperations::GetStringFromValuesBucket(cmdValues,
+        PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey)) {
+        predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+        values.Put(PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey);
+    }
+    MEDIA_INFO_LOG("MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
+        supportedWatermarkType, cameraShotKey.c_str());
     int32_t updateDirtyRows = 0;
     if (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))) {
         // Only third-party app save photo, it will bring dirty flag
         // The photo saved by third-party apps, whether of low or high quality, should set dirty to TYPE_NEW
         // Every subtype of photo saved by third-party apps, should set dirty to TYPE_NEW
         // Need to change the quality to high quality before updating
-        values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
-        values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
-        CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR, "update third party photo temp and dirty flag fail.");
-        return updateDirtyRows;
+        return UpdateThirdPartyPhotoDirtyFlag(values, predicates, updateDirtyRows);
     }
 
     string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
@@ -1126,7 +1147,8 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
         predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::BURST)));
         values.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
         updateDirtyRows = MediaLibraryRdbStore::UpdateWithDateTime(values, predicates);
-        CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR, "burst photo update temp and dirty flag fail.");
+        CHECK_AND_RETURN_RET_LOG(updateDirtyRows >= 0, E_ERR,
+            "burst photo update temp, dirty flag, watermark type and camera shot key fail.");
         return updateDirtyRows;
     }
 
