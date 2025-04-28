@@ -2523,6 +2523,8 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetCameraShotKeyExecute");
     auto changeOperations = context.assetChangeOperations;
     bool containsSaveCameraPhoto = std::find(changeOperations.begin(), changeOperations.end(),
         AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOperations.end();
@@ -2530,8 +2532,6 @@ static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context
         NAPI_INFO_LOG("set camera shot key will execute by save camera photo.");
         return true;
     }
-    MediaLibraryTracer tracer;
-    tracer.Start("SetCameraShotKeyExecute");
 
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
@@ -2710,6 +2710,8 @@ static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& conte
 
 static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetSupportedWatermarkTypeExecute");
     auto changeOperations = context.assetChangeOperations;
     bool containsSaveCameraPhoto = std::find(changeOperations.begin(), changeOperations.end(),
         AssetChangeOperation::SAVE_CAMERA_PHOTO) != changeOperations.end();
@@ -2717,8 +2719,6 @@ static bool SetSupportedWatermarkTypeExecute(MediaAssetChangeRequestAsyncContext
         NAPI_INFO_LOG("set supported watermark type will execute by save camera photo.");
         return true;
     }
-    MediaLibraryTracer tracer;
-    tracer.Start("SetSupportedWatermarkTypeExecute");
 
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
