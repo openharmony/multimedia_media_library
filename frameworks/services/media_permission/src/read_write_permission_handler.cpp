@@ -79,6 +79,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
     OperationObject::ANALYSIS_ALBUM_ASSET_MAP,
     OperationObject::CLOUD_MEDIA_ASSET_OPERATE,
     OperationObject::ANALYSIS_ADDRESS,
+    OperationObject::TAB_FACARD_PHOTO,
 };
 
 std::string USER_STR = "user";
@@ -250,7 +251,6 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
         OperationObject::ACTIVE_DEVICE,
         OperationObject::MISCELLANEOUS,
         OperationObject::TAB_OLD_PHOTO,
-        OperationObject::TAB_FACARD_PHOTO,
         OperationObject::CONVERT_PHOTO,
     };
 
