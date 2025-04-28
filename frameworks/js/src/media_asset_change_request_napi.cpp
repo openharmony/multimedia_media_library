@@ -2597,11 +2597,9 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     if (iscontainsSetSupportedWatermarkType) {
-        predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
         valuesBucket.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, fileAsset->GetSupportedWatermarkType());
     }
     if (iscontainsSetCameraShotKey) {
-        predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
         valuesBucket.Put(PhotoColumn::CAMERA_SHOT_KEY, fileAsset->GetCameraShotKey());
     }
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
