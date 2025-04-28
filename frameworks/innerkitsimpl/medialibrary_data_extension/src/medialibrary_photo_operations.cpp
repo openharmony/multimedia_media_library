@@ -906,13 +906,22 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
         }
     }
 
-    const std::string updateSql = "UPDATE Photos"
-        " SET source_path = ( SELECT"
-        " '/storage/emulated/0' || COALESCE(PhotoAlbum.lpath, '/Pictures/其它') || '/' || SubPhotos.display_name "
-        " FROM Photos AS SubPhotos "
-        " LEFT JOIN PhotoAlbum ON SubPhotos.owner_album_id = PhotoAlbum.album_id "
-        " WHERE SubPhotos.file_id = Photos.file_id"
-        " LIMIT 1"
+    const std::string updateSql = "UPDATE Photos "
+        "SET source_path = ("
+            "SELECT "
+                "CASE "
+                    "WHEN PhotoAlbum.lpath IS NOT NULL THEN "
+                        "'/storage/ /0' || PhotoAlbum.lpath || '/' || SubPhotos.display_name "
+                    "WHEN PhotoAlbum.lpath IS NULL AND (SubPhotos.owner_album_id = 0 "
+                        "OR Photos.source_path IS NULL OR Photos.source_path = '') THEN "
+                        "'/storage/emulated/0/Pictures/其它/' || SubPhotos.display_name "
+                    "ELSE "
+                        "Photos.source_path "
+                "END "
+            "FROM Photos AS SubPhotos "
+            "LEFT JOIN PhotoAlbum ON SubPhotos.owner_album_id = PhotoAlbum.album_id "
+            "WHERE SubPhotos.file_id = Photos.file_id "
+            "LIMIT 1 "
         ") "
         "WHERE file_id IN (" + inClause + ")";
     std::thread([=] {
