@@ -339,7 +339,7 @@ void CloneRestoreHighlight::GetAnalysisAlbumInfos()
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query AnalysisAlbum nums: %{public}zu", analysisInfos_.size());
 }
 
@@ -551,7 +551,7 @@ void CloneRestoreHighlight::GetHighlightAlbumInfos()
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_highlight_album nums: %{public}zu", highlightInfos_.size());
 }
 
@@ -806,7 +806,7 @@ void CloneRestoreHighlight::GetHighlightCoverInfos()
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_highlight_cover_info nums: %{public}zu", coverInfos_.size());
 }
 
@@ -950,7 +950,7 @@ void CloneRestoreHighlight::GetHighlightPlayInfos()
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_highlight_play_info nums: %{public}zu", playInfos_.size());
 }
 

@@ -786,7 +786,7 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
 }
 
 void CloneRestoreCVAnalysis::ReportCloneRestoreCVAnalysisTask()
