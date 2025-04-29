@@ -57,6 +57,7 @@ public:
     EXPORT static void ScanFileAsync(const std::string &path, const std::string &id, MediaLibraryApi api,
         bool isCameraShotMovingPhoto = false, std::shared_ptr<Media::Picture> resultPicture = nullptr);
     static void ScanFileSyncWithoutAlbumUpdate(const std::string &path, const std::string &id, MediaLibraryApi api);
+    EXPORT static void ScanMovingPhotoVideoAsync(const std::string &path, bool isCameraShotMovingPhoto);
     EXPORT static int32_t GetIdByPathFromDb(const std::string &path);
     static std::string GetPathByIdFromDb(const std::string &id, const bool isDelete = false);
     static std::unique_ptr<FileAsset> GetFileAssetByPredicates(const NativeRdb::AbsRdbPredicates &predicates,

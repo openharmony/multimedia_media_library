@@ -3130,7 +3130,7 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         if (fileAsset->GetStageVideoTaskStatus() == static_cast<int32_t>(StageVideoTaskStatus::NEED_TO_STAGE)) {
             MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(fileAsset->GetPhotoId());
         }
-        return AddFiltersToVideoExecute(fileAsset->GetFilePath(), true);
+        return AddFiltersToVideoExecute(fileAsset->GetFilePath(), true, true);
     }
 
     if (IsCameraEditData(cmd)) {
@@ -3290,7 +3290,8 @@ int32_t MediaLibraryPhotoOperations::CopyVideoFile(const string& assetPath, bool
     return E_OK;
 }
 
-int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string &assetPath, bool isSaveVideo)
+int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string &assetPath,
+    bool isSaveVideo, bool isNeedScan)
 {
     string editDataCameraPath = MediaLibraryAssetOperations::GetEditDataCameraPath(assetPath);
     if (MediaFileUtils::IsFileExists(editDataCameraPath)) {
@@ -3327,11 +3328,14 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const std::string 
         MEDIA_INFO_LOG("AddFiltersToVideoExecute after EraseStickerField, editData = %{public}s", editData.c_str());
         CHECK_AND_RETURN_RET_LOG(SaveSourceVideoFile(assetPath, true) == E_OK, E_HAS_FS_ERROR,
             "Failed to save source video, path = %{public}s", assetPath.c_str());
-        VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData);
-        return E_OK;
+        VideoCompositionCallbackImpl::AddCompositionTask(assetPath, editData, isNeedScan);
     } else {
-        return SaveTempMovingPhotoVideo(assetPath);
+        int32_t ret = SaveTempMovingPhotoVideo(assetPath);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret,
+            "Failed to save temp video, path = %{private}s", assetPath.c_str());
+        MediaLibraryObjectUtils::ScanMovingPhotoVideoAsync(assetPath, true);
     }
+    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersForCloudEnhancementPhoto(int32_t fileId,

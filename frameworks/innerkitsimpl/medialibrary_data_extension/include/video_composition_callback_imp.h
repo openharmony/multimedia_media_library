@@ -43,10 +43,14 @@ public:
         string sourceVideoPath_;
         string videoPath_;
         string editData_;
-        Task(string& sourceVideoPath, string& videoPath, string& editData)
+        string assetPath_;
+        bool isNeedScan_;
+        Task(string& sourceVideoPath, string& videoPath, string& editData, const string& assetPath, bool isNeedScan)
             : sourceVideoPath_(sourceVideoPath),
             videoPath_(videoPath),
-            editData_(editData)
+            editData_(editData),
+            assetPath_(assetPath),
+            isNeedScan_(isNeedScan)
         {
         }
     };
@@ -55,9 +59,12 @@ public:
     void onProgress(uint32_t progress) override;
 
     static int32_t CallStartComposite(const std::string& sourceVideoPath, const std::string& videoPath,
-        const std::string& effectDescription);
-    static void AddCompositionTask(const std::string& assetPath, std::string& editData);
+        const std::string& effectDescription, const std::string& assetPath, bool isNeedScan);
+    static void AddCompositionTask(const std::string& assetPath, std::string& editData, bool isNeedScan);
     static void EraseStickerField(std::string& editData, size_t index, bool isTimingSticker);
+    static void InitCallbackImpl(std::shared_ptr<VideoCompositionCallbackImpl>& callBack,
+        int32_t inputFileFd, int32_t outputFileFd, const std::string& videoPath, std::string& absSourceVideoPath,
+        const std::string& assetPath, bool isNeedScan);
 
 private:
     static std::unordered_map<uint32_t, std::shared_ptr<VideoEditor>> editorMap_;
@@ -69,6 +76,8 @@ private:
     string videoPath_;
     string tempFilters_;
     string sourceVideoPath_;
+    string assetPath_;
+    bool isNeedScan_;
 };
 
 } // end of namespace

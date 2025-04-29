@@ -239,10 +239,11 @@ HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_CallStartCompos
     string srcPatch;
     string videoPath;
     string effectDescription;
+    string assetPath;
 
     auto imp = make_shared<VideoCompositionCallbackImpl>();
     ASSERT_NE(imp, nullptr);
-    auto ret =  imp->CallStartComposite(srcPatch, videoPath, effectDescription);
+    auto ret =  imp->CallStartComposite(srcPatch, videoPath, effectDescription, assetPath, false);
     EXPECT_EQ(ret, E_HAS_FS_ERROR);
     MEDIA_INFO_LOG("end VideoComposition_Test_CallStartComposite_Invalid_Path");
 }
@@ -257,10 +258,10 @@ HWTEST_F(VideoCompositionCallbackImplTest, VideoComposition_Test_AddCompositionT
     auto fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
     ASSERT_GT(fileId, 0);
     string assetPath;
-    imp->AddCompositionTask(assetPath, assetPath);
+    imp->AddCompositionTask(assetPath, assetPath, false);
 
     assetPath = GetFilePath(fileId);
-    imp->AddCompositionTask(assetPath, EDITDATA_VALUE);
+    imp->AddCompositionTask(assetPath, EDITDATA_VALUE, false);
 
     MEDIA_INFO_LOG("end VideoComposition_Test_AddCompositionTask");
 }
