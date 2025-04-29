@@ -3383,15 +3383,15 @@ static void UpdateSourcePhotoAlbumTrigger(RdbStore &store)
     MEDIA_INFO_LOG("end update source photo album trigger");
 }
 
-static void UpdateSearchStatusTriggerForOwnerAlbumId(RdbStore &store)
+static void UpdateSearchStatusTrigger(RdbStore &store)
 {
-    MEDIA_INFO_LOG("start update search status trigger for owner album id");
+    MEDIA_INFO_LOG("start update search status trigger");
     const vector<string> sqls = {
         "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_STATUS_TRIGGER,
         CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
     };
     ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("end update search status trigger for owner album id");
+    MEDIA_INFO_LOG("end update search status trigger");
 }
 
 static void AddHighlightAnalysisProgress(RdbStore &store)
@@ -4392,9 +4392,9 @@ static void UpgradeAPI18(RdbStore &store, unordered_map<string, bool> &photoColu
     }
     MEDIA_INFO_LOG("End VERSION_ADD_HIGHLIGHT_TRIGGER");
 
-    MEDIA_INFO_LOG("Start VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID");
-    UpdateSearchStatusTriggerForOwnerAlbumId(store);
-    MEDIA_INFO_LOG("End VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID");
+    MEDIA_INFO_LOG("Start VERSION_UPDATE_SEARCH_STATUS_TRIGGER");
+    UpdateSearchStatusTrigger(store);
+    MEDIA_INFO_LOG("End VERSION_UPDATE_SEARCH_STATUS_TRIGGER");
 
     MEDIA_INFO_LOG("Start VERSION_HIGHLIGHT_MOVING_PHOTO");
     AddMovingPhotoRelatedData(store);
@@ -4570,8 +4570,8 @@ static void UpgradeExtensionPart4(RdbStore &store, int32_t oldVersion)
         UpdateSourcePhotoAlbumTrigger(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_OWNER_ALBUM_ID) {
-        UpdateSearchStatusTriggerForOwnerAlbumId(store);
+    if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER) {
+        UpdateSearchStatusTrigger(store);
     }
 
     if (oldVersion < VERSION_ADD_CHECK_FLAG) {
