@@ -203,7 +203,7 @@ void CloneRestoreCVAnalysis::GetAssetAlbumInfos(CloneRestoreHighlight &cloneHigh
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
 }
 
 void CloneRestoreCVAnalysis::InsertIntoAssetMap()
