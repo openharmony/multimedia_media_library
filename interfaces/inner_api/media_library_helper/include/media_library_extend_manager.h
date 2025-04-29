@@ -37,6 +37,7 @@ enum class PhotoPermissionType : int32_t {
     TEMPORARY_WRITE_IMAGEVIDEO,
     TEMPORARY_READWRITE_IMAGEVIDEO,
     PERSIST_READWRITE_IMAGEVIDEO,
+    PERSIST_WRITE_IMAGEVIDEO,
 };
 
 enum class HideSensitiveType : int32_t {
@@ -44,6 +45,12 @@ enum class HideSensitiveType : int32_t {
     GEOGRAPHIC_LOCATION_DESENSITIZE,
     SHOOTING_PARAM_DESENSITIZE,
     NO_DESENSITIZE
+};
+
+enum class OperationMode : int32_t {
+    READ_MODE = 0b01,
+    WRITE_MODE = 0b10,
+    READ_WRITE_MODE = 0b11,
 };
 
 class MediaLibraryExtendManager {
@@ -99,10 +106,13 @@ public:
      * @param strTokenId a parameter for input, indicating the calling sourceTokenId
      * @param targetTokenId a parameter for input, indicating the calling targetTokenId
      * @param uris a parameter for input, indicating the uris expected to grant permission
+     * @param persistFlag a parameter for cancel persist_permission or temporary_permission
+     * @param OperationMode a parameter for cancel read_permission or write_permission
      * @return If the cancel is successful, return 0; otherwise, return -1 for failure.
      */
     EXPORT int32_t CancelPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId,
-        const std::vector<string> &uris);
+        const std::vector<string> &uris, const bool persistFlag = false,
+        const OperationMode mode = OperationMode::READ_WRITE_MODE);
 
     /**
      * @brief open photo or video
@@ -145,6 +155,27 @@ public:
      */
     EXPORT std::shared_ptr<DataShare::DataShareResultSet> GetResultSetFromDb(string columnName,
         const string &value, vector<string> &columns);
+
+    /**
+     * @brief check if the application has the corresponding permissions for uris
+     *
+     * @param targetTokenld token of the target application
+     * @param uris query the list of uris
+     * @param photoPermissionType permission type to be queried
+     * @param result boolean result with permission or not
+     * @return container for Boolean Results
+     */
+    EXPORT int32_t GetPhotoUrisPermission(uint32_t targetTokenld, const std::vector<string> &uris,
+        PhotoPermissionType photoPermissionType, std::vector<bool> &result);
+
+    /**
+     * @brief convert path to URI
+     *
+     * @param paths path
+     * @param uris uri
+     * @return container converted to URI
+     */
+    EXPORT int32_t GetUrisFromFusePaths(const std::vector<std::string> paths, std::vector<std::string> &uris);
 private:
 
     int32_t userId_;

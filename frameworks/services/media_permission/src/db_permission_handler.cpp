@@ -19,6 +19,7 @@
 
 #include <cstdlib>
 
+#include "media_app_uri_permission_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_bundle_manager.h"
@@ -34,9 +35,7 @@ using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
-static set<int> readPermSet{0, 1, 2, 3, 4};
 
-static set<int> writePermSet{2, 3, 4};
 static string UFM_PHOTO_PREFIX = "datashare:///media/userfilemgr_photo_operation";
 static string UFM_AUDIO_PREFIX = "datashare:///media/userfilemgr_audio_operation";
 static string PATH_PHOTO_PREFIX = "datashare:///media/phaccess_photo_operation";
@@ -150,9 +149,9 @@ int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, Pe
     ret = queryResultSet->GetInt(index, permissionType);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_PERMISSION_DENIED, "GetInt fail");
     if (!isWrite) {
-        return ConvertPermResult(readPermSet.count(permissionType));
+        return ConvertPermResult(AppUriPermissionColumn::PERMISSION_TYPES_ALL.count(permissionType));
     }
-    return ConvertPermResult(writePermSet.count(permissionType));
+    return ConvertPermResult(AppUriPermissionColumn::PERMISSION_TYPE_WRITE.count(permissionType));
 }
 
 } // namespace name
