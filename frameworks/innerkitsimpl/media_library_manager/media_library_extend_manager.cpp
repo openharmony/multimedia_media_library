@@ -204,7 +204,9 @@ static void MakePredicatesForCheckPhotoUriPermission(int64_t &checkFlag, DataSha
             permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
             permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
+                to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO)));
+            permissionTypes.emplace_back(
+                to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO)));
             break;
         case URI_PERMISSION_FLAG_WRITE:
             permissionTypes.emplace_back(
@@ -212,7 +214,9 @@ static void MakePredicatesForCheckPhotoUriPermission(int64_t &checkFlag, DataSha
             permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
             permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
+                to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO)));
+            permissionTypes.emplace_back(
+                to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO)));
             break;
         case URI_PERMISSION_FLAG_READWRITE:
             permissionTypes.emplace_back(
@@ -220,7 +224,9 @@ static void MakePredicatesForCheckPhotoUriPermission(int64_t &checkFlag, DataSha
             permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
             permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
+                to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO)));
+            permissionTypes.emplace_back(
+                to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO)));
             break;
         default:
             MEDIA_ERR_LOG("error flag object: %{public}ld", (long)checkFlag);
@@ -349,9 +355,9 @@ int32_t MediaLibraryExtendManager::GrantPhotoUriPermission(uint32_t srcTokenId, 
     vector<DataShareValuesBucket> valueSet;
     bool cond = ((uris.empty()) || (uris.size() > URI_MAX_SIZE));
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Media Uri list error, please check!");
-    cond = (photoPermissionType != PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO &&
-        photoPermissionType != PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO &&
-        photoPermissionType != PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO);
+    cond = (photoPermissionType < PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO ||
+        photoPermissionType > PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO ||
+        photoPermissionType == PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO);
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "photoPermissionType error, please check param!");
 
     cond = (hideSensitiveTpye < HideSensitiveType::ALL_DESENSITIZE ||
@@ -387,8 +393,32 @@ int32_t MediaLibraryExtendManager::GrantPhotoUriPermission(uint32_t srcTokenId, 
     return ret;
 }
 
+static vector<string> BuildPermissionType(const bool persistFlag, const OperationMode mode)
+{
+    vector<string> permissionTypes;
+    if (persistFlag) {
+        if (static_cast<int32_t>(mode) & static_cast<int32_t>(OperationMode::READ_MODE)) {
+            permissionTypes.push_back(to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO)));
+        }
+        if (static_cast<int32_t>(mode) & static_cast<int32_t>(OperationMode::WRITE_MODE)) {
+            permissionTypes.push_back(to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO)));
+        }
+    } else {
+        if (static_cast<int32_t>(mode) & static_cast<int32_t>(OperationMode::READ_MODE)) {
+            permissionTypes.push_back(to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO)));
+        }
+        if (static_cast<int32_t>(mode) & static_cast<int32_t>(OperationMode::WRITE_MODE)) {
+            permissionTypes.push_back(
+                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO)));
+            permissionTypes.push_back(
+                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
+        }
+    }
+    return permissionTypes;
+}
+
 int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId,
-    const std::vector<string> &uris)
+    const std::vector<string> &uris, const bool persistFlag, const OperationMode mode)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryExtendManager::CancelPhotoUriPermission");
@@ -397,7 +427,7 @@ int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId,
     vector<DataShareValuesBucket> valueSet;
     bool cond = ((uris.empty()) || (uris.size() > URI_MAX_SIZE));
     CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Media Uri list error, please check!");
-
+    vector<string> permissionTypes = BuildPermissionType(persistFlag, mode);
     DataSharePredicates predicates;
     for (size_t i = 0; i < uris.size(); i++) {
         string uri = uris[i];
@@ -422,10 +452,7 @@ int32_t MediaLibraryExtendManager::CancelPhotoUriPermission(uint32_t srcTokenId,
         predicates.EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
         predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
         predicates.EqualTo(AppUriPermissionColumn::URI_TYPE, tableType);
-        predicates.NotEqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
-            static_cast<int>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO));
-        predicates.NotEqualTo(AppUriPermissionColumn::PERMISSION_TYPE,
-            static_cast<int>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO));
+        predicates.In(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypes);
         predicates.EndWrap();
     }
     Uri deleteUri(MEDIALIBRARY_GRANT_URIPERM_URI);
@@ -532,6 +559,118 @@ std::shared_ptr<DataShareResultSet> MediaLibraryExtendManager::GetResultSetFromD
     } else {
         return resultSet;
     }
+}
+
+static bool HasPermission(int32_t permissionType, PhotoPermissionType photoPermissionType)
+{
+    switch (photoPermissionType) {
+        case PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO:
+            return permissionType == static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO);
+        case PhotoPermissionType::PERSIST_READ_IMAGEVIDEO:
+            return permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO);
+        case PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO:
+        case PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO:
+            return permissionType == static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO);
+        case PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO:
+        case PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO:
+            return permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO) ||
+                   permissionType == static_cast<int32_t>(PhotoPermissionType::PERSIST_READWRITE_IMAGEVIDEO);
+        default:
+            return false;
+    }
+}
+
+int32_t MediaLibraryExtendManager::GetPhotoUrisPermission(uint32_t targetTokenId, const std::vector<string> &uris,
+    PhotoPermissionType photoPermissionType, std::vector<bool> &result)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryExtendManager::GetPhotoUrisPermission");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_ERR, "dataShareHelper is nullptr");
+    MEDIA_DEBUG_LOG("GetPhotoUrisPermission begin, targetTokenId:%{private}d", targetTokenId);
+    bool isTypeValid = (photoPermissionType >= PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO &&
+            photoPermissionType <= PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO);
+    CHECK_AND_RETURN_RET_LOG(isTypeValid, E_ERR, "photoPermissionType error, please check param!");
+
+    vector<string> columns = {
+        AppUriPermissionColumn::FILE_ID,
+        AppUriPermissionColumn::PERMISSION_TYPE,
+        AppUriPermissionColumn::TARGET_TOKENID
+    };
+
+    DataSharePredicates predicates;
+    predicates.EqualTo(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(targetTokenId));
+
+    bool cond = ((uris.empty()) || (uris.size() > URI_MAX_SIZE));
+    CHECK_AND_RETURN_RET_LOG(!cond, E_ERR, "Uri list error, please check!");
+
+    result.resize(uris.size(), false);
+
+    std::vector<std::string> fileIds;
+    for (const auto &uri : uris) {
+        fileIds.push_back(MediaFileUtils::GetIdFromUri(uri));
+    }
+    predicates.In(AppUriPermissionColumn::FILE_ID, fileIds);
+
+    Uri queryUri(MEDIALIBRARY_CHECK_URIPERM_URI);
+    auto queryResultSet = dataShareHelper_->Query(queryUri, predicates, columns);
+    if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query Uris");
+        return E_ERR;
+    }
+
+    std::unordered_map<std::string, bool> permissionMap;
+    while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string fileId = GetStringVal(AppUriPermissionColumn::FILE_ID, queryResultSet);
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryResultSet);
+        if (HasPermission(permissionType, photoPermissionType)) {
+            permissionMap[fileId] = true;
+        }
+    }
+
+    for (size_t i = 0; i < uris.size(); ++i) {
+        string fileId = MediaFileUtils::GetIdFromUri(uris[i]);
+        result[i] = permissionMap.find(fileId) != permissionMap.end() ? permissionMap[fileId] : false;
+    }
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryExtendManager::GetUrisFromFusePaths(const std::vector<std::string> paths,
+    std::vector<std::string> &uris)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryExtendManager::GetUrisFromFusePaths");
+
+    if ((paths.empty()) || (paths.size() > URI_MAX_SIZE)) {
+        MEDIA_ERR_LOG("Path list error, please check!");
+        return E_ERR;
+    }
+    const std::string FUSE_PATH_PREFIX_1 = "/data/storage/el2/media/";
+    const std::string FUSE_PATH_PREFIX_2 = "/mnt/data/100/media_fuse/";
+    const std::string URI_PREFIX = "file://media/";
+
+    for (const auto &path : paths) {
+        if (path.compare(0, FUSE_PATH_PREFIX_1.length(), FUSE_PATH_PREFIX_1) == 0) {
+            std::string uri = URI_PREFIX + path.substr(FUSE_PATH_PREFIX_1.length());
+            uris.push_back(uri);
+        } else if (path.compare(0, FUSE_PATH_PREFIX_2.length(), FUSE_PATH_PREFIX_2) == 0) {
+            std::string uri = URI_PREFIX + path.substr(FUSE_PATH_PREFIX_2.length());
+            uris.push_back(uri);
+        } else {
+            MEDIA_ERR_LOG("Invalid path: %{private}s", path.c_str());
+            return E_ERR;
+        }
+    }
+    return E_SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS
