@@ -90,7 +90,7 @@ void MediaLibraryRdbUtilsTest::TearDown(void)
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::TearDown");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_001:start");
     int32_t albumId = 0;
@@ -103,7 +103,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_002, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_002, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_002:start");
     int32_t albumId = 1;
@@ -116,7 +116,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_002:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_003, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_003, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_003:start");
     int32_t albumId = 1;
@@ -129,7 +129,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_003:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_004, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_004, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_004:start");
     int32_t albumId = 1;
@@ -142,7 +142,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_004:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_005, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_005, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_005:start");
     int32_t albumId = 1;
@@ -155,7 +155,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_005:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_006, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_006, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_006:start");
     int32_t albumId = 1;
@@ -168,7 +168,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_006:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_007, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_007, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_007:start");
     int32_t albumId = 1;
@@ -181,7 +181,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_007:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_008, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_008, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_008:start");
     int32_t albumId = 1;
@@ -194,7 +194,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_008:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_009, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_test_009, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_009:start");
     int32_t albumId = -1;
@@ -207,7 +207,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_FillOneAlbumCountCoverUri_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_FillOneAlbumCountCoverUri_test_009:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsNeedRefreshByCheckTable_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsNeedRefreshByCheckTable_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_IsNeedRefreshByCheckTable_test_001:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -218,7 +218,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsNeedRefreshByCheckTable_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_IsNeedRefreshByCheckTable_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsNeedRefreshByCheckTable_test_002, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsNeedRefreshByCheckTable_test_002, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_IsNeedRefreshByCheckTable_test_002:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -229,7 +229,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsNeedRefreshByCheckTable_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_IsNeedRefreshByCheckTable_test_002:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsNeedRefreshAlbum_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsNeedRefreshAlbum_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_IsNeedRefreshAlbum_test_001:start");
     bool ret = MediaLibraryRdbUtils::IsNeedRefreshAlbum();
@@ -237,7 +237,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsNeedRefreshAlbum_test_001
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_IsNeedRefreshAlbum_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsInRefreshTask_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsInRefreshTask_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_IsInRefreshTask_test_001:start");
     bool ret = MediaLibraryRdbUtils::IsInRefreshTask();
@@ -245,14 +245,14 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_IsInRefreshTask_test_001, t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_IsInRefreshTask_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_SetNeedRefreshAlbum_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_SetNeedRefreshAlbum_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_SetNeedRefreshAlbum_test_001:start");
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_SetNeedRefreshAlbum_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateUserAlbumInternal_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateUserAlbumInternal_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateUserAlbumInternal_test_001:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -269,7 +269,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateUserAlbumInternal_tes
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateUserAlbumInternal_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateUserAlbumInternal_test_002, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateUserAlbumInternal_test_002, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateUserAlbumInternal_test_002:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -280,7 +280,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateUserAlbumInternal_tes
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateUserAlbumInternal_test_002:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateTrashedAssetOnAlbum_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateTrashedAssetOnAlbum_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateTrashedAssetOnAlbum_test_001:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -291,7 +291,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateTrashedAssetOnAlbum_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateTrashedAssetOnAlbum_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateRemovedAssetToTrash_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateRemovedAssetToTrash_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateRemovedAssetToTrash_test_001:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -302,7 +302,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateRemovedAssetToTrash_t
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateRemovedAssetToTrash_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateHighlightPlayInfo_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateHighlightPlayInfo_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateHighlightPlayInfo_test_001:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -313,7 +313,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateHighlightPlayInfo_tes
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateHighlightPlayInfo_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateHighlightPlayInfo_test_002, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateHighlightPlayInfo_test_002, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateHighlightPlayInfo_test_002:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -324,7 +324,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateHighlightPlayInfo_tes
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateHighlightPlayInfo_test_002:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateOwnerAlbumId_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateOwnerAlbumId_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateOwnerAlbumId_test_001:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -340,7 +340,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateOwnerAlbumId_test_001
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateOwnerAlbumId_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateOwnerAlbumId_test_002, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateOwnerAlbumId_test_002, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateOwnerAlbumId_test_002:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -360,7 +360,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateOwnerAlbumId_test_002
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateOwnerAlbumId_test_002:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateAnalysisAlbumByUri_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateAnalysisAlbumByUri_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateAnalysisAlbumByUri_test_001:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -370,7 +370,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateAnalysisAlbumByUri_te
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateAnalysisAlbumByUri_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateAnalysisAlbumByUri_test_002, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateAnalysisAlbumByUri_test_002, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateAnalysisAlbumByUri_test_002:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -380,7 +380,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_UpdateAnalysisAlbumByUri_te
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_UpdateAnalysisAlbumByUri_test_002:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_GetAlbumIdsForPortrait_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_GetAlbumIdsForPortrait_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_GetAlbumIdsForPortrait_test_001:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -391,7 +391,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_GetAlbumIdsForPortrait_test
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_GetAlbumIdsForPortrait_test_001:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_GetAlbumIdsForPortrait_test_002, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_GetAlbumIdsForPortrait_test_002, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_GetAlbumIdsForPortrait_test_002:start");
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -402,7 +402,7 @@ HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_GetAlbumIdsForPortrait_test
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_GetAlbumIdsForPortrait_test_002:stop");
 }
 
-HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_GetAlbumSubtypeArgument_test_001, testing::ext::TestSize.Level0)
+HWTEST_F(MediaLibraryRdbUtilsTest, medialib_rdbutils_GetAlbumSubtypeArgument_test_001, testing::ext::TestSize.Level1)
 {
     MEDIA_INFO_LOG("MediaLibraryRestoreTest::medialib_rdbutils_GetAlbumSubtypeArgument_test_001:start");
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);

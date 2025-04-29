@@ -1431,7 +1431,7 @@ HWTEST_F(MediaLibraryAlbumOperationTest, Maot_HandlePhotoAlbumOperations_test_00
     MEDIA_INFO_LOG("Maot_HandlePhotoAlbumOperations_test_001 End");
 }
 
-HWTEST_F(MediaLibraryAlbumOperationTest, Maot_RenewDeletedPhotoAlbum_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumOperationTest, Maot_RenewDeletedPhotoAlbum_test_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("Maot_RenewDeletedPhotoAlbum_test_002::Start");
     int32_t id = 1;

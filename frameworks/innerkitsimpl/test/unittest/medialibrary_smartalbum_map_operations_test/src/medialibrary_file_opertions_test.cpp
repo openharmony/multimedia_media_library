@@ -186,14 +186,14 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_QueryTrashFiles_t
     EXPECT_EQ((resultset != nullptr), true);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_HandleFileOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_HandleFileOperation_test_002, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     int32_t ret = MediaLibraryFileOperations::HandleFileOperation(cmd);
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_GetAlbumCapacityOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialibrary_GetAlbumCapacityOperation_test_002, TestSize.Level1)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY);
     NativeRdb::ValuesBucket value;
