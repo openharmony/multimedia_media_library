@@ -24,6 +24,7 @@
 #include "photo_file_utils.h"
 #include "dfx_utils.h"
 #include "directory_ex.h"
+#include "medialibrary_object_utils.h"
 
 using std::string;
 
@@ -103,6 +104,9 @@ void VideoCompositionCallbackImpl::onResult(VEFResult result, VEFError errorCode
     if (ret != E_OK) {
         CleanTempFilters(tempFilters_);
     }
+    if (isNeedScan_) {
+        MediaLibraryObjectUtils::ScanMovingPhotoVideoAsync(assetPath_, true);
+    }
     mutex_.lock();
     if (waitQueue_.empty()) {
         --curWorkerNum_;
@@ -111,7 +115,8 @@ void VideoCompositionCallbackImpl::onResult(VEFResult result, VEFError errorCode
         Task task = std::move(waitQueue_.front());
         waitQueue_.pop();
         mutex_.unlock();
-        if (CallStartComposite(task.sourceVideoPath_, task.videoPath_, task.editData_) != E_OK) {
+        if (CallStartComposite(task.sourceVideoPath_, task.videoPath_, task.editData_,
+                               task.assetPath_, task.isNeedScan_) != E_OK) {
             mutex_.lock();
             --curWorkerNum_;
             mutex_.unlock();
@@ -137,7 +142,7 @@ static std::string GetTempFiltersPath(const std::string videoPath)
 }
 
 int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sourceVideoPath,
-    const std::string& videoPath, const std::string& effectDescription)
+    const std::string& videoPath, const std::string& effectDescription, const std::string& assetPath, bool isNeedScan)
 {
     MEDIA_INFO_LOG("StartComposite, sourceVideoPath: %{public}s", DfxUtils::GetSafePath(sourceVideoPath).c_str());
     string absSourceVideoPath;
@@ -171,10 +176,9 @@ int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sour
         MEDIA_ERR_LOG("Open failed for outputFileFd file, errno: %{public}d", errno);
         return E_ERR;
     }
-    callBack->inputFileFd_ = inputFileFd;
-    callBack->outputFileFd_ = outputFileFd;
-    callBack->videoPath_ = videoPath;
-    callBack->sourceVideoPath_ = absSourceVideoPath;
+    
+    InitCallbackImpl(callBack, inputFileFd, outputFileFd, videoPath, absSourceVideoPath, assetPath, isNeedScan);
+
     auto compositionOptions = std::make_shared<CompositionOptions>(outputFileFd, callBack);
     error = editor->StartComposite(compositionOptions);
     if (error != VEFError::ERR_OK) {
@@ -189,7 +193,8 @@ int32_t VideoCompositionCallbackImpl::CallStartComposite(const std::string& sour
     return E_OK;
 }
 
-void VideoCompositionCallbackImpl::AddCompositionTask(const std::string& assetPath, std::string& editData)
+void VideoCompositionCallbackImpl::AddCompositionTask(const std::string& assetPath,
+    std::string& editData, bool isNeedScan)
 {
     string sourceImagePath = PhotoFileUtils::GetEditDataSourcePath(assetPath);
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
@@ -199,7 +204,7 @@ void VideoCompositionCallbackImpl::AddCompositionTask(const std::string& assetPa
     if (curWorkerNum_ < MAX_CONCURRENT_NUM) {
         ++curWorkerNum_;
         mutex_.unlock();
-        if (CallStartComposite(sourceVideoPath, videoPath, editData) != E_OK) {
+        if (CallStartComposite(sourceVideoPath, videoPath, editData, assetPath, isNeedScan) != E_OK) {
             mutex_.lock();
             --curWorkerNum_;
             mutex_.unlock();
@@ -209,7 +214,7 @@ void VideoCompositionCallbackImpl::AddCompositionTask(const std::string& assetPa
         }
     } else {
         MEDIA_WARN_LOG("Failed to CallStartComposite, curWorkerNum over MAX_CONCURRENT_NUM");
-        Task newWaitTask{sourceVideoPath, videoPath, editData};
+        Task newWaitTask{sourceVideoPath, videoPath, editData, assetPath, isNeedScan};
         waitQueue_.push(std::move(newWaitTask));
         mutex_.unlock();
     }
@@ -227,6 +232,18 @@ void VideoCompositionCallbackImpl::EraseStickerField(std::string& editData, size
     }
     auto len = end - begin + 1;
     editData.erase(begin, len);
+}
+
+void VideoCompositionCallbackImpl::InitCallbackImpl(std::shared_ptr<VideoCompositionCallbackImpl>& callBack,
+    int32_t inputFileFd, int32_t outputFileFd, const std::string& videoPath, std::string& absSourceVideoPath,
+    const std::string& assetPath, bool isNeedScan)
+{
+    callBack->inputFileFd_ = inputFileFd;
+    callBack->outputFileFd_ = outputFileFd;
+    callBack->videoPath_ = videoPath;
+    callBack->sourceVideoPath_ = absSourceVideoPath;
+    callBack->assetPath_ = assetPath;
+    callBack->isNeedScan_ = isNeedScan;
 }
 
 } // end of namespace
