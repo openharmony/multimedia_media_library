@@ -115,8 +115,8 @@ private:
     EXPORT DownloadFileData ReadyDataForBatchDownload();
     EXPORT int32_t DoForceTaskExecute();
     EXPORT int32_t SubmitBatchDownload(DownloadFileData &data, const bool &isCache);
-    EXPORT void StartFileCacheFailed(const int64_t batchNum, const int64_t batchSize);
-    EXPORT void StartBatchDownload(const int64_t batchNum, const int64_t batchSize);
+    EXPORT void StartFileCacheFailed();
+    EXPORT void StartBatchDownload();
     EXPORT int32_t DoRecoverExecute();
     EXPORT int32_t PassiveStatusRecover();
     EXPORT int32_t SubmitBatchDownloadAgain();
