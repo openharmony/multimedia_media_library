@@ -42,7 +42,7 @@ void MediaAssetRdbstoreTest::TearDown(void) {}
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_CloudSyncTriggerFunc_Test_001, TestSize.Level0)
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_CloudSyncTriggerFunc_Test_001, TestSize.Level1)
 {
     std::vector<std::string> args;
     args.push_back("test_arg1");
@@ -59,7 +59,7 @@ HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_CloudSyncTriggerFunc_Tes
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_IsCallerSelfFunc_Test_001, TestSize.Level0)
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_IsCallerSelfFunc_Test_001, TestSize.Level1)
 {
     std::vector<std::string> args;
     args.push_back("test_arg1");
@@ -77,7 +77,7 @@ HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_IsCallerSelfFunc_Test_00
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_PhotoAlbumNotifyFunc_Test_001, TestSize.Level0)
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_PhotoAlbumNotifyFunc_Test_001, TestSize.Level1)
 {
     std::vector<std::string> args;
     args.push_back("test_arg1");
@@ -96,7 +96,7 @@ HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_PhotoAlbumNotifyFunc_Tes
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_TryGetRdbStore_Test_001, TestSize.Level0)
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_TryGetRdbStore_Test_001, TestSize.Level1)
 {
     shared_ptr<MediaAssetRdbStore> ptr = make_shared<MediaAssetRdbStore>();
     ASSERT_NE(ptr, nullptr);
@@ -114,7 +114,7 @@ HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_TryGetRdbStore_Test_001,
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_Query_Test_001, TestSize.Level0)
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_Query_Test_001, TestSize.Level1)
 {
     shared_ptr<MediaAssetRdbStore> ptr = make_shared<MediaAssetRdbStore>();
     ASSERT_NE(ptr, nullptr);
@@ -135,7 +135,7 @@ HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_Query_Test_001, TestSize
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_IsQueryAccessibleViaSandBox_Test_001, TestSize.Level0)
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_IsQueryAccessibleViaSandBox_Test_001, TestSize.Level1)
 {
     shared_ptr<MediaAssetRdbStore> ptr = make_shared<MediaAssetRdbStore>();
     ASSERT_NE(ptr, nullptr);
@@ -159,7 +159,7 @@ HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_IsQueryAccessibleViaSand
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_QueryRdb_Test_001, TestSize.Level0)
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_QueryRdb_Test_001, TestSize.Level1)
 {
     shared_ptr<MediaAssetRdbStore> ptr = make_shared<MediaAssetRdbStore>();
     ASSERT_NE(ptr, nullptr);
@@ -180,7 +180,7 @@ HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_QueryRdb_Test_001, TestS
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_IsSupportSharedAssetQuery_Test_001, TestSize.Level0)
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_IsSupportSharedAssetQuery_Test_001, TestSize.Level1)
 {
     shared_ptr<MediaAssetRdbStore> ptr = make_shared<MediaAssetRdbStore>();
     ASSERT_NE(ptr, nullptr);
@@ -201,7 +201,7 @@ HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_IsSupportSharedAssetQuer
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_QueryTimeIdBatch_Test_001, TestSize.Level0)
+HWTEST_F(MediaAssetRdbstoreTest, MediaAssetRdbstoreTest_QueryTimeIdBatch_Test_001, TestSize.Level1)
 {
     shared_ptr<MediaAssetRdbStore> ptr = make_shared<MediaAssetRdbStore>();
     ASSERT_NE(ptr, nullptr);

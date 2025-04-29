@@ -2633,7 +2633,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test, T
     EXPECT_NE(mediaLibraryExtendManager->GetResultSetFromDb(columnName, value, columns), nullptr);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_InitMediaLibraryManager_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_InitMediaLibraryManager_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     int32_t ret = 0;
@@ -2644,7 +2644,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_InitMediaLibraryManager_te
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstcYearAndMonth_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstcYearAndMonth_test_002, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     std::vector<string> uris;
@@ -2656,7 +2656,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstcYearAndMonth_test_0
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryTotalSize_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryTotalSize_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     int32_t ret;
@@ -2665,7 +2665,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryTotalSize_test, TestS
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_002, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     std::string columnName = MEDIA_DATA_DB_URI;
@@ -2676,7 +2676,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_00
     EXPECT_EQ(res, nullptr);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_003, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     std::shared_ptr<DataShareResultSet> ptr = nullptr;
@@ -2687,7 +2687,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetResultSetFromDb_test_00
     EXPECT_NE(ptr, nullptr);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     std::shared_ptr<DataShareResultSet> resultSet = nullptr;
@@ -2696,7 +2696,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test, TestS
     EXPECT_NE(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test_002, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     vector<string> columns;
@@ -2713,7 +2713,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckResultSet_test_002, T
     EXPECT_EQ(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     string file = "/path/to/file";
@@ -2725,7 +2725,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test, T
     EXPECT_NE(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test_002, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     string file = "/path/to/file";
@@ -2739,7 +2739,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetFilePathFromUri_test_00
     EXPECT_NE(ret, E_SUCCESS);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_OpenThumbnail_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_OpenThumbnail_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     string uristr = URI_QUERY_PHOTO;
@@ -2751,7 +2751,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_OpenThumbnail_test, TestSi
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeThumbnail_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeThumbnail_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     UniqueFd uniqueFd;
@@ -2762,7 +2762,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeThumbnail_test, Test
     EXPECT_EQ(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryThumbnail_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryThumbnail_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     UriParams params;
@@ -2774,7 +2774,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_QueryThumbnail_test, TestS
     EXPECT_EQ(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetThumbnail_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetThumbnail_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     string file = "/path/to/file";
@@ -2784,7 +2784,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetThumbnail_test, TestSiz
     EXPECT_EQ(ret, nullptr);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     vector<string> uriBatch;
@@ -2798,7 +2798,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test, TestSi
     EXPECT_EQ(ret, E_INVALID_URI);
 }
 
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeAstc_test, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeAstc_test, TestSize.Level1)
 {
     ASSERT_NE(mediaLibraryManager, nullptr);
     UniqueFd uniqueFd;

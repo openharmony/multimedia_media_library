@@ -289,14 +289,14 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_IsThumbnailLatest_002, TestS
     EXPECT_EQ(MediaFileUtils::DeleteDir("/storage/cloud/files/.thumbs/Photo/1/IMG_123456789_123.jpg"), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetThumbDir_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetThumbDir_001, TestSize.Level1)
 {
     std::string photoPath = "/Picture/";
     string res = PhotoFileUtils::GetThumbDir(photoPath);
     EXPECT_EQ(res, "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetLCDPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetLCDPath_001, TestSize.Level1)
 {
     std::string photoPath = "/Picture/";
     int32_t userId = 0;
@@ -304,7 +304,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetLCDPath_001, TestSize.Lev
     EXPECT_EQ(res, "");
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetTHMPath_001, TestSize.Level0)
+HWTEST_F(MediaLibraryHelperUnitTest, PhotoFileUtils_GetTHMPath_001, TestSize.Level1)
 {
     std::string photoPath = "/Picture/";
     int32_t userId = 0;
