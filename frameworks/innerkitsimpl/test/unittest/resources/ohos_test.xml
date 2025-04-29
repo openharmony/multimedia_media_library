@@ -158,4 +158,21 @@
             <option name="push" value="cloudsync_datafile/data_client-photo_album.csv -> /data/test/cloudsync" src="res"/>
         </preparer>
     </target>
+    <target name="MediaLibraryThumbnailFuzzTest">
+        <preparer>
+            <option name="shell" value="rm -rf /storage/media/local/files/*"/>
+            <option name="shell" value="scanner"/>
+            <option name="shell" value="sleep 10"/>
+            <option name="shell" value="mkdir /storage/media/local"/>
+            <option name="shell" value="mkdir /storage/media/local/files"/>
+            <option name="shell" value="mkdir /storage/media/local/files/Photo"/>
+            <option name="shell" value="mkdir /storage/media/local/files/Photo/1"/>
+            <option name="push" value="thumbnail_testfile/CreateImageThumbnailTest_001.jpg -> /storage/media/local/files/Photo/1" src="res"/>
+            <option name="push" value="thumbnail_testfile/CreateImageLcdTest_001.jpg -> /storage/media/local/files/Photo/1" src="res"/>
+            <option name="push" value="thumbnail_testfile/CreateAudioThumbnailTest_001.mp3 -> /storage/media/local/files/Photo/1" src="res"/>
+            <option name="push" value="thumbnail_testfile/CreateVideoThumbnailTest_001.mp4 -> /storage/media/local/files/Photo/1" src="res"/>
+            <option name="shell" value="scanner"/>
+            <option name="shell" value="sleep 10"/>
+        </preparer>
+    </target>
 </configuration>

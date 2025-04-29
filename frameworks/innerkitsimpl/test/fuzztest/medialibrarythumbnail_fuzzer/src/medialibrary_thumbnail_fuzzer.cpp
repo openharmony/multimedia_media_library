@@ -33,6 +33,7 @@
 
 #define private public
 #include "thumbnail_aging_helper.h"
+#include "thumbnail_file_utils.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker.h"
 #include "thumbnail_generate_worker_manager.h"
@@ -54,6 +55,7 @@ using ThumbnailWorkerPtr = std::shared_ptr<Media::ThumbnailGenerateWorker>;
 const int32_t PRIORITY_DEFAULT = -1;
 const int32_t THUMBNAIL_TASK_TYPE_DEFAULT = -1;
 const string PHOTOS_TABLE = "Photos";
+const string TEST_IMAGE_PATH = "/storage/cloud/files/Photo/1/CreateImageLcdTest_001.jpg";
 const int32_t EVEN = 2;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
 const int32_t PIXELMAP_WIDTH_AND_HEIGHT = 1000;
@@ -533,6 +535,41 @@ static void ThumbnailSourceTest2(const uint8_t* data, size_t size)
     sourceLoader5.CreateSourceWithOriginalPictureMainPixel();
 }
 
+static void ThumbnailRemainTest(const uint8_t* data, size_t size)
+{
+    Media::ThumbnailData thumbnailData;
+    Media::ThumbnailType type;
+    Media::ThumbRdbOpt opt;
+    Media::Size desiredSize;
+    string str;
+
+    // thumbnail_file_utils
+    thumbnailData = FuzzThumbnailData(data, size);
+    Media::ThumbnailFileUtils::DeleteAllThumbFiles(thumbnailData);
+    thumbnailData = FuzzThumbnailData(data, size);
+    type = FuzzThumbnailType(data, size);
+    Media::ThumbnailFileUtils::DeleteThumbFile(thumbnailData, type);
+    thumbnailData = FuzzThumbnailData(data, size);
+    Media::ThumbnailFileUtils::DeleteBeginTimestampDir(thumbnailData);
+
+    // thumbnail_generate_helper
+    opt = FuzzThumbRdbOpt(data, size, false);
+    Media::ThumbnailGenerateHelper::TriggerHighlightThumbnail(opt, str, str, str, str);
+
+    // thumbnail_source_loading
+    thumbnailData = FuzzThumbnailData(data, size);
+    desiredSize = FuzzSize(data, size);
+    thumbnailData.path = TEST_IMAGE_PATH;
+    thumbnailData.mediaType = Media::MediaType::MEDIA_TYPE_IMAGE;
+    thumbnailData.loaderOpts.loadingStates = {
+        { Media::SourceState::BEGIN, Media::SourceState::LOCAL_ORIGIN },
+        { Media::SourceState::LOCAL_ORIGIN, Media::SourceState::FINISH },
+    };
+    Media::SourceLoader sourceLoader6(desiredSize, thumbnailData);
+    bool ret = sourceLoader6.RunLoading();
+    MEDIA_INFO_LOG("sourceLoader6.RunLoading image path: %{public}s. ret: %{public}d", TEST_IMAGE_PATH.c_str(), ret);
+}
+
 static void ParseFileUriTest(const uint8_t* data, size_t size)
 {
     string outFileId;
@@ -585,7 +622,6 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    /* Run your code on data */
     OHOS::ThumhnailTest(data, size);
     OHOS::ThumbnailAgingHelperTest(data, size);
     OHOS::ThumbnailGenerateHelperTest(data, size);
@@ -595,5 +631,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::ThumbnailSourceTest2(data, size);
     OHOS::ParseFileUriTest(data, size);
     OHOS::ThumhnailImageFrameworkUtilsTest(data, size);
+    OHOS::ThumbnailRemainTest(data, size);
     return 0;
 }
