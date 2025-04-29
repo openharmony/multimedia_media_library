@@ -183,7 +183,9 @@ int32_t CloneRestoreCVAnalysis::GetNewAssetId(int32_t assetId)
 
 void CloneRestoreCVAnalysis::GetAssetAlbumInfos(CloneRestoreHighlight &cloneHighlight)
 {
-    const std::string QUERY_SQL = "SELECT * FROM tab_analysis_album_asset_map LIMIT ?, ?";
+    const std::string QUERY_SQL = "SELECT tab_analysis_album_asset_map.* FROM tab_analysis_album_asset_map "
+        " INNER JOIN tab_highlight_album AS h ON tab_analysis_album_asset_map.map_album = h.id "
+        " WHERE h.highlight_status > 0 LIMIT ?, ?";
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
