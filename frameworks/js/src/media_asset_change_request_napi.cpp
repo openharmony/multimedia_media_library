@@ -2908,9 +2908,9 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
             CHECK_COND_WITH_MESSAGE(env,
                 napi_get_value_string_utf8(env, napiValue, uriBuffer.data(), uriBuffer.size(), nullptr) == napi_ok,
                 "Failed to copy string");
-            std::string fileId = MediaLibraryNapiUtils::GetFileIdFromUri(std::string(uriBuffer.data()));
-            CHECK_ARGS_WITH_MESSAGE(env, !fileId.empty(), "Invalid URI format or empty fileId");
-            deleteIds.push_back(fileId);
+            int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromPhotoUri(std::string(uriBuffer.data()));
+            CHECK_ARGS_WITH_MESSAGE(env, fileId >= 0, "Invalid URI format or empty fileId");
+            deleteIds.push_back(std::to_string(fileId));
         } else {
             FileAssetNapi* obj = nullptr;
             CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
