@@ -2160,6 +2160,37 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GrantPhotoUriPermiss
 }
 
 /**
+ * @tc.number    : MediaLibraryExtendManager_GrantPhotoUriPermission_test_003
+ * @tc.name      : HideSensitiveType Error
+ * @tc.desc      : check error result
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GrantPhotoUriPermission_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GrantPhotoUriPermission_test_003 enter");
+    int src_tokenId = 5;
+    int target_tokenId = 6;
+    vector<string> uris;
+    for (int i = 0; i < 5; i++) {
+        string uri = CreateOwnerPrivliegeAssets(src_tokenId, target_tokenId);
+        uris.push_back(uri);
+    }
+    auto permissionType = PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO;
+    auto SensitiveType = static_cast<HideSensitiveType>(-1);
+    auto ret = mediaLibraryExtendManager->GrantPhotoUriPermission(src_tokenId, tokenId, uris, permissionType,
+        SensitiveType);
+    ASSERT_EQ(ret, E_ERR);
+    SensitiveType = static_cast<HideSensitiveType>(4);
+    ret = mediaLibraryExtendManager->GrantPhotoUriPermission(src_tokenId, target_tokenId, uris, permissionType,
+        SensitiveType);
+    ASSERT_EQ(ret, E_ERR);
+    SensitiveType = HideSensitiveType::ALL_DESENSITIZE;
+    ret = mediaLibraryExtendManager->GrantPhotoUriPermission(src_tokenId, target_tokenId, uris, permissionType,
+        SensitiveType);
+    ASSERT_EQ(ret, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GrantPhotoUriPermission_test_003 exit");
+}
+
+/**
  * @tc.number    : MediaLibraryExtendManager_CheckPhotoUriPermission_test_001
  * @tc.name      : Check only read system permission uri permission results
  * @tc.desc      : Grant system read permission to see CheckPhotoUriPermission results
@@ -2266,6 +2297,62 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CancelPhotoUriPermis
     int32_t ret = mediaLibraryExtendManager->CancelPhotoUriPermission(src_tokenId, target_tokenId, uris);
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("MediaLibraryExtendManager_CancelPhotoUriPermission_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_CancelPhotoUriPermission_test_003
+ * @tc.name      : cancel permission persist
+ * @tc.desc      : cancel permission
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CancelPhotoUriPermission_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_CancelPhotoUriPermission_test_003 enter");
+    int src_tokenId = 3;
+    int target_tokenId = 2;
+    vector<string> uris;
+    vector<string> inColumn;
+    for (int i = 0; i < 5; i++) {
+        auto uri = CreatePhotoAsset("test.mp4");
+        uris.push_back(uri);
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(uri));
+    }
+    auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    int32_t ret = mediaLibraryExtendManager->GrantPhotoUriPermission(src_tokenId, target_tokenId, uris, permissionType,
+        SensitiveType);
+    EXPECT_EQ(ret, 0);
+    ret = mediaLibraryExtendManager->CancelPhotoUriPermission(src_tokenId, target_tokenId, uris,
+        true, OperationMode::WRITE_MODE);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_CancelPhotoUriPermission_test_003 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_CancelPhotoUriPermission_test_004
+ * @tc.name      : cancel write permission
+ * @tc.desc      : cancel permission
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_CancelPhotoUriPermission_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_CancelPhotoUriPermission_test_004 enter");
+    int src_tokenId = 3;
+    int target_tokenId = 2;
+    vector<string> uris;
+    vector<string> inColumn;
+    for (int i = 0; i < 5; i++) {
+        auto uri = CreatePhotoAsset("test.mp4");
+        uris.push_back(uri);
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(uri));
+    }
+    auto permissionType = PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    int32_t ret = mediaLibraryExtendManager->GrantPhotoUriPermission(src_tokenId, target_tokenId, uris, permissionType,
+        SensitiveType);
+    EXPECT_EQ(ret, 0);
+    ret = mediaLibraryExtendManager->CancelPhotoUriPermission(src_tokenId, target_tokenId, uris,
+        true, OperationMode::WRITE_MODE);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_CancelPhotoUriPermission_test_004 exit");
 }
 
 HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_001, TestSize.Level1)
@@ -2718,6 +2805,121 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_DecodeAstc_test, TestSize.
     unique_ptr<PixelMap> ret = nullptr;
     ret = MediaLibraryManager::DecodeAstc(uniqueFd);
     EXPECT_EQ(ret, nullptr);
+}
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_GetPhotoUrisPermission_test_001
+ * @tc.name      : Get permission
+ * @tc.desc      : Get permission success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GetPhotoUrisPermission_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetPhotoUrisPermission_test_001 enter");
+    int target_tokenId = 2;
+    vector<string> uris;
+    vector<bool> result;
+    for (int i = 0; i < 5; i++) {
+        auto uri = CreatePhotoAsset("test.mp4");
+        uris.push_back(uri);
+    }
+    auto permissionType = PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO;
+    int32_t ret = mediaLibraryExtendManager->GetPhotoUrisPermission(target_tokenId, uris, permissionType,
+        result);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetPhotoUrisPermission_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_GetPhotoUrisPermission_test_002
+ * @tc.name      : Get permission
+ * @tc.desc      : Get permission fail
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GetPhotoUrisPermission_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetPhotoUrisPermission_test_002 enter");
+    int target_tokenId = 3;
+    vector<string> uris;
+    vector<bool> result;
+    uris.resize(1001);
+    auto permissionType = PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO;
+    int32_t ret = mediaLibraryExtendManager->GetPhotoUrisPermission(target_tokenId, uris, permissionType,
+        result);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetPhotoUrisPermission_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_GetPhotoUrisPermission_test_003
+ * @tc.name      : Get permission
+ * @tc.desc      : Get permission fail
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GetPhotoUrisPermission_test_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetPhotoUrisPermission_test_003 enter");
+    int target_tokenId = 4;
+    vector<string> uris;
+    vector<bool> result;
+    for (int i = 0; i < 5; i++) {
+        auto uri = CreatePhotoAsset("test.mp4");
+        uris.push_back(uri);
+    }
+    auto permissionType = static_cast<PhotoPermissionType>(6);
+    int32_t ret = mediaLibraryExtendManager->GetPhotoUrisPermission(target_tokenId, uris, permissionType,
+        result);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetPhotoUrisPermission_test_003 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_GetPhotoUrisPermission_test_004
+ * @tc.name      : Get permission
+ * @tc.desc      : Get permission fail
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GetPhotoUrisPermission_test_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetPhotoUrisPermission_test_004 enter");
+    int target_tokenId = -1;
+    vector<string> uris;
+    vector<bool> result;
+    for (int i = 0; i < 5; i++) {
+        auto uri = CreatePhotoAsset("test.mp4");
+        uris.push_back(uri);
+    }
+    auto permissionType = PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO;
+    int32_t ret = mediaLibraryExtendManager->GetPhotoUrisPermission(target_tokenId, uris, permissionType,
+        result);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetPhotoUrisPermission_test_004 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_GetUrisFromFusePaths_test_001
+ * @tc.name      : Get uri
+ * @tc.desc      : Get uri success
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GetUrisFromFusePaths_test_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetUrisFromFusePaths_test_001 enter");
+    vector<string> paths = {"/data/storage/el2/media/test.mp4"};
+    vector<string> uris;
+    int32_t ret = mediaLibraryExtendManager->GetUrisFromFusePaths(paths, uris);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetUrisFromFusePaths_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryExtendManager_GetUrisFromFusePaths_test_002
+ * @tc.name      : Get uri
+ * @tc.desc      : Get uri fail
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryExtendManager_GetUrisFromFusePaths_test_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetUrisFromFusePaths_test_002 enter");
+    vector<string> paths = {"/data/storage/el2/test.mp4"};
+    vector<string> uris;
+    int32_t ret = mediaLibraryExtendManager->GetUrisFromFusePaths(paths, uris);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryExtendManager_GetUrisFromFusePaths_test_002 exit");
 }
 } // namespace Media
 } // namespace OHOS
