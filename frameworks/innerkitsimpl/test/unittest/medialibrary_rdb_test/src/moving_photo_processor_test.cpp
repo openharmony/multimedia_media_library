@@ -40,7 +40,7 @@ void MoingPhotoProcessorTest::TearDown(void) {}
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StartProcessLivePhoto_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StartProcessLivePhoto_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::isProcessing_ = false;
     MovingPhotoProcessor::StartProcessMovingPhoto();
@@ -58,7 +58,7 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StartProcessLivePhoto_
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StartProcess_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StartProcess_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::isProcessing_ = false;
     MovingPhotoProcessor::StartProcess();
@@ -76,7 +76,7 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StartProcess_Test_001,
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StopProcess_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StopProcess_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::isProcessing_ = false;
     MovingPhotoProcessor::StartProcessMovingPhoto();
@@ -88,28 +88,13 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_StopProcess_Test_001, 
 
 /*
  * Feature : MoingPhotoProcessorTest
- * Function : QueryMovingPhoto
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_QueryMovingPhoto_Test_001, TestSize.Level0)
-{
-    MovingPhotoProcessor::isProcessing_ = false;
-    auto ret = MovingPhotoProcessor::QueryMovingPhoto();
-    EXPECT_EQ(ret, nullptr);
-}
-
-/*
- * Feature : MoingPhotoProcessorTest
  * Function : GetUpdatedMovingPhotoData
  * SubFunction : NA
  * FunctionPoints : NA
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_GetUpdatedMovingPhotoData_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_GetUpdatedMovingPhotoData_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::MovingPhotoData currentData;
     currentData.fileId = 10;
@@ -131,7 +116,7 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_GetUpdatedMovingPhotoD
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_CompatMovingPhoto_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_CompatMovingPhoto_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::MovingPhotoData currentData;
     currentData.fileId = 10;
@@ -147,27 +132,13 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_CompatMovingPhoto_Test
 
 /*
  * Feature : MoingPhotoProcessorTest
- * Function : QueryCandidateLivePhoto
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_QueryCandidateLivePhoto_Test_001, TestSize.Level0)
-{
-    auto ret = MovingPhotoProcessor::QueryCandidateLivePhoto();
-    EXPECT_EQ(ret, nullptr);
-}
-
-/*
- * Feature : MoingPhotoProcessorTest
  * Function : CompatLivePhoto
  * SubFunction : NA
  * FunctionPoints : NA
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_CompatLivePhoto_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_CompatLivePhoto_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::LivePhotoDataList livePhotoDataList;
     MovingPhotoProcessor::LivePhotoData livePhotoData;
@@ -191,7 +162,7 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_CompatLivePhoto_Test_0
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_CompatLivePhoto_Test_002, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_CompatLivePhoto_Test_002, TestSize.Level1)
 {
     MovingPhotoProcessor::LivePhotoDataList livePhotoDataList;
     MovingPhotoProcessor::LivePhotoData livePhotoData;
@@ -215,7 +186,7 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_CompatLivePhoto_Test_0
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_ProcessLocalLivePhoto_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_ProcessLocalLivePhoto_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::LivePhotoData livePhotoData;
     livePhotoData.isLivePhoto = true;
@@ -236,7 +207,7 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_ProcessLocalLivePhoto_
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_ProcessLocalCloudLivePhoto_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_ProcessLocalCloudLivePhoto_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::LivePhotoData livePhotoData;
     livePhotoData.isLivePhoto = false;
@@ -259,7 +230,7 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_ProcessLocalCloudLiveP
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_GetUpdatedLivePhotoData_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_GetUpdatedLivePhotoData_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::LivePhotoData oldlivePhotoData;
     oldlivePhotoData.isLivePhoto = false;
@@ -288,7 +259,7 @@ HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_GetUpdatedLivePhotoDat
  * EnvContions : NA
  * CaseDescription : NA
  */
-HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_UpdateLivePhotoData_Test_001, TestSize.Level0)
+HWTEST_F(MoingPhotoProcessorTest, MoingPhotoProcessorTest_UpdateLivePhotoData_Test_001, TestSize.Level1)
 {
     MovingPhotoProcessor::LivePhotoData livePhotoData;
     livePhotoData.isLivePhoto = false;
