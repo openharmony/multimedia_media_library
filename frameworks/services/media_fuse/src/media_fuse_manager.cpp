@@ -44,6 +44,7 @@
 #include "permission_used_type.h"
 #include "medialibrary_object_utils.h"
 #include "media_file_utils.h"
+#include "media_app_uri_permission_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -60,8 +61,6 @@ const int32_t URI_SLASH_NUM_API10 = 4;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
 const int32_t FUSE_PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int32_t BASE_USER_RANGE = 200000;
-static set<int> readPermSet{0, 1, 2, 3, 4};
-static set<int> writePermSet{2, 3, 4};
 static const map<uint32_t, string> MEDIA_OPEN_MODE_MAP = {
     { O_RDONLY, MEDIA_FILEMODE_READONLY },
     { O_WRONLY, MEDIA_FILEMODE_WRITEONLY },
@@ -276,9 +275,11 @@ static int32_t DbCheckPermission(const string &filePath, const string &mode, con
         permissionType = MediaLibraryRdbStore::GetInt(resultSet, FIELD_PERMISSION_TYPE);
         MEDIA_INFO_LOG("get permissionType %{public}d", permissionType);
     }
-    cond = ((mode.find("r") != string::npos) && (readPermSet.count(permissionType) == 0));
+    cond = ((mode.find("r") != string::npos) &&
+        (AppUriPermissionColumn::PERMISSION_TYPES_ALL.count(permissionType) == 0));
     CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
-    cond = ((mode.find("w") != string::npos) && (writePermSet.count(permissionType) == 0));
+    cond = ((mode.find("w") != string::npos) &&
+        (AppUriPermissionColumn::PERMISSION_TYPE_WRITE.count(permissionType) == 0));
     CHECK_AND_RETURN_RET(!cond, E_PERMISSION_DENIED);
     return E_SUCCESS;
 }

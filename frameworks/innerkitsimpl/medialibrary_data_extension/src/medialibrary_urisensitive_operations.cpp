@@ -80,10 +80,7 @@ static void DeleteAllSensitiveOperation(AsyncTaskData *data)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "UriSensitive delete operation fail, rdbStore is null.");
 
-    int32_t ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::DROP_APP_URI_SENSITIVE_TABLE);
-    CHECK_AND_RETURN_LOG(ret >= 0, "UriSensitive table delete all temporary Sensitive failed");
-
-    ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE);
+    int32_t ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::CREATE_APP_URI_SENSITIVE_TABLE);
     CHECK_AND_RETURN_LOG(ret >= 0, "UriSensitive table delete all temporary Sensitive failed");
 
     ret = rdbStore->ExecuteSql(AppUriSensitiveColumn::CREATE_URI_URITYPE_APPID_INDEX);

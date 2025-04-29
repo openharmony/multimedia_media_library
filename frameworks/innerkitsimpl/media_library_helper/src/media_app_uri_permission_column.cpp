@@ -39,18 +39,22 @@ const int AppUriPermissionColumn::PERMISSION_PERSIST_READ = 1;
 const int AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE = 2;
 const int AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE = 3;
 const int AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE = 4;
+const int AppUriPermissionColumn::PERMISSION_PERSIST_WRITE = 5;
 const std::set<int> AppUriPermissionColumn::PERMISSION_TYPES_ALL = {
     AppUriPermissionColumn::PERMISSION_TEMPORARY_READ, AppUriPermissionColumn::PERMISSION_PERSIST_READ,
     AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE,
-    AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE};
+    AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE, AppUriPermissionColumn::PERMISSION_PERSIST_WRITE};
+const std::set<int> AppUriPermissionColumn::PERMISSION_TYPE_WRITE = {
+    AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE, AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE,
+    AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE, AppUriPermissionColumn::PERMISSION_PERSIST_WRITE};
 const std::set<int> AppUriPermissionColumn::PERMISSION_TYPES_PICKER = {
     AppUriPermissionColumn::PERMISSION_TEMPORARY_READ, AppUriPermissionColumn::PERMISSION_PERSIST_READ};
 const std::set<int> AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY = {
     AppUriPermissionColumn::PERMISSION_TEMPORARY_READ, AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE,
     AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE};
 const std::set<int> AppUriPermissionColumn::PERMISSION_TYPES_PERSIST = {
-    AppUriPermissionColumn::PERMISSION_PERSIST_READ, AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE};
-
+    AppUriPermissionColumn::PERMISSION_PERSIST_READ, AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE,
+    AppUriPermissionColumn::PERMISSION_PERSIST_WRITE};
 
 const std::string AppUriPermissionColumn::URI_URITYPE_APPID_INDEX = "uri_uritype_appid_index";
 
