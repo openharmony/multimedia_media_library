@@ -718,8 +718,7 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             RENAME_OPERATION + " != 0 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == FAVORITE_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +
-            GROUP_TAG + " ORDER BY CASE WHEN " + IS_ME + " != 0 THEN 0 ELSE 1 END, CASE WHEN " +
-            RENAME_OPERATION + " != 0 THEN 0 ELSE 1 END, " + COUNT + " DESC, " + RANK;
+            GROUP_TAG + " ORDER BY " + RANK;
     } else {
         MEDIA_ERR_LOG("The display level is invalid");
         whereClause = "";
