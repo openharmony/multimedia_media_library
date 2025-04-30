@@ -361,6 +361,7 @@ void UpgradeRestore::RestoreHighlightAlbums()
         ", dualDeviceSoftName_: " + dualDeviceSoftName_ +
         ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
         ", isAccountValid_: " + std::to_string(isAccountValid_) +
+        ", syncSwitchType_: " + std::to_string(syncSwitchType_) +
         ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOn_));
     if ((sceneCode_ == UPGRADE_RESTORE_ID || dualDeviceSoftName_.empty()
         || dualDeviceSoftName_.find("4", dualDeviceSoftName_.find(" ")) == dualDeviceSoftName_.find(" ") + 1)

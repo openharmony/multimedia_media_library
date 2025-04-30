@@ -229,7 +229,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
     MEDIA_INFO_LOG("Start clone restore");
     SetParameterForClone();
     GetAccountValid();
-    isSyncSwitchOn_ = CloudSyncUtils::IsCloudSyncSwitchOn();
+    GetSyncSwitchOn();
     MEDIA_INFO_LOG("the isAccountValid_ is %{public}d, the isSyncSwitchOn_ is %{public}d", isAccountValid_,
         isSyncSwitchOn_);
 #ifdef CLOUD_SYNC_MANAGER
@@ -498,6 +498,7 @@ void CloneRestore::RestoreHighlightAlbums()
             "sceneCode_: " + std::to_string(this->sceneCode_) +
             ", highlightCloudMediaCnt: " + std::to_string(highlightCloudMediaCnt) +
             ", isAccountValid_: " + std::to_string(isAccountValid_) +
+            ", syncSwitchType_: " + std::to_string(syncSwitchType_) +
             ", isSyncSwitchOpen: " + std::to_string(isSyncSwitchOn_));
     bool cond = (highlightCloudMediaCnt == 0 || IsCloudRestoreSatisfied());
     CHECK_AND_EXECUTE(!cond, cloneRestoreHighlight_.RestoreAlbums());
