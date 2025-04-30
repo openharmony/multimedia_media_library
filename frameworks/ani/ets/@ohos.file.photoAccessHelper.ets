@@ -1345,7 +1345,7 @@ export namespace photoAccessHelper {
     saveFormInfo(info: FormInfo): Promise<void>;
     applyChanges(mediaChangeRequest: MediaChangeRequest): Promise<void>;
     getIndexConstructProgress(): Promise<string>;
-    grantPhotoUriPermission(appid: string, uri: string, photoPermissionType: PhotoPermissionType,
+    grantPhotoUriPermission(tokenId: number, uri: string, photoPermissionType: PhotoPermissionType,
       hideSensitiveType: HideSensitiveType): Promise<number>;
   }
 
@@ -1353,11 +1353,11 @@ export namespace photoAccessHelper {
     bundleName: string;
     appName: string;
     appId: string;
-    tokenId?: number;
+    tokenId: number;
   }
 
   interface GrantPhotoUriPermissionParam {
-    appid: string;
+    tokenId: number;
     uri: string;
   }
 
@@ -1675,7 +1675,8 @@ export namespace photoAccessHelper {
       let appInfo: AppInfo = {
         bundleName: bundleName,
         appName: appName,
-        appId: appId
+        appId: appId,
+        tokenId: 0
       };
       return new Promise<Array<string>>((resolve: (v: Array<string>) => void, reject: RejectString) => {
         let cb = (): Array<string> | MediaLibraryAniError => {
@@ -1855,10 +1856,10 @@ export namespace photoAccessHelper {
       });
     }
 
-    grantPhotoUriPermission(appid: string, uri: string, photoPermissionType: PhotoPermissionType,
+    grantPhotoUriPermission(tokenId: number, uri: string, photoPermissionType: PhotoPermissionType,
       hideSensitiveType: HideSensitiveType): Promise<number> {
       let param: GrantPhotoUriPermissionParam = {
-        appid: appid,
+        tokenId: tokenId,
         uri: uri
       };
       return new Promise<number>((resolve: (v: number) => void, reject: RejectString) => {
@@ -2203,6 +2204,8 @@ export namespace photoAccessHelper {
     native mergeAlbum(album: Album): void;
 
     native placeBefore(album: Album): void;
+
+    native removeAssets(assets: Array<PhotoAsset>): void;
 
     private create(context: long): void {
       if (this.nativeHandle == 0) {
