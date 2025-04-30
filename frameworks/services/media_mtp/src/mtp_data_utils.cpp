@@ -45,9 +45,7 @@ static constexpr int32_t INTTYPE128 = 128;
 static constexpr int32_t STRINGTYPE = -1;
 static const string MEDIA_DATA_DB_FORMAT = "format";
 static const string MEDIA_DATA_DB_COMPOSER = "composer";
-static constexpr int32_t EDITED_PHOTO_TYPE = 2;
 static constexpr int32_t MOVING_PHOTO_TYPE = 3;
-static constexpr int32_t EDITED_MOVING_TYPE = 4;
 static constexpr int64_t MILLI_TO_SECOND = 1000;
 static const string PARENT = "parent";
 constexpr int32_t PARENT_ROOT_ID = 0;
@@ -696,9 +694,9 @@ int32_t MtpDataUtils::GetPropValueBySet(const uint32_t property,
         string mp4FilePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(filePath);
         return GetPropValueForVideoOfMovingPhoto(mp4FilePath, property, outPropValue);
     }
-
-    if (GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet) == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
-        property == MTP_PROPERTY_OBJECT_SIZE_CODE) {
+    int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+    if (IsMtpMovingPhoto(subtype, effectMode) && property == MTP_PROPERTY_OBJECT_SIZE_CODE) {
         string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
         struct stat statInfo;
         CHECK_AND_RETURN_RET_LOG(stat(filePath.c_str(), &statInfo) == 0, MTP_ERROR_INVALID_OBJECTPROP_VALUE,
@@ -990,23 +988,9 @@ string MtpDataUtils::GetMovingOrEnditSourcePath(const std::string &path, const i
     string sourcePath;
     CHECK_AND_RETURN_RET_LOG(context != nullptr, sourcePath, "context is nullptr");
 
-    MEDIA_INFO_LOG("mtp GetMovingOrEnditSourcePath path:%{public}s, subtype:%{public}d", path.c_str(), subtype);
-    switch (static_cast<int32_t>(context->handle / COMMON_PHOTOS_OFFSET)) {
-        case EDITED_PHOTO_TYPE:
-            if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-                sourcePath = MovingPhotoFileUtils::GetSourceMovingPhotoImagePath(path);
-            } else {
-                sourcePath = PhotoFileUtils::GetEditDataSourcePath(path);
-            }
-            break;
-        case MOVING_PHOTO_TYPE:
-            sourcePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
-            break;
-        case EDITED_MOVING_TYPE:
-            sourcePath = MovingPhotoFileUtils::GetSourceMovingPhotoVideoPath(path);
-            break;
-        default:
-            break;
+    MEDIA_INFO_LOG("mtp GetMovingOrEnditSourcePath path:%{public}s", path.c_str());
+    if (static_cast<int32_t>(context->handle / COMMON_PHOTOS_OFFSET) == MOVING_PHOTO_TYPE) {
+        sourcePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
     }
     MEDIA_INFO_LOG("Mtp GetMovingOrEnditSourcePath sourcePath:%{public}s", sourcePath.c_str());
     return sourcePath;
@@ -1126,6 +1110,12 @@ bool MtpDataUtils::IsNumber(const string& str)
         CHECK_AND_RETURN_RET(isdigit(c) != 0, false);
     }
     return true;
+}
+
+bool MtpDataUtils::IsMtpMovingPhoto(const int32_t& subtype, const int32_t& effectMode)
+{
+    return (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
 }
 } // namespace Media
 } // namespace OHOS

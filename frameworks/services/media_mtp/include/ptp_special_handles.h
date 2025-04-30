@@ -17,10 +17,8 @@
 #define FRAMEWORKS_SERVICES_MEDIA_MTP_INCLUDE_PTP_SPECIAL_DELETED_HANDLES_H_
 
 #include <iostream>
-#include <map>
 #include <memory>
-#include <mutex>
-#include <vector>
+#include <safe_map.h>
 
 namespace OHOS {
 namespace Media {
@@ -35,13 +33,13 @@ public:
     static std::shared_ptr<PtpSpecialHandles> GetInstance();
 
     void AddHandleToMap(uint32_t deletedHandle, uint32_t realHandle);
-    uint32_t HandleConvertToAdded(uint32_t key) const;
-    bool FindRealHandle(uint32_t realHandle) const;
-    bool FindDeletedHandle(int32_t deletedHandle) const;
-    uint32_t HandleConvertToDeleted(uint32_t deletedHandle) const;
+    uint32_t HandleConvertToAdded(uint32_t key);
+    bool FindRealHandle(uint32_t realHandle);
+    bool FindDeletedHandle(uint32_t deletedHandle);
+    uint32_t HandleConvertToDeleted(uint32_t deletedHandle);
     void ClearDeletedHandles();
 private:
-    std::unordered_map<uint32_t, uint32_t> deletedHandleMap_;
+    OHOS::SafeMap<uint32_t, uint32_t> deletedHandleMap_;
     static std::mutex mutex_;
     static std::shared_ptr<PtpSpecialHandles> instance_;
 };
