@@ -907,6 +907,50 @@ std::string ThumbnailUtils::GetHighlightValue(const std::string &str, const std:
     return valueStr;
 }
 
+bool ThumbnailUtils::QueryLocalNoThumbnailInfos(ThumbRdbOpt &opt, vector<ThumbnailData> &infos, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_THUMBNAIL_READY,
+        MEDIA_DATA_DB_DATE_MODIFIED,
+        PhotoColumn::PHOTO_LCD_VISIT_TIME,
+    };
+    RdbPredicates rdbPredicates(opt.table);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
+    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0")->Or()->
+        EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY,
+        std::to_string(static_cast<int32_t>(ThumbnailReady::GENERATE_THUMB_LATER)))
+        ->EndWrap();
+    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
+    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
+    rdbPredicates.Limit(THUMBNAIL_QUERY_MIN);
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_TAKEN);
+    if (opt.store == nullptr) {
+        MEDIA_ERR_LOG("opt.store is nullptr");
+        return false;
+    }
+    shared_ptr<ResultSet> resultSet = opt.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+    err = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "Failed GoToFirstRow %{public}d", err);
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err, column);
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
 bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
