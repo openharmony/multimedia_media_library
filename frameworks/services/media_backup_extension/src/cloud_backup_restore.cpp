@@ -17,10 +17,31 @@
 
 #include "cloud_backup_restore.h"
 
+#include "backup_const.h"
+#include "backup_const_column.h"
 #include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
+int32_t CloudBackupRestore::Init(const std::string &backupRestoreDir, const std::string &upgradePath, bool isUpgrade)
+{
+    appDataPath_ = backupRestoreDir;
+    filePath_ = backupRestoreDir;
+    galleryDbPath_ = backupRestoreDir + "/" + GALLERY_DB_NAME;
+    audioDbPath_ = backupRestoreDir + INTERNAL_PREFIX + "/0/" + AUDIO_DB_NAME;
+    SetCloneParameterAndStopSync();
+
+    int32_t errCode = InitDb();
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    photoAlbumRestore_.OnStart(mediaLibraryRdb_, galleryRdb_);
+    photosRestore_.OnStart(mediaLibraryRdb_, galleryRdb_);
+    MEDIA_INFO_LOG("Init db succ.");
+    return E_OK;
+}
+
 bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     FileInfo &info)
 {
@@ -33,13 +54,13 @@ bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeR
     // [album info]source_path, owner_album_id, package_name
     info.sourcePath = GetStringVal(GALLERY_FILE_DATA, resultSet);
     info.lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
-    info.lPath = this->photosRestore_.FindlPath(info);
-    info.bundleName = this->photosRestore_.FindBundleName(info);
-    info.packageName = this->photosRestore_.FindPackageName(info);
+    info.lPath = photosRestore_.FindlPath(info);
+    info.bundleName = photosRestore_.FindBundleName(info);
+    info.packageName = photosRestore_.FindPackageName(info);
 
     // [special type]
     info.photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
-    info.photoQuality = this->photosRestore_.FindPhotoQuality(info);
+    info.photoQuality = photosRestore_.FindPhotoQuality(info);
 
     // [time info]date_taken, date_modified, date_added
     info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
@@ -60,21 +81,21 @@ NativeRdb::ValuesBucket CloudBackupRestore::GetInsertValue(const FileInfo &fileI
     values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
 
     // [album info]source_path, owner_album_id, package_name
-    values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, this->photosRestore_.FindSourcePath(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, this->photosRestore_.FindAlbumId(fileInfo));
+    values.PutString(PhotoColumn::PHOTO_SOURCE_PATH, photosRestore_.FindSourcePath(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_OWNER_ALBUM_ID, photosRestore_.FindAlbumId(fileInfo));
     CHECK_AND_EXECUTE(fileInfo.packageName.empty(),
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, fileInfo.packageName));
 
     // [special type]
     values.PutInt(PhotoColumn::PHOTO_QUALITY, fileInfo.photoQuality);
-    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, this->photosRestore_.FindSubtype(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, this->photosRestore_.FindBurstCoverLevel(fileInfo));
-    values.PutString(PhotoColumn::PHOTO_BURST_KEY, this->photosRestore_.FindBurstKey(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, this->photosRestore_.FindStrongAssociation(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, this->photosRestore_.FindCeAvailable(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, photosRestore_.FindSubtype(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, photosRestore_.FindBurstCoverLevel(fileInfo));
+    values.PutNull(PhotoColumn::PHOTO_BURST_KEY);
+    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, photosRestore_.FindStrongAssociation(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, photosRestore_.FindCeAvailable(fileInfo));
 
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
-    values.PutInt(PhotoColumn::PHOTO_DIRTY, this->photosRestore_.FindDirty(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_DIRTY, photosRestore_.FindDirty(fileInfo));
     return values;
 }
 
@@ -104,6 +125,7 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
     value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
+    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
 
     value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, fileInfo.dateTaken));

@@ -415,23 +415,21 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   }
 
   private getSceneCode(bundleVersion: BundleVersion): number {
-    if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
+    const [name, code] = bundleVersion;
+    if (name.startsWith(UPGRADE_NAME)) {
       return UPGRADE_RESTORE;
     }
-    if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
-      if (!this.checkDBExist(GALLERY_DB_PATH)) {
-        return LITE_PHONE_CLONE_RESTORE;
-      }
-      return DUAL_FRAME_CLONE_RESTORE;
+    if (name === DUAL_FRAME_CLONE_NAME && code === 0) {
+      return this.checkDBExist(GALLERY_DB_PATH) ? DUAL_FRAME_CLONE_RESTORE : LITE_PHONE_CLONE_RESTORE;
     }
-    if (bundleVersion.name === OTHERS_PHONE_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+    if (name === OTHERS_PHONE_FRAME_CLONE_NAME && code === 0) {
       return OTHERS_PHONE_CLONE_RESTORE;
     }
-    if (bundleVersion.name === I_PHONE_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+    if (name === I_PHONE_FRAME_CLONE_NAME && code === 0) {
       return I_PHONE_CLONE_RESTORE;
     }
-    if (bundleVersion.name === CLOUD_BACKUP_NAME && bundleVersion.code === 0) {
-      return CLOUD_BACKUP_RESTORE;
+    if (name === CLOUD_BACKUP_NAME && code === 0) {
+      return this.checkDBExist(GALLERY_DB_PATH) ? CLOUD_BACKUP_RESTORE : LITE_PHONE_CLONE_RESTORE;
     }
     return CLONE_RESTORE;
   }

@@ -25,6 +25,7 @@ public:
     CloudBackupRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode) :
         UpgradeRestore(galleryAppName, mediaAppName, sceneCode) {}
 
+    int32_t Init(const std::string &backupRestoreDir, const std::string &upgradePath, bool isUpgrade) override;
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) override;
 
