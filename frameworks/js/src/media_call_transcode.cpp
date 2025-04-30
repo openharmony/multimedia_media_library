@@ -33,11 +33,11 @@ void MediaCallTranscode::CallTranscodeHandle(napi_env env, int srcFd, int destFd
     napi_value &result, off_t &size, std::string requestId)
 {
     NAPI_INFO_LOG("CallTranscodeHandle start");
-    bool ret = DoTranscode(srcFd, destFd, size, requestId);
+    bool ret = DoTranscode(srcFd, destFd, size, requestId, 0);
     napi_get_boolean(env, ret, &result);
 }
 
-bool MediaCallTranscode::DoTranscode(int srcFd, int destFd, off_t &size, std::string requestId)
+bool MediaCallTranscode::DoTranscode(int srcFd, int destFd, int64_t &size, std::string requestId, int64_t offset)
 {
     UniqueFd uniqueSrcFd(srcFd);
     UniqueFd uniqueDestFd(destFd);
@@ -60,7 +60,7 @@ bool MediaCallTranscode::DoTranscode(int srcFd, int destFd, off_t &size, std::st
         NAPI_ERR_LOG("Failed to set TransCoder callback");
         return false;
     }
-    if (transCoder->SetInputFile(uniqueSrcFd.Get(), 0, size) != E_OK) {
+    if (transCoder->SetInputFile(uniqueSrcFd.Get(), offset, size) != E_OK) {
         NAPI_ERR_LOG("Failed to set input file for TransCoder");
         return false;
     }
@@ -80,7 +80,8 @@ bool MediaCallTranscode::DoTranscode(int srcFd, int destFd, off_t &size, std::st
         NAPI_ERR_LOG("Failed to TransCoder Start");
         return false;
     }
-    return  true;
+    NAPI_INFO_LOG("DoTranscode success requestId:%{public}s", requestId.c_str());
+    return true;
 }
 
 void MediaCallTranscode::CallTranscodeRelease(const std::string& requestId)

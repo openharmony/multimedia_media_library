@@ -426,43 +426,45 @@ int32_t MovingPhotoNapi::GetFdFromUri(const std::string &uri)
 
 static int32_t ArrayBufferToTranscode(napi_env env, MovingPhotoAsyncContext* context, int32_t fd)
 {
-    if (context == nullptr) {
-        NAPI_INFO_LOG("context is null");
-        return E_ERR;
-    }
+    CHECK_COND_RET(context != nullptr, E_ERR, "context is null");
     {
         std::lock_guard<std::mutex> lockMutex(requestContentCompleteResultMutex);
         requestContentCompleteResult.Insert(context->requestId, context);
     }
-    std::string uri = context->movingPhotoUri;
-    NAPI_DEBUG_LOG("uri %{public}s", uri.c_str());
     auto abilityContext = AbilityRuntime::Context::GetApplicationContext();
-    if (abilityContext == nullptr) {
-        NAPI_INFO_LOG("abilityContext is null");
-        return E_ERR;
-    }
+    CHECK_COND_RET(abilityContext != nullptr, E_ERR, "abilityContext is null");
     string cachePath = abilityContext->GetCacheDir();
     string destUri = cachePath + "/" +context->requestId + ".mp4";
     NAPI_DEBUG_LOG("destUri:%{public}s", destUri.c_str());
     int destFd = MovingPhotoNapi::GetFdFromUri(destUri);
     if (destFd < 0) {
-        context->error = destFd;
+        context->error = JS_INNER_FAIL;
         NAPI_ERR_LOG("get destFd fail");
         return E_ERR;
     }
-    napi_value resultNapiValue = nullptr;
-    struct stat statSrc;
     UniqueFd uniqueFd(fd);
     UniqueFd uniqueDestFd(destFd);
-    if (fstat(uniqueFd.Get(), &statSrc) == E_ERR) {
-        napi_get_boolean(env, false, &resultNapiValue);
-        NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
-        return E_ERR;
+    int64_t offset = 0;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    if (context->position == POSITION_CLOUD) {
+        int32_t ret = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(uniqueFd.Get(), offset, videoSize,
+            extraDataSize);
+        if (ret != E_OK) {
+            context->error = JS_INNER_FAIL;
+            NAPI_ERR_LOG("get moving photo detailed size fail");
+            return E_ERR;
+        }
+    } else {
+        struct stat statSrc;
+        if (fstat(uniqueFd.Get(), &statSrc) == E_ERR) {
+            NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
+            return E_HAS_FS_ERROR;
+        }
+        videoSize = statSrc.st_size;
     }
     MediaCallTranscode::RegisterCallback(context->callback);
-    bool result = MediaCallTranscode::DoTranscode(uniqueFd.Get(), uniqueDestFd.Get(), statSrc.st_size,
-        context->requestId);
-    if (!result) {
+    if (!MediaCallTranscode::DoTranscode(uniqueFd.Get(), uniqueDestFd.Get(), videoSize, context->requestId, offset)) {
         NAPI_INFO_LOG("DoTranscode fail");
         return E_GET_PRAMS_FAIL;
     }
@@ -744,19 +746,26 @@ napi_value MovingPhotoNapi::JSGetUri(napi_env env, napi_callback_info info)
 
 int32_t MovingPhotoNapi::DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, MovingPhotoAsyncContext* context)
 {
-    if (context == nullptr) {
-        NAPI_INFO_LOG("context is null");
-        return E_ERR;
-    }
+    CHECK_COND_RET(context != nullptr, E_ERR, "context is null");
     if (videoFd == -1) {
         NAPI_INFO_LOG("videoFd is null");
         return E_ERR;
     }
+    int64_t offset = 0;
     UniqueFd uniqueVideoFd(videoFd);
-    struct stat statSrc;
-    if (fstat(uniqueVideoFd.Get(), &statSrc) == E_ERR) {
-        NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
-        return E_HAS_FS_ERROR;
+    int64_t videoSize = 0;
+    int64_t extraDataSize = 0;
+    if (context->position == POSITION_CLOUD) {
+        int32_t ret = MovingPhotoFileUtils::GetMovingPhotoDetailedSize(uniqueVideoFd.Get(), offset, videoSize,
+            extraDataSize);
+        CHECK_COND_RET(ret == E_OK, E_ERR, "get moving photo detailed size fail");
+    } else {
+        struct stat statSrc;
+        if (fstat(uniqueVideoFd.Get(), &statSrc) == E_ERR) {
+            NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
+            return E_HAS_FS_ERROR;
+        }
+        videoSize = statSrc.st_size;
     }
     AppFileService::ModuleFileUri::FileUri fileUri(context->destVideoUri);
     string destPath = fileUri.GetRealPath();
@@ -772,8 +781,8 @@ int32_t MovingPhotoNapi::DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, 
     }
     UniqueFd uniqueDestFd(destFd);
     MediaCallTranscode::RegisterCallback(context->callback);
-    bool result = MediaCallTranscode::DoTranscode(uniqueVideoFd.Get(), uniqueDestFd.Get(), statSrc.st_size,
-        context->requestId);
+    bool result = MediaCallTranscode::DoTranscode(uniqueVideoFd.Get(), uniqueDestFd.Get(), videoSize,
+        context->requestId, offset);
     if (!result) {
         NAPI_ERR_LOG("DoTranscode fail");
         return E_GET_PRAMS_FAIL;
@@ -880,12 +889,8 @@ void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyn
     context->arrayBufferLength = fileSize;
 }
 
-void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
+void BufferTranscodeRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
 {
-    if (context->position == POSITION_CLOUD) {
-        return RequestCloudContentArrayBuffer(fd, context);
-    }
-
     UniqueFd uniqueFd(fd);
     off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
     if (fileLen < 0) {
@@ -922,6 +927,14 @@ void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* con
     return;
 }
 
+void MovingPhotoNapi::SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context)
+{
+    if (context->position == POSITION_CLOUD) {
+        return RequestCloudContentArrayBuffer(fd, context);
+    }
+    BufferTranscodeRequestContent(fd, context);
+}
+
 void CallArrayBufferRequestContentComplete(napi_env env, MovingPhotoAsyncContext* context)
 {
     auto abilityContext = AbilityRuntime::Context::GetApplicationContext();
@@ -933,11 +946,11 @@ void CallArrayBufferRequestContentComplete(napi_env env, MovingPhotoAsyncContext
     int fd = MovingPhotoNapi::GetFdFromUri(destUri);
     if (fd < 0) {
         NAPI_ERR_LOG("get fd fail");
-        context->error = fd;
+        context->error = JS_INNER_FAIL;
         return;
     }
     UniqueFd uniqueFd(fd);
-    MovingPhotoNapi::SubRequestContent(uniqueFd.Get(), context);
+    BufferTranscodeRequestContent(uniqueFd.Get(), context);
     if (!MediaFileUtils::DeleteFile(destUri)) {
         NAPI_WARN_LOG("remove fail, errno:%{public}d", errno);
     }
