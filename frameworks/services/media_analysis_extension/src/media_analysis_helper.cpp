@@ -122,8 +122,8 @@ bool MediaAnalysisHelper::ParseGeoInfo(const std::vector<std::string> geoInfo, c
     }
 
     std::string addressDescription = reply.ReadString();
-    MEDIA_INFO_LOG("ParseGeoInfo success, fileId: %{public}s, addressDescription: %{private}s", geoInfo.front().c_str(),
-        addressDescription.c_str());
+    MEDIA_INFO_LOG("ParseGeoInfo success, fileId: %{private}s, addressDescription: %{private}s",
+        geoInfo.front().c_str(), addressDescription.c_str());
     return true;
 }
 
