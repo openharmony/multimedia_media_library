@@ -25,9 +25,11 @@
 #include "album_operation_uri.h"
 #include "ani.h"
 #include "ani_class_name.h"
+#include "data_secondary_directory_uri.h"
 #include "directory_ex.h"
 #include "file_asset_ani.h"
 #include "form_map.h"
+#include "ipc_skeleton.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_tracer.h"
 #include "media_app_uri_permission_column.h"
@@ -88,6 +90,10 @@ const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
 const std::string EXTENSION = "fileNameExtension";
 const std::string PHOTO_TYPE = "photoType";
 const std::string PHOTO_SUB_TYPE = "subtype";
+const std::string CONFIRM_BOX_BUNDLE_NAME = "bundleName";
+const std::string CONFIRM_BOX_APP_NAME = "appName";
+const std::string CONFIRM_BOX_APP_ID = "appId";
+const std::string TOKEN_ID = "tokenId";
 
 void ChangeListenerAni::OnChange(MediaChangeListener &listener, const ani_ref cbRef)
 {
@@ -1288,7 +1294,7 @@ ani_status MediaLibraryAni::Release(ani_env *env, ani_object object)
 
 ani_status MediaLibraryAni::ApplyChanges(ani_env *env, ani_object object, ani_object mediaChangeRequest)
 {
-    MediaChangeRequestAni* mediaChangeRequestAni = MediaChangeRequestAni::Unwrap(env, object);
+    MediaChangeRequestAni* mediaChangeRequestAni = MediaChangeRequestAni::Unwrap(env, mediaChangeRequest);
     if (mediaChangeRequestAni == nullptr) {
         ANI_ERR_LOG("Failed to unwrap MediaChangeRequestAni");
         return ANI_ERROR;
@@ -1433,9 +1439,12 @@ static void GetCreateUri(unique_ptr<MediaLibraryAsyncContext> &context, string &
         context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         switch (context->assetType) {
             case TYPE_PHOTO:
-                uri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-                    ((context->isCreateByComponent) ? UFM_CREATE_PHOTO_COMPONENT : UFM_CREATE_PHOTO) :
-                    ((context->isCreateByComponent) ? PAH_CREATE_PHOTO_COMPONENT : PAH_CREATE_PHOTO);
+                if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+                    uri = (context->isCreateByComponent) ? UFM_CREATE_PHOTO_COMPONENT : UFM_CREATE_PHOTO;
+                } else {
+                    uri = (context->isCreateByComponent) ? PAH_CREATE_PHOTO_COMPONENT :
+                        (context->needSystemApp ? PAH_SYS_CREATE_PHOTO : PAH_CREATE_PHOTO);
+                }
                 break;
             case TYPE_AUDIO:
                 uri = (context->isCreateByComponent) ? UFM_CREATE_AUDIO_COMPONENT : UFM_CREATE_AUDIO;
@@ -2066,17 +2075,33 @@ void MediaLibraryAni::PhotoAccessSaveFormInfo(ani_env *env, ani_object object, a
 
 static ani_status ParseBundleInfo(ani_env *env, ani_object appInfo, BundleInfo &bundleInfo)
 {
-    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, appInfo, "bundleName", bundleInfo.bundleName),
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, appInfo, CONFIRM_BOX_BUNDLE_NAME, bundleInfo.bundleName),
         "Failed to get bundleName");
-    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, appInfo, "appName", bundleInfo.packageName),
-        "Failed to get bundleName");
-    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, appInfo, "appId", bundleInfo.appId),
-        "Failed to get bundleName");
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, appInfo, CONFIRM_BOX_APP_NAME, bundleInfo.packageName),
+        "Failed to get appName");
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, appInfo, CONFIRM_BOX_APP_ID, bundleInfo.appId),
+        "Failed to get appId");
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, appInfo, TOKEN_ID, bundleInfo.tokenId),
+        "Failed to get appId");
     return ANI_OK;
 }
 
+static void HandleBundleInfo(OHOS::DataShare::DataShareValuesBucket &valuesBucket, bool isAuthorization,
+    const BundleInfo &bundleInfo)
+{
+    if (isAuthorization) {
+        valuesBucket.Put(MEDIA_DATA_DB_OWNER_PACKAGE, bundleInfo.bundleName);
+        valuesBucket.Put(MEDIA_DATA_DB_OWNER_APPID, bundleInfo.appId);
+        valuesBucket.Put(MEDIA_DATA_DB_PACKAGE_NAME, bundleInfo.packageName);
+    }
+    if (!bundleInfo.ownerAlbumId.empty()) {
+        valuesBucket.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, bundleInfo.ownerAlbumId);
+        ANI_INFO_LOG("client put ownerAlbumId: %{public}s", bundleInfo.ownerAlbumId.c_str());
+    }
+}
+
 static ani_status ParseCreateConfig(ani_env *env, ani_object photoCreationConfig, const BundleInfo &bundleInfo,
-    unique_ptr<MediaLibraryAsyncContext> &context)
+    unique_ptr<MediaLibraryAsyncContext> &context, bool isAuthorization = true)
 {
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     ani_object photoTypeAni {};
@@ -2115,9 +2140,7 @@ static ani_status ParseCreateConfig(ani_env *env, ani_object photoCreationConfig
         "Failed to call GetString for %{public}s", EXTENSION.c_str());
     valuesBucket.Put(ASSET_EXTENTION, extension);
 
-    valuesBucket.Put(MEDIA_DATA_DB_OWNER_PACKAGE, bundleInfo.bundleName);
-    valuesBucket.Put(MEDIA_DATA_DB_OWNER_APPID, bundleInfo.appId);
-    valuesBucket.Put(MEDIA_DATA_DB_PACKAGE_NAME, bundleInfo.packageName);
+    HandleBundleInfo(valuesBucket, isAuthorization, bundleInfo);
     context->valuesBucketArray.push_back(move(valuesBucket));
     return ANI_OK;
 }
@@ -2146,27 +2169,82 @@ static ani_status ParseArgsAgentCreateAssets(ani_env *env, ani_object appInfo, a
     return ANI_OK;
 }
 
+static bool CheckAlbumUri(ani_env *env, OHOS::DataShare::DataShareValuesBucket &valueBucket,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    bool isValid = false;
+    string ownerAlbumId = valueBucket.Get(PhotoColumn::PHOTO_OWNER_ALBUM_ID, isValid);
+    if (!isValid || ownerAlbumId.empty()) {
+        return false;
+    }
+    string queryUri = PAH_QUERY_PHOTO_ALBUM;
+    Uri uri(queryUri);
+    DataSharePredicates predicates;
+    vector selectionArgs = {to_string(PhotoAlbumSubType::USER_GENERIC), to_string(PhotoAlbumSubType::SOURCE_GENERIC)};
+    predicates.In(PhotoAlbumColumns::ALBUM_SUBTYPE, selectionArgs);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, ownerAlbumId);
+    int errCode = 0;
+    vector<string> columns;
+    columns.push_back(MEDIA_COLUMN_COUNT_1);
+    shared_ptr<DataShareResultSet> resultSet =
+        UserFileClient::Query(uri, predicates, columns, errCode);
+    if (resultSet == nullptr) {
+        ANI_ERR_LOG("resultSet is null, errCode: %{public}d", errCode);
+        return false;
+    }
+    int err = resultSet->GoToFirstRow();
+    if (err != NativeRdb::E_OK) {
+        ANI_ERR_LOG("Invalid albumuri, Failed GoToFirstRow %{public}d", err);
+        resultSet->Close();
+        return false;
+    }
+    int32_t count = 0;
+    resultSet->GetInt(0, count);
+    if (count == 0) {
+        ANI_ERR_LOG("Invalid albumuri!");
+        resultSet->Close();
+        return false;
+    }
+    resultSet->Close();
+    return true;
+}
+
 static void PhotoAccessAgentCreateAssetsExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     string uri;
     GetCreateUri(context, uri);
+    if (context->isContainsAlbumUri) {
+        bool isValid = CheckAlbumUri(env, context->valuesBucketArray[0], context);
+        if (!isValid) {
+            context->error = JS_ERR_PARAMETER_INVALID;
+            return;
+        }
+    }
+    if (context->tokenId != 0) {
+        ANI_INFO_LOG("tokenId: %{public}d", context->tokenId);
+        MediaLibraryAniUtils::UriAppendKeyValue(uri, TOKEN_ID, to_string(context->tokenId));
+    }
     Uri createFileUri(uri);
-    for (const auto &valuesBucket: context->valuesBucketArray) {
+    for (const auto& valuesBucket : context->valuesBucketArray) {
+        bool inValid = false;
+        string title = valuesBucket.Get(MediaColumn::MEDIA_TITLE, inValid);
+        if (!context->isContainsAlbumUri && !title.empty() && MediaFileUtils::CheckTitleCompatible(title) != E_OK) {
+            ANI_ERR_LOG("Title contains invalid characters: %{private}s, skipping", title.c_str());
+            context->uriArray.push_back(to_string(E_INVALID_DISPLAY_NAME));
+            continue;
+        }
         string outUri;
         int index = UserFileClient::InsertExt(createFileUri, valuesBucket, outUri);
         if (index < 0) {
-            if (index == E_PERMISSION_DENIED) {
-                context->error = OHOS_PERMISSION_DENIED_CODE;
+            if (index == E_PERMISSION_DENIED || index == -E_CHECK_SYSTEMAPP_FAIL) {
+                context->SaveError(index);
                 ANI_ERR_LOG("PERMISSION_DENIED, index: %{public}d.", index);
                 return;
             }
-
             if (index == E_HAS_DB_ERROR) {
                 index = OHOS_INVALID_PARAM_CODE;
             }
             context->uriArray.push_back(to_string(index));
-            bool isValid = false;
-            string title = valuesBucket.Get(MediaColumn::MEDIA_TITLE, isValid);
             ANI_ERR_LOG("InsertExt fail, index: %{public}d title: %{public}s.", index, title.c_str());
         } else {
             context->uriArray.push_back(move(outUri));
@@ -2188,6 +2266,7 @@ ani_object MediaLibraryAni::PhotoAccessHelperAgentCreateAssets(ani_env *env, ani
     unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     context->assetType = TYPE_PHOTO;
+    context->needSystemApp = true;
     context->objectInfo = Unwrap(env, object);
     if (context->objectInfo == nullptr) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -2207,6 +2286,7 @@ static ani_status ParseArgsAgentCreateAssetsWithMode(ani_env *env, ani_object ap
 {
     context->isCreateByComponent = false;
     context->isCreateByAgent = true;
+    context->needSystemApp = true;
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return ANI_ERROR;
@@ -2242,17 +2322,13 @@ ani_object MediaLibraryAni::PhotoAccessHelperAgentCreateAssetsWithMode(ani_env *
         "Failed to call EnumGetValueInt32 for authorizationMode");
     CHECK_COND_WITH_MESSAGE(env, authorizationModeInt == SaveType::SHORT_IMAGE_PERM, "authorizationMode is error");
 
-    ani_object tokenIdObj {};
-    ani_double tokenId = 0;
-    if (MediaLibraryAniUtils::GetProperty(env, appInfo, "tokenId", tokenIdObj) != ANI_OK ||
-        MediaLibraryAniUtils::IsUndefined(env, tokenIdObj) == ANI_TRUE ||
-        env->Object_CallMethodByName_Double(tokenIdObj, "doubleValue", nullptr, &tokenId) != ANI_OK) {
+    uint32_t tokenId = 0;
+    if (MediaLibraryAniUtils::GetProperty(env, appInfo, TOKEN_ID, tokenId) != ANI_OK) {
         AniError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid tokenId");
         return nullptr;
     }
-    int32_t tokenIdInt = static_cast<int32_t>(tokenId);
     int ret = Security::AccessToken::AccessTokenKit::GrantPermissionForSpecifiedTime(
-        tokenIdInt, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
+        tokenId, PERM_SHORT_TERM_WRITE_IMAGEVIDEO, SHORT_TERM_PERMISSION_DURATION_300S);
     if (ret != E_SUCCESS) {
         AniError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "This app have no short permission");
         return nullptr;
@@ -2381,20 +2457,46 @@ ani_string MediaLibraryAni::PhotoAccessGetIndexConstructProgress(ani_env *env, a
     return GetIndexConstructProgressComplete(env, context);
 }
 
+static ani_status ParsePermissionType(ani_env *env, ani_enum_item permissionTypeAni, int32_t &permissionType)
+{
+    CHECK_STATUS_RET(MediaLibraryEnumAni::EnumGetValueInt32(env, permissionTypeAni, permissionType),
+        "Failed to get permissionType");
+    if (AppUriPermissionColumn::PERMISSION_TYPES_PICKER.find((int)permissionType) ==
+        AppUriPermissionColumn::PERMISSION_TYPES_PICKER.end()) {
+        ANI_ERR_LOG("invalid picker permissionType, permissionType=%{public}d", permissionType);
+        return ANI_INVALID_ARGS;
+    }
+    return ANI_OK;
+}
+
+static ani_status ParseHidenSensitiveType(ani_env *env, ani_enum_item hideSensitiveTypeAni, int32_t &hideSensitiveType)
+{
+    CHECK_STATUS_RET(MediaLibraryEnumAni::EnumGetValueInt32(env, hideSensitiveTypeAni, hideSensitiveType),
+        "Failed to get hideSensitiveType");
+    if (AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.find((int)hideSensitiveType) ==
+        AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end()) {
+        ANI_ERR_LOG("invalid picker hideSensitiveType, hideSensitiveType=%{public}d", hideSensitiveType);
+        return ANI_INVALID_ARGS;
+    }
+    return ANI_OK;
+}
+
 static ani_status ParseArgsGrantPhotoUriPermission(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context,
     ani_object param, ani_enum_item permissionTypeAni, ani_enum_item hideSensitiveTypeAni)
 {
     context->isCreateByComponent = false;
+    context->needSystemApp = true;
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return ANI_INVALID_ARGS;
     }
 
-    // parse appid
-    std::string appid = "";
-    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, param, "appid", appid), "Failed to get appid");
-    CHECK_COND_RET(!appid.empty(), ANI_INVALID_ARGS, "appid is empty");
-    context->valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
+    // parse appid or tokenId
+    uint32_t tokenId = 0;
+    CHECK_STATUS_RET(MediaLibraryAniUtils::GetProperty(env, param, "tokenId", tokenId), "Failed to parse tokenId");
+    context->valuesBucket.Put(AppUriPermissionColumn::TARGET_TOKENID, static_cast<int64_t>(tokenId));
+    uint32_t srcTokenId = IPCSkeleton::GetCallingTokenID();
+    context->valuesBucket.Put(AppUriSensitiveColumn::SOURCE_TOKENID, static_cast<int64_t>(srcTokenId));
 
     // parse fileId
     std::string uri = "";
@@ -2405,20 +2507,12 @@ static ani_status ParseArgsGrantPhotoUriPermission(ani_env *env, unique_ptr<Medi
 
     // parse permissionType
     int32_t permissionType = 0;
-    CHECK_STATUS_RET(MediaLibraryEnumAni::EnumGetValueInt32(env, permissionTypeAni, permissionType),
-        "Failed to get permissionType");
-    CHECK_COND_RET(AppUriPermissionColumn::PERMISSION_TYPES_PICKER.find((int)permissionType) !=
-        AppUriPermissionColumn::PERMISSION_TYPES_PICKER.end(), ANI_INVALID_ARGS,
-        "invalid picker permissionType, permissionType=%{public}d", permissionType);
+    CHECK_STATUS_RET(ParsePermissionType(env, permissionTypeAni, permissionType), "Invalid PermissionType");
     context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     // parse hideSensitiveType
     int32_t hideSensitiveType = 0;
-    CHECK_STATUS_RET(MediaLibraryEnumAni::EnumGetValueInt32(env, hideSensitiveTypeAni, hideSensitiveType),
-        "Failed to get hideSensitiveType");
-    CHECK_COND_RET(AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.find((int)hideSensitiveType) !=
-        AppUriSensitiveColumn::SENSITIVE_TYPES_ALL.end(), ANI_INVALID_ARGS,
-        "invalid picker hideSensitiveType, hideSensitiveType=%{public}d", hideSensitiveType);
+    CHECK_STATUS_RET(ParseHidenSensitiveType(env, hideSensitiveTypeAni, hideSensitiveType), "Invalid SensitiveType");
     context->valuesBucket.Put(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE, hideSensitiveType);
 
     // parsing fileId ensured uri is photo.
@@ -2428,7 +2522,12 @@ static ani_status ParseArgsGrantPhotoUriPermission(ani_env *env, unique_ptr<Medi
 
 static void PhotoAccessGrantPhotoUriPermissionExecute(ani_env *env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    string uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_APP_URI_PERMISSIONOPRN + "/" + OPRN_CREATE;
+    if (context == nullptr) {
+        ANI_ERR_LOG("Async context is null");
+        return;
+    }
+
+    string uri = PAH_CREATE_APP_URI_PERMISSION;
     MediaLibraryAniUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createUri(uri);
     
@@ -2475,6 +2574,16 @@ ani_double MediaLibraryAni::PhotoAccessGrantPhotoUriPermission(ani_env *env, ani
     }
     PhotoAccessGrantPhotoUriPermissionExecute(env, context);
     return PhotoUriPermissionComplete(env, context);
+}
+
+int32_t MediaLibraryAni::GetUserId()
+{
+    return userId_;
+}
+ 
+void MediaLibraryAni::SetUserId(const int32_t &userId)
+{
+    userId_ = userId;
 }
 } // namespace Media
 } // namespace OHOS

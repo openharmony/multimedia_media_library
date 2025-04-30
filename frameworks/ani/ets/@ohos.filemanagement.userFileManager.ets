@@ -31,12 +31,11 @@ function isNullish(d: NullishType): boolean {
   return (d === null || d === undefined) ? true : false;
 }
 
-class MediaLibraryAniError extends Error {
-  code: number;
-
+class MediaLibraryAniError extends BusinessError {
   constructor(code: number, message: string) {
-    super('MediaLibraryAniError', message, undefined);
+    super();
     this.code = code;
+    this.message = message;
   }
 }
 

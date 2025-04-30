@@ -27,6 +27,19 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+
+struct AniPhotoAlbumOperator {
+    std::string clsName;
+    ani_class cls {};
+    ani_method ctor {};
+    ani_method setAlbumType {};
+    ani_method setAlbumSubtype {};
+    ani_method setAlbumName {};
+    ani_method setAlbumUri {};
+    ani_method setCount {};
+    ani_method setCoverUri {};
+};
+
 class PhotoAlbumAni {
 public:
     EXPORT PhotoAlbumAni();
@@ -35,13 +48,16 @@ public:
     EXPORT static ani_status PhotoAccessInit(ani_env *env);
     EXPORT static ani_object CreatePhotoAlbumAni(ani_env *env, std::unique_ptr<PhotoAlbum> &albumData);
     EXPORT static ani_object CreatePhotoAlbumAni(ani_env *env, std::shared_ptr<PhotoAlbum> &albumData);
+    EXPORT static ani_status InitAniPhotoAlbumOperator(ani_env *env, AniPhotoAlbumOperator &photoAlbumOperator);
+    EXPORT static ani_object CreatePhotoAlbumAni(ani_env *env, std::unique_ptr<PhotoAlbum> &albumData,
+        const AniPhotoAlbumOperator &photoAlbumOperator);
     EXPORT static PhotoAlbumAni* UnwrapPhotoAlbumObject(ani_env *env, ani_object object);
 
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
 
 private:
     EXPORT void SetPhotoAlbumAniProperties();
-    EXPORT static ani_object PhotoAlbumAniConstructor(ani_env *env, ani_class clazz);
+    EXPORT static ani_object PhotoAlbumAniConstructor(ani_env *env, const AniPhotoAlbumOperator &opt);
     EXPORT static void PhotoAlbumAniDestructor(ani_env *env, ani_object object);
 
     EXPORT static ani_object PhotoAccessGetPhotoAssets(ani_env *env, ani_object object, ani_object fetchOptions);
