@@ -238,6 +238,7 @@ public:
     static int32_t GetGalleryPropList(const std::shared_ptr<MtpOperationContext> &context,
         shared_ptr<vector<Property>> &outProps, const std::string &name);
     static bool IsNumber(const std::string& str);
+    static bool IsMtpMovingPhoto(const int32_t& subtype, const int32_t& effectMode);
 private:
     static int32_t GetPropList(const std::shared_ptr<MtpOperationContext> &context,
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
