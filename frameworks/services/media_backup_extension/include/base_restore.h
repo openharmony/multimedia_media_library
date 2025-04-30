@@ -78,6 +78,7 @@ protected:
         std::vector<FileInfo> &fileInfos, int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
     virtual void GetAccountValid();
+    virtual void GetSyncSwitchOn();
     void GetSourceDeviceInfo();
     bool IsRestorePhoto();
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
@@ -228,6 +229,7 @@ protected:
     HighlightRestore highlightRestore_;
     PhotosDataHandler photosDataHandler_;
     int32_t restoreMode_;
+    int32_t syncSwitchType_;
 };
 } // namespace Media
 } // namespace OHOS

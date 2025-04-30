@@ -21,6 +21,7 @@
 #include <sys/types.h>
 
 #include "backup_const_column.h"
+#include "datashare_helper.h"
 #include "scanner_utils.h"
 #include "media_file_uri.h"
 #include "metadata_extractor.h"
@@ -55,6 +56,9 @@ const std::string BackupFileUtils::THM_FILE_NAME = "THM.jpg";
 const uint8_t BackupFileUtils::IMAGE_QUALITY = 90;
 const uint32_t BackupFileUtils::IMAGE_NUMBER_HINT = 1;
 const int32_t BackupFileUtils::IMAGE_MIN_BUF_SIZE = 8192;
+static const std::string CLOUD_BASE_URI = "datashareproxy://generic.cloudstorage";
+static const std::string CLOUD_SYNC_SWITCH_URI = CLOUD_BASE_URI + "/sync_switch";
+static const std::string MOBILE_NETWORK_STATUS_ON = "1";
 
 bool FileAccessHelper::GetValidPath(string &filePath)
 {
@@ -811,6 +815,38 @@ bool BackupFileUtils::EncodePixelMap(PixelMap &pixelMap, const std::string &outF
     err = imagePacker.FinalizePacking();
     CHECK_AND_RETURN_RET_LOG(err == 0, false, "Failed to FinalizePacking %{public}d", err);
     return true;
+}
+
+static std::shared_ptr<DataShare::DataShareHelper> GetCloudHelper(const std::string &uri)
+{
+    if (uri.empty()) {
+        MEDIA_ERR_LOG("uri is empty.");
+        return nullptr;
+    }
+    DataShare::CreateOptions options;
+    options.enabled_ = true;
+    return DataShare::DataShareHelper::Creator(uri, options);
+}
+
+int32_t BackupFileUtils::IsCloneCloudSyncSwitchOn(int32_t sceneCode)
+{
+    std::shared_ptr<DataShare::DataShareHelper> cloudHelper = GetCloudHelper(CLOUD_BASE_URI);
+    CHECK_AND_RETURN_RET_LOG(cloudHelper != nullptr, CheckSwitchType::CLOUD_HELPER_NULL, "cloudHelper is null");
+
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo("bundleName", "generic.cloudstorage");
+    Uri cloudUri(CLOUD_SYNC_SWITCH_URI);
+    vector<string> columns = { "isSwitchOn" };
+    shared_ptr<DataShare::DataShareResultSet> resultSet = cloudHelper->Query(cloudUri, predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, CheckSwitchType::RESULT_NULL, "resultSet is null");
+
+    string switchOn = "0";
+    if (resultSet->GoToNextRow() == E_OK) {
+        resultSet->GetString(0, switchOn);
+    } else if (sceneCode == UPGRADE_RESTORE_ID) {
+        return CheckSwitchType::UPGRADE_FAILED_ON;
+    }
+    return (switchOn == MOBILE_NETWORK_STATUS_ON) ? CheckSwitchType::SUCCESS_ON : CheckSwitchType::SUCCESS_OFF;
 }
 } // namespace Media
 } // namespace OHOS
