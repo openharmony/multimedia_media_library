@@ -13,8 +13,8 @@
 * limitations under the License.
 */
 
-#ifndef MEDIALIBRARY_EXT_UNIT_TEST_H
-#define MEDIALIBRARY_EXT_UNIT_TEST_H
+#ifndef MEDIALIBRARY_THUMBNAIL_UTILS_TEST_H
+#define MEDIALIBRARY_THUMBNAIL_UTILS_TEST_H
  
 #include <gtest/gtest.h>
 namespace OHOS {
@@ -28,4 +28,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIALIBRARY_EXT_UNIT_TEST_H
+#endif // MEDIALIBRARY_THUMBNAIL_UTILS_TEST_H
