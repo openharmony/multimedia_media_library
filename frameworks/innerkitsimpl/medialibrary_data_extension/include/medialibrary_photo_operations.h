@@ -29,6 +29,13 @@
 
 namespace OHOS {
 namespace Media {
+struct PhotoExtInfo {
+    std::string photoId;
+    std::string format;
+    std::string oldFilePath;
+    std::string extension;
+    std::shared_ptr<Media::Picture> picture;
+};
 
 class AlbumData {
 public:
@@ -66,8 +73,8 @@ public:
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
         const std::string &outputPath, std::string &editdata, const std::string &mime_type);
-    EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId,
-        std::shared_ptr<Media::Picture> &resultPicture);
+    EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId, const int32_t getPicRet,
+        PhotoExtInfo &photoExtInfo, std::shared_ptr<Media::Picture> &resultPicture);
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,
         bool isCleanImmediately, std::string &photoId, bool &isHighQualityPicture);
     EXPORT static int32_t FinishRequestPicture(MediaLibraryCommand &cmd);
@@ -89,6 +96,8 @@ public:
     EXPORT static int32_t ProcessCustomRestore(MediaLibraryCommand &cmd);
     EXPORT static int32_t CancelCustomRestore(MediaLibraryCommand &cmd);
     EXPORT static int32_t UpdateSupportedWatermarkType(MediaLibraryCommand &cmd);
+    static int32_t UpdateExtension(const int32_t &fileId, const int32_t &fileType, PhotoExtInfo &photoExtInfo,
+        NativeRdb::ValuesBucket &updateValues);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
@@ -168,8 +177,6 @@ private:
     static int32_t DoRevertAfterAddFiltersFailed(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &path, const std::string &sourcePath);
 private:
-    static int32_t UpdateExtension(const int32_t &fileId, std::string &mimeType, const int32_t &fileType,
-        std::string &oldFilePath);
     static void UpdateEditDataPath(std::string filePath, const std::string &extension);
     static void DeleteAbnormalFile(std::string &assetPath, const int32_t &fileId, const std::string &oldFilePath);
     static std::mutex saveCameraPhotoMutex_;
