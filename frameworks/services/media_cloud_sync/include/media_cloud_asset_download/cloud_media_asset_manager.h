@@ -55,6 +55,8 @@ public:
     EXPORT static void DeleteAllCloudMediaAssetsAsync();
     EXPORT static void StartDeleteCloudMediaAssets();
     EXPORT static void StopDeleteCloudMediaAssets();
+    EXPORT int32_t CheckCloudSyncStatus();
+    EXPORT void RestartForceRetainCloudAssets();
 
 private:
     CloudMediaAssetManager() {}
@@ -78,12 +80,15 @@ private:
     EXPORT void NotifyUpdateAssetsChange(const std::vector<std::string> &notifyFileIds);
     EXPORT bool HasLocalAndCloudAssets(std::vector<std::string> &updateFileIds);
     EXPORT int32_t UpdateLocalAndCloudAssets(const std::vector<std::string> &updateFileIds);
+    EXPORT void SetCloudsyncStatusKey(const int32_t statusKey);
+    EXPORT void TryToStartSync();
 
 private:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;
     static std::atomic<TaskDeleteState> doDeleteTask_;
     static std::mutex deleteMutex_;
     static std::mutex updateMutex_;
+    static std::atomic<bool> isCleaning_;
 };
 } // namespace Media
 } // namespace OHOS
