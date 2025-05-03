@@ -1118,27 +1118,44 @@ static int32_t UpdateThirdPartyPhotoDirtyFlag(ValuesBucket &values, RdbPredicate
     return updateDirtyRows;
 }
 
-static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &fileId)
+static void UpdateValuesBucketForExt(MediaLibraryCommand &cmd, ValuesBucket &values)
+{
+    ValuesBucket &cmdValues = cmd.GetValueBucket();
+    int32_t supportedWatermarkType = 0;
+    if (MediaLibraryAssetOperations::GetInt32FromValuesBucket(cmdValues,
+        PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType)) {
+        values.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType);
+    }
+
+    std::string cameraShotKey;
+    if (MediaLibraryAssetOperations::GetStringFromValuesBucket(cmdValues,
+        PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey)) {
+        values.Put(PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey);
+    }
+    MEDIA_INFO_LOG("MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
+        supportedWatermarkType, cameraShotKey.c_str());
+}
+
+static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &fileId,
+    const string &fileType, int32_t &getPicRet, PhotoExtInfo &photoExtInfo)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
     ValuesBucket values;
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    ValuesBucket &cmdValues = cmd.GetValueBucket();
-    int32_t supportedWatermarkType = 0;
-    string cameraShotKey;
-    if (MediaLibraryAssetOperations::GetInt32FromValuesBucket(cmdValues,
-        PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType)) {
-        predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
-        values.Put(PhotoColumn::SUPPORTED_WATERMARK_TYPE, supportedWatermarkType);
+    UpdateValuesBucketForExt(cmd, values);
+
+    bool isHighQualityPicture = false;
+    getPicRet = MediaLibraryPhotoOperations::GetPicture(std::stoi(fileId.c_str()), photoExtInfo.picture, false,
+        photoExtInfo.photoId, isHighQualityPicture);
+    if (!fileType.empty() && getPicRet == E_OK) {
+        auto ret = MediaLibraryPhotoOperations::UpdateExtension(std::stoi(fileId.c_str()), std::stoi(fileType.c_str()),
+            photoExtInfo, values);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("execute UpdateExtension failed, fileId: %{public}s, ret: %{public}d.", fileId.c_str(), ret);
+        }
     }
-    if (MediaLibraryAssetOperations::GetStringFromValuesBucket(cmdValues,
-        PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey)) {
-        predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
-        values.Put(PhotoColumn::CAMERA_SHOT_KEY, cameraShotKey);
-    }
-    MEDIA_INFO_LOG("MultistagesCapture, supportedWatermarkType: %{public}d, cameraShotKey: %{public}s",
-        supportedWatermarkType, cameraShotKey.c_str());
+
     int32_t updateDirtyRows = 0;
     if (cmd.GetQuerySetParam(PhotoColumn::PHOTO_DIRTY) == to_string(static_cast<int32_t>(DirtyType::TYPE_NEW))) {
         // Only third-party app save photo, it will bring dirty flag
@@ -1177,20 +1194,27 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
-    if (fileId.empty()) {
+    if (fileId.empty() && !MediaLibraryDataManagerUtils::IsNumber(fileId)) {
         MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
         return 0;
     }
     MEDIA_INFO_LOG("MultistagesCapture, start fileId: %{public}s", fileId.c_str());
     tracer.Start("MediaLibraryPhotoOperations::UpdateIsTempAndDirty");
-    int32_t ret = UpdateIsTempAndDirty(cmd, fileId);
+
+    string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
+    int32_t getPicRet = -1;
+    PhotoExtInfo photoExtInfo = {"", MIME_TYPE_JPEG, "", "", nullptr};
+    int32_t ret = UpdateIsTempAndDirty(cmd, fileId, fileType, getPicRet, photoExtInfo);
+
     tracer.Finish();
     CHECK_AND_RETURN_RET(ret >= 0, 0);
-    string fileType = cmd.GetQuerySetParam(IMAGE_FILE_TYPE);
+    if (photoExtInfo.oldFilePath != "") {
+        UpdateEditDataPath(photoExtInfo.oldFilePath, photoExtInfo.extension);
+    }
     tracer.Start("MediaLibraryPhotoOperations::SavePicture");
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
     if (!fileType.empty()) {
-        SavePicture(stoi(fileType), stoi(fileId), resultPicture);
+        SavePicture(stoi(fileType), stoi(fileId), getPicRet, photoExtInfo, resultPicture);
     }
     tracer.Finish();
 
@@ -2305,47 +2329,37 @@ static int32_t Move(const string& srcPath, const string& destPath)
     return ret;
 }
  
-int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, std::string &mimeType,
-    const int32_t &fileType, std::string &oldFilePath)
+int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, const int32_t &fileType,
+    PhotoExtInfo &photoExtInfo, ValuesBucket &updateValues)
 {
     ImageFileType type = static_cast<ImageFileType>(fileType);
     auto itr = IMAGE_FILE_TYPE_MAP.find(type);
     CHECK_AND_RETURN_RET_LOG(itr != IMAGE_FILE_TYPE_MAP.end(), E_INVALID_ARGUMENTS,
         "fileType : %{public} is not support", fileType);
-    mimeType = itr->second;
+    photoExtInfo.format = itr->second;
     auto extensionItr = IMAGE_EXTENSION_MAP.find(type);
     CHECK_AND_RETURN_RET_LOG(itr != IMAGE_EXTENSION_MAP.end(), E_INVALID_ARGUMENTS,
         "fileType : %{public} is not support", fileType);
-    std::string extension = extensionItr->second;
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore when updating mime type");
+    photoExtInfo.extension = extensionItr->second;
+
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
                                                          OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+                                                         
     std::string filePath = fileAsset->GetFilePath();
     std::string displayName = fileAsset->GetDisplayName();
     std::string modifyFilePath;
     std::string modifyDisplayName;
-    GetModityExtensionPath(filePath, modifyFilePath, extension);
-    GetModityExtensionPath(displayName, modifyDisplayName, extension);
+    GetModityExtensionPath(filePath, modifyFilePath, photoExtInfo.extension);
+    GetModityExtensionPath(displayName, modifyDisplayName, photoExtInfo.extension);
     MEDIA_DEBUG_LOG("modifyFilePath:%{public}s", modifyFilePath.c_str());
     MEDIA_DEBUG_LOG("modifyDisplayName:%{public}s", modifyDisplayName.c_str());
     bool cond = ((modifyFilePath == filePath) && (modifyDisplayName == displayName));
     CHECK_AND_RETURN_RET(!cond, E_OK);
-
-    UpdateEditDataPath(filePath, extension);
-    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
-    ValuesBucket updateValues;
     updateValues.PutString(MediaColumn::MEDIA_FILE_PATH, modifyFilePath);
     updateValues.PutString(MediaColumn::MEDIA_NAME, modifyDisplayName);
-    updateValues.PutString(MediaColumn::MEDIA_MIME_TYPE, mimeType);
+    updateValues.PutString(MediaColumn::MEDIA_MIME_TYPE, photoExtInfo.format);
     updateValues.PutString(PhotoColumn::PHOTO_MEDIA_SUFFIX, ScannerUtils::GetFileExtension(modifyDisplayName));
-    updateCmd.SetValueBucket(updateValues);
-    int32_t updateRows = -1;
-    int32_t errCode = rdbStore->Update(updateCmd, updateRows);
-    CHECK_AND_RETURN_RET_LOG(errCode == NativeRdb::E_OK && updateRows >= 0, E_HAS_DB_ERROR,
-        "Update extension failed. errCode:%{public}d, updateRows:%{public}d.", errCode, updateRows);
-    oldFilePath = filePath;
+    photoExtInfo.oldFilePath = filePath;
     return E_OK;
 }
 
@@ -3157,39 +3171,40 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     resultSet->Close();
     string uri = cmd.GetQuerySetParam("uri");
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
-    SavePicture(fileType, fileId, resultPicture);
+
+    bool isHighQualityPicture;
+    PhotoExtInfo photoExtInfo = {"", MIME_TYPE_JPEG, "", "", nullptr};
+    int32_t getPicRet = GetPicture(fileId, photoExtInfo.picture, false, uri, isHighQualityPicture);
+    SavePicture(fileType, fileId, getPicRet, photoExtInfo, resultPicture);
     string path = MediaFileUri::GetPathFromUri(uri, true);
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId, resultPicture);
     return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const int32_t &fileId,
-    std::shared_ptr<Media::Picture> &resultPicture)
+    const int32_t getPicRet, PhotoExtInfo &photoExtInfo, std::shared_ptr<Media::Picture> &resultPicture)
 {
     MEDIA_INFO_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
-    std::shared_ptr<Media::Picture> picture;
     std::string photoId;
     bool isHighQualityPicture = false;
-    CHECK_AND_RETURN_RET_LOG(GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK,
-        E_FILE_EXIST, "Failed to get picture");
+    CHECK_AND_RETURN_RET_LOG(getPicRet == E_OK && photoExtInfo.picture != nullptr, E_FILE_EXIST,
+        "Failed to get picture");
 
-    std::string format = MIME_TYPE_JPEG;
-    std::string oldFilePath = "";
-    int32_t updateResult = UpdateExtension(fileId, format, fileType, oldFilePath);
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
                                         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
 
-    FileUtils::DealPicture(format, assetPath, picture);
+    FileUtils::DealPicture(photoExtInfo.format, assetPath, photoExtInfo.picture);
     string editData = "";
     string editDataCameraPath = GetEditDataCameraPath(assetPath);
+    std::shared_ptr<Media::Picture> picture;
     if (ReadEditdataFromFile(editDataCameraPath, editData) == E_OK &&
         GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK &&
         GetTakeEffect(picture, photoId) == E_OK) {
         MediaFileUtils::CopyFileUtil(assetPath, GetEditDataSourcePath(assetPath));
         int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
-        FileUtils::DealPicture(format, assetPath, picture);
+        FileUtils::DealPicture(photoExtInfo.format, assetPath, picture);
     }
     if (isHighQualityPicture) {
         RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
@@ -3201,7 +3216,7 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
         CHECK_AND_PRINT_LOG(updatedRows >= 0, "update photo quality fail.");
     }
 
-    resultPicture = picture;
+    resultPicture = (picture == nullptr) ? photoExtInfo.picture : picture;
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
         pictureManagerThread->FinishAccessingPicture(photoId);
@@ -3210,9 +3225,9 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     lastPhotoId_ = photoId;
     // 删除已经存在的异常后缀的图片
     size_t size = -1;
-    MediaFileUtils::GetFileSize(oldFilePath, size);
-    bool cond = (updateResult == E_OK && oldFilePath != "" && size > 0);
-    CHECK_AND_EXECUTE(!cond, DeleteAbnormalFile(assetPath, fileId, oldFilePath));
+    MediaFileUtils::GetFileSize(photoExtInfo.oldFilePath, size);
+    bool cond = (photoExtInfo.oldFilePath != "" && size > 0);
+    CHECK_AND_EXECUTE(!cond, DeleteAbnormalFile(assetPath, fileId, photoExtInfo.oldFilePath));
     return E_OK;
 }
 
