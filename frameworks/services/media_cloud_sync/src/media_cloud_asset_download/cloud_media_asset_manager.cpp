@@ -24,6 +24,8 @@
 #include "abs_rdb_predicates.h"
 #include "cloud_media_asset_download_operation.h"
 #include "cloud_media_asset_types.h"
+#include "cloud_sync_notify_handler.h"
+#include "cloud_sync_helper.h"
 #include "cloud_sync_utils.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -40,6 +42,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_notify.h"
+#include "parameters.h"
 #include "photo_album_column.h"
 #include "rdb_store.h"
 #include "result_set_utils.h"
@@ -58,6 +61,7 @@ std::shared_ptr<CloudMediaAssetDownloadOperation> CloudMediaAssetManager::operat
 std::mutex CloudMediaAssetManager::deleteMutex_;
 std::mutex CloudMediaAssetManager::updateMutex_;
 std::atomic<TaskDeleteState> CloudMediaAssetManager::doDeleteTask_ = TaskDeleteState::IDLE;
+std::atomic<bool> CloudMediaAssetManager::isCleaning_ = false;
 static const int32_t BATCH_LIMIT_COUNT = 500;
 static const int32_t CYCLE_NUMBER = 1024 * 1024;
 static const int32_t SLEEP_FOR_DELETE = 1000;
@@ -513,7 +517,8 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia()
     MEDIA_INFO_LOG("enter ForceRetainDownloadCloudMedia.");
     MediaLibraryTracer tracer;
     tracer.Start("ForceRetainDownloadCloudMedia");
-
+    isCleaning_ = true;
+    SetCloudsyncStatusKey(static_cast<int32_t>(CloudSyncStatus::CLOUD_CLEANING));
     int32_t updateRet = UpdateCloudMediaAssets();
     CHECK_AND_PRINT_LOG(updateRet == E_OK, "UpdateCloudMediaAssets failed. ret %{public}d.", updateRet);
     int32_t ret = DeleteEmptyCloudAlbums();
@@ -529,12 +534,18 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia()
     ret = UpdateLocalAlbums();
     CHECK_AND_PRINT_LOG(ret == E_OK, "UpdateLocalAlbums failed. ret %{public}d.", ret);
     if (updateRet != E_OK) {
+        SetCloudsyncStatusKey(static_cast<int32_t>(CloudSyncStatus::SYNC_SWITCHED_OFF));
+        isCleaning_ = false;
+        TryToStartSync();
         MEDIA_WARN_LOG("end to ForceRetainDownloadCloudMedia, updateRet: %{public}d.", updateRet);
         return updateRet;
     }
-    MEDIA_INFO_LOG("begin to CleanGalleryDentryFile");
-    CloudSyncManager::GetInstance().CleanGalleryDentryFile();
-    MEDIA_INFO_LOG("end to CleanGalleryDentryFile");
+    std::thread([&] {
+        MEDIA_INFO_LOG("begin to CleanGalleryDentryFile");
+        CloudSyncManager::GetInstance().CleanGalleryDentryFile();
+        MEDIA_INFO_LOG("end to CleanGalleryDentryFile");
+    }).detach();
+    SetCloudsyncStatusKey(static_cast<int32_t>(CloudSyncStatus::SYNC_SWITCHED_OFF));
 
     TaskDeleteState expect = TaskDeleteState::IDLE;
     if (doDeleteTask_.compare_exchange_strong(expect, TaskDeleteState::ACTIVE_DELETE)) {
@@ -543,6 +554,8 @@ int32_t CloudMediaAssetManager::ForceRetainDownloadCloudMedia()
     } else {
         doDeleteTask_.store(TaskDeleteState::ACTIVE_DELETE);
     }
+    isCleaning_ = false;
+    TryToStartSync();
     MEDIA_INFO_LOG("end to ForceRetainDownloadCloudMedia.");
     return ret;
 }
@@ -634,6 +647,49 @@ bool CloudMediaAssetManager::SetBgDownloadPermission(const bool &flag)
     MEDIA_INFO_LOG("Success set isBgDownloadPermission, flag: %{public}d.", static_cast<int32_t>(flag));
     operation_->isBgDownloadPermission_ = flag;
     return true;
+}
+
+void CloudMediaAssetManager::SetCloudsyncStatusKey(const int32_t statusKey)
+{
+    MEDIA_INFO_LOG("Set cloudsyncStatusKey: %{public}d", statusKey);
+    bool retFlag = system::SetParameter(CLOUDSYNC_STATUS_KEY, std::to_string(statusKey));
+    CHECK_AND_PRINT_LOG(retFlag, "Failed to set CLOUDSYNC_STATUS_KEY, retFlag: %{public}d.", retFlag);
+}
+
+void CloudMediaAssetManager::RestartForceRetainCloudAssets()
+{
+    std::thread([&] {
+        MEDIA_INFO_LOG("enter RestartForceRetainCloudAssets.");
+        int32_t cloudSyncStatus = static_cast<int32_t>(system::GetParameter(CLOUDSYNC_STATUS_KEY, "0").at(0) - '0');
+        CHECK_AND_RETURN_INFO_LOG(cloudSyncStatus == CloudSyncStatus::CLOUD_CLEANING,
+            "cloudSyncStatus: %{public}d", cloudSyncStatus);
+        ForceRetainDownloadCloudMedia();
+    }).detach();
+}
+
+int32_t CloudMediaAssetManager::CheckCloudSyncStatus()
+{
+    int32_t cloudSyncStatus = static_cast<int32_t>(system::GetParameter(CLOUDSYNC_STATUS_KEY, "0").at(0) - '0');
+    if (cloudSyncStatus != CloudSyncStatus::CLOUD_CLEANING) {
+        return E_OK;
+    }
+    CHECK_AND_RETURN_RET_INFO_LOG(!isCleaning_.load(), E_OK, "cloud data is cleaning.");
+    bool retFlag = system::SetParameter(
+        CLOUDSYNC_STATUS_KEY, std::to_string(static_cast<int32_t>(CloudSyncStatus::SYNC_SWITCHED_OFF)));
+    CHECK_AND_RETURN_RET_LOG(retFlag, E_ERR, "Failed to set CLOUDSYNC_STATUS_KEY, retFlag: %{public}d.", retFlag);
+    return E_OK;
+}
+
+void CloudMediaAssetManager::TryToStartSync()
+{
+    if (!CloudSyncHelper::GetInstance()->IsSyncSwitchOpen()) {
+        MEDIA_INFO_LOG("syncSwitch is not open");
+        return;
+    }
+    MEDIA_INFO_LOG("cloud sync manager start sync");
+    int32_t ret = CloudSyncManager::GetInstance().StartSync(BUNDLE_NAME);
+    CHECK_AND_PRINT_LOG(ret == E_OK, "cloud sync manager start sync err %{public}d", ret);
+    MEDIA_INFO_LOG("cloud sync manager end sync");
 }
 } // namespace Media
 } // namespace OHOS
