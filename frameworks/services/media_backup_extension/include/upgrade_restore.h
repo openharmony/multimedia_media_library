@@ -126,7 +126,7 @@ protected:
     void ProcessCloudGalleryFailedOffsets();
     void ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type);
     void SetCloneParameterAndStopSync();
-    int32_t InitDb();
+    int32_t InitDb(bool isUpgrade);
 
 protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
