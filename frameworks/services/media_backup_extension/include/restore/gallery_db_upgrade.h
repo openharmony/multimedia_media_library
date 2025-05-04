@@ -33,6 +33,7 @@ private:
     int32_t GarbageAlbumCheckOrAddRelativeBucketId(NativeRdb::RdbStore &store);
     int32_t GarbageAlbumCheckOrAddType(NativeRdb::RdbStore &store);
     int32_t AddIndexOfGalleryAlbum(NativeRdb::RdbStore &store);
+    int32_t AddIndexAlbumIdOfGalleryAlbum(NativeRdb::RdbStore &store);
     int32_t AddIndexOfAlbumPlugin(NativeRdb::RdbStore &store);
     int32_t AddStoryChosenOfGalleryMedia(NativeRdb::RdbStore &store);
     int32_t CreateRelativeAlbumOfGalleryAlbum(NativeRdb::RdbStore &store);
@@ -54,6 +55,11 @@ private:
         CREATE INDEX IF NOT EXISTS gallery_album_index_relativeBucketId ON gallery_album \
         ( \
             relativeBucketId \
+        );";
+    const std::string SQL_GALLERY_ALBUM_INDEX_ALBUM_ID = "\
+        CREATE INDEX IF NOT EXISTS gallery_album_index_albumId ON gallery_album \
+        ( \
+            albumId \
         );";
     const std::string SQL_ALBUM_PLUGIN_INDEX_ALBUM_NAME = "\
         CREATE INDEX IF NOT EXISTS album_plugin_index_album_name ON album_plugin \

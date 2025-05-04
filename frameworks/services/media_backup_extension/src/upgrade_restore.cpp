@@ -120,7 +120,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
 
 int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 {
-    int32_t errCode = InitDb();
+    int32_t errCode = InitDb(isUpgrade);
     if (errCode != E_OK) {
         return errCode;
     }
@@ -1417,7 +1417,7 @@ void UpgradeRestore::SetCloneParameterAndStopSync()
 #endif
 }
 
-int32_t UpgradeRestore::InitDb()
+int32_t UpgradeRestore::InitDb(bool isUpgrade)
 {
     if (isUpgrade && BaseRestore::Init() != E_OK) {
         ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
@@ -1453,6 +1453,8 @@ int32_t UpgradeRestore::InitDb()
             return E_FAIL;
         }
     }
+
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

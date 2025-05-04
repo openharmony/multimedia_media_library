@@ -19,7 +19,9 @@
 
 #include "backup_const.h"
 #include "backup_const_column.h"
+#include "medialibrary_errno.h"
 #include "result_set_utils.h"
+#include "upgrade_restore_task_report.h"
 
 namespace OHOS {
 namespace Media {
@@ -31,7 +33,7 @@ int32_t CloudBackupRestore::Init(const std::string &backupRestoreDir, const std:
     audioDbPath_ = backupRestoreDir + INTERNAL_PREFIX + "/0/" + AUDIO_DB_NAME;
     SetCloneParameterAndStopSync();
 
-    int32_t errCode = InitDb();
+    int32_t errCode = InitDb(isUpgrade);
     if (errCode != E_OK) {
         return errCode;
     }
@@ -65,7 +67,6 @@ bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeR
     // [time info]date_taken, date_modified, date_added
     info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
-    info.firstUpdateTime = GetInt64Val(EXTERNAL_DATE_ADDED, resultSet) * MSEC_TO_SEC;
 
     return true;
 }
