@@ -329,6 +329,13 @@ void GallerySource::InitGalleryMediaSix()
         "'duplicate_data_case', 'NULL', 'duplicate_data_case.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
         "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/duplicate_data_case.mp4', \
         0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00')");
+    
+    // NULL storage_id
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(40, 34, ") +
+        "'/storage/emulated/0/A/media/Rocket/test/null_storage_id.mp4', 10865209, 1708600079, 1708600079," +
+        "'null_storage_id', 'NULL', 'null_storage_id.mp4', 0, -1122816831, 52221, 3, NULL, 352, 640, " +
+        "NULL, 1264692236, 1708600079000, 0, 0, '/storage/emulated/0/A/media/Rocket/test/null_storage_id.mp4', \
+        0, NULL, 0, 1495970415377, 1495970415377, '2025:04:16 17:00:00')");
 }
 
 void GallerySource::InitGarbageAlbum()
