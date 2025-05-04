@@ -34,9 +34,7 @@ int32_t CloudBackupRestore::Init(const std::string &backupRestoreDir, const std:
     SetCloneParameterAndStopSync();
 
     int32_t errCode = InitDb(isUpgrade);
-    if (errCode != E_OK) {
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
 
     photoAlbumRestore_.OnStart(mediaLibraryRdb_, galleryRdb_);
     photosRestore_.OnStart(mediaLibraryRdb_, galleryRdb_);

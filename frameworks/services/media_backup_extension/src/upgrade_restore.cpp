@@ -121,9 +121,8 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
 int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 {
     int32_t errCode = InitDb(isUpgrade);
-    if (errCode != E_OK) {
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
+
     ParseXml(xmlPath);
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
