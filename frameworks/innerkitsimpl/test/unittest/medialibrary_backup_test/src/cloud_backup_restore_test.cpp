@@ -21,6 +21,7 @@
 
 #define private public
 #define protected public
+#include "backup_const.h"
 #include "cloud_backup_restore.h"
 #include "database_utils.h"
 #include "gallery_source.h"
@@ -114,6 +115,15 @@ HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_query_file_infos_001, Test
     MEDIA_INFO_LOG("End cloud_backup_restore_query_file_infos_001");
 }
 
+int32_t GetNullStorageIdCount(const std::vector<FileInfo> &infos)
+{
+    int32_t count = 0;
+    for (const auto &info : infos) {
+        count += static_cast<int32_t>(info.title == "null_storage_id");
+    }
+    return count;
+}
+
 HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_query_file_infos_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start cloud_backup_restore_query_file_infos_002");
@@ -126,7 +136,7 @@ HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_query_file_infos_002, Test
 
     std::vector<FileInfo> fileInfos = restore->QueryFileInfos(0);
     EXPECT_GT(fileInfos.size(), 0);
-    EXPECT_GT(CloudBackupRestoreTestUtils::GetNullStorageIdCount(), 0);
+    EXPECT_GT(GetNullStorageIdCount(fileInfos), 0);
 
     ClearCloneSource(gallerySource, TEST_BACKUP_GALLERY_PATH);
     MEDIA_INFO_LOG("End cloud_backup_restore_query_file_infos_002");
@@ -140,7 +150,7 @@ HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_get_insert_value_001, Test
     FileInfo fileInfo;
     NativeRdb::ValuesBucket value = restore->GetInsertValue(fileInfo, TEST_NEW_DATA, SourceType::GALLERY);
 
-    ValueObject valueObject;
+    NativeRdb::ValueObject valueObject;
     EXPECT_EQ(value.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject), 0); // orientation not added to value
 
     std::string filePath;
@@ -158,9 +168,9 @@ HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_set_value_from_metadata_00
         std::make_unique<CloudBackupRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CLOUD_BACKUP_RESTORE_ID);
     FileInfo fileInfo;
     NativeRdb::ValuesBucket value;
-    restore->SetValueFromMetaData(fileInfo, values);
+    restore->SetValueFromMetaData(fileInfo, value);
 
-    ValueObject valueObject;
+    NativeRdb::ValueObject valueObject;
     EXPECT_NE(value.GetObject(PhotoColumn::PHOTO_ORIENTATION, valueObject), 0); // orientation added to value
     EXPECT_NE(value.GetObject(MediaColumn::MEDIA_SIZE, valueObject), 0); // size added to value
     EXPECT_NE(value.GetObject(MediaColumn::MEDIA_DATE_TAKEN, valueObject), 0); // date_taken added to value
@@ -179,14 +189,5 @@ void CloudBackupRestoreTestUtils::ClearPhotosData()
 {
     const std::string CLEAR_PHOTOS_SQL = "DELETE FROM Photos";
     DatabaseUtils::ExecuteSql(g_rdbStore->GetRaw(), CLEAR_PHOTOS_SQL);
-}
-
-int32_t CloudBackupRestoreTestUtils::GetNullStorageIdCount(const std::vector<FileInfo> &infos)
-{
-    int32_t count = 0;
-    for (const auto &info : infos) {
-        count += static_cast<int32_t>(info.title == "null_storage_id");
-    }
-    return count;
 }
 }  // namespace OHOS::Media

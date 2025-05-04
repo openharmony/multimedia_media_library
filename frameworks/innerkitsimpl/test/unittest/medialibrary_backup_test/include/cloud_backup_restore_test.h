@@ -31,7 +31,6 @@ class CloudBackupRestoreTestUtils {
 public:
     static void ClearAllData();
     static void ClearPhotosData();
-    static int32_t GetNullStorageIdCount(const std::vector<FileInfo> &infos);
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_CLOUD_BACKUP_RESTORE_TEST_H

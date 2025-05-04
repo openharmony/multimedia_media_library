@@ -2569,7 +2569,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_rel
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_photo_related_test");
     FileInfo fileInfo;
     std::vector<FileInfo> fileInfos = {fileInfo};
-    restoreService->InsertPhotoRelated(fileInfos);
+    restoreService->InsertPhotoRelated(fileInfos, SourceType::PHOTOS);
     EXPECT_EQ(restoreService->migrateDatabaseMapNumber_, 0);
 }
 
