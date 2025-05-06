@@ -721,7 +721,7 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
 vector<NativeRdb::ValuesBucket> CloneRestore::GetCloudInsertValues(int32_t sceneCode, vector<FileInfo> &fileInfos,
     int32_t sourceType)
 {
-    MEDIA_INFO_LOG("singleClone GetCloudInsertValues: %{public}u", fileInfos.size());
+    MEDIA_INFO_LOG("singleClone GetCloudInsertValues: %{public}zu", fileInfos.size());
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
