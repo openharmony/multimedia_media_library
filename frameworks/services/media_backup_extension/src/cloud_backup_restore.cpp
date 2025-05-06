@@ -31,6 +31,7 @@ int32_t CloudBackupRestore::Init(const std::string &backupRestoreDir, const std:
     filePath_ = backupRestoreDir;
     galleryDbPath_ = backupRestoreDir + "/" + GALLERY_DB_NAME;
     audioDbPath_ = backupRestoreDir + INTERNAL_PREFIX + "/0/" + AUDIO_DB_NAME;
+    shouldIncludeSd_ = true;
     SetCloneParameterAndStopSync();
 
     int32_t errCode = InitDb(isUpgrade);
@@ -163,6 +164,22 @@ void CloudBackupRestore::RestoreAnalysisAlbum()
 void CloudBackupRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     return;
+}
+
+bool CloudBackupRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath, FileInfo &fileInfo)
+{
+    if (MediaFileUtils::StartsWith(srcPath, INTERNAL_PREFIX)) {
+        return UpgradeRestore::ConvertPathToRealPath(srcPath, prefix, newPath, relativePath);
+    }
+    size_t pos = 0;
+    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, SD_PREFIX_LEVEL, pos)) {
+        return false;
+    }
+    newPath = prefix + srcPath;
+    relativePath = srcPath.substr(pos);
+    fileInfo.isInternal = false;
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

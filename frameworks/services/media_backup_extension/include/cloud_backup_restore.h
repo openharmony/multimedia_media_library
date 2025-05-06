@@ -22,8 +22,8 @@ namespace OHOS {
 namespace Media {
 class CloudBackupRestore : public UpgradeRestore {
 public:
-    CloudBackupRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode) :
-        UpgradeRestore(galleryAppName, mediaAppName, sceneCode) {}
+    CloudBackupRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
+        : UpgradeRestore(galleryAppName, mediaAppName, sceneCode) {}
 
     int32_t Init(const std::string &backupRestoreDir, const std::string &upgradePath, bool isUpgrade) override;
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
@@ -34,6 +34,8 @@ protected:
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value) override;
     void RestoreAnalysisAlbum() override;
     void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType) override;
+    bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
+        std::string &relativePath, FileInfo &fileInfo) override;
 
 private:
     void SetSize(const std::unique_ptr<Metadata> &data, FileInfo &info, NativeRdb::ValuesBucket &value);
