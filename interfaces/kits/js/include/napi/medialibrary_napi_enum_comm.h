@@ -254,6 +254,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("IS_AUTO",                   PhotoColumn::PHOTO_IS_AUTO),
     std::make_pair("MEDIA_SUFFIX",              PhotoColumn::PHOTO_MEDIA_SUFFIX),
     std::make_pair("IS_RECENT_SHOW",            PhotoColumn::PHOTO_IS_RECENT_SHOW),
+    std::make_pair("SUM_SIZE",                  MEDIA_SUM_SIZE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
