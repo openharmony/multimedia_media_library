@@ -2872,6 +2872,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::PHOTO_ORIGINAL_SUBTYPE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
+        MEDIA_SUM_SIZE,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {
