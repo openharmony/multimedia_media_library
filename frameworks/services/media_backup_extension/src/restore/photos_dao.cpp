@@ -74,6 +74,28 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFileWithoutAlbum(const FileInfo &fil
 }
 
 /**
+ * @brief Find FileInfo, which is cloud photo, by cloud_id.
+ */
+PhotosDao::PhotosRowData PhotosDao::FindSameFileWithCloudId(const FileInfo &fileInfo, int32_t maxFileId)
+{
+    PhotosDao::PhotosRowData rowData;
+    CHECK_AND_RETURN_RET(maxFileId > 0, rowData);
+    const std::vector<NativeRdb::ValueObject> params = {
+        maxFileId, fileInfo.uniqueId};
+    std::string querySql = this->SQL_PHOTOS_FIND_SAME_FILE_WITH_CLOUD_ID;
+    CHECK_AND_RETURN_RET_LOG(this->mediaLibraryRdb_ != nullptr, rowData, "Media_Restore: mediaLibraryRdb_ is null.");
+
+    auto resultSet = this->mediaLibraryRdb_->QuerySql(querySql, params);
+    bool cond = (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK);
+    CHECK_AND_RETURN_RET(!cond, rowData);
+    rowData.fileId = GetInt32Val("file_id", resultSet);
+    rowData.data = GetStringVal("data", resultSet);
+    rowData.cleanFlag = GetInt32Val("clean_flag", resultSet);
+    rowData.position = GetInt32Val("position", resultSet);
+    return rowData;
+}
+
+/**
  * @brief Get basic information of the Photos.
  */
 PhotosDao::PhotosBasicInfo PhotosDao::GetBasicInfo()
@@ -101,6 +123,10 @@ PhotosDao::PhotosRowData PhotosDao::FindSameFile(const FileInfo &fileInfo, const
 {
     PhotosDao::PhotosRowData rowData;
     CHECK_AND_RETURN_RET(maxFileId > 0, rowData);
+    if (!fileInfo.uniqueId.empty()) {
+        rowData = this->FindSameFileWithCloudId(fileInfo, maxFileId);
+        return rowData;
+    }
     if (fileInfo.lPath.empty()) {
         rowData = this->FindSameFileWithoutAlbum(fileInfo, maxFileId);
         MEDIA_ERR_LOG("Media_Restore: FindSameFile - lPath is empty, DB Info: %{public}s, Object: %{public}s",

@@ -128,6 +128,13 @@ void BaseRestore::GetAccountValid()
     isAccountValid_ = ((oldId != "") && (oldId == newId));
 }
 
+void BaseRestore::GetSyncSwitchOn()
+{
+    syncSwitchType_ = BackupFileUtils::IsCloneCloudSyncSwitchOn(sceneCode_);
+    isSyncSwitchOn_ = (syncSwitchType_ == CheckSwitchType::SUCCESS_ON ||
+        syncSwitchType_ == CheckSwitchType::UPGRADE_FAILED_ON);
+}
+
 void BaseRestore::GetSourceDeviceInfo()
 {
     nlohmann::json jsonArray = nlohmann::json::parse(restoreInfo_, nullptr, false);
@@ -172,7 +179,7 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
     upgradeRestoreDir_ = upgradePath;
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     GetAccountValid();
-    isSyncSwitchOn_ = CloudSyncUtils::IsCloudSyncSwitchOn();
+    GetSyncSwitchOn();
     GetSourceDeviceInfo();
     if (errorCode == E_OK) {
         RestorePhoto();
@@ -380,7 +387,8 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
         if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == OTHERS_PHONE_CLONE_RESTORE ||
-            sceneCode == LITE_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE) &&
+            sceneCode == LITE_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE ||
+            sceneCode == UPGRADE_RESTORE_ID) &&
             this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
@@ -438,7 +446,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetCloudInsertValues(const int32_t 
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
-        if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) &&
+        if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == UPGRADE_RESTORE_ID) &&
             this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);

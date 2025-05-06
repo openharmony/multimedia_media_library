@@ -80,6 +80,7 @@ public:
 
     static bool HandleRotateImage(const std::string &sourceFile, const std::string &targetPath,
         int32_t degrees, bool isLcd);
+    static int32_t IsCloneCloudSyncSwitchOn(int32_t sceneCode);
 
 private:
     static const std::string IMAGE_FORMAT;
