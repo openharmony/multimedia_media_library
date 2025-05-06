@@ -1825,5 +1825,13 @@ bool BaseRestore::IsCloudRestoreSatisfied()
 {
     return isAccountValid_ && isSyncSwitchOn_;
 }
+
+void BaseRestore::ProcessBurstPhotos(int32_t maxId)
+{
+    int64_t startProcess = MediaFileUtils::UTCTimeMilliSeconds();
+    BackupDatabaseUtils::UpdateBurstPhotos(mediaLibraryRdb_, maxId);
+    int64_t endProcess = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("process burst photos end, cost: %{public}" PRId64, endProcess - startProcess);
+}
 } // namespace Media
 } // namespace OHOS
