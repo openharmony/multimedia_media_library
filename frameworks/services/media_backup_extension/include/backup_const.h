@@ -287,6 +287,14 @@ enum ProcessStatus {
     START,
 };
 
+enum CheckSwitchType {
+    SUCCESS_OFF = 0,
+    SUCCESS_ON,
+    CLOUD_HELPER_NULL,
+    RESULT_NULL,
+    UPGRADE_FAILED_ON,
+};
+
 const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::INIT_FAILED, "RESTORE_INIT_FAILED" },
     { RestoreError::FILE_INVALID, "DEVICE_FILE_INVALID" },

@@ -57,6 +57,7 @@ private:
     PhotosRowData FindSameFileWithoutAlbum(const FileInfo &fileInfo, int32_t maxFileId);
     PhotosRowData FindSameFileInAlbum(const FileInfo &fileInfo, int32_t maxFileId);
     PhotosRowData FindSameFileBySourcePath(const FileInfo &fileInfo, int32_t maxFileId);
+    PhotosRowData FindSameFileWithCloudId(const FileInfo &fileInfo, int32_t maxFileId);
     std::string ToString(const FileInfo &fileInfo);
     std::string ToString(const PhotosRowData &rowData);
     std::string ToLower(const std::string &str);
@@ -116,6 +117,16 @@ private:
             size = ? AND \
             (owner_album_id IS NULL OR owner_album_id = 0) AND \
             (1 <> ? OR orientation = ?) \
+        LIMIT 1;";
+    const std::string SQL_PHOTOS_FIND_SAME_FILE_WITH_CLOUD_ID = "\
+        SELECT \
+            P.file_id, \
+            P.data, \
+            P.clean_flag, \
+            P.position \
+        FROM Photos AS P \
+        WHERE file_id <= ? AND \
+            cloud_id = ? \
         LIMIT 1;";
     const std::string SQL_PHOTOS_FIND_SAME_FILE_BY_SOURCE_PATH = "\
         SELECT \
