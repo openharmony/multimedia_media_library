@@ -144,9 +144,7 @@ int32_t MtpPtpProxy::SetObjectPropValue(Context &context)
 
     CHECK_AND_RETURN_RET(IsMtpMode(), g_mtpMedialibraryManager->SetObjectPropValue(context));
 
-    if (context->handle < PTP_IN_MTP_ID) {
-        return g_mtpMedialibraryManager->SetObjectPropValue(context);
-    } else if (context->handle == PTP_IN_MTP_ID) {
+    if (context->handle <= PTP_IN_MTP_ID) {
         MEDIA_WARN_LOG("MtpPtpProxy::%{public}s *MTP_ERROR_ACCESS_DENIED*", __func__);
         return MTP_ERROR_ACCESS_DENIED;
     } else {
