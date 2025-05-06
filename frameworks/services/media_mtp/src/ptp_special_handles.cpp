@@ -34,60 +34,54 @@ shared_ptr<PtpSpecialHandles> PtpSpecialHandles::GetInstance()
 
 PtpSpecialHandles::~PtpSpecialHandles()
 {
-    lock_guard<mutex> lock(mutex_);
-    deletedHandleMap_.clear();
+    deletedHandleMap_.Clear();
 }
 
 void PtpSpecialHandles::AddHandleToMap(uint32_t deletedHandle, uint32_t realHandle)
 {
-    lock_guard<mutex> lock(mutex_);
-    deletedHandleMap_[deletedHandle] = realHandle;
+    deletedHandleMap_.EnsureInsert(deletedHandle, realHandle);
 }
 
-uint32_t PtpSpecialHandles::HandleConvertToAdded(uint32_t deletedHandle) const
+uint32_t PtpSpecialHandles::HandleConvertToAdded(uint32_t deletedHandle)
 {
-    lock_guard<mutex> lock(mutex_);
-    auto it = deletedHandleMap_.find(deletedHandle);
-    if (it != deletedHandleMap_.end()) {
-        return it->second;
-    } else {
-        return deletedHandle;
+    uint32_t addHandle = 0;
+    if (deletedHandleMap_.Find(deletedHandle, addHandle)) {
+        return addHandle;
     }
+    return deletedHandle;
 }
 
-bool PtpSpecialHandles::FindRealHandle(uint32_t realHandle) const
+bool PtpSpecialHandles::FindRealHandle(uint32_t realHandle)
 {
-    lock_guard<mutex> lock(mutex_);
-    for (const auto& handlePair : deletedHandleMap_) {
-        if (handlePair.second == realHandle) {
-            return true;
+    bool found = false;
+    deletedHandleMap_.Iterate([&found, realHandle](const uint32_t key, uint32_t& value) {
+        if (realHandle == value) {
+            found = true;
         }
-    }
-    return false;
+    });
+    return found;
 }
 
-bool PtpSpecialHandles::FindDeletedHandle(int32_t deletedHandle) const
+bool PtpSpecialHandles::FindDeletedHandle(uint32_t deletedHandle)
 {
-    lock_guard<mutex> lock(mutex_);
-    auto it = deletedHandleMap_.find(deletedHandle);
-    return it != deletedHandleMap_.end();
+    uint32_t value = 0;
+    return deletedHandleMap_.Find(deletedHandle, value);
 }
 
-uint32_t PtpSpecialHandles::HandleConvertToDeleted(uint32_t realHandle) const
+uint32_t PtpSpecialHandles::HandleConvertToDeleted(uint32_t realHandle)
 {
-    lock_guard<mutex> lock(mutex_);
-    for (auto& pair : deletedHandleMap_) {
-        if (pair.second == realHandle) {
-            return pair.first;
+    uint32_t deleteHandle = realHandle;
+    deletedHandleMap_.Iterate([&deleteHandle, realHandle](const uint32_t key, uint32_t& value) {
+        if (realHandle == value) {
+            deleteHandle = key;
         }
-    }
-    return realHandle;
+    });
+    return deleteHandle;
 }
 
 void PtpSpecialHandles::ClearDeletedHandles()
 {
-    lock_guard<mutex> lock(mutex_);
-    deletedHandleMap_.clear();
+    deletedHandleMap_.Clear();
 }
 } // namespace Media
 } // namespace OHOS

@@ -93,6 +93,7 @@ std::vector<std::string> g_photoColumns = {
     PhotoColumn::MEDIA_DATE_MODIFIED,
     PhotoColumn::PHOTO_THUMB_SIZE,
     PhotoColumn::PHOTO_BURST_KEY,
+    PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
 };
 const std::string ZERO = "0";
 } // namespace
@@ -418,7 +419,8 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
             continue;
         }
         int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+        if (MtpDataUtils::IsMtpMovingPhoto(subtype, effectMode)) {
             uint32_t videoId = id + (COMMON_MOVING_OFFSET - COMMON_PHOTOS_OFFSET);
             outHandles->push_back(videoId);
         }
@@ -504,7 +506,8 @@ int32_t MtpMedialibraryManager::GetAllHandles(
             continue;
         }
         int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+        if (MtpDataUtils::IsMtpMovingPhoto(subtype, effectMode)) {
             uint32_t videoId = id + (COMMON_MOVING_OFFSET - COMMON_PHOTOS_OFFSET);
             out->push_back(videoId);
         }
@@ -565,8 +568,7 @@ int32_t MtpMedialibraryManager::SetObject(const std::shared_ptr<DataShare::DataS
         }
         string displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
         string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-        int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-        string sourcePath = MtpDataUtils::GetMovingOrEnditSourcePath(data, subtype, context);
+        string sourcePath = MtpDataUtils::GetMovingOrEnditSourcePath(data, 0, context);
         if (sourcePath.empty()) {
             MEDIA_ERR_LOG("MtpMedialibraryManager::SetObject get sourcePath failed");
             return MtpErrorUtils::SolveGetObjectInfoError(E_NO_SUCH_FILE);
@@ -597,7 +599,7 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
         MtpErrorUtils::SolveGetObjectInfoError(E_HAS_DB_ERROR), "outObjectInfo is nullptr");
     outObjectInfo->handle = static_cast<uint32_t>(fileAsset->GetId());
     outObjectInfo->name = fileAsset->GetDisplayName();
-    if (fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+    if (MtpDataUtils::IsMtpMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode()) &&
         fileAsset->GetMediaType() != MEDIA_TYPE_ALBUM) {
         struct stat statInfo;
         CHECK_AND_RETURN_RET_LOG(stat(fileAsset->GetPath().c_str(), &statInfo) == 0,
@@ -1021,9 +1023,9 @@ int32_t MtpMedialibraryManager::MoveObject(const std::shared_ptr<MtpOperationCon
         MTP_ERROR_INVALID_OBJECTHANDLE, "have no handles");
     int errorCode;
     int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
     uint32_t objectHandle = 0;
-    if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
-        subType == static_cast<int32_t>(PhotoSubType::BURST)) {
+    if (MtpDataUtils::IsMtpMovingPhoto(subType, effectMode) || subType == static_cast<int32_t>(PhotoSubType::BURST)) {
         errorCode = CopyObject(context, objectHandle, true);
         CHECK_AND_RETURN_RET_LOG(errorCode == MTP_SUCCESS, MTP_ERROR_INVALID_OBJECTHANDLE, "CopyObject failed");
         errorCode = DeletePhoto(context, true);
@@ -1035,7 +1037,8 @@ int32_t MtpMedialibraryManager::MoveObject(const std::shared_ptr<MtpOperationCon
         int32_t albumId = GetInt32Val(PARENT, resultSet);
         predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId));
         DataShare::DataShareValuesBucket valuesBuckets;
-        valuesBuckets.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, static_cast<int32_t>(context->parent));
+        valuesBuckets.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID,
+            static_cast<int32_t>(HandleConvertToAdded(context->parent)));
         string uri = MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + OPRN_BATCH_UPDATE_OWNER_ALBUM_ID;
         MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
         Uri moveAssetsUri(uri);
@@ -1483,8 +1486,9 @@ int32_t MtpMedialibraryManager::DeletePhoto(const std::shared_ptr<MtpOperationCo
         MTP_ERROR_INVALID_OBJECTHANDLE, "have no row");
 
     int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
     resultSet->Close();
-    if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+    if (MtpDataUtils::IsMtpMovingPhoto(subType, effectMode)) {
         deletedMovingPhotoHandles_.insert(actualHandle);
         if (deletedMovingPhotoHandles_.count((actualHandle % COMMON_PHOTOS_OFFSET) + COMMON_PHOTOS_OFFSET) == 0 ||
             deletedMovingPhotoHandles_.count((actualHandle % COMMON_PHOTOS_OFFSET) + COMMON_MOVING_OFFSET) == 0) {
@@ -1570,8 +1574,9 @@ int32_t MtpMedialibraryManager::GetCopyAlbumObjectPath(uint32_t handle, PathMap 
         auto path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
         auto displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
         auto subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+        auto effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
         // if moving photo, add moving photo video
-        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        if (MtpDataUtils::IsMtpMovingPhoto(subtype, effectMode)) {
             auto sourcePath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
             auto name = GetMovingPhotoVideoDisplayName(displayName, sourcePath);
             paths.emplace(std::move(sourcePath), std::move(name));

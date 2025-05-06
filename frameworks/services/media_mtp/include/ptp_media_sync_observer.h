@@ -66,6 +66,7 @@ private:
     void GetOwnerAlbumIdList(std::set<int32_t> &albumIds);
     void GetAddEditPhotoHandles(int32_t handle);
     int32_t GetAddEditAlbumHandle(int32_t handle);
+    void AddBurstPhotoHandle(std::string burstKey);
     void AddPhotoHandle(int32_t handle);
     void SendPhotoRemoveEvent(std::string &suffixString);
     bool ParseNotifyData(const ChangeInfo &changeInfo, std::vector<std::string> &fileIds);
