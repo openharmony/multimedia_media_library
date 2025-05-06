@@ -886,12 +886,15 @@ std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::QuerySql(
     return rdbStore->QuerySql(querySql, params);
 }
 
-void BackupDatabaseUtils::UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+void BackupDatabaseUtils::UpdateBurstPhotos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t maxId)
 {
     const string updateSql =
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1," +
-        PhotoColumn::PHOTO_BURST_KEY + " = NULL WHERE " + SQL_SELECT_ERROR_BURST_PHOTOS +
-        "AND file_id IN (" + SQL_SELECT_CLONE_FILE_IDS + ")";
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + to_string(static_cast<int32_t>(BurstCoverLevelType::COVER)) +
+        "," + PhotoColumn::PHOTO_BURST_KEY + " = NULL," +
+        PhotoColumn::PHOTO_SUBTYPE + " = " + to_string(static_cast<int32_t>(PhotoSubType::DEFAULT)) +
+        " WHERE " + SQL_SELECT_ERROR_BURST_PHOTOS +
+        " AND " + " ((file_id IN (" + SQL_SELECT_CLONE_FILE_IDS + ")) OR (file_id > " + to_string(maxId) + "))";
     int32_t erroCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     CHECK_AND_PRINT_LOG(erroCode >= 0, "execute update continuous shooting photos, ret=%{public}d", erroCode);
 }
