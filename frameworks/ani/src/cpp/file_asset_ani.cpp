@@ -217,6 +217,26 @@ static ani_status BindAniAttributes(ani_env *env, ani_class cls, ani_object obje
     return ANI_OK;
 }
 
+static ani_status BindAniAttributes(ani_env *env, ani_object object,
+    const FileAssetAniMethod &fileAssetAniMethod, const FileAssetAttributes &attrs)
+{
+    ani_enum_item photoType = 0;
+    CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.photoType, photoType), "Get photoType index fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, fileAssetAniMethod.setPhotoType, photoType),
+        "<set>photoType fail");
+
+    ani_string uri {};
+    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.uri, uri), "ToAniString uri fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, fileAssetAniMethod.setUri, uri), "<set>uri fail");
+
+    ani_string displayName {};
+    CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.displayName, displayName),
+        "ToAniString displayName fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, fileAssetAniMethod.setDisplayName, displayName),
+        "<set>displayName fail");
+    return ANI_OK;
+}
+
 ani_object FileAssetAni::Constructor([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_class clazz)
 {
     std::shared_ptr<FileAsset> fileAssetPtr = std::make_shared<FileAsset>();
@@ -276,7 +296,61 @@ FileAssetAni* FileAssetAni::CreateFileAsset(ani_env *env, std::unique_ptr<FileAs
     return fileAssetAni.release();
 }
 
-ani_object FileAssetAni::Wrap(ani_env *env, FileAssetAni* fileAssetAni)
+ani_status FileAssetAni::InitFileAssetAniMethod(ani_env *env, ResultNapiType classType,
+    FileAssetAniMethod &fileAssetAniMethod)
+{
+    std::string className;
+    if (classType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        className = ANI_CLASS_PHOTO_ASSET;
+    } else if (classType == ResultNapiType::TYPE_USERFILE_MGR) {
+        className = UFM_ANI_CLASS_PHOTO_ALBUM_HANDLE;
+    } else {
+        ANI_ERR_LOG("type not support");
+        return ANI_ERROR;
+    }
+
+    CHECK_STATUS_RET(env->FindClass(className.c_str(), &fileAssetAniMethod.cls),
+        "No className: %{public}s", className.c_str());
+    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<ctor>", "J:V", &fileAssetAniMethod.ctor),
+        "No <ctor>");
+    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<set>uri", nullptr, &fileAssetAniMethod.setUri),
+        "No <set>uri");
+    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<set>photoType", nullptr,
+        &fileAssetAniMethod.setPhotoType), "No <set>photoType");
+    CHECK_STATUS_RET(env->Class_FindMethod(fileAssetAniMethod.cls, "<set>displayName", nullptr,
+        &fileAssetAniMethod.setDisplayName), "No <set>displayName");
+
+    return ANI_OK;
+}
+
+ani_object FileAssetAni::Wrap(ani_env *env, FileAssetAni *fileAssetAni, const FileAssetAniMethod &fileAssetAniMethod)
+{
+    if (fileAssetAni == nullptr || fileAssetAni->GetFileAssetInstance() == nullptr) {
+        ANI_ERR_LOG("fileAssetAni is nullptr");
+        return nullptr;
+    }
+
+    std::shared_ptr<FileAsset> fileAsset = fileAssetAni->GetFileAssetInstance();
+    FileAssetAttributes attrs;
+    attrs.uri = fileAsset->GetUri();
+    attrs.photoType = fileAsset->GetMediaType();
+    attrs.displayName = fileAsset->GetDisplayName();
+
+    ani_object fileAsset_object = nullptr;
+    if (ANI_OK != env->Object_New(fileAssetAniMethod.cls, fileAssetAniMethod.ctor, &fileAsset_object,
+        reinterpret_cast<ani_long>(fileAssetAni))) {
+        ANI_ERR_LOG("New FileAsset Fail");
+        return nullptr;
+    }
+
+    if (ANI_OK != BindAniAttributes(env, fileAsset_object, fileAssetAniMethod, attrs)) {
+        ANI_ERR_LOG("fileAsset BindAniAttributes Fail");
+        return nullptr;
+    }
+    return fileAsset_object;
+}
+
+ani_object FileAssetAni::Wrap(ani_env *env, FileAssetAni *fileAssetAni)
 {
     MediaLibraryTracer tracer;
     tracer.Start("FileAssetAni::Wrap");
