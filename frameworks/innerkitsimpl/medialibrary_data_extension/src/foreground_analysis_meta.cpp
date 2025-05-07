@@ -167,7 +167,7 @@ void ForegroundAnalysisMeta::StartAnalysisService()
     });
     ffrt::submit(
         [taskId = taskId_, opType = opType_, fileIds = fileIds_]() {
-            MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}u", taskId, opType,
+            MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}zu", taskId, opType,
                 fileIds.size());
             if (opType & ForegroundAnalysisOpType::OCR_AND_LABEL) {
                 MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
@@ -220,7 +220,7 @@ int32_t ForegroundAnalysisMeta::QueryPendingAnalyzeFileIds(MediaLibraryCommand &
     if (fileIds.empty()) {
         MEDIA_INFO_LOG("no fileId match");
     } else {
-        MEDIA_INFO_LOG("cv match cnt:%{public}u", fileIds.size());
+        MEDIA_INFO_LOG("cv match cnt:%{public}zu", fileIds.size());
     }
     return E_OK;
 }
@@ -233,8 +233,7 @@ void ForegroundAnalysisMeta::AppendAnalysisTypeOnWhereClause(int32_t type, std::
     static const std::map<int32_t, std::string> FRONT_ANALYSIS_WHERE_CLAUSE_MAP = {
         { ANALYSIS_SEARCH_INDEX, VISION_TOTAL_TABLE + "." + STATUS + " = 0" + " AND (" + VISION_TOTAL_TABLE + "." +
             OCR + " = 0 OR " + VISION_TOTAL_TABLE + "." + LABEL + " = 0) AND " + PhotoColumn::PHOTOS_TABLE +
-            "." + MediaColumn::MEDIA_TYPE + " IN (" + std::to_string(MediaType::MEDIA_TYPE_IMAGE) + "," +
-            std::to_string(MediaType::MEDIA_TYPE_VIDEO) + ") " },
+            "." + MediaColumn::MEDIA_TYPE + " IN (" + std::to_string(MediaType::MEDIA_TYPE_IMAGE) + ") " },
     };
     std::string analysisTypeClause;
     auto it = FRONT_ANALYSIS_WHERE_CLAUSE_MAP.find(type);
