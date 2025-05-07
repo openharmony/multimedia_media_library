@@ -22,6 +22,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
 #include "search_column.h"
+#include "vision_total_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -31,7 +32,8 @@ namespace Media {
 const std::string notTrashedAndHiddenCondition = MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
         MediaColumn::MEDIA_HIDDEN + " = 0 AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
         PhotoColumn::PHOTO_CLEAN_FLAG + " = 0 AND " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 AND ";
-const std::string analysisCompleteCondition = TBL_SEARCH_CV_STATUS + " = 1 AND (" + TBL_SEARCH_GEO_STATUS +
+const std::string analysisCompleteCondition = "(" + TBL_SEARCH_CV_STATUS + " = 1 AND (" + OCR + " != 0 AND " + FACE +
+    " NOT IN (0,1,2) OR " + MediaColumn::MEDIA_TYPE + " = 2) AND " + LABEL + " != 0) AND (" + TBL_SEARCH_GEO_STATUS +
     " = 1 OR (" + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = 0 AND " +
     PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LONGITUDE + " = 0)) ";
 const std::string selectAnalysisCompletedPhoto = "SELECT COUNT(case when " + notTrashedAndHiddenCondition +
@@ -46,7 +48,9 @@ const std::string mediaVideoTotal = "COUNT(case when " + notTrashedAndHiddenCond
     " = 2 then 1 end) as " + VIDEO_TOTAL_NUM;
 const std::string mediaPhotosQuery = selectAnalysisCompletedPhoto + mediaPhotoTotal + selectAnalysisCompletedVideo +
     mediaVideoTotal + " FROM " + PhotoColumn::PHOTOS_TABLE + " Inner JOIN " + SEARCH_TOTAL_TABLE + " ON " +
-    PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + "=" + SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_FILE_ID;
+    PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + "=" + SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_FILE_ID +
+    " Inner JOIN " + VISION_TOTAL_TABLE + " ON " + SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_FILE_ID + "=" +
+    VISION_TOTAL_TABLE + "." + MediaColumn::MEDIA_ID;
 
 int32_t MediaLibrarySearchOperations::InsertOperation(MediaLibraryCommand &cmd)
 {
