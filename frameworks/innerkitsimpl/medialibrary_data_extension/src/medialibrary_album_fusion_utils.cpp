@@ -41,6 +41,8 @@
 #include "photo_album_lpath_operation.h"
 #include "photo_album_update_date_modified_operation.h"
 #include "photo_album_copy_meta_data_operation.h"
+#include "medialibrary_bundle_manager.h"
+#include "permission_utils.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -507,10 +509,12 @@ struct MediaAssetCopyInfo {
     std::string displayName;
     bool isCopyDateAdded;
     bool isCopyCeAvailable;
+    bool isCopyPackageName;
     MediaAssetCopyInfo(const std::string& targetPath, bool isCopyThumbnail, int32_t ownerAlbumId,
-        const std::string& displayName = "", bool isCopyDateAdded = true, bool isCopyCeAvailable = false)
-        : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail), ownerAlbumId(ownerAlbumId),
-        displayName(displayName), isCopyDateAdded(isCopyDateAdded), isCopyCeAvailable(isCopyCeAvailable) {}
+        const std::string& displayName = "", bool isCopyDateAdded = true, bool isCopyCeAvailable = false,
+        bool isCopyPackageName = true) : targetPath(targetPath), isCopyThumbnail(isCopyThumbnail),
+        ownerAlbumId(ownerAlbumId), displayName(displayName), isCopyDateAdded(isCopyDateAdded),
+        isCopyCeAvailable(isCopyCeAvailable), isCopyPackageName(isCopyPackageName) {}
 };
 
 static void HandleLowQualityAssetValuesBucket(shared_ptr<NativeRdb::ResultSet>& resultSet,
@@ -541,6 +545,16 @@ static void HandleCeAvailableValuesBucket(const MediaAssetCopyInfo &copyInfo,
     if (ceAvailable == static_cast<int32_t>(CloudEnhancementAvailableType::FINISH)) {
         values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, ceAvailable);
     }
+}
+
+static string GetPackageName()
+{
+    string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    if (clientBundle.empty()) {
+        MEDIA_ERR_LOG("GetClientBundleName failed");
+        return "";
+    }
+    return PermissionUtils::GetPackageNameByBundleName(clientBundle);
 }
 
 static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
@@ -577,6 +591,10 @@ static int32_t BuildInsertValuesBucket(const std::shared_ptr<MediaLibraryRdbStor
     if (!copyInfo.isCopyDateAdded) {
         values.Delete(MediaColumn::MEDIA_DATE_ADDED);
         values.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
+    }
+    if (!copyInfo.isCopyPackageName) {
+        values.Delete(MediaColumn::MEDIA_PACKAGE_NAME);
+        values.PutString(MediaColumn::MEDIA_PACKAGE_NAME, GetPackageName());
     }
     HandleLowQualityAssetValuesBucket(resultSet, values);
     HandleCeAvailableValuesBucket(copyInfo, resultSet, values);
@@ -781,7 +799,7 @@ static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStor
         return E_ERR;
     }
 
-    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false, true);
+    MediaAssetCopyInfo copyInfo(targetPath, false, ownerAlbumId, displayName, false, true, false);
     err = CopyMateData(upgradeStore, resultSet, newAssetId, targetPath, copyInfo);
     if (err != E_OK) {
         MEDIA_INFO_LOG("Failed to copy local file.");
