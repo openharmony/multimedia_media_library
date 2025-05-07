@@ -27,6 +27,8 @@ var __decorate = this && this.__decorate || function (e, o, t, i) {
 const fs = requireNapi('file.fs');
 const fileUri = requireNapi('file.fileuri');
 const bundleManager = requireNapi('bundle.bundleManager');
+const LengthMetrics = requireNapi('arkui.node').LengthMetrics;
+const LengthUnit = requireNapi('arkui.node').LengthUnit;
 const photoAccessHelper = requireNapi('file.photoAccessHelper');
 const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
@@ -222,7 +224,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d;
+            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _, b, d, k;
             SecurityUIExtensionComponent.create({
                 parameters: {
                     errorRevokeIndex: this.revokeIndex,
@@ -258,7 +260,8 @@ export class PhotoPickerComponent extends ViewPU {
                     isSlidingSelectionSupported: null === (b = this.pickerOptions) || void 0 === b ? void 0 : b.isSlidingSelectionSupported,
                     photoBrowserCheckboxPosition: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserCheckboxPosition,
                     gridMargin: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.gridMargin,
-                    photoBrowserMargin: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.photoBrowserMargin
+                    photoBrowserMargin: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.photoBrowserMargin,
+                    singleLineConfig: null === (k = this.pickerOptions) || void 0 === k ? void 0 : this.getSingleLineConfig(k.singleLineConfig),
                 }
             });
             SecurityUIExtensionComponent.height('100%');
@@ -445,10 +448,131 @@ export class PhotoPickerComponent extends ViewPU {
         return o;
     }
 
+    getSingleLineConfig(singleLineConfig) {
+        if (null === singleLineConfig || void 0 === singleLineConfig) {
+            return void 0;
+        }
+        singleLineConfig.itemDisplayRatio =
+            (null === singleLineConfig.itemDisplayRatio || void 0 === singleLineConfig.itemDisplayRatio) ?
+            ItemDisplayRatio.SQUARE_RATIO : singleLineConfig.itemDisplayRatio;
+        singleLineConfig.itemBorderRadius =
+            this.getSingleLineConfigItemBorderRadius(singleLineConfig.itemBorderRadius);
+        singleLineConfig.itemGap = this.getLength(singleLineConfig.itemGap);
+        return singleLineConfig;
+    }
+
+    getSingleLineConfigItemBorderRadius(itemBorderRadius) {
+        if (null === itemBorderRadius || void 0 === itemBorderRadius) {
+            return 0;
+        }
+        if (typeof itemBorderRadius === 'number' || typeof itemBorderRadius === 'string') {
+            return itemBorderRadius;
+        }
+        if (this.hasOwnProp(itemBorderRadius, ['topStart', 'topEnd', 'bottomStart', 'bottomEnd'])) {
+            const l2 = {
+                topStart: LengthMetrics.vp(0),
+                topEnd: LengthMetrics.vp(0),
+                bottomStart: LengthMetrics.vp(0),
+                bottomEnd: LengthMetrics.vp(0),
+            };
+            const m2 = itemBorderRadius;
+            l2.topStart = m2.topStart ? m2.topStart : LengthMetrics.vp(0);
+            l2.topEnd = m2.topEnd ? m2.topEnd : LengthMetrics.vp(0);
+            l2.bottomStart = m2.bottomStart ? m2.bottomStart : LengthMetrics.vp(0);
+            l2.bottomEnd = m2.bottomEnd ? m2.bottomEnd : LengthMetrics.vp(0);
+            return l2;
+        }
+        if (this.hasOwnProp(itemBorderRadius, ['topLeft', 'topRight', 'bottomLeft', 'bottomRight'])) {
+            const borderRadiuses = {
+                topLeft: 0,
+                topRight: 0,
+                bottomLeft: 0,
+                bottomRight: 0
+            };
+            const k2 = itemBorderRadius;
+            borderRadiuses.topLeft = this.getLength(k2.topLeft);
+            borderRadiuses.topRight = this.getLength(k2.topRight);
+            borderRadiuses.bottomLeft = this.getLength(k2.bottomLeft);
+            borderRadiuses.bottomRight = this.getLength(k2.bottomRight);
+            return borderRadiuses;
+        }
+        const j2 = itemBorderRadius;
+        const resource = LengthMetrics.resource(j2);
+        if (M.getInstance().isValid(resource)) {
+            return M.getInstance().stringify(resource);
+        }
+        return 0;
+    }
+
+    getLength(prop) {
+        if (null === prop || void 0 === prop) {
+            return 0;
+        }
+        if (typeof prop === 'number' || typeof prop === 'string') {
+            return prop;
+        }
+        const resource = LengthMetrics.resource(prop);
+        if (M.getInstance().isValid(resource)) {
+            return M.getInstance().stringify(resource);
+        }
+        return 0;
+    }
+
+    hasOwnProp(obj, props) {
+        for (const key of Object.keys(obj)) {
+            if (props.includes(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     rerender() {
         this.updateDirtyElements();
     }
 }
+
+class M {
+    constructor() {
+    }
+
+    static getInstance() {
+        if (!M.instance) {
+            M.instance = new M();
+        }
+        return M.instance;
+    }
+
+    stringify(metrics) {
+        if (null === metrics || void 0 === metrics || typeof metrics !== 'object' || null === metrics.unit ||
+            void 0 === metrics.unit || null === metrics.value || void 0 === metrics.value) {
+            return '0vp';
+        }
+        switch (metrics.unit) {
+            case LengthUnit.PX:
+                return `${metrics.value}px`;
+            case LengthUnit.VP:
+                return `${metrics.value}vp`;
+            case LengthUnit.FP:
+                return `${metrics.value}fp`;
+            case LengthUnit.PERCENT:
+                return `${metrics.value}%`;
+            case LengthUnit.LPX:
+                return `${metrics.value}lpx`;
+            default:
+                return '0vp';
+        }
+    }
+
+    isValid(metrics) {
+        if (null === metrics || void 0 === metrics || typeof metrics !== 'object' ||
+            null === metrics.value || void 0 === metrics.value) {
+            return false;
+        }
+        return metrics.value > 0;
+    }
+}
+
 let PickerController = class {
     constructor() {
         this.replaceCallbackMap = new Map();
@@ -633,6 +757,14 @@ class PhotoBrowserRangeInfo {
 class PhotoBrowserUIElementVisibility {
 }
 
+export class SingleLineConfig {
+    constructor() {
+        this.itemDisplayRatio = ItemDisplayRatio.SQUARE_RATIO;
+        this.itemBorderRadius = 0;
+        this.itemGap = 0;
+    }
+}
+
 export var DataType;
 !function(e) {
     e[e.SET_SELECTED_URIS = 1] = 'SET_SELECTED_URIS';
@@ -711,6 +843,12 @@ export var SaveMode;
     e[e.OVERWRITE = 1] = 'OVERWRITE';
 }(SaveMode || (SaveMode = {}));
 
+export var ItemDisplayRatio;
+!function(e) {
+    e[e.SQUARE_RATIO = 0] = 'SQUARE_RATIO';
+    e[e.ORIGINAL_SIZE_RATIO = 1] = 'ORIGINAL_SIZE_RATIO';
+}(ItemDisplayRatio || (ItemDisplayRatio = {}));
+
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, BaseItemInfo, ItemInfo, PhotoBrowserInfo, AnimatorParams,
     MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType, PhotoBrowserRange, PhotoBrowserUIElement,
-    VideoPlayerState, SaveMode};
+    VideoPlayerState, SaveMode, SingleLineConfig, ItemDisplayRatio };
