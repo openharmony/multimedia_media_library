@@ -21,6 +21,7 @@
 #include <string>
 
 #include "deferred_video_proc_session.h"
+#include "medialibrary_async_worker.h"
 
 namespace OHOS {
 namespace Media {
@@ -35,7 +36,17 @@ public:
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
 
 private:
-    EXPORT int32_t UpdateVideoQuality(const std::string &videoId, bool isSuccess, bool isDirtyNeedUpdate = false);
+    static int32_t UpdateVideoQuality(const std::string &videoId, bool isSuccess, bool isDirtyNeedUpdate = false);
+    void AsyncOnErrorProc(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode);
+    static void VideoFaileProcAsync(AsyncTaskData *data);
+    class VideoFaileProcTaskData : public AsyncTaskData {
+    public:
+        VideoFaileProcTaskData(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode)
+            : videoId_(std::move(videoId)), errorCode_(errorCode) {}
+        virtual ~VideoFaileProcTaskData() override = default;
+        std::string videoId_;
+        CameraStandard::DpsErrorCode errorCode_;
+    };
 };
 } // namespace Media
 } // namespace OHOS
