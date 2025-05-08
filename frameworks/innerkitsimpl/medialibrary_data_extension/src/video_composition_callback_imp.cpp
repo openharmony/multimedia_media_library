@@ -15,6 +15,8 @@
 
 #include "video_composition_callback_imp.h"
 
+#include <nlohmann/json.hpp>
+
 #include "media_log.h"
 #include "media_file_utils.h"
 #include <sys/types.h>
@@ -232,6 +234,21 @@ void VideoCompositionCallbackImpl::EraseStickerField(std::string& editData, size
     }
     auto len = end - begin + 1;
     editData.erase(begin, len);
+}
+
+void VideoCompositionCallbackImpl::EraseWatermarkTag(std::string& editData)
+{
+    nlohmann::json data = nlohmann::json::parse(editData);
+    nlohmann::json filters = data[IMAGE_EFFECT][FILTERS_FIELD];
+    nlohmann::json newFilters;
+    for (const auto& filter : filters) {
+        if (filter.find(FILTER_CATEGORY) == filter.end() || filter[FILTER_CATEGORY] != BORDER_WATERMARK) {
+            newFilters.push_back(filter);
+        }
+    }
+    nlohmann::json newData = data;
+    newData[IMAGE_EFFECT][FILTERS_FIELD] = newFilters;
+    editData = newData.dump();
 }
 
 void VideoCompositionCallbackImpl::InitCallbackImpl(std::shared_ptr<VideoCompositionCallbackImpl>& callBack,
