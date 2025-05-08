@@ -303,8 +303,10 @@ void CloneRestoreHighlight::GetAnalysisAlbumInfos()
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string QUERY_SQL = "SELECT * FROM AnalysisAlbum WHERE album_subtype IN (4104, 4105) "
-            "LIMIT " + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
+        const std::string QUERY_SQL = "SELECT AnalysisAlbum.* FROM AnalysisAlbum INNER JOIN tab_highlight_album AS h "
+            " ON (AnalysisAlbum.album_id = h.album_id OR AnalysisAlbum.album_id = h.ai_album_id) "
+            " WHERE album_subtype IN (4104, 4105) AND h.highlight_status > 0 "
+            " LIMIT " + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         if (resultSet == nullptr) {
             MEDIA_INFO_LOG("query resultSql is null.");
@@ -322,7 +324,7 @@ void CloneRestoreHighlight::GetAnalysisAlbumInfos()
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query AnalysisAlbum nums: %{public}zu", analysisInfos_.size());
 }
 
@@ -522,8 +524,8 @@ void CloneRestoreHighlight::GetHighlightAlbumInfos()
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string QUERY_SQL = "SELECT * FROM tab_highlight_album LIMIT "
-            + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
+        const std::string QUERY_SQL = "SELECT * FROM tab_highlight_album WHERE highlight_status > 0 "
+            " LIMIT " + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         if (resultSet == nullptr) {
             MEDIA_INFO_LOG("query resultSql is null.");
@@ -540,7 +542,7 @@ void CloneRestoreHighlight::GetHighlightAlbumInfos()
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_highlight_album nums: %{public}zu", highlightInfos_.size());
 }
 
@@ -780,8 +782,10 @@ void CloneRestoreHighlight::GetHighlightCoverInfos()
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string QUERY_SQL = "SELECT * FROM tab_highlight_cover_info LIMIT " + std::to_string(offset) + ", " +
-            std::to_string(PAGE_SIZE);
+        const std::string QUERY_SQL = "SELECT tab_highlight_cover_info.* FROM tab_highlight_cover_info "
+            " INNER JOIN tab_highlight_album AS h ON tab_highlight_cover_info.album_id = h.id "
+            " WHERE h.highlight_status > 0 "
+            " LIMIT " + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         if (resultSet == nullptr) {
             MEDIA_INFO_LOG("query resultSql is null.");
@@ -810,7 +814,7 @@ void CloneRestoreHighlight::GetHighlightCoverInfos()
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_highlight_cover_info nums: %{public}zu", coverInfos_.size());
 }
 
@@ -934,8 +938,10 @@ void CloneRestoreHighlight::GetHighlightPlayInfos()
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string QUERY_SQL = "SELECT * FROM tab_highlight_play_info LIMIT " + std::to_string(offset) + ", " +
-            std::to_string(PAGE_SIZE);
+        const std::string QUERY_SQL = "SELECT tab_highlight_play_info.* FROM tab_highlight_play_info "
+            " INNER JOIN tab_highlight_album AS h ON tab_highlight_play_info.album_id = h.id "
+            " WHERE h.highlight_status > 0 "
+            " LIMIT " + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         if (resultSet == nullptr) {
             MEDIA_INFO_LOG("query resultSql is null.");
@@ -962,7 +968,7 @@ void CloneRestoreHighlight::GetHighlightPlayInfos()
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_highlight_play_info nums: %{public}zu", playInfos_.size());
 }
 
