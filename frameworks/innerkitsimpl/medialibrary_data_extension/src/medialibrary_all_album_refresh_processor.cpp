@@ -19,7 +19,13 @@
 #include "cloud_sync_helper.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
+#include "media_log.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_rdb_utils.h"
+#include "medialibrary_unistore_manager.h"
+#include "photo_album_column.h"
+#include "vision_album_column.h"
+#include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -113,12 +119,12 @@ static int32_t GetAlbumId(const shared_ptr<NativeRdb::ResultSet>& resultSet)
     return albumId;
 }
 
-int32_t GetPhotoAlbumIds(PhotoAlbumSubType albumSubtype, int32_t currentAlbumId, vector<string>& albumIds)
+int32_t GetPhotoAlbumIds(PhotoAlbumSubType albumSubtype, int32_t currentAlbumId, vector<int32_t>& albumIds)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
 
-    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    NativeRdb::RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubtype))
     ->And()
     ->GreaterThan(PhotoAlbumColumns::ALBUM_ID, currentAlbumId)
@@ -138,12 +144,12 @@ int32_t GetPhotoAlbumIds(PhotoAlbumSubType albumSubtype, int32_t currentAlbumId,
     return E_OK;
 }
 
-int32_t GetAnalysisAlbumIds(int32_t currentAlbumId, vector<string>& albumIds)
+int32_t GetAnalysisAlbumIds(int32_t currentAlbumId, vector<int32_t>& albumIds)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
 
-    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    NativeRdb::RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.GreaterThan(ALBUM_ID, currentAlbumId)->OrderByAsc(ALBUM_ID);
     vector<string> columns = { ALBUM_ID };
     shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->Query(predicates, columns);
@@ -160,7 +166,7 @@ int32_t GetAnalysisAlbumIds(int32_t currentAlbumId, vector<string>& albumIds)
     return E_OK;
 }
 
-int32_t GetAlbumIds(AlbumRefreshStatus albumRefreshStatus, int32_t currentAlbumId, vector<string>& albumIds)
+int32_t GetAlbumIds(AlbumRefreshStatus albumRefreshStatus, int32_t currentAlbumId, vector<int32_t>& albumIds)
 {
     switch (albumRefreshStatus) {
         case AlbumRefreshStatus::SYSTEM:
@@ -179,24 +185,25 @@ int32_t GetAlbumIds(AlbumRefreshStatus albumRefreshStatus, int32_t currentAlbumI
 }
 
 int32_t MediaLibraryAllAlbumRefreshProcessor::RefreshAlbums(AlbumRefreshStatus albumRefreshStatus,
-    int32_t currentAlbumId, const vector<string>& albumIds)
+    int32_t currentAlbumId, const vector<int32_t>& albumIds)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
     if (albumRefreshStatus == AlbumRefreshStatus::SYSTEM) {
         MediaLibraryRdbUtils::UpdateSystemAlbumsByUris(rdbStore, AlbumOperationType::DEFAULT);
         return E_OK;
     }
 
-    int32_t currentAlbumId = currentAlbumId_;
     for (auto iter = albumIds.begin(); iter != albumIds.end() && currentStatus_ && !isCloudSyncing_; iter++) {
         int32_t albumId = *iter;
         if (albumRefreshStatus == AlbumRefreshStatus::USER) {
-            MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { albumId }, false, false);
-            MediaLibraryRdbUtils::UpdateUserAlbumHiddenState(rdbStore, { albumId });
+            MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { to_string(albumId) }, false, false);
+            MediaLibraryRdbUtils::UpdateUserAlbumHiddenState(rdbStore, { to_string(albumId) });
         } else if (albumRefreshStatus == AlbumRefreshStatus::SOURCE) {
-            MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore, { albumId }, false, false);
-            MediaLibraryRdbUtils::UpdateSourceAlbumHiddenState(rdbStore, { albumId });
+            MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore, { to_string(albumId) }, false, false);
+            MediaLibraryRdbUtils::UpdateSourceAlbumHiddenState(rdbStore, { to_string(albumId) });
         } else if (albumRefreshStatus == AlbumRefreshStatus::ANALYSIS) {
-            MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { albumId });
+            MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, { to_string(albumId) });
         } else {
             MEDIA_WARN_LOG("Ignore to refresh album %{public}d id: %{public}d",
                 static_cast<int32_t>(albumRefreshStatus), albumId);
@@ -232,7 +239,7 @@ void MediaLibraryAllAlbumRefreshProcessor::TryRefreshAllAlbums()
     }
 
     while (albumRefreshStatus_ != AlbumRefreshStatus::NOT_START && currentStatus_ && !isCloudSyncing_) {
-        vector<string> albumIds = {};
+        vector<int32_t> albumIds = {};
         int32_t ret = GetAlbumIds(albumRefreshStatus_, currentAlbumId_, albumIds);
         if (ret < E_OK) {
             albumRefreshStatus_ = GetNextRefreshStatus(albumRefreshStatus_);
