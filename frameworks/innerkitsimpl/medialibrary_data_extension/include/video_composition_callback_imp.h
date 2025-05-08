@@ -77,7 +77,7 @@ private:
     string tempFilters_;
     string sourceVideoPath_;
     string assetPath_;
-    bool isNeedScan_;
+    bool isNeedScan_ = false;
 };
 
 } // end of namespace
