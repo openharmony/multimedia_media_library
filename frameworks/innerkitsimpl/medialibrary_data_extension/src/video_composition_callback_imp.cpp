@@ -251,7 +251,7 @@ void VideoCompositionCallbackImpl::EraseWatermarkTag(std::string& editData)
         }
         nlohmann::json newData = data;
         newData[IMAGE_EFFECT][FILTERS_FIELD] = newFilters;
-        editData = newData.dump();
+        editData = newData.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
     }
 }
 
