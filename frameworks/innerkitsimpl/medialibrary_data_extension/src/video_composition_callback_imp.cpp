@@ -238,6 +238,8 @@ void VideoCompositionCallbackImpl::EraseStickerField(std::string& editData, size
 
 void VideoCompositionCallbackImpl::EraseWatermarkTag(std::string& editData)
 {
+    CHECK_AND_RETURN_LOG(nlohmann::json::accept(editData),
+        "Failed to verify the editData format, editData is: %{public}s", editData.c_str());
     nlohmann::json data = nlohmann::json::parse(editData);
     nlohmann::json filters = data[IMAGE_EFFECT][FILTERS_FIELD];
     nlohmann::json newFilters;
