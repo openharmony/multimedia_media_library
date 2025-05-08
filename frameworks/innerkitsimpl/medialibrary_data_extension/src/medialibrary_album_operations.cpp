@@ -563,13 +563,13 @@ int32_t IsAllUserPhotoAlbum(std::shared_ptr<MediaLibraryRdbStore> rdbStore, RdbP
 
     int32_t rowCount;
     int32_t ret = resultSet->GetRowCount(rowCount);
-    if (ret != 0) {
+    if (ret != 0 || rowCount < 0) {
         MEDIA_ERR_LOG("result set get row count err %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
     resultSet->Close();
-    if (rowCount != albumIds.size()) {
-        int32_t nonUserAlbumUriCount = albumIds.size() - rowCount;
+    if (static_cast<size_t>(rowCount) != albumIds.size()) {
+        int32_t nonUserAlbumUriCount = static_cast<int32_t>(albumIds.size()) - rowCount;
         MEDIA_ERR_LOG("deleted Albums Uri Contains non-user albums count is %{public}d",
             (int)nonUserAlbumUriCount);
         return E_INVALID_URI;
