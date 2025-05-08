@@ -172,7 +172,9 @@ int32_t CloneRestoreCVAnalysis::GetNewAssetId(int32_t assetId)
 
 void CloneRestoreCVAnalysis::GetAssetAlbumInfos(CloneRestoreHighlight &cloneHighlight)
 {
-    const std::string QUERY_SQL = "SELECT * FROM tab_analysis_album_asset_map LIMIT ?, ?";
+    const std::string QUERY_SQL = "SELECT tab_analysis_album_asset_map.* FROM tab_analysis_album_asset_map "
+        " INNER JOIN tab_highlight_album AS h ON tab_analysis_album_asset_map.map_album = h.id "
+        " WHERE h.highlight_status > 0 LIMIT ?, ?";
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
@@ -195,7 +197,7 @@ void CloneRestoreCVAnalysis::GetAssetAlbumInfos(CloneRestoreHighlight &cloneHigh
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
 }
 
 void CloneRestoreCVAnalysis::InsertIntoAssetMap()
@@ -714,26 +716,26 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
-        const std::string QUERY_SQL = "SELECT album_id, play_info_id, play_info FROM tab_highlight_play_info LIMIT "
-            + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
+        const std::string QUERY_SQL = "SELECT p.album_id, p.play_info_id, p.play_info FROM tab_highlight_play_info AS p"
+            " INNER JOIN tab_highlight_album AS h ON p.album_id = h.id WHERE h.highlight_status > 0 "
+            " LIMIT " + std::to_string(offset) + ", " + std::to_string(PAGE_SIZE);
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, QUERY_SQL);
         CHECK_AND_RETURN_INFO_LOG(resultSet != nullptr, "query resultSql is null.");
 
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            std::optional<int32_t> oldAlbumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "album_id");
+            std::optional<int32_t> oldAlbumId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "p.album_id");
             if (!oldAlbumId.has_value()) {
                 continue;
             }
-            std::optional<int32_t> playId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "play_info_id");
+            std::optional<int32_t> playId = BackupDatabaseUtils::GetOptionalValue<int32_t>(resultSet, "p.play_info_id");
             std::optional<std::string> oldPlayInfo =
-                BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "play_info");
+                BackupDatabaseUtils::GetOptionalValue<std::string>(resultSet, "p.play_info");
             std::string newPlayInfo = "null";
             if (oldPlayInfo.has_value()) {
                 newPlayInfo = ParsePlayInfo(oldPlayInfo.value(), cloneHighlight);
             }
             int32_t albumId = cloneHighlight.GetNewHighlightAlbumId(oldAlbumId.value());
-            std::string updatePlayInfoSql = "UPDATE tab_highlight_play_info SET play_info = ? "
-                " WHERE album_id = ? ";
+            std::string updatePlayInfoSql = "UPDATE tab_highlight_play_info SET play_info = ? WHERE album_id = ? ";
             int32_t ret = E_ERR;
             if (playId.has_value()) {
                 std::string playInfoId = std::to_string(playId.value());
@@ -750,7 +752,7 @@ void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &clo
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
 }
 
 void CloneRestoreCVAnalysis::ReportCloneRestoreCVAnalysisTask()
