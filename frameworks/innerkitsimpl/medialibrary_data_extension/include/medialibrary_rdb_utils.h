@@ -68,9 +68,13 @@ public:
     EXPORT static void UpdateUserAlbumInternal(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &userAlbumIds = {}, bool shouldNotify = false,
         bool shouldUpdateDateModified = false);
+    EXPORT static void UpdateUserAlbumHiddenState(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::vector<std::string> &userAlbumIds = {});
     EXPORT static void UpdateSourceAlbumInternal(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &sourceAlbumIds = {}, bool shouldNotify = false,
         bool shouldUpdateDateModified = false);
+    EXPORT static void UpdateSourceAlbumHiddenState(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
+        const std::vector<std::string> &sourceAlbumIds = {});
     EXPORT static void UpdateCommonAlbumInternal(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
         const std::vector<std::string> &albumIds = {}, bool shouldNotify = false,
         bool shouldUpdateDateModified = false);
