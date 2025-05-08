@@ -1146,6 +1146,10 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     UpdateValuesBucketForExt(cmd, values);
 
     bool isHighQualityPicture = false;
+    if (fileId.empty() && !MediaLibraryDataManagerUtils::IsNumber(fileId)) {
+        MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
+        return 0;
+    }
     getPicRet = MediaLibraryPhotoOperations::GetPicture(std::stoi(fileId.c_str()), photoExtInfo.picture, false,
         photoExtInfo.photoId, isHighQualityPicture);
     if (!fileType.empty() && getPicRet == E_OK) {
@@ -1194,10 +1198,6 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
-    if (fileId.empty() && !MediaLibraryDataManagerUtils::IsNumber(fileId)) {
-        MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
-        return 0;
-    }
     MEDIA_INFO_LOG("MultistagesCapture, start fileId: %{public}s", fileId.c_str());
     tracer.Start("MediaLibraryPhotoOperations::UpdateIsTempAndDirty");
 
@@ -3192,6 +3192,7 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
 
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
                                         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
 
@@ -3531,6 +3532,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditMovingPhotoExecute(MediaLibraryCo
     const shared_ptr<FileAsset>& fileAsset)
 {
     MEDIA_INFO_LOG("Moving photo SubmitEditMovingPhotoExecute begin, fileId:%{public}d", fileAsset->GetId());
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
     int32_t errCode = E_OK;
