@@ -330,11 +330,13 @@ bool ThumbnailWait::TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType ty
         if (!thumbnailWait->UpdateSavedFileMap(data.id, type, data.dateModified)) {
             MEDIA_ERR_LOG("UpdateSavedFileMap failed while save pixelMap, path: %{public}s",
                 DfxUtils::GetSafePath(data.path).c_str());
+            data.needUpdateDb = false;
             return false;
         }
     } else {
         MEDIA_ERR_LOG("TrySaveCurrentPixelMap cancelled, corresponding task has finished, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
+        data.needUpdateDb = false;
         return false;
     }
     return true;
@@ -367,12 +369,14 @@ bool ThumbnailWait::TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, 
         if (!thumbnailWait->UpdateSavedFileMap(data.id, lcdType, data.dateModified)) {
             MEDIA_ERR_LOG("UpdateSavedFileMap failed while save picture, path: %{public}s",
                 DfxUtils::GetSafePath(data.path).c_str());
+            data.needUpdateDb = false;
             return false;
         }
     } else {
         MEDIA_ERR_LOG("TrySaveCurrentPicture cancelled, corresponding task has finished, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         ThumbnailUtils::CancelAfterPacking(tempOutputPath);
+        data.needUpdateDb = false;
         return false;
     }
     return true;
