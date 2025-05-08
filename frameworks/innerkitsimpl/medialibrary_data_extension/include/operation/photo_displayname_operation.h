@@ -42,11 +42,9 @@ private:
     PhotoAssetInfo photoAssetInfo_;
     const std::string SQL_PHOTOS_TABLE_QUERY_DISPLAY_NAME = "\
         SELECT \
-            display_name \
+            DISTINCT owner_album_id \
         FROM Photos \
-        WHERE owner_album_id = ? \
-            AND LOWER(display_name) = LOWER(?) \
-        LIMIT 1;";
+        WHERE display_name = ?;";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTO_DISPLAYNAME_OPERATIOIN_H

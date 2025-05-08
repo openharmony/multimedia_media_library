@@ -30,6 +30,7 @@
 #include "metadata.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_compatibility_fusion_sql.h"
+#include "medialibrary_tracer.h"
 #include "parameters.h"
 #include "photo_file_operation.h"
 #include "photo_asset_copy_operation.h"
@@ -726,6 +727,8 @@ static int32_t CopyLocalFile(shared_ptr<NativeRdb::ResultSet> &resultSet, const 
 static int32_t CopyMateData(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, shared_ptr<NativeRdb::ResultSet>
     &resultSet, int64_t &newAssetId, std::string &targetPath, const MediaAssetCopyInfo &copyInfo)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CopyMateData");
     NativeRdb::ValuesBucket values;
     int32_t err = BuildInsertValuesBucket(upgradeStore, values, resultSet, copyInfo);
     if (err != E_OK) {
@@ -747,6 +750,8 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
     const int32_t &ownerAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId,
     std::string displayName)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CopyLocalSingleFile");
     if (upgradeStore == nullptr) {
         MEDIA_INFO_LOG("fail to get rdbstore");
         return E_DB_FAIL;
@@ -785,6 +790,8 @@ int32_t MediaLibraryAlbumFusionUtils::CopyLocalSingleFile(const std::shared_ptr<
 static int32_t CopyLocalSingleFileSync(const std::shared_ptr<MediaLibraryRdbStore> upgradeStore, const int32_t
     &ownerAlbumId, shared_ptr<NativeRdb::ResultSet> &resultSet, int64_t &newAssetId, const std::string displayName)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CopyLocalSingleFileSync");
     if (upgradeStore == nullptr) {
         MEDIA_INFO_LOG("fail to get rdbstore");
         return E_DB_FAIL;
