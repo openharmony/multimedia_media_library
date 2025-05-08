@@ -17,6 +17,7 @@ import photoAccessHelper from '@ohos.file.photoAccessHelper';
 import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { bundleManager } from '@kit.AbilityKit';
+import { LengthMetrics, LengthUnit } from '@kit.ArkUI';
 
 const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
     ['*/*', 'FILTER_MEDIA_TYPE_ALL'],
@@ -192,7 +193,8 @@ export struct PhotoPickerComponent {
             isSlidingSelectionSupported: this.pickerOptions?.isSlidingSelectionSupported as boolean,
             photoBrowserCheckboxPosition: this.pickerOptions?.photoBrowserCheckboxPosition as [number, number],
             gridMargin: this.pickerOptions?.gridMargin as Margin,
-            photoBrowserMargin: this.pickerOptions?.photoBrowserMargin as Margin
+            photoBrowserMargin: this.pickerOptions?.photoBrowserMargin as Margin,
+            singleLineConfig: this.getSingleLineConfig(this.pickerOptions?.singleLineConfig as SingleLineConfig),
           }
         })
           .height('100%')
@@ -414,6 +416,132 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent convertMIMETypeToFilterType: ' + JSON.stringify(filterType));
     return filterType;
   }
+
+  private getSingleLineConfig(singleLineConfig: SingleLineConfig): SingleLineConfig | undefined {
+    if (singleLineConfig === null || singleLineConfig === undefined) {
+      return undefined;
+    }
+    singleLineConfig.itemDisplayRatio = (singleLineConfig.itemDisplayRatio === null ||
+      singleLineConfig.itemDisplayRatio === undefined) ? ItemDisplayRatio.SQUARE_RATIO :
+      singleLineConfig.itemDisplayRatio;
+    singleLineConfig.itemBorderRadius = this.getSingleLineConfigItemBorderRadius(singleLineConfig.itemBorderRadius);
+    singleLineConfig.itemGap = this.getLength(singleLineConfig.itemGap);
+    return singleLineConfig
+  }
+
+  private getSingleLineConfigItemBorderRadius(itemBorderRadius?: Length | BorderRadiuses |
+    LocalizedBorderRadiuses): Length | BorderRadiuses | LocalizedBorderRadiuses {
+    if (itemBorderRadius === undefined || itemBorderRadius === null) {
+      return 0;
+    }
+    if (typeof itemBorderRadius === 'number' || typeof itemBorderRadius === 'string') {
+      return itemBorderRadius;
+    }
+    if (this.hasOwnProp(itemBorderRadius, ['topStart', 'topEnd', 'bottomStart', 'bottomEnd'])) {
+      const localizedBorderRadiuses: LocalizedBorderRadiuses = {
+        topStart: LengthMetrics.vp(0),
+        topEnd: LengthMetrics.vp(0),
+        bottomStart: LengthMetrics.vp(0),
+        bottomEnd: LengthMetrics.vp(0),
+      };
+      const itemBorderRadiusValue = itemBorderRadius as LocalizedBorderRadiuses;
+      localizedBorderRadiuses.topStart = itemBorderRadiusValue.topStart ? itemBorderRadiusValue.topStart :
+        LengthMetrics.vp(0);
+      localizedBorderRadiuses.topEnd = itemBorderRadiusValue.topEnd ? itemBorderRadiusValue.topEnd :
+        LengthMetrics.vp(0);
+      localizedBorderRadiuses.bottomStart = itemBorderRadiusValue.bottomStart ? itemBorderRadiusValue.bottomStart :
+        LengthMetrics.vp(0);
+      localizedBorderRadiuses.bottomEnd = itemBorderRadiusValue.bottomEnd ? itemBorderRadiusValue.bottomEnd :
+        LengthMetrics.vp(0);
+      return localizedBorderRadiuses;
+    }
+    if (this.hasOwnProp(itemBorderRadius, ['topLeft', 'topRight', 'bottomLeft', 'bottomRight'])) {
+      const borderRadiuses: BorderRadiuses = {
+        topLeft: 0,
+        topRight: 0,
+        bottomLeft: 0,
+        bottomRight: 0
+      };
+      const borderRadiusesValue = itemBorderRadius as BorderRadiuses;
+      borderRadiuses.topLeft = this.getLength(borderRadiusesValue.topLeft);
+      borderRadiuses.topRight = this.getLength(borderRadiusesValue.topRight);
+      borderRadiuses.bottomLeft = this.getLength(borderRadiusesValue.bottomLeft);
+      borderRadiuses.bottomRight = this.getLength(borderRadiusesValue.bottomRight);
+      return borderRadiuses;
+    }
+    const borderRadiusesValue = itemBorderRadius as Resource;
+    const resource = LengthMetrics.resource(borderRadiusesValue);
+    if (LengthUnitUtils.getInstance().isValid(resource)) {
+      return LengthUnitUtils.getInstance().stringify(resource);
+    }
+    return 0;
+  }
+
+  getLength(prop?: Length): Length {
+    if (prop === undefined || prop === null) {
+      return 0;
+    }
+    if (typeof prop === 'number' || typeof prop === 'string') {
+      return prop;
+    }
+    const resource = LengthMetrics.resource(prop);
+    if (LengthUnitUtils.getInstance().isValid(resource)) {
+      return LengthUnitUtils.getInstance().stringify(resource);
+    }
+    return 0;
+  }
+
+  private hasOwnProp(obj: Object, props: string[]): boolean {
+    for (const key of Object.keys(obj)) {
+      if (props.includes(key)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+class LengthUnitUtils {
+  private static instance: LengthUnitUtils;
+
+  private constructor() {
+  }
+
+  public static getInstance(): LengthUnitUtils {
+    if (!LengthUnitUtils.instance) {
+      LengthUnitUtils.instance = new LengthUnitUtils();
+    }
+    return LengthUnitUtils.instance;
+  }
+
+  public stringify(metrics: LengthMetrics): string {
+    if (null === metrics || undefined === metrics || typeof metrics !== 'object' || null === metrics.unit ||
+      undefined === metrics.unit || null === metrics.value || undefined === metrics.value) {
+      return '0vp';
+    }
+    switch (metrics.unit) {
+      case LengthUnit.PX:
+        return `${metrics.value}px`;
+      case LengthUnit.VP:
+        return `${metrics.value}vp`;
+      case LengthUnit.FP:
+        return `${metrics.value}fp`;
+      case LengthUnit.PERCENT:
+        return `${metrics.value}%`;
+      case LengthUnit.LPX:
+        return `${metrics.value}lpx`;
+      default:
+        return '0vp';
+    }
+  }
+
+  public isValid(metrics: LengthMetrics): boolean {
+    if (null === metrics || undefined === metrics || typeof metrics !== 'object' ||
+      null === metrics.value || undefined === metrics.value) {
+      return false;
+    }
+    return metrics.value > 0;
+  }
 }
 
 export type ItemsDeletedCallback = (baseItemInfos: Array<BaseItemInfo>) => void;
@@ -600,7 +728,8 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   isSlidingSelectionSupported?: boolean;
   photoBrowserCheckboxPosition?: [number, number];
   gridMargin?: Margin;
-  photoBrowserMargin?: Margin; 
+  photoBrowserMargin?: Margin;
+  singleLineConfig?: SingleLineConfig;
 }
 
 export class BaseItemInfo {
@@ -627,6 +756,18 @@ export class AnimatorParams {
 
 export class MaxSelected {
   data?: Map<MaxCountType, number>;
+}
+
+export class SingleLineConfig {
+  itemDisplayRatio?: ItemDisplayRatio;
+  itemBorderRadius?: Length | BorderRadiuses | LocalizedBorderRadiuses;
+  itemGap?: Length;
+
+  constructor() {
+    this.itemDisplayRatio = ItemDisplayRatio.SQUARE_RATIO;
+    this.itemBorderRadius = 0;
+    this.itemGap = 0;
+  }
 }
 
 class PhotoBrowserRangeInfo {
@@ -703,4 +844,9 @@ export enum VideoPlayerState {
 export enum SaveMode {
   SAVE_AS = 0,
   OVERWRITE = 1
+}
+
+export enum ItemDisplayRatio {
+  SQUARE_RATIO = 0,
+  ORIGINAL_SIZE_RATIO = 1
 }
