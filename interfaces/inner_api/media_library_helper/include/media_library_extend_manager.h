@@ -47,7 +47,7 @@ enum class HideSensitiveType : int32_t {
     NO_DESENSITIZE
 };
 
-enum class OperationMode : int32_t {
+enum class OperationMode : uint32_t {
     READ_MODE = 0b01,
     WRITE_MODE = 0b10,
     READ_WRITE_MODE = 0b11,

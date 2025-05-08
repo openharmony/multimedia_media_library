@@ -397,21 +397,21 @@ static vector<string> BuildPermissionType(const bool persistFlag, const Operatio
 {
     vector<string> permissionTypes;
     if (persistFlag) {
-        if (static_cast<int32_t>(mode) & static_cast<int32_t>(OperationMode::READ_MODE)) {
-            permissionTypes.push_back(to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO)));
+        if (static_cast<uint32_t>(mode) & static_cast<uint32_t>(OperationMode::READ_MODE)) {
+            permissionTypes.push_back(to_string(static_cast<uint32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO)));
         }
-        if (static_cast<int32_t>(mode) & static_cast<int32_t>(OperationMode::WRITE_MODE)) {
-            permissionTypes.push_back(to_string(static_cast<int32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO)));
+        if (static_cast<uint32_t>(mode) & static_cast<uint32_t>(OperationMode::WRITE_MODE)) {
+            permissionTypes.push_back(to_string(static_cast<uint32_t>(PhotoPermissionType::PERSIST_WRITE_IMAGEVIDEO)));
         }
     } else {
-        if (static_cast<int32_t>(mode) & static_cast<int32_t>(OperationMode::READ_MODE)) {
-            permissionTypes.push_back(to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO)));
+        if (static_cast<uint32_t>(mode) & static_cast<uint32_t>(OperationMode::READ_MODE)) {
+            permissionTypes.push_back(to_string(static_cast<uint32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO)));
         }
-        if (static_cast<int32_t>(mode) & static_cast<int32_t>(OperationMode::WRITE_MODE)) {
+        if (static_cast<uint32_t>(mode) & static_cast<uint32_t>(OperationMode::WRITE_MODE)) {
             permissionTypes.push_back(
-                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO)));
+                to_string(static_cast<uint32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO)));
             permissionTypes.push_back(
-                to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
+                to_string(static_cast<uint32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
         }
     }
     return permissionTypes;
