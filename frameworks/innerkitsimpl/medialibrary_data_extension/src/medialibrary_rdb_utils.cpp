@@ -1332,7 +1332,6 @@ static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore
     CHECK_AND_RETURN_RET_LOG(trans != nullptr, E_HAS_DB_ERROR, "transactionOprn is null");
     auto subtype = static_cast<PhotoAlbumSubType>(data.albumSubtype);
     MediaLibraryTracer tracer;
-    MEDIA_DEBUG_LOG("UpdateSysAlbum: " + to_string(subtype));
     tracer.Start("UpdateSysAlbum: " + to_string(subtype));
     ValuesBucket values;
     int err = SetUpdateValues(rdbStore, data, values, subtype, hiddenState);
