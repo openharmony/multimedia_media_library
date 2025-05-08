@@ -42,7 +42,7 @@ private:
     void PostRefreshAllAlbumsTask();
     int64_t GetNowTimeUs();
     int32_t RefreshAlbums(AlbumRefreshStatus albumRefreshStatus, int32_t currentAlbumId,
-        const std::vector<std::string>& albumIds)
+        const std::vector<std::string>& albumIds);
 
     /* singleton */
     static std::shared_ptr<MediaLibraryAllAlbumRefreshProcessor> instance_;
