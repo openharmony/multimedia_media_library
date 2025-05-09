@@ -48,6 +48,39 @@ public:
 private:
     EXPORT static std::mutex mutex_;
 };
+
+class FaCloudSyncSwitchObserver : public AAFwk::DataAbilityObserverStub {
+public:
+    explicit FaCloudSyncSwitchObserver(const std::string &cloudSyncChangeUri) :
+    cloudSyncChangeUri(cloudSyncChangeUri) {}
+    ~FaCloudSyncSwitchObserver() override = default;
+    void PostAssetChangeTask();
+    void OnChange() override;
+    struct CloudSyncChangeInfo {
+        std::string cloudSyncChangeUri;
+        int cloudSyncChangeType;
+        CloudSyncChangeInfo(const std::string& uri, int type)
+            : cloudSyncChangeUri(uri),
+              cloudSyncChangeType(type) {}
+        bool operator==(const CloudSyncChangeInfo& other) const
+        {
+            return cloudSyncChangeUri == other.cloudSyncChangeUri && cloudSyncChangeType == other.cloudSyncChangeType;
+        }
+    };
+    struct CloudSyncChangeInfoHash {
+        std::size_t operator()(const CloudSyncChangeInfo& info) const
+        {
+            std::hash<std::string> hashStr;
+            std::hash<int> hashInt;
+            return hashStr(info.cloudSyncChangeUri) ^ (hashInt(info.cloudSyncChangeType) << 1);
+        }
+    };
+    const std::string cloudSyncChangeUri;
+    static std::unordered_set<CloudSyncChangeInfo, CloudSyncChangeInfoHash> cloudSyncChanges;
+    static std::shared_ptr<AppExecFwk::EventHandler> deviceHandler_;
+    static bool isTaskPosted;
+    static std::mutex mtx;
+};
  
 class CardAssetUriObserver : public DataShare::DataShareObserver {
 public:
