@@ -250,17 +250,26 @@ void PhotoAlbumDao::LoadPhotoAlbums()
  */
 std::string PhotoAlbumDao::ParseSourcePathToLPath(const std::string &sourcePath)
 {
-    size_t start_pos = sourcePath.find(GALLERT_ROOT_PATH);
-    size_t end_pos = sourcePath.find_last_of("/");
-
     std::string result = "/Pictures/其它";
-    if (start_pos != std::string::npos && end_pos != std::string::npos) {
-        start_pos += GALLERT_ROOT_PATH.length();
-        result = sourcePath.substr(start_pos, end_pos - start_pos);
-        start_pos = result.find_first_of("/");
-        CHECK_AND_EXECUTE(start_pos == std::string::npos, result = result.substr(start_pos));
-    }
+    CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), result, "Empty sourcePath");
+
+    std::string rootPath = FindRootPath(sourcePath);
+    size_t start_pos = sourcePath.find(rootPath);
+    size_t end_pos = sourcePath.find_last_of("/");
+    CHECK_AND_RETURN_RET(start_pos != std::string::npos && end_pos != std::string::npos, result);
+
+    start_pos += rootPath.length();
+    result = sourcePath.substr(start_pos, end_pos - start_pos);
+    start_pos = result.find_first_of("/");
+    CHECK_AND_EXECUTE(start_pos == std::string::npos, result = result.substr(start_pos));
+
     return result;
+}
+
+std::string PhotoAlbumDao::FindRootPath(const std::string &path)
+{
+    size_t pos = path.find(GALLERY_INTERNAL_ROOT_PATH);
+    return pos != std::string::npos ? GALLERY_INTERNAL_ROOT_PATH : GALLERY_EXTERNAL_ROOT_PATH;
 }
 
 /**
