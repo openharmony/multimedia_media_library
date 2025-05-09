@@ -1354,8 +1354,8 @@ static int32_t UpdateSysAlbumIfNeeded(const std::shared_ptr<MediaLibraryRdbStore
     return E_SUCCESS;
 }
 
-static void UpdateUserAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &userAlbumIds = {})
+void MediaLibraryRdbUtils::UpdateUserAlbumHiddenState(
+    const shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &userAlbumIds)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateUserAlbumHiddenState");
@@ -1822,8 +1822,8 @@ static void UpdateCommonAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> 
     ForEachRow(rdbStore, datas, true, UpdateCommonAlbumIfNeeded);
 }
 
-static void UpdateSourceAlbumHiddenState(const shared_ptr<MediaLibraryRdbStore> rdbStore,
-    const vector<string> &sourceAlbumIds = {})
+void MediaLibraryRdbUtils::UpdateSourceAlbumHiddenState(
+    const shared_ptr<MediaLibraryRdbStore> rdbStore, const vector<string> &sourceAlbumIds)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumHiddenState");
