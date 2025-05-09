@@ -19,6 +19,7 @@
 
 #include "backup_const.h"
 #include "backup_const_column.h"
+#include "backup_file_utils.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "upgrade_restore_task_report.h"
@@ -53,7 +54,7 @@ bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeR
     info.localMediaId = info.fileIdOld;
 
     // [album info]source_path, owner_album_id, package_name
-    info.sourcePath = GetStringVal(GALLERY_FILE_DATA, resultSet);
+    info.sourcePath = GetStringVal(GALLERY_MEDIA_SOURCE_PATH, resultSet);
     info.lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
     info.lPath = photosRestore_.FindlPath(info);
     info.bundleName = photosRestore_.FindBundleName(info);

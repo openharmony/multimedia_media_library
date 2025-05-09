@@ -81,7 +81,7 @@ protected:
     int StringToInt(const std::string& str);
     int32_t InitDbAndXml(std::string xmlPath, bool isUpgrade);
     int32_t HandleXmlNode(xmlNodePtr cur);
-    bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
+    virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath, FileInfo &fileInfo);
     bool HasSameFileForDualClone(FileInfo &fileInfo) override;
     void RestoreFromGalleryPortraitAlbum();
