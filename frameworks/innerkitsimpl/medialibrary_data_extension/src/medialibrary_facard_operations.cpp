@@ -49,6 +49,8 @@ namespace Media {
 std::mutex MediaLibraryFaCardOperations::mutex_;
 const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata";
 static std::map<std::string, std::vector<std::shared_ptr<CardAssetUriObserver>>> formAssetObserversMap;
+const string CLOUD_SYNC_PROXY_URI = "datashareproxy://com.huawei.hmos.clouddrive/sync_switch";
+static std::map<std::string, std::vector<sptr<FaCloudSyncSwitchObserver>>> formCloudSyncObserversMap;
 static std::map<ChangeType, int> changeTypeMap = {
     { ChangeType::INSERT, 0 },
     { ChangeType::DELETE, 1 },
@@ -64,7 +66,15 @@ std::mutex CardAssetUriObserver::mtx;
 std::unordered_set<
     CardAssetUriObserver::AssetChangeInfo,
     CardAssetUriObserver::AssetChangeInfoHash> CardAssetUriObserver::assetChanges;
- 
+
+bool FaCloudSyncSwitchObserver::isTaskPosted = false;
+std::shared_ptr<AppExecFwk::EventHandler> FaCloudSyncSwitchObserver::deviceHandler_ =
+std::make_shared<AppExecFwk::EventHandler>(AppExecFwk::EventRunner::Create("MediaLibraryCloudSyncFacard"));
+std::mutex FaCloudSyncSwitchObserver::mtx;
+std::unordered_set<
+    FaCloudSyncSwitchObserver::CloudSyncChangeInfo,
+    FaCloudSyncSwitchObserver::CloudSyncChangeInfoHash> FaCloudSyncSwitchObserver::cloudSyncChanges;
+
 std::map<std::string, std::vector<std::string>> MediaLibraryFaCardOperations::GetUris()
 {
     lock_guard<mutex> lock(mutex_);
@@ -132,6 +142,34 @@ void CardAssetUriObserver::PostAssetChangeTask()
     }
 }
 
+void FaCloudSyncSwitchObserver::PostAssetChangeTask()
+{
+    if (!FaCloudSyncSwitchObserver::isTaskPosted) {
+        FaCloudSyncSwitchObserver::isTaskPosted = true;
+        const int DELAY_MILLISECONDS = 2000;
+        FaCloudSyncSwitchObserver::deviceHandler_->PostTask([this]() {
+            std::lock_guard<std::mutex> lock(FaCloudSyncSwitchObserver::mtx);
+            std::vector<std::string> assetChangeUris;
+            std::vector<int> assetChangeTypes;
+            for (const auto& change : FaCloudSyncSwitchObserver::cloudSyncChanges) {
+                assetChangeUris.push_back(change.cloudSyncChangeUri);
+                MEDIA_DEBUG_LOG("change.assetChangeUri = %{public}s", change.cloudSyncChangeUri.c_str());
+                assetChangeTypes.push_back(change.cloudSyncChangeType);
+                MEDIA_DEBUG_LOG("change.assetChangeType = %{public}d", change.cloudSyncChangeType);
+            }
+            AAFwk::Want want;
+            want.SetElementName("com.huawei.hmos.photos", "FACardServiceAbility");
+            want.SetParam("assetChangeUris", assetChangeUris);
+            want.SetParam("assetChangeTypes", assetChangeTypes);
+            int32_t userId = -1;
+            auto result = AAFwk::AbilityManagerClient::GetInstance()->StartExtensionAbility(
+                want, nullptr, userId, AppExecFwk::ExtensionAbilityType::SERVICE);
+            FaCloudSyncSwitchObserver::cloudSyncChanges.clear();
+            FaCloudSyncSwitchObserver::isTaskPosted = false;
+            }, "StartExtensionAbility", DELAY_MILLISECONDS);
+    }
+}
+
 void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
 {
     if (changeTypeMap.find(changeInfo.changeType_) != changeTypeMap.end()) {
@@ -144,7 +182,19 @@ void CardAssetUriObserver::OnChange(const ChangeInfo &changeInfo)
         PostAssetChangeTask();
     }
 }
- 
+
+void FaCloudSyncSwitchObserver::OnChange()
+{
+    std::lock_guard<std::mutex> lock(FaCloudSyncSwitchObserver::mtx);
+    const int CLOUD_SYNC_TYPE = 3;
+    MEDIA_DEBUG_LOG("OnChange assetChangeUri = %{public}s", CLOUD_SYNC_PROXY_URI.c_str());
+    MEDIA_DEBUG_LOG("OnChange assetChangeType = %{public}d", static_cast<int>(CLOUD_SYNC_TYPE));
+    FaCloudSyncSwitchObserver::cloudSyncChanges.insert(
+        CloudSyncChangeInfo(CLOUD_SYNC_PROXY_URI, static_cast<int>(CLOUD_SYNC_TYPE)));
+
+    PostAssetChangeTask();
+}
+
 void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, const std::string &registerUri)
 {
     const std::string ASSET_URI_PREFIX = "file://media/";
@@ -152,11 +202,17 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
     MEDIA_DEBUG_LOG("registerUri = %{public}s", registerUri.c_str());
  
     std::shared_ptr<DataShare::DataShareObserver> observer;
-    if (registerUri.find(ASSET_URI_PREFIX) == 0 || registerUri.find(CLOUD_SYNC_SWITCH_URI_PREFIX) == 0) {
+    sptr<FaCloudSyncSwitchObserver> cloudSyncObserver;
+    if (registerUri.find(ASSET_URI_PREFIX) == 0) {
         auto cardAssetUriObserver = std::make_shared<CardAssetUriObserver>(registerUri);
         MEDIA_DEBUG_LOG("cardAssetUriObserver->uri = %{public}s", cardAssetUriObserver->assetChangeUri.c_str());
         formAssetObserversMap[formId].push_back(cardAssetUriObserver);
         observer = std::static_pointer_cast<DataShare::DataShareObserver>(cardAssetUriObserver);
+    } else if (registerUri.find(CLOUD_SYNC_SWITCH_URI_PREFIX) == 0) {
+        sptr<FaCloudSyncSwitchObserver> cloudSwitchObserver(new (std::nothrow) FaCloudSyncSwitchObserver(registerUri));
+        MEDIA_DEBUG_LOG("FaCloudSyncuri = %{public}s", cloudSwitchObserver->cloudSyncChangeUri.c_str());
+        formCloudSyncObserversMap[formId].push_back(cloudSwitchObserver);
+        cloudSyncObserver = cloudSwitchObserver;
     } else {
         MEDIA_ERR_LOG("registerUri is inValid");
         return;
@@ -164,22 +220,22 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
     Uri notifyUri(registerUri);
     CreateOptions options;
     options.enabled_ = true;
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-    DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("dataShareHelper is nullptr");
-        return;
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper;
+    if (registerUri.find(ASSET_URI_PREFIX) == 0) {
+        dataShareHelper = DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
+        dataShareHelper->RegisterObserverExt(notifyUri, observer, true);
+    } else if (registerUri.find(CLOUD_SYNC_SWITCH_URI_PREFIX) == 0) {
+        dataShareHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
+        dataShareHelper->RegisterObserver(notifyUri, cloudSyncObserver);
     }
-    MEDIA_DEBUG_LOG("notifyUri = %{public}s", notifyUri.ToString().c_str());
-    dataShareHelper->RegisterObserverExt(notifyUri, observer, true);
 }
- 
+
 void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
 {
     CreateOptions options;
     options.enabled_ = true;
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-    DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper;
+    dataShareHelper = DataShare::DataShareHelper::Creator(MEDIA_LIBRARY_PROXY_URI, options);
     if (dataShareHelper == nullptr) {
         MEDIA_ERR_LOG("dataShareHelper is nullptr");
         return;
@@ -196,8 +252,25 @@ void MediaLibraryFaCardOperations::UnregisterObserver(const std::string &formId)
             std::static_pointer_cast<DataShare::DataShareObserver>(observer));
     }
     formAssetObserversMap.erase(formId);
+
+    dataShareHelper = DataShare::DataShareHelper::Creator(CLOUD_SYNC_PROXY_URI, options);
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("dataShareHelper is nullptr");
+        return;
+    }
+    auto cloudItAsset = formCloudSyncObserversMap.find(formId);
+    if (cloudItAsset == formCloudSyncObserversMap.end()) {
+        MEDIA_ERR_LOG("No formCloudSyncObserversMap found for formId: %{public}s", formId.c_str());
+        return;
+    }
+    const std::vector<sptr<FaCloudSyncSwitchObserver>>& formCloudSyncObservers = cloudItAsset->second;
+    for (const auto& observer : formCloudSyncObservers) {
+        Uri notifyUri(observer->cloudSyncChangeUri);
+        dataShareHelper->UnregisterObserver(notifyUri, observer);
+    }
+    formCloudSyncObserversMap.erase(formId);
 }
- 
+
 int32_t MediaLibraryFaCardOperations::HandleStoreGalleryFormOperation(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
