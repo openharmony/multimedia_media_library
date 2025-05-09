@@ -2869,7 +2869,7 @@ void MediaLibraryRdbUtils::TransformAppId2TokenId(const shared_ptr<MediaLibraryR
         int changeRows = 0;
         CHECK_AND_EXECUTE(store->Update(changeRows, refreshValues, rdbPredicate) != E_OK, successCount++);
     }
-    MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}u, successcount:%{public}d",
+    MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}zu, successcount:%{public}d",
         tokenIdMap.size(), successCount);
 }
 
