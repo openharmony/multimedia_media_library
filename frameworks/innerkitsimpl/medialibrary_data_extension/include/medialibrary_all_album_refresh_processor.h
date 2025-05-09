@@ -41,7 +41,7 @@ private:
     void TryRefreshAllAlbums();
     void PostRefreshAllAlbumsTask();
     int64_t GetNowTimeUs();
-    int32_t RefreshAlbums(AlbumRefreshStatus albumRefreshStatus, int32_t currentAlbumId,
+    int32_t RefreshAlbums(AlbumRefreshStatus albumRefreshStatus,
         const std::vector<int32_t>& albumIds);
 
     /* singleton */

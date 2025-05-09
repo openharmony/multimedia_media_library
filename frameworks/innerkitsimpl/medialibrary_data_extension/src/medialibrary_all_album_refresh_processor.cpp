@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "MediaLibraryAllAlbumRefreshProcessor"
+
 #include "medialibrary_all_album_refresh_processor.h"
 
 #include "albums_refresh_manager.h"
@@ -185,7 +187,7 @@ int32_t GetAlbumIds(AlbumRefreshStatus albumRefreshStatus, int32_t currentAlbumI
 }
 
 int32_t MediaLibraryAllAlbumRefreshProcessor::RefreshAlbums(AlbumRefreshStatus albumRefreshStatus,
-    int32_t currentAlbumId, const vector<int32_t>& albumIds)
+    const vector<int32_t>& albumIds)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "rdbStore is null");
@@ -194,7 +196,8 @@ int32_t MediaLibraryAllAlbumRefreshProcessor::RefreshAlbums(AlbumRefreshStatus a
         return E_OK;
     }
 
-    for (auto iter = albumIds.begin(); iter != albumIds.end() && currentStatus_ && !isCloudSyncing_; iter++) {
+    int32_t currentAlbumId = currentAlbumId_;
+    for (auto iter = albumIds.begin(); iter != albumIds.end(); iter++) {
         int32_t albumId = *iter;
         if (albumRefreshStatus == AlbumRefreshStatus::USER) {
             MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, { to_string(albumId) }, false, false);
@@ -210,9 +213,14 @@ int32_t MediaLibraryAllAlbumRefreshProcessor::RefreshAlbums(AlbumRefreshStatus a
         }
 
         currentAlbumId = albumId;
+        if (!currentStatus_ || isCloudSyncing_) {
+            MEDIA_INFO_LOG("Condition changes, currentStatus_: %{public}d, isCloudSyncing_: %{public}d",
+                currentStatus_, isCloudSyncing_);
+            break;
+        }
     }
 
-    if (currentAlbumId == albumIds.back()) {
+    if (albumIds.empty() || currentAlbumId == albumIds.back()) {
         MEDIA_INFO_LOG("Finish refreshing album type: %{public}d", albumRefreshStatus);
         return E_OK;
     }
@@ -227,6 +235,7 @@ void MediaLibraryAllAlbumRefreshProcessor::TryRefreshAllAlbums()
     {
         std::lock_guard<std::mutex> lock(refreshAllAlbumsLock_);
         if (!CheckRefreshConditionLocked()) {
+            MEDIA_DEBUG_LOG("Not meet the condition of refreshing albums");
             return;
         }
         MEDIA_INFO_LOG("RefreshAllAlbums! now: %{public}lld, last : %{public}lld",
@@ -247,7 +256,7 @@ void MediaLibraryAllAlbumRefreshProcessor::TryRefreshAllAlbums()
             continue;
         }
 
-        ret = RefreshAlbums(albumRefreshStatus_, currentAlbumId_, albumIds);
+        ret = RefreshAlbums(albumRefreshStatus_, albumIds);
         if (ret > 0) {
             currentAlbumId_ = ret;
             break;
