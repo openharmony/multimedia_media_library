@@ -266,8 +266,8 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
         asyncContext->photoUri, mediaAssetDataHandler, threadSafeFunc);
     assetHandler->photoQuality = asyncContext->photoQuality;
     assetHandler->needsExtraInfo = asyncContext->needsExtraInfo;
-    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s", notifyMode, asyncContext->photoUri.c_str(),
-        asyncContext->requestId.c_str());
+    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s", notifyMode,
+        MediaFileUtils::DesensitizeUri(asyncContext->photoUri).c_str(), asyncContext->requestId.c_str());
 
     switch (notifyMode) {
         case NotifyMode::FAST_NOTIFY: {
@@ -302,7 +302,8 @@ static void DeleteDataHandler(NotifyMode notifyMode, const std::string &requestU
 {
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     auto uriLocal = MediaFileUtils::GetUriWithoutDisplayname(requestUri);
-    NAPI_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode, requestUri.c_str(), requestId.c_str());
+    NAPI_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode,
+        MediaFileUtils::DesensitizeUri(requestUri).c_str(), requestId.c_str());
     if (notifyMode == NotifyMode::WAIT_FOR_HIGH_QUALITY) {
         DeleteInProcessMapRecord(uriLocal, requestId);
     }
