@@ -314,8 +314,7 @@ bool SourceLoader::CreateVideoFramePixelMap()
     tracer.Start("CreateVideoFramePixelMap");
     int64_t timeStamp = AV_FRAME_TIME;
     if (!data_.tracks.empty()) {
-        int64_t timeStamp = SafeStoll(data_.timeStamp);
-        timeStamp = timeStamp * MS_TRANSFER_US;
+        timeStamp = SafeStoll(data_.timeStamp) * MS_TRANSFER_US;
     }
     if (state_ == SourceState::CLOUD_ORIGIN && timeStamp != AV_FRAME_TIME) {
         MEDIA_ERR_LOG("Avoid reading specific frame from cloud video, path %{public}s",
@@ -455,7 +454,8 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
 bool SourceLoader::CreateSourcePixelMap()
 {
-    if (data_.mediaType == MEDIA_TYPE_VIDEO) {
+    if ((state_ == SourceState::LOCAL_ORIGIN || state_ == SourceState::CLOUD_ORIGIN) &&
+        data_.mediaType == MEDIA_TYPE_VIDEO) {
         return CreateVideoFramePixelMap();
     }
 
