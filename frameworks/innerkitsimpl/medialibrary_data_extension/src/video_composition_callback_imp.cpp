@@ -15,6 +15,8 @@
 
 #include "video_composition_callback_imp.h"
 
+#include <nlohmann/json.hpp>
+
 #include "media_log.h"
 #include "media_file_utils.h"
 #include <sys/types.h>
@@ -232,6 +234,25 @@ void VideoCompositionCallbackImpl::EraseStickerField(std::string& editData, size
     }
     auto len = end - begin + 1;
     editData.erase(begin, len);
+}
+
+void VideoCompositionCallbackImpl::EraseWatermarkTag(std::string& editData)
+{
+    CHECK_AND_RETURN_LOG(nlohmann::json::accept(editData),
+        "Failed to verify the editData format, editData is: %{public}s", editData.c_str());
+    nlohmann::json data = nlohmann::json::parse(editData);
+    if (data.contains(IMAGE_EFFECT) && data[IMAGE_EFFECT].contains(FILTERS_FIELD)) {
+        nlohmann::json filters = data[IMAGE_EFFECT][FILTERS_FIELD];
+        nlohmann::json newFilters;
+        for (const auto& filter : filters) {
+            if (!filter.contains(FILTER_CATEGORY) || filter[FILTER_CATEGORY] != BORDER_WATERMARK) {
+                newFilters.push_back(filter);
+            }
+        }
+        nlohmann::json newData = data;
+        newData[IMAGE_EFFECT][FILTERS_FIELD] = newFilters;
+        editData = newData.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+    }
 }
 
 void VideoCompositionCallbackImpl::InitCallbackImpl(std::shared_ptr<VideoCompositionCallbackImpl>& callBack,
