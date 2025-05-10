@@ -253,6 +253,7 @@ public:
     EXPORT static int32_t OpenReadOnlyAppSandboxVideo(const string& uri);
     EXPORT static int64_t GetSandboxMovingPhotoTime(const string& uri);
     EXPORT int32_t GetAstcYearAndMonth(const std::vector<string> &uris);
+    EXPORT static int32_t GetSandboxPathFromUri(const string &uri, string &filePath);
 
     sptr<IRemoteObject> InitToken();
     int32_t CheckResultSet(std::shared_ptr<DataShareResultSet> &resultSet);
