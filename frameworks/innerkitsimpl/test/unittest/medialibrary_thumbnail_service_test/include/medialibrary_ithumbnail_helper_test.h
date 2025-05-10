@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_EXT_UNIT_TEST_H
-#define MEDIALIBRARY_EXT_UNIT_TEST_H
+#ifndef MEDIALIBRARY_ITHUMBNAIL_HELPER_TEST_H
+#define MEDIALIBRARY_ITHUMBNAIL_HELPER_TEST_H
 
 #include <gtest/gtest.h>
  
@@ -29,4 +29,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIALIBRARY_EXT_UNIT_TEST_H
+#endif // MEDIALIBRARY_ITHUMBNAIL_HELPER_TEST_H
