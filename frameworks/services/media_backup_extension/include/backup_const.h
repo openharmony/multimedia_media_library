@@ -437,6 +437,7 @@ struct FileInfo {
     std::string portraitIds;
     bool needUpdate {false};
     int32_t storyChosen {0};
+    bool isLivePhoto {false};
 };
 
 struct AlbumInfo {

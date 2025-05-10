@@ -163,6 +163,7 @@ protected:
     int32_t GetRestoreMode();
     uint64_t GetNotFoundNumber();
     bool IsCloudRestoreSatisfied();
+    void SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
