@@ -882,7 +882,8 @@ static void JSGetAnalysisDataExecute(SendableFileAssetAsyncContext *context)
     std::vector<std::string> fetchColumn = analysisInfo.fetchColumn;
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
-    context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
+    context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet,
+        fetchColumn, context->analysisType);
     if (context->analysisData == ANALYSIS_NO_RESULTS) {
         Uri uri(PAH_QUERY_ANA_TOTAL);
         DataShare::DataSharePredicates predicates;
