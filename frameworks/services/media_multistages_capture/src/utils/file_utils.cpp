@@ -251,7 +251,7 @@ int32_t FileUtils::SaveMovingPhotoVideo(const std::string &filePath, bool isEdit
 
     string editDataCameraPath = PhotoFileUtils::GetEditDataCameraPath(filePath);
     if (!isEdited && !isMovingPhotoEffectMode && IsFileExist(editDataCameraPath) && IsFileExist(sourceVideoPath)) {
-        ret = MediaLibraryPhotoOperations::AddFiltersToVideoExecute(filePath, false);
+        ret = MediaLibraryPhotoOperations::AddFiltersToVideoExecute(filePath, false, true);
         MEDIA_INFO_LOG("MediaLibraryPhotoOperations AddFiltersToVideoExecute ret: %{public}d", ret);
     }
     MEDIA_INFO_LOG("SaveMovingPhotoVideo end ret: %{public}d", ret);
