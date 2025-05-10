@@ -543,7 +543,7 @@ bool IThumbnailHelper::TrySavePixelMap(ThumbnailData &data, ThumbnailType type)
             MEDIA_ERR_LOG("No wait TrySavePixelMap failed: %{public}d, path: %{public}s", err,
                 DfxUtils::GetSafePath(data.path).c_str());
         }
-        return err >= 0;
+        return err == E_OK;
     }
     ThumbnailWait thumbnailWait(false);
     if (!thumbnailWait.TrySaveCurrentPixelMap(data, type)) {
