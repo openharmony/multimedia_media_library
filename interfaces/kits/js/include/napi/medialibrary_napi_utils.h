@@ -490,10 +490,17 @@ public:
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);
     EXPORT static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
-        const std::vector<std::string> &cloumns);
+        const std::vector<std::string> &cloumns, const int32_t &analysisType = ANALYSIS_INVALID);
+
+    static std::string ParseColumnNeedCompatible(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+        const int32_t &analysisType, const std::string &columnName);
+
+    static std::vector<std::vector<double>> FeatureDeserialize(const std::vector<uint8_t> &buffer);
+
+    static std::string FeatureDeserializeToStr(const std::vector<uint8_t> &buffer);
 
     static std::string ParseAnalysisFace2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
-        const std::vector<std::string> &cloumns);
+        const std::vector<std::string> &cloumns, const int32_t &analysisType = ANALYSIS_INVALID);
 
     static std::string GetStringValueByColumn(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::string columnName);

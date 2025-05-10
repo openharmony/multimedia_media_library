@@ -2186,8 +2186,8 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
     int userId = context->objectPtr != nullptr ? context->objectPtr->GetUserId() : -1;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
     context->analysisData = context->analysisType == ANALYSIS_FACE ?
-        MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn) :
-        MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
+        MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn, context->analysisType) :
+        MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, context->analysisType);
     if (context->analysisData == ANALYSIS_NO_RESULTS) {
         Uri uri(PAH_QUERY_ANA_TOTAL);
         DataShare::DataSharePredicates predicates;
