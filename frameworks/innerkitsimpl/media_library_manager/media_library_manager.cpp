@@ -1303,5 +1303,18 @@ std::unordered_map<std::string, std::string> MediaLibraryManager::GetUrisByOldUr
     MEDIA_INFO_LOG("Start request uris by old uris, size: %{public}zu", uris.size());
     return TabOldPhotosClient(*this).GetUrisByOldUris(uris);
 }
+
+int32_t MediaLibraryManager::GetSandboxPathFromUri(const string &uri, string &filePath)
+{
+    CHECK_AND_RETURN_RET_LOG(!uri.empty(), E_ERR, "GetSandboxPathFromUri failed, uri is empty");
+    UriParams uriParams;
+    MediaFileUri mediaUri(uri);
+    CHECK_AND_RETURN_RET_LOG(mediaUri.IsValid(), E_ERR, "GetSandboxPathFromUri failed, uri is invalid");
+    auto &queryKey = mediaUri.GetQueryKeys();
+    GetUriParamsFromQueryKey(uriParams, queryKey);
+    filePath = GetSandboxPath(uriParams.path, uriParams.size, uriParams.isAstc);
+    return E_OK;
+}
+
 } // namespace Media
 } // namespace OHOS
