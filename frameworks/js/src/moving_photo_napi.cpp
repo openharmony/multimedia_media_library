@@ -522,7 +522,7 @@ static int32_t QueryPhotoPosition(string movingPhotoUri, bool hasReadPermission,
         userIdStr = str.substr(pos, end - pos);
         NAPI_INFO_LOG("QueryPhotoPosition for other user is %{public}s", userIdStr.c_str());
     }
-    int32_t userId = userIdStr != "" && MediaFileUtils::IsValidInteger(userIdStr) ? atoi(userIdStr) : -1;
+    int32_t userId = userIdStr != "" && MediaFileUtils::IsValidInteger(userIdStr) ? atoi(userIdStr.c_str()) : -1;
 
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, MediaFileUtils::GetIdFromUri(movingPhotoUri));
