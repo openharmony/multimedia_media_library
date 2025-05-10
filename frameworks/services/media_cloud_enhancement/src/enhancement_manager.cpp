@@ -627,7 +627,8 @@ int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
     int32_t errCode = E_OK;
     RdbPredicates servicePredicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_HIDDEN,
-        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE };
+        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_CE_AVAILABLE,
+        PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_SUBTYPE };
     GenerateAddAutoServicePredicates(servicePredicates);
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(servicePredicates, columns);
     if (CheckResultSet(resultSet) != E_OK) {
@@ -635,10 +636,19 @@ int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
         return E_ERR;
     }
     while (resultSet->GoToNextRow() == E_OK) {
+        string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+        int32_t subType = GetInt32Val(MediaColumn::PHOTO_SUBTYPE, resultSet);
+        int32_t movingPhotoEffectMode = GetInt32Val(MediaColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+        if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) && 
+            movingPhotoEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START))
+        {
+            MEDIA_INFO_LOG("HandleAutoAddOperation picture can not addOperation photo_id: %{public}s",
+                photoId.c_str());
+            continue;
+        }
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         string mimeType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
         int32_t dynamicRangeType = GetInt32Val(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, resultSet);
-        string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
         int32_t ceAvailable = GetInt32Val(PhotoColumn::PHOTO_CE_AVAILABLE, resultSet);
         int32_t hidden = GetInt32Val(MediaColumn::MEDIA_HIDDEN, resultSet);
         CHECK_AND_CONTINUE_ERR_LOG(hidden == 0, "photo is hidden, photo_id: %{public}s", photoId.c_str());
