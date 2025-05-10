@@ -2262,8 +2262,8 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext *context)
         context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
     } else {
         context->analysisData = (analysisType == ANALYSIS_FACE) ?
-            MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn) :
-            MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
+            MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn, context->analysisType) :
+            MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn, context->analysisType);
     }
     if (context->analysisData == ANALYSIS_NO_RESULTS) {
         resultSet = CallQueryAnalysisData(context, analysisInfo, true);
