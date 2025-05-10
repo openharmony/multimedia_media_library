@@ -509,6 +509,21 @@ static bool IsValidResourceType(int32_t resourceType)
 
 static int32_t QueryPhotoPosition(string movingPhotoUri, bool hasReadPermission, int32_t &position)
 {
+    std::string MULTI_USER_URI_FLAG = "user=";
+    std::string str = movingPhotoUri;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    std::string userIdStr = "";
+    if (pos != std::string::npos) {
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == std::string::npos) {
+            end = str.length();
+        }
+        userIdStr = str.substr(pos, end - pos);
+        NAPI_INFO_LOG("QueryPhotoPosition for other user is %{public}s", userIdStr.c_str());
+    }
+    int32_t userId = userIdStr != "" && MediaFileUtils::IsValidInteger(userIdStr) ? atoi(userIdStr) : -1;
+
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, MediaFileUtils::GetIdFromUri(movingPhotoUri));
     std::vector<std::string> fetchColumn { PhotoColumn::PHOTO_POSITION };
@@ -521,7 +536,7 @@ static int32_t QueryPhotoPosition(string movingPhotoUri, bool hasReadPermission,
     }
     Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         NAPI_ERR_LOG("query resultSet is nullptr");
         return E_ERR;
