@@ -63,6 +63,13 @@ bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeR
     // [special type]
     info.photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
     info.photoQuality = photosRestore_.FindPhotoQuality(info);
+    info.isLivePhoto = photosRestore_.FindIsLivePhoto(info);
+    if (BackupFileUtils::IsLivePhoto(info) && !BackupFileUtils::ConvertToMovingPhoto(info)) {
+        ErrorInfo errorInfo(RestoreError::MOVING_PHOTO_CONVERT_FAILED, 1, "",
+            BackupLogUtils::FileInfoToString(sceneCode_, info));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        return false;
+    }
 
     // [time info]date_taken, date_modified, date_added
     info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
@@ -127,6 +134,9 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
+
+    // [special type]live photo
+    SetCoverPosition(fileInfo, value);
 
     value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, fileInfo.dateTaken));

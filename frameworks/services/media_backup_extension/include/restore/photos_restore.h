@@ -77,6 +77,7 @@ public:
     std::string FindSourcePath(const FileInfo &fileInfo);
     int32_t FindStrongAssociation(const FileInfo &fileInfo);
     int32_t FindCeAvailable(const FileInfo &fileInfo);
+    bool FindIsLivePhoto(const FileInfo &fileInfo);
 
 private:
     PhotosRestore &SetMediaLibraryRdb(std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb)

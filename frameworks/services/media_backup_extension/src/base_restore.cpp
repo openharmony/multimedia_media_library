@@ -513,8 +513,7 @@ static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
 }
 
-static void SetCoverPosition(const FileInfo &fileInfo,
-    const unique_ptr<Metadata> &imageMetaData, NativeRdb::ValuesBucket &value)
+void BaseRestore::SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     uint64_t coverPosition = 0;
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
@@ -591,7 +590,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, fileInfo.dateTaken));
     value.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo.dateTaken));
-    SetCoverPosition(fileInfo, data, value);
+    SetCoverPosition(fileInfo, value);
 }
 
 void BaseRestore::CreateDir(std::string &dir)

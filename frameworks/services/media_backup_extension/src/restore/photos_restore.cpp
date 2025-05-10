@@ -22,6 +22,7 @@
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "media_log.h"
+#include "moving_photo_file_utils.h"
 #include "photo_album_dao.h"
 #include "album_plugin_config.h"
 #include "backup_file_utils.h"
@@ -310,5 +311,13 @@ int32_t PhotosRestore::FindCeAvailable(const FileInfo &fileInfo)
 {
     CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, SINGLE_CLOUD_ENHANCEMENT_PHOTO);
     return 0;
+}
+
+/**
+ * @brief Find if it is live photo by file format.
+ */
+bool PhotosRestore::FindIsLivePhoto(const FileInfo &fileInfo)
+{
+    return MovingPhotoFileUtils::IsLivePhoto(fileInfo.filePath);
 }
 }  // namespace OHOS::Media
