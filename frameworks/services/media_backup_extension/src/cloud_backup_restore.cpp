@@ -20,6 +20,7 @@
 #include "backup_const.h"
 #include "backup_const_column.h"
 #include "backup_file_utils.h"
+#include "backup_log_utils.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "upgrade_restore_task_report.h"
@@ -99,8 +100,8 @@ NativeRdb::ValuesBucket CloudBackupRestore::GetInsertValue(const FileInfo &fileI
     values.PutInt(PhotoColumn::PHOTO_SUBTYPE, photosRestore_.FindSubtype(fileInfo));
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, photosRestore_.FindBurstCoverLevel(fileInfo));
     values.PutNull(PhotoColumn::PHOTO_BURST_KEY);
-    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, photosRestore_.FindStrongAssociation(fileInfo));
-    values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, photosRestore_.FindCeAvailable(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_STRONG_ASSOCIATION, photosRestore_.FindStrongAssociationByDisplayName(fileInfo));
+    values.PutInt(PhotoColumn::PHOTO_CE_AVAILABLE, photosRestore_.FindCeAvailableByDisplayName(fileInfo));
 
     values.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
     values.PutInt(PhotoColumn::PHOTO_DIRTY, photosRestore_.FindDirty(fileInfo));

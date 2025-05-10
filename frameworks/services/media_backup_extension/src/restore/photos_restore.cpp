@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <string>
+#include <regex>
 #include <vector>
 
 #include "photos_restore.h"
@@ -300,6 +300,12 @@ std::string PhotosRestore::FindSourcePath(const FileInfo &fileInfo)
  */
 int32_t PhotosRestore::FindStrongAssociation(const FileInfo &fileInfo)
 {
+    CHECK_AND_RETURN_RET(IsEndWithEnhanced(fileInfo.displayName), CLOUD_ENHANCEMENT_ALBUM);
+    return 0;
+}
+
+int32_t PhotosRestore::FindStrongAssociationByDisplayName(const FileInfo &fileInfo)
+{
     CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, CLOUD_ENHANCEMENT_ALBUM);
     return 0;
 }
@@ -308,6 +314,12 @@ int32_t PhotosRestore::FindStrongAssociation(const FileInfo &fileInfo)
  * @brief Find cloud enhancement available for the target device by FileInfo.
  */
 int32_t PhotosRestore::FindCeAvailable(const FileInfo &fileInfo)
+{
+    CHECK_AND_RETURN_RET(IsEndWithEnhanced(fileInfo.displayName), CLOUD_ENHANCEMENT_ALBUM);
+    return 0;
+}
+
+int32_t PhotosRestore::FindCeAvailableByDisplayName(const FileInfo &fileInfo)
 {
     CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, SINGLE_CLOUD_ENHANCEMENT_PHOTO);
     return 0;
@@ -319,5 +331,11 @@ int32_t PhotosRestore::FindCeAvailable(const FileInfo &fileInfo)
 bool PhotosRestore::FindIsLivePhoto(const FileInfo &fileInfo)
 {
     return MovingPhotoFileUtils::IsLivePhoto(fileInfo.filePath);
+}
+
+bool PhotosRestore::IsEndWithEnhanced(const std::string &displayName)
+{
+    std::regex pattern(R"(.*_enhanced(\.[^.]+)$)");
+    return std::regex_match(displayName, pattern);
 }
 }  // namespace OHOS::Media

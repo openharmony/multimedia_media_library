@@ -76,7 +76,9 @@ public:
     int32_t FindMediaType(const FileInfo &fileInfo);
     std::string FindSourcePath(const FileInfo &fileInfo);
     int32_t FindStrongAssociation(const FileInfo &fileInfo);
+    int32_t FindStrongAssociationByDisplayName(const FileInfo &fileInfo);
     int32_t FindCeAvailable(const FileInfo &fileInfo);
+    int32_t FindCeAvailableByDisplayName(const FileInfo &fileInfo);
     bool FindIsLivePhoto(const FileInfo &fileInfo);
 
 private:
@@ -115,6 +117,7 @@ private:
         return ss.str();
     }
     std::string GetSuffix(const std::string &displayName);
+    bool IsEndWithEnhanced(const std::string &displayName);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
