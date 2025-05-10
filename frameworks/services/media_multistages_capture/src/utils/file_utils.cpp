@@ -178,7 +178,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     imagePacker.FinalizePacking();
     size_t size = -1;
     MediaFileUtils::GetFileSize(tempOutputPath, size);
-    MEDIA_INFO_LOG("SavePicture end size: {public}%zu", size);
+    MEDIA_INFO_LOG("SavePicture end size: %{public}zu", size);
     if (size == 0) {
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
@@ -191,6 +191,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
             MEDIA_ERR_LOG("delete file: %{public}s failed", tempOutputPath.c_str());
         }
     }
+    MEDIA_INFO_LOG("rename ret: %{public}d", ret);
     return ret;
 }
 
