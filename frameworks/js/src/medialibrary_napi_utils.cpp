@@ -53,6 +53,9 @@
 #include "userfilemgr_uri.h"
 #include "album_operation_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "vision_ocr_column.h"
+#include "vision_video_label_column.h"
+#include "vision_label_column.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -61,6 +64,15 @@ namespace OHOS {
 namespace Media {
 static const string EMPTY_STRING = "";
 static const string MULTI_USER_URI_FLAG = "user=";
+static const string OLD_INVALID_ORC_TEXT_MSG = "{\"blockSize\":0,\"blocks\":[],\"linesH\":[],\"value\":\"\"}";
+static const uint8_t BINARY_FEATURE_END_FLAG = 0x01;
+static const std::unordered_map<int32_t, std::string> NEED_COMPATIBLE_COLUMN_MAP = {
+    { ANALYSIS_LABEL, FEATURE },
+    { ANALYSIS_FACE, FEATURES },
+    { ANALYSIS_VIDEO_LABEL, VIDEO_PART_FEATURE },
+    { ANALYSIS_OCR, OCR_TEXT_MSG }   
+};
+
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -1267,7 +1279,7 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
 }
 
 string MediaLibraryNapiUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataShareResultSet> resultSet,
-    const std::vector<std::string> &columns)
+    const std::vector<std::string> &columns, const int32_t &analysisType)
 {
     json jsonArray = json::array();
     if (resultSet == nullptr) {
@@ -1277,15 +1289,128 @@ string MediaLibraryNapiUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataS
         json jsonObject;
         for (uint32_t i = 0; i < columns.size(); i++) {
             string columnName = columns[i];
-            jsonObject[columnName] = GetStringValueByColumn(resultSet, columnName);
+            auto it = NEED_COMPATIBLE_COLUMN_MAP.find(analysisType);
+            if (it != NEED_COMPATIBLE_COLUMN_MAP.end() && columnName == it->second) {
+                jsonObject[columnName] = ParseColumnNeedCompatible(resultSet, analysisType, columnName);
+            } else {
+                jsonObject[columnName] = GetStringValueByColumn(resultSet, columnName);
+            }
         }
         jsonArray.push_back(jsonObject);
     }
     return jsonArray.dump();
 }
 
+string MediaLibraryNapiUtils::ParseColumnNeedCompatible(shared_ptr<DataShare::DataShareResultSet> resultSet,
+    const int32_t &analysisType, const string &columnName)
+{
+    string result;
+    // ocr_text_msg
+    if (analysisType == ANALYSIS_OCR && columnName == OCR_TEXT_MSG) {
+        string orcTextMsgStr =  GetStringValueByColumn(resultSet, columnName); 
+        if (orcTextMsgStr.empty()) {
+            result = OLD_INVALID_ORC_TEXT_MSG;
+        } else {
+            result = orcTextMsgStr;
+        }
+        return result;
+    }
+
+    // feature, features, video_part_feature
+    vector<uint8_t> vcFeatures;
+    int index;
+    if (resultSet->GetColumnIndex(columnName, index) == 0) {
+        resultSet->GetBlob(index, vcFeatures);
+    }
+    if (vcFeatures.back() == BINARY_FEATURE_END_FLAG) {
+        result = FeatureDeserializeToStr(vcFeatures);
+    } else {
+        result = GetStringValueByColumn(resultSet, columnName);
+    }
+    return result;
+}
+
+vector<vector<double>> MediaLibraryNapiUtils::FeatureDeserialize(const vector<uint8_t> &buffer)
+{
+    vector<vector<double>> result;
+
+    if (buffer.empty()) {
+        return result;
+    }
+
+    bool isNewFormat = buffer.back() == BINARY_FEATURE_END_FLAG;
+    size_t actualSize = isNewFormat ? buffer.size() - 1 : buffer.size();
+
+    size_t offset = 0;
+    if (actualSize < sizeof(size_t)) {
+        return result;
+    }
+
+    // out size
+    size_t outerSize = 0;
+    int32_t ret = memcpy_s(&outerSize, sizeof(outerSize), buffer.data(), sizeof(size_t));
+    if (ret != E_OK) {
+        NAPI_ERR_LOG("FeatureDeserialize copy buffer failed");
+        return result;
+    }
+    offset += sizeof(size_t);
+    
+    for (size_t i = 0;  i < outerSize && outerSize < actualSize; ++i) {
+        if (offset + sizeof(size_t) > actualSize) {
+            break;
+        }
+        // innersize
+        size_t innerSize = 0;
+        ret = memcpy_s(&innerSize, sizeof(innerSize), buffer.data() + offset, sizeof(size_t));
+        if (ret != E_OK) {
+            NAPI_ERR_LOG("FeatureDeserialize copy buffer failed");
+            vector<vector<double>> tmp;
+            return result;
+        }
+        offset += sizeof(size_t);
+
+        if (offset + innerSize * sizeof(double) > actualSize) {
+            break;
+        }
+        // read feture
+        vector<double> inner(innerSize);
+        if (innerSize > 0) {
+            ret = memcpy_s(inner.data(), inner.size() * sizeof(double), buffer.data() + offset,
+                innerSize * sizeof(double));
+            if (ret != E_OK) {
+                NAPI_ERR_LOG("FeatureDeserialize copy buffer failed");
+                vector<vector<double>> tmp;
+                return result;
+            }
+            offset += innerSize * sizeof(double);
+        }
+        result.push_back(std::move(inner));
+    }
+    return result;
+}
+
+string MediaLibraryNapiUtils::FeatureDeserializeToStr(const vector<uint8_t> &buffer)
+{
+    vector<vector<double>> result = FeatureDeserialize(buffer);
+
+    string featureStr;
+    if (result.empty()) {
+        featureStr = "[]";
+        return featureStr;
+    }
+
+    nlohmann::json jsonObject;
+    if (result.size() == 1) {
+        jsonObject = result.front();
+    } else {
+        jsonObject = result;
+    }
+    featureStr = jsonObject.dump();
+    return featureStr;
+}
+
 string MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(shared_ptr<DataShare::DataShareResultSet> resultSet,
-    const vector<string> &columns)
+    const vector<string> &columns, const int32_t &analysisType)
 {
     json jsonArray = json::array();
     if (resultSet == nullptr) {
@@ -1310,7 +1435,14 @@ string MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(shared_ptr<DataShare::Da
         json jsonObject;
         for (uint32_t i = 0; i < columns.size(); i++) {
             string columnName = columns[i];
-            string columnValue = GetStringValueByColumn(resultSet, columnName);
+            // face features
+            string columnValue;
+            auto it = NEED_COMPATIBLE_COLUMN_MAP.find(analysisType);
+            if (it != NEED_COMPATIBLE_COLUMN_MAP.end() && columnName == it->second) {
+                columnValue = ParseColumnNeedCompatible(resultSet, analysisType, columnName);
+            } else {
+                columnValue = GetStringValueByColumn(resultSet, columnName);
+            }
             jsonObject[columnName] = columnValue;
             if (columnName == TAG_ID) {
                 jsonObject[ALBUM_URI] = PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX + tagIdToAlbumIdMap[columnValue];
