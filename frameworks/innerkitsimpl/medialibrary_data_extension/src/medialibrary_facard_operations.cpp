@@ -187,10 +187,10 @@ void FaCloudSyncSwitchObserver::OnChange()
 {
     std::lock_guard<std::mutex> lock(FaCloudSyncSwitchObserver::mtx);
     const int CLOUD_SYNC_TYPE = 3;
-    MEDIA_DEBUG_LOG("OnChange assetChangeUri = %{public}s", CLOUD_SYNC_PROXY_URI.c_str());
+    MEDIA_DEBUG_LOG("OnChange assetChangeUri = %{public}s", cloudSyncChangeUri.c_str());
     MEDIA_DEBUG_LOG("OnChange assetChangeType = %{public}d", static_cast<int>(CLOUD_SYNC_TYPE));
     FaCloudSyncSwitchObserver::cloudSyncChanges.insert(
-        CloudSyncChangeInfo(CLOUD_SYNC_PROXY_URI, static_cast<int>(CLOUD_SYNC_TYPE)));
+        CloudSyncChangeInfo(cloudSyncChangeUri, static_cast<int>(CLOUD_SYNC_TYPE)));
 
     PostAssetChangeTask();
 }
