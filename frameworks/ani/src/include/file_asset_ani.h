@@ -48,14 +48,6 @@ struct FileAssetContext : public AniError {
     std::string userComment;
 };
 
-struct FileAssetAniMethod {
-    ani_class cls;
-    ani_method ctor;
-    ani_method setUri;
-    ani_method setPhotoType;
-    ani_method setDisplayName;
-};
-
 class FileAssetAni {
 public:
     FileAssetAni(std::shared_ptr<FileAsset> fileAsset);
@@ -69,10 +61,7 @@ public:
     static ani_status PhotoAccessHelperInit(ani_env *env);
     static void Destructor([[maybe_unused]] ani_env env, void *nativeObject, void *finalize_hint);
     static ani_object Wrap(ani_env *env, FileAssetAni *fileAssetAni);
-    static ani_object Wrap(ani_env *env, FileAssetAni *fileAssetAni, const FileAssetAniMethod &fileAssetAniMethod);
     static FileAssetAni* Unwrap(ani_env *env, ani_object object);
-    static ani_status InitFileAssetAniMethod(ani_env *env, ResultNapiType classType,
-        FileAssetAniMethod &fileAssetAniMethod);
 
     static void Set(ani_env *env, ani_object object, ani_string member, ani_string value);
     static ani_object Get(ani_env *env, ani_object object, ani_string member);
