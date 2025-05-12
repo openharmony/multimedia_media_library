@@ -134,7 +134,7 @@ int MtpPacket::Read()
     return errorCode;
 }
 
-int MtpPacket::Write()
+int MtpPacket::Write(int32_t &result)
 {
     CHECK_AND_RETURN_RET_LOG(mtpDriver_ != nullptr,
         MTP_ERROR_DRIVER_OPEN_FAILED, "Write failed, mtpDriver_ is nullptr");
@@ -144,7 +144,7 @@ int MtpPacket::Write()
         EventMtp event;
         event.length = EVENT_LENGTH;
         event.data = writeBuffer_;
-        mtpDriver_->WriteEvent(event);
+        result = mtpDriver_->WriteEvent(event);
         return MTP_SUCCESS;
     }
     // Due to the USB module using IPC for communication, and the maximum length supported by IPC is 248000,
@@ -154,11 +154,11 @@ int MtpPacket::Write()
         for (uint32_t i = 0; i < writeBuffer_.size(); i += BATCH_SIZE) {
             uint32_t end = std::min(i + BATCH_SIZE, total);
             std::vector<uint8_t> batch(writeBuffer_.begin() + i, writeBuffer_.begin() + end);
-            mtpDriver_->Write(batch, end);
+            mtpDriver_->Write(batch, end, result);
             std::vector<uint8_t>().swap(batch);
         }
     } else {
-        mtpDriver_->Write(writeBuffer_, writeSize_);
+        mtpDriver_->Write(writeBuffer_, writeSize_, result);
     }
     return MTP_SUCCESS;
 }
