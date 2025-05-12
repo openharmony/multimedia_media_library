@@ -31,6 +31,7 @@
 #include "iservice_registry.h"
 #include "media_log.h"
 #include "media_mtp_utils.h"
+#include "mtp_dfx_reporter.h"
 #include "mtp_manager.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_context.h"
@@ -262,8 +263,13 @@ void MtpOperationUtils::SendEventPacket(uint32_t objectHandle, uint16_t eventCod
 
     event.data = outBuffer;
     CHECK_AND_RETURN_LOG(context_->mtpDriver != nullptr, "SendEventPacket mtpDriver is null");
-
-    context_->mtpDriver->WriteEvent(event);
+    auto startTime = std::chrono::high_resolution_clock::now();
+    int32_t result = context_->mtpDriver->WriteEvent(event);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<uint16_t, std::milli> duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    MtpDfxReporter::GetInstance().DoSendResponseResultDfxReporter(eventCode, result,
+        duration.count(), OperateMode::writemode);
 }
 
 uint16_t MtpOperationUtils::GetObjectPropList(shared_ptr<PayloadData> &data,

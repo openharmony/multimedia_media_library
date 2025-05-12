@@ -112,12 +112,13 @@ HWTEST_F(MtpUnitTest, medialibrary_MTP_testlevel_003, TestSize.Level1)
     ASSERT_NE(mtpPacket->mtpDriver_, nullptr);
 
     mtpPacket->writeBuffer_.resize(MAX_SIZE);
-    int res = mtpPacket->Write();
+    int32_t result;
+    int res = mtpPacket->Write(result);
     EXPECT_EQ(res, MTP_SUCCESS);
 
     ASSERT_NE(mtpPacket->headerData_, nullptr);
     mtpPacket->headerData_->SetContainerType(EVENT_CONTAINER_TYPE);
-    res = mtpPacket->Write();
+    res = mtpPacket->Write(result);
     EXPECT_EQ(res, MTP_SUCCESS);
 }
 

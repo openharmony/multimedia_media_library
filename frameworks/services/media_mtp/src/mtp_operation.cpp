@@ -20,6 +20,7 @@
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "mtp_constants.h"
+#include "mtp_dfx_reporter.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
 #include "mtp_operation_context.h"
@@ -133,13 +134,21 @@ void MtpOperation::SendMakeResponsePacket(int &errorCode)
         MEDIA_INFO_LOG("operation = [0x%{public}x : %{public}s ]", mtpContextPtr_->operationCode,
             MtpPacketTool::GetOperationName(mtpContextPtr_->operationCode).c_str());
     }
+    MtpDfxReporter::GetInstance().DoOperationResultStatistics(mtpContextPtr_->operationCode, responseCode_);
     shared_ptr<HeaderData> responseHeaderData = make_shared<HeaderData>(
         RESPONSE_CONTAINER_TYPE, responseCode_, mtpContextPtr_->transactionID);
 
     responsePacketPtr_->Init(responseHeaderData, dataPayloadData_);
     errorCode = responsePacketPtr_->Maker(false);
     CHECK_AND_RETURN_LOG(errorCode == MTP_SUCCESS, "responsePacket Maker fail err: %{public}d", errorCode);
-    errorCode = responsePacketPtr_->Write();
+    int32_t result = 0;
+    auto startTime = std::chrono::high_resolution_clock::now();
+    errorCode = responsePacketPtr_->Write(result);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<uint16_t, std::milli> duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    MtpDfxReporter::GetInstance().DoSendResponseResultDfxReporter(mtpContextPtr_->operationCode, result,
+        duration.count(), OperateMode::writemode);
     CHECK_AND_RETURN_LOG(errorCode == MTP_SUCCESS, "responsePacket Write fail err: %{public}d", errorCode);
 }
 
@@ -190,7 +199,14 @@ void MtpOperation::SendR2Idata(int &errorCode)
     dataPacketPtr_->Init(dataHeaderData, dataPayloadData_);
     errorCode = dataPacketPtr_->Maker(true);
     CHECK_AND_RETURN_LOG(errorCode == MTP_SUCCESS, "dataPacket Maker fail err: %{public}d", errorCode);
-    errorCode = dataPacketPtr_->Write();
+    int32_t result = 0;
+    auto startTime = std::chrono::high_resolution_clock::now();
+    errorCode = dataPacketPtr_->Write(result);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<uint16_t, std::milli> duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    MtpDfxReporter::GetInstance().DoSendResponseResultDfxReporter(mtpContextPtr_->operationCode, result,
+        duration.count(), OperateMode::writemode);
     CHECK_AND_RETURN_LOG(errorCode == MTP_SUCCESS, "dataPacket Write fail err: %{public}d", errorCode);
 }
 

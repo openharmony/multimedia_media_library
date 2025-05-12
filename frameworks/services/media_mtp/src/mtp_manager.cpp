@@ -120,6 +120,7 @@ void MtpManager::StartMtpService(const MtpMode mode)
         auto service = GetMtpService();
         CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager mtpServicePtr is nullptr");
         if (mtpMode_ != MtpMode::NONE_MODE) {
+            MtpDfxReporter::GetInstance().NotifyDoDfXReporter(static_cast<int32_t>(mtpMode_));
             service->StopService();
         }
         mtpMode_ = mode;
@@ -141,6 +142,7 @@ void MtpManager::StopMtpService()
             "MtpManager::StopMtpService -- service is already stopped");
         auto service = GetMtpService();
         CHECK_AND_RETURN_LOG(service != nullptr, "MtpManager mtpServicePtr is nullptr");
+        MtpDfxReporter::GetInstance().NotifyDoDfXReporter(static_cast<int32_t>(mtpMode_));
         mtpMode_ = MtpMode::NONE_MODE;
         service->StopService();
         isMtpServiceRunning = false;
