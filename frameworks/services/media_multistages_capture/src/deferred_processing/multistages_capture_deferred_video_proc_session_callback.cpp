@@ -155,7 +155,7 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::AsyncOnErrorProc(const 
     CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to new taskData");
 
     shared_ptr<MediaLibraryAsyncTask> asyncTask =
-        make_shared<MediaLibraryAsyncTask>(VideoFaileProcAsync, nullptr);
+        make_shared<MediaLibraryAsyncTask>(VideoFaileProcAsync, taskData);
     CHECK_AND_RETURN_LOG(asyncTask != nullptr, "Can not get asyncWorker");
 
     MEDIA_INFO_LOG("AsyncOnErrorProc add task success");
