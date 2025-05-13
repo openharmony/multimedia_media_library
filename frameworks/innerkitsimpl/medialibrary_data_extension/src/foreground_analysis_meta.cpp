@@ -21,6 +21,7 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -169,14 +170,7 @@ void ForegroundAnalysisMeta::StartAnalysisService()
         [taskId = taskId_, opType = opType_, fileIds = fileIds_]() {
             MEDIA_INFO_LOG("prepare submit taskId:%{public}d, opType:%{public}d, size:%{public}zu", taskId, opType,
                 fileIds.size());
-            if (opType & ForegroundAnalysisOpType::OCR_AND_LABEL) {
-                MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
-                    IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_OCR, fileIds, taskId);
-            }
-            if (opType & ForegroundAnalysisOpType::SEARCH_INDEX) {
-                MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
-                    IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX, {}, taskId);
-            }
+            ForegroundAnalysisMeta::StartServiceByOpType(opType, fileIds, taskId);
         },
         {},
         {},
@@ -293,6 +287,84 @@ std::shared_ptr<NativeRdb::ResultSet> ForegroundAnalysisMeta::QueryByErrorCode(i
     }
     std::string sql = "SELECT " + std::to_string(errCode);
     return rdbStore->QuerySql(sql);
+}
+
+void ForegroundAnalysisMeta::StartServiceByOpType(uint32_t opType,
+    const std::vector<std::string> &fileIds, int32_t taskId)
+{
+    if (opType & ForegroundAnalysisOpType::OCR_AND_LABEL) {
+        MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
+            IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_OCR, fileIds, taskId);
+    }
+    if (opType & ForegroundAnalysisOpType::SEARCH_INDEX) {
+        MediaAnalysisHelper::StartForegroundAnalysisServiceSync(
+            IMediaAnalysisService::ActivateServiceType::START_FOREGROUND_INDEX, {}, taskId);
+    }
+}
+
+DelayBatchTrigger& DelayBatchTrigger::GetTrigger()
+{
+    static DelayBatchTrigger trigger([](const std::map<int32_t, std::set<std::string>> &requests) {
+        for (const auto &[analysisType, fileIdSet] : requests) {
+            std::string uriStr = PAH_QUERY_ANA_FOREGROUND;
+            MediaFileUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TYPE,
+                std::to_string(AnalysisType::ANALYSIS_SEARCH_INDEX));
+            MediaFileUtils::UriAppendKeyValue(uriStr, FOREGROUND_ANALYSIS_TASK_ID,
+                std::to_string(ForegroundAnalysisMeta::GetIncTaskId()));
+            Uri uri(uriStr);
+            MediaLibraryCommand cmd(uri);
+            DataShare::DataSharePredicates predicates;
+            std::vector<std::string> fileIds(fileIdSet.begin(), fileIdSet.end());
+            predicates.In(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID, fileIds);
+            std::vector<string> columns;
+            int errCode = E_OK;
+            MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+        }
+    }, DELAY_BATCH_TRIGGER_TIME_MS);
+    return trigger;
+}
+
+DelayBatchTrigger::DelayBatchTrigger(std::function<void(const std::map<int32_t, std::set<std::string>> &)> callback,
+    int delayMs) : callback_(callback), delayMs_(delayMs), timerRunning_(false)
+{
+}
+
+void DelayBatchTrigger::Push(const std::vector<std::string> &fileIds, int32_t analysisType)
+{
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto it = requestMap_.find(analysisType);
+        if (it != requestMap_.end()) {
+            it->second.insert(fileIds.begin(), fileIds.end());
+        } else {
+            requestMap_[analysisType] = std::set<std::string>(fileIds.begin(), fileIds.end());
+        }
+    }
+    StartTimer();
+}
+
+void DelayBatchTrigger::StartTimer()
+{
+    bool expected = false;
+    if (timerRunning_.compare_exchange_strong(expected, true)) {
+        ffrt::submit(
+            [this]() {
+                std::this_thread::sleep_for(std::chrono::milliseconds(delayMs_));
+                std::map<int32_t, std::set<std::string>> requests;
+                {
+                    std::lock_guard<std::mutex> lock(mutex_);
+                    requests.swap(requestMap_);
+                    timerRunning_ = false;
+                }
+
+                if (!requests.empty() && callback_) {
+                    callback_(requests);
+                }
+            },
+            {},
+            {},
+            ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
+    }
 }
 }
 }
