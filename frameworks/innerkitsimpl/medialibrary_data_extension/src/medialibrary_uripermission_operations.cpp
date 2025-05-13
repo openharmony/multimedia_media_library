@@ -360,13 +360,12 @@ static int32_t ValueBucketCheck(const std::vector<DataShareValuesBucket> &values
 }
 
 static void InsertValueBucketPrepare(const std::vector<DataShareValuesBucket> &values, int32_t fileId,
-    int32_t uriType, std::vector<ValuesBucket> &batchInsertBucket)
+    int32_t uriType, int32_t permissionType, std::vector<ValuesBucket> &batchInsertBucket)
 {
     bool isValid;
     ValuesBucket insertValues;
     int64_t srcTokenId = values.at(0).Get(AppUriPermissionColumn::SOURCE_TOKENID, isValid);
     int64_t targetTokenId = values.at(0).Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
-    int32_t permissionType = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
     insertValues.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
     insertValues.Put(AppUriPermissionColumn::FILE_ID, fileId);
     insertValues.Put(AppUriPermissionColumn::TARGET_TOKENID, (int64_t)targetTokenId);
@@ -426,9 +425,10 @@ int32_t UriPermissionOperations::GrantUriPermission(MediaLibraryCommand &cmd,
     for (size_t i = 0; i < values.size(); i++) {
         int32_t fileId = GetFileId(values.at(i), isValid);
         int32_t uriType = values.at(i).Get(AppUriPermissionColumn::URI_TYPE, isValid);
+        int32_t permissioinType = values.at(i).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
         if (dbOperation.at(i) == INSERT_DB_OPERATION) {
             needToInsert = true;
-            InsertValueBucketPrepare(values, fileId, uriType, batchInsertBucket);
+            InsertValueBucketPrepare(values, fileId, uriType, permissioinType, batchInsertBucket);
         }
     }
     if (!needToInsert) {
