@@ -16,6 +16,7 @@
 #include "ani_class_name.h"
 #include "medialibrary_ani_log.h"
 #include "photo_proxy_ani.h"
+#include "medialibrary_ani_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -26,18 +27,22 @@ PhotoProxyAni::PhotoProxyAni() : env_(nullptr), wrapper_(nullptr)
 
 PhotoProxyAni::~PhotoProxyAni()
 {
-    if (wrapper_ != nullptr) {
+    if (wrapper_ != nullptr && env_!= nullptr) {
         env_->GlobalReference_Delete(wrapper_);
         wrapper_ = nullptr;
     }
-    if (photoProxy_) {
+    if (photoProxy_ != nullptr) {
         photoProxy_ = nullptr;
+    }
+    if (env_ != nullptr) {
+        env_ = nullptr;
     }
 }
 
 ani_status PhotoProxyAni::Init(ani_env *env)
 {
     static const char *className = PAH_ANI_CLASS_PHOTO_PROXY_HANDLE.c_str();
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
@@ -62,7 +67,9 @@ ani_status PhotoProxyAni::Init(ani_env *env)
 ani_object PhotoProxyAni::PhotoProxyAniConstructor(ani_env *env, [[maybe_unused]] ani_class clazz)
 {
     ANI_DEBUG_LOG("PhotoProxyAniConstructor is called");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     std::unique_ptr<PhotoProxyAni> nativeHandle = std::make_unique<PhotoProxyAni>();
+    CHECK_COND_RET(nativeHandle != nullptr, nullptr, "Failed to create PhotoProxyAni");
     nativeHandle->env_ = env;
     nativeHandle->photoProxy_ = sPhotoProxy_;
 

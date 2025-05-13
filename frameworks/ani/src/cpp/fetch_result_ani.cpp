@@ -30,6 +30,7 @@ ani_status FetchFileResultAni::UserFileMgrInit(ani_env *env)
 
 ani_status FetchFileResultAni::PhotoAccessHelperInit(ani_env *env)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const char *className = PAH_ANI_CLASS_FETCH_RESULT_HANDLE.c_str();
     ani_class cls;
     auto status = env->FindClass(className, &cls);
@@ -88,30 +89,43 @@ std::shared_ptr<FetchResult<SmartAlbumAsset>> FetchFileResultAni::GetFetchSmartA
 void FetchFileResultAni::GetFetchResult(unique_ptr<FetchFileResultAni> &obj)
 {
     ANI_INFO_LOG("GetFetchResult type: %{public}d", sFetchResType_);
+    CHECK_NULL_PTR_RETURN_VOID(obj, "obj is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(obj->propertyPtr, "obj->propertyPtr is nullptr");
     switch (sFetchResType_) {
         case FetchResType::TYPE_FILE: {
+            CHECK_NULL_PTR_RETURN_VOID(sFetchFileResult_, "sFetchFileResult_ is nullptr");
             auto fileResult = make_shared<FetchResult<FileAsset>>(move(sFetchFileResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchFileResult_ = fileResult;
+            CHECK_NULL_PTR_RETURN_VOID(obj->propertyPtr->fetchFileResult_, "fetchFileResult_ is nullptr");
             obj->propertyPtr->fetchFileResult_->SetInfo(sFetchFileResult_);
+            obj->propertyPtr->fetchFileResult_->SetUserId(sFetchFileResult_->GetUserId());
             break;
         }
         case FetchResType::TYPE_ALBUM: {
+            CHECK_NULL_PTR_RETURN_VOID(sFetchAlbumResult_, "sFetchAlbumResult_ is nullptr");
             auto albumResult = make_shared<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchAlbumResult_ = albumResult;
+            CHECK_NULL_PTR_RETURN_VOID(obj->propertyPtr->fetchAlbumResult_, "fetchAlbumResult_ is nullptr");
             obj->propertyPtr->fetchAlbumResult_->SetInfo(sFetchAlbumResult_);
+            obj->propertyPtr->fetchAlbumResult_->SetUserId(sFetchAlbumResult_->GetUserId());
             break;
         }
         case FetchResType::TYPE_PHOTOALBUM: {
+            CHECK_NULL_PTR_RETURN_VOID(sFetchPhotoAlbumResult_, "sFetchPhotoAlbumResult_ is nullptr");
             auto photoAlbumResult =
                 make_shared<FetchResult<PhotoAlbum>>(move(sFetchPhotoAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchPhotoAlbumResult_ = photoAlbumResult;
+            CHECK_NULL_PTR_RETURN_VOID(obj->propertyPtr->fetchPhotoAlbumResult_, "fetchPhotoAlbumResult_ is nullptr");
             obj->propertyPtr->fetchPhotoAlbumResult_->SetInfo(sFetchPhotoAlbumResult_);
+            obj->propertyPtr->fetchPhotoAlbumResult_->SetUserId(sFetchPhotoAlbumResult_->GetUserId());
             break;
         }
         case FetchResType::TYPE_SMARTALBUM: {
+            CHECK_NULL_PTR_RETURN_VOID(sFetchSmartAlbumResult_, "sFetchSmartAlbumResult_ is nullptr");
             auto smartResult =
                 make_shared<FetchResult<SmartAlbumAsset>>(move(sFetchSmartAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchSmartAlbumResult_ = smartResult;
+            CHECK_NULL_PTR_RETURN_VOID(obj->propertyPtr->fetchSmartAlbumResult_, "fetchSmartAlbumResult_ is nullptr");
             obj->propertyPtr->fetchSmartAlbumResult_->SetInfo(sFetchSmartAlbumResult_);
             break;
         }
@@ -123,9 +137,12 @@ void FetchFileResultAni::GetFetchResult(unique_ptr<FetchFileResultAni> &obj)
 
 ani_object FetchFileResultAni::FetchFileResultAniConstructor(ani_env *env, ani_class clazz)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     unique_ptr<FetchFileResultAni> obj = make_unique<FetchFileResultAni>();
+    CHECK_COND_RET(obj != nullptr, nullptr, "obj is nullptr");
     obj->propertyPtr = make_shared<FetchResultProperty>();
     GetFetchResult(obj);
+    CHECK_COND_RET(obj->propertyPtr != nullptr, nullptr, "obj->propertyPtr is nullptr");
     obj->propertyPtr->fetchResType_ = sFetchResType_;
 
     ani_method ctor {};
@@ -144,6 +161,7 @@ ani_object FetchFileResultAni::FetchFileResultAniConstructor(ani_env *env, ani_c
 
 FetchFileResultAni* FetchFileResultAni::Unwrap(ani_env *env, ani_object fetchFileResultHandle)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     ani_long fetchFileResultHandleLong;
     auto status = env->Object_GetFieldByName_Long(fetchFileResultHandle,
         "nativeValue", &fetchFileResultHandleLong);
@@ -154,38 +172,21 @@ FetchFileResultAni* FetchFileResultAni::Unwrap(ani_env *env, ani_object fetchFil
     return reinterpret_cast<FetchFileResultAni *>(fetchFileResultHandleLong);
 }
 
-static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContext>& aniContest)
+static void GetAllObjectFromFetchResultMore(std::unique_ptr<FetchFileResultAniContext>& aniContest)
 {
+    CHECK_NULL_PTR_RETURN_VOID(aniContest, "aniContest is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(aniContest->objectInfo, "aniContest->objectInfo is nullptr");
     auto propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
     if (propertyPtr == nullptr) {
         ANI_ERR_LOG("propertyPtr is nullptr");
         return;
     }
-
-    ANI_DEBUG_LOG("GetAllObject type: %{public}d", propertyPtr->fetchResType_);
     switch (propertyPtr->fetchResType_) {
-        case FetchResType::TYPE_FILE: {
-            auto fetchResult = propertyPtr->fetchFileResult_;
-            auto file = fetchResult->GetFirstObject();
-            while (file != nullptr) {
-                aniContest->fileAssetArray.emplace_back(move(file));
-                file = fetchResult->GetNextObject();
-            }
-            break;
-        }
-        case FetchResType::TYPE_ALBUM: {
-            auto fetchResult = propertyPtr->fetchAlbumResult_;
-            auto album = fetchResult->GetFirstObject();
-            while (album != nullptr) {
-                aniContest->fileAlbumArray.emplace_back(move(album));
-                album = fetchResult->GetNextObject();
-            }
-            break;
-        }
         case FetchResType::TYPE_PHOTOALBUM: {
             auto fetchResult = propertyPtr->fetchPhotoAlbumResult_;
             auto photoAlbum = fetchResult->GetFirstObject();
             while (photoAlbum != nullptr) {
+                photoAlbum->SetUserId(fetchResult->GetUserId());
                 aniContest->filePhotoAlbumArray.emplace_back(move(photoAlbum));
                 photoAlbum = fetchResult->GetNextObject();
             }
@@ -202,6 +203,43 @@ static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContex
         }
         default:
             ANI_ERR_LOG("unsupported FetchResType");
+            break;
+    }
+}
+
+static void GetAllObjectFromFetchResult(std::unique_ptr<FetchFileResultAniContext>& aniContest)
+{
+    CHECK_NULL_PTR_RETURN_VOID(aniContest, "aniContest is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(aniContest->objectInfo, "aniContest->objectInfo is nullptr");
+    auto propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
+    if (propertyPtr == nullptr) {
+        ANI_ERR_LOG("propertyPtr is nullptr");
+        return;
+    }
+
+    ANI_DEBUG_LOG("GetAllObject type: %{public}d", propertyPtr->fetchResType_);
+    switch (propertyPtr->fetchResType_) {
+        case FetchResType::TYPE_FILE: {
+            auto fetchResult = propertyPtr->fetchFileResult_;
+            auto file = fetchResult->GetFirstObject();
+            while (file != nullptr) {
+                file->SetUserId(fetchResult->GetUserId());
+                aniContest->fileAssetArray.emplace_back(move(file));
+                file = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_ALBUM: {
+            auto fetchResult = propertyPtr->fetchAlbumResult_;
+            auto album = fetchResult->GetFirstObject();
+            while (album != nullptr) {
+                aniContest->fileAlbumArray.emplace_back(move(album));
+                album = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        default:
+            GetAllObjectFromFetchResultMore(aniContest);
             break;
     }
 }
@@ -223,6 +261,9 @@ static ani_object GetAllObjectComplete(ani_env *env, std::unique_ptr<FetchFileRe
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetAllObjectsComplete");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
+    CHECK_COND_RET(context->objectPtr != nullptr, nullptr, "context->objectPtr is nullptr");
 
     ani_object result = nullptr;
     ani_status status;
@@ -246,8 +287,10 @@ ani_object FetchFileResultAni::GetAllObjects(ani_env *env, [[maybe_unused]] ani_
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetAllObjects");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
 
     auto aniContext = make_unique<FetchFileResultAniContext>();
+    CHECK_COND_RET(aniContext != nullptr, nullptr, "aniContext is nullptr");
     aniContext->objectInfo = Unwrap(env, fetchFileResultHandle);
     if (CheckIfFFRAniNotEmpty(aniContext->objectInfo)) {
         aniContext->objectPtr = aniContext->objectInfo->propertyPtr;
@@ -264,6 +307,7 @@ ani_object FetchFileResultAni::GetAllObjects(ani_env *env, [[maybe_unused]] ani_
 ani_status FetchFileResultAni::Close(ani_env *env, [[maybe_unused]] ani_object fetchFileResultHandle)
 {
     ANI_INFO_LOG("fetch result close");
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     FetchFileResultAni* fetchFileResultAni = Unwrap(env, fetchFileResultHandle);
     if (fetchFileResultAni != nullptr) {
         delete fetchFileResultAni;
@@ -277,8 +321,8 @@ ani_status FetchFileResultAni::Close(ani_env *env, [[maybe_unused]] ani_object f
 
 ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<FileAsset>> fileResult)
 {
-    if (fileResult == nullptr) {
-        ANI_ERR_LOG("fetchResult FileAsset is nullptr");
+    if (env == nullptr || fileResult == nullptr) {
+        ANI_ERR_LOG("env or fetchResult FileAsset is nullptr");
         return nullptr;
     }
 
@@ -310,7 +354,7 @@ ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_p
 
 ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_ptr<FetchResult<PhotoAlbum>> fileResult)
 {
-    if (fileResult == nullptr) {
+    if (env == nullptr || fileResult == nullptr) {
         ANI_ERR_LOG("fetchResult PhotoAlbum is nullptr");
         return nullptr;
     }
@@ -343,6 +387,8 @@ ani_object FetchFileResultAni::CreateFetchFileResult(ani_env *env, std::unique_p
 
 static void GetFirstAsset(std::unique_ptr<FetchFileResultAniContext>& aniContest)
 {
+    CHECK_NULL_PTR_RETURN_VOID(aniContest, "aniContest is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(aniContest->objectInfo, "aniContest->objectInfo is nullptr");
     auto propertyPtr = aniContest->objectInfo->GetPropertyPtrInstance();
     if (propertyPtr == nullptr) {
         ANI_ERR_LOG("propertyPtr is nullptr");
@@ -384,11 +430,27 @@ static ani_object GetPositionObjectComplete(ani_env *env, std::unique_ptr<FetchF
     ani_object etsAsset = nullptr;
     switch (aniContest->objectPtr->fetchResType_) {
         case FetchResType::TYPE_FILE: {
+            if (aniContest->fileAsset != nullptr && aniContest->objectPtr->fetchFileResult_ != nullptr) {
+                aniContest->fileAsset->SetUserId(aniContest->objectPtr->fetchFileResult_->GetUserId());
+            }
             auto fileAssetAni = FileAssetAni::CreateFileAsset(env, aniContest->fileAsset);
-            etsAsset = FileAssetAni::Wrap(env, fileAssetAni);
+            if (fileAssetAni == nullptr) {
+                etsAsset = nullptr;
+                break;
+            }
+            FileAssetAniMethod fileAssetAniMethod;
+            if (ANI_OK != FileAssetAni::InitFileAssetAniMethod(env,
+                fileAssetAni->GetFileAssetInstance()->GetResultNapiType(), fileAssetAniMethod)) {
+                ANI_ERR_LOG("InitFileAssetAniMethod failed");
+                return nullptr;
+            }
+            etsAsset = FileAssetAni::Wrap(env, fileAssetAni, fileAssetAniMethod);
             break;
         }
         case FetchResType::TYPE_PHOTOALBUM: {
+            if (aniContest->photoAlbum != nullptr && aniContest->objectPtr->fetchPhotoAlbumResult_ != nullptr) {
+                aniContest->photoAlbum->SetUserId(aniContest->objectPtr->fetchPhotoAlbumResult_->GetUserId());
+            }
             etsAsset = PhotoAlbumAni::CreatePhotoAlbumAni(env, aniContest->photoAlbum);
             break;
         }

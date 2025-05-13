@@ -38,14 +38,19 @@ public:
     EXPORT ~HighlightAlbumAni();
 
     EXPORT static ani_status Init(ani_env *env);
+    EXPORT static ani_status AnalysisAlbumInit(ani_env *env);
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
 
 private:
+    EXPORT static ani_object GetOrderPosition(ani_env *env, ani_object aniObject, ani_object photoAssets);
     EXPORT static ani_long Constructor(ani_env *env, [[maybe_unused]] ani_object object, ani_object aniAlbum);
     EXPORT static void Destructor(ani_env *env, ani_object object);
     static HighlightAlbumAni* Unwrap(ani_env *env, ani_object object);
 
     EXPORT static ani_string GetHighlightAlbumInfo(ani_env *env, ani_object object, ani_enum_item type);
+    EXPORT static ani_status SetSubTitle(ani_env *env, ani_object object, ani_object subTitle);
+    EXPORT static ani_double DeleteHighlightAlbums(ani_env *env, ani_object object, ani_object context,
+        ani_object albums);
 
     ani_env *highlightmEnv_;
     std::shared_ptr<PhotoAlbum> highlightAlbumPtr = nullptr;
@@ -63,12 +68,17 @@ struct HighlightAlbumAniContext : public AniError {
     std::unique_ptr<FetchResult<FileAsset>> fetchResult;
     ResultNapiType resultNapiType;
     std::string highlightAlbumInfo;
+    std::vector<std::string> assetIdArray;
+    std::vector<int32_t> orderPositionArray;
+    int32_t albumId;
+    PhotoAlbumSubType subType;
 
     int32_t highlightAlbumInfoType = HighlightAlbumInfoType::INVALID_INFO;
     int32_t highlightUserActionType = HighlightUserActionType::INVALID_USER_ACTION;
 
     int32_t actionData = 0;
     std::string resourceUri;
+    std::string subtitle;
 
     HighlightAlbumAni *objectInfo;
 };

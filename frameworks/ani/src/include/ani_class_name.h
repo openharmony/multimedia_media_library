@@ -32,6 +32,7 @@ static const std::string PAH_ANI_CLASS_CLOUD_ENHANCEMENT_TASK_STATE_HANDLE =
 static const std::string PAH_ANI_CLASS_FETCH_RESULT_HANDLE = PAH_CLASS_SPACE + "FetchResultHandle;";
 static const std::string PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE = PAH_CLASS_SPACE + "AlbumHandle;";
 static const std::string PAH_ANI_CLASS_HIGHLIGHT_ALBUM = PAH_CLASS_SPACE + "HighlightAlbum;";
+static const std::string PAH_ANI_CLASS_ANALYSIS_ALBUM = PAH_CLASS_SPACE + "AnalysisAlbum;";
 static const std::string PAH_ANI_CLASS_PHOTO_ASSET = PAH_CLASS_SPACE + "PhotoAsset;";
 static const std::string PAH_ANI_CLASS_PHOTO_ASSET_HANDLE = PAH_CLASS_SPACE + "PhotoAssetHandle;";
 static const std::string PAH_ANI_CLASS_PHOTO_ACCESS_HELPER_HANDLE = PAH_CLASS_SPACE + "PhotoAccessHelperHandle;";
@@ -40,6 +41,8 @@ static const std::string PAH_ANI_CLASS_SIZE = PAH_CLASS_SPACE + "SizeImpl;";
 static const std::string PAH_ANI_CLASS_MOVING_PHOTO_HANDLE = PAH_CLASS_SPACE + "MovingPhotoHandle;";
 static const std::string PAH_ANI_CLASS_CHANGE_DATA_HANDLE = PAH_CLASS_SPACE + "ChangeDataHandle;";
 static const std::string PAH_ANI_CLASS_MEDIA_ALBUM_CHANGE_REQUEST = PAH_CLASS_SPACE + "MediaAlbumChangeRequest;";
+static const std::string PAH_ANI_CLASS_MEDIA_ANALYSIS_ALBUM_CHANGE_REQUEST =
+    PAH_CLASS_SPACE + "MediaAnalysisAlbumChangeRequest;";
 static const std::string PAH_ANI_CLASS_MEDIA_ASSET_CHANGE_REQUEST = PAH_CLASS_SPACE + "MediaAssetChangeRequest;";
 static const std::string PAH_ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST = PAH_CLASS_SPACE + "MediaAssetsChangeRequest;";
 static const std::string PAH_ANI_CLASS_MEDIA_ASSETS_EDIT_DATA = PAH_CLASS_SPACE + "MediaAssetEditData;";

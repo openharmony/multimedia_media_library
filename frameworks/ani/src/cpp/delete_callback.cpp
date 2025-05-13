@@ -93,6 +93,7 @@ void DeleteCallback::SendMessageBack()
 {
     CloseModalUIExtension();
     ani_ref undefined;
+    CHECK_NULL_PTR_RETURN_VOID(this->env_, "env_ is nullptr");
     CHECK_ARGS_RET_VOID(this->env_, this->env_->GetUndefined(&undefined), JS_ERR_PARAMETER_INVALID);
 }
 

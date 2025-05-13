@@ -58,6 +58,7 @@ struct AssetHandler {
     ThreadFuncitonOnData threadSafeFunc;
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     bool needsExtraInfo = false;
+    bool isError = false;
 
     AssetHandler(ani_env *env, const std::string &photoId, const std::string &requestId, const std::string &uri,
         const std::shared_ptr<AniMediaAssetDataHandler> &handler, ThreadFuncitonOnData func)
@@ -69,6 +70,7 @@ struct RetProgressValue {
     int32_t progress;
     int32_t type;
     std::string errorMsg;
+    RetProgressValue() : progress(0), type(0), errorMsg("") {}
 };
 
 struct ProgressHandler {
@@ -78,12 +80,13 @@ struct ProgressHandler {
     RetProgressValue retProgressValue;
     ani_ref progressRef;
     ProgressHandler(ani_env *env, ThreadFuncitonOnProgress func, const std::string &requestId,
-        RetProgressValue &retProgressValue, ani_ref progressRef) : env(env), progressFunc(func),
-        requestId(requestId), retProgressValue(retProgressValue), progressRef(progressRef) {}
+        ani_ref progressRef) : env(env), progressFunc(func),
+        requestId(requestId), progressRef(progressRef) {}
 };
 
 struct MediaAssetManagerAniContext : AniError {
     int fileId = -1; // default value of request file id
+    int userId = -1;
     std::string photoUri;
     std::string photoId;
     std::string displayName;
@@ -134,7 +137,7 @@ public:
     ~MediaAssetManagerAni() = default;
     static ani_status Init(ani_env *env);
     static MultiStagesCapturePhotoStatus QueryPhotoStatus(int fileId, const string& photoUri,
-        std::string &photoId, bool hasReadPermission);
+        std::string &photoId, bool hasReadPermission, int32_t userId);
     static void NotifyMediaDataPrepared(AssetHandler *assetHandler);
     static void NotifyOnProgress(int32_t type, int32_t progress, std::string requestId);
     static void NotifyDataPreparedWithoutRegister(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context);
@@ -150,7 +153,7 @@ public:
     static void WriteDataToDestPath(WriteData &writeData, ani_object &resultAniValue, std::string requestId);
 
 private:
-    static bool InitUserFileClient(ani_env *env, ani_object context);
+    static bool InitUserFileClient(ani_env *env, ani_object context, const int32_t userId = -1);
     static ani_status ParseRequestMediaArgs(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context,
         ani_object asset, ani_object requestOptions, ani_object dataHandler);
     static ani_status ParseEfficentRequestMediaArgs(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context,
@@ -168,6 +171,7 @@ private:
     static void ProcessImage(const int fileId, const int deliveryMode);
     static void CancelProcessImage(const std::string &photoId);
     static void OnHandleRequestImage(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context);
+    static void OnHandleProgress(ani_env *env, unique_ptr<MediaAssetManagerAniContext> &context);
     static void SendFile(ani_env *env, int srcFd, int destFd, ani_object &result, off_t fileSize);
     static int32_t GetFdFromSandBoxUri(const std::string &sandBoxUri);
 

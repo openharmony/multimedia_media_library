@@ -22,6 +22,7 @@ namespace OHOS {
 namespace Media {
 ani_status CloudEnhancementTaskStateAni::Init(ani_env *env)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const char *className = PAH_ANI_CLASS_CLOUD_ENHANCEMENT_TASK_STATE_HANDLE.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
@@ -52,6 +53,7 @@ ani_status CloudEnhancementTaskStateAni::Init(ani_env *env)
 ani_status CloudEnhancementTaskStateAni::BindAniAttributes(ani_env *env, ani_class cls, ani_object object,
     unique_ptr<CloudEnhancementTaskStateAni> &nativeHandle)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(nativeHandle != nullptr, ANI_ERROR, "CloudEnhancementTaskStateAni is nullptr");
     ani_method taskStageSetter {};
     CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>taskStage", nullptr, &taskStageSetter), "No <set>taskStage");
@@ -65,6 +67,7 @@ ani_status CloudEnhancementTaskStateAni::BindAniAttributes(ani_env *env, ani_cla
 ani_object CloudEnhancementTaskStateAni::NewCloudEnhancementTaskStateAni(ani_env *env,
     unique_ptr<CloudEnhancementAniContext> &context)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     CHECK_COND_RET(context != nullptr, nullptr, "CloudEnhancementAniContext is nullptr");
     static const char *className = PAH_ANI_CLASS_CLOUD_ENHANCEMENT_TASK_STATE_HANDLE.c_str();
     ani_class cls;
@@ -73,6 +76,7 @@ ani_object CloudEnhancementTaskStateAni::NewCloudEnhancementTaskStateAni(ani_env
         return nullptr;
     }
     unique_ptr<CloudEnhancementTaskStateAni> nativeHandle = make_unique<CloudEnhancementTaskStateAni>();
+    CHECK_COND_RET(nativeHandle != nullptr, nullptr, "CloudEnhancementTaskStateAni is nullptr");
     nativeHandle->SetCloudEnhancementTaskStage(context->cloudEnhancementTaskStage_);
     nativeHandle->SetTransferredFileSize(context->transferredFileSize_);
     nativeHandle->SetTotalFileSize(context->totalFileSize_);
@@ -90,6 +94,8 @@ ani_object CloudEnhancementTaskStateAni::NewCloudEnhancementTaskStateAni(ani_env
 ani_object CloudEnhancementTaskStateAni::Constructor(ani_env *env, ani_class cls,
     unique_ptr<CloudEnhancementTaskStateAni> &nativeHandle)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(nativeHandle != nullptr, nullptr, "nativeHandle is nullptr");
     ani_method ctor;
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", nullptr, &ctor)) {
         ANI_ERR_LOG("Failed to find method: %{public}s", "ctor");
@@ -106,6 +112,7 @@ ani_object CloudEnhancementTaskStateAni::Constructor(ani_env *env, ani_class cls
 
 CloudEnhancementTaskStateAni* CloudEnhancementTaskStateAni::Unwrap(ani_env *env, ani_object aniObject)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     ani_long nativeHandle;
     if (ANI_OK != env->Object_GetFieldByName_Long(aniObject, "nativeHandle", &nativeHandle)) {
         ANI_ERR_LOG("Failed to get nativeHandle");
@@ -126,6 +133,7 @@ void CloudEnhancementTaskStateAni::SetCloudEnhancementTaskStage(CloudEnhancement
 
 ani_double CloudEnhancementTaskStateAni::GetTransferredFileSize(ani_env *env, ani_object object)
 {
+    CHECK_COND_RET(env != nullptr, CloudEnhancementTaskStateAni::UNDEFINED, "env is nullptr");
     CloudEnhancementTaskStateAni* nativeHandle = Unwrap(env, object);
     CHECK_COND_RET(nativeHandle != nullptr, CloudEnhancementTaskStateAni::UNDEFINED,
         "CloudEnhancementTaskStateAni is nullptr");
@@ -139,6 +147,7 @@ void CloudEnhancementTaskStateAni::SetTransferredFileSize(int32_t transferredFil
 
 ani_double CloudEnhancementTaskStateAni::GetTotalFileSize(ani_env *env, ani_object object)
 {
+    CHECK_COND_RET(env != nullptr, CloudEnhancementTaskStateAni::UNDEFINED, "env is nullptr");
     CloudEnhancementTaskStateAni* nativeHandle = Unwrap(env, object);
     CHECK_COND_RET(nativeHandle != nullptr, CloudEnhancementTaskStateAni::UNDEFINED,
         "CloudEnhancementTaskStateAni is nullptr");
@@ -152,6 +161,7 @@ void CloudEnhancementTaskStateAni::SetTotalFileSize(int32_t totalFileSize)
 
 ani_double CloudEnhancementTaskStateAni::GetExpectedDuration(ani_env *env, ani_object object)
 {
+    CHECK_COND_RET(env != nullptr, CloudEnhancementTaskStateAni::UNDEFINED, "env is nullptr");
     CloudEnhancementTaskStateAni* nativeHandle = Unwrap(env, object);
     CHECK_COND_RET(nativeHandle != nullptr, CloudEnhancementTaskStateAni::UNDEFINED,
         "CloudEnhancementTaskStateAni is nullptr");
@@ -165,6 +175,7 @@ void CloudEnhancementTaskStateAni::SetExpectedDuration(int32_t expectedDuration)
 
 ani_double CloudEnhancementTaskStateAni::GetStatusCode(ani_env *env, ani_object object)
 {
+    CHECK_COND_RET(env != nullptr, CloudEnhancementTaskStateAni::UNDEFINED, "env is nullptr");
     CloudEnhancementTaskStateAni* nativeHandle = Unwrap(env, object);
     CHECK_COND_RET(nativeHandle != nullptr, CloudEnhancementTaskStateAni::UNDEFINED,
         "CloudEnhancementTaskStateAni is nullptr");
