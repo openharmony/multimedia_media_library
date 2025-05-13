@@ -37,7 +37,7 @@ public:
 
 private:
     static int32_t UpdateVideoQuality(const std::string &videoId, bool isSuccess, bool isDirtyNeedUpdate = false);
-    void AsyncOnErrorProc(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode);
+    static void AsyncOnErrorProc(const std::string& videoId, const CameraStandard::DpsErrorCode errorCode);
     static void VideoFaileProcAsync(AsyncTaskData *data);
     class VideoFaileProcTaskData : public AsyncTaskData {
     public:
