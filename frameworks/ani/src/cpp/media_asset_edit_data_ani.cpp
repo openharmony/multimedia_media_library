@@ -30,6 +30,7 @@ ani_status MediaAssetEditDataAni::Init(ani_env *env)
 {
     static const char *className = PAH_ANI_CLASS_MEDIA_ASSETS_EDIT_DATA.c_str();
     ani_class cls;
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to find class: %{public}s", className);
@@ -57,6 +58,7 @@ ani_status MediaAssetEditDataAni::Init(ani_env *env)
 ani_status MediaAssetEditDataAni::Constructor(ani_env *env, ani_object aniObject, ani_string compatibleFormat,
     ani_string formatVersion)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "The constructor can be called only by system apps");
         return ANI_ERROR;
@@ -84,6 +86,7 @@ ani_status MediaAssetEditDataAni::Constructor(ani_env *env, ani_object aniObject
 
 MediaAssetEditDataAni* MediaAssetEditDataAni::Unwrap(ani_env *env, ani_object aniObject)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
     ani_long context;
     if (ANI_OK != env->Object_GetFieldByName_Long(aniObject, "nativeHandle", &context)) {
         return nullptr;

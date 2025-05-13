@@ -49,7 +49,7 @@ public:
 private:
     static ani_object Constructor(ani_env *env, ani_class clazz, ani_object context);
     static ani_object SubmitCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets,
-        ani_boolean hasCloudWatermark);
+        ani_boolean hasCloudWatermark, int triggerMode);
     static ani_object PrioritizeCloudEnhancementTask(ani_env *env, ani_object aniObject, ani_object photoAsset);
     static ani_object CancelCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets);
     static ani_object CancelAllCloudEnhancementTasks(ani_env *env, ani_object aniObject);
@@ -68,6 +68,7 @@ struct CloudEnhancementAniContext : public AniError {
     int32_t fileId {UNDEFINED};
     std::string displayName;
     bool hasCloudWatermark_;
+    int32_t triggerMode_;
     ResultNapiType resultNapiType;
     AniAssetType assetType;
     std::unique_ptr<FileAsset> fileAsset;

@@ -16,8 +16,9 @@
 #ifndef FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ASSETS_DATA_HANDLER_ANI_H
 #define FRAMEWORKS_ANI_SRC_INCLUDE_MEDIA_ASSETS_DATA_HANDLER_ANI_H
 
-#include "ani.h"
-#include "medialibrary_ani_utils.h"
+#include <ani.h>
+#include <string>
+#include <mutex>
 
 namespace OHOS {
 namespace Media {
