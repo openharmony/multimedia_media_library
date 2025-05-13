@@ -81,11 +81,11 @@ public:
      * @param tokenId a parameter for input, indicating the expected app's tokenId to check
      * @param urisSource a parameter for input, indicating the source of URIs expected to check
      * @param result a parameter for output, indicating the check result (permission granted or not)
-     * @param flag a parameter for input, indicating the expected type of permission check
+     * @param flags a parameter for input, indicating the expected type of permission check
      * @return If the check is successful, return 0; otherwise, return -1 for failure.
      */
     EXPORT int32_t CheckPhotoUriPermission(uint32_t tokenId,
-        const std::vector<string> &urisSource, std::vector<bool> &result, uint32_t flag);
+        const std::vector<string> &urisSource, std::vector<bool> &result, const std::vector<uint32_t> &flags);
 
     /**
      * @brief Grant PhotoUri Permission
@@ -93,12 +93,12 @@ public:
      * @param strTokenId a parameter for input, indicating the calling sourceTokenId
      * @param targetTokenId a parameter for input, indicating the calling targetTokenId
      * @param uris a parameter for input, indicating the uris expected to grant permission
-     * @param photoPermissionType a parameter for input, indicating the expected grant permission type for photos
+     * @param photoPermissionTypes a parameter for input, indicating the expected grant permission type for photos
      * @param hideSensitiveType a parameter for input, indicating the expected grant hideSensitiveType
      * @return If the grant is successful, return 0; otherwise, return -1 for failure.
      */
     EXPORT int32_t GrantPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId, const std::vector<string> &uris,
-        PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye);
+        const std::vector<PhotoPermissionType> &photoPermissionTypes, HideSensitiveType hideSensitiveTpye);
 
     /**
      * @brief Cancel PhotoUri Permission
@@ -112,7 +112,7 @@ public:
      */
     EXPORT int32_t CancelPhotoUriPermission(uint32_t srcTokenId, uint32_t targetTokenId,
         const std::vector<string> &uris, const bool persistFlag = false,
-        const OperationMode mode = OperationMode::READ_WRITE_MODE);
+        const std::vector<OperationMode> &mode = {OperationMode::READ_WRITE_MODE});
 
     /**
      * @brief open photo or video
@@ -166,7 +166,7 @@ public:
      * @return container for Boolean Results
      */
     EXPORT int32_t GetPhotoUrisPermission(uint32_t targetTokenld, const std::vector<string> &uris,
-        PhotoPermissionType photoPermissionType, std::vector<bool> &result);
+        const std::vector<PhotoPermissionType> &photoPermissionTypes, std::vector<bool> &result);
 
     /**
      * @brief convert path to URI
@@ -182,6 +182,8 @@ private:
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
     int32_t CheckPhotoUriPermissionQueryOperation(const DataShare::DataSharePredicates &predicates,
         std::map<string, int32_t> &resultMap);
+    int32_t GetPhotoUrisPermission(uint32_t targetTokenId, const std::vector<string> &uris,
+        PhotoPermissionType photoPermissionType, std::vector<bool> &result);
     bool ForceReconnect();
 };
 } // namespace Media
