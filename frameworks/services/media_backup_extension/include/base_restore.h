@@ -147,7 +147,7 @@ protected:
         const std::atomic<uint64_t> &totalNumber);
     nlohmann::json GetSubProcessInfoJson(const std::string &type, const SubProcessInfo &subProcessInfo);
     void UpdateDatabase();
-    void UpdatePhotoAlbumDateModified(const std::vector<std::string> &albumIds);
+    void UpdatePhotoAlbumDateModified(const std::vector<std::string> &albumIds, const std::string &tableName);
     void GetUpdateTotalCount();
     void GetUpdateAllAlbumsCount();
     std::string GetUpgradeEnhance();

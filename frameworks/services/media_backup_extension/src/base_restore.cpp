@@ -1645,9 +1645,12 @@ void BaseRestore::UpdateDatabase()
     updateProcessStatus_ = ProcessStatus::STOP;
 }
 
-void BaseRestore::UpdatePhotoAlbumDateModified(const vector<string> &albumIds)
+void BaseRestore::UpdatePhotoAlbumDateModified(const vector<string> &albumIds, const string &tableName)
 {
-    MEDIA_INFO_LOG("Start update photoAlbums date modified");
+    CHECK_AND_RETURN(!albumIds.empty());
+    CHECK_AND_RETURN(tableName == PhotoAlbumColumns::TABLE);
+    MEDIA_INFO_LOG("Start update photoAlbums date modified tableName:%{public}s, albumIds count:%{public}zu",
+        tableName.c_str(), albumIds.size());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, albumIds, false, true);
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore, albumIds, false, true);

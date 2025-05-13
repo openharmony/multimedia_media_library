@@ -1427,21 +1427,19 @@ void CloneRestore::InsertAlbum(vector<AlbumInfo> &albumInfos, const string &tabl
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
     CHECK_AND_RETURN_LOG(!albumInfos.empty(), "albumInfos are empty");
-    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
-    BatchQueryAlbum(albumInfos, tableName);
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     vector<string> albumIds{};
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(albumInfos, albumIds, tableName);
-    if (!albumIds.empty()) {
-        UpdatePhotoAlbumDateModified(albumIds);
-    }
+    UpdatePhotoAlbumDateModified(albumIds, tableName);
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
     CHECK_AND_RETURN_LOG(errCode == E_OK, "Batc insert failed");
     migrateDatabaseAlbumNumber_ += rowNum;
+    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
+    BatchQueryAlbum(albumInfos, tableName);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("insert %{public}ld albums cost %{public}ld, query cost %{public}ld.", (long)rowNum,
-        (long)(end - startInsert), (long)(startInsert - startQuery));
+        (long)(startQuery - startInsert), (long)(end - startQuery));
 }
 
 vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> &albumInfos, vector<string> &albumIds,
@@ -1462,11 +1460,11 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> 
     return values;
 }
 
-bool CloneRestore::HasSameAlbum(const AlbumInfo &albumInfo, const string &tableName)
+bool CloneRestore::HasSameAlbum(AlbumInfo &albumInfo, const string &tableName)
 {
     // check if the album already exists
     CHECK_AND_RETURN_RET(tableName != PhotoAlbumColumns::TABLE,
-        this->photoAlbumClone_.HasSameAlbum(albumInfo.lPath));
+        this->photoAlbumClone_.HasSameAlbum(albumInfo.lPath, albumInfo.albumIdNew));
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + tableName + " WHERE " +
         PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(albumInfo.albumType) + " AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
