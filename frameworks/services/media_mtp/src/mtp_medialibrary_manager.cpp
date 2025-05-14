@@ -575,7 +575,7 @@ int32_t MtpMedialibraryManager::SetObject(const std::shared_ptr<DataShare::DataS
         }
         outObjectInfo->handle = HandleConvertToAdded(context->handle);
         outObjectInfo->name = GetMovingPhotoVideoDisplayName(displayName, sourcePath);
-        outObjectInfo->parent = GetInt32Val(MediaColumn::MEDIA_PARENT_ID, resultSet);
+        outObjectInfo->parent = static_cast<uint32_t>(GetInt32Val(MediaColumn::MEDIA_PARENT_ID, resultSet));
         outObjectInfo->storageID = context->storageID;
         struct stat statInfo;
         CHECK_AND_RETURN_RET_LOG(stat(sourcePath.c_str(), &statInfo) == 0,
@@ -608,7 +608,7 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
     } else {
         outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
     }
-    outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetOwnerAlbumId());
+    outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
     outObjectInfo->dateCreated = fileAsset->GetDateAdded() / MILLI_TO_SECOND;
     outObjectInfo->dateModified = fileAsset->GetDateModified() / MILLI_TO_SECOND;
     outObjectInfo->storageID = DEFAULT_STORAGE_ID;
