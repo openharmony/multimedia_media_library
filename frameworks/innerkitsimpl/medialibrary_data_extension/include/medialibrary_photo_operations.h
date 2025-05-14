@@ -73,7 +73,7 @@ public:
     EXPORT static int32_t Save(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static int32_t AddFiltersToPicture(std::shared_ptr<Media::Picture>& inPicture,
-        const std::string &outputPath, std::string &editdata, const std::string &mime_type);
+        const std::string &outputPath, std::string &editdata, const std::string &mime_type, bool isHighQualityPicture);
     EXPORT static int32_t SavePicture(const int32_t &fileType, const int32_t &fileId, const int32_t getPicRet,
         PhotoExtInfo &photoExtInfo, std::shared_ptr<Media::Picture> &resultPicture);
     EXPORT static int32_t GetPicture(const int32_t &fileId, std::shared_ptr<Media::Picture> &picture,

@@ -136,20 +136,20 @@ int32_t FileUtils::SavePicture(const string &imageId, std::shared_ptr<Media::Pic
         return -1;
     }
 
-    int ret = DealPicture(mime_type, sourcePath, picture);
+    int ret = DealPicture(mime_type, sourcePath, picture, !isLowQualityPicture);
     return ret;
 }
 
 int32_t FileUtils::SavePicture(const string &path, std::shared_ptr<Media::Picture> &picture,
-    const std::string &mime_type, bool isEdited)
+    const std::string &mime_type, bool isHighQualityPicture)
 {
     MEDIA_INFO_LOG("SavePicture width %{public}d, heigh %{public}d, mime_type %{public}sd",
         picture->GetMainPixel()->GetWidth(), picture->GetMainPixel()->GetHeight(), mime_type.c_str());
-    return DealPicture(mime_type, path, picture);
+    return DealPicture(mime_type, path, picture, isHighQualityPicture);
 }
 
 int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &path,
-    std::shared_ptr<Media::Picture> &picture)
+    std::shared_ptr<Media::Picture> &picture, bool isHighQualityPicture)
 {
     MediaLibraryTracer tracer;
     tracer.Start("FileUtils::DealPicture");
@@ -169,7 +169,8 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
     size_t lastSlash = path.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && path.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", path.c_str());
-    string tempOutputPath = path.substr(0, lastSlash) + "/temp_" + path.substr(lastSlash + 1);
+    string tempInternal = isHighQualityPicture ? "high_" :"low_";
+    string tempOutputPath = path.substr(0, lastSlash) + tempInternal + path.substr(lastSlash + 1);
     int32_t ret = MediaFileUtils::CreateAsset(tempOutputPath);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, E_HAS_FS_ERROR,
         "Failed to create temp filters file %{private}s", tempOutputPath.c_str());
