@@ -2774,14 +2774,19 @@ void ChangeListenerNapi::GetResultSetFromMsg(UvChangeMsg *msg, JsOnChangeCallbac
                 continue;
             }
             wrapper->extraUris_.push_back(subUri);
-            extraIds.push_back(MediaLibraryNapiUtils::GetFileIdFromUriString(subUri));
+            string fileId = MediaLibraryNapiUtils::GetFileIdFromUriString(subUri);
+            if (!fileId.empty()) {
+                extraIds.push_back(fileId);
+            }
         }
         if (len > MAX_QUERY_LIMIT) {
             NAPI_INFO_LOG("subUri length exceed the limit.");
             wrapper->extraSharedAssets_ = nullptr;
             return;
         }
-        wrapper->extraSharedAssets_ = GetSharedResultSetFromIds(extraIds, true);
+        if (extraIds.size() != 0) {
+            wrapper->extraSharedAssets_ = GetSharedResultSetFromIds(extraIds, true);
+        }    
     }
 }
 
