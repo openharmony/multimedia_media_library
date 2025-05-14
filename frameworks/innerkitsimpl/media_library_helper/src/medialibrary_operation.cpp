@@ -369,6 +369,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { MTH_AND_YEAR_ASTC, OperationType::MTH_AND_YEAR_ASTC },
         { OPRN_HIGHLIGHT_SUBTITLE, OperationType::HIGHLIGHT_SUBTITLE},
         { OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE, OperationType::UPDATE_SUPPORTED_WATERMARK_TYPE },
+        { OPRN_QUERY_HIGHLIGHT_DIRECTORY_SIZE, OperationType::QUERY_HIGHLIGHT_DIRECTORY_SIZE },
     };
     return oprnTypeMap;
 }

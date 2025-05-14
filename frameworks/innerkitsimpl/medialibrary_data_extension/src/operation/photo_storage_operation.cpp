@@ -19,6 +19,8 @@
 #include "media_file_utils.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
+#include "preferences.h"
+#include "preferences_helper.h"
 
 namespace OHOS::Media {
 std::shared_ptr<NativeRdb::ResultSet> PhotoStorageOperation::FindStorage(std::shared_ptr<MediaLibraryRdbStore> rdbStore)
@@ -29,8 +31,10 @@ std::shared_ptr<NativeRdb::ResultSet> PhotoStorageOperation::FindStorage(std::sh
     CHECK_AND_RETURN_RET_LOG(!conn, nullptr, "rdbStore is null");
     std::string sql = this->SQL_DB_STORAGE_QUERY;
     int64_t cacheSize = this->GetCacheSize();
-    MEDIA_INFO_LOG("Media_Storage: cacheSize = %{public}" PRId64 "", cacheSize);
-    std::vector<NativeRdb::ValueObject> params = {cacheSize};
+    int64_t highlightSize = this->GetHighlightSizeFromPreferences();
+    MEDIA_INFO_LOG("Media_Storage: cacheSize = %{public}" PRId64 ", highlightSize = %{public}" PRId64 "",
+        cacheSize, highlightSize);
+    std::vector<NativeRdb::ValueObject> params = {cacheSize + highlightSize};
     return rdbStore->QuerySql(sql, params);
 }
 
@@ -41,5 +45,50 @@ int64_t PhotoStorageOperation::GetCacheSize()
     size_t totalSize = 0;
     MediaFileUtils::StatDirSize(MEDIA_CACHE_DIR, totalSize);
     return static_cast<int64_t>(totalSize);
+}
+
+int64_t PhotoStorageOperation::GetHighlightSize()
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoStorageOperation::GetHighlightSize");
+    size_t totalSize = 0;
+    auto start = std::chrono::system_clock::now();
+    MediaFileUtils::StatDirSize(MEDIA_HIGHLIGHT_DIR, totalSize);
+    auto end = std::chrono::system_clock::now();
+    MEDIA_INFO_LOG("Media_Storage: GetHighlightSize size = %{public}zu, cost time = %{public}lld ms",
+        totalSize, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+    this->SaveHighlightSizeToPreferences(totalSize);
+    return static_cast<int64_t>(totalSize);
+}
+
+std::shared_ptr<NativeRdb::ResultSet> PhotoStorageOperation::QueryHighlightDirectorySize(
+    std::shared_ptr<MediaLibraryRdbStore> rdbStore)
+{
+    int64_t highlightSize = GetHighlightSize();
+    std::string sql = "SELECT ? AS dir_size";
+    std::vector<NativeRdb::ValueObject> params = {highlightSize};
+    return rdbStore->QuerySql(sql, params);
+}
+
+int64_t PhotoStorageOperation::GetHighlightSizeFromPreferences()
+{
+    int32_t errCode;
+    std::shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(HIGHLIGHT_CONFIG, errCode);
+    CHECK_AND_RETURN_RET_WARN_LOG(prefs != nullptr && errCode == NativePreferences::E_OK, 0,
+        "get highlight preferences error: %{public}d", errCode);
+    return prefs->GetLong(HIGHLIGHT_DIRECTORY_SIZE, 0);
+}
+
+void PhotoStorageOperation::SaveHighlightSizeToPreferences(int64_t size)
+{
+    int32_t errCode;
+    std::shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(HIGHLIGHT_CONFIG, errCode);
+    CHECK_AND_RETURN_WARN_LOG(prefs != nullptr && errCode == NativePreferences::E_OK,
+        "get highlight preferences error: %{public}d", errCode);
+    int32_t output = prefs->PutLong(HIGHLIGHT_DIRECTORY_SIZE, size);
+    prefs->FlushSync();
+    MEDIA_INFO_LOG("SaveHighlightSizeToPreferences output is %{public}d", output);
 }
 }  // namespace OHOS::Media

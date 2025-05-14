@@ -214,6 +214,7 @@ enum class EXPORT OperationType : uint32_t {
     DELETE_LOCAL_ASSETS_PERMANENTLY,
     MTH_AND_YEAR_ASTC,
     UPDATE_SUPPORTED_WATERMARK_TYPE,
+    QUERY_HIGHLIGHT_DIRECTORY_SIZE,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
