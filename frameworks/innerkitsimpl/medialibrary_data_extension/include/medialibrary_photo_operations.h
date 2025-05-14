@@ -35,6 +35,7 @@ struct PhotoExtInfo {
     std::string oldFilePath;
     std::string extension;
     std::shared_ptr<Media::Picture> picture;
+    bool isHighQualityPicture = false;
 };
 
 class AlbumData {
