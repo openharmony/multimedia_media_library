@@ -241,6 +241,7 @@ const std::string ROOT_SANDBOX_DIR = "/storage/Share/";
 const std::string FS_TYPE_EPFS = "epfs";
 const std::string EPFS_MOUNT_POINT = "/storage/cloud/epfs";
 const std::string MEDIA_CACHE_DIR = ROOT_MEDIA_DIR + ".cache/";
+const std::string MEDIA_HIGHLIGHT_DIR = ROOT_MEDIA_DIR + "highlight/";
 const std::string MEDIA_EDIT_DATA_DIR = ROOT_MEDIA_DIR + ".editData/";
 const std::string META_RECOVERY_PHOTO_RELATIVE_PATH = "/Photo/";
 const std::string META_RECOVERY_META_RELATIVE_PATH = "/.meta/Photo/";
@@ -251,6 +252,8 @@ const std::string SLASH_STR = "/";
 const int32_t KEY_FRAME_LCD = 1;
 const int32_t KEY_FRAME_THM = 2;
 const int32_t KEY_FRAME_THM_ASTC = 3;
+const std::string HIGHLIGHT_CONFIG = "/data/storage/el2/base/preferences/highlight.xml";
+const std::string HIGHLIGHT_DIRECTORY_SIZE = "highlight_directory_size";
 
 const std::string SKIPLIST_FILE_PATH = "/data/SkipScanFile.txt";
 
