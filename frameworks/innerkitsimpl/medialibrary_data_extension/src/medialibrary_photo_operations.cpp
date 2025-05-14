@@ -1020,9 +1020,12 @@ static int32_t UpdateIsTempAndDirty(MediaLibraryCommand &cmd, const string &file
     values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
     UpdateValuesBucketForExt(cmd, values);
 
-    bool isHighQualityPicture = false;
+    if (fileId.empty() && !MediaLibraryDataManagerUtils::IsNumber(fileId)) {
+        MEDIA_ERR_LOG("MultistagesCapture, get fileId fail");
+        return 0;
+    }
     getPicRet = MediaLibraryPhotoOperations::GetPicture(std::stoi(fileId.c_str()), photoExtInfo.picture, false,
-        photoExtInfo.photoId, isHighQualityPicture);
+        photoExtInfo.photoId, photoExtInfo.isHighQualityPicture);
     if (!fileType.empty() && getPicRet == E_OK) {
         auto ret = MediaLibraryPhotoOperations::UpdateExtension(std::stoi(fileId.c_str()), std::stoi(fileType.c_str()),
             photoExtInfo, values);
@@ -3030,9 +3033,8 @@ int32_t MediaLibraryPhotoOperations::ForceSavePicture(MediaLibraryCommand& cmd)
     string uri = cmd.GetQuerySetParam("uri");
     std::shared_ptr<Media::Picture> resultPicture = nullptr;
 
-    bool isHighQualityPicture;
     PhotoExtInfo photoExtInfo = {"", MIME_TYPE_JPEG, "", "", nullptr};
-    int32_t getPicRet = GetPicture(fileId, photoExtInfo.picture, false, uri, isHighQualityPicture);
+    int32_t getPicRet = GetPicture(fileId, photoExtInfo.picture, false, uri, photoExtInfo.isHighQualityPicture);
     SavePicture(fileType, fileId, getPicRet, photoExtInfo, resultPicture);
     string path = MediaFileUri::GetPathFromUri(uri, true);
     MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(path, false, false, true, fileId, resultPicture);
@@ -3043,8 +3045,6 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     const int32_t getPicRet, PhotoExtInfo &photoExtInfo, std::shared_ptr<Media::Picture> &resultPicture)
 {
     MEDIA_INFO_LOG("savePicture fileType is: %{public}d, fileId is: %{public}d", fileType, fileId);
-    std::string photoId;
-    bool isHighQualityPicture = false;
     CHECK_AND_RETURN_RET_LOG(getPicRet == E_OK && photoExtInfo.picture != nullptr, E_FILE_EXIST,
         "Failed to get picture");
 
@@ -3053,16 +3053,19 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
 
-    FileUtils::DealPicture(photoExtInfo.format, assetPath, photoExtInfo.picture);
+    FileUtils::DealPicture(photoExtInfo.format, assetPath, photoExtInfo.picture, photoExtInfo.isHighQualityPicture);
     string editData = "";
     string editDataCameraPath = GetEditDataCameraPath(assetPath);
+    std::string photoId;
     std::shared_ptr<Media::Picture> picture;
+    bool isHighQualityPicture = false;
     if (ReadEditdataFromFile(editDataCameraPath, editData) == E_OK &&
         GetPicture(fileId, picture, false, photoId, isHighQualityPicture) == E_OK) {
         MediaFileUtils::CopyFileUtil(assetPath, GetEditDataSourcePath(assetPath));
         int32_t ret = MediaChangeEffect::TakeEffectForPicture(picture, editData);
-        FileUtils::DealPicture(photoExtInfo.format, assetPath, picture);
+        FileUtils::DealPicture(photoExtInfo.format, assetPath, picture, isHighQualityPicture);
     }
+    isHighQualityPicture = (picture == nullptr) ? photoExtInfo.isHighQualityPicture : isHighQualityPicture;
     if (isHighQualityPicture) {
         RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
         predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
@@ -3074,6 +3077,7 @@ int32_t MediaLibraryPhotoOperations::SavePicture(const int32_t &fileType, const 
     }
 
     resultPicture = (picture == nullptr) ? photoExtInfo.picture : picture;
+    photoId = (picture == nullptr) ? photoExtInfo.photoId : photoId;
     auto pictureManagerThread = PictureManagerThread::GetInstance();
     if (pictureManagerThread != nullptr) {
         pictureManagerThread->FinishAccessingPicture(photoId);
