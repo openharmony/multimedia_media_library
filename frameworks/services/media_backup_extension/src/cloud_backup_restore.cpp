@@ -134,7 +134,8 @@ void CloudBackupRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::Val
     value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
     value.PutString(PhotoColumn::PHOTO_FRONT_CAMERA, data->GetFrontCamera());
     value.PutInt(PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, data->GetDynamicRangeType());
-    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
+    fileInfo.orientation = data->GetOrientation();
+    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation);
 
     // [special type]live photo
     SetCoverPosition(fileInfo, value);
