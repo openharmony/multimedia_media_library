@@ -300,14 +300,13 @@ std::string PhotosRestore::FindSourcePath(const FileInfo &fileInfo)
  */
 int32_t PhotosRestore::FindStrongAssociation(const FileInfo &fileInfo)
 {
-    CHECK_AND_RETURN_RET(IsEndWithEnhanced(fileInfo.displayName), CLOUD_ENHANCEMENT_ALBUM);
+    CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, CLOUD_ENHANCEMENT_ALBUM);
     return 0;
 }
 
 int32_t PhotosRestore::FindStrongAssociationByDisplayName(const FileInfo &fileInfo)
 {
-    CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, CLOUD_ENHANCEMENT_ALBUM);
-    return 0;
+    return IsEndWithEnhanced(fileInfo.displayName) ? CLOUD_ENHANCEMENT_ALBUM : 0;
 }
 
 /**
@@ -315,14 +314,13 @@ int32_t PhotosRestore::FindStrongAssociationByDisplayName(const FileInfo &fileIn
  */
 int32_t PhotosRestore::FindCeAvailable(const FileInfo &fileInfo)
 {
-    CHECK_AND_RETURN_RET(IsEndWithEnhanced(fileInfo.displayName), CLOUD_ENHANCEMENT_ALBUM);
+    CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, SINGLE_CLOUD_ENHANCEMENT_PHOTO);
     return 0;
 }
 
 int32_t PhotosRestore::FindCeAvailableByDisplayName(const FileInfo &fileInfo)
 {
-    CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, SINGLE_CLOUD_ENHANCEMENT_PHOTO);
-    return 0;
+    return IsEndWithEnhanced(fileInfo.displayName) ? SINGLE_CLOUD_ENHANCEMENT_PHOTO : 0;
 }
 
 /**
