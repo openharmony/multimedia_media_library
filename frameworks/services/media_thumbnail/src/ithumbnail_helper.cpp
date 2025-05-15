@@ -603,8 +603,8 @@ void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
     }
     data.isNeedStoreSize = true;
     int err = 0;
-    if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
-        MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
+    if (!ThumbnailUtils::CacheLcdInfo(opts, data)) {
+        MEDIA_INFO_LOG("CacheLcdInfo faild");
     }
 }
 
@@ -846,7 +846,7 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailDa
         data.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::DEFAULT_PHOTO_URI + "/", data.id,
             MediaFileUtils::GetExtraUri(data.displayName, data.path));
     }
-    return isSuccess ? UpdateSuccessState(opts, data) : UpdateFailState(opts, data);
+    return isSuccess ? CacheSuccessState(opts, data) : CacheFailState(opts, data);
 }
 
 // This method has to be called before updating rdb
@@ -883,60 +883,58 @@ std::string GetLocalOriginFilePath(const std::string &path)
     return LOCAL_MEDIA_PREFIX + path.substr(ROOT_MEDIA_DIR.length());
 }
 
-bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+bool IThumbnailHelper::CacheSuccessState(const ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    int thumbnailVisible = IsPhotoVisible(opts, data);
-    int32_t err = UpdateThumbDbState(opts, data);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "update thumbnail_ready failed, err = %{public}d", err);
+    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
+        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
+
+    int32_t err = CacheThumbDbState(opts, data);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "CacheThumbDbState failed, err = %{public}d", err);
+
     if (data.isRegenerateStage) {
         string filePath = GetLocalOriginFilePath(data.path);
         bool shouldUpdateFDirty = access(filePath.c_str(), F_OK) == 0;
-        ValuesBucket values;
-        int changedRows;
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ?
-            static_cast<int32_t>(DirtyType::TYPE_FDIRTY) : static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
-        MEDIA_ERR_LOG("update thumbnail_ready failed, err = %{public}d", err);
-        int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-            vector<string> { data.id });
-        CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Update Regenerate dirty status failed! %{public}d", err);
+
+        if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
+            data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
+        }
+        ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ? static_cast<int32_t>(DirtyType::TYPE_FDIRTY) :
+            static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
     }
 
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(watch != nullptr, false, "SendThumbNotify watch is nullptr");
-    if (thumbnailVisible) {
-        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_UPDATE);
-    } else {
-        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
-    }
     return true;
 }
 
-bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+bool IThumbnailHelper::CacheFailState(const ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
+    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
+        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
+    
+    if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
+        data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
     }
-    ValuesBucket values;
-    int changedRows;
+
+    ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
+
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
-    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { data.id });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        return false;
-    }
-    CHECK_AND_RETURN_RET_LOG(changedRows != 0, false, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
-        data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
+
     return true;
 }
 
-int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+int32_t IThumbnailHelper::CacheThumbDbState(const ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
-    ValuesBucket values;
-    int changedRows;
+    ThumbnailUtils::StoreThumbnailSize(opts, data);
+
+    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
+        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
+
+    if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
+        data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
+    }
+
+    ValuesBucket& values = data.rdbUpdateCache[opts.table];
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
     Size lcdSize;
@@ -948,12 +946,7 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::THUMB, thumbSize)) {
         ThumbnailUtils::SetThumbnailSizeValue(values, thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
     }
-    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { data.id });
-    ThumbnailUtils::StoreThumbnailSize(opts, data);
-    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, E_ERR, "RdbStore Update failed! %{public}d", err);
-    CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
-        data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
+
     return E_OK;
 }
 

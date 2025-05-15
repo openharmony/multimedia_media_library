@@ -95,7 +95,7 @@ HWTEST_F(EventThumbnailTest, medialib_event_UpdateLcdInfo_test_001, TestSize.Lev
     };
     ThumbnailData data;
     int err = 0;
-    bool ret = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
+    bool ret = ThumbnailUtils::CacheLcdInfo(opts, data);
     EXPECT_EQ(ret, false);
 }
 

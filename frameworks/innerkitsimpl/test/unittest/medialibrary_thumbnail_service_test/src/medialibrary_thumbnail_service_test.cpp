@@ -1071,7 +1071,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_038, T
     opts.store = storePtr;
     ThumbnailData data;
     data.path = "/storage/cloud/files/";
-    auto res = IThumbnailHelper::UpdateSuccessState(opts, data);
+    auto res = IThumbnailHelper::CacheSuccessState(opts, data);
     EXPECT_EQ(res, false);
 }
 
@@ -1423,7 +1423,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, Te
     ThumbRdbOpt opts;
     ThumbnailData data;
     int err = E_ERR;
-    auto res = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
+    auto res = ThumbnailUtils::CacheLcdInfo(opts, data);
     EXPECT_EQ(res, false);
 }
 
@@ -1435,7 +1435,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_updateLcdInf
     opts.table = "tab_analysis_video_label";
     ThumbnailData data;
     int err = E_ERR;
-    auto res = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
+    auto res = ThumbnailUtils::CacheLcdInfo(opts, data);
     EXPECT_EQ(res, false);
 }
 
