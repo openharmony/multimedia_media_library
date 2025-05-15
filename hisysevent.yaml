@@ -222,3 +222,28 @@ MEDIALIB_OPRN_CHANGE_INFO:
   OPT_TOTAL_COUNT: { type: INT32, desc: total change count }
   OPT_START_TIME: { type: INT64, desc: operation handle start time }
   OPT_END_TIME: { type: INT64, desc: operation handle end time }
+
+MEDIALIB_MTP_PTP_SYNC_RESULT:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: Medialibrary MTP or PTP file synchronization count information, preserve: true }
+  MTP_MODE: { type: INT32, desc: Transmission protocol }
+  FILE_COUNT_INFO: { type: STRING, arrsize: 50, desc: Statistics on the number of files requested by the PC from the mobile phone }
+
+MEDIALIB_MTP_OPERATION_RESULT:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: File operation records in medialibrary MTP or PT, preserve: true }
+  MTP_MODE: { type: INT32, desc: Transmission protocol }
+  MTP_GET_OBJECT_HANDLES_INFO: { type: INT32, arrsize: 2, desc: Count of successful and failed file statistics information }
+  MTP_GET_OBJECT_INFO: { type: INT32, arrsize: 2, desc: Get the count of successful and failed attempts for a single file }
+  MTP_GET_PARTIAL_OBJECT_INFO: { type: INT32, arrsize: 2, desc: Count of successful and failed attempts to retrieve partial file content }
+  MTP_DELETE_OBJECT_INFO: { type: INT32, arrsize: 2, desc: Count of successful and failed file deletion }
+  MTP_SEND_OBJECT_INFO: { type: INT32, arrsize: 2, desc: Count of successful and failed copying of PC to mobile phone }
+  MTP_SET_OBJECT_PROP_VALUE_INFO: { type: INT32, arrsize: 2, desc: Count of successful and failed renaming of files }
+  MTP_MOVE_OBJECT_INFO: { type: INT32, arrsize: 2, desc: Counting the success and failure of moving files inside the phone on a PC }
+  MTP_COPY_OBJECT_INFO: { type: INT32, arrsize: 2, desc: Counting the success and failure of copying files inside the phone on a PC }
+
+MEDIALIB_MTP_PTP_SEND_RESPONSE:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: Interaction results between media library and USB, preserve: true }
+  MTP_MODE: { type: INT32, desc: Transmission protocol }
+  OPERATION_CODE: { type: UINT16, desc: Operation Code }
+  OPERATION_RESULT: { type: INT32, desc: Operation result }
+  OPERATION_COST_TIME: { type: UINT64, desc: Operation time consumption }
+  OPERATION_MODE : { type: INT32, desc: operating mode read or write }

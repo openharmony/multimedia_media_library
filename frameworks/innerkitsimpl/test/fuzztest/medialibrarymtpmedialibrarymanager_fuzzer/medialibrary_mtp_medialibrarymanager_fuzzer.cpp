@@ -207,7 +207,8 @@ static void PtpHaveMovingPhotesHandleTest(const uint8_t* data, size_t size)
     shared_ptr<UInt32List> outHandles = make_shared<UInt32List>(FuzzVectorUInt32(data + offset, size));
     offset += sizeof(uint32_t);
     const uint32_t parent = FuzzUInt32(data + offset, size);
-    ptpMediaLib_->HaveMovingPhotesHandle(resultSet, outHandles, parent);
+    FileCountInfo fileCountInfo;
+    ptpMediaLib_->HaveMovingPhotesHandle(resultSet, outHandles, parent, fileCountInfo);
     ptpMediaLib_->GetSizeFromOfft(size);
     ptpMediaLib_->GetBurstKeyFromPhotosInfo();
     ptpMediaLib_->Clear();
