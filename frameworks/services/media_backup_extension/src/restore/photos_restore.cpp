@@ -304,6 +304,9 @@ int32_t PhotosRestore::FindStrongAssociation(const FileInfo &fileInfo)
     return 0;
 }
 
+/**
+ * @brief Find enhancement photo quality for the target device by FileInfo displayName, only for cloud backup restore
+ */
 int32_t PhotosRestore::FindStrongAssociationByDisplayName(const FileInfo &fileInfo)
 {
     return IsEndWithEnhanced(fileInfo.displayName) ? CLOUD_ENHANCEMENT_ALBUM : 0;
@@ -318,6 +321,9 @@ int32_t PhotosRestore::FindCeAvailable(const FileInfo &fileInfo)
     return 0;
 }
 
+/**
+ * @brief Find cloud enhancement available for the target device by FileInfo displayName, only for cloud backup restore
+ */
 int32_t PhotosRestore::FindCeAvailableByDisplayName(const FileInfo &fileInfo)
 {
     return IsEndWithEnhanced(fileInfo.displayName) ? SINGLE_CLOUD_ENHANCEMENT_PHOTO : 0;
