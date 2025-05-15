@@ -94,6 +94,7 @@ private:
     SourceMode sourceMode_ = SourceMode::EDITED_MODE;
     CompatibleMode compatibleMode_ = CompatibleMode::COMPATIBLE_FORMAT_MODE;
     std::string requestId_;
+    std::function<void(int, int, std::string)> callback_ = nullptr;
 };
 
 } // Media

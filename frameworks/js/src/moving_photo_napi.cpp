@@ -43,7 +43,6 @@ namespace Media {
 
 static const string MOVING_PHOTO_NAPI_CLASS = "MovingPhoto";
 thread_local napi_ref MovingPhotoNapi::constructor_ = nullptr;
-static std::function<void(int, int, std::string)> callback_;
 static SafeMap<std::string, bool> isMovingPhotoTranscoderMap;
 static SafeMap<std::string, MovingPhotoAsyncContext *> requestContentCompleteResult;
 static std::mutex isMovingPhotoTranscoderMapMutex;
