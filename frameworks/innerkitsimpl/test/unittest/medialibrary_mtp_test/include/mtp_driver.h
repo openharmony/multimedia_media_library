@@ -28,7 +28,7 @@ public:
     int CloseDriver();
 
     int Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize);
-    void Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize);
+    void Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize, int32_t &result);
 
     int ReceiveObj(MtpFileRange &mfr);
 

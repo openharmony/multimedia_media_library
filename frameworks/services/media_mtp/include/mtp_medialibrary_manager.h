@@ -20,6 +20,7 @@
 #include "avmetadatahelper.h"
 #include "datashare_helper.h"
 #include "file_asset.h"
+#include "mtp_dfx_reporter.h"
 #include "mtp_ptp_const.h"
 #include "mtp_operation_context.h"
 #include "object_info.h"
@@ -89,7 +90,7 @@ private:
     int32_t GetAlbumCloud();
     int32_t GetAlbumCloudDisplay(std::vector<std::string> &ownerAlbumIds);
     int32_t HaveMovingPhotesHandle(const std::shared_ptr<DataShare::DataShareResultSet> resultSet,
-        std::shared_ptr<UInt32List> &outHandles, const uint32_t parent);
+        std::shared_ptr<UInt32List> &outHandles, const uint32_t parent, FileCountInfo &fileCountInfo);
     uint32_t GetSizeFromOfft(const off_t &size);
     std::vector<std::string> GetBurstKeyFromPhotosInfo();
     std::shared_ptr<DataShare::DataShareResultSet> GetOwnerAlbumIdList();
@@ -104,6 +105,8 @@ private:
     int32_t GetThumbnailFromPath(std::string &path, std::shared_ptr<UInt8List> &outThumb);
     int32_t GetCopyAlbumObjectPath(uint32_t handle, PathMap &paths);
     int32_t GetCopyPhotoObjectPath(uint32_t handle, PathMap &paths);
+    void CountPhotosNumber(const std::shared_ptr<MtpOperationContext> &context, FileCountInfo &fileCountInfo);
+    int32_t GetCloudPhotoCountFromAlbum(const std::shared_ptr<MtpOperationContext> &context);
 private:
     static std::mutex mutex_;
     static std::shared_ptr<MtpMedialibraryManager> instance_;
