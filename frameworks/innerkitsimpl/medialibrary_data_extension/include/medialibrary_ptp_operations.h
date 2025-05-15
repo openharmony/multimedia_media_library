@@ -48,7 +48,7 @@ private:
     static FileManagement::CloudSync::CleanFileInfo GetCleanFileInfo(std::shared_ptr<FileAsset> &fileAssetPtr);
     static bool BatchDeleteLocalAndCloud(const std::vector<FileManagement::CloudSync::CleanFileInfo> &fileInfos);
     static int32_t DeleteLocalAndCloudPhotos(std::vector<std::shared_ptr<FileAsset>> &subFileAsset);
-    static bool isLastBurstPhoto(const std::string& burstKey);
+    static bool IsLastBurstPhoto(const std::string& burstKey);
 };
 
 } // namespace Media

@@ -242,7 +242,7 @@ int32_t MediaLibraryPtpOperations::DeleteLocalAndCloudPhotos(vector<shared_ptr<F
     return E_OK;
 }
 
-bool MediaLibraryPtpOperations::isLastBurstPhoto(const std::string& burstKey)
+bool MediaLibraryPtpOperations::IsLastBurstPhoto(const std::string& burstKey)
 {
     NativeRdb::RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = { MediaColumn::MEDIA_ID };
@@ -277,7 +277,7 @@ int32_t MediaLibraryPtpOperations::DeletePtpPhoto(NativeRdb::RdbPredicates &rdbP
         burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
         ret = UpdateBurstPhotoInfo(burstKey, true, rdbPredicate);
     } else if (subType == static_cast<int32_t>(PhotoSubType::BURST)) {
-        ret = UpdateBurstPhotoInfo(burstKey, isLastBurstPhoto(burstKey), rdbPredicate);
+        ret = UpdateBurstPhotoInfo(burstKey, IsLastBurstPhoto(burstKey), rdbPredicate);
     }
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "UpdateBurstPhotoInfo fail.");
     return MediaLibraryAssetOperations::DeletePermanently(rdbPredicate, true);

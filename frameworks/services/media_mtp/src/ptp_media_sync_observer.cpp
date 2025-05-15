@@ -389,7 +389,7 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
         CHECK_AND_RETURN_LOG(IsNumber(suffixString), "Mtp SendPhotoRemoveEvent deleteHandle is incorrect ");
         auto specialHandles = PtpSpecialHandles::GetInstance();
         CHECK_AND_RETURN_LOG(specialHandles != nullptr, "specialHandles is nullptr");
-        uint32_t fileId = atoi(suffixString.c_str());
+        uint32_t fileId = static_cast<uint32_t>(atoi(suffixString.c_str()));
         if (FindRealHandle(fileId + COMMON_PHOTOS_OFFSET)) {
             uint32_t actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
             SendEventPackets(actualHandle, MTP_EVENT_OBJECT_REMOVED_CODE);
