@@ -507,8 +507,13 @@ static bool IsValidResourceType(int32_t resourceType)
                MediaLibraryNapiUtils::IsSystemApp());
 }
 
-static int32_t QueryPhotoPosition(string movingPhotoUri, bool hasReadPermission, int32_t &position)
+static int32_t QueryPhotoPosition(const string &movingPhotoUri, bool hasReadPermission, int32_t &position)
 {
+    if (!MediaFileUtils::IsMediaLibraryUri(movingPhotoUri)) {
+        position = static_cast<int32_t>(PhotoPositionType::LOCAL);
+        return E_OK;
+    }
+
     std::string MULTI_USER_URI_FLAG = "user=";
     std::string str = movingPhotoUri;
     size_t pos = str.find(MULTI_USER_URI_FLAG);
@@ -620,7 +625,7 @@ static void RequestContentExecute(napi_env env, void *data)
     auto* context = static_cast<MovingPhotoAsyncContext*>(data);
     int32_t ret = QueryPhotoPosition(context->movingPhotoUri, HasReadPermission(), context->position);
     if (ret != E_OK) {
-        NAPI_ERR_LOG("Failed to query position of moving photo");
+        NAPI_ERR_LOG("Failed to query position of moving photo, ret: %{public}d", ret);
         context->SaveError(ret);
         return;
     }
