@@ -184,7 +184,8 @@ static bool IsMapRecordCanceled(const std::string &requestId, std::string &photo
 
 static void DeleteDataHandler(NativeNotifyMode notifyMode, const std::string &requestUri, const std::string &requestId)
 {
-    MEDIA_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode, requestUri.c_str(), requestId.c_str());
+    MEDIA_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode,
+        MediaFileUtils::DesensitizeUri(requestUri).c_str(), requestId.c_str());
     if (notifyMode == NativeNotifyMode::WAIT_FOR_HIGH_QUALITY) {
         DeleteInProcessMapRecord(requestUri, requestId);
     }
@@ -242,7 +243,7 @@ static AssetHandler* InsertDataHandler(NativeNotifyMode notifyMode,
     AssetHandler *assetHandler = CreateAssetHandler(asyncContext->photoId, asyncContext->requestId,
         asyncContext->requestUri, asyncContext->destUri, mediaAssetDataHandler);
     MEDIA_INFO_LOG("Add %{public}d, %{private}s, %{private}s", notifyMode,
-        asyncContext->requestUri.c_str(), asyncContext->requestId.c_str());
+        MediaFileUtils::DesensitizeUri(asyncContext->requestUri).c_str(), asyncContext->requestId.c_str());
 
     switch (notifyMode) {
         case NativeNotifyMode::FAST_NOTIFY: {
