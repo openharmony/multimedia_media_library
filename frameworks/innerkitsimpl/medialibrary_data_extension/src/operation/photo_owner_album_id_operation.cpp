@@ -368,6 +368,8 @@ std::string PhotoOwnerAlbumIdOperation::ParseSourcePathToLPath(const std::string
         start_pos = result.find_first_of("/");
         if (start_pos != std::string::npos) {
             result = result.substr(start_pos);
+        } else {
+            result = FILE_SEPARATOR;
         }
     }
     return result;
