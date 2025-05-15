@@ -186,6 +186,7 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
         return E_OK;
     }
     ret = rename(tempOutputPath.c_str(), path.c_str());
+    CHECK_AND_PRINT_LOG(ret == E_SUCCESS, "Failed rename errno: %{public}d", errno);
     if (MediaFileUtils::IsFileExists(tempOutputPath)) {
         MEDIA_INFO_LOG("file: %{public}s exists and needs to be deleted", tempOutputPath.c_str());
         if (!MediaFileUtils::DeleteFile(tempOutputPath)) {
