@@ -25,7 +25,9 @@ const string GalleryOpenCall::CREATE_GALLERY_MEDIA = string("CREATE TABLE IF NOT
     "orientation INTEGER, bucket_id TEXT, duration INTEGER, media_type INTEGER, storage_id INTEGER, width INTEGER, " +
     "height INTEGER, is_hw_favorite INTEGER,  relative_bucket_id TEXT, showDateToken INTEGER, recycleFlag INTEGER, " +
     "recycledTime INTEGER, sourcePath TEXT, is_hw_burst INTEGER DEFAULT 0, hash TEXT, " +
-    "special_file_type INTEGER DEFAULT 0, first_update_time INTEGER, datetaken INTEGER, detail_time TEXT);";
+    "special_file_type INTEGER DEFAULT 0, first_update_time INTEGER, datetaken INTEGER, detail_time TEXT, " +
+    "localThumbPath TEXT, localBigThumbPath TEXT, thumbType INTEGER DEFAULT 0, uniqueId TEXT, " +
+    "latitude DOUBLE, longitude DOUBLE, story_id TEXT, portrait_id TEXT, albumId TEXT);";
 
 const string GalleryOpenCall::CREATE_GARBAGE_ALBUM = string("CREATE TABLE IF NOT EXISTS garbage_album") +
     "(app_name TEXT, cache_dir TEXT, nick_name TEXT, nick_dir TEXT, type INTEGER, relative_bucket_id TEXT);";
