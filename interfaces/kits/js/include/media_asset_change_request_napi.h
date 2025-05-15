@@ -53,7 +53,6 @@ enum class AssetChangeOperation {
     SET_ORIENTATION,
     SET_SUPPORTED_WATERMARK_TYPE,
     SET_VIDEO_ENHANCEMENT_ATTR,
-    SET_DISPLAY_NAME
 };
 
 enum class AddResourceMode {
@@ -104,13 +103,8 @@ public:
     void RecordChangeOperation(AssetChangeOperation changeOperation);
     uint32_t FetchAddCacheFileId();
     void SetCacheFileName(std::string& fileName);
-    std::string GetCacheFileName();
     void SetCacheMovingPhotoVideoName(std::string& fileName);
     int32_t SubmitCache(bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced, const int32_t userId = -1);
-    int32_t SubmitCacheWithCreation(
-        std::string &uri, std::string &assetUri, bool isSetEffectMode, const int32_t userId);
-    int32_t SubmitCacheWithoutCreation(std::string &uri, bool isSetEffectMode, bool isWriteGpsAdvanced,
-        const int32_t userId);
     int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
@@ -120,12 +114,6 @@ public:
 
     void SetIsWriteGpsAdvanced(bool val);
     bool GetIsWriteGpsAdvanced();
-
-    void SetIsEditDisplayName(bool val);
-    bool GetIsEditDisplayName();
-    void SetOldDisplayName(const std::string &oldDisplayName);
-    std::string GetOldDisplayName();
-    void PutStringToCreationValue(const std::string &columnName, const std::string &val);
 
     sptr<PhotoProxy> GetPhotoProxyObj();
     void ReleasePhotoProxyObj();
@@ -144,7 +132,6 @@ private:
     EXPORT static napi_value JSSetFavorite(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetTitle(napi_env env, napi_callback_info info);
-    EXPORT static napi_value JSSetDisplayName(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetUserComment(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetWriteCacheHandler(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSAddResource(napi_env env, napi_callback_info info);
@@ -187,13 +174,7 @@ private:
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
     int32_t imageFileType_;
-
-    // use for setLocation
     bool isWriteGpsAdvanced_{false};
-
-    // use for setDisplayName
-    bool isEditDisplayName_{false};
-    std::string oldDisplayName_;
 };
 
 struct MediaAssetChangeRequestAsyncContext : public NapiError {

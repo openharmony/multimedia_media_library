@@ -625,26 +625,6 @@ void FileAsset::SetIsAuto(int32_t isAuto)
     member_[PhotoColumn::PHOTO_IS_AUTO] = isAuto;
 }
 
-int32_t FileAsset::GetDirty() const
-{
-    return GetInt32Member(MEDIA_DATA_DB_DIRTY);
-}
-
-void FileAsset::SetDirty(int32_t dirty)
-{
-    member_[MEDIA_DATA_DB_DIRTY] = dirty;
-}
-
-std::string FileAsset::GetMediaSuffix() const
-{
-    return GetStrMember(PhotoColumn::PHOTO_MEDIA_SUFFIX);
-}
-
-void FileAsset::SetMediaSuffix(const std::string &mediaSuffix)
-{
-    member_[PhotoColumn::PHOTO_MEDIA_SUFFIX] = mediaSuffix;
-}
-
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
