@@ -1112,7 +1112,7 @@ bool MtpDataUtils::IsNumber(const string& str)
     return true;
 }
 
-bool MtpDataUtils::IsMtpMovingPhoto(const int32_t& subtype, const int32_t& effectMode)
+bool MtpDataUtils::IsMtpMovingPhoto(int32_t subtype, int32_t effectMode)
 {
     return (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
         effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
