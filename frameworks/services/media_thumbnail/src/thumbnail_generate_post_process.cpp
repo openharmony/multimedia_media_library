@@ -32,7 +32,7 @@ int32_t ThumbnailGeneratePostProcess::PostProcess(const ThumbnailData& data, con
     err = UpdateCachedRdbValue(data, opts);
     CHECK_AND_RETURN_RET(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
 
-    if (GeneratedThumb(data)) {
+    if (HasGeneratedThumb(data)) {
         err = Notify(notifyType);
         CHECK_AND_RETURN_RET(err == E_OK, err, "Notify failed. err: %{public}d", err);
     }
@@ -49,14 +49,10 @@ int32_t ThumbnailGeneratePostProcess::UpdateCachedRdbValue(const ThumbnailData& 
 
     for (const auto& it : data.rdbUpdateCache) {
         const string& tableName = it.first;
-        const ValuesBucket& values = it.second;
-        const string& whereClause = MEDIA_DATA_DB_ID + " = ?";
-        const vector<string> args = { data.id };
 
-        err = opts.store->Update(changedRows, tableName, values, whereClause, args);
+        err = opts.store->Update(changedRows, tableName, it.second, MEDIA_DATA_DB_ID + " = ?", { data.id });
         CHECK_AND_RETURN_RET(err == E_OK, err, "UpdateCachedRdbValue failed. tableName: %{public}s, err: %{public}d",
             tableName.c_str(), err);
-
         CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
             data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
     }
@@ -99,23 +95,20 @@ int32_t ThumbnailGeneratePostProcess::GetNotifyType(const ThumbnailData& data,
     return E_OK;
 }
 
-int32_t ThumbnailGeneratePostProcess::GeneratedThumb(const ThumbnailData& data, bool& generated)
+bool ThumbnailGeneratePostProcess::HasGeneratedThumb(const ThumbnailData& data)
 {
-    generated = false;
-
     bool hasPhotosTable = data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end();
-    CHECK_AND_RETURN_INFO_LOG(hasPhotosTable, E_OK, "Do not cache photos table value");
+    CHECK_AND_RETURN_INFO_LOG(hasPhotosTable, false, "Do not cache photos table value");
 
     const ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
     ValueObject valueObject;
     bool hasThumbReadyColumn = values.GetObject(PhotoColumn::PHOTO_THUMBNAIL_READY, valueObject);
-    CHECK_AND_RETURN_INFO_LOG(hasPhotosTable, E_OK, "Photos table do not cache thumbnail_ready value");
+    CHECK_AND_RETURN_INFO_LOG(hasPhotosTable, false, "Do not cache thumbnail_ready value in photos table");
 
     int64_t thumbReady;
     valueObject.GetLong(thumbReady);
-    generated = !(thumbReady == static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
 
-    return E_OK;
+    return thumbReady != static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY);
 }
 
 } // namespace Media
