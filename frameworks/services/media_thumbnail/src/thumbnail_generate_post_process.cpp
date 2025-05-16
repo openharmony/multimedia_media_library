@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2022-2024 Huawei Device Co., Ltd.
+* Copyright (C) 2022-2025 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -15,64 +15,60 @@
 
 #include "thumbnail_generate_post_process.h"
 
+#include "medialibrary_errno.h"
+#include "medialibrary_notify.h"
+
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
 
-int32_t ThumbnailGeneratePostProcess::PostProcess(const ThumbnailData& data, const ThumbRdbOpt& opts)
+int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, const ThumbRdbOpt& opts)
 {
     int32_t err = E_OK;
     NotifyType notifyType;
 
     err = GetNotifyType(data, opts, notifyType);
-    CHECK_AND_RETURN_RET(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
 
     err = UpdateCachedRdbValue(data, opts);
-    CHECK_AND_RETURN_RET(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
 
     if (HasGeneratedThumb(data)) {
         err = Notify(notifyType);
-        CHECK_AND_RETURN_RET(err == E_OK, err, "Notify failed. err: %{public}d", err);
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Notify failed. err: %{public}d", err);
     }
-
     return E_OK;
 }
 
-int32_t ThumbnailGeneratePostProcess::UpdateCachedRdbValue(const ThumbnailData& data, const ThumbRdbOpt& opts)
+int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(const ThumbnailData& data, const ThumbRdbOpt& opts)
 {
     int32_t err = E_OK;
     int32_t changedRows;
-
     CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
 
     for (const auto& it : data.rdbUpdateCache) {
         const string& tableName = it.first;
-
         err = opts.store->Update(changedRows, tableName, it.second, MEDIA_DATA_DB_ID + " = ?", { data.id });
-        CHECK_AND_RETURN_RET(err == E_OK, err, "UpdateCachedRdbValue failed. tableName: %{public}s, err: %{public}d",
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. table: %{public}s, err: %{public}d",
             tableName.c_str(), err);
         CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
             data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
     }
-
     return E_OK;
 }
 
-int32_t ThumbnailGeneratePostProcess::Notify(const NotifyType notifyType)
+int32_t ThumbnailGenerationPostProcess::Notify(const NotifyType notifyType)
 {
-    int32_t err = E_OK;
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "SendThumbNotify watch is nullptr");
-
-    err = watch->Notify(data.fileUri, notifyType);
-
+    watch->Notify(data.fileUri, notifyType);
     return E_OK;
 }
 
 
-int32_t ThumbnailGeneratePostProcess::GetNotifyType(const ThumbnailData& data,
+int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
     const ThumbRdbOpt& opts, NotifyType& notifyType)
 {
     int32_t err = E_OK;
@@ -91,11 +87,10 @@ int32_t ThumbnailGeneratePostProcess::GetNotifyType(const ThumbnailData& data,
     int32_t thumbnailVisible = GetInt32Val(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet);
 
     notifyType = thumbnailVisible > 0 ? NotifyType::NOTIFY_UPDATE : NotifyType::NOTIFY_ADD;
-
     return E_OK;
 }
 
-bool ThumbnailGeneratePostProcess::HasGeneratedThumb(const ThumbnailData& data)
+bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data)
 {
     bool hasPhotosTable = data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end();
     CHECK_AND_RETURN_INFO_LOG(hasPhotosTable, false, "Do not cache photos table value");
@@ -107,7 +102,6 @@ bool ThumbnailGeneratePostProcess::HasGeneratedThumb(const ThumbnailData& data)
 
     int64_t thumbReady;
     valueObject.GetLong(thumbReady);
-
     return thumbReady != static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY);
 }
 
