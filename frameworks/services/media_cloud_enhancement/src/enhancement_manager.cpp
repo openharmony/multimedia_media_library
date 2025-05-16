@@ -126,7 +126,7 @@ static int32_t CheckPhotoStatus(shared_ptr<NativeRdb::ResultSet> &resultSet)
     int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     int32_t movingPhotoEffectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
     if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
-        movingPhotoEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START)) {
+        movingPhotoEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT)) {
             return E_FAIL;
     }
     return E_OK;

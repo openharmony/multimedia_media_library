@@ -193,7 +193,6 @@ int32_t FileUtils::DealPicture(const std::string &mime_type, const std::string &
             MEDIA_ERR_LOG("delete file: %{public}s failed", tempOutputPath.c_str());
         }
     }
-    MEDIA_INFO_LOG("rename ret: %{public}d", ret);
     return ret;
 }
 
