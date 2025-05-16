@@ -121,7 +121,7 @@ public:
     EXPORT static bool IsPureCloudImage(ThumbRdbOpt &opts);
     EXPORT static void DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data);
     EXPORT static void UpdateAstcDateTaken(std::shared_ptr<ThumbnailTaskData> &data);
-    EXPORT static bool UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
+    EXPORT static bool CacheThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
     EXPORT static void UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data);
 private:
     EXPORT static bool TrySavePixelMap(ThumbnailData &data, ThumbnailType type);

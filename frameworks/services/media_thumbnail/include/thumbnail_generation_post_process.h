@@ -29,9 +29,9 @@ public:
     EXPORT static int32_t PostProcess(const ThumbnailData& data, const ThumbRdbOpt& opts);
 private:
     EXPORT static int32_t UpdateCachedRdbValue(const ThumbnailData& data, const ThumbRdbOpt& opts);
-    EXPORT static int32_t HasGeneratedThumb(const ThumbnailData& data); // do not check lcd
+    EXPORT static bool HasGeneratedThumb(const ThumbnailData& data); // do not check lcd
     EXPORT static int32_t GetNotifyType(const ThumbnailData& data, const ThumbRdbOpt& opts, NotifyType& notifyType);
-    EXPORT static int32_t Notify(const NotifyType notifyType);
+    EXPORT static int32_t Notify(const ThumbnailData& data, const NotifyType notifyType);
 };
 } // namespace Media
 } // namespace OHOS

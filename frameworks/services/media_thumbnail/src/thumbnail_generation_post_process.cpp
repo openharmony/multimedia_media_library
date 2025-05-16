@@ -13,10 +13,12 @@
 * limitations under the License.
 */
 
-#include "thumbnail_generate_post_process.h"
+#include "thumbnail_generation_post_process.h"
 
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
+#include "media_log.h"
+#include "result_set_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -36,7 +38,7 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, c
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
 
     if (HasGeneratedThumb(data)) {
-        err = Notify(notifyType);
+        err = Notify(data, notifyType);
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Notify failed. err: %{public}d", err);
     }
     return E_OK;
@@ -59,11 +61,13 @@ int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(const ThumbnailData
     return E_OK;
 }
 
-int32_t ThumbnailGenerationPostProcess::Notify(const NotifyType notifyType)
+int32_t ThumbnailGenerationPostProcess::Notify(const ThumbnailData& data, const NotifyType notifyType)
 {
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "SendThumbNotify watch is nullptr");
     watch->Notify(data.fileUri, notifyType);
+    MEDIA_DEBUG_LOG("ThumbnailGenerationPostProcess::Notify() "
+        "fileUri: %{public}s, notifyType: %{public}d", data.fileUri.c_str(), notifyType);
     return E_OK;
 }
 
@@ -73,7 +77,7 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
 {
     int32_t err = E_OK;
     CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
-    CHECK_AND_RETURN_RET(!data.id.empty(), E_ERR, "data.id is empty");
+    CHECK_AND_RETURN_RET_LOG(!data.id.empty(), E_ERR, "data.id is empty");
 
     vector<string> columns = { PhotoColumn::PHOTO_THUMBNAIL_VISIBLE };
     string strQueryCondition = MEDIA_DATA_DB_ID + " = " + data.id;
@@ -93,12 +97,12 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
 bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data)
 {
     bool hasPhotosTable = data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end();
-    CHECK_AND_RETURN_INFO_LOG(hasPhotosTable, false, "Do not cache photos table value");
+    CHECK_AND_RETURN_RET_INFO_LOG(hasPhotosTable, false, "Do not cache photos table value");
 
-    const ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
+    const ValuesBucket& values = data.rdbUpdateCache.at(PhotoColumn::PHOTOS_TABLE);
     ValueObject valueObject;
     bool hasThumbReadyColumn = values.GetObject(PhotoColumn::PHOTO_THUMBNAIL_READY, valueObject);
-    CHECK_AND_RETURN_INFO_LOG(hasPhotosTable, false, "Do not cache thumbnail_ready value in photos table");
+    CHECK_AND_RETURN_RET_INFO_LOG(hasPhotosTable, false, "Do not cache thumbnail_ready value in photos table");
 
     int64_t thumbReady;
     valueObject.GetLong(thumbReady);
