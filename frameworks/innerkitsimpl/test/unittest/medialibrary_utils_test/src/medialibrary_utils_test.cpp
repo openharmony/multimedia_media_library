@@ -348,13 +348,13 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoHighlightPath_test_001, TestSize
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateLcdInfo_test_001, TestSize.Level1)
+HWTEST_F(MediaLibraryUtilsTest, medialib_CacheLcdInfo_test_001, TestSize.Level1)
 {
     if (storePtr == nullptr) {
         exit(1);
     }
-    string row = "medialib_UpdateLcdInfo_test_001";
-    string table = "medialib_UpdateLcdInfo_test_001";
+    string row = "medialib_CacheLcdInfo_test_001";
+    string table = "medialib_CacheLcdInfo_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = table,

@@ -84,10 +84,10 @@ HWTEST_F(EventThumbnailTest, medialib_event_GetThumbnail_test_001, TestSize.Leve
     serverTest->ReleaseService();
 }
 
-HWTEST_F(EventThumbnailTest, medialib_event_UpdateLcdInfo_test_001, TestSize.Level1)
+HWTEST_F(EventThumbnailTest, medialib_event_CacheLcdInfo_test_001, TestSize.Level1)
 {
-    string row = "medialib_UpdateLcdInfo_test_001";
-    string table = "medialib_UpdateLcdInfo_test_001";
+    string row = "medialib_CacheLcdInfo_test_001";
+    string table = "medialib_CacheLcdInfo_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = table,
