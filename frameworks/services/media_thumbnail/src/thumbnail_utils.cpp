@@ -1228,22 +1228,17 @@ bool ThumbnailUtils::UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data,
     return true;
 }
 
-bool ThumbnailUtils::UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
+bool ThumbnailUtils::CacheVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
-    ValuesBucket values;
-    int changedRows;
+    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, false, "opts.store is nullptr");
+    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, false, "Not photos table!");
+
+    if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
+        data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
+    }
+    ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
     int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { opts.row });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("UpdateVisitTime rdbStore Update failed! %{public}d", err);
-        return false;
-    }
     return true;
 }
 

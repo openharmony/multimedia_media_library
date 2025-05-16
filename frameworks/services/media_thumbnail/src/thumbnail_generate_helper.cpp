@@ -37,6 +37,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_file_utils.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_generation_post_process.h"
 #include "thumbnail_source_loading.h"
 #include "thumbnail_utils.h"
 #include "highlight_column.h"
@@ -65,6 +66,9 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
 
     if (isSync) {
         IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
+        int32_t err;
+        err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -88,6 +92,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(ThumbRdbOp
 
     if (isSync) {
         IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
+        ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -583,6 +588,11 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
         MEDIA_ERR_LOG("GenerateLocalThumbnail failed, path: %{public}s", DfxUtils::GetSafePath(tempFileName).c_str());
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
+
+    int32_t err;
+    err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
+
     if (!opts.path.empty()) {
         fileName = GetThumbnailPath(data.path, thumbSuffix);
     }
@@ -607,6 +617,11 @@ int32_t ThumbnailGenerateHelper::GetAvailableKeyFrameFile(ThumbRdbOpt &opts, Thu
         MEDIA_ERR_LOG("GenerateKeyFrameLocalThumbnail failed");
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
+
+    int32_t err;
+    err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
+
     if (!opts.path.empty()) {
         fileName = GetThumbnailPathHighlight(data.path, thumbSuffix, data.timeStamp);
     }
@@ -647,13 +662,18 @@ bool IsLocalKeyFrameThumbnailAvailable(ThumbnailData &data, int32_t type)
     return access(tmpPath.c_str(), F_OK) == 0;
 }
 
-void UpdateStreamReadThumbDbStatus(ThumbRdbOpt& opts, ThumbnailData& data, ThumbnailType thumbType)
+void CacheStreamReadThumbDbStatus(ThumbRdbOpt& opts, ThumbnailData& data, ThumbnailType thumbType)
 {
-    ValuesBucket values;
+    CHECK_AND_RETURN_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, "Not photos table!");
+
     Size tmpSize;
-    if (!ThumbnailUtils::GetLocalThumbSize(data, thumbType, tmpSize)) {
-        return;
+    CHECK_AND_RETURN_LOG(ThumbnailUtils::GetLocalThumbSize(data, thumbType, tmpSize),
+        "GetLocalThumbSize failed");
+    
+    if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
+        data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
     }
+    ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
     switch (thumbType) {
         case ThumbnailType::LCD:
             ThumbnailUtils::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_LCD_SIZE);
@@ -666,20 +686,16 @@ void UpdateStreamReadThumbDbStatus(ThumbRdbOpt& opts, ThumbnailData& data, Thumb
         default:
             break;
     }
-    int changedRows = 0;
-    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { data.id });
-    CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "UpdateStreamReadThumbDbStatus failed! %{public}d", err);
 }
 
-void UpdateThumbStatus(ThumbRdbOpt &opts, ThumbnailType thumbType, ThumbnailData& thumbnailData, int& err,
+void CacheThumbStatus(ThumbRdbOpt &opts, ThumbnailType thumbType, ThumbnailData& thumbnailData, int& err,
     bool& isLocalThumbnailAvailable)
 {
     if (!isLocalThumbnailAvailable) {
-        UpdateStreamReadThumbDbStatus(opts, thumbnailData, thumbType);
+        CacheStreamReadThumbDbStatus(opts, thumbnailData, thumbType);
     }
     if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE) {
-        ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
+        ThumbnailUtils::CacheVisitTime(opts, thumbnailData, err);
     }
 }
 
@@ -738,7 +754,11 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
             return -errno;
         }
     }
-    UpdateThumbStatus(opts, thumbType, thumbnailData, err, isLocalThumbnailAvailable);
+    CacheThumbStatus(opts, thumbType, thumbnailData, err, isLocalThumbnailAvailable);
+    IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
+    int32_t err;
+    err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
     return fd;
 }
 

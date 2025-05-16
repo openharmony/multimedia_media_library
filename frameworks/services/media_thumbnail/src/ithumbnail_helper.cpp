@@ -41,6 +41,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_file_utils.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_generation_post_process.h"
 #include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "medialibrary_astc_stat.h"
@@ -65,6 +66,10 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
         return;
     }
     DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
+    int32_t err;
+    err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    MEDIA_ERR_LOG("PostProcess failed, err %{public}d", err);
+    
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -75,6 +80,9 @@ void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
         return;
     }
     DoCreateLcd(data->opts_, data->thumbnailData_);
+    int32_t err;
+    err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    MEDIA_ERR_LOG("PostProcess failed, err %{public}d", err);
 }
 
 void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -84,6 +92,9 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
         return;
     }
     DoCreateThumbnail(data->opts_, data->thumbnailData_);
+    int32_t err;
+    err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    MEDIA_ERR_LOG("PostProcess failed, err %{public}d", err);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -95,7 +106,10 @@ void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
     }
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     bool isSuccess = DoCreateAstc(data->opts_, data->thumbnailData_);
-    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    CacheThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    int32_t err;
+    err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    MEDIA_ERR_LOG("PostProcess failed, err %{public}d", err);
     MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime,
         data->thumbnailData_.stats.scene, AstcGenScene::NOCHARGING_SCREENOFF, data->thumbnailData_.id);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
@@ -108,6 +122,9 @@ void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
         return;
     }
     DoCreateAstcEx(data->opts_, data->thumbnailData_);
+    int32_t err;
+    err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    MEDIA_ERR_LOG("PostProcess failed, err %{public}d", err);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -837,7 +854,7 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
 
 // After all thumbnails are generated, the value of column "thumbnail_ready" in rdb needs to be updated,
 // And if generate successfully, application should receive a notification at the same time.
-bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess)
+bool IThumbnailHelper::CacheThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess)
 {
     if (data.fileUri.empty()) {
         data.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::DEFAULT_PHOTO_URI + "/", data.id,
@@ -937,7 +954,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     if (!IsCreateThumbnailSuccess(opts, data)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
         if (data.needUpdateDb) {
-            IThumbnailHelper::UpdateThumbnailState(opts, data, false);
+            IThumbnailHelper::CacheThumbnailState(opts, data, false);
         }
         return false;
     }
@@ -949,7 +966,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     data.needCheckWaitStatus = false;
     MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime, data.stats.scene,
         AstcGenScene::SCREEN_ON, data.id);
-    IThumbnailHelper::UpdateThumbnailState(opts, data, true);
+    IThumbnailHelper::CacheThumbnailState(opts, data, true);
     return true;
 }
 
@@ -1077,7 +1094,7 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
             isPrevStepSuccess = false;
         }
     } else if (data.needUpdateDb) {
-        IThumbnailHelper::UpdateThumbnailState(opts, data, false);
+        IThumbnailHelper::CacheThumbnailState(opts, data, false);
     }
 
     if (isPrevStepSuccess && !data.tracks.empty() && (data.trigger == "0")) {
@@ -1232,7 +1249,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
             isPrevStepSuccess = false;
         }
     } else if (data.needUpdateDb) {
-        IThumbnailHelper::UpdateThumbnailState(opts, data, false);
+        IThumbnailHelper::CacheThumbnailState(opts, data, false);
     }
 
     if (isPrevStepSuccess) {
