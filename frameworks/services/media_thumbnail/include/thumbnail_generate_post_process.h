@@ -22,10 +22,10 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
-class ThumbnailGeneratePostProcess {
+class ThumbnailGenerationPostProcess {
 public:
-    ThumbnailGeneratePostProcess() = delete;
-    virtual ~ThumbnailGeneratePostProcess() = delete;
+    ThumbnailGenerationPostProcess() = delete;
+    virtual ~ThumbnailGenerationPostProcess() = delete;
     EXPORT static int32_t PostProcess(const ThumbnailData& data, const ThumbRdbOpt& opts);
 private:
     EXPORT static int32_t UpdateCachedRdbValue(const ThumbnailData& data, const ThumbRdbOpt& opts);

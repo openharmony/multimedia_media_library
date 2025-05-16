@@ -593,13 +593,15 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
+void CacheLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
 {
+    CHECK_AND_RETURN_INFO_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, "table: %{public}s, not photos table",
+        opts.table.c_str());
     if (data.isNeedStoreSize) {
         ThumbnailUtils::StoreThumbnailSize(opts, data);
     }
     data.isNeedStoreSize = true;
-    int err = 0;
+
     CHECK_AND_RETURN_LOG(ThumbnailUtils::CacheLcdInfo(opts, data), "CacheLcdInfo faild");
 }
 
@@ -648,7 +650,7 @@ bool IThumbnailHelper::SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &da
         lcdSource = copySource;
     }
     if (!isSourceEx) {
-        UpdateLcdDbState(opts, data);
+        CacheLcdDbState(opts, data);
     }
     return true;
 }
@@ -695,7 +697,7 @@ bool IThumbnailHelper::SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &d
 
     data.lcd.clear();
     if (!isSourceEx) {
-        UpdateLcdDbState(opts, data);
+        CacheLcdDbState(opts, data);
     }
     return true;
 }
