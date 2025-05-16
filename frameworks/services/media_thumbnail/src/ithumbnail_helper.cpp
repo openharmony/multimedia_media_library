@@ -595,17 +595,12 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 
 void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (opts.table != PhotoColumn::PHOTOS_TABLE) {
-        return;
-    }
     if (data.isNeedStoreSize) {
         ThumbnailUtils::StoreThumbnailSize(opts, data);
     }
     data.isNeedStoreSize = true;
     int err = 0;
-    if (!ThumbnailUtils::CacheLcdInfo(opts, data)) {
-        MEDIA_INFO_LOG("CacheLcdInfo faild");
-    }
+    CHECK_AND_RETURN_LOG(ThumbnailUtils::CacheLcdInfo(opts, data), "CacheLcdInfo faild");
 }
 
 void IThumbnailHelper::UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data)
@@ -847,32 +842,6 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailDa
             MediaFileUtils::GetExtraUri(data.displayName, data.path));
     }
     return isSuccess ? CacheSuccessState(opts, data) : CacheFailState(opts, data);
-}
-
-// This method has to be called before updating rdb
-static int32_t IsPhotoVisible(const ThumbRdbOpt &opts, const ThumbnailData &data)
-{
-    vector<string> columns = {
-        PhotoColumn::PHOTO_THUMBNAIL_VISIBLE
-    };
-    if (data.id.empty() && opts.row.empty()) {
-        MEDIA_ERR_LOG("SendThumbNotify thumb is empty");
-        return 0;
-    }
-    string fileId = data.id.empty() ? opts.row : data.id;
-    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + fileId;
-    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicates.SetWhereClause(strQueryCondition);
-    
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("SendThumbNotify opts.store is nullptr");
-        return 0;
-    }
-    auto resultSet = opts.store->QueryByStep(rdbPredicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "SendThumbNotify result is null");
-    auto ret = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, 0, "SendThumbNotify go to first row failed");
-    return GetInt32Val(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet);
 }
 
 std::string GetLocalOriginFilePath(const std::string &path)

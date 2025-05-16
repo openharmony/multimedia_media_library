@@ -1427,7 +1427,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, Te
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_updateLcdInfo_test, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_CacheLcdInfo_test, TestSize.Level0)
 {
     ThumbRdbOpt opts;
     opts.row = "a";
