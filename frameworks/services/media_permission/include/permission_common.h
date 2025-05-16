@@ -28,6 +28,7 @@ static const std::string TABLE_PERMISSION = "UriPermission"; // 权限表
 
 static const int32_t GRANT_PERMISSION_CALLING_UID = 5523; // foundation调用方
 static const int32_t ROOT_UID = 0;
+static const int32_t SANDBOX_UID = 3076;
 
 /**
  * 鉴权参数
