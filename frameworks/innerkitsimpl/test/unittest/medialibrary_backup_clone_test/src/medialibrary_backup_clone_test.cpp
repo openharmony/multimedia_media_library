@@ -2316,6 +2316,16 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_
     EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, CLONE_RESTORE_ID);
 }
 
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_service_init_test_007, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_service_init_test_007");
+    BackupRestoreService backupRestoreService;
+    RestoreInfo info;
+    info.sceneCode = CLOUD_BACKUP_RESTORE_ID;
+    backupRestoreService.Init(info);
+    EXPECT_EQ(backupRestoreService.restoreService_->sceneCode_, CLOUD_BACKUP_RESTORE_ID);
+}
+
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_get_backup_info_test");
@@ -2559,7 +2569,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_insert_photo_rel
     MEDIA_INFO_LOG("Start medialibrary_backup_clone_insert_photo_related_test");
     FileInfo fileInfo;
     std::vector<FileInfo> fileInfos = {fileInfo};
-    restoreService->InsertPhotoRelated(fileInfos);
+    restoreService->InsertPhotoRelated(fileInfos, SourceType::PHOTOS);
     EXPECT_EQ(restoreService->migrateDatabaseMapNumber_, 0);
 }
 

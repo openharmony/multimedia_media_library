@@ -56,6 +56,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/burst_key_generator.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/classify/clone_restore_classify.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/clone_restore.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/cloud_backup_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/geo_dictionary/clone_restore_geo_dictionary.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/geo_knowledge/clone_restore_geo.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/geo_knowledge/geo_knowledge_restore.cpp",

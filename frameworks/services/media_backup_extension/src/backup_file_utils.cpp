@@ -581,7 +581,8 @@ void BackupFileUtils::DeleteSdDatabase(const std::string &prefix)
 
 bool BackupFileUtils::IsLivePhoto(const FileInfo &fileInfo)
 {
-    return fileInfo.specialFileType == LIVE_PHOTO_TYPE || fileInfo.specialFileType == LIVE_PHOTO_HDR_TYPE;
+    return fileInfo.specialFileType == LIVE_PHOTO_TYPE || fileInfo.specialFileType == LIVE_PHOTO_HDR_TYPE ||
+        fileInfo.isLivePhoto;
 }
 
 static void addPathSuffix(const string &oldPath, const string &suffix, string &newPath)
