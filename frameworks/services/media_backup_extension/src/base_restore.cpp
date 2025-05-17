@@ -394,7 +394,7 @@ bool BaseRestore::PrepareInsertValue(const int32_t sceneCode, FileInfo &fileInfo
     int32_t errCode = IsFileValid(fileInfo, sceneCode);
     if (errCode != E_OK) {
         fileInfo.needMove = false;
-        if (!NeedReportError(restoreMode_, fileInfos[i].userId)) {
+        if (!NeedReportError(restoreMode_, fileInfo.userId)) {
             MEDIA_WARN_LOG("file not found but no need report, file name:%{public}s",
                 BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str());
             notFoundNumber_++;

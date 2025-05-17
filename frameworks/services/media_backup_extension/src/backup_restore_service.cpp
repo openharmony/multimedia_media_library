@@ -38,9 +38,10 @@ public:
     void OnStatistic(const SqlExecutionInfo &info) override
     {
         for (auto sql : info.sql_) {
-            MEDIA_DEBUG_LOG("DEBUG_MediaLibraryBackup totaltime: %{public}ld waitTime: %{public}ld "
-                "prepareTime: %{public}ld executeTime: %{public}ld sql: %{public}s",
-                info.totalTime_, info.waitTime_, info.prepareTime_, info.executeTime_, sql.c_str());
+            MEDIA_DEBUG_LOG("DEBUG_MediaLibraryBackup totaltime: %{public}lld waitTime: %{public}lld "
+                "prepareTime: %{public}lld executeTime: %{public}lld sql: %{public}s",
+                (long long) info.totalTime_, (long long) info.waitTime_, (long long) info.prepareTime_,
+                (long long) info.executeTime_, sql.c_str());
         }
     };
 };
