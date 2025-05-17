@@ -95,7 +95,7 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "resultSet->GoToFirstRow() failed");
     int32_t thumbnailVisible = GetInt32Val(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet);
 
-    notifyType = thumbnailVisible > 0 ? NotifyType::NOTIFY_UPDATE : NotifyType::NOTIFY_ADD;
+    notifyType = thumbnailVisible > 0 ? NotifyType::NOTIFY_THUMB_UPDATE : NotifyType::NOTIFY_THUMB_ADD;
     return E_OK;
 }
 
