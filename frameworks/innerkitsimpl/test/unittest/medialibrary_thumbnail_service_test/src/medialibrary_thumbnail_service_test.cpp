@@ -1445,7 +1445,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_046, Te
     opts.store = storePtr;
     ThumbnailData data;
     int err = E_ERR;
-    auto res = ThumbnailUtils::UpdateVisitTime(opts, data, err);
+    auto res = ThumbnailUtils::CacheVisitTime(opts, data);
     EXPECT_EQ(res, false);
 }
 
