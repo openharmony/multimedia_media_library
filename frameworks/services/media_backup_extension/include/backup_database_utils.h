@@ -89,7 +89,7 @@ public:
     static void PrintQuerySql(const std::string& querySql);
     static int64_t QueryLong(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
         const std::string &columnName, const std::vector<NativeRdb::ValueObject> &args = {});
-    static int64_t QueryMaxId(std::shared_ptr<NativeRdb::RdbStore> rdbStore，
+    static int64_t QueryMaxId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
         const std::string& tableName, const std::string& idColumnName);
     static int ExecuteSQL(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string& sql,
         const std::vector<NativeRdb::ValueObject> &args = {});
