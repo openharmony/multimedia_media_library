@@ -14,8 +14,6 @@
  */
 #include "photo_album_dao.h"
 
-#include <regex>
-
 #include "rdb_store.h"
 #include "media_log.h"
 #include "result_set_utils.h"

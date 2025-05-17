@@ -967,6 +967,7 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos, sourceType);
+    geoKnowledgeRestore_.RestoreMaps(fileInfos);
     highlightRestore_.RestoreMaps(fileInfos);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1042,7 +1043,6 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos, sourceType);
-    geoKnowledgeRestore_.RestoreMaps(fileInfos);
     highlightRestore_.RestoreMaps(fileInfos);
 
     // create dentry file for cloud origin, save failed cloud id
