@@ -601,7 +601,7 @@ int64_t BackupDatabaseUtils::QueryMaxId(std::shared_ptr<NativeRdb::RdbStore> rdb
 
     std::string querySql = "SELECT MAX(" + idColumnName + ") AS max_id FROM " + tableName;
     int64_t maxId = BackupDatabaseUtils::QueryLong(rdbStore, querySql, "max_id");
-    MEDIA_INFO_LOG("QueryMaxId on table '%{public}s' colnumn '%{public}s' return %{public}" PRId64,
+    MEDIA_INFO_LOG("QueryMaxId on table '%{public}s' column '%{public}s' return %{public}" PRId64,
         tableName.c_str(), idColumnName.c_str(), maxId);
 
     return maxId;
