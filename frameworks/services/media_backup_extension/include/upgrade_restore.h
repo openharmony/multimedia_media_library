@@ -156,6 +156,7 @@ protected:
     ffrt::mutex galleryFailedMutex_;
     ffrt::mutex externalFailedMutex_;
     int32_t maxId_{-1};
+    int64_t maxAnalysisAlbumId_ {0};
 };
 } // namespace Media
 } // namespace OHOS

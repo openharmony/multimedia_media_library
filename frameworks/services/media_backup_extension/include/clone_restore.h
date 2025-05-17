@@ -265,6 +265,7 @@ private:
     std::atomic<uint64_t> thumbMigrateFileNumber_{0};
     std::atomic<uint64_t> migrateCloudSuccessNumber_{0};
     CloneRestoreGeoDictionary cloneRestoreGeoDictionary_;
+    int64_t maxAnalysisAlbumId_ {0};
 };
 
 template<typename T>
