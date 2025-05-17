@@ -2066,14 +2066,21 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
     string movingPhotoVideoPath = "";
     bool isMovingPhotoVideoRequest =
         cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD) == OPEN_MOVING_PHOTO_VIDEO;
+    bool isMovingPhotoMetadataRequest =
+        cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD) == OPEN_PRIVATE_MOVING_PHOTO_METADATA;
+    CHECK_AND_RETURN_RET_LOG((!isMovingPhotoVideoRequest && !isMovingPhotoMetadataRequest) ||
+        CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(),
+            cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)),
+        E_INVALID_VALUES,
+        "Non-moving photo requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
+        id.c_str(), fileAsset->GetPhotoSubType());
     if (isMovingPhotoVideoRequest) {
-        CHECK_AND_RETURN_RET_LOG(
-            CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(),
-                cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)),
-            E_INVALID_VALUES,
-            "Non-moving photo requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
-            id.c_str(), fileAsset->GetPhotoSubType());
         movingPhotoVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
+    }
+
+    if (isMovingPhotoMetadataRequest) {
+        return OpenFileWithPrivacy(
+            MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path), MEDIA_FILEMODE_READONLY, id);
     }
 
     string sourcePath = isMovingPhotoVideoRequest ?
