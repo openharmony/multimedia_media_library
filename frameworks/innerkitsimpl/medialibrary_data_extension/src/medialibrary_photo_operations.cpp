@@ -2954,7 +2954,8 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         ScanMovingPhoto(cmd, columns);
 
         vector<string> fileAssetColumns = {PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
-            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_ID };
+            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_ID,
+            PhotoColumn::STAGE_VIDEO_TASK_STATUS };
         shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
             PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, fileAssetColumns);
         CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
@@ -3109,10 +3110,10 @@ int32_t MediaLibraryPhotoOperations::CopyVideoFile(const string& assetPath, bool
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
     string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourceImagePath);
     if (toSource) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(videoPath, sourceVideoPath), E_HAS_FS_ERROR,
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileSafe(videoPath, sourceVideoPath), E_HAS_FS_ERROR,
             "Copy videoPath to sourceVideoPath, path:%{private}s", videoPath.c_str());
     } else {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(sourceVideoPath, videoPath), E_HAS_FS_ERROR,
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileSafe(sourceVideoPath, videoPath), E_HAS_FS_ERROR,
             "Copy sourceVideoPath to videoPath, path:%{private}s", sourceVideoPath.c_str());
     }
     return E_OK;
