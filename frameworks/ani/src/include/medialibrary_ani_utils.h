@@ -272,7 +272,9 @@ public:
     static ani_status ToAniDoubleObject(ani_env *env, double src, ani_object &aniObj);
 
     static ani_status GetUint32Array(ani_env *env, ani_object arg, std::vector<uint32_t> &array);
+    static ani_status GetInt32Array(ani_env *env, ani_object arg, std::vector<int32_t> &array);
     static ani_status ToAniInt32Array(ani_env *env, const std::vector<uint32_t> &array, ani_object &aniArray);
+    static ani_status ToAniNumberArray(ani_env *env, const std::vector<int32_t> &array, ani_object &aniArray);
     static ani_status GetStringArray(ani_env *env, ani_object arg, std::vector<std::string> &array);
     static ani_status ToAniStringArray(ani_env *env, const std::vector<std::string> &array, ani_object &aniArray);
     static ani_status GetObjectArray(ani_env *env, ani_object arg, std::vector<ani_object> &array);
@@ -374,6 +376,7 @@ public:
         const bool hiddenOnly);
     static bool IsFeaturedSinglePortraitAlbum(std::string albumName, DataShare::DataSharePredicates &predicates);
     static bool IsSystemApp();
+    static ani_status ParseAssetIdArray(ani_env *env, ani_object photoAssets, std::vector<std::string> &idArray);
 
     EXPORT static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::vector<std::string> &cloumns);

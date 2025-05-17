@@ -35,6 +35,7 @@ std::vector<std::shared_ptr<FileAsset>> MediaAssetsChangeRequestAni::fileAssets_
 std::vector<AssetsChangeOperation> MediaAssetsChangeRequestAni::assetsChangeOperations_;
 bool MediaAssetsChangeRequestAni::isFavorite_;
 bool MediaAssetsChangeRequestAni::isHidden_;
+std::string MediaAssetsChangeRequestAni::userComment_;
 
 MediaAssetsChangeRequestAni::MediaAssetsChangeRequestAni(vector<shared_ptr<FileAsset>> fileAssets)
 {
@@ -88,6 +89,30 @@ void MediaAssetsChangeRequestAni::SetHidden([[maybe_unused]] ani_env *env, [[may
     RecordChangeOperation(AssetsChangeOperation::BATCH_SET_HIDDEN);
 }
 
+ani_object MediaAssetsChangeRequestAni::SetUserComment([[maybe_unused]] ani_env *env,
+    [[maybe_unused]] ani_object object, ani_string comment)
+{
+    ANI_DEBUG_LOG("%{public}s is called", __func__);
+    ani_object result {};
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return result;
+    }
+    auto context = Unwrap(env, object);
+    CHECK_COND_WITH_MESSAGE(env, context != nullptr, "[SetUserComment] context is null");
+
+    std::string stdComment("");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetString(env, comment, stdComment) == ANI_OK,
+        "Failed to get comment");
+    for (const auto& fileAsset : context->fileAssets_) {
+        fileAsset->SetUserComment(stdComment);
+    }
+    context->userComment_ = std::move(stdComment);
+    RecordChangeOperation(AssetsChangeOperation::BATCH_SET_USER_COMMENT);
+    return result;
+}
+
 bool MediaAssetsChangeRequestAni::SetAssetsPropertyExecute(const AssetsChangeOperation& changeOperation)
 {
     string uri;
@@ -103,6 +128,10 @@ bool MediaAssetsChangeRequestAni::SetAssetsPropertyExecute(const AssetsChangeOpe
         case AssetsChangeOperation::BATCH_SET_HIDDEN:
             uri = PAH_HIDE_PHOTOS;
             valuesBucket.Put(PhotoColumn::MEDIA_HIDDEN, GetHiddenStatus() ? YES : NO);
+            break;
+        case AssetsChangeOperation::BATCH_SET_USER_COMMENT:
+            uri = PAH_BATCH_UPDATE_USER_COMMENT;
+            valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, GetUserComment());
             break;
         default:
             MEDIA_ERR_LOG("Unsupported assets change operation: %{public}d", changeOperation);
@@ -173,9 +202,14 @@ bool MediaAssetsChangeRequestAni::GetHiddenStatus()
     return isHidden_;
 }
 
+std::string &MediaAssetsChangeRequestAni::GetUserComment()
+{
+    return userComment_;
+}
 
 MediaAssetsChangeRequestAni* MediaAssetsChangeRequestAni::Unwrap(ani_env *env, ani_object object)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
     ani_long context;
     if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativeHandle", &context)) {
         return nullptr;
@@ -203,6 +237,7 @@ ani_status MediaAssetsChangeRequestAni::Constructor(ani_env *env, ani_object obj
 
 ani_status MediaAssetsChangeRequestAni::Init(ani_env *env)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is null");
     ani_class cls;
     if (ANI_OK != env->FindClass(PAH_ANI_CLASS_MEDIA_ASSETS_CHANGE_REQUEST.c_str(), &cls)) {
         return ANI_ERROR;
@@ -216,7 +251,7 @@ ani_status MediaAssetsChangeRequestAni::Init(ani_env *env)
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
         return ANI_ERROR;
-    };
+    }
 
     return ANI_OK;
 }

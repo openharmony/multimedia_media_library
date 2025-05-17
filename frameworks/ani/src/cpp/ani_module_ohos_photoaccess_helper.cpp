@@ -34,6 +34,7 @@ using namespace OHOS::Media;
 namespace OHOS::Media::Ani {
 ani_status GlobalFunctionInit(ani_env *env)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     const char *namespaceName = "L@ohos/file/photoAccessHelper/photoAccessHelper;";
     ani_namespace ns;
     if (ANI_OK != env->FindNamespace(namespaceName, &ns)) {
@@ -42,14 +43,14 @@ ani_status GlobalFunctionInit(ani_env *env)
     }
 
     std::array staticMethods = {
-        ani_native_function {"getPhotoAccessHelper", nullptr,
-            reinterpret_cast<void *>(MediaLibraryAni::GetPhotoAccessHelper)},
+        ani_native_function {"getPhotoAccessHelperInner", nullptr,
+            reinterpret_cast<void *>(MediaLibraryAni::GetPhotoAccessHelperInner)},
     };
 
     if (ANI_OK != env->Namespace_BindNativeFunctions(ns, staticMethods.data(), staticMethods.size())) {
         ANI_ERR_LOG("Cannot bind native methods to namespace: %{public}s", namespaceName);
         return ANI_ERROR;
-    };
+    }
 
     ANI_INFO_LOG("GlobalFunctionInit ok");
     return ANI_OK;
@@ -59,11 +60,13 @@ ani_status GlobalFunctionInit(ani_env *env)
 ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
 {
     ANI_INFO_LOG("ANI_Constructor start");
+    CHECK_COND_RET(vm != nullptr, ANI_ERROR, "vm is nullptr");
     ani_env *env;
     if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &env)) {
         ANI_ERR_LOG("Unsupported %{public}d", ANI_VERSION_1);
         return ANI_ERROR;
     }
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
 
     CHECK_STATUS_RET(OHOS::Media::Ani::GlobalFunctionInit(env), "GlobalFunctionInit fail");
     CHECK_STATUS_RET(MediaLibraryAni::PhotoAccessHelperInit(env), "PhotoAccessHelperInit fail");
@@ -71,10 +74,13 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
     CHECK_STATUS_RET(FileAssetAni::PhotoAccessHelperInit(env), "FileAssetAni init fail");
     CHECK_STATUS_RET(PhotoAlbumAni::PhotoAccessInit(env), "PhotoAccessInit fail");
     CHECK_STATUS_RET(HighlightAlbumAni::Init(env), "HighlightAlbumAni init fail");
+    CHECK_STATUS_RET(HighlightAlbumAni::AnalysisAlbumInit(env), "AnalysisAlbumInit fail");
     CHECK_STATUS_RET(MediaAssetEditDataAni::Init(env), "MediaAssetEditDataAni init fail");
     CHECK_STATUS_RET(MediaAssetChangeRequestAni::Init(env), "MediaAssetChangeRequestAni init fail");
     CHECK_STATUS_RET(MediaAssetsChangeRequestAni::Init(env), "MediaAssetsChangeRequestAni init fail");
     CHECK_STATUS_RET(MediaAlbumChangeRequestAni::Init(env), "MediaAlbumChangeRequestAni init fail");
+    CHECK_STATUS_RET(MediaAlbumChangeRequestAni::MediaAnalysisAlbumChangeRequestInit(env),
+        "MediaAnalysisAlbumChangeRequestAni init fail");
     CHECK_STATUS_RET(MediaAssetManagerAni::Init(env), "MediaAssetManagerAni init fail");
     CHECK_STATUS_RET(MovingPhotoAni::Init(env), "MovingPhoto init fail");
     CHECK_STATUS_RET(CloudEnhancementAni::Init(env), "CloudEnhancementAni init fail");

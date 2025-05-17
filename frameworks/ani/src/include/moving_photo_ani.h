@@ -22,6 +22,12 @@
 
 namespace OHOS {
 namespace Media {
+struct MovingPhotoParam {
+    std::string requestId;
+    CompatibleMode compatibleMode;
+};
+struct MovingPhotoAsyncContext;
+
 class MovingPhotoAni {
 public:
     MovingPhotoAni(const std::string& photoUri) : photoUri_(photoUri) {};
@@ -30,10 +36,20 @@ public:
     static MovingPhotoAni* Unwrap(ani_env *env, ani_object object);
     static int32_t OpenReadOnlyFile(const std::string& uri, bool isReadImage);
     static int32_t OpenReadOnlyLivePhoto(const std::string& destLivePhotoUri);
-    static ani_object NewMovingPhotoAni(ani_env *env, const string& photoUri, SourceMode sourceMode);
+    static int32_t OpenReadOnlyMetadata(const std::string& movingPhotoUri);
+    static ani_object NewMovingPhotoAni(ani_env *env, const std::string& photoUri, SourceMode sourceMode,
+        MovingPhotoParam movingPhotoParam, const std::function<void(int, int, std::string)> callbacks);
+    static void SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context);
     std::string GetUriInner();
     SourceMode GetSourceMode();
+    static int32_t GetFdFromUri(const std::string &uri);
     void SetSourceMode(SourceMode sourceMode);
+    std::string GetRequestId();
+    void SetRequestId(const std::string requestId);
+    CompatibleMode GetCompatibleMode();
+    void SetCompatibleMode(const CompatibleMode compatibleMode);
+    void SetMovingPhotoCallback(const std::function<void(int, int, std::string)> callback);
+    std::function<void(int, int, std::string)> GetMovingPhotoCallback();
 
 private:
     static ani_object Constructor(ani_env *env, [[maybe_unused]] ani_class clazz, ani_string photoUriAni);
@@ -48,6 +64,8 @@ private:
 
     std::string photoUri_;
     SourceMode sourceMode_ = SourceMode::EDITED_MODE;
+    CompatibleMode compatibleMode_ = CompatibleMode::COMPATIBLE_FORMAT_MODE;
+    std::string requestId_;
 };
 
 struct MovingPhotoAsyncContext : public AniError {
@@ -59,10 +77,14 @@ struct MovingPhotoAsyncContext : public AniError {
 
     std::string movingPhotoUri;
     SourceMode sourceMode;
+    CompatibleMode compatibleMode;
+    std::function<void(int, int, std::string)> callback;
+    std::string requestId;
     ResourceType resourceType;
     std::string destImageUri;
     std::string destVideoUri;
     std::string destLivePhotoUri;
+    std::string destMetadataUri;
     RequestContentMode requestContentMode = UNDEFINED;
     void* arrayBufferData = nullptr;
     size_t arrayBufferLength = 0;

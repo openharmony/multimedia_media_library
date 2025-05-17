@@ -103,6 +103,7 @@ CompatibleMode AniMediaAssetDataHandler::GetCompatibleMode()
 void AniMediaAssetDataHandler::EtsOnDataPrepared(ani_env *env, ani_object arg, ani_object extraInfo)
 {
     static const char *className = PAH_ANI_CLASS_MEDIA_MANAGER.c_str();
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is null");
     ani_class cls {};
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
@@ -140,6 +141,7 @@ void AniMediaAssetDataHandler::EtsOnDataPrepared(ani_env *env, ani_object pictur
 {
     static const char *className = PAH_ANI_CLASS_MEDIA_MANAGER.c_str();
     ani_class cls {};
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is null");
     ani_status status = env->FindClass(className, &cls);
     if (status != ANI_OK) {
         ANI_ERR_LOG("Failed to find class: %{public}s, ani status: %{public}d", className, static_cast<int>(status));
