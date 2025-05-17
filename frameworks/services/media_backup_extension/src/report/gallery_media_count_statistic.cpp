@@ -181,7 +181,7 @@ int32_t GalleryMediaCountStatistic::QueryGalleryCloneCount()
 {
     static string QUERY_GALLERY_CLONE_COUNT =
         string("SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -3 AND _size > 0 ") +
-        "AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( " +
+        "AND COALESCE(storage_id, 0) IN (0, 65537) AND relative_bucket_id NOT IN ( " +
         "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
     return BackupDatabaseUtils::QueryInt(this->galleryRdb_, QUERY_GALLERY_CLONE_COUNT, CUSTOM_COUNT);
 }
@@ -380,7 +380,7 @@ std::vector<AlbumStatisticInfo> GalleryMediaCountStatistic::QueryAlbumCountByLPa
 bool GalleryMediaCountStatistic::HasLowQualityImage()
 {
     std::string sql = "SELECT count(1) AS count FROM gallery_media WHERE (local_media_id != -1) AND \
-        (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
+        (COALESCE(storage_id, 0) IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
         garbage_album WHERE type = 1) AND _size = 0 AND photo_quality = 0";
     int count = BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("HasLowQualityImage count:%{public}d", count);

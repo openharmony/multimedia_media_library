@@ -57,7 +57,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_CLOUD_META_QUERY_COUNT = "\
         SELECT COUNT(1) AS count \
@@ -77,7 +77,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE = "\
         SELECT \
@@ -99,6 +99,7 @@ private:
             title, \
             orientation, \
             date_modified, \
+            date_added, \
             relative_bucket_id, \
             sourcePath, \
             is_hw_burst, \
@@ -139,7 +140,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC \
         LIMIT ?, ?;";
     const std::string SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE = "\
@@ -162,6 +163,7 @@ private:
             title, \
             orientation, \
             date_modified, \
+            date_added, \
             relative_bucket_id, \
             sourcePath, \
             is_hw_burst, \
@@ -200,7 +202,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC \
         LIMIT ?, ?;";
     const std::string SQL_GALLERY_MEDIA_QUERY_NO_NEED_MIGRATE_COUNT = "\
@@ -208,7 +210,7 @@ private:
         FROM gallery_media \
         WHERE (local_media_id = -1) OR \
             _data LIKE '/storage/emulated/0/Pictures/cloud/Imports%' OR \
-            (0 = ? AND storage_id NOT IN (0, 65537));";
+            (0 = ? AND COALESCE(storage_id, 0) NOT IN (0, 65537));";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTO_ALBUM_DAO_H
