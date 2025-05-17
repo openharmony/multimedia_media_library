@@ -101,7 +101,7 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
 
 bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data)
 {
-    bool hasPhotosTable = data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end();
+    bool hasPhotosTable = data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) != data.rdbUpdateCache.end();
     CHECK_AND_RETURN_RET_INFO_LOG(hasPhotosTable, false, "Do not cache photos table value");
 
     const ValuesBucket& values = data.rdbUpdateCache.at(PhotoColumn::PHOTOS_TABLE);
