@@ -100,10 +100,8 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
 
 void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
 {
-    if (data == nullptr) {
-        MEDIA_ERR_LOG("CreateAstc failed, data is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     bool isSuccess = DoCreateAstc(data->opts_, data->thumbnailData_);
     CacheThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
