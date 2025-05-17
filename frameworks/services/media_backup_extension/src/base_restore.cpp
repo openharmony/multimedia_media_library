@@ -967,6 +967,7 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos, sourceType);
+    highlightRestore_.RestoreMaps(fileInfos);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     migrateDatabaseNumber_ += rowNum;
@@ -1041,6 +1042,8 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos, sourceType);
+    geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    highlightRestore_.RestoreMaps(fileInfos);
 
     // create dentry file for cloud origin, save failed cloud id
     std::vector<std::string> dentryFailedOrigin;
@@ -1443,8 +1446,6 @@ void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t s
         "%{public}ld photos (%{public}ld faces + %{public}ld maps) cost %{public}ld",
         (long)(startInsertMap - startQuery), (long)mapRowNum, (long)(startInsertPortrait - startInsertMap),
         (long)portraitPhotoNum, (long)faceRowNum, (long)portraitMapRowNum, (long)(end - startInsertPortrait));
-    geoKnowledgeRestore_.RestoreMaps(fileInfos);
-    highlightRestore_.RestoreMaps(fileInfos);
 }
 
 bool BaseRestore::NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)

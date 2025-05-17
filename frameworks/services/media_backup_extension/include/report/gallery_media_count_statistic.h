@@ -130,7 +130,7 @@ private:
     const std::string SQL_QUERY_GALLERY_SD_CARD_COUNT = "\
         SELECT COUNT(1) AS count \
         FROM gallery_media \
-        WHERE storage_id NOT IN (0, 65537) AND \
+        WHERE COALESCE(storage_id, 0) NOT IN (0, 65537) AND \
             _size > 0 AND \
             (0 = ? OR media_type = ?) AND \
             (-1 = ? OR 0 = ? AND COALESCE(local_media_id, 0) <> -4 OR 1 = ? AND COALESCE(local_media_id, 0) = -4) AND \

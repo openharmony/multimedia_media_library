@@ -30,6 +30,8 @@ public:
         int32_t sourceType) override;
 
 protected:
+    void GetAccountValid() override;
+    void GetSyncSwitchOn() override;
     bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value) override;
     void RestoreAnalysisAlbum() override;

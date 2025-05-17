@@ -24,6 +24,7 @@
 #include "backup_const.h"
 #include "cloud_backup_restore.h"
 #include "database_utils.h"
+#include "gallery_db_upgrade.h"
 #include "gallery_source.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
@@ -35,12 +36,14 @@
 using namespace testing::ext;
 
 namespace OHOS::Media {
-const std::string TEST_BACKUP_PATH = "/data/test/backup/db";
-const std::string TEST_BACKUP_GALLERY_PATH = "/data/test/backup/db/gallery.db";
+const int32_t SLEEP_SECONDS = 2;
+const std::string TEST_BACKUP_PATH = "/data/test/backup/cloudBackupRestore";
+const std::string TEST_BACKUP_GALLERY_PATH = TEST_BACKUP_PATH + "/gallery.db";
 const std::string TEST_UPGRADE_FILE_DIR = "/data/test/backup/file";
 const std::string GALLERY_APP_NAME = "gallery";
 const std::string MEDIA_APP_NAME = "external";
 const std::string TEST_NEW_DATA = "/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg";
+const std::string TEST_PREFIX = "/backup";
 
 static std::shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
@@ -55,11 +58,18 @@ void ClearCloneSource(GallerySource &gallerySource, const std::string &dbPath)
 {
     gallerySource.galleryStorePtr_ = nullptr;
     NativeRdb::RdbHelper::DeleteRdbStore(dbPath);
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 void CloudBackupRestoreTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("SetUpTestCase");
+    MEDIA_INFO_LOG("Start create directory");
+    if (!MediaFileUtils::IsFileExists(TEST_BACKUP_PATH) && !MediaFileUtils::CreateDirectory(TEST_BACKUP_PATH)) {
+        MEDIA_ERR_LOG("%{public}s not exist, create failed", TEST_BACKUP_PATH.c_str());
+        exit(1);
+    }
+
     MEDIA_INFO_LOG("Start Init media_library.db");
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -71,6 +81,7 @@ void CloudBackupRestoreTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("TearDownTestCase");
     CloudBackupRestoreTestUtils::ClearAllData();
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
 }
 
 // SetUp:Execute before each test case
@@ -105,10 +116,15 @@ HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_query_file_infos_001, Test
         std::make_unique<CloudBackupRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CLOUD_BACKUP_RESTORE_ID);
     restore->mediaLibraryRdb_ = g_rdbStore->GetRaw();
     restore->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, true);
+    ASSERT_NE(restore->galleryRdb_, nullptr);
+    MEDIA_INFO_LOG("Start upgrade");
+    DataTransfer::GalleryDbUpgrade().OnUpgrade(restore->galleryRdb_);
 
     std::vector<FileInfo> fileInfos = restore->QueryFileInfos(0);
-    EXPECT_GT(fileInfos.size(), 0);
+    MEDIA_INFO_LOG("QueryFileInfos size: %{public}zu", fileInfos.size());
+    ASSERT_GT(fileInfos.size(), 0);
     FileInfo fileInfo = fileInfos[0];
+    MEDIA_INFO_LOG("localMediaId: %{public}d, fileIdOld: %{public}d", fileInfo.localMediaId, fileInfo.fileIdOld);
     EXPECT_EQ(fileInfo.localMediaId, fileInfo.fileIdOld);
 
     ClearCloneSource(gallerySource, TEST_BACKUP_GALLERY_PATH);
@@ -133,6 +149,9 @@ HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_query_file_infos_002, Test
         std::make_unique<CloudBackupRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CLOUD_BACKUP_RESTORE_ID);
     restore->mediaLibraryRdb_ = g_rdbStore->GetRaw();
     restore->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, true);
+    ASSERT_NE(restore->galleryRdb_, nullptr);
+    MEDIA_INFO_LOG("Start upgrade");
+    DataTransfer::GalleryDbUpgrade().OnUpgrade(restore->galleryRdb_);
 
     std::vector<FileInfo> fileInfos = restore->QueryFileInfos(0);
     EXPECT_GT(fileInfos.size(), 0);
@@ -178,6 +197,73 @@ HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_set_value_from_metadata_00
     EXPECT_NE(value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject), 0); // date_added added to value
 
     MEDIA_INFO_LOG("End cloud_backup_restore_set_value_from_metadata_001");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_is_cloud_restore_satisfied_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_is_cloud_restore_supported_001");
+    std::unique_ptr<CloudBackupRestore> restore =
+        std::make_unique<CloudBackupRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CLOUD_BACKUP_RESTORE_ID);
+    restore->GetAccountValid();
+    restore->GetSyncSwitchOn();
+    EXPECT_EQ(restore->IsCloudRestoreSatisfied(), false);
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_is_cloud_restore_supported_001");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_insert_photo_related_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_insert_photo_related_001");
+    std::unique_ptr<CloudBackupRestore> restore =
+        std::make_unique<CloudBackupRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CLOUD_BACKUP_RESTORE_ID);
+    FileInfo fileInfo;
+    std::vector<FileInfo> fileInfos;
+    restore->InsertPhotoRelated(fileInfos, SourceType::GALLERY);
+    EXPECT_EQ(restore->migratePortraitFaceNumber_, 0);
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_insert_photo_related_001");
+}
+
+bool TestConvertPathToRealPathByPath(FileInfo &info)
+{
+    std::unique_ptr<CloudBackupRestore> restore =
+        std::make_unique<CloudBackupRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CLOUD_BACKUP_RESTORE_ID);
+    return restore->ConvertPathToRealPath(info.oldPath, TEST_PREFIX, info.filePath, info.relativePath, info);
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_convert_path_to_real_path_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_convert_path_to_real_path_001");
+    FileInfo fileInfo;
+    fileInfo.oldPath = "/storage/emulated/0/Pictures/test.jpg";
+    bool ret = TestConvertPathToRealPathByPath(fileInfo);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(fileInfo.filePath, TEST_PREFIX + fileInfo.oldPath);
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_convert_path_to_real_path_001");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_convert_path_to_real_path_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_convert_path_to_real_path_002");
+    FileInfo fileInfo;
+    fileInfo.oldPath = "/storage/1234-5678/Pictures/test.jpg";
+    bool ret = TestConvertPathToRealPathByPath(fileInfo);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(fileInfo.filePath, TEST_PREFIX + fileInfo.oldPath);
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_convert_path_to_real_path_002");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_convert_path_to_real_path_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_convert_path_to_real_path_003");
+    FileInfo fileInfo;
+    fileInfo.oldPath = "/storage/1234-5678";
+    bool ret = TestConvertPathToRealPathByPath(fileInfo);
+    EXPECT_EQ(ret, false);
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_convert_path_to_real_path_003");
 }
 
 void CloudBackupRestoreTestUtils::ClearAllData()

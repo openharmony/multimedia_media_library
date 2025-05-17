@@ -99,6 +99,7 @@ private:
             title, \
             orientation, \
             date_modified, \
+            date_added, \
             relative_bucket_id, \
             sourcePath, \
             is_hw_burst, \
@@ -162,6 +163,7 @@ private:
             title, \
             orientation, \
             date_modified, \
+            date_added, \
             relative_bucket_id, \
             sourcePath, \
             is_hw_burst, \
@@ -208,7 +210,7 @@ private:
         FROM gallery_media \
         WHERE (local_media_id = -1) OR \
             _data LIKE '/storage/emulated/0/Pictures/cloud/Imports%' OR \
-            (0 = ? AND storage_id NOT IN (0, 65537));";
+            (0 = ? AND COALESCE(storage_id, 0) NOT IN (0, 65537));";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTO_ALBUM_DAO_H

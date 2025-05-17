@@ -109,6 +109,7 @@
             <option name="shell" value="mkdir -p /data/test/backup/db/medialibrary/ce/databases"/>
             <option name="shell" value="mkdir -p /data/test/backup/db/external/ce/databases"/>
             <option name="shell" value="mkdir -p /data/test/backup/db/medialibrary/ce/databases/rdb"/>
+            <option name="shell" value="mkdir -p /data/test/backup/db/cloudBackupRestore/"/>
             <option name="shell" value="touch /data/test/backup/1.txt"/>
             <option name="push" value="backup_testfile/test.xml -> /data/test/backup" src="res"/>
             <option name="push" value="backup_testfile/test2.xml -> /data/test/backup" src="res"/>
