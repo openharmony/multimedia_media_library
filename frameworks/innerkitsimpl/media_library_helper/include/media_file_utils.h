@@ -99,6 +99,7 @@ public:
         unsigned short curRecursionDepth = 0);
     EXPORT static bool CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile);
     EXPORT static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
+    EXPORT static bool CopyFileSafe(const std::string &filePath, const std::string &newPath);
     EXPORT static bool WriteStrToFile(const std::string &filePath, const std::string &str);
     EXPORT static bool ReadStrFromFile(const std::string &filePath, std::string &fileContent);
     EXPORT static bool CopyFile(int32_t rfd, int32_t wfd);
