@@ -440,6 +440,8 @@ void CloneRestore::RestorePhotoForCloud()
 void CloneRestore::RestoreAlbum()
 {
     MEDIA_INFO_LOG("Start clone restore: albums");
+    maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
+        ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {
             MEDIA_ERR_LOG("Column status of %{public}s is not ready for restore album, quit",
@@ -2150,7 +2152,6 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     RecordOldPortraitAlbumDfx();
 
-    int64_t maxAlbumId = BackupDatabaseUtils::QueryMaxAlbumId(mediaLibraryRdb_);
     std::string querySql =   "SELECT count(1) AS count FROM " + ANALYSIS_ALBUM_TABLE + " WHERE ";
     std::string whereClause = "(" + SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
         "album_subtype" + " = " + std::to_string(PORTRAIT) + ")";
@@ -2175,7 +2176,7 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
             }
         }
 
-        InsertPortraitAlbum(analysisAlbumTbl, maxAlbumId);
+        InsertPortraitAlbum(analysisAlbumTbl, maxAnalysisAlbumId_);
     }
 
     LogPortraitCloneDfx();
