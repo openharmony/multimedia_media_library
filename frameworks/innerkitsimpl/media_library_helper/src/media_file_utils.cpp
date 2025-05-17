@@ -692,6 +692,23 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
     return errCode;
 }
 
+bool MediaFileUtils::CopyFileSafe(const string &filePath, const string &newPath)
+{
+    if (newPath.empty()) {
+        MEDIA_ERR_LOG("newPath is empty");
+        return false;
+    }
+    string newTempPath = newPath + "_" + std::to_string(MediaFileUtils::UTCTimeMilliSeconds());
+    if (!CopyFileUtil(filePath, newTempPath)) {
+        MEDIA_ERR_LOG("copy file errno: %{public}d", errno);
+        if (!DeleteFile(newTempPath)) {
+            MEDIA_ERR_LOG("del temp file errno: %{public}d", errno);
+        }
+        return false;
+    }
+    return rename(newTempPath.c_str(), newPath.c_str()) == E_OK;
+}
+
 void MediaFileUtils::SetDeletionRecord(int fd, const string &fileName)
 {
     unsigned int flags = 0;

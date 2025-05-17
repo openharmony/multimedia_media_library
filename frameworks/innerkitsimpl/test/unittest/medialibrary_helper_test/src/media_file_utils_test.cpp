@@ -127,6 +127,16 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_MoveFile_Test_003, TestSize.
     EXPECT_EQ(MediaFileUtils::MoveFile(oldPath, newPath), false);
 }
 
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFileSafe_Test_001, TestSize.Level1)
+{
+    string oldPath = "/data/test/cfs_001_s.mp4";
+    string newPath = "/data/test/cfs_001_t.mp4";
+    EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), true);
+    EXPECT_EQ(MediaFileUtils::CopyFileSafe(oldPath, newPath), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(oldPath), true);
+    EXPECT_EQ(MediaFileUtils::DeleteFile(newPath), true);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateDirectory_Test_001, TestSize.Level1)
 {
     string dirPath = "/data/test/createdir_001";
