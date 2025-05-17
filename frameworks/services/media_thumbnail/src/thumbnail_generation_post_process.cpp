@@ -15,6 +15,7 @@
 
 #include "thumbnail_generation_post_process.h"
 
+#include "dfx_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "media_log.h"
@@ -28,6 +29,8 @@ namespace Media {
 
 int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, const ThumbRdbOpt& opts)
 {
+    MEDIA_INFO_LOG("Start ThumbnailGenerationPostProcess, id: %{public}s, path: %{public}s",
+        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     int32_t err = E_OK;
     NotifyType notifyType;
 
@@ -37,7 +40,9 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, c
     err = UpdateCachedRdbValue(data, opts);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
 
-    if (HasGeneratedThumb(data)) {
+    bool hasGeneratedThumb = HasGeneratedThumb(data);
+    MEDIA_INFO_LOG("hasGeneratedThumb: %{public}d", hasGeneratedThumb);
+    if (hasGeneratedThumb) {
         err = Notify(data, notifyType);
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Notify failed. err: %{public}d", err);
     }
@@ -66,7 +71,7 @@ int32_t ThumbnailGenerationPostProcess::Notify(const ThumbnailData& data, const 
     auto watch = MediaLibraryNotify::GetInstance();
     CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "SendThumbNotify watch is nullptr");
     watch->Notify(data.fileUri, notifyType);
-    MEDIA_DEBUG_LOG("ThumbnailGenerationPostProcess::Notify() "
+    MEDIA_INFO_LOG("ThumbnailGenerationPostProcess::Notify() "
         "fileUri: %{public}s, notifyType: %{public}d", data.fileUri.c_str(), notifyType);
     return E_OK;
 }
