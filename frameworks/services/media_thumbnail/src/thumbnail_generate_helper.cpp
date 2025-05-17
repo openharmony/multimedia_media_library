@@ -92,7 +92,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(ThumbRdbOp
 
     if (isSync) {
         IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
-        ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+        ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -695,7 +695,7 @@ void CacheThumbStatus(ThumbRdbOpt &opts, ThumbnailType thumbType, ThumbnailData&
         CacheStreamReadThumbDbStatus(opts, thumbnailData, thumbType);
     }
     if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE) {
-        ThumbnailUtils::CacheVisitTime(opts, thumbnailData, err);
+        ThumbnailUtils::CacheVisitTime(opts, thumbnailData);
     }
 }
 

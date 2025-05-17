@@ -185,17 +185,17 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, UpdateHighlightInfo_test_001, TestSize.
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailUtilsTest, UpdateVisitTime_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailUtilsTest, CacheVisitTime, TestSize.Level0)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
     opts.row = "123";
     int err = 0;
     opts.store = nullptr;
-    auto res = ThumbnailUtils::UpdateVisitTime(opts, data, err);
+    auto res = ThumbnailUtils::CacheVisitTime(opts, data);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = ThumbnailUtils::UpdateVisitTime(opts, data, err);
+    res = ThumbnailUtils::CacheVisitTime(opts, data);
     EXPECT_EQ(res, false);
 }
 
