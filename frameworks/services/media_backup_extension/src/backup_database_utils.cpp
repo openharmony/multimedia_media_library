@@ -594,7 +594,7 @@ int64_t BackupDatabaseUtils::QueryLong(std::shared_ptr<NativeRdb::RdbStore> rdbS
     return resultValue;
 }
 
-int64_t BackupDatabaseUtils::QueryMaxId(std::shared_ptr<NativeRdb::RdbStore> rdbStore，
+int64_t BackupDatabaseUtils::QueryMaxId(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
     const std::string& tableName, const std::string& idColumnName)
 {
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, 0, "RdbStore is null.");
