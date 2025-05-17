@@ -368,7 +368,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         int64_t startDuplicate = MediaFileUtils::UTCTimeMilliSeconds();
         if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == OTHERS_PHONE_CLONE_RESTORE ||
             sceneCode == LITE_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE ||
-            sceneCode == UPGRADE_RESTORE_ID) &&
+            sceneCode == UPGRADE_RESTORE_ID || sceneCode == CLOUD_BACKUP_RESTORE_ID) &&
             this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
@@ -545,8 +545,7 @@ static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
 }
 
-static void SetCoverPosition(const FileInfo &fileInfo,
-    const unique_ptr<Metadata> &imageMetaData, NativeRdb::ValuesBucket &value)
+void BaseRestore::SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     uint64_t coverPosition = 0;
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
@@ -623,7 +622,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, fileInfo.dateTaken));
     value.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo.dateTaken));
-    SetCoverPosition(fileInfo, data, value);
+    SetCoverPosition(fileInfo, value);
 }
 
 void BaseRestore::CreateDir(std::string &dir)
