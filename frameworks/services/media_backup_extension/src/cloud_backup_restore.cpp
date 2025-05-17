@@ -45,6 +45,16 @@ int32_t CloudBackupRestore::Init(const std::string &backupRestoreDir, const std:
     return E_OK;
 }
 
+void CloudBackupRestore::GetAccountValid()
+{
+    isAccountValid_ = false;
+}
+
+void CloudBackupRestore::GetSyncSwitchOn()
+{
+    isSyncSwitchOn_ = false;
+}
+
 bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     FileInfo &info)
 {
@@ -75,6 +85,7 @@ bool CloudBackupRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeR
     // [time info]date_taken, date_modified, date_added
     info.dateTaken = GetInt64Val(GALLERY_DATE_TAKEN, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
+    info.firstUpdateTime = GetInt64Val(EXTERNAL_DATE_ADDED, resultSet) * MSEC_TO_SEC;
 
     return true;
 }
@@ -162,7 +173,7 @@ void CloudBackupRestore::SetTimeInfo(const std::unique_ptr<Metadata> &data, File
     // [time info]date_taken, date_modified, date_added
     info.dateTaken = info.dateTaken > 0 ? info.dateTaken : data->GetDateTaken();
     info.dateModified = info.dateModified > 0 ? info.dateModified : data->GetFileDateModified();
-    info.firstUpdateTime = info.firstUpdateTime > 0 ? info.firstUpdateTime : info.dateTaken;
+    info.firstUpdateTime = info.firstUpdateTime > 0 ? info.firstUpdateTime : info.dateModified;
 
     value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, info.dateTaken);
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, info.dateModified);
