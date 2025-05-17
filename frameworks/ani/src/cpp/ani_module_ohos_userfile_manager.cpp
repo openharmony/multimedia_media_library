@@ -19,11 +19,13 @@ using namespace OHOS::Media;
 
 ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
 {
+    CHECK_COND_RET(vm != nullptr, ANI_ERROR, "vm is nullptr");
     ani_env *env;
     if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &env)) {
         ANI_ERR_LOG("Unsupported %{public}d", ANI_VERSION_1);
         return ANI_ERROR;
     }
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
 
     static const char *staticNsName = "L@ohos/filemanagement/userFileManager/userFileManager;";
     ani_namespace staticNs;

@@ -65,6 +65,7 @@ struct AniArrayOperator {
 
 static ani_status InitAniArrayOperator(ani_env *env, AniArrayOperator &arrayOperator)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const std::string className = "Lescompat/Array;";
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &(arrayOperator.cls)), "Can't find Lescompat/Array.");
 
@@ -78,6 +79,7 @@ static ani_status InitAniArrayOperator(ani_env *env, AniArrayOperator &arrayOper
 
 ani_boolean MediaLibraryAniUtils::IsArray(ani_env *env, ani_object object)
 {
+    CHECK_COND_RET(env != nullptr, ANI_FALSE, "env is nullptr");
     ani_boolean isArray = ANI_FALSE;
     ani_class cls {};
     static const std::string className = "Lescompat/Array;";
@@ -95,6 +97,7 @@ ani_boolean MediaLibraryAniUtils::IsArray(ani_env *env, ani_object object)
 
 ani_boolean MediaLibraryAniUtils::IsUndefined(ani_env *env, ani_object object)
 {
+    CHECK_COND_RET(env != nullptr, ANI_FALSE, "env is nullptr");
     ani_boolean isUndefined = ANI_TRUE;
     CHECK_COND_RET(ANI_OK == env->Reference_IsUndefined(object, &isUndefined), ANI_TRUE,
         "Call Reference_IsUndefined failed.");
@@ -103,6 +106,7 @@ ani_boolean MediaLibraryAniUtils::IsUndefined(ani_env *env, ani_object object)
 
 ani_status MediaLibraryAniUtils::GetUndefinedObject(ani_env *env, ani_object &object)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_ref undefinedRef {};
     CHECK_STATUS_RET(env->GetUndefined(&undefinedRef), "Call GetUndefined failed.");
     object = static_cast<ani_object>(undefinedRef);
@@ -117,6 +121,7 @@ ani_status MediaLibraryAniUtils::GetBool(ani_env *env, ani_boolean arg, bool &va
 
 ani_status MediaLibraryAniUtils::GetBool(ani_env *env, ani_object arg, bool &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
@@ -141,6 +146,7 @@ ani_status MediaLibraryAniUtils::GetByte(ani_env *env, ani_byte arg, uint8_t &va
 
 ani_status MediaLibraryAniUtils::GetByte(ani_env *env, ani_object arg, uint8_t &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
@@ -165,6 +171,7 @@ ani_status MediaLibraryAniUtils::GetShort(ani_env *env, ani_short arg, int16_t &
 
 ani_status MediaLibraryAniUtils::GetShort(ani_env *env, ani_object arg, int16_t &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
@@ -189,6 +196,7 @@ ani_status MediaLibraryAniUtils::GetInt32(ani_env *env, ani_int arg, int32_t &va
 
 ani_status MediaLibraryAniUtils::GetInt32(ani_env *env, ani_object arg, int32_t &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
@@ -213,6 +221,7 @@ ani_status MediaLibraryAniUtils::GetUint32(ani_env *env, ani_int arg, uint32_t &
 
 ani_status MediaLibraryAniUtils::GetUint32(ani_env *env, ani_object arg, uint32_t &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
@@ -236,6 +245,7 @@ ani_status MediaLibraryAniUtils::GetInt64(ani_env *env, ani_long arg, int64_t &v
 
 ani_status MediaLibraryAniUtils::GetInt64(ani_env *env, ani_object arg, int64_t &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
@@ -259,6 +269,7 @@ ani_status MediaLibraryAniUtils::GetFloat(ani_env *env, ani_float arg, float &va
 
 ani_status MediaLibraryAniUtils::GetFloat(ani_env *env, ani_object arg, float &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
@@ -282,6 +293,7 @@ ani_status MediaLibraryAniUtils::GetDouble(ani_env *env, ani_double arg, double 
 
 ani_status MediaLibraryAniUtils::GetDouble(ani_env *env, ani_object arg, double &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
 
     ani_class cls {};
@@ -299,6 +311,7 @@ ani_status MediaLibraryAniUtils::GetDouble(ani_env *env, ani_object arg, double 
 
 ani_status MediaLibraryAniUtils::GetString(ani_env *env, ani_string arg, std::string &str)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(arg != nullptr, ANI_INVALID_ARGS, "GetString invalid arg");
 
     ani_size srcSize = 0;
@@ -322,6 +335,7 @@ ani_status MediaLibraryAniUtils::GetString(ani_env *env, ani_object arg, std::st
 
 ani_status MediaLibraryAniUtils::ToAniString(ani_env *env, const std::string &str, ani_string &aniStr)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_STATUS_RET(env->String_NewUTF8(str.c_str(), str.size(), &aniStr), "String_NewUTF8 failed");
     return ANI_OK;
 }
@@ -347,6 +361,7 @@ ani_status MediaLibraryAniUtils::ToAniDouble(ani_env *env, const double &arg, an
 ani_status MediaLibraryAniUtils::GetParamStringWithLength(ani_env *env, ani_string arg, int32_t maxLen,
     std::string &str)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_size srcSize = 0;
     CHECK_STATUS_RET(env->String_GetUTF8Size(arg, &srcSize), "String_GetUTF8Size failed");
     if (static_cast<int32_t>(srcSize) > maxLen) {
@@ -369,6 +384,7 @@ ani_status MediaLibraryAniUtils::GetParamStringPathMax(ani_env *env, ani_object 
 
 ani_status MediaLibraryAniUtils::ToAniBooleanObject(ani_env *env, bool src, ani_object &aniObj)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const char *className = "Lstd/core/Boolean;";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
@@ -383,6 +399,7 @@ ani_status MediaLibraryAniUtils::ToAniBooleanObject(ani_env *env, bool src, ani_
 
 ani_status MediaLibraryAniUtils::ToAniIntObject(ani_env *env, int32_t src, ani_object &aniObj)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const char *className = "Lstd/core/Int;";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
@@ -396,6 +413,7 @@ ani_status MediaLibraryAniUtils::ToAniIntObject(ani_env *env, int32_t src, ani_o
 
 ani_status MediaLibraryAniUtils::ToAniNumberObject(ani_env *env, int32_t src, ani_object &aniObj)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const char *className = "Lstd/core/Double;";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
@@ -409,6 +427,7 @@ ani_status MediaLibraryAniUtils::ToAniNumberObject(ani_env *env, int32_t src, an
 
 ani_status MediaLibraryAniUtils::ToAniDoubleObject(ani_env *env, double src, ani_object &aniObj)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const char *className = "Lstd/core/Double;";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
@@ -422,6 +441,7 @@ ani_status MediaLibraryAniUtils::ToAniDoubleObject(ani_env *env, double src, ani
 
 ani_status MediaLibraryAniUtils::ToAniLongObject(ani_env *env, int64_t src, ani_object &aniObj)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const char *className = "Lescompat/BigInt;";
     ani_class cls {};
     CHECK_STATUS_RET(env->FindClass(className, &cls), "Failed to find class: %{public}s", className);
@@ -435,6 +455,7 @@ ani_status MediaLibraryAniUtils::ToAniLongObject(ani_env *env, int64_t src, ani_
 
 ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, std::vector<uint32_t> &array)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
@@ -455,9 +476,33 @@ ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, st
     return ANI_OK;
 }
 
+ani_status MediaLibraryAniUtils::GetInt32Array(ani_env *env, ani_object arg, std::vector<int32_t> &array)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
+    CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
+
+    ani_double length;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, "length", &length),
+        "Call method <get>length failed.");
+
+    for (int i = 0; i < static_cast<ani_int>(length); i++) {
+        ani_ref ref;
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(arg, "$_get", "I:Lstd/core/Object;", &ref, (ani_int)i),
+            "Call method $_get failed.");
+
+        int32_t value = 0;
+        CHECK_STATUS_RET(GetInt32(env, (ani_object)ref, value), "Call method GetInt32 failed.");
+
+        array.emplace_back(value);
+    }
+    return ANI_OK;
+}
+
 ani_status MediaLibraryAniUtils::ToAniInt32Array(ani_env *env, const std::vector<uint32_t> &array,
     ani_object &aniArray)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     AniArrayOperator arrayOperator;
     CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
@@ -472,8 +517,27 @@ ani_status MediaLibraryAniUtils::ToAniInt32Array(ani_env *env, const std::vector
     return ANI_OK;
 }
 
+ani_status MediaLibraryAniUtils::ToAniNumberArray(ani_env *env, const std::vector<int32_t> &array,
+    ani_object &aniArray)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    AniArrayOperator arrayOperator;
+    CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
+
+    CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
+        "Call method <ctor> failed.");
+
+    for (size_t i = 0; i < array.size(); i++) {
+        ani_double aniDouble = static_cast<ani_double>(array[i]);
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, aniDouble),
+            "Call method $_set failed.");
+    }
+    return ANI_OK;
+}
+
 ani_status MediaLibraryAniUtils::GetStringArray(ani_env *env, ani_object arg, std::vector<std::string> &array)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
@@ -496,6 +560,7 @@ ani_status MediaLibraryAniUtils::GetStringArray(ani_env *env, ani_object arg, st
 ani_status MediaLibraryAniUtils::ToAniStringArray(ani_env *env, const std::vector<std::string> &array,
     ani_object &aniArray)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     AniArrayOperator arrayOperator;
     CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
@@ -513,6 +578,7 @@ ani_status MediaLibraryAniUtils::ToAniStringArray(ani_env *env, const std::vecto
 
 ani_status MediaLibraryAniUtils::GetObjectArray(ani_env *env, ani_object arg, std::vector<ani_object> &array)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
@@ -532,6 +598,7 @@ ani_status MediaLibraryAniUtils::GetObjectArray(ani_env *env, ani_object arg, st
 ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::string, std::string> &map,
     ani_object &aniMap)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls {};
     static const std::string className = "Lescompat/Map;";
     CHECK_STATUS_RET(env->FindClass(className.c_str(), &cls), "Can't find Lescompat/Map");
@@ -562,6 +629,7 @@ ani_status MediaLibraryAniUtils::ToAniMap(ani_env *env, const std::map<std::stri
 ani_status MediaLibraryAniUtils::GetProperty(ani_env *env, ani_object arg, const std::string &propName,
     uint32_t &propValue)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_double aniDouble = 0;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(arg, propName.c_str(), &aniDouble),
         "Object_GetPropertyByName_Double failed.");
@@ -581,6 +649,7 @@ ani_status MediaLibraryAniUtils::GetProperty(ani_env *env, ani_object arg, const
 ani_status MediaLibraryAniUtils::GetProperty(ani_env *env, ani_object arg, const std::string &propName,
     ani_object &propObj)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_ref propRef;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Ref(arg, propName.c_str(), &propRef),
         "Object_GetPropertyByName_Ref failed.");
@@ -599,6 +668,7 @@ ani_status MediaLibraryAniUtils::GetArrayProperty(ani_env *env, ani_object arg, 
 
 ani_status MediaLibraryAniUtils::GetArrayBuffer(ani_env *env, ani_arraybuffer arg, void *&buffer, size_t &size)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     ani_size length;
     CHECK_STATUS_RET(env->ArrayBuffer_GetInfo(arg, &buffer, &length), "ArrayBuffer_GetInfo failed.");
@@ -609,6 +679,7 @@ ani_status MediaLibraryAniUtils::GetArrayBuffer(ani_env *env, ani_arraybuffer ar
 ani_status MediaLibraryAniUtils::GetOptionalStringPathMaxField(ani_env *env, ani_object src,
     const std::string &fieldName, std::string &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_ref field_ref;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(src, fieldName.c_str(), &field_ref)) {
         ANI_ERR_LOG("Object_GetPropertyByName_Ref %{public}s Failed", fieldName.c_str());
@@ -630,6 +701,7 @@ ani_status MediaLibraryAniUtils::GetOptionalStringPathMaxField(ani_env *env, ani
 ani_status MediaLibraryAniUtils::GetOptionalEnumInt32Field(ani_env *env, ani_object src, const std::string &fieldName,
     int32_t &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_ref field_ref;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(src, fieldName.c_str(), &field_ref)) {
         ANI_ERR_LOG("Object_GetPropertyByName_Ref %{public}s Failed", fieldName.c_str());
@@ -654,6 +726,7 @@ ani_status MediaLibraryAniUtils::GetOptionalEnumInt32Field(ani_env *env, ani_obj
 ani_status MediaLibraryAniUtils::GetOptionalEnumStringField(ani_env *env, ani_object src, const std::string &fieldName,
     std::string &value)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_ref field_ref;
     if (ANI_OK != env->Object_GetPropertyByName_Ref(src, fieldName.c_str(), &field_ref)) {
         ANI_ERR_LOG("Object_GetPropertyByName_Ref %{public}s Failed", fieldName.c_str());
@@ -715,6 +788,7 @@ bool MediaLibraryAniUtils::IsSystemApp()
 
 static std::string GetUriFromAsset(const std::shared_ptr<FileAsset> &fileAsset)
 {
+    CHECK_COND_RET(fileAsset != nullptr, "", "fileAsset is nullptr");
     std::string displayName = fileAsset->GetDisplayName();
     std::string filePath = fileAsset->GetPath();
     return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()),
@@ -723,6 +797,7 @@ static std::string GetUriFromAsset(const std::shared_ptr<FileAsset> &fileAsset)
 
 ani_status MediaLibraryAniUtils::GetUriArrayFromAssets(ani_env *env, ani_object arg, std::vector<std::string> &array)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
@@ -753,6 +828,7 @@ ani_status MediaLibraryAniUtils::GetUriArrayFromAssets(ani_env *env, ani_object 
 ani_status MediaLibraryAniUtils::GetArrayFromAssets(ani_env *env, ani_object arg,
     std::vector<std::shared_ptr<FileAsset>> &array)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(IsUndefined(env, arg) != ANI_TRUE, ANI_ERROR, "invalid property.");
     CHECK_COND_RET(IsArray(env, arg) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
 
@@ -783,6 +859,7 @@ ani_status MediaLibraryAniUtils::GetArrayFromAssets(ani_env *env, ani_object arg
 ani_status MediaLibraryAniUtils::ToFileAssetInfoAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
     ani_object &aniArray)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     AniArrayOperator arrayOperator;
     CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
@@ -801,15 +878,28 @@ ani_status MediaLibraryAniUtils::ToFileAssetInfoAniArray(ani_env *env, std::vect
 ani_status MediaLibraryAniUtils::ToFileAssetAniArray(ani_env *env, std::vector<std::unique_ptr<FileAsset>> &array,
     ani_object &aniArray)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     AniArrayOperator arrayOperator;
     CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
     CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
         "Call method <ctor> failed.");
 
+    FileAssetAniMethod photoAccessAniMethod;
+    CHECK_STATUS_RET(FileAssetAni::InitFileAssetAniMethod(env, ResultNapiType::TYPE_PHOTOACCESS_HELPER,
+        photoAccessAniMethod), "Init photoAccessAniMethod failed");
+
     for (size_t i = 0; i < array.size(); ++i) {
         FileAssetAni* fileAssetAni = FileAssetAni::CreateFileAsset(env, array[i]);
-        ani_object value = FileAssetAni::Wrap(env, fileAssetAni);
+        if (fileAssetAni == nullptr) {
+            ANI_ERR_LOG("CreateFileAsset failed");
+            return ANI_ERROR;
+        }
+        ani_object value = nullptr;
+        if (fileAssetAni->GetFileAssetInstance()->GetResultNapiType() ==
+            ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+            value = FileAssetAni::Wrap(env, fileAssetAni, photoAccessAniMethod);
+        }
         CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAsset failed");
         CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, value),
             "Call method $_set failed.");
@@ -855,14 +945,20 @@ ani_status MediaLibraryAniUtils::GetPhotoAlbumAniArray(ani_env *env, ani_object 
 ani_status MediaLibraryAniUtils::ToPhotoAlbumAniArray(ani_env *env, std::vector<unique_ptr<PhotoAlbum>> &array,
     ani_object &aniArray)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     AniArrayOperator arrayOperator;
     CHECK_STATUS_RET(InitAniArrayOperator(env, arrayOperator), "InitAniArrayOperator fail");
 
     CHECK_STATUS_RET(env->Object_New(arrayOperator.cls, arrayOperator.ctorMethod, &aniArray, array.size()),
         "Call method <ctor> failed.");
 
+    AniPhotoAlbumOperator photoAlbumOperator;
+    photoAlbumOperator.clsName = PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE;
+    CHECK_STATUS_RET(PhotoAlbumAni::InitAniPhotoAlbumOperator(env, photoAlbumOperator),
+        "InitAniPhotoAlbumOperator fail");
+
     for (size_t i = 0; i < array.size(); i++) {
-        ani_object value = PhotoAlbumAni::CreatePhotoAlbumAni(env, array[i]);
+        ani_object value = PhotoAlbumAni::CreatePhotoAlbumAni(env, array[i], photoAlbumOperator);
         CHECK_COND_RET(value != nullptr, ANI_ERROR, "CreatePhotoAlbum failed");
         CHECK_STATUS_RET(env->Object_CallMethod_Void(aniArray, arrayOperator.setMethod, (ani_int)i, value),
             "Call method $_set failed.");
@@ -874,6 +970,7 @@ template <class AniContext>
 ani_status MediaLibraryAniUtils::GetFetchOption(ani_env *env, ani_object fetchOptions, FetchOptionType fetchOptType,
     AniContext &context)
 {
+    CHECK_COND_RET(context != nullptr, ANI_ERROR, "context is nullptr");
     // Parse the argument into fetchOption if any
     CHECK_STATUS_RET(GetPredicate(env, fetchOptions, "predicates", context, fetchOptType), "invalid predicate");
     CHECK_STATUS_RET(GetArrayProperty(env, fetchOptions, "fetchColumns", context->fetchColumn),
@@ -909,6 +1006,7 @@ int32_t MediaLibraryAniUtils::GetFileIdFromPhotoUri(const std::string &uri)
 
 DataSharePredicates* MediaLibraryAniUtils::UnwrapPredicate(ani_env *env, const ani_object predicates)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     ani_class cls {};
     static const std::string className = "L@ohos/data/dataSharePredicates/dataSharePredicates/DataSharePredicates;";
     CHECK_COND_RET(env->FindClass(className.c_str(), &cls) == ANI_OK, nullptr, "Can't find class DataSharePredicates");
@@ -975,6 +1073,7 @@ template <class AniContext>
 bool MediaLibraryAniUtils::HandleSpecialPredicate(AniContext &context,
     DataSharePredicates *predicate, FetchOptionType fetchOptType)
 {
+    CHECK_COND_RET(context != nullptr, false, "context is nullptr");
     if (predicate == nullptr) {
         ANI_ERR_LOG("predicate is null");
         return false;
@@ -1028,6 +1127,7 @@ bool MediaLibraryAniUtils::HandleSpecialField(AniContext& context, const Operati
 template <class AniContext>
 bool MediaLibraryAniUtils::HandleNetworkIdField(AniContext& context, const OperationItem& item, const string& value)
 {
+    CHECK_COND_RET(context != nullptr, false, "context is nullptr");
     if (item.operation != DataShare::EQUAL_TO || value.empty()) {
         ANI_ERR_LOG("DEVICE_DB_NETWORK_ID predicates not support %{public}d", item.operation);
         return false;
@@ -1040,6 +1140,7 @@ template <class AniContext>
 bool MediaLibraryAniUtils::HandleUriField(AniContext& context, const OperationItem& item,
     const string& uriValue, vector<OperationItem>& operations, FetchOptionType fetchOptType)
 {
+    CHECK_COND_RET(context != nullptr, false, "context is nullptr");
     if (item.operation != DataShare::EQUAL_TO) {
         ANI_ERR_LOG("MEDIA_DATA_DB_URI predicates not support %{public}d", item.operation);
         return false;
@@ -1060,6 +1161,7 @@ bool MediaLibraryAniUtils::HandleUriField(AniContext& context, const OperationIt
 template <class AniContext>
 bool MediaLibraryAniUtils::GetLocationPredicate(AniContext &context, DataSharePredicates *predicate)
 {
+    CHECK_COND_RET(context != nullptr, false, "context is nullptr");
     map<string, string> locationMap;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
@@ -1153,6 +1255,7 @@ void MediaLibraryAniUtils::HandleError(ani_env *env, int error, ani_object &erro
 void MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_object &errorObj, const int32_t errCode,
     const string &errMsg)
 {
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
     static const std::string className = "L@ohos/file/photoAccessHelper/MediaLibraryAniError;";
     ani_class cls {};
     ani_status status = env->FindClass(className.c_str(), &cls);
@@ -1183,6 +1286,7 @@ void MediaLibraryAniUtils::CreateAniErrorObject(ani_env *env, ani_object &errorO
 string MediaLibraryAniUtils::GetStringValueByColumn(shared_ptr<DataShare::DataShareResultSet> resultSet,
     const std::string columnName)
 {
+    CHECK_COND_RET(resultSet != nullptr, EMPTY_STRING, "resultSet is nullptr");
     int index;
     DataShare::DataType dataType;
     if (resultSet->GetColumnIndex(columnName, index) || resultSet->GetDataType(index, dataType)) {
@@ -1225,6 +1329,46 @@ string MediaLibraryAniUtils::GetStringValueByColumn(shared_ptr<DataShare::DataSh
     return EMPTY_STRING;
 }
 
+ani_status MediaLibraryAniUtils::ParseAssetIdArray(ani_env *env, ani_object photoAssets,
+    std::vector<std::string> &idArray)
+{
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
+    ani_boolean isArray = MediaLibraryAniUtils::IsArray(env, photoAssets);
+    if (isArray == ANI_FALSE) {
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array type");
+        return ANI_INVALID_ARGS;
+    }
+
+    ani_double length = 0;
+    CHECK_STATUS_RET(env->Object_GetPropertyByName_Double(photoAssets, "length", &length),
+        "Call method <get>length failed.");
+    if (length <= 0) {
+        ANI_ERR_LOG("Failed to check array length: %{public}f", length);
+        AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array length");
+        return ANI_INVALID_ARGS;
+    }
+
+    idArray.clear();
+    for (ani_int i = 0; i < static_cast<ani_int>(length); i++) {
+        ani_ref asset {};
+        CHECK_STATUS_RET(env->Object_CallMethodByName_Ref(photoAssets, "$_get", "I:Lstd/core/Object;", &asset, i),
+            "Call method $_get failed.");
+
+        FileAssetAni *obj = FileAssetAni::Unwrap(env, static_cast<ani_object>(asset));
+        if (obj == nullptr || obj->GetFileAssetInstance() == nullptr) {
+            AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset ani object");
+            return ANI_INVALID_ARGS;
+        }
+        MediaType mediaType = obj->GetFileAssetInstance()->GetMediaType();
+        if ((mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO)) {
+            ANI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", mediaType);
+            continue;
+        }
+        idArray.push_back(std::to_string(obj->GetFileAssetInstance()->GetId()));
+    }
+    return ANI_OK;
+}
+
 string MediaLibraryAniUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataShareResultSet> resultSet,
     const std::vector<std::string> &columns)
 {
@@ -1257,7 +1401,7 @@ string MediaLibraryAniUtils::ParseAnalysisFace2JsonStr(shared_ptr<DataShare::Dat
     vector<string> albumColumns = { ALBUM_ID, TAG_ID };
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> albumSet = UserFileClient::Query(uri, predicates, albumColumns, errCode);
- 
+    CHECK_COND_RET(albumSet != nullptr, jsonArray.dump(), "albumSet is nullptr");
     unordered_map<string, string> tagIdToAlbumIdMap;
     if (albumSet != nullptr) {
         while (albumSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -1603,6 +1747,7 @@ bool MediaLibraryAniUtils::IsFeaturedSinglePortraitAlbum(
 
 ani_status MediaLibraryAniUtils::FindClass(ani_env *env, const std::string &className, ani_class *cls)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_STATUS_RET(env->FindClass(className.c_str(), cls), "Can't find class");
     return ANI_OK;
 }
@@ -1610,6 +1755,7 @@ ani_status MediaLibraryAniUtils::FindClass(ani_env *env, const std::string &clas
 ani_status MediaLibraryAniUtils::FindClassMethod(ani_env *env, const std::string &className,
     const std::string &methodName, ani_method *method)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_class cls {};
     CHECK_STATUS_RET(MediaLibraryAniUtils::FindClass(env, className, &cls), "Can't find class");
     CHECK_STATUS_RET(env->Class_FindMethod(cls, methodName.c_str(), nullptr, method), "Can't find method");

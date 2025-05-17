@@ -41,11 +41,20 @@ struct FileAssetContext : public AniError {
     int32_t analysisType = AnalysisType::ANALYSIS_INVALID;
     bool isFavorite = false;
     bool isHidden = false;
+    bool hasEdit = false;
     std::string analysisData;
     std::shared_ptr<PixelMap> pixelmap;
 
     ResultNapiType resultNapiType;
     std::string userComment;
+};
+
+struct FileAssetAniMethod {
+    ani_class cls;
+    ani_method ctor;
+    ani_method setUri;
+    ani_method setPhotoType;
+    ani_method setDisplayName;
 };
 
 class FileAssetAni {
@@ -60,8 +69,10 @@ public:
     static ani_status UserFileMgrInit(ani_env *env);
     static ani_status PhotoAccessHelperInit(ani_env *env);
     static void Destructor([[maybe_unused]] ani_env env, void *nativeObject, void *finalize_hint);
-    static ani_object Wrap(ani_env *env, FileAssetAni *fileAssetAni);
+    static ani_object Wrap(ani_env *env, FileAssetAni *fileAssetAni, const FileAssetAniMethod &fileAssetAniMethod);
     static FileAssetAni* Unwrap(ani_env *env, ani_object object);
+    static ani_status InitFileAssetAniMethod(ani_env *env, ResultNapiType classType,
+        FileAssetAniMethod &fileAssetAniMethod);
 
     static void Set(ani_env *env, ani_object object, ani_string member, ani_string value);
     static ani_object Get(ani_env *env, ani_object object, ani_string member);
@@ -73,9 +84,11 @@ public:
     static ani_string PhotoAccessHelperGetAnalysisData(ani_env *env, ani_object object, ani_enum_item analysisType);
     static void PhotoAccessHelperSetHidden(ani_env *env, ani_object object, ani_boolean hiddenState);
     static void PhotoAccessHelperSetFavorite(ani_env *env, ani_object object, ani_boolean favoriteState);
+    static ani_boolean PhotoAccessHelperIsEdited(ani_env *env, ani_object object);
     std::string GetFileDisplayName() const;
     std::string GetFileUri() const;
     int32_t GetFileId() const;
+
 private:
     static thread_local std::shared_ptr<FileAsset> sFileAsset_;
     std::shared_ptr<FileAsset> fileAssetPtr = nullptr;

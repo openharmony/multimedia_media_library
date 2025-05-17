@@ -70,49 +70,107 @@ void PictureHandlerClient::FinishRequestPicture(const int32_t &fileId)
     UserFileClient::Insert(finishRequestPictureUri, valuesBucket);
 }
 
+int32_t GetMessageLength(const int32_t &fd, uint32_t &msgLen)
+{
+    void* msgLenAddr = mmap(nullptr, UINT32_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (msgLenAddr == MAP_FAILED) {
+        MEDIA_ERR_LOG("mmap msgLen failed");
+        close(fd);
+        return E_ERR;
+    }
+    
+    msgLen = *static_cast<uint32_t*>(msgLenAddr);
+    munmap(msgLenAddr, UINT32_LEN);
+    MEDIA_DEBUG_LOG("msgLen: %{public}u", msgLen);
+    return E_OK;
+}
+
+int32_t MapMessageData(const int32_t &fd, uint32_t msgLen, uint8_t*& addr)
+{
+    addr = static_cast<uint8_t*>(mmap(nullptr, msgLen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
+    if (addr == MAP_FAILED) {
+        MEDIA_ERR_LOG("mmap addr failed");
+        close(fd);
+        return E_ERR;
+    }
+    return E_OK;
+}
+
+uint32_t ReadDataSize(uint8_t* addr, uint32_t& offset)
+{
+    uint32_t dataSize = *reinterpret_cast<const uint32_t*>(addr + offset);
+    offset += UINT32_LEN;
+    MEDIA_DEBUG_LOG("dataSize: %{public}u", dataSize);
+    return dataSize;
+}
+
+int32_t ParseMainPicture(uint8_t* addr, uint32_t& offset, uint32_t dataSize, MessageParcel& parcel)
+{
+    uint32_t auxCount = *reinterpret_cast<const uint32_t*>(addr + offset);
+    offset += UINT32_LEN;
+    MEDIA_DEBUG_LOG("auxiliaryPictureSize: %{public}u", auxCount);
+
+    if (dataSize <= 0) {
+        return E_ERR;
+    }
+
+    uint8_t* parcelData = static_cast<uint8_t*>(malloc(dataSize));
+    if (!parcelData) {
+        return E_ERR;
+    }
+
+    if (memcpy_s(parcelData, dataSize, addr + offset, dataSize) != 0) {
+        free(parcelData);
+        return E_ERR;
+    }
+    offset += dataSize;
+
+    parcel.ParseFrom(reinterpret_cast<uintptr_t>(parcelData), dataSize);
+    free(parcelData);
+
+    return E_OK;
+}
+
+uint32_t ReadAuxiliaryPictureCount(uint8_t* addr, uint32_t& offset)
+{
+    uint32_t count = *reinterpret_cast<const uint32_t*>(addr + offset);
+    offset += UINT32_LEN;
+    return count;
+}
+
 int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &fileId,
     std::shared_ptr<Media::Picture> &picture)
 {
+    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture fd: %{public}d", fd);
     // 获取消息总长度
-    void *msgLenAddr = mmap(nullptr, UINT32_LEN, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    uint32_t msgLen = *((uint32_t*)msgLenAddr);
-    munmap(msgLenAddr, UINT32_LEN);
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture fd: %{public}d, msgLen: %{public}d", fd, msgLen);
-
+    uint32_t msgLen = 0;
+    if (GetMessageLength(fd, msgLen) != E_OK) {
+        return E_ERR;
+    }
     // 获取消息
-    uint8_t *addr = (uint8_t*)mmap(nullptr, msgLen, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    uint32_t readoffset = UINT32_LEN;
+    uint8_t* addr = nullptr;
+    if (MapMessageData(fd, msgLen, addr) != E_OK) {
+        return E_ERR;
+    }
+    uint32_t readOffset = UINT32_LEN;
 
     // 读取dataSize
-    uint32_t dataSize = *reinterpret_cast<const uint32_t*>(addr + readoffset);
-    readoffset += UINT32_LEN;
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture dataSize: %{public}d", dataSize);
+    uint32_t dataSize = ReadDataSize(addr, readOffset);
     if (dataSize == 0) {
-        MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture picture is not exists");
+        MEDIA_DEBUG_LOG("Picture not exists");
         munmap(addr, msgLen);
         return E_NO_SUCH_FILE;
     }
 
     // 读取auxiliaryPictureSize
-    uint32_t auxiliaryPictureSize =  *reinterpret_cast<const uint32_t*>(addr + readoffset);
-    readoffset += UINT32_LEN;
-    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture auxiliaryPicSize: %{public}d", auxiliaryPictureSize);
-    uint8_t *pictureParcelData = static_cast<uint8_t *>(malloc(dataSize));
-    if (pictureParcelData == nullptr) {
-        munmap(addr, msgLen);
-        return E_ERR;
-    }
-    if (memcpy_s((void*)pictureParcelData, dataSize, addr+readoffset, dataSize)) {
-        MEDIA_ERR_LOG("PictureHandlerService::ReadPicture memcpy_s pictureParcel failed!");
-        free(pictureParcelData);
-        munmap(addr, msgLen);
-        return E_ERR;
-    }
     MessageParcel pictureParcel;
-    pictureParcel.ParseFrom(reinterpret_cast<uintptr_t>(pictureParcelData), dataSize);
-
-    std::shared_ptr<PixelMap> mainPixelMap = ReadPixelMap(pictureParcel);
-    std::unique_ptr<Media::Picture> picturePtr = Picture::Create(mainPixelMap);
+    std::unique_ptr<Media::Picture> picturePtr;
+    if (ParseMainPicture(addr, readOffset, dataSize, pictureParcel) != E_OK) {
+        munmap(addr, msgLen);
+        return E_ERR;
+    }
+    std::shared_ptr<PixelMap> pixelMap = PictureHandlerClient::ReadPixelMap(pictureParcel);
+    picturePtr = Picture::Create(pixelMap);
     if (picturePtr == nullptr) {
         MEDIA_ERR_LOG("PictureHandlerService::ReadPicture picturePtr is nullptr!");
         munmap(addr, msgLen);
@@ -122,6 +180,7 @@ int32_t PictureHandlerClient::ReadPicture(const int32_t &fd, const int32_t &file
     ReadExifMetadata(pictureParcel, picturePtr);
     ReadMaintenanceData(pictureParcel, picturePtr);
 
+    uint32_t auxiliaryPictureSize = ReadAuxiliaryPictureCount(addr, readOffset);
     for (size_t i = 1; i <= auxiliaryPictureSize; i++) {
         MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPicture read auxiliaryPicture, index:%{public}zu", i);
         ReadAuxiliaryPicture(pictureParcel, picturePtr);
@@ -148,6 +207,7 @@ std::shared_ptr<PixelMap> PictureHandlerClient::ReadPixelMap(MessageParcel &data
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadPixelMap editable:%{public}d", editable);
 
     std::unique_ptr<PixelMap> pixelMap;
+    CHECK_COND_RET(pixelMap != nullptr, nullptr, "pixelMap is nullptr");
     if (isYuv) {
 #ifdef EXT_PIXEL
         pixelMap = std::make_unique<PixelYuvExt>();
@@ -172,9 +232,12 @@ bool PictureHandlerClient::ReadAuxiliaryPicture(MessageParcel &data, std::unique
     ReadAuxiliaryPictureInfo(data, auxiliaryPictureInfo);
 
     std::shared_ptr<PixelMap> pixelMap = ReadPixelMap(data);
+    CHECK_COND_RET(pixelMap != nullptr, false, "pixelMap is nullptr");
     std::unique_ptr<AuxiliaryPicture> uptr = AuxiliaryPicture::Create(pixelMap,
         auxiliaryPictureInfo.auxiliaryPictureType, auxiliaryPictureInfo.size);
+    CHECK_COND_RET(uptr != nullptr, false, "uptr is nullptr");
     std::shared_ptr<AuxiliaryPicture> auxiliaryPicture;
+    CHECK_COND_RET(auxiliaryPicture != nullptr, false, "auxiliaryPicture is nullptr");
     auxiliaryPicture.reset(uptr.get());
     uptr.release();
 
@@ -285,14 +348,33 @@ bool PictureHandlerClient::ReadSurfaceBuffer(MessageParcel &data, std::unique_pt
         return false;
     }
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    CHECK_COND_RET(surfaceBuffer != nullptr, false, "surfaceBuffer creation failed");
     ReadBufferHandle(data, surfaceBuffer);
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(nativeBuffer);
+    CHECK_COND_RET(ref != nullptr, false, "ref is nullptr");
     ref->IncStrongRef(ref);
     pixelMap->SetPixelsAddr(static_cast<uint8_t*>(surfaceBuffer->GetVirAddr()), nativeBuffer,
         pixelMap->GetByteCount(), AllocatorType::DMA_ALLOC, nullptr);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadSurfaceBuffer end");
     return true;
+}
+
+void setHandleFromData(BufferHandle *handle, MessageParcel &data)
+{
+    CHECK_NULL_PTR_RETURN_VOID(handle, "handle is null");
+    handle->width = data.ReadInt32();
+    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle width: %{public}d", handle->width);
+    handle->stride = data.ReadInt32();
+    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle stride: %{public}d", handle->stride);
+    handle->height = data.ReadInt32();
+    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle height: %{public}d", handle->height);
+    handle->size = data.ReadInt32();
+    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle size: %{public}d", handle->size);
+    handle->format = data.ReadInt32();
+    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle format: %{public}d", handle->format);
+    handle->usage = data.ReadUint64();
+    handle->phyAddr = data.ReadUint64();
 }
 
 bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuffer> &surfaceBuffer)
@@ -318,15 +400,10 @@ bool PictureHandlerClient::ReadBufferHandle(MessageParcel &data, sptr<SurfaceBuf
 
     handle->reserveFds = reserveFds;
     handle->reserveInts = reserveInts;
-    handle->width = data.ReadInt32();
-    handle->stride = data.ReadInt32();
-    handle->height = data.ReadInt32();
-    handle->size = data.ReadInt32();
-    handle->format = data.ReadInt32();
-    handle->usage = data.ReadUint64();
-    handle->phyAddr = data.ReadUint64();
+    setHandleFromData(handle, data);
 
     int32_t fd = RequestBufferHandlerFd(data.ReadInt32());
+    MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle fd: %{public}d", fd);
     handle->fd = dup(fd);
     close(fd);
     MEDIA_DEBUG_LOG("PictureHandlerClient::ReadBufferHandle handle->fd: %{public}d", handle->fd);

@@ -41,12 +41,14 @@ void AniError::SaveError(int32_t ret)
 void AniError::HandleError(ani_env *env, ani_object &errorObj)
 {
     // deal with context->error
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
     MediaLibraryAniUtils::HandleError(env, error, errorObj, apiName);
     env->ThrowError(static_cast<ani_error>(errorObj));
 }
 
 void AniError::ThrowError(ani_env *env, int32_t err, const std::string &errMsg)
 {
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
     string message = errMsg;
     if (message.empty()) {
         message = "operation not support";
@@ -63,6 +65,7 @@ void AniError::ThrowError(ani_env *env, int32_t err, const std::string &errMsg)
 
 void AniError::ThrowError(ani_env *env, int32_t err, const char *funcName, int32_t line, const std::string &errMsg)
 {
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
     string message = errMsg;
     if (message.empty()) {
         message = "operation not support";

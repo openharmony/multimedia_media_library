@@ -66,9 +66,7 @@ ohos_shared_library("medialibrary_ani_utils") {
     "src/cpp/userfile_client.cpp",
   ]
 
-  deps = [
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-  ]
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
   use_exceptions = true
 
@@ -78,6 +76,7 @@ ohos_shared_library("medialibrary_ani_utils") {
     "ability_runtime:ability_runtime",
     "ability_runtime:abilitykit_native",
     "ability_runtime:ani_base_context",
+    "ability_runtime:app_context",
     "ability_runtime:appkit_native",
     "ability_runtime:ui_extension",
     "access_token:libaccesstoken_sdk",
@@ -125,9 +124,7 @@ ohos_shared_library("medialibrary_ani_utils") {
   }
 
   if (ability_runtime_graphics) {
-    external_deps += [
-      "ace_engine:ace_uicontent",
-    ]
+    external_deps += [ "ace_engine:ace_uicontent" ]
     cflags_cc = [ "-DHAS_ACE_ENGINE_PART" ]
   }
 

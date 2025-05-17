@@ -47,6 +47,7 @@ enum class AlbumChangeOperation {
     DISMISS_ASSET,
     SET_IS_ME,
     DISMISS,
+    SET_ORDER_POSITION,
 };
 
 struct PhotoAlbumPtrCompare {
@@ -67,6 +68,7 @@ public:
     ~MediaAlbumChangeRequestAni() = default;
     static MediaAlbumChangeRequestAni* Unwrap(ani_env *env, ani_object mediaAlbumChangeRequestHandle);
     static ani_status Init(ani_env *env);
+    static ani_status MediaAnalysisAlbumChangeRequestInit(ani_env *env);
     static ani_status Constructor(ani_env *env, ani_object object, ani_object albumHandle);
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
     std::shared_ptr<PhotoAlbum> GetTargetPhotoAlbumInstance() const;
@@ -76,6 +78,8 @@ public:
     std::vector<std::string> GetRecoverAssetArray() const;
     std::vector<std::string> GetDeleteAssetArray() const;
     std::vector<std::string> GetDismissAssetArray() const;
+    std::vector<std::pair<std::string, int32_t>> GetIdOrderPositionPairs() const;
+    int32_t GetUserId() const;
     void ClearAddAssetArray();
     void ClearRemoveAssetArray();
     void ClearRecoverAssetArray();
@@ -95,6 +99,7 @@ public:
     static ani_status SetIsMe(ani_env *env, ani_object object);
     static ani_status DeleteAlbums(ani_env *env, ani_class clazz, ani_object context, ani_object arrayAlbum);
     static ani_status DeleteAssets(ani_env *env, ani_object object, ani_object arrayPhotoAsset);
+    static ani_status SetOrderPosition(ani_env *env, ani_object object, ani_object assets, ani_object position);
     ani_status ApplyChanges(ani_env *env) override;
     bool CheckChangeOperations(ani_env *env);
 
@@ -114,6 +119,8 @@ private:
     std::vector<std::string> dismissAssets_;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> moveMap_;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
+    std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;
+    int32_t userId_;
 };
 
 struct MediaAlbumChangeRequestContext : public AniError {

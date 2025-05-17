@@ -19,6 +19,7 @@
 #include "highlight_album_ani.h"
 #include "ani_class_name.h"
 #include "file_asset_ani.h"
+#include "media_album_change_request_ani.h"
 #include "media_file_utils.h"
 #include "media_library_enum_ani.h"
 #include "medialibrary_client_errno.h"
@@ -34,11 +35,16 @@
 #include "user_photography_info_column.h"
 #include "userfile_client.h"
 #include "vision_column.h"
+#include "album_operation_uri.h"
 
 using namespace std;
 
 namespace OHOS::Media {
-
+namespace {
+static const std::string MAP_ALBUM = "map_album";
+static const std::string MAP_ASSET = "map_asset";
+static const std::string ORDER_POSITION = "order_position";
+}
 static const map<int32_t, struct HighlightAlbumInfo> HIGHLIGHT_ALBUM_INFO_MAP = {
     { COVER_INFO, { PAH_QUERY_HIGHLIGHT_COVER, { ID, HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
         AI_ALBUM_ID, SUB_TITLE, CLUSTER_TYPE, CLUSTER_SUB_TYPE,
@@ -58,6 +64,7 @@ HighlightAlbumAni::~HighlightAlbumAni() = default;
 
 ani_status HighlightAlbumAni::Init(ani_env *env)
 {
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
     ani_class cls;
     if (ANI_OK != env->FindClass(PAH_ANI_CLASS_HIGHLIGHT_ALBUM.c_str(), &cls)) {
         ANI_ERR_LOG("Failed to find class: %{public}s", PAH_ANI_CLASS_HIGHLIGHT_ALBUM.c_str());
@@ -67,6 +74,29 @@ ani_status HighlightAlbumAni::Init(ani_env *env)
     std::array methods = {
         ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)},
         ani_native_function {"getHighlightAlbumInfoInner", nullptr, reinterpret_cast<void *>(GetHighlightAlbumInfo)},
+
+    };
+
+    if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
+        ANI_ERR_LOG("Failed to bind native methods to: %{public}s", PAH_ANI_CLASS_HIGHLIGHT_ALBUM.c_str());
+        return ANI_ERROR;
+    }
+
+    return ANI_OK;
+}
+
+ani_status HighlightAlbumAni::AnalysisAlbumInit(ani_env *env)
+{
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
+    static const char *className = PAH_ANI_CLASS_ANALYSIS_ALBUM.c_str();
+    ani_class cls;
+    if (ANI_OK != env->FindClass(className, &cls)) {
+        ANI_ERR_LOG("Failed to find class: %{public}s", className);
+        return ANI_ERROR;
+    }
+
+    std::array methods = {
+        ani_native_function {"nativeConstructor", nullptr, reinterpret_cast<void *>(Constructor)}
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
@@ -79,6 +109,7 @@ ani_status HighlightAlbumAni::Init(ani_env *env)
 
 HighlightAlbumAni* HighlightAlbumAni::Unwrap(ani_env *env, ani_object object)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
     ani_long photoAlbum {};
     if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativePhotoAlbum", &photoAlbum)) {
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
@@ -94,6 +125,7 @@ std::shared_ptr<PhotoAlbum> HighlightAlbumAni::GetPhotoAlbumInstance() const
 
 ani_long HighlightAlbumAni::Constructor(ani_env *env, [[maybe_unused]] ani_object object, ani_object aniAlbum)
 {
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
     PhotoAlbumAni* photoAlbumAni = PhotoAlbumAni::UnwrapPhotoAlbumObject(env, aniAlbum);
     CHECK_COND_RET(photoAlbumAni != nullptr, 0, "Failed to get PhotoAlbumAni object");
 
@@ -113,6 +145,7 @@ ani_long HighlightAlbumAni::Constructor(ani_env *env, [[maybe_unused]] ani_objec
 
 void HighlightAlbumAni::Destructor(ani_env *env, ani_object object)
 {
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
     HighlightAlbumAni *highlightAlbum = Unwrap(env, object);
     if (highlightAlbum == nullptr) {
         return;
@@ -123,6 +156,8 @@ void HighlightAlbumAni::Destructor(ani_env *env, ani_object object)
 
 static void GetHighlightAlbumInfoExecute(ani_env *env, unique_ptr<HighlightAlbumAniContext> &context)
 {
+    CHECK_NULL_PTR_RETURN_VOID(env, "env is nullptr");
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     string uriStr;
     std::vector<std::string> fetchColumn;
     DataShare::DataSharePredicates predicates;
@@ -144,10 +179,8 @@ static void GetHighlightAlbumInfoExecute(ani_env *env, unique_ptr<HighlightAlbum
         ANI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
     }
-    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
-    int albumId = photoAlbum->GetAlbumId();
-    int subType = photoAlbum->GetPhotoAlbumSubType();
+    int32_t albumId = context->albumId;
+    PhotoAlbumSubType subType = context->subType;
     Uri uri (uriStr);
     if (subType == PhotoAlbumSubType::HIGHLIGHT) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
@@ -166,6 +199,8 @@ static void GetHighlightAlbumInfoExecute(ani_env *env, unique_ptr<HighlightAlbum
 
 static ani_string GetHighlightAlbumInfoComplete(ani_env *env, unique_ptr<HighlightAlbumAniContext> &context)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    CHECK_COND_RET(context != nullptr, nullptr, "context is null");
     ani_string result {};
     ani_object errorObj {};
     if (context->error != ERR_DEFAULT) {
@@ -180,6 +215,7 @@ static ani_string GetHighlightAlbumInfoComplete(ani_env *env, unique_ptr<Highlig
 
 ani_string HighlightAlbumAni::GetHighlightAlbumInfo(ani_env *env, ani_object object, ani_enum_item type)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
     MediaLibraryTracer tracer;
     tracer.Start("GetHighlightAlbumInfo");
 
@@ -202,8 +238,228 @@ ani_string HighlightAlbumAni::GetHighlightAlbumInfo(ani_env *env, ani_object obj
         return nullptr;
     }
 
+    context->albumId = photoAlbum->GetAlbumId();
+    context->subType = photoAlbum->GetPhotoAlbumSubType();
     context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     GetHighlightAlbumInfoExecute(env, context);
     return GetHighlightAlbumInfoComplete(env, context);
+}
+
+static ani_object GetOrderPositionComplete(ani_env *env, std::unique_ptr<HighlightAlbumAniContext> &context)
+{
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    CHECK_COND_RET(context != nullptr, nullptr, "objectInfo is null");
+    ani_object result {};
+    ani_object errorObj {};
+    auto cond = context->orderPositionArray.size() == context->assetIdArray.size();
+    if (context->error != ERR_DEFAULT || !cond) {
+        ANI_ERR_LOG("GetOrderPosition failed, error code: %{public}d, orderPositionArray size: %{public}zu",
+            context->error, context->orderPositionArray.size());
+        context->HandleError(env, errorObj);
+    } else {
+        if (MediaLibraryAniUtils::ToAniNumberArray(env, context->orderPositionArray, result) != ANI_OK) {
+            ANI_ERR_LOG("ToAniInt32Array orderPositionArray fail");
+        }
+    }
+    context.reset();
+    return result;
+}
+
+static void GetOrderPositionExecute(std::unique_ptr<HighlightAlbumAniContext> &context)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_NULL_PTR_RETURN_VOID(context->objectInfo, "objectInfo is null");
+    // make fetch column
+    std::vector<std::string> fetchColumn{MAP_ASSET, ORDER_POSITION};
+    // make where predicates
+    DataShare::DataSharePredicates predicates;
+    const std::vector<std::string> &assetIdArray = context->assetIdArray;
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_NULL_PTR_RETURN_VOID(photoAlbum, "photoAlbum is null");
+
+    auto albumId = photoAlbum->GetAlbumId();
+    const std::string mapTable = ANALYSIS_PHOTO_MAP_TABLE;
+    predicates.EqualTo(mapTable + "." + MAP_ALBUM, albumId)->And()->In(mapTable + "." + MAP_ASSET, assetIdArray);
+
+    // start query, deal with result
+    Uri uri(PAH_QUERY_ORDER_ANA_ALBUM);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        ANI_ERR_LOG("Query failed, error code: %{public}d", errCode);
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+    int count = 0;
+    int ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK || count <= 0) {
+        ANI_ERR_LOG("GetRowCount failed, error code: %{public}d, count: %{public}d", ret, count);
+        context->error = JS_INNER_FAIL;
+        return;
+    }
+
+    std::unordered_map<std::string, int32_t> idOrderMap;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t mapAsset = get<int32_t>(ResultSetUtils::GetValFromColumn(MAP_ASSET, resultSet, TYPE_INT32));
+        int32_t orderPosition = get<int32_t>(ResultSetUtils::GetValFromColumn(ORDER_POSITION, resultSet, TYPE_INT32));
+        idOrderMap[std::to_string(mapAsset)] = orderPosition;
+    }
+    context->orderPositionArray.clear();
+    for (std::string& assetId : context->assetIdArray) {
+        context->orderPositionArray.emplace_back(idOrderMap[assetId]);
+    }
+    ANI_INFO_LOG("GetOrderPosition: result size: %{public}d, orderPositionArray size: %{public}d", count,
+        static_cast<int>(context->orderPositionArray.size()));
+}
+
+ani_object HighlightAlbumAni::GetOrderPosition(ani_env *env, ani_object object, ani_object photoAssets)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetOrderPosition");
+
+    ANI_DEBUG_LOG("%{public}s is called", __func__);
+    CHECK_COND_RET(env != nullptr, nullptr, "env is null");
+    std::unique_ptr<HighlightAlbumAniContext> context = std::make_unique<HighlightAlbumAniContext>();
+    CHECK_COND_WITH_MESSAGE(env, context != nullptr, "context is null");
+    context->objectInfo = Unwrap(env, object);
+    CHECK_COND_WITH_MESSAGE(env, context->objectInfo != nullptr, "objectInfo is null");
+
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
+    auto cond = PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType());
+    CHECK_COND_WITH_MESSAGE(env, cond, "Only analysis album can get asset order positions");
+
+    // get assets, check duplicated
+    std::vector<std::string> assetIdArray;
+    auto ret = MediaLibraryAniUtils::ParseAssetIdArray(env, photoAssets, assetIdArray);
+    CHECK_COND_WITH_MESSAGE(env, ret == ANI_OK, "Failed to parse assets");
+    ANI_INFO_LOG("GetOrderPosition assetIdArray size: %{public}zu", assetIdArray.size());
+    CHECK_COND_WITH_MESSAGE(env, !assetIdArray.empty(), "assetIdArray is empty");
+
+    std::set<std::string> idSet(assetIdArray.begin(), assetIdArray.end());
+    CHECK_COND_WITH_MESSAGE(env, idSet.size() == assetIdArray.size(), "assetIdArray has duplicated elements");
+    context->assetIdArray = std::move(assetIdArray);
+    context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+
+    GetOrderPositionExecute(context);
+    return GetOrderPositionComplete(env, context);
+}
+
+static ani_status SetHighlightSubtitleComplete(ani_env *env, std::unique_ptr<HighlightAlbumAniContext> &context)
+{
+    CHECK_COND_RET(context != nullptr, ANI_INVALID_ARGS, "context is null");
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetHighlightSubtitleCompleteCallback");
+
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
+    CHECK_COND_WITH_RET_MESSAGE(env, context != nullptr, ANI_INVALID_ARGS, "context is nullptr");
+    ani_status result {};
+    ani_object errorObj {};
+    if (context->error != ERR_DEFAULT) {
+        ANI_ERR_LOG("GetOrderPosition failed, error code: %{public}d", context->error);
+        context->HandleError(env, errorObj);
+        result = ANI_ERROR;
+    }
+    context.reset();
+    return result;
+}
+
+static void SetHighlightSubtitleExecute(std::unique_ptr<HighlightAlbumAniContext> &context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHighlightSubtitleExecute");
+
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    if (context->objectInfo == nullptr) {
+        ANI_ERR_LOG("objectInfo is null");
+        context->SaveError(ANI_INVALID_ARGS);
+        return;
+    }
+
+    auto albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
+    Uri uri(PAH_HIGHLIGHT_SUBTITLE);
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    context->valuesBucket.Put(SUB_TITLE, context->subtitle);
+    int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        ANI_ERR_LOG("Failed to set highlight subtitle, err: %{public}d", changedRows);
+        return;
+    }
+}
+
+ani_status HighlightAlbumAni::SetSubTitle(ani_env *env, ani_object object, ani_object subTitle)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetSubTitle");
+
+    ANI_DEBUG_LOG("%{public}s is called", __func__);
+    CHECK_COND_RET(env != nullptr, ANI_INVALID_ARGS, "env is null");
+    auto context = std::make_unique<HighlightAlbumAniContext>();
+    CHECK_COND_WITH_RET_MESSAGE(env, context != nullptr, ANI_INVALID_ARGS, "context is nullptr");
+    context->objectInfo = Unwrap(env, object);
+    CHECK_COND_WITH_RET_MESSAGE(env, context->objectInfo != nullptr, ANI_INVALID_ARGS, "objectInfo is null");
+
+    auto ret = MediaLibraryAniUtils::GetString(env, subTitle, context->subtitle);
+    CHECK_COND_WITH_RET_MESSAGE(env, ret == ANI_OK, ANI_INVALID_ARGS, "parse param subtile failed");
+
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaFileUtils::CheckHighlightSubtitle(context->subtitle) == E_OK,
+        ANI_INVALID_ARGS, "Invalid highlight subtitle");
+
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, ANI_INVALID_ARGS, "photoAlbum is nullptr");
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        ANI_INVALID_ARGS, "Only highlight album can set highlight sub title");
+    context->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+
+    SetHighlightSubtitleExecute(context);
+    return SetHighlightSubtitleComplete(env, context);
+}
+
+ani_double HighlightAlbumAni::DeleteHighlightAlbums(ani_env *env, ani_object object, ani_object context,
+    ani_object albums)
+{
+    ANI_DEBUG_LOG("%{public}s is called", __func__);
+    ani_double returnObj {};
+    CHECK_COND_RET(env != nullptr, returnObj, "env is null");
+    if (!MediaLibraryAniUtils::IsSystemApp()) {
+        AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "DeleteHighlightAlbums can be called only by system apps");
+        return returnObj;
+    }
+
+    auto aniContext = std::make_unique<HighlightAlbumAniContext>();
+    CHECK_COND_WITH_RET_MESSAGE(env, context != nullptr, returnObj, "context is nullptr");
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaAlbumChangeRequestAni::InitUserFileClient(env, context), returnObj,
+        "DeleteAlbums InitUserFileClient failed");
+
+    std::vector<PhotoAlbumAni*> array;
+    CHECK_COND_WITH_RET_MESSAGE(env, MediaLibraryAniUtils::GetPhotoAlbumAniArray(env, albums, array) == ANI_OK,
+        returnObj, "Failed to get arrayAlbum");
+
+    std::vector<std::string> deleteIds;
+    for (const auto& obj : array) {
+        CHECK_COND_WITH_RET_MESSAGE(env, obj != nullptr, returnObj, "obj is null");
+        auto photoAlbum = obj->GetPhotoAlbumInstance();
+        CHECK_COND_WITH_RET_MESSAGE(env, photoAlbum != nullptr, returnObj, "photoAlbum is null");
+        CHECK_COND_WITH_RET_MESSAGE(env,
+            PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsHighlightAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+            returnObj, "Only user or highlight album can be deleted");
+        deleteIds.push_back(std::to_string(photoAlbum->GetAlbumId()));
+    }
+    aniContext->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+    Uri deleteAlbumUri(PAH_DELETE_PHOTO_ALBUM);
+    int ret = UserFileClient::Delete(deleteAlbumUri, aniContext->predicates);
+    if (ret < 0) {
+        ANI_ERR_LOG("Failed to delete albums, err: %{public}d", ret);
+        aniContext->ThrowError(env, ret, "Failed to delete albums");
+        return returnObj;
+    }
+    ANI_INFO_LOG("Delete %{public}d album(s)", ret);
+    CHECK_COND_WITH_RET_MESSAGE(env,
+        MediaLibraryAniUtils::ToAniDouble(env, static_cast<double>(ret), returnObj) == ANI_OK,
+        returnObj, "ToAniDouble failed");
+    return returnObj;
 }
 } // namespace OHOS::Media

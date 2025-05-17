@@ -19,6 +19,7 @@
 #include "media_call_transcode.h"
 #include "medialibrary_ani_log.h"
 #include "medialibrary_errno.h"
+#include "unique_fd.h"
 
 namespace OHOS {
 namespace Media {
@@ -30,6 +31,10 @@ static const int32_t INFO_TYPE_ERROR = 2;
 
 static ani_status CreateAniBooleanObject(ani_env *env, bool value, ani_object &aniObj)
 {
+    if (env == nullptr) {
+        ANI_ERR_LOG("env is nullptr");
+        return ANI_ERROR;
+    }
     ani_class cls {};
     ani_status status = env->FindClass("Lstd/core/Boolean;", &cls);
     if (status != ANI_OK) {
@@ -51,23 +56,22 @@ static ani_status CreateAniBooleanObject(ani_env *env, bool value, ani_object &a
     return ANI_OK;
 }
 
-void MediaCallTranscode::TransCodeError(ani_env *env, ani_object &result,
-    int srcFd, int destFd, const std::string& errorMsg)
-{
-    ANI_ERR_LOG(" %{public}s", errorMsg.c_str());
-    close(srcFd);
-    close(destFd);
-    CreateAniBooleanObject(env, false, result);
-}
-
 void MediaCallTranscode::CallTranscodeHandle(ani_env *env, int srcFd, int destFd,
     ani_object &result, off_t &size, std::string requestId)
 {
     ANI_INFO_LOG("CallTranscodeHandle start");
+    bool ret = DoTranscode(srcFd, destFd, size, requestId);
+    CreateAniBooleanObject(env, ret, result);
+}
+
+bool MediaCallTranscode::DoTranscode(int srcFd, int destFd, off_t &size, std::string requestId)
+{
+    UniqueFd uniqueSrcFd(srcFd);
+    UniqueFd uniqueDestFd(destFd);
     auto transCoder = TransCoderFactory::CreateTransCoder();
     if (transCoder == nullptr) {
-        TransCodeError(env, result, srcFd, destFd, "Failed to create TransCoder");
-        return;
+        ANI_ERR_LOG("Failed to create TransCoder");
+        return false;
     }
     {
         std::lock_guard<std::mutex> lock(transCoderMapMutex_);
@@ -75,41 +79,35 @@ void MediaCallTranscode::CallTranscodeHandle(ani_env *env, int srcFd, int destFd
     }
     auto transCoderCb = std::make_shared<OHOS::Media::MediaAssetManagerCallback>();
     if (transCoderCb == nullptr) {
-        TransCodeError(env, result, srcFd, destFd, "Failed to create MediaAssetManagerCallback");
-        return;
+        ANI_ERR_LOG("Failed to create TransCoder");
+        return false;
     }
     transCoderCb->SetRequestId(requestId);
-    int32_t ret = transCoder->SetTransCoderCallback(transCoderCb);
-    if (ret != E_OK) {
-        TransCodeError(env, result, srcFd, destFd, "Failed to set TransCoder callback");
-        return;
+    if (transCoder->SetTransCoderCallback(transCoderCb) != E_OK) {
+        ANI_ERR_LOG("Failed to set TransCoder callback");
+        return false;
     }
-    ret = transCoder->SetInputFile(srcFd, 0, size);
-    if (ret != E_OK) {
-        TransCodeError(env, result, srcFd, destFd, "Failed to set input file for TransCoder");
-        return;
+    if (transCoder->SetInputFile(uniqueSrcFd.Get(), 0, size) != E_OK) {
+        ANI_ERR_LOG("Failed to set input file for TransCoder");
+        return false;
     }
-    ret = transCoder->SetOutputFile(destFd);
-    if (ret != E_OK) {
-        TransCodeError(env, result, srcFd, destFd, "Failed to set output file for TransCoder");
-        return;
+    if (transCoder->SetOutputFile(uniqueDestFd.Get()) != E_OK) {
+        ANI_ERR_LOG("Failed to set output file for TransCoder");
+        return false;
     }
-    ret = transCoder->SetOutputFormat(FORMAT_MPEG_4);
-    if (ret != E_OK) {
-        TransCodeError(env, result, srcFd, destFd, "Failed to SetOutputFormat");
-        return;
+    if (transCoder->SetOutputFormat(FORMAT_MPEG_4) != E_OK) {
+        ANI_ERR_LOG("Failed to SetOutputFormat");
+        return false;
     }
-    ret = transCoder->Prepare();
-    if (ret != E_OK) {
-        TransCodeError(env, result, srcFd, destFd, "Failed to prepare TransCoder");
-        return;
+    if (transCoder->Prepare() != E_OK) {
+        ANI_ERR_LOG("Failed to prepare TransCoder");
+        return false;
     }
-    ret = transCoder->Start();
-    if (ret != E_OK) {
-        TransCodeError(env, result, srcFd, destFd, "Failed to TransCoder Start");
-        return;
+    if (transCoder->Start() != E_OK) {
+        ANI_ERR_LOG("Failed to TransCoder Start");
+        return false;
     }
-    CreateAniBooleanObject(env, true, result);
+    return  true;
 }
 
 void MediaCallTranscode::CallTranscodeRelease(const std::string& requestId)
@@ -140,7 +138,9 @@ void MediaAssetManagerCallback::OnError(int32_t errCode, const std::string &erro
 {
     std::lock_guard<std::mutex> lock(transCoderMapMutex_);
     auto tcm = transCoderMap_.find(requestId_);
-    transCoderMap_.erase(tcm);
+    if (tcm != transCoderMap_.end()) {
+        transCoderMap_.erase(tcm);
+    }
     ANI_ERR_LOG("MediaAssetManagerCallback OnError errorMsg:%{public}s", errorMsg.c_str());
     int32_t type = INFO_TYPE_ERROR;
     if (callback_) {

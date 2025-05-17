@@ -276,6 +276,7 @@ static void InitCloudEnhancementFunc()
 
 ani_status CloudEnhancementAni::Init(ani_env *env)
 {
+    CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     static const char *className = PAH_ANI_CLASS_CLOUD_ENHANCEMENT.c_str();
     ani_class cls;
     ani_status status = env->FindClass(className, &cls);
@@ -313,6 +314,7 @@ ani_status CloudEnhancementAni::Init(ani_env *env)
 
 ani_object CloudEnhancementAni::Constructor(ani_env *env, ani_class clazz, ani_object context)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL,
             "The cloud enhancement instance can be called only by system apps");
@@ -338,6 +340,7 @@ ani_object CloudEnhancementAni::Constructor(ani_env *env, ani_class clazz, ani_o
 
 CloudEnhancementAni* CloudEnhancementAni::Unwrap(ani_env *env, ani_object aniObject)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     ani_long context;
     if (ANI_OK != env->Object_GetFieldByName_Long(aniObject, "nativeHandle", &context)) {
         return nullptr;
@@ -359,23 +362,29 @@ bool CloudEnhancementAni::InitUserFileClient(ani_env *env, ani_object aniObject)
     return UserFileClient::IsValid();
 }
 
-static ani_object ParseArgsSubmitCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets,
-    ani_boolean hasCloudWatermark, unique_ptr<CloudEnhancementAniContext> &context)
+struct SubmitCloudEnhancementParams {
+    ani_object photoAssets;
+    ani_boolean hasCloudWatermark;
+    int triggerMode;
+};
+
+static ani_object ParseArgsSubmitCloudEnhancementTasks(ani_env *env, ani_object aniObject,
+    const SubmitCloudEnhancementParams &params, unique_ptr<CloudEnhancementAniContext> &context)
 {
     CHECK_COND(env, CloudEnhancementAni::InitUserFileClient(env, aniObject), JS_INNER_FAIL);
     bool hasCloudWatermarkBool = false;
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetBool(
-        env, hasCloudWatermark, hasCloudWatermarkBool) == ANI_OK, "Failed to get hasCloudWatermark");
-    
+        env, params.hasCloudWatermark, hasCloudWatermarkBool) == ANI_OK, "Failed to get hasCloudWatermark");
     vector<string> uris;
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetUriArrayFromAssets(env, photoAssets, uris) == ANI_OK,
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryAniUtils::GetUriArrayFromAssets(env, params.photoAssets, uris) == ANI_OK,
         "Failed to get uris");
     CHECK_COND_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty array");
     for (const auto& uri : uris) {
         CHECK_COND(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI);
     }
-    
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
     context->hasCloudWatermark_ = hasCloudWatermarkBool;
+    context->triggerMode_ = params.triggerMode;
     context->predicates.In(PhotoColumn::MEDIA_ID, uris);
     context->uris.assign(uris.begin(), uris.end());
     return reinterpret_cast<ani_object>(true);
@@ -385,6 +394,7 @@ static void CommonComplete(ani_env *env, std::unique_ptr<CloudEnhancementAniCont
 {
     MediaLibraryTracer tracer;
     tracer.Start("CommonComplete");
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
 
     ani_object errorObj = {};
     if (context->error != ERR_DEFAULT) {
@@ -399,9 +409,11 @@ static void SubmitCloudEnhancementTasksExecute(std::unique_ptr<CloudEnhancementA
 {
     MediaLibraryTracer tracer;
     tracer.Start("SubmitCloudEnhancementTasksExecute");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
     string uriStr = PAH_CLOUD_ENHANCEMENT_ADD;
     MediaLibraryAniUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(aniContext->hasCloudWatermark_));
+    MediaLibraryAniUtils::UriAppendKeyValue(uriStr, MEDIA_TRIGGER_MODE_KEYWORD, to_string(aniContext->triggerMode_));
     Uri addTaskUri(uriStr);
     aniContext->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
     int32_t changeRows = UserFileClient::Update(addTaskUri, aniContext->predicates, aniContext->valuesBucket);
@@ -414,8 +426,9 @@ static void SubmitCloudEnhancementTasksExecute(std::unique_ptr<CloudEnhancementA
 }
 
 ani_object CloudEnhancementAni::SubmitCloudEnhancementTasks(ani_env *env, ani_object aniObject,
-    ani_object photoAssets, ani_boolean hasCloudWatermark)
+    ani_object photoAssets, ani_boolean hasCloudWatermark, int triggerMode)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -424,8 +437,12 @@ ani_object CloudEnhancementAni::SubmitCloudEnhancementTasks(ani_env *env, ani_ob
     tracer.Start("SubmitCloudEnhancementTasks");
 
     auto aniContext = make_unique<CloudEnhancementAniContext>();
+    SubmitCloudEnhancementParams params;
+    params.photoAssets = photoAssets;
+    params.hasCloudWatermark = hasCloudWatermark;
+    params.triggerMode = triggerMode;
     CHECK_COND_WITH_MESSAGE(env, ParseArgsSubmitCloudEnhancementTasks(
-        env, aniObject, photoAssets, hasCloudWatermark, aniContext), "Failed to parse args");
+        env, aniObject, params, aniContext), "Failed to parse args");
 
     SubmitCloudEnhancementTasksExecute(aniContext);
     CommonComplete(env, aniContext);
@@ -435,6 +452,8 @@ ani_object CloudEnhancementAni::SubmitCloudEnhancementTasks(ani_env *env, ani_ob
 static bool ParseArgPrioritize(ani_env *env, ani_object aniObject, ani_object photoAsset,
     unique_ptr<CloudEnhancementAniContext> &context)
 {
+    CHECK_COND_RET(env != nullptr, false, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, false, "context is nullptr");
     if (CloudEnhancementAni::ParseArgGetPhotoAsset(env, photoAsset, context->fileId, context->photoUri,
         context->displayName) != ANI_OK) {
         ANI_ERR_LOG("requestMedia ParseArgGetPhotoAsset error");
@@ -451,6 +470,7 @@ static void PrioritizeCloudEnhancementTaskExecute(std::unique_ptr<CloudEnhanceme
 {
     MediaLibraryTracer tracer;
     tracer.Start("PrioritizeCloudEnhancementTaskExecute");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
     string uriStr = PAH_CLOUD_ENHANCEMENT_PRIORITIZE;
     Uri prioritizeTaskUri(uriStr);
     aniContext->predicates.EqualTo(MediaColumn::MEDIA_ID, aniContext->photoUri);
@@ -467,6 +487,7 @@ static void PrioritizeCloudEnhancementTaskExecute(std::unique_ptr<CloudEnhanceme
 ani_object CloudEnhancementAni::PrioritizeCloudEnhancementTask(ani_env *env, ani_object aniObject,
     ani_object photoAsset)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -485,6 +506,7 @@ ani_object CloudEnhancementAni::PrioritizeCloudEnhancementTask(ani_env *env, ani
 
 bool CloudEnhancementAniContext::GetPairAsset()
 {
+    CHECK_COND_RET(fetchFileResult != nullptr, false, "fetchFileResult is nullptr");
     if (fetchFileResult->GetCount() != 1) {
         ANI_ERR_LOG("Object number of fetchfileResult is not one");
         return false;
@@ -518,6 +540,8 @@ ani_status CloudEnhancementAni::ParseArgGetPhotoAsset(ani_env *env, ani_object p
 static ani_object ParseArgsCancelCloudEnhancementTasks(ani_env *env, ani_object aniObject, ani_object photoAssets,
     unique_ptr<CloudEnhancementAniContext> &context)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
     CHECK_COND(env, CloudEnhancementAni::InitUserFileClient(env, aniObject), JS_INNER_FAIL);
 
     std::vector<std::string> uris;
@@ -538,6 +562,7 @@ static void CancelCloudEnhancementTasksExecute(std::unique_ptr<CloudEnhancementA
 {
     MediaLibraryTracer tracer;
     tracer.Start("CancelCloudEnhancementTasksExecute");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
     string uriStr = PAH_CLOUD_ENHANCEMENT_CANCEL;
     Uri cancelTaskUri(uriStr);
@@ -575,6 +600,7 @@ static void CancelAllCloudEnhancementTasksExecute(std::unique_ptr<CloudEnhanceme
 {
     MediaLibraryTracer tracer;
     tracer.Start("CancelCloudEnhancementTasksExecute");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
     string uriStr = PAH_CLOUD_ENHANCEMENT_CANCEL_ALL;
     Uri cancelAllTaskUri(uriStr);
@@ -607,6 +633,8 @@ ani_object CloudEnhancementAni::CancelAllCloudEnhancementTasks(ani_env *env, ani
 static bool ParseArgQuery(ani_env *env, ani_object aniObject, ani_object photoAsset,
     unique_ptr<CloudEnhancementAniContext> &context)
 {
+    CHECK_COND_RET(env != nullptr, false, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, false, "context is nullptr");
     if (CloudEnhancementAni::ParseArgGetPhotoAsset(env, photoAsset, context->fileId, context->photoUri,
         context->displayName) != ANI_OK) {
         ANI_ERR_LOG("requestMedia ParseArgGetPhotoAsset error");
@@ -622,6 +650,7 @@ static bool ParseArgQuery(ani_env *env, ani_object aniObject, ani_object photoAs
 static void FillTaskStageWithClientQuery(CloudEnhancementAniContext* context, string &photoId)
 {
 #ifdef ABILITY_CLOUD_ENHANCEMENT_SUPPORT
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is nullptr");
     lock_guard<mutex> lock(mtx);
     InitCloudEnhancementFunc();
     if (dynamicHandler == nullptr) {
@@ -670,6 +699,7 @@ static void QueryCloudEnhancementTaskStateExecute(std::unique_ptr<CloudEnhanceme
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryCloudEnhancementTaskStateExecute");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
     string uriStr = PAH_CLOUD_ENHANCEMENT_QUERY;
     Uri queryTaskUri(uriStr);
@@ -714,6 +744,8 @@ static void QueryCloudEnhancementTaskStateExecute(std::unique_ptr<CloudEnhanceme
 
 static ani_object QueryCloudEnhancementTaskStateComplete(ani_env *env, unique_ptr<CloudEnhancementAniContext> &context)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
     ani_object taskStateObj {};
     ani_object errorObj {};
     if (context->error != ERR_DEFAULT) {
@@ -728,6 +760,7 @@ static ani_object QueryCloudEnhancementTaskStateComplete(ani_env *env, unique_pt
 ani_object CloudEnhancementAni::QueryCloudEnhancementTaskState(ani_env *env, ani_object aniObject,
     ani_object photoAsset)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -748,6 +781,7 @@ static void SyncCloudEnhancementTaskStatusExecute(std::unique_ptr<CloudEnhanceme
 {
     MediaLibraryTracer tracer;
     tracer.Start("SyncCloudEnhancementTaskStatusExecute");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
     string uriStr = PAH_CLOUD_ENHANCEMENT_SYNC;
     Uri syncUri(uriStr);
     aniContext->valuesBucket.Put(PhotoColumn::PHOTO_STRONG_ASSOCIATION, STRONG_ASSOCIATION);
@@ -762,6 +796,7 @@ static void SyncCloudEnhancementTaskStatusExecute(std::unique_ptr<CloudEnhanceme
 
 ani_object CloudEnhancementAni::SyncCloudEnhancementTaskStatus(ani_env *env, ani_object aniObject)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -777,6 +812,8 @@ ani_object CloudEnhancementAni::SyncCloudEnhancementTaskStatus(ani_env *env, ani
 
 static ani_object GetAniPairFileAsset(ani_env *env, std::unique_ptr<CloudEnhancementAniContext> &context)
 {
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
     ani_object errorObj {};
     ani_object pairRes = nullptr;
     // Create PhotiAsset object using the contents of fileAsset
@@ -793,7 +830,13 @@ static ani_object GetAniPairFileAsset(ani_env *env, std::unique_ptr<CloudEnhance
         return pairRes;
     }
     context->fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
-    pairRes = FileAssetAni::Wrap(env, FileAssetAni::CreateFileAsset(env, context->fileAsset));
+    FileAssetAniMethod fileAssetAniMethod;
+    if (ANI_OK != FileAssetAni::InitFileAssetAniMethod(env, ResultNapiType::TYPE_PHOTOACCESS_HELPER,
+        fileAssetAniMethod)) {
+        ANI_ERR_LOG("InitFileAssetAniMethod failed");
+        return nullptr;
+    }
+    pairRes = FileAssetAni::Wrap(env, FileAssetAni::CreateFileAsset(env, context->fileAsset), fileAssetAniMethod);
     if (pairRes == nullptr) {
         MediaLibraryAniUtils::CreateAniErrorObject(env, errorObj, ERR_INVALID_OUTPUT,
             "Failed to create js object for Fetch File Result");
@@ -805,6 +848,8 @@ static ani_object GetCloudEnhancementPairComplete(ani_env *env, std::unique_ptr<
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetCloudEnhancementPairComplete");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
+    CHECK_COND_RET(context != nullptr, nullptr, "context is nullptr");
 
     ani_object pairRes {};
     ani_object errorObj {};
@@ -823,6 +868,7 @@ static void GetCloudEnhancementPairExecute(std::unique_ptr<CloudEnhancementAniCo
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetCloudEnhancementPairExecute");
+    CHECK_NULL_PTR_RETURN_VOID(aniContext, "aniContext is nullptr");
 
     string uriStr = PAH_CLOUD_ENHANCEMENT_GET_PAIR;
     Uri getPairUri(uriStr);
@@ -849,11 +895,13 @@ ani_object CloudEnhancementAni::GetCloudEnhancementPair(ani_env *env, ani_object
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetCloudEnhancementPair");
+    CHECK_COND_RET(env != nullptr, nullptr, "env is nullptr");
     if (!MediaLibraryAniUtils::IsSystemApp()) {
         AniError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
     auto aniContext = make_unique<CloudEnhancementAniContext>();
+    CHECK_COND_RET(aniContext != nullptr, nullptr, "aniContext is nullptr");
     aniContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     aniContext->assetType = TYPE_PHOTO;
 

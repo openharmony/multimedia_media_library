@@ -112,7 +112,12 @@ public:
         ani_object assets);
 
     static ani_object SetEditData(ani_env *env, ani_object aniObject, ani_object editData);
+    static ani_object SetFavorite(ani_env *env, ani_object object, ani_boolean favoriteState);
+    static ani_object SetHidden(ani_env *env, ani_object object, ani_boolean hiddenState);
+    static ani_object SetUserComment(ani_env *env, ani_object object, ani_string userComment);
     static ani_object SetEffectMode(ani_env *env, ani_object aniObject, ani_enum_item mode);
+    static ani_object SetCameraShotKey(ani_env *env, ani_object aniObject, ani_string shotKey);
+    static ani_double GetWriteCacheHandler(ani_env *env, ani_object aniObject);
 
     void RecordChangeOperation(AssetChangeOperation changeOperation);
     bool Contains(AssetChangeOperation changeOperation) const;
@@ -129,7 +134,6 @@ public:
     int32_t CopyFileToMediaLibrary(const OHOS::UniqueFd &destFd, bool isMovingPhotoVideo = false);
     int32_t CopyDataBufferToMediaLibrary(const OHOS::UniqueFd &destFd, bool isMovingPhotoVideo = false);
     int32_t CopyMovingPhotoVideo(const std::string &assetUri);
-    int32_t SubmitCache(bool isCreation, bool isSetEffectMode);
 
     std::shared_ptr<FileAsset> GetFileAssetInstance() const;
     sptr<PhotoProxy> GetPhotoProxyObj();
@@ -145,6 +149,18 @@ public:
     AddResourceMode GetMovingPhotoVideoMode() const;
     void* GetMovingPhotoVideoBuffer() const;
     size_t GetMovingPhotoVideoSize() const;
+    void SetIsEditDisplayName(bool val);
+    bool GetIsEditDisplayName();
+    void SetOldDisplayName(const std::string &oldDisplayName);
+    std::string GetOldDisplayName();
+    void SetIsWriteGpsAdvanced(bool val);
+    bool GetIsWriteGpsAdvanced();
+    
+    int32_t SubmitCache(bool isCreation, bool isSetEffectMode, bool isWriteGpsAdvanced, const int32_t userId = -1);
+    int32_t SubmitCacheWithCreation(
+        std::string &uri, std::string &assetUri, bool isSetEffectMode, const int32_t userId);
+    int32_t SubmitCacheWithoutCreation(std::string &uri, bool isSetEffectMode, bool isWriteGpsAdvanced,
+        const int32_t userId);
 
 private:
     static ani_object CreateAssetRequestInner(ani_env *env,
@@ -167,6 +183,9 @@ private:
     size_t movingPhotoVideoBufferSize_ = 0;
     AddResourceMode movingPhotoVideoResourceMode_ = AddResourceMode::DATA_BUFFER;
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
+    bool isWriteGpsAdvanced_{false};
+    bool isEditDisplayName_{false};
+    std::string oldDisplayName_;
 };
 
 struct MediaAssetChangeRequestAniContext : public AniError {
@@ -179,6 +198,7 @@ struct MediaAssetChangeRequestAniContext : public AniError {
     std::string appName;
     std::string realPath;
     int32_t fd;
+    int32_t userId_ = -1;
 };
 } // namespace Media
 } // namespace OHOS

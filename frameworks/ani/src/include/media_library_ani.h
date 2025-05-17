@@ -126,9 +126,11 @@ class MediaLibraryAni {
 public:
     static ani_status PhotoAccessHelperInit(ani_env *env);
     static ani_status UserFileMgrInit(ani_env *env);
+    static ani_object CreateNewInstance(ani_env *env, ani_class clazz, ani_object context,
+        ani_object userIdObject, bool isAsync = false);
 
     static ani_object GetUserFileMgr(ani_env *env, ani_object context);
-    static ani_object GetPhotoAccessHelper(ani_env *env, ani_object context);
+    static ani_object GetPhotoAccessHelperInner(ani_env *env, ani_object context, ani_object userId);
     static MediaLibraryAni* Unwrap(ani_env *env, ani_object object);
     static void OnThumbnailGenerated(ani_env *env, ani_object callback, void *context, void *data);
     int32_t GetUserId();
@@ -141,6 +143,7 @@ public:
 
 private:
     static ani_object Constructor(ani_env *env, ani_class clazz, ani_object context);
+    static ani_object Constructor(ani_env *env, ani_class clazz, ani_object context, ani_object userIdObject);
 
     // UserFileMgr
     static ani_object GetPhotoAssets(ani_env *env, [[maybe_unused]] ani_object object, ani_object options);
@@ -167,6 +170,8 @@ private:
         [[maybe_unused]] ani_object object, ani_object predicate);
     static ani_object GetBurstAssets([[maybe_unused]] ani_env *env, [[maybe_unused]] ani_object object,
         ani_string burstKey, ani_object fetchOptions);
+    static ani_string PhotoAccessHelperGetDataAnalysisProgress([[maybe_unused]] ani_env *env,
+        [[maybe_unused]] ani_object object, ani_enum_item analysisType);
     static void PhotoAccessHelperOnCallback(ani_env *env, ani_object object, ani_string aniUri,
         ani_boolean forChildUris, ani_fn_object callbackOn);
     static void PhotoAccessHelperOffCallback(ani_env *env, ani_object object, ani_string aniUri,
