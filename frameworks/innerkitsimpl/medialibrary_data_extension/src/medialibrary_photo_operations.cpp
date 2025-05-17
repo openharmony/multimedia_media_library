@@ -1644,20 +1644,32 @@ void UpdateAlbumOnSystemMoveAssets(const int32_t &oriAlbumId, const int32_t &tar
         rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) }, false, true);
 }
 
-bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
+int32_t IsSystemAlbumMovement(MediaLibraryCommand &cmd, bool &isSystemAlbum)
 {
+    static vector<int32_t> systemAlbumIds;
+    if (systemAlbumIds.empty()) {
+        vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
+        NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
+        rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, static_cast<int32_t>(PhotoAlbumType::SYSTEM));
+        auto resultSet = uniStore->Query(rdbPredicates, columns);
+        if (resultSet == nullptr) {
+            MEDIA_ERR_LOG("Failed to query system albums");
+            return E_HAS_DB_ERROR;
+        }
+
+        while (resultSet->GoToNextRow() == E_OK) {
+            int32_t albumId =
+                get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet, TYPE_INT32));
+            systemAlbumIds.push_back(albumId);
+        }
+        resultSet->Close();
+    }
+
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     int32_t oriAlbumId = MediaLibraryAssetOperations::GetAlbumIdByPredicates(whereClause, whereArgs);
-    PhotoAlbumType type;
-    PhotoAlbumSubType subType;
-    CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(to_string(oriAlbumId), type, subType) == E_SUCCESS, false,
-        "move assets invalid album uri");
-    bool cond = ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType)));
-    CHECK_AND_RETURN_RET_LOG(!cond, false,
-        "album id %{private}s type:%d subtype:%d", to_string(oriAlbumId).c_str(), type, subType);
-
-    return type == PhotoAlbumType::SYSTEM;
+    isSystemAlbum = std::find(systemAlbumIds.begin(), systemAlbumIds.end(), oriAlbumId) != systemAlbumIds.end();
+    return E_OK;
 }
 
 void GetSystemMoveAssets(AbsRdbPredicates &predicates)
@@ -1737,14 +1749,18 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
     MediaLibraryRdbStore::ReplacePredicatesUriToId(*(cmd.GetAbsRdbPredicates()));
 
     // Check if move from system album
-    if (IsSystemAlbumMovement(cmd)) {
+    bool isSystemAlbum = false;
+    int32_t errCode = IsSystemAlbumMovement(cmd, isSystemAlbum);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to check whether move from system album, errCode=%{public}d", errCode);
+    if (isSystemAlbum) {
         MEDIA_INFO_LOG("Move assets from system album");
         GetSystemMoveAssets(*(cmd.GetAbsRdbPredicates()));
         int32_t updateSysRows = UpdateSystemRows(cmd);
         return updateSysRows;
     }
 
-    int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
+    errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
         "Failed to query file asset vector from db, errCode=%{public}d, predicates=%{public}s",
