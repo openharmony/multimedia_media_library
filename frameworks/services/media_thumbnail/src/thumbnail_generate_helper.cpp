@@ -756,7 +756,6 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
     }
     CacheThumbStatus(opts, thumbType, thumbnailData, err, isLocalThumbnailAvailable);
     IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
-    int32_t err;
     err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
     return fd;
