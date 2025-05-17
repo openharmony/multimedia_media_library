@@ -50,6 +50,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 const std::string TEST_BACKUP_PATH = "/data/test/backup/db";
+const std::string TEST_BACKUP_PATH_CLOUD = "/data/test/backup/db1";
 const std::string TEST_UPGRADE_FILE_DIR = "/data/test/backup/file";
 const std::string GALLERY_APP_NAME = "gallery";
 const std::string MEDIA_APP_NAME = "external";
@@ -143,83 +144,86 @@ int PhotosOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersion)
 
 std::shared_ptr<NativeRdb::RdbStore> photosStorePtr = nullptr;
 std::unique_ptr<UpgradeRestore> restoreService = nullptr;
+std::shared_ptr<NativeRdb::RdbStore> photosStorePtrCloud = nullptr;
+std::unique_ptr<UpgradeRestore> restoreServiceCloud = nullptr;
 
-void InitPhotoAlbum()
+void InitPhotoAlbum(std::shared_ptr<NativeRdb::RdbStore> &photosStore)
 {
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (0, 1, 'test101');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, 'TmallPic');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, '美图贴贴');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, 'funnygallery');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, 'xiaohongshu');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, 'Douyin');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, 'save');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, 'Weibo');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, 'Camera');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, 'Screenshots');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (1024, 2049, 'Screenrecorder');");
-    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) VALUES (1024, 2049,'" +
+    photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) VALUES (1024, 2049,'" +
         GetDUALBundleName() + " Share');");
 }
 
-void Init(GallerySource &gallerySource, ExternalSource &externalSource)
+void Init(GallerySource &gallerySource, ExternalSource &externalSource, std::string testBackupPath,
+    std::unique_ptr<UpgradeRestore> &restorePtr, std::shared_ptr<NativeRdb::RdbStore> &photosStore)
 {
     MEDIA_INFO_LOG("start init galleryDb");
-    const string galleryDbPath = TEST_BACKUP_PATH + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
+    const string galleryDbPath = testBackupPath + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
     gallerySource.Init(galleryDbPath);
     MEDIA_INFO_LOG("end init galleryDb");
     MEDIA_INFO_LOG("start init externalDb");
-    const string externalDbPath = TEST_BACKUP_PATH + "/" + MEDIA_APP_NAME + "/ce/databases/external.db";
+    const string externalDbPath = testBackupPath + "/" + MEDIA_APP_NAME + "/ce/databases/external.db";
     externalSource.Init(externalDbPath);
     MEDIA_INFO_LOG("end init externalDb");
-    const string dbPath = TEST_BACKUP_PATH + "/" + MEDIA_LIBRARY_APP_NAME + "/ce/databases/media_library.db";
+    const string dbPath = testBackupPath + "/" + MEDIA_LIBRARY_APP_NAME + "/ce/databases/media_library.db";
     NativeRdb::RdbStoreConfig config(dbPath);
     PhotosOpenCall helper;
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
-    photosStorePtr = store;
-    InitPhotoAlbum();
-    restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
-    restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
-    restoreService->InitGarbageAlbum();
+    photosStore = store;
+    InitPhotoAlbum(photosStore);
+    restorePtr = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    restorePtr->Init(testBackupPath, TEST_UPGRADE_FILE_DIR, false);
+    restorePtr->InitGarbageAlbum();
 }
 
-void RestoreFromGallery()
+void RestoreFromGallery(std::unique_ptr<UpgradeRestore> &restorePtr, std::shared_ptr<NativeRdb::RdbStore> &photosStore)
 {
-    std::vector<FileInfo> fileInfos = restoreService->QueryFileInfos(0);
+    std::vector<FileInfo> fileInfos = restorePtr->QueryFileInfos(0);
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        const NativeRdb::ValuesBucket values = restoreService->GetInsertValue(fileInfos[i], TEST_BACKUP_PATH,
+        const NativeRdb::ValuesBucket values = restorePtr->GetInsertValue(fileInfos[i], TEST_BACKUP_PATH,
             SourceType::GALLERY);
         int64_t rowNum = 0;
-        if (photosStorePtr->Insert(rowNum, "Photos", values) != E_OK) {
+        if (photosStore->Insert(rowNum, "Photos", values) != E_OK) {
             MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s", fileInfos[i].filePath.c_str());
         }
     }
 }
 
-void RestoreFromExternal(GallerySource &gallerySource, bool isCamera)
+void RestoreFromExternal(GallerySource &gallerySource, bool isCamera,
+    std::unique_ptr<UpgradeRestore> &restorePtr, std::shared_ptr<NativeRdb::RdbStore> &photosStore)
 {
     MEDIA_INFO_LOG("start restore from %{public}s", (isCamera ? "camera" : "others"));
     int32_t maxId = BackupDatabaseUtils::QueryInt(gallerySource.galleryStorePtr_, isCamera ?
         QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, CUSTOM_MAX_ID);
     int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
-    std::vector<FileInfo> fileInfos = restoreService->QueryFileInfosFromExternal(0, maxId, isCamera);
+    std::vector<FileInfo> fileInfos = restorePtr->QueryFileInfosFromExternal(0, maxId, isCamera);
     MEDIA_INFO_LOG("%{public}d asset will restor, maxid: %{public}d", (int)fileInfos.size(), maxId);
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        const NativeRdb::ValuesBucket values = restoreService->GetInsertValue(fileInfos[i], TEST_BACKUP_PATH,
-            type);
+        const NativeRdb::ValuesBucket values = restorePtr->GetInsertValue(fileInfos[i], TEST_BACKUP_PATH, type);
         int64_t rowNum = 0;
-        if (photosStorePtr->Insert(rowNum, "Photos", values) != E_OK) {
+        if (photosStore->Insert(rowNum, "Photos", values) != E_OK) {
             MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s", fileInfos[i].filePath.c_str());
         }
     }
@@ -230,10 +234,16 @@ void MediaLibraryBackupTest::SetUpTestCase(void)
     MEDIA_INFO_LOG("SetUpTestCase");
     GallerySource gallerySource;
     ExternalSource externalSource;
-    Init(gallerySource, externalSource);
-    RestoreFromGallery();
-    RestoreFromExternal(gallerySource, true);
-    RestoreFromExternal(gallerySource, false);
+    Init(gallerySource, externalSource, TEST_BACKUP_PATH, restoreService, photosStorePtr);
+    RestoreFromGallery(restoreService, photosStorePtr);
+    RestoreFromExternal(gallerySource, true, restoreService, photosStorePtr);
+    RestoreFromExternal(gallerySource, false, restoreService, photosStorePtr);
+    GallerySource gallerySourceCloud;
+    ExternalSource externalSourceCloud;
+    Init(gallerySourceCloud, externalSourceCloud, TEST_BACKUP_PATH_CLOUD, restoreServiceCloud, photosStorePtrCloud);
+    RestoreFromGallery(restoreServiceCloud, photosStorePtrCloud);
+    RestoreFromExternal(gallerySourceCloud, true, restoreServiceCloud, photosStorePtrCloud);
+    RestoreFromExternal(gallerySourceCloud, false, restoreServiceCloud, photosStorePtrCloud);
 }
 
 void MediaLibraryBackupTest::TearDownTestCase(void)
@@ -2268,9 +2278,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ConvertLowQualityPath, Tes
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_from_cloud_test, TestSize.Level2)
 {
     MEDIA_INFO_LOG("medialib_backup_test_restore_from_cloud_test start");
-    int32_t countBefore = restoreService->totalNumber_;
-    restoreService->RestoreCloudFromGallery();
-    EXPECT_EQ((restoreService->totalNumber_ - countBefore), 0);
+    int32_t countBefore = restoreServiceCloud->totalNumber_;
+    restoreServiceCloud->RestoreCloudFromGallery();
+    EXPECT_EQ((restoreServiceCloud->totalNumber_ - countBefore), 0);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_cloud_infos_test, TestSize.Level2)
@@ -2677,8 +2687,8 @@ HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test3, T
     restoreService->geoKnowledgeRestore_.mediaLibraryRdb_ = nullptr;
     restoreService->geoKnowledgeRestore_.batchCnt_ = 0xFF;
 
-    std::vector<FileInfo> fileInfos;
-    restoreService->geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
+    restoreService->geoKnowledgeRestore_.RestoreMaps(photoInfoMap);
     EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 0);
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test3 end");
 }
@@ -2692,8 +2702,8 @@ HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test4, T
     restoreService->geoKnowledgeRestore_.mediaLibraryRdb_ = photosStorePtr;
     restoreService->geoKnowledgeRestore_.batchCnt_ = 0xFF;
 
-    std::vector<FileInfo> fileInfos;
-    restoreService->geoKnowledgeRestore_.RestoreMaps(fileInfos);
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
+    restoreService->geoKnowledgeRestore_.RestoreMaps(photoInfoMap);
     EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 0);
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test4 end");
 }
@@ -2705,20 +2715,28 @@ HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test5, T
         UPGRADE_RESTORE_ID);
     (void)restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
     restoreService->geoKnowledgeRestore_.mediaLibraryRdb_ = photosStorePtr;
-    restoreService->geoKnowledgeRestore_.batchCnt_ = 0xFF;
+    restoreService->geoKnowledgeRestore_.batchCnt_ = 0;
 
     constexpr double DOUBLE_EPSILON = 1e-15;
-    std::vector<FileInfo> fileInfos;
-    FileInfo info1;
-    info1.fileIdNew = 0;
-    fileInfos.push_back(info1);
-    FileInfo info2;
-    info2.fileIdNew = 1;
-    info2.latitude = DOUBLE_EPSILON + 1.0;
-    info2.longitude = DOUBLE_EPSILON + 1.0;
-    fileInfos.push_back(info2);
-    restoreService->geoKnowledgeRestore_.RestoreMaps(fileInfos);
-    EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 0);
+    int64_t rowNum = 0;
+    GeoKnowledgeRestore::GeoMapInfo geoMapInfo1;
+    std::vector<NativeRdb::ValuesBucket> values1;
+    geoMapInfo1.photoInfo.fileIdNew = 0;
+    restoreService->geoKnowledgeRestore_.UpdateMapInsertValues(values1, geoMapInfo1);
+    restoreService->geoKnowledgeRestore_.BatchInsertWithRetry("tab_analysis_geo_knowledge", values1, rowNum);
+    GeoKnowledgeRestore::GeoMapInfo geoMapInfo2;
+    std::vector<NativeRdb::ValuesBucket> values2;
+    geoMapInfo2.photoInfo.fileIdNew = 1;
+    geoMapInfo2.latitude = DOUBLE_EPSILON + 1.0;
+    geoMapInfo2.longitude = DOUBLE_EPSILON + 1.0;
+    GeoKnowledgeRestore::GeoKnowledgeInfo albumInfo;
+    albumInfo.language = "zh";
+    albumInfo.latitude = DOUBLE_EPSILON + 1.0;
+    albumInfo.longitude = DOUBLE_EPSILON + 1.0;
+    restoreService->geoKnowledgeRestore_.albumInfos_.emplace_back(albumInfo);
+    restoreService->geoKnowledgeRestore_.UpdateMapInsertValues(values2, geoMapInfo2);
+    restoreService->geoKnowledgeRestore_.BatchInsertWithRetry("tab_analysis_geo_knowledge", values2, rowNum);
+    EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 1);
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test5 end");
 }
 } // namespace Media

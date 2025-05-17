@@ -345,7 +345,8 @@ void BackupDatabaseUtils::UpdateAnalysisTotalStatus(std::shared_ptr<NativeRdb::R
 void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
 {
     std::string updateSql = "UPDATE tab_analysis_face_tag SET count = (SELECT count(1) from tab_analysis_image_face \
-        WHERE tab_analysis_image_face.tag_id = tab_analysis_face_tag.tag_id)";
+        WHERE tab_analysis_image_face.tag_id = tab_analysis_face_tag.tag_id \
+        AND tab_analysis_image_face.tag_id LIKE 'ser%')";
     int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis face tag count failed, ret=%{public}d", errCode);
 }
@@ -368,8 +369,8 @@ void BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(std::shared_ptr<NativeRdb
             "ELSE 3 "
         "END "
         "WHERE EXISTS (SELECT 1 FROM tab_analysis_image_face "
-                      "WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id "
-                      "AND " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause + ")";
+                      "WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id) "
+        "AND " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause;
 
     int32_t errCode = BackupDatabaseUtils::ExecuteSQL(rdbStore, updateSql);
     CHECK_AND_PRINT_LOG(errCode >= 0, "execute update analysis total failed, ret=%{public}d", errCode);
@@ -724,13 +725,19 @@ void BackupDatabaseUtils::DeleteExistingImageFaceData(std::shared_ptr<NativeRdb:
     const std::vector<FileIdPair>& fileIdPair)
 {
     auto [oldFileIds, newFileIds] = BackupDatabaseUtils::UnzipFileIdPairs(fileIdPair);
-    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(newFileIds, ", ") + ")";
+    std::vector<int> realNewFileIds;
+    for (auto fileId: newFileIds) {
+        CHECK_AND_EXECUTE(fileId == -1, realNewFileIds.emplace_back(fileId));
+    }
+    std::string fileIdNewFilterClause = "(" + BackupDatabaseUtils::JoinValues<int>(realNewFileIds, ", ") + ")";
 
     std::string deleteAnalysisPhotoMapSql =
-        "DELETE FROM AnalysisPhotoMap WHERE map_asset IN ("
+        "DELETE FROM AnalysisPhotoMap WHERE "
+        "map_album IN (SELECT album_id FROM AnalysisAlbum WHERE album_type = 4096 AND album_subtype = 4102) "
+        "AND map_asset IN ("
         "SELECT " + IMAGE_FACE_COL_FILE_ID + " FROM " + VISION_IMAGE_FACE_TABLE +
         " WHERE " + IMAGE_FACE_COL_FILE_ID + " IN " + fileIdNewFilterClause +
-        ") AND map_album IN (SELECT album_id FROM AnalysisAlbum WHERE album_type = 4096 AND album_subtype = 4102)";
+        ") ";
 
     // 删除 AnalysisPhotoMap 表中的重复记录
     BackupDatabaseUtils::ExecuteSQL(mediaLibraryRdb, deleteAnalysisPhotoMapSql);

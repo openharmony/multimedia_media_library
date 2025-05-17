@@ -74,6 +74,8 @@ protected:
     virtual std::string CheckInvalidFile(const FileInfo &fileInfo, int32_t errCode);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
+    bool PrepareInsertValue(const int32_t sceneCode, FileInfo &fileInfo, int32_t sourceType,
+        NativeRdb::ValuesBucket &value);
     virtual std::vector<NativeRdb::ValuesBucket> GetCloudInsertValues(int32_t sceneCode,
         std::vector<FileInfo> &fileInfos, int32_t sourceType);
     int32_t CopyFile(const std::string &srcFile, const std::string &dstFile) const;
@@ -102,6 +104,7 @@ protected:
     }
     void InsertPhotoMap(std::vector<FileInfo> &fileInfos, int64_t &mapRowNum);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos, bool isFull, const NeedQueryMap &needQueryMap);
+    void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
     nlohmann::json GetErrorInfoJson();
     nlohmann::json GetCountInfoJson(const std::vector<std::string> &countInfoTypes);
@@ -163,6 +166,7 @@ protected:
     int32_t GetRestoreMode();
     uint64_t GetNotFoundNumber();
     bool IsCloudRestoreSatisfied();
+    void AddToPhotoInfoMap(std::vector<FileInfo> &fileInfos);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
@@ -211,6 +215,7 @@ protected:
     ffrt::mutex imageMutex_;
     ffrt::mutex videoMutex_;
     ffrt::mutex audioMutex_;
+    ffrt::mutex photoInfoMutex_;
     std::mutex failedFilesMutex_;
     int32_t errorCode_{RestoreError::SUCCESS};
     std::string errorInfo_;
@@ -230,6 +235,8 @@ protected:
     PhotosDataHandler photosDataHandler_;
     int32_t restoreMode_;
     int32_t syncSwitchType_;
+    size_t totalFailCount_{0};
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
 };
 } // namespace Media
 } // namespace OHOS
