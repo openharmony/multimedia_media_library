@@ -36,18 +36,18 @@ static const int32_t SINGLE_CLOUD_ENHANCEMENT_PHOTO = 120;
  * @brief Get the gallery_media to restore to Photos.
  */
 std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetGalleryMedia(
-    int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+    int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    return this->galleryMediaDao_.GetGalleryMedia(offset, pageSize, shouldIncludeSd, hasLowQualityImage);
+    return this->galleryMediaDao_.GetGalleryMedia(minId, pageSize, shouldIncludeSd, hasLowQualityImage);
 }
 
 /**
  * @brief Get the gallery_media for cloud to restore to Photos.
  */
 std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetCloudGalleryMedia(
-    int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+    int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    return this->galleryMediaDao_.GetCloudGalleryMedia(offset, pageSize, shouldIncludeSd, hasLowQualityImage);
+    return this->galleryMediaDao_.GetCloudGalleryMedia(minId, pageSize, shouldIncludeSd, hasLowQualityImage);
 }
 
 /**

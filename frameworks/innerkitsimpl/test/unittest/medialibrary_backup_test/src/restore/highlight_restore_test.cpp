@@ -125,14 +125,13 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_001, TestSize.Level0)
     EXPECT_EQ(highlightRestore->sceneCode_, 2);
     std::string albumOdid = "test";
     highlightRestore->RestoreAlbums(albumOdid);
-    std::vector<FileInfo> fileInfos;
-    FileInfo fileInfo;
-    fileInfo.fileIdNew = 1;
-    fileInfo.cloudPath = "cloud/path/test.jpg";
-    fileInfos.emplace_back(fileInfo);
-    highlightRestore->RestoreMaps(fileInfos);
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap;
+    PhotoInfo photoInfo;
+    photoInfo.fileIdNew = 1;
+    photoInfo.cloudPath = "cloud/path/test.jpg";
+    photoInfoMap.insert(std::make_pair(1, photoInfo));
+    highlightRestore->RestoreMaps(photoInfoMap);
     EXPECT_NE(highlightRestore->albumInfos_.size(), 0);
-
     ClearData();
 }
 
@@ -201,16 +200,19 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("highlight_restore_test_005 start");
     shared_ptr<HighlightRestore> highlightRestore = make_shared<HighlightRestore>();
-    highlightRestore->Init(2, "1", nullptr, g_galleryPtr);
+    highlightRestore->Init(2, "1", g_rdbStore->GetRaw(), g_galleryPtr);
     EXPECT_EQ(highlightRestore->sceneCode_, 2);
-    FileInfo fileInfo;
-    fileInfo.fileIdNew = 1;
-    fileInfo.fileIdOld = 2;
-    fileInfo.storyIds = "100";
-    fileInfo.portraitIds = "4,5,6";
-    fileInfo.storyChosen = 1;
-    fileInfo.displayName = "test.jpg";
-    fileInfo.cloudPath = "cloud/path/test.jpg";
+    HighlightRestore::HighlightPhotoInfo highlightPhoto;
+    PhotoInfo photoInfo;
+    photoInfo.displayName = "test.jpg";
+    photoInfo.cloudPath = "cloud/path/test.jpg";
+    photoInfo.fileIdNew = 1;
+    photoInfo.fileType = 1;
+    highlightPhoto.photoInfo = photoInfo;
+    highlightPhoto.fileIdOld = 2;
+    highlightPhoto.storyIds = "100";
+    highlightPhoto.portraitIds = "4,5,6";
+    highlightPhoto.hashCode = "3275";
     HighlightRestore::HighlightAlbumInfo info1;
     info1.highlightStatus = HIGHLIGHT_STATUS_SUCCESS;
     info1.coverId = 2;
@@ -221,7 +223,7 @@ HWTEST_F(HighlightRestoreTest, highlight_restore_test_005, TestSize.Level0)
     info2.coverId = -1;
     highlightRestore->albumInfos_.emplace_back(info2);
     std::vector<NativeRdb::ValuesBucket> values;
-    highlightRestore->UpdateMapInsertValues(values, fileInfo);
+    highlightRestore->UpdateMapInsertValues(values, highlightPhoto);
     highlightRestore->UpdateAlbums();
     EXPECT_EQ(highlightRestore->successCnt_, 1);
     EXPECT_EQ(highlightRestore->failCnt_, 1);

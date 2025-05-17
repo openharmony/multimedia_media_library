@@ -25,9 +25,25 @@
 #include "clone_restore.h"
 #include "upgrade_restore.h"
 #include "others_clone_restore.h"
+#include "rdb_sql_statistic.h"
+#include "rdb_types.h"
 
 namespace OHOS {
 namespace Media {
+class MediaLibraryBackupObserver : public DistributedRdb::SqlObserver {
+public:
+    virtual ~MediaLibraryBackupObserver() {}
+
+    void OnStatistic(const SqlExecutionInfo &info) override
+    {
+        for (auto sql : info.sql_) {
+            MEDIA_DEBUG_LOG("DEBUG_MediaLibraryBackup totaltime: %{public}ld waitTime: %{public}ld "
+                "prepareTime: %{public}ld executeTime: %{public}ld sql: %{public}s",
+                info.totalTime_, info.waitTime_, info.prepareTime_, info.executeTime_, sql.c_str());
+        }
+    };
+};
+
 const int DUAL_FIRST_NUMBER = 65;
 const int DUAL_SECOND_NUMBER = 110;
 const int DUAL_THIRD_NUMBER = 100;
@@ -92,6 +108,8 @@ void BackupRestoreService::StartRestore(const std::shared_ptr<AbilityRuntime::Co
 void BackupRestoreService::StartRestoreEx(const std::shared_ptr<AbilityRuntime::Context> &context,
     const RestoreInfo &info, std::string &restoreExInfo)
 {
+    shared_ptr<MediaLibraryBackupObserver> sqlPrintObserver = std::make_shared<MediaLibraryBackupObserver>();
+    DistributedRdb::SqlStatistic::Subscribe(sqlPrintObserver);
     MEDIA_INFO_LOG("Start restoreEx service: %{public}d", info.sceneCode);
     Init(info);
     if (restoreService_ == nullptr) {

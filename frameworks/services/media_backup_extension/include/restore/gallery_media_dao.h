@@ -128,7 +128,7 @@ private:
             ON gallery_media.albumId=gallery_album.albumId \
             LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
-        WHERE (local_media_id != -1) AND \
+        WHERE _id > ? AND (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \
@@ -141,7 +141,7 @@ private:
             COALESCE(_data, '') <> '' AND \
             (1 = ? OR storage_id IN (0, 65537) ) \
         ORDER BY _id ASC \
-        LIMIT ?, ?;";
+        LIMIT ?;";
     const std::string SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE = "\
         SELECT \
             _id, \
@@ -189,7 +189,7 @@ private:
             ON gallery_media.albumId=gallery_album.albumId \
             LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
-        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
+        WHERE _id > ? AND (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \
@@ -202,7 +202,7 @@ private:
             COALESCE(_data, '') <> '' AND \
             (1 = ? OR storage_id IN (0, 65537) ) \
         ORDER BY _id ASC \
-        LIMIT ?, ?;";
+        LIMIT ?;";
     const std::string SQL_GALLERY_MEDIA_QUERY_NO_NEED_MIGRATE_COUNT = "\
         SELECT COUNT(1) AS count \
         FROM gallery_media \

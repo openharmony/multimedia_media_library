@@ -30,7 +30,7 @@ public:
     void Init(int32_t sceneCode, std::string taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
     void RestoreAlbums(const std::string &albumOdid);
-    void RestoreMaps(std::vector<FileInfo> &fileInfos);
+    void RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
     void UpdateAlbums();
 
 private:
@@ -69,6 +69,15 @@ private:
         }
     };
 
+    struct HighlightPhotoInfo {
+        int32_t fileIdOld {-1};
+        PhotoInfo photoInfo;
+        std::string storyIds;
+        std::string portraitIds;
+        std::string hashCode;
+        int64_t dateModified {0};
+    };
+
     void GetAlbumInfos(const std::string &albumOdid);
     bool HasSameHighlightAlbum(HighlightAlbumInfo &info);
     void TransferClusterInfo(HighlightAlbumInfo &info);
@@ -79,11 +88,11 @@ private:
     void InsertIntoHighlightAlbum();
     void InsertIntoHighlightCoverAndPlayInfo();
     void UpdateHighlightIds();
-    void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
-    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo);
-    void UpdateMapInsertValuesByStoryId(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo,
-        const std::string &storyId);
-    nlohmann::json GetEffectline(const FileInfo &fileInfo);
+    void UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values,
+        const HighlightPhotoInfo &highlightPhoto);
+    void UpdateMapInsertValuesByStoryId(std::vector<NativeRdb::ValuesBucket> &values,
+        const HighlightPhotoInfo &highlightPhoto, const std::string &storyId);
+    nlohmann::json GetEffectline(const HighlightPhotoInfo &highlightPhoto);
     nlohmann::json GetEffectVideoTrack(const std::string &hashCode);
     NativeRdb::ValuesBucket GetMapInsertValue(int32_t albumId, int32_t fileId);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,

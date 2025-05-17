@@ -46,6 +46,7 @@ public:
 
 private:
     int32_t GetHighlightCloudMediaCnt();
+    void RestoreSmartAlbums();
     void RestoreHighlightAlbums();
     void RestorePhoto(void) override;
     void RestoreAudio(void) override;
@@ -123,6 +124,8 @@ private:
     void ProcessGalleryFailedOffsets();
     void ProcessCloudGalleryFailedOffsets();
     void ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type);
+    std::vector<int32_t> GetCloudPhotoMinIds();
+    std::vector<int32_t> GetLocalPhotoMinIds();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
