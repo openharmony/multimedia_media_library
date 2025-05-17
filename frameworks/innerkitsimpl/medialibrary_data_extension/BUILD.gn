@@ -159,7 +159,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_aging_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_file_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_helper.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_post_process.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generation_post_process.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_worker_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_image_framework_utils.cpp",
