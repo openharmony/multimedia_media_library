@@ -74,6 +74,8 @@ void BackupRestoreService::Init(const RestoreInfo &info)
                 info.sceneCode);
             break;
         case I_PHONE_CLONE_RESTORE:
+            restoreService_ = std::make_unique<OthersCloneRestore>(info.sceneCode, info.mediaAppName, info.bundleInfo);
+            break;
         case OTHERS_PHONE_CLONE_RESTORE:
         case LITE_PHONE_CLONE_RESTORE:
             restoreService_ = std::make_unique<OthersCloneRestore>(info.sceneCode, info.mediaAppName);

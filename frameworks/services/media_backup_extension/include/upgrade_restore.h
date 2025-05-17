@@ -46,7 +46,6 @@ public:
 
 protected:
     virtual void RestoreAnalysisAlbum();
-    virtual bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
 
     int32_t GetHighlightCloudMediaCnt();
     void RestoreHighlightAlbums();
@@ -62,6 +61,7 @@ protected:
     bool ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         int mediaType = DUAL_MEDIA_TYPE::IMAGE_TYPE);
     bool ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
+    virtual bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     void RestoreFromGallery();
     void RestoreCloudFromGallery();
     void RestoreFromExternal(bool isCamera);
