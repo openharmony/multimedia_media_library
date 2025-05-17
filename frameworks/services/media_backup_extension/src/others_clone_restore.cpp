@@ -50,7 +50,6 @@ const int PHONE_FIFTH_NUMBER = 110;
 const int PHONE_SIXTH_NUMBER = 101;
 const int QUERY_NUMBER = 200;
 const int STRONG_ASSOCIATION_ENABLE = 1;
-constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int32_t MAX_CLONE_THREAD_NUM = 2;
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const std::string I_PHONE_LPATH = "/Pictures/";

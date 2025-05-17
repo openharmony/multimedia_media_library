@@ -91,9 +91,8 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     bool isDirtyNeedUpdate = (GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet) !=
         static_cast<int32_t>(PhotoPositionType::LOCAL));
+    bool isMovingPhotoEffectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet) > 0;
     resultSet->Close();
-
-    bool isMovingPhotoEffectMode = GetInt64Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet) > 0;
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesVideo(isEdited, isMovingPhoto, isMovingPhotoEffectMode,
         data);
     if (ret != E_OK) {

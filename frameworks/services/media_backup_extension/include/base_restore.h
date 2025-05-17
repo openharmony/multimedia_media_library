@@ -90,7 +90,7 @@ protected:
     virtual int InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
     void SetMetaDataValue(const FileInfo &fileInfo, std::unique_ptr<Metadata> &metadata);
-    void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
+    virtual void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
         int64_t &rowNum);
     int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir, bool deleteOriginalFile = true) const;
@@ -134,7 +134,7 @@ protected:
         int32_t &videoFileMoveCount, int32_t sceneCode);
     void SetParameterForClone();
     void StopParameterForClone();
-    void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType);
+    virtual void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void UpdateLcdVisibleColumn(const FileInfo &fileInfo);
     bool NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     bool NeedBatchQueryPhotoForPhotoMap(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
@@ -166,6 +166,7 @@ protected:
     int32_t GetRestoreMode();
     uint64_t GetNotFoundNumber();
     bool IsCloudRestoreSatisfied();
+    void SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value);
     void AddToPhotoInfoMap(std::vector<FileInfo> &fileInfos);
 
 protected:

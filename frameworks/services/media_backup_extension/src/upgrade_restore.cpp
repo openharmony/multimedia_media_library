@@ -52,7 +52,6 @@ namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
-constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int32_t RESTORE_CLOUD_QUERY_COUNT = 200;
 const std::string DB_INTEGRITY_CHECK = "ok";
 
@@ -89,10 +88,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSd_ = BackupFileUtils::ShouldIncludeSd(filePath_);
         backupDatabaseHelper_.Init(sceneCode_, shouldIncludeSd_, filePath_);
-        SetParameterForClone();
-#ifdef CLOUD_SYNC_MANAGER
-        FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
-#endif
+        SetCloneParameterAndStopSync();
     } else {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";
@@ -123,39 +119,9 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
 
 int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 {
-    if (isUpgrade && BaseRestore::Init() != E_OK) {
-        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
-            "InitDb And Xml fail, isUpgrade = " + std::to_string(isUpgrade));
-        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
-        return E_FAIL;
-    }
-    if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
-        MEDIA_ERR_LOG("Gallery media db is not exist.");
-    } else {
-        int32_t galleryErr = BackupDatabaseUtils::InitDb(galleryRdb_, GALLERY_DB_NAME, galleryDbPath_,
-            galleryAppName_, false);
-        if (galleryRdb_ == nullptr) {
-            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
-                "Gallery init rdb fail, err = " + std::to_string(galleryErr));
-            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
-            MEDIA_ERR_LOG("Gallery init rdb fail, err = %{public}d", galleryErr);
-            return E_FAIL;
-        }
-    }
+    int32_t errCode = InitDb(isUpgrade);
+    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
 
-    if (!MediaFileUtils::IsFileExists(audioDbPath_)) {
-        MEDIA_ERR_LOG("audio mediaInfo db is not exist.");
-    } else {
-        int32_t audioErr = BackupDatabaseUtils::InitDb(audioRdb_, AUDIO_DB_NAME, audioDbPath_,
-            audioAppName_, false);
-        if (audioRdb_ == nullptr) {
-            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
-                "audio init rdb fail, err = " + std::to_string(audioErr));
-            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
-            MEDIA_ERR_LOG("audio init rdb fail, err = %{public}d", audioErr);
-            return E_FAIL;
-        }
-    }
     ParseXml(xmlPath);
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
@@ -168,7 +134,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 bool UpgradeRestore::HasLowQualityImage()
 {
     std::string sql = "SELECT count(1) AS count FROM gallery_media WHERE (local_media_id != -1) AND \
-        (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
+        (COALESCE(storage_id, 0) IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
         garbage_album WHERE type = 1) AND _size = 0 AND photo_quality = 0";
     int count = BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("HasLowQualityImage count:%{public}d", count);
@@ -407,7 +373,7 @@ void UpgradeRestore::RestorePhotoInner()
         // restore PhotoAlbum
         this->photoAlbumRestore_.Restore();
         int64_t startRestorePortrait = MediaFileUtils::UTCTimeMilliSeconds();
-        RestoreFromGalleryPortraitAlbum();
+        RestoreAnalysisAlbum();
         int64_t endRestoreAlbums = MediaFileUtils::UTCTimeMilliSeconds();
         MEDIA_INFO_LOG("TimeCost: GalleryDbUpgrade cost: %{public}" PRId64
             ", AnalyzeGallerySource cost: %{public}" PRId64
@@ -1547,6 +1513,59 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
     MEDIA_INFO_LOG("end handle gallery integrity check, cost %{public}lld, size %{public}s.", \
         (long long)(dbIntegrityCheckTime), dbSize.c_str());
     return dbIntegrityCheck;
+}
+
+void UpgradeRestore::RestoreAnalysisAlbum()
+{
+    RestoreFromGalleryPortraitAlbum();
+}
+
+void UpgradeRestore::SetCloneParameterAndStopSync()
+{
+    SetParameterForClone();
+#ifdef CLOUD_SYNC_MANAGER
+    FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
+#endif
+}
+
+int32_t UpgradeRestore::InitDb(bool isUpgrade)
+{
+    if (isUpgrade && BaseRestore::Init() != E_OK) {
+        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+            "InitDb And Xml fail, isUpgrade = " + std::to_string(isUpgrade));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        return E_FAIL;
+    }
+
+    if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
+        MEDIA_ERR_LOG("Gallery media db is not exist.");
+    } else {
+        int32_t galleryErr = BackupDatabaseUtils::InitDb(galleryRdb_, GALLERY_DB_NAME, galleryDbPath_,
+            galleryAppName_, false);
+        if (galleryRdb_ == nullptr) {
+            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+                "Gallery init rdb fail, err = " + std::to_string(galleryErr));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+            MEDIA_ERR_LOG("Gallery init rdb fail, err = %{public}d", galleryErr);
+            return E_FAIL;
+        }
+    }
+
+    if (!MediaFileUtils::IsFileExists(audioDbPath_)) {
+        MEDIA_ERR_LOG("audio mediaInfo db is not exist.");
+    } else {
+        int32_t audioErr = BackupDatabaseUtils::InitDb(audioRdb_, AUDIO_DB_NAME, audioDbPath_,
+            audioAppName_, false);
+        if (audioRdb_ == nullptr) {
+            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+                "audio init rdb fail, err = " + std::to_string(audioErr));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+            MEDIA_ERR_LOG("audio init rdb fail, err = %{public}d", audioErr);
+            return E_FAIL;
+        }
+    }
+
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

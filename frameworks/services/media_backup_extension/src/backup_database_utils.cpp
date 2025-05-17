@@ -194,15 +194,6 @@ int32_t BackupDatabaseUtils::InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStor
     return E_OK;
 }
 
-int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
-{
-    static string QUERY_GALLERY_CLONE_COUNT =
-        string("SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -3 AND _size > 0 ") +
-        "AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( " +
-        "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
-    return QueryInt(galleryRdb, QUERY_GALLERY_CLONE_COUNT, CUSTOM_COUNT);
-}
-
 void BackupDatabaseUtils::QueryGalleryDuplicateDataCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
     int32_t &count, int32_t &total)
 {

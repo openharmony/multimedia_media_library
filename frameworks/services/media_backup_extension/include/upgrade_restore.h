@@ -44,7 +44,9 @@ public:
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
     void InitGarbageAlbum();
 
-private:
+protected:
+    virtual void RestoreAnalysisAlbum();
+
     int32_t GetHighlightCloudMediaCnt();
     void RestoreSmartAlbums();
     void RestoreHighlightAlbums();
@@ -60,7 +62,7 @@ private:
     bool ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         int mediaType = DUAL_MEDIA_TYPE::IMAGE_TYPE);
     bool ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
-    bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
+    virtual bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     void RestoreFromGallery();
     void RestoreCloudFromGallery();
     void RestoreFromExternal(bool isCamera);
@@ -80,7 +82,7 @@ private:
     int StringToInt(const std::string& str);
     int32_t InitDbAndXml(std::string xmlPath, bool isUpgrade);
     int32_t HandleXmlNode(xmlNodePtr cur);
-    bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
+    virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath, FileInfo &fileInfo);
     bool HasSameFileForDualClone(FileInfo &fileInfo) override;
     void RestoreFromGalleryPortraitAlbum();
@@ -124,10 +126,12 @@ private:
     void ProcessGalleryFailedOffsets();
     void ProcessCloudGalleryFailedOffsets();
     void ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type);
+    void SetCloneParameterAndStopSync();
+    int32_t InitDb(bool isUpgrade);
     std::vector<int32_t> GetCloudPhotoMinIds();
     std::vector<int32_t> GetLocalPhotoMinIds();
 
-private:
+protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
     std::shared_ptr<NativeRdb::RdbStore> audioRdb_;
