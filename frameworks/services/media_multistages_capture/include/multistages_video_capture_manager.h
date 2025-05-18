@@ -39,6 +39,8 @@ public:
     EXPORT void AddVideoInternal(const std::string &videoId, const std::string &filePath, bool isMovingPhoto = false);
     EXPORT void AddVideo(const std::string &videoId, const std::string &fileId, const std::string &filePath);
     EXPORT void RemoveVideo(const std::string &videoId, const bool restorable);
+    EXPORT void RemoveVideo(const std::string &videoId, const std::string &mediaFilePath, const int32_t &photoSubType,
+        const bool restorable);
     EXPORT void RestoreVideo(const std::string &videoId);
 private:
     MultiStagesVideoCaptureManager();

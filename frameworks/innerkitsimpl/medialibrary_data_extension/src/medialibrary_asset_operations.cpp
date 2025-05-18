@@ -112,6 +112,7 @@ struct DeletedFilesParams {
     map<string, string> displayNames;
     map<string, string> albumNames;
     map<string, string> ownerAlbumIds;
+    bool containsHidden = false;
 };
 
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
@@ -2494,8 +2495,10 @@ static void DeleteFiles(AsyncTaskData *data)
     CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
-    MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
-        rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
+    if (taskData->containsHidden_) {
+        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
+            rdbStore, { to_string(PhotoAlbumSubType::TRASH) });
+    }
 
     DeleteBehaviorData dataInfo {taskData->displayNames_, taskData->albumNames_, taskData->ownerAlbumIds_};
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
@@ -2552,10 +2555,19 @@ void HandlePhotosResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, De
             to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))),
             to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_OWNER_ALBUM_ID, resultSet,
                 TYPE_INT32)))});
+        MultiStagesCaptureManager::RemovePhotosWithResultSet(resultSet, false);
+        if (filesParams.containsHidden) {
+            continue;
+        }
+        int32_t hidden = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_HIDDEN, resultSet,
+            TYPE_INT32));
+        if (hidden > 0) {
+            filesParams.containsHidden = true;
+        }
     }
 }
 
-int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates, DeletedFilesParams &filesParams)
+int32_t QueryFileInfoAndHandleRemovePhotos(const AbsRdbPredicates &predicates, DeletedFilesParams &filesParams)
 {
     vector<string> columns = {
         MediaColumn::MEDIA_ID,
@@ -2568,6 +2580,11 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates, DeletedFilesParams &f
         columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
         columns.push_back(MediaColumn::MEDIA_NAME);
         columns.push_back(PhotoColumn::PHOTO_OWNER_ALBUM_ID);
+        columns.push_back(MEDIA_DATA_DB_PHOTO_ID);
+        columns.push_back(MEDIA_DATA_DB_PHOTO_QUALITY);
+        columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
+        columns.push_back(MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS);
+        columns.push_back(MediaColumn::MEDIA_HIDDEN);
     }
 
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
@@ -2863,12 +2880,9 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     }
     DeletedFilesParams fileParams;
     int32_t deletedRows = 0;
-    GetIdsAndPaths(predicates, fileParams);
+    QueryFileInfoAndHandleRemovePhotos(predicates, fileParams);
     GetAlbumNamesById(fileParams);
     CHECK_AND_RETURN_RET_LOG(!fileParams.ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
-
-    // notify deferred processing session to remove image
-    MultiStagesCaptureManager::RemovePhotos(predicates, false);
 
     // delete cloud enhanacement task
 #ifdef MEDIALIBRARY_FEATURE_CLOUD_ENHANCEMENT
@@ -2889,7 +2903,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     auto *taskData = new (nothrow) DeleteFilesTask(fileParams.ids, fileParams.paths, notifyUris,
         fileParams.dateTakens, fileParams.subTypes,
-        predicates.GetTableName(), deletedRows, bundleName);
+        predicates.GetTableName(), deletedRows, bundleName, fileParams.containsHidden);
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_ERR, "Failed to alloc async data for Delete From Disk!");
     taskData->SetOtherInfos(fileParams.displayNames, fileParams.albumNames, fileParams.ownerAlbumIds);
     taskData->isTemps_.swap(fileParams.isTemps);
