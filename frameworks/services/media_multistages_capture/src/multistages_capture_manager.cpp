@@ -86,6 +86,46 @@ void MultiStagesCaptureManager::RemovePhotos(const NativeRdb::AbsRdbPredicates &
     } while (!resultSet->GoToNextRow());
 }
 
+void MultiStagesCaptureManager::RemovePhotosWithResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
+    bool isRestorable)
+{
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Result set is empty");
+        return;
+    }
+    string photoId = GetStringVal(MEDIA_DATA_DB_PHOTO_ID, resultSet);
+    int32_t stageVideoTaskStatus = GetInt32Val(MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS, resultSet);
+    // Moving photo remove video task
+    if (stageVideoTaskStatus == static_cast<int32_t>(StageVideoTaskStatus::STAGE_TASK_DELIVERED)) {
+        string mediaFilePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+        int32_t photoSubType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+        MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(photoId, mediaFilePath, photoSubType,
+            isRestorable);
+        return;
+    }
+    int32_t photoQuality = GetInt32Val(MEDIA_DATA_DB_PHOTO_QUALITY, resultSet);
+    if (photoId.empty() || photoQuality == static_cast<int32_t>(MultiStagesPhotoQuality::FULL)) {
+        MEDIA_DEBUG_LOG("photoId is empty or task status invalid ");
+        return;
+    }
+    int32_t mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, resultSet);
+    switch (mediaType) {
+        case MediaType::MEDIA_TYPE_IMAGE:
+            MultiStagesPhotoCaptureManager::GetInstance().RemoveImage(photoId, isRestorable);
+            break;
+        case MediaType::MEDIA_TYPE_VIDEO:
+            {
+                string mediaFilePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+                int32_t photoSubType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+                MultiStagesVideoCaptureManager::GetInstance()
+                    .RemoveVideo(photoId, mediaFilePath, photoSubType, isRestorable);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 void MultiStagesCaptureManager::RestorePhotos(const NativeRdb::AbsRdbPredicates &predicates)
 {
     MEDIA_INFO_LOG("Restore photos enter");
