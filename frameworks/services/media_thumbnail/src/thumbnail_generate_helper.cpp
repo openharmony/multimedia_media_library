@@ -669,11 +669,8 @@ void CacheStreamReadThumbDbStatus(ThumbRdbOpt& opts, ThumbnailData& data, Thumbn
     Size tmpSize;
     CHECK_AND_RETURN_LOG(ThumbnailUtils::GetLocalThumbSize(data, thumbType, tmpSize),
         "GetLocalThumbSize failed");
-    
-    if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
-        data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
-    }
-    ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
+
+    ValuesBucket& values = ThumbnailUtils::TryInsertValuesBucket(PhotoColumn::PHOTOS_TABLE, data.rdbUpdateCache);
     switch (thumbType) {
         case ThumbnailType::LCD:
             ThumbnailUtils::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_LCD_SIZE);

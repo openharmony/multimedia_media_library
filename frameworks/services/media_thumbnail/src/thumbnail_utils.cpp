@@ -1191,10 +1191,7 @@ bool ThumbnailUtils::CacheLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data)
     CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, false,
         "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
 
-    if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
-        data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
-    }
-    ValuesBucket& values = data.rdbUpdateCache[opts.table];
+    ValuesBucket& values = ThumbnailUtils::TryInsertValuesBucket(PhotoColumn::PHOTOS_TABLE, data.rdbUpdateCache);
 
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, static_cast<int64_t>(LcdReady::GENERATE_LCD_COMPLETED));
@@ -1233,10 +1230,7 @@ bool ThumbnailUtils::CacheVisitTime(ThumbRdbOpt &opts, ThumbnailData &data)
     CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, false, "opts.store is nullptr");
     CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, false, "Not photos table!");
 
-    if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
-        data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
-    }
-    ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
+    ValuesBucket& values = ThumbnailUtils::TryInsertValuesBucket(PhotoColumn::PHOTOS_TABLE, data.rdbUpdateCache);
     int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
     return true;
@@ -2316,6 +2310,14 @@ void ThumbnailUtils::DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailD
     if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
         MediaLibraryPhotoOperations::HasDroppedThumbnailSize(photoId);
     }
+}
+
+unordered_map<string, ValuesBucket>& ThumbnailUtils::TryInsertValuesBucket(const string& table, unordered_map<string, ValuesBucket>& map)
+{
+    if (map.find(table) == map.end()) {
+        map.insert({ table, ValuesBucket() });
+    }
+    return map;
 }
 } // namespace Media
 } // namespace OHOS
