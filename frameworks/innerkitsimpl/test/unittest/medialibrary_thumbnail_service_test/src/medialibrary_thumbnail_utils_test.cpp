@@ -190,7 +190,6 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, CacheVisitTime, TestSize.Level0)
     ThumbRdbOpt opts;
     ThumbnailData data;
     opts.row = "123";
-    int err = 0;
     opts.store = nullptr;
     auto res = ThumbnailUtils::CacheVisitTime(opts, data);
     EXPECT_EQ(res, false);

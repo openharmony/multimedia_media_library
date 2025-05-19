@@ -361,7 +361,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_CacheLcdInfo_test_001, TestSize.Level1)
         .row = row
     };
     ThumbnailData data;
-    int err = 0;
     bool ret = ThumbnailUtils::CacheLcdInfo(opts, data);
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::CacheLcdInfo(opts, data);
@@ -378,7 +377,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_CacheVisitTime_test_001, TestSize.Level
         .networkId = "",
     };
     ThumbnailData data;
-    int err = 0;
     bool ret = ThumbnailUtils::CacheVisitTime(opts, data);
     EXPECT_EQ(ret, false);
     opts.networkId = "CacheVisitTime";

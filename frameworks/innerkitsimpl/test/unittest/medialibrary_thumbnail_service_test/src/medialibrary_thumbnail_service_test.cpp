@@ -239,10 +239,12 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_00
         exit(1);
     }
     string url = "";
-    ThumbnailService serverTest;
-    int32_t ret = serverTest.CreateThumbnailFileScaned(url, "", true);
-    EXPECT_EQ(ret, E_OK);
-    serverTest.ReleaseService();
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    shared_ptr<OHOS::AbilityRuntime::Context> context;
+    serverTest->Init(storePtr, context);
+    int32_t ret = serverTest->CreateThumbnailFileScaned(url, "", true);
+    EXPECT_EQ(ret, E_ERR);
+    serverTest->ReleaseService();
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test_001, TestSize.Level1)
@@ -1422,7 +1424,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, Te
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    int err = E_ERR;
     auto res = ThumbnailUtils::CacheLcdInfo(opts, data);
     EXPECT_EQ(res, false);
 }
@@ -1434,7 +1435,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_CacheLcdInfo
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
     opts.table = "tab_analysis_video_label";
     ThumbnailData data;
-    int err = E_ERR;
     auto res = ThumbnailUtils::CacheLcdInfo(opts, data);
     EXPECT_EQ(res, false);
 }

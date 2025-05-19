@@ -108,7 +108,7 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, TrySavePicture_test_001, TestSize.Lev
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryIthumbnailHelperTest, UpdateSuccessState_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryIthumbnailHelperTest, CacheSuccessState_test_001, TestSize.Level0)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
