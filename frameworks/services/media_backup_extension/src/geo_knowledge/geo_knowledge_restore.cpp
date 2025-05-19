@@ -116,21 +116,34 @@ void GeoKnowledgeRestore::RestoreMaps(const std::unordered_map<int32_t, PhotoInf
         batchCnt_ = 0;
         return;
     }
-    std::vector<std::string> fileIds;
-    std::vector<NativeRdb::ValuesBucket> values;
     std::string querySql = "SELECT _id, latitude, longitude FROM gallery_media "
-        "WHERE ABS(latitude) >= 1e-15 OR ABS(longitude) >= 1e-15";
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        GeoMapInfo geoMapInfo;
-        geoMapInfo.fileIdOld = GetInt32Val("_id", resultSet);
-        CHECK_AND_CONTINUE(photoInfoMap.find(geoMapInfo.fileIdOld) != photoInfoMap.end());
-        geoMapInfo.photoInfo = photoInfoMap.at(geoMapInfo.fileIdOld);
-        geoMapInfo.latitude = GetInt64Val("latitude", resultSet);
-        geoMapInfo.longitude = GetInt64Val("longitude", resultSet);
-        std::string fileIdString = UpdateMapInsertValues(values, geoMapInfo);
-        CHECK_AND_EXECUTE(fileIdString == NOT_MATCH, fileIds.push_back(fileIdString));
-    }
+        "WHERE ABS(latitude) >= 1e-15 OR ABS(longitude) >= 1e-15 AND _id > ? ORDER BY _id ASC LIMIT ?;";
+    int rowCount = 0;
+    int offset = 0;
+    do {
+        std::vector<std::string> fileIds;
+        std::vector<NativeRdb::ValuesBucket> values;
+        std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
+        auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_, querySql, params);
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            GeoMapInfo geoMapInfo;
+            geoMapInfo.fileIdOld = GetInt32Val("_id", resultSet);
+            offset = geoMapInfo.fileIdOld;
+            CHECK_AND_CONTINUE(photoInfoMap.find(geoMapInfo.fileIdOld) != photoInfoMap.end());
+            geoMapInfo.photoInfo = photoInfoMap.at(geoMapInfo.fileIdOld);
+            geoMapInfo.latitude = GetInt64Val("latitude", resultSet);
+            geoMapInfo.longitude = GetInt64Val("longitude", resultSet);
+            std::string fileIdString = UpdateMapInsertValues(values, geoMapInfo);
+            CHECK_AND_EXECUTE(fileIdString == NOT_MATCH, fileIds.push_back(fileIdString));
+        }
+        resultSet->GetRowCount(rowCount);
+        resultSet->Close();
+        UpdateMaps(values, fileIds);
+    } while (rowCount == PAGE_SIZE);
+}
+
+void GeoKnowledgeRestore::UpdateMaps(std::vector<NativeRdb::ValuesBucket> &values, std::vector<std::string> &fileIds)
+{
     int64_t rowNum = 0;
     int32_t errCodeGeo = BatchInsertWithRetry("tab_analysis_geo_knowledge", values, rowNum);
     if (errCodeGeo != E_OK) {
