@@ -68,7 +68,7 @@ void GeoKnowledgeRestore::Init(int32_t sceneCode, std::string taskId,
     systemLanguage_ = Global::I18n::LocaleConfig::GetSystemLanguage();
 }
 
-void GeoKnowledgeRestore::ResotreGeo(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
+void GeoKnowledgeRestore::RestoreGeo(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
 {
     CHECK_AND_RETURN_LOG(galleryRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr");
     GetGeoKnowledgeInfos();

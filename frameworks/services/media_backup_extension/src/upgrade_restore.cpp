@@ -419,7 +419,7 @@ void UpgradeRestore::RestorePhoto()
         int64_t startUpdateFace = MediaFileUtils::UTCTimeMilliSeconds();
         UpdateFaceAnalysisStatus();
         int64_t endUpdateFace = MediaFileUtils::UTCTimeMilliSeconds();
-        MEDIA_INFO_LOG("TimeCost: UpdateFaceAnalysisStatus cost: %{public}" PRId64 , endUpdateFace - startUpdateFace);
+        MEDIA_INFO_LOG("TimeCost: UpdateFaceAnalysisStatus cost: %{public}" PRId64, endUpdateFace - startUpdateFace);
     } else {
         int64_t startUpdateDual = MediaFileUtils::UTCTimeMilliSeconds();
         UpdateDualCloneFaceAnalysisStatus();
@@ -554,7 +554,7 @@ void UpgradeRestore::RestoreFromGallery()
     }
     ffrt::wait();
     int64_t endRestoreBatch = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: RestoreBatch cost: %{public}" PRId64 , endRestoreBatch - startRestoreBatch);
+    MEDIA_INFO_LOG("TimeCost: RestoreBatch cost: %{public}" PRId64, endRestoreBatch - startRestoreBatch);
     ProcessGalleryFailedOffsets();
     MEDIA_INFO_LOG("RestoreFromGallery end");
 }
@@ -577,7 +577,7 @@ void UpgradeRestore::RestoreCloudFromGallery()
     }
     ffrt::wait();
     int64_t endRestoreBatch = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("TimeCost: RestoreBatchForCloud cost: %{public}" PRId64 , endRestoreBatch - startRestoreBatch);
+    MEDIA_INFO_LOG("TimeCost: RestoreBatchForCloud cost: %{public}" PRId64, endRestoreBatch - startRestoreBatch);
     ProcessCloudGalleryFailedOffsets();
     MEDIA_INFO_LOG("RestoreCloudFromGallery end");
 }
@@ -591,7 +591,7 @@ std::vector<int32_t> UpgradeRestore::GetCloudPhotoMinIds()
             "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' "
             "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
                 "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
-            "AND (_size > 0 AND (1 = ? OR _size = 0 AND photo_quality = 0)) "
+            "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
             "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
             "AND COALESCE(_data, '') <> '' AND (1 = ? OR storage_id IN (0, 65537))) AS numbered "
         "WHERE (row_num - 1) % 200 = 0 ;";
@@ -611,7 +611,7 @@ std::vector<int32_t> UpgradeRestore::GetLocalPhotoMinIds()
     int64_t startGetLocalPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
     std::vector<int32_t> minIds;
     std::string querySql = "SELECT _id FROM ("
-        "SELECT _ID, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
+        "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
             "WHERE (local_media_id != -1) "
             "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
                 "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
