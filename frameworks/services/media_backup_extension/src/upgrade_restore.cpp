@@ -593,7 +593,7 @@ std::vector<int32_t> UpgradeRestore::GetCloudPhotoMinIds()
                 "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
             "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
             "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
-            "AND COALESCE(_data, '') <> '' AND (1 = ? OR storage_id IN (0, 65537))) AS numbered "
+            "AND COALESCE(_data, '') <> '' AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
         "WHERE (row_num - 1) % 200 = 0 ;";
     std::vector<NativeRdb::ValueObject> params = { hasLowQualityImage_, shouldIncludeSd_ };
     auto resultSet = galleryRdb_->QuerySql(querySql, params);
@@ -617,7 +617,7 @@ std::vector<int32_t> UpgradeRestore::GetLocalPhotoMinIds()
                 "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
             "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
             "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
-            "AND COALESCE(_data, '') <> '' AND (1 = ? OR storage_id IN (0, 65537))) AS numbered "
+            "AND COALESCE(_data, '') <> '' AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
         "WHERE (row_num - 1) % 200 = 0 ;";
     std::vector<NativeRdb::ValueObject> params = { hasLowQualityImage_, shouldIncludeSd_ };
     auto resultSet = galleryRdb_->QuerySql(querySql, params);

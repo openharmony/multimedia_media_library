@@ -147,7 +147,7 @@ std::unique_ptr<UpgradeRestore> restoreService = nullptr;
 std::shared_ptr<NativeRdb::RdbStore> photosStorePtrCloud = nullptr;
 std::unique_ptr<UpgradeRestore> restoreServiceCloud = nullptr;
 
-void InitPhotoAlbum(std::shared_ptr<NativeRdb::RdbStore> photosStore)
+void InitPhotoAlbum(std::shared_ptr<NativeRdb::RdbStore> &photosStore)
 {
     photosStore->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
         VALUES (0, 1, 'test101');");
@@ -176,7 +176,7 @@ void InitPhotoAlbum(std::shared_ptr<NativeRdb::RdbStore> photosStore)
 }
 
 void Init(GallerySource &gallerySource, ExternalSource &externalSource, std::string testBackupPath,
-    std::unique_ptr<UpgradeRestore> &restorePtr, std::shared_ptr<NativeRdb::RdbStore> photosStore)
+    std::unique_ptr<UpgradeRestore> &restorePtr, std::shared_ptr<NativeRdb::RdbStore> &photosStore)
 {
     MEDIA_INFO_LOG("start init galleryDb");
     const string galleryDbPath = testBackupPath + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
@@ -198,7 +198,7 @@ void Init(GallerySource &gallerySource, ExternalSource &externalSource, std::str
     restorePtr->InitGarbageAlbum();
 }
 
-void RestoreFromGallery(std::unique_ptr<UpgradeRestore> &restorePtr, std::shared_ptr<NativeRdb::RdbStore> photosStore)
+void RestoreFromGallery(std::unique_ptr<UpgradeRestore> &restorePtr, std::shared_ptr<NativeRdb::RdbStore> &photosStore)
 {
     std::vector<FileInfo> fileInfos = restorePtr->QueryFileInfos(0);
     for (size_t i = 0; i < fileInfos.size(); i++) {
@@ -212,7 +212,7 @@ void RestoreFromGallery(std::unique_ptr<UpgradeRestore> &restorePtr, std::shared
 }
 
 void RestoreFromExternal(GallerySource &gallerySource, bool isCamera,
-    std::unique_ptr<UpgradeRestore> &restorePtr, std::shared_ptr<NativeRdb::RdbStore> photosStore)
+    std::unique_ptr<UpgradeRestore> &restorePtr, std::shared_ptr<NativeRdb::RdbStore> &photosStore)
 {
     MEDIA_INFO_LOG("start restore from %{public}s", (isCamera ? "camera" : "others"));
     int32_t maxId = BackupDatabaseUtils::QueryInt(gallerySource.galleryStorePtr_, isCamera ?
