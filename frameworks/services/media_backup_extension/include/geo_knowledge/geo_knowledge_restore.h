@@ -27,9 +27,7 @@ class GeoKnowledgeRestore {
 public:
     void Init(int32_t sceneCode, std::string taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
-    void RestoreGeoKnowledgeInfos();
-    void RestoreMaps(std::vector<FileInfo> &fileInfos);
-    void ReportGeoRestoreTask();
+    void RestoreGeo(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
 
 private:
     struct GeoKnowledgeInfo {
@@ -47,15 +45,23 @@ private:
         double longitude;
     };
 
+    struct GeoMapInfo {
+        int32_t fileIdOld {-1};
+        PhotoInfo photoInfo;
+        int64_t latitude {0};
+        int64_t longitude {0};
+    };
+
     void GetGeoKnowledgeInfos();
-    void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
+    void RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void ReportGeoRestoreTask();
     NativeRdb::ValuesBucket GetMapInsertValue(std::vector<GeoKnowledgeInfo>::iterator it, int32_t fileId);
     int32_t BatchUpdate(const std::string &tableName, std::vector<std::string> &fileIds);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
-    std::string UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo);
-    std::string UpdateByGeoLocation(std::vector<NativeRdb::ValuesBucket> &values,
-        const FileInfo &fileInfo, const double latitude, const double longitude);
+    void UpdateMaps(std::vector<NativeRdb::ValuesBucket> &values, std::vector<std::string> &fileIds);
+    std::string UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const GeoMapInfo &geoMapInfo);
+    std::string UpdateByGeoLocation(std::vector<NativeRdb::ValuesBucket> &values, const GeoMapInfo &geoMapInfo);
 
 private:
     int32_t sceneCode_{-1};
