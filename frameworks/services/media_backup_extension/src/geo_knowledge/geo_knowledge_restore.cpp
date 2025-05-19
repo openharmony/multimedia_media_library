@@ -118,7 +118,7 @@ void GeoKnowledgeRestore::RestoreMaps(const std::unordered_map<int32_t, PhotoInf
         return;
     }
     std::string querySql = "SELECT _id, latitude, longitude FROM gallery_media "
-        "WHERE ABS(latitude) >= 1e-15 OR ABS(longitude) >= 1e-15 AND _id > ? ORDER BY _id ASC LIMIT ?;";
+        "WHERE (ABS(latitude) >= 1e-15 OR ABS(longitude) >= 1e-15) AND _id > ? ORDER BY _id ASC LIMIT ?;";
     int rowCount = 0;
     int offset = 0;
     do {
