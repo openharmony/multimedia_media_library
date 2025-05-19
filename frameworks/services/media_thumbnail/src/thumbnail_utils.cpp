@@ -2315,7 +2315,7 @@ void ThumbnailUtils::DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailD
 NativeRdb::ValuesBucket& GetCachedValuesBucket(ThumbnailData& data, const std::string& table);
 {
     if (data.rdbUpdateCache.find(table) == data.rdbUpdateCache.end()) {
-        map.insert({ table, ValuesBucket() });
+        data.rdbUpdateCache.insert({ table, ValuesBucket() });
     }
     return data.rdbUpdateCache[table];
 }
