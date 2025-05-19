@@ -1191,7 +1191,7 @@ bool ThumbnailUtils::CacheLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data)
     CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, false,
         "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
 
-    ValuesBucket& values = ThumbnailUtils::TryInsertValuesBucket(PhotoColumn::PHOTOS_TABLE, data.rdbUpdateCache);
+    ValuesBucket& values = ThumbnailUtils::GetCachedValuesBucket(data, PhotoColumn::PHOTOS_TABLE);
 
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, static_cast<int64_t>(LcdReady::GENERATE_LCD_COMPLETED));
@@ -1230,7 +1230,7 @@ bool ThumbnailUtils::CacheVisitTime(ThumbRdbOpt &opts, ThumbnailData &data)
     CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, false, "opts.store is nullptr");
     CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, false, "Not photos table!");
 
-    ValuesBucket& values = ThumbnailUtils::TryInsertValuesBucket(PhotoColumn::PHOTOS_TABLE, data.rdbUpdateCache);
+    ValuesBucket& values = ThumbnailUtils::GetCachedValuesBucket(data, PhotoColumn::PHOTOS_TABLE);
     int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
     return true;
@@ -2312,12 +2312,12 @@ void ThumbnailUtils::DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailD
     }
 }
 
-unordered_map<string, ValuesBucket>& ThumbnailUtils::TryInsertValuesBucket(const string& table, unordered_map<string, ValuesBucket>& map)
+NativeRdb::ValuesBucket& GetCachedValuesBucket(ThumbnailData& data, const std::string& table);
 {
-    if (map.find(table) == map.end()) {
+    if (data.rdbUpdateCache.find(table) == data.rdbUpdateCache.end()) {
         map.insert({ table, ValuesBucket() });
     }
-    return map;
+    return data.rdbUpdateCache[table];
 }
 } // namespace Media
 } // namespace OHOS

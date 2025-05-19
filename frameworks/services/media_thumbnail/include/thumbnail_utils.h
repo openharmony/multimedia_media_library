@@ -130,7 +130,7 @@ public:
         const std::string &table, std::vector<ThumbnailData> &infos);
     EXPORT static void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
     EXPORT static void DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
-    EXPORT static unordered_map<string, ValuesBucket>& TryInsertValuesBucket(const string& table, map<string, ValuesBucket>& map);
+    EXPORT static NativeRdb::ValuesBucket& GetCachedValuesBucket(ThumbnailData& data, const std::string& table);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
