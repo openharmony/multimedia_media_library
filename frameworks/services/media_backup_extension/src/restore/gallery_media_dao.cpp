@@ -31,11 +31,11 @@ void GalleryMediaDao::SetGalleryRdb(std::shared_ptr<NativeRdb::RdbStore> gallery
  * @brief Get the gallery_media to restore to Photos.
  */
 std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetGalleryMedia(
-    int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+    int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
     int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
     int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
-    std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag, offset, pageSize};
+    std::vector<NativeRdb::ValueObject> params = {minId, hasLowQualityImageFlag, shouldIncludeSdFlag, pageSize};
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, nullptr, "Media_Restore: galleryRdb_ is null.");
     return this->galleryRdb_->QuerySql(this->SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE, params);
 }
@@ -44,12 +44,12 @@ std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetGalleryMedia(
  * @brief Get the gallery_media to restore cloud to Photos.
  */
 std::shared_ptr<NativeRdb::ResultSet> GalleryMediaDao::GetCloudGalleryMedia(
-    int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+    int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
     CHECK_AND_RETURN_RET_LOG(this->galleryRdb_ != nullptr, nullptr, "Media_Restore: galleryRdb_ is null.");
     int32_t shouldIncludeSdFlag = shouldIncludeSd == true ? 1 : 0;
     int32_t hasLowQualityImageFlag = hasLowQualityImage == true ? 1 : 0;
-    std::vector<NativeRdb::ValueObject> params = {hasLowQualityImageFlag, shouldIncludeSdFlag, offset, pageSize};
+    std::vector<NativeRdb::ValueObject> params = {minId, hasLowQualityImageFlag, shouldIncludeSdFlag, pageSize};
     return this->galleryRdb_->QuerySql(this->SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE, params);
 }
 

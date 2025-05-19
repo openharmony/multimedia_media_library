@@ -48,6 +48,7 @@ protected:
     virtual void RestoreAnalysisAlbum();
 
     int32_t GetHighlightCloudMediaCnt();
+    void RestoreSmartAlbums();
     void RestoreHighlightAlbums();
     void RestorePhoto(void) override;
     void RestoreAudio(void) override;
@@ -127,6 +128,8 @@ protected:
     void ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, int32_t type);
     void SetCloneParameterAndStopSync();
     int32_t InitDb(bool isUpgrade);
+    std::vector<int32_t> GetCloudPhotoMinIds();
+    std::vector<int32_t> GetLocalPhotoMinIds();
 
 protected:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

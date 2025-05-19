@@ -340,6 +340,13 @@ const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_OLD_DEVICE = {
     { AudioColumn::AUDIOS_TABLE },
 };
 
+struct PhotoInfo {
+    int32_t fileIdNew {-1};
+    int32_t fileType {0};
+    std::string displayName;
+    std::string cloudPath;
+};
+
 struct FileInfo {
     std::string filePath;
     std::string displayName;
