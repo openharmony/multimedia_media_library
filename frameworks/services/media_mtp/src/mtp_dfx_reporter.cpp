@@ -141,7 +141,7 @@ void MtpDfxReporter::DoBatchFileCountInfoDfxReporter(int32_t mtpMode)
             result.clear();
         }
     }
-    MEDIA_INFO_LOG("MtpDfxReporter:DoBatchFileCountInfoDfxReporter result.size():%{public}d", result.size());
+    MEDIA_INFO_LOG("MtpDfxReporter:DoBatchFileCountInfoDfxReporter result.size():%{public}zu", result.size());
     if (result.size() > 0) {
         DoFileCountInfoDfxReporter(mtpMode, result);
     }
