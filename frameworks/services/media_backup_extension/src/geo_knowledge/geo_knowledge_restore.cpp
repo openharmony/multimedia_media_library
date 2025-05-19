@@ -68,11 +68,12 @@ void GeoKnowledgeRestore::Init(int32_t sceneCode, std::string taskId,
     systemLanguage_ = Global::I18n::LocaleConfig::GetSystemLanguage();
 }
 
-void GeoKnowledgeRestore::RestoreGeoKnowledgeInfos()
+void GeoKnowledgeRestore::ResotreGeo(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
 {
-    bool cond = (galleryRdb_ == nullptr || mediaLibraryRdb_ == nullptr);
-    CHECK_AND_RETURN_LOG(!cond, "rdbStore is nullptr");
+    CHECK_AND_RETURN_LOG(galleryRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr");
     GetGeoKnowledgeInfos();
+    RestoreMaps(photoInfoMap);
+    ReportGeoRestoreTask();
 }
 
 void GeoKnowledgeRestore::GetGeoKnowledgeInfos()

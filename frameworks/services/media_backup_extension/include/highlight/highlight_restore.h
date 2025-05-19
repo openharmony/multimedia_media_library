@@ -29,9 +29,7 @@ class HighlightRestore {
 public:
     void Init(int32_t sceneCode, std::string taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
-    void RestoreAlbums(const std::string &albumOdid);
-    void RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
-    void UpdateAlbums();
+    void RestoreHighlight(const std::string &albumOdid, const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
 
 private:
     struct HighlightAlbumInfo {
@@ -78,6 +76,9 @@ private:
         int64_t dateModified {0};
     };
 
+    void RestoreAlbums(const std::string &albumOdid);
+    void RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void UpdateAlbums();
     void GetAlbumInfos(const std::string &albumOdid);
     bool HasSameHighlightAlbum(HighlightAlbumInfo &info);
     void TransferClusterInfo(HighlightAlbumInfo &info);
