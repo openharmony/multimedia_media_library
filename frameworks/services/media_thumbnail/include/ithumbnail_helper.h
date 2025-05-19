@@ -135,6 +135,7 @@ private:
     EXPORT static bool CacheSuccessState(const ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool CacheFailState(const ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static int32_t CacheThumbDbState(const ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static int32_t CacheDirtyState(const ThumbRdbOpt &opts, ThumbnailData &data)
     EXPORT static bool IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);

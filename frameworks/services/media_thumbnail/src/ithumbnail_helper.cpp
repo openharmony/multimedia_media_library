@@ -873,20 +873,9 @@ bool IThumbnailHelper::CacheSuccessState(const ThumbRdbOpt &opts, ThumbnailData 
 {
     int32_t err = CacheThumbDbState(opts, data);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "CacheThumbDbState failed, err = %{public}d", err);
-    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, false,
-        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
 
-    if (data.isRegenerateStage) {
-        string filePath = GetLocalOriginFilePath(data.path);
-        bool shouldUpdateFDirty = access(filePath.c_str(), F_OK) == 0;
-
-        if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
-            data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
-        }
-        ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ? static_cast<int32_t>(DirtyType::TYPE_FDIRTY) :
-            static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
-    }
+    err = CacheDirtyState(opts, data);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "CacheDirtyState failed, err = %{public}d", err);
 
     return true;
 }
@@ -895,12 +884,8 @@ bool IThumbnailHelper::CacheFailState(const ThumbRdbOpt &opts, ThumbnailData &da
 {
     CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
         "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
-    
-    if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
-        data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
-    }
 
-    ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
+    ValuesBucket& values = ThumbnailUtils::TryInsertValuesBucket(PhotoColumn::PHOTOS_TABLE, data.rdbUpdateCache);
 
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
@@ -915,11 +900,7 @@ int32_t IThumbnailHelper::CacheThumbDbState(const ThumbRdbOpt &opts, ThumbnailDa
     CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
         "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
 
-    if (data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) == data.rdbUpdateCache.end()) {
-        data.rdbUpdateCache.insert({ PhotoColumn::PHOTOS_TABLE, ValuesBucket() });
-    }
-
-    ValuesBucket& values = data.rdbUpdateCache[PhotoColumn::PHOTOS_TABLE];
+    ValuesBucket& values = ThumbnailUtils::TryInsertValuesBucket(PhotoColumn::PHOTOS_TABLE, data.rdbUpdateCache);
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
     Size lcdSize;
@@ -932,6 +913,21 @@ int32_t IThumbnailHelper::CacheThumbDbState(const ThumbRdbOpt &opts, ThumbnailDa
         ThumbnailUtils::SetThumbnailSizeValue(values, thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
     }
 
+    return E_OK;
+}
+
+int32_t IThumbnailHelper::CacheDirtyState(const ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
+        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
+    if (data.isRegenerateStage) {
+        string filePath = GetLocalOriginFilePath(data.path);
+        bool shouldUpdateFDirty = access(filePath.c_str(), F_OK) == 0;
+
+        ValuesBucket& values = ThumbnailUtils::TryInsertValuesBucket(PhotoColumn::PHOTOS_TABLE, data.rdbUpdateCache);
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ? static_cast<int32_t>(DirtyType::TYPE_FDIRTY) :
+            static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
+    }
     return E_OK;
 }
 

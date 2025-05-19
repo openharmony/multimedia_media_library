@@ -130,6 +130,7 @@ public:
         const std::string &table, std::vector<ThumbnailData> &infos);
     EXPORT static void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
     EXPORT static void DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
+    EXPORT static unordered_map<string, ValuesBucket>& TryInsertValuesBucket(const string& table, map<string, ValuesBucket>& map);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
@@ -152,7 +153,7 @@ private:
         int index, int64_t &data);
     EXPORT static void ParseHighlightQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
        ThumbnailData &data, int &err);
-    
+
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     EXPORT static bool LoadImageFile(ThumbnailData &data, Size &desiredSize);
