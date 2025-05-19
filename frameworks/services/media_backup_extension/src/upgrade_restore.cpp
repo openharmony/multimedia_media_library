@@ -326,9 +326,7 @@ void UpgradeRestore::RestoreSmartAlbums()
     CHECK_AND_RETURN(sceneCode_ == UPGRADE_RESTORE_ID || sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID);
     MEDIA_INFO_LOG("RestoreSmartAlbums start");
     int64_t startRestoreGeo = MediaFileUtils::UTCTimeMilliSeconds();
-    geoKnowledgeRestore_.RestoreGeoKnowledgeInfos();
-    geoKnowledgeRestore_.RestoreMaps(photoInfoMap_);
-    geoKnowledgeRestore_.ReportGeoRestoreTask();
+    geoKnowledgeRestore_.RestoreGeo(photoInfoMap_);
     int64_t startRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
     RestoreHighlightAlbums();
     int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
@@ -352,9 +350,7 @@ void UpgradeRestore::RestoreHighlightAlbums()
         || dualDeviceSoftName_.find("4", dualDeviceSoftName_.find(" ")) == dualDeviceSoftName_.find(" ") + 1)
         && (highlightCloudMediaCnt == 0 || IsCloudRestoreSatisfied())) {
         MEDIA_INFO_LOG("start to restore highlight albums");
-        highlightRestore_.RestoreAlbums(albumOdid_);
-        highlightRestore_.RestoreMaps(photoInfoMap_);
-        highlightRestore_.UpdateAlbums();
+        highlightRestore_.RestoreHighlight(albumOdid_, photoInfoMap_);
     }
 }
 
@@ -592,7 +588,7 @@ std::vector<int32_t> UpgradeRestore::GetCloudPhotoMinIds()
     std::vector<int32_t> minIds;
     std::string querySql = "SELECT _id FROM ("
         "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
-            "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> ''"
+            "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' "
             "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
                 "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
             "AND (_size > 0 AND (1 = ? OR _size = 0 AND photo_quality = 0)) "

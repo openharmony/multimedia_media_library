@@ -63,11 +63,17 @@ void HighlightRestore::Init(int32_t sceneCode, std::string taskId,
     tracksParseFailCnt_ = 0;
 }
 
+void HighlightRestore::RestoreHighlight(const std::string &albumOdid,
+    const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
+{
+    CHECK_AND_RETURN_LOG(galleryRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr");
+    RestoreAlbums(albumOdid);
+    RestoreMaps(photoInfoMap);
+    UpdateAlbums();
+}
+
 void HighlightRestore::RestoreAlbums(const std::string &albumOdid)
 {
-    bool cond = (galleryRdb_ == nullptr || mediaLibraryRdb_ == nullptr);
-    CHECK_AND_RETURN_LOG(!cond, "rdbStore is nullptr");
-
     GetAlbumInfos(albumOdid);
     InsertIntoAnalysisAlbum();
     UpdateAlbumIds();

@@ -27,9 +27,7 @@ class GeoKnowledgeRestore {
 public:
     void Init(int32_t sceneCode, std::string taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
-    void RestoreGeoKnowledgeInfos();
-    void RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
-    void ReportGeoRestoreTask();
+    void ResotreGeo(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
 
 private:
     struct GeoKnowledgeInfo {
@@ -55,6 +53,8 @@ private:
     };
 
     void GetGeoKnowledgeInfos();
+    void RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void ReportGeoRestoreTask();
     NativeRdb::ValuesBucket GetMapInsertValue(std::vector<GeoKnowledgeInfo>::iterator it, int32_t fileId);
     int32_t BatchUpdate(const std::string &tableName, std::vector<std::string> &fileIds);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
