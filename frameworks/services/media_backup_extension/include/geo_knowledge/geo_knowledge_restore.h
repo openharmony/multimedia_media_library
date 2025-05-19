@@ -27,7 +27,7 @@ class GeoKnowledgeRestore {
 public:
     void Init(int32_t sceneCode, std::string taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
-    void ResotreGeo(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void RestoreGeo(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
 
 private:
     struct GeoKnowledgeInfo {

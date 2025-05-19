@@ -394,7 +394,7 @@ void HighlightRestore::RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> 
 }
 
 void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values,
-        const HighlightPhotoInfo &highlightPhoto)
+    const HighlightPhotoInfo &highlightPhoto)
 {
     CHECK_AND_RETURN(highlightPhoto.photoInfo.fileIdNew > 0);
     int32_t fileIdOld = highlightPhoto.fileIdOld;
