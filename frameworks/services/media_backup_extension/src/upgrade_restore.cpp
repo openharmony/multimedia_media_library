@@ -323,6 +323,7 @@ int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
 
 void UpgradeRestore::RestoreSmartAlbums()
 {
+    CHECK_AND_RETURN(sceneCode_ == UPGRADE_RESTORE_ID || sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID);
     MEDIA_INFO_LOG("RestoreSmartAlbums start");
     int64_t startRestoreGeo = MediaFileUtils::UTCTimeMilliSeconds();
     geoKnowledgeRestore_.RestoreGeoKnowledgeInfos();

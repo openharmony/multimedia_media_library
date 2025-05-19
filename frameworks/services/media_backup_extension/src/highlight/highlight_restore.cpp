@@ -353,29 +353,38 @@ void HighlightRestore::RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> 
 {
     CHECK_AND_RETURN_LOG(galleryRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr");
     CHECK_AND_RETURN_INFO_LOG(!albumInfos_.empty(), "albumInfos_ is empty, no need to restore maps.");
-    std::vector<NativeRdb::ValuesBucket> values;
     std::string querySql = "SELECT _id, story_id, portrait_id, date_modified, hash FROM gallery_media "
         "WHERE ((story_id IS NOT NULL AND story_id != '') OR (portrait_id IS NOT NULL AND portrait_id != '')) "
-        "AND story_chosen != 0";
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        HighlightPhotoInfo highlightPhoto;
-        highlightPhoto.fileIdOld = GetInt32Val("_id", resultSet);
-        CHECK_AND_CONTINUE(photoInfoMap.find(highlightPhoto.fileIdOld) != photoInfoMap.end());
-        highlightPhoto.photoInfo = photoInfoMap.at(highlightPhoto.fileIdOld);
-        highlightPhoto.storyIds = GetStringVal("story_id", resultSet);
-        highlightPhoto.portraitIds = GetStringVal("portrait_id", resultSet);
-        highlightPhoto.hashCode = GetStringVal("hash", resultSet);
-        highlightPhoto.dateModified = GetInt64Val("date_modified", resultSet);
-        UpdateMapInsertValues(values, highlightPhoto);
-    }
-    int64_t rowNum = 0;
-    int errCode = BatchInsertWithRetry("AnalysisPhotoMap", values, rowNum);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("RestoreMaps fail.");
-        ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode), "RestoreMaps fail.");
-        UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
-    }
+        "AND story_chosen != 0 AND _id > ? ORDER BY _id ASC LIMIT ?;";
+    int rowCount = 0;
+    int offset = 0;
+    do {
+        std::vector<NativeRdb::ValuesBucket> values;
+        std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
+        auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_, querySql, params);
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            HighlightPhotoInfo highlightPhoto;
+            highlightPhoto.fileIdOld = GetInt32Val("_id", resultSet);
+            offset = highlightPhoto.fileIdOld;
+            CHECK_AND_CONTINUE(photoInfoMap.find(highlightPhoto.fileIdOld) != photoInfoMap.end());
+            highlightPhoto.photoInfo = photoInfoMap.at(highlightPhoto.fileIdOld);
+            highlightPhoto.storyIds = GetStringVal("story_id", resultSet);
+            highlightPhoto.portraitIds = GetStringVal("portrait_id", resultSet);
+            highlightPhoto.hashCode = GetStringVal("hash", resultSet);
+            highlightPhoto.dateModified = GetInt64Val("date_modified", resultSet);
+            UpdateMapInsertValues(values, highlightPhoto);
+        }
+        resultSet->GetRowCount(rowCount);
+        resultSet->Close();
+        int64_t rowNum = 0;
+        int errCode = BatchInsertWithRetry("AnalysisPhotoMap", values, rowNum);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("RestoreMaps fail.");
+            ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode), "RestoreMaps fail.");
+            UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+        }
+    } while (rowCount == PAGE_SIZE);
 }
 
 void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values,

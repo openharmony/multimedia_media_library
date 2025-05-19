@@ -59,6 +59,7 @@ private:
     int32_t BatchUpdate(const std::string &tableName, std::vector<std::string> &fileIds);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
+    void UpdateMaps(std::vector<NativeRdb::ValuesBucket> &values, std::vector<std::string> &fileIds);
     std::string UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const GeoMapInfo &geoMapInfo);
     std::string UpdateByGeoLocation(std::vector<NativeRdb::ValuesBucket> &values, const GeoMapInfo &geoMapInfo);
 
