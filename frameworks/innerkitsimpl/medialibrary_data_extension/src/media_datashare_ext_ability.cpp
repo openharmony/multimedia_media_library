@@ -285,6 +285,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     Media::MedialibrarySubscriber::Subscribe();
     dataManager->SetStartupParameter();
     DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
+    CloudMediaAssetManager::GetInstance().RestartForceRetainCloudAssets();
 }
 
 void MediaDataShareExtAbility::OnStop()
