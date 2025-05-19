@@ -871,11 +871,10 @@ std::string GetLocalOriginFilePath(const std::string &path)
 
 bool IThumbnailHelper::CacheSuccessState(const ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
-        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
-
     int32_t err = CacheThumbDbState(opts, data);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "CacheThumbDbState failed, err = %{public}d", err);
+    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, false,
+        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
 
     if (data.isRegenerateStage) {
         string filePath = GetLocalOriginFilePath(data.path);
