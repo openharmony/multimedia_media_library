@@ -67,6 +67,7 @@ const int32_t MIGRATE_CLOUD_LCD_TYPE = 1;
 const int32_t APP_MAIN_DATA_USER_ID = 0;
 const int32_t APP_TWIN_DATA_USER_ID_START = 128;
 const int32_t APP_TWIN_DATA_USER_ID_END = 147;
+const int32_t SINGLE_LEN_EXTRADATA = 20;
 
 static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
 {
@@ -715,6 +716,42 @@ static bool MoveExtraData(const FileInfo &fileInfo, int32_t sceneCode)
     return true;
 }
 
+static bool SaveIosExtraData(const FileInfo &fileInfo, std::string movingPhotoVideoPath, int32_t sceneCode)
+{
+    string localExtraDataDir = BackupFileUtils::GetReplacedPathByPrefixType(
+        PrefixType::CLOUD, PrefixType::LOCAL, MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(fileInfo.cloudPath));
+    if (localExtraDataDir.empty()) {
+        MEDIA_WARN_LOG("Failed to get local extra data dir");
+        return false;
+    }
+    if (!MediaFileUtils::IsFileExists(localExtraDataDir) && !MediaFileUtils::CreateDirectory(localExtraDataDir)) {
+        MEDIA_WARN_LOG("Failed to create local extra data dir, errno:%{public}d", errno);
+        return false;
+    }
+
+    string localExtraDataPath = BackupFileUtils::GetReplacedPathByPrefixType(
+        PrefixType::CLOUD, PrefixType::LOCAL, MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(fileInfo.cloudPath));
+    if (localExtraDataPath.empty()) {
+        MEDIA_WARN_LOG("Failed to get local extra data path");
+        return false;
+    }
+
+    size_t videoSize = 0;
+    MediaFileUtils::GetFileSize(movingPhotoVideoPath, videoSize);
+
+    std::string versionAndFrame = "v7_f0";
+    versionAndFrame.resize(SINGLE_LEN_EXTRADATA, ' ');
+    std::string startEndPosition = "0:0";
+    startEndPosition.resize(SINGLE_LEN_EXTRADATA, ' ');
+    std::string videoLengthStr = "LIVE_" + std::to_string(videoSize + SINGLE_LEN_EXTRADATA);
+    videoLengthStr.resize(SINGLE_LEN_EXTRADATA, ' ');
+    std::string extraData = versionAndFrame + startEndPosition + videoLengthStr;
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(localExtraDataPath) &&
+        MediaFileUtils::WriteStrToFile(localExtraDataPath, extraData), false,
+        "Write to %{public}s failed", BackupFileUtils::GarbleFilePath(localExtraDataPath, sceneCode).c_str());
+    return true;
+}
+
 static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
 {
     string tmpPath = fileInfo.cloudPath;
@@ -725,6 +762,24 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
         BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
         BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
     BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
+    
+    if (sceneCode == I_PHONE_CLONE_RESTORE && fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        string movSrcPath = fileInfo.filePath.substr(0, fileInfo.filePath.find_last_of(".")) + ".MOV";
+        string movTargetPath = localPath.substr(0, localPath.find_last_of(".")) + ".mp4";
+        
+        errCode = BackupFileUtils::MoveFile(movSrcPath, movTargetPath, sceneCode);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false,
+            "Move moving photo video failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
+            BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
+            BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str(), errCode, errno);
+        BackupFileUtils::ModifyFile(movTargetPath, fileInfo.dateModified / MSEC_TO_SEC);
+        
+        CHECK_AND_RETURN_RET_LOG(SaveIosExtraData(fileInfo, movTargetPath, sceneCode), false,
+            "Save the extraData for ios moving photo failed, src:%{public}s, dest:%{public}s",
+            BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
+            BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str());
+        return true;
+    }
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
         string tmpVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(fileInfo.cloudPath);
