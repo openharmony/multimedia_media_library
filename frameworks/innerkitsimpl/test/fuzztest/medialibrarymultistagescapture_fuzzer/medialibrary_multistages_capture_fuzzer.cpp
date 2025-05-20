@@ -27,6 +27,7 @@
 #include "multistages_moving_photo_capture_manager.h"
 #include "multistages_photo_capture_manager.h"
 #include "multistages_video_capture_manager.h"
+#include "multistages_capture_request_task_manager.h"
 
 namespace OHOS {
 using namespace std;
@@ -107,13 +108,13 @@ static void MultistagesCaptureManagerTest(const uint8_t *data, size_t size)
     std::string photoId = FuzzString(data, size);
     int32_t fileId = InsertAsset(data, size, photoId);
     MEDIA_DEBUG_LOG("fileId: %{public}d.", fileId);
+    Media::MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(fileId, photoId, false);
     NativeRdb::RdbPredicates rdbPredicate(PHOTOS_TABLE);
     rdbPredicate.EqualTo(Media::MediaColumn::MEDIA_ID, fileId);
     rdbPredicate.EqualTo(Media::PhotoColumn::PHOTO_ID, photoId);
     Media::MultiStagesCaptureManager::RemovePhotos(rdbPredicate, true);
     Media::MultiStagesCaptureManager::RestorePhotos(rdbPredicate);
     Media::MultiStagesCaptureManager::QuerySubType(photoId);
-    Media::MultiStagesCaptureManager::RemovePhotos(rdbPredicate, false);
 }
 
 static void MultistagesMovingPhotoCaptureManagerTest(const uint8_t *data, size_t size)
@@ -144,7 +145,6 @@ static void MultistagesVideoCaptureManagerTest(const uint8_t *data, size_t size)
     std::string filePath = FuzzString(data, size);
     Media::MultiStagesVideoCaptureManager &instance =
         Media::MultiStagesVideoCaptureManager::GetInstance();
-    instance.AddVideoInternal(videoId, filePath);
     int32_t fileId = InsertAsset(data, size, videoId);
     instance.AddVideo(videoId, std::to_string(fileId), filePath);
 }
