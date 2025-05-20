@@ -380,6 +380,7 @@ struct FileInfo {
     int32_t fileType {0};
     int32_t specialFileType {0};
     int32_t subtype {0};
+    int32_t otherSubtype {0};
     int64_t showDateToken {0};
     int32_t height {0};
     int32_t width {0};

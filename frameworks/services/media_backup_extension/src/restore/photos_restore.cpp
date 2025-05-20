@@ -181,7 +181,9 @@ int32_t PhotosRestore::FindBurstCoverLevel(const FileInfo &fileInfo)
 int32_t PhotosRestore::FindSubtype(const FileInfo &fileInfo)
 {
     CHECK_AND_RETURN_RET(fileInfo.burstKey.size() <= 0, static_cast<int32_t>(PhotoSubType::BURST));
-    CHECK_AND_RETURN_RET(!BackupFileUtils::IsLivePhoto(fileInfo), static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    CHECK_AND_RETURN_RET(!BackupFileUtils::IsLivePhoto(fileInfo) &&
+        !(fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)),
+        static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     return static_cast<int32_t>(PhotoSubType::DEFAULT);
 }
 
