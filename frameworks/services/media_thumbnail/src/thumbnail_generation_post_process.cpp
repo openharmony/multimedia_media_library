@@ -32,10 +32,7 @@ namespace Media {
 
 int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, const ThumbRdbOpt& opts)
 {
-    MEDIA_INFO_LOG("Start ThumbnailGenerationPostProcess, id: %{public}s, path: %{public}s",
-        data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     int32_t err = E_OK;
-
     bool hasGeneratedThumb = HasGeneratedThumb(data);
     MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d", hasGeneratedThumb);
     if (!hasGeneratedThumb) {
@@ -67,10 +64,9 @@ int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(const ThumbnailData
 
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCachedRdbValue opts.store->Update");
-    err = opts.store->Update(changedRows, photosTable, data.rdbUpdateCache[photosTable],
-        MEDIA_DATA_DB_ID + " = ?", { data.id });
+    err = opts.store->Update(changedRows, photosTable, data.rdbUpdateCache, MEDIA_DATA_DB_ID + " = ?", { data.id });
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. table: %{public}s, err: %{public}d",
-        tableName.c_str(), err);
+        photosTable.c_str(), err);
     CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
         data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
 
@@ -112,12 +108,8 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
 
 bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data)
 {
-    bool hasPhotosTable = data.rdbUpdateCache.find(PhotoColumn::PHOTOS_TABLE) != data.rdbUpdateCache.end();
-    CHECK_AND_RETURN_RET_INFO_LOG(hasPhotosTable, false, "Do not cache photos table value");
-
-    const ValuesBucket& values = data.rdbUpdateCache.at(PhotoColumn::PHOTOS_TABLE);
     ValueObject valueObject;
-    bool hasThumbReadyColumn = values.GetObject(PhotoColumn::PHOTO_THUMBNAIL_READY, valueObject);
+    bool hasThumbReadyColumn = data.rdbUpdateCache.GetObject(PhotoColumn::PHOTO_THUMBNAIL_READY, valueObject);
     CHECK_AND_RETURN_RET_INFO_LOG(hasPhotosTable, false, "Do not cache thumbnail_ready value in photos table");
 
     int64_t thumbReady;
