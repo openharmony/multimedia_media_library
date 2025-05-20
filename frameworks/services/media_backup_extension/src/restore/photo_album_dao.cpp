@@ -292,6 +292,7 @@ std::string PhotoAlbumDao::ParseSourcePathToLPath(const std::string &sourcePath)
             result = result.substr(start_pos);
         }
     }
+    result = result == AlbumPlugin::LPATH_HIDDEN_ALBUM ? AlbumPlugin::LPATH_RECOVER : result;
     return result;
 }
 
