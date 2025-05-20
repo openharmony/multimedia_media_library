@@ -22,6 +22,7 @@
 #include "medialibrary_tracer.h"
 #include "media_log.h"
 #include "result_set_utils.h"
+#include "thumbnail_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -34,20 +35,24 @@ int32_t ThumbnailGenerationPostProcess::PostProcess(const ThumbnailData& data, c
     MEDIA_INFO_LOG("Start ThumbnailGenerationPostProcess, id: %{public}s, path: %{public}s",
         data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
     int32_t err = E_OK;
-    NotifyType notifyType;
 
+    bool hasGeneratedThumb = HasGeneratedThumb(data);
+    MEDIA_INFO_LOG("HasGeneratedThumb: %{public}d", hasGeneratedThumb);
+    if (!hasGeneratedThumb) {
+        err = UpdateCachedRdbValue(data, opts);
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
+        return E_OK;
+    }
+
+    NotifyType notifyType;
     err = GetNotifyType(data, opts, notifyType);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetNotifyType failed. err: %{public}d", err);
 
     err = UpdateCachedRdbValue(data, opts);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. err: %{public}d", err);
 
-    bool hasGeneratedThumb = HasGeneratedThumb(data);
-    MEDIA_INFO_LOG("hasGeneratedThumb: %{public}d", hasGeneratedThumb);
-    if (hasGeneratedThumb) {
-        err = Notify(data, notifyType);
-        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Notify failed. err: %{public}d", err);
-    }
+    err = Notify(data, notifyType);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Notify failed. err: %{public}d", err);
     return E_OK;
 }
 
@@ -55,17 +60,20 @@ int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(const ThumbnailData
 {
     int32_t err = E_OK;
     int32_t changedRows;
+    const string& photosTable = PhotoColumn::PHOTOS_TABLE;
     CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
+    CHECK_AND_RETURN_RET_LOG(opts.table == photosTable, false,
+        "Not %{public}s table, table: %{public}s", photosTable.c_str(), opts.table.c_str());
+
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCachedRdbValue opts.store->Update");
-    for (const auto& it : data.rdbUpdateCache) {
-        const string& tableName = it.first;
-        err = opts.store->Update(changedRows, tableName, it.second, MEDIA_DATA_DB_ID + " = ?", { data.id });
-        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. table: %{public}s, err: %{public}d",
-            tableName.c_str(), err);
-        CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
-            data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
-    }
+    err = opts.store->Update(changedRows, photosTable, data.rdbUpdateCache[photosTable],
+        MEDIA_DATA_DB_ID + " = ?", { data.id });
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "UpdateCachedRdbValue failed. table: %{public}s, err: %{public}d",
+        tableName.c_str(), err);
+    CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
+        data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
+
     return E_OK;
 }
 
@@ -85,7 +93,7 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
 {
     int32_t err = E_OK;
     CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
-    CHECK_AND_RETURN_RET_LOG(!data.id.empty(), E_ERR, "data.id is empty");
+    CHECK_AND_RETURN_RET_LOG(!data.id.empty(), E_ERR, "Data.id is empty");
 
     vector<string> columns = { PhotoColumn::PHOTO_THUMBNAIL_VISIBLE };
     string strQueryCondition = MEDIA_DATA_DB_ID + " = " + data.id;
@@ -95,7 +103,7 @@ int32_t ThumbnailGenerationPostProcess::GetNotifyType(const ThumbnailData& data,
     auto resultSet = opts.store->QueryByStep(rdbPredicates, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_ERR, "QueryByStep() result is null");
     auto ret = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "resultSet->GoToFirstRow() failed");
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "ResultSet->GoToFirstRow() failed");
     int32_t thumbnailVisible = GetInt32Val(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet);
 
     notifyType = thumbnailVisible > 0 ? NotifyType::NOTIFY_THUMB_UPDATE : NotifyType::NOTIFY_THUMB_ADD;
