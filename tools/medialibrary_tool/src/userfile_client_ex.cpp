@@ -282,7 +282,7 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
     if (!id.empty()) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_ID, id);
     }
-    if (!IsRoot()) {
+    if (!IsRoot() && (tableName == PhotoColumn::PHOTOS_TABLE)) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
     }
     std::vector<std::string> columns;
@@ -471,7 +471,7 @@ std::shared_ptr<DataShare::DataShareResultSet> UserFileClientEx::GetResultsetByD
 {
     DataShare::DataSharePredicates predicates;
     predicates.And()->EqualTo(MediaColumn::MEDIA_NAME, displayName);
-    if (!IsRoot()) {
+    if (!IsRoot() && (tableName == PhotoColumn::PHOTOS_TABLE)) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, 0);
     }
     std::vector<std::string> columns;
