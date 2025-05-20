@@ -769,6 +769,7 @@ std::string OthersCloneRestore::ParseSourcePathToLPath(int32_t sceneCode, const 
             BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str());
         lPath = FILE_SEPARATOR;
     }
+    lPath = lPath == AlbumPlugin::LPATH_HIDDEN_ALBUM ? AlbumPlugin::LPATH_RECOVER : lPath;
     return lPath;
 }
 
