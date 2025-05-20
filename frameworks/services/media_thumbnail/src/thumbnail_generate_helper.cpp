@@ -670,7 +670,7 @@ void CacheStreamReadThumbDbStatus(ThumbRdbOpt& opts, ThumbnailData& data, Thumbn
     CHECK_AND_RETURN_LOG(ThumbnailUtils::GetLocalThumbSize(data, thumbType, tmpSize),
         "GetLocalThumbSize failed");
 
-    ValuesBucket& values = ThumbnailUtils::GetCachedValuesBucket(data, PhotoColumn::PHOTOS_TABLE);
+    ValuesBucket& values = data.rdbUpdateCache;
     switch (thumbType) {
         case ThumbnailType::LCD:
             ThumbnailUtils::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_LCD_SIZE);
