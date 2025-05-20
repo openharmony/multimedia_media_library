@@ -260,6 +260,7 @@ std::string PhotoAlbumDao::ParseSourcePathToLPath(const std::string &sourcePath)
     start_pos = result.find_first_of("/");
     CHECK_AND_EXECUTE(start_pos == std::string::npos, result = result.substr(start_pos));
 
+    result = result == AlbumPlugin::LPATH_HIDDEN_ALBUM ? AlbumPlugin::LPATH_RECOVER : result;
     return result;
 }
 
