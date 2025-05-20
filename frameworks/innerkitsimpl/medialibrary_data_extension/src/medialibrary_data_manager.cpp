@@ -2107,10 +2107,6 @@ void MediaLibraryDataManager::InitACLPermission()
         MEDIA_ERR_LOG("Failed create thumbs Photo dir");
         return;
     }
-
-    if (Acl::AclSetDefault() != E_OK) {
-        MEDIA_ERR_LOG("Failed to set the acl read permission for the thumbs Photo dir");
-    }
 }
 
 void MediaLibraryDataManager::InitDatabaseACLPermission()
