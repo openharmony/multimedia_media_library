@@ -16,7 +16,8 @@
 #ifndef FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_GENERATION_POST_PROCESS_H
 #define FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_GENERATION_POST_PROCESS_H
 
-#include "thumbnail_utils.h"
+#include "thumbnail_data.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {

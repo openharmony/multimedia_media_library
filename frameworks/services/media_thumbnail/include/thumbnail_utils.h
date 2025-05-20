@@ -33,22 +33,6 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-struct ThumbRdbOpt {
-    EXPORT std::shared_ptr<MediaLibraryRdbStore> store;
-    EXPORT std::shared_ptr<AbilityRuntime::Context> context;
-    EXPORT std::string networkId;
-    EXPORT std::string path;
-    EXPORT std::string table;
-    EXPORT std::string udid;
-    EXPORT std::string row;
-    EXPORT std::string uri;
-    EXPORT std::string dateAdded;
-    EXPORT std::string dateTaken;
-    EXPORT std::string dateModified;
-    EXPORT std::string fileUri;
-    EXPORT std::string fileId;
-    EXPORT Size screenSize;
-};
 
 class ThumbnailUtils {
 public:
