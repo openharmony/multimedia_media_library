@@ -61,7 +61,7 @@ static int32_t InsertAsset(const uint8_t *data, size_t size, string photoId)
     }
     NativeRdb::ValuesBucket values;
     values.PutString(Media::PhotoColumn::PHOTO_ID, photoId);
-    values.PurString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
@@ -71,7 +71,7 @@ void SetTables()
 {
     vector<string> createTableSqlList = { Media::PhotoColumn::CREATE_PHOTO_TABLE };
     for (auto &createTableSql : createTableSqlList) {
-        CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "g_rdbStore is null");
+        CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "g_rdbStore is null.");
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Execute sql %{private}s failed.", createTableSql.c_str());
@@ -92,7 +92,7 @@ static void Init()
     CHECK_AND_RETURN_LOG(ret == NativeRdb::E_OK, "InitMediaLibrary Mgr failed, ret: %{public}d.", ret);
     auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is nullptr");
+        MEDIA_ERR_LOG("rdbStore is nullptr.");
         return;
     }
     g_rdbStore = rdbStore;
@@ -103,6 +103,7 @@ static void MultistagesCaptureManagerTest(const uint8_t *data, size_t size)
 {
     Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd(data, size);
     auto rdbStore = Media::MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "Failed to get rdb store.");
     std::string photoId = FuzzString(data, size);
     int32_t fileId = InsertAsset(data, size, photoId);
     MEDIA_DEBUG_LOG("fileId: %{public}d.", fileId);
@@ -117,7 +118,7 @@ static void MultistagesCaptureManagerTest(const uint8_t *data, size_t size)
 
 static void MultistagesMovingPhotoCaptureManagerTest(const uint8_t *data, size_t size)
 {
-    std::string photoId = FuzzSting(data, size);
+    std::string photoId = FuzzString(data, size);
     Media::MultiStagesMovingPhotoCaptureManager::SaveMovingPhotoVideoFinished(photoId);
     Media::MultiStagesMovingPhotoCaptureManager::AddVideoFromMovingPhoto(photoId);
 }
@@ -125,9 +126,9 @@ static void MultistagesMovingPhotoCaptureManagerTest(const uint8_t *data, size_t
 static void MultistagesPhotoCaptureManagerTest(const uint8_t *data, size_t size)
 {
     Media::MediaLibraryCommand cmd = FuzzMediaLibraryCmd(data, size);
-    Media::MediaStagesPhotoCaptureManager &instance =
+    Media::MultiStagesPhotoCaptureManager &instance =
         Media::MultiStagesPhotoCaptureManager::GetInstance();
-    instance.UpdataDbInfo(cmd);
+    instance.UpdateDbInfo(cmd);
     std::string photoId = FuzzString(data, size);
     instance.CancelProcessRequest(photoId);
     int32_t fileId = InsertAsset(data, size, photoId);
@@ -143,21 +144,20 @@ static void MultistagesVideoCaptureManagerTest(const uint8_t *data, size_t size)
     std::string filePath = FuzzString(data, size);
     Media::MultiStagesVideoCaptureManager &instance =
         Media::MultiStagesVideoCaptureManager::GetInstance();
-    instance.SyncWithDeferredVideoProcSession();
     instance.AddVideoInternal(videoId, filePath);
     int32_t fileId = InsertAsset(data, size, videoId);
     instance.AddVideo(videoId, std::to_string(fileId), filePath);
 }
 } // namespace OHOS
 
-extern "C" int LLVMFuzzerInitialize(int *argc, char **argv)
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
     OHOS::Init();
     return 0;
 }
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerInitialize(const uint8_t *data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
