@@ -622,7 +622,7 @@ void OthersCloneRestore::HandleInsertBatch(int32_t offset)
             MEDIA_WARN_LOG("photo info error : %{public}s", info.displayName.c_str());
             continue;
         }
-        if (sceneCode == I_PHONE_CLONE_RESTORE && info.otherSubType == I_PHONE_DYNAMIC_VIDEO_TYPE) {
+        if (sceneCode_ == I_PHONE_CLONE_RESTORE && info.otherSubtype == I_PHONE_DYNAMIC_VIDEO_TYPE) {
             continue;
         }
         UpdateAlbumInfo(info);
