@@ -19,6 +19,7 @@
 #include "dfx_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_tracer.h"
 #include "media_log.h"
 #include "result_set_utils.h"
 
@@ -55,7 +56,8 @@ int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(const ThumbnailData
     int32_t err = E_OK;
     int32_t changedRows;
     CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
-
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateCachedRdbValue opts.store->Update");
     for (const auto& it : data.rdbUpdateCache) {
         const string& tableName = it.first;
         err = opts.store->Update(changedRows, tableName, it.second, MEDIA_DATA_DB_ID + " = ?", { data.id });

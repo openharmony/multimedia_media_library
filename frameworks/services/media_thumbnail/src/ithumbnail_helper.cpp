@@ -757,7 +757,7 @@ bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &da
         MEDIA_ERR_LOG("Fail to create directory, fileName: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
         return false;
     }
-    
+
     if (data.source.IsEmptySource()) {
         MEDIA_ERR_LOG("Fail to create lcdEx, source is nullptr");
         return false;
@@ -807,7 +807,7 @@ bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
             DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
     }
-    
+
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
     string dirName = MediaFileUtils::GetParentPath(fileName);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dirName), false,
@@ -1049,7 +1049,7 @@ static bool ScaleLcdToThumbnail(ThumbnailData &data)
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
-    
+
     if (data.orientation != 0 && data.source.HasPictureSource()) {
         MEDIA_INFO_LOG("Scale from picture source, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         auto mainPixelMapEx = data.source.GetPictureEx()->GetMainPixel();
