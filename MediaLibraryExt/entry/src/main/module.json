@@ -20,6 +20,10 @@
       {
         "name": "MediaBackupExtensionAbilityVersion",
         "value": "1"
+      },
+      {
+        "name": "SupportLivePhoto",
+        "value": "1"
       }
     ],
     "abilities": [
