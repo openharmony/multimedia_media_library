@@ -162,7 +162,7 @@ void CloneRestoreHighlight::Init(int32_t sceneCode, const std::string &taskId,
     MEDIA_INFO_LOG("/highlight/ source dir %{public}s.",
         MediaFileUtils::IsDirectory(highlightSourcePath) ? "exist" : "don't exist");
     coverPath_ = highlightSourcePath + "cover/";
-    musicDir_ = highlightSourcePath + "/music";
+    musicDir_ = highlightSourcePath + "music";
     garblePath_ = backupRestoreDir + GARBLE_DST_PATH;
     albumPhotoCounter_.clear();
     failCnt_ = 0;
