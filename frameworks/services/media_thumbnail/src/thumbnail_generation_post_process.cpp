@@ -110,7 +110,7 @@ bool ThumbnailGenerationPostProcess::HasGeneratedThumb(const ThumbnailData& data
 {
     ValueObject valueObject;
     bool hasThumbReadyColumn = data.rdbUpdateCache.GetObject(PhotoColumn::PHOTO_THUMBNAIL_READY, valueObject);
-    CHECK_AND_RETURN_RET_INFO_LOG(hasPhotosTable, false, "Do not cache thumbnail_ready value in photos table");
+    CHECK_AND_RETURN_RET_INFO_LOG(hasThumbReadyColumn, false, "Do not cache thumbnail_ready value in photos table");
 
     int64_t thumbReady;
     valueObject.GetLong(thumbReady);

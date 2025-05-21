@@ -66,8 +66,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
 
     if (isSync) {
         IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
-        int32_t err;
-        err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
+        int32_t err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
         CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
@@ -92,7 +91,8 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(ThumbRdbOp
 
     if (isSync) {
         IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
-        ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
+        int32_t err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -589,8 +589,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
 
-    int32_t err;
-    err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
+    int32_t err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
 
     if (!opts.path.empty()) {
@@ -618,8 +617,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableKeyFrameFile(ThumbRdbOpt &opts, Thu
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
 
-    int32_t err;
-    err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
+    int32_t err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
 
     if (!opts.path.empty()) {
