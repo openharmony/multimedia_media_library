@@ -262,14 +262,6 @@ static void GetMediafileQueryResult(const vector<string>& predicateInColumns, Op
     } while (!queryResult->GoToNextRow());
 }
 
-static void FilterSameElementFromColumns(vector<string>& columns)
-{
-    if (!columns.empty()) {
-        set<string> sec(columns.begin(), columns.end());
-        columns.assign(sec.begin(), sec.end());
-    }
-}
-
 static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, vector<int32_t>& dbOperation)
 {
     vector<int32_t> photoFileIdList;
@@ -284,8 +276,6 @@ static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, 
             audioColumns.push_back(val.Get(AppUriPermissionColumn::FILE_ID, isValid));
         }
     }
-    FilterSameElementFromColumns(photosColumns);
-    FilterSameElementFromColumns(audioColumns);
     if (!photosColumns.empty()) {
         GetMediafileQueryResult(photosColumns, OperationObject::FILESYSTEM_PHOTO, photoFileIdList);
     }
@@ -297,21 +287,13 @@ static void FilterNotExistUri(const std::vector<DataShareValuesBucket> &values, 
         int32_t uriType = values[i].Get(AppUriPermissionColumn::URI_TYPE, isValid);
         if (uriType == PHOTOSTYPE) {
             auto notExistIt = std::find(photoFileIdList.begin(), photoFileIdList.end(), fileId);
-            auto sameIt = std::find(photosColumns.begin(), photosColumns.end(), to_string(fileId));
-            if (notExistIt == photoFileIdList.end() || sameIt == photosColumns.end()) {
+            if (notExistIt == photoFileIdList.end()) {
                 dbOperation[i] = NO_DB_OPERATION;
-            }
-            if (sameIt != photosColumns.end()) {
-                photosColumns.erase(sameIt);
             }
         } else if (uriType == AUDIOSTYPE) {
             auto it = std::find(audioFileIdList.begin(), audioFileIdList.end(), fileId);
-            auto sameIt = std::find(audioColumns.begin(), audioColumns.end(), to_string(fileId));
-            if (it == audioFileIdList.end() || sameIt == audioColumns.end()) {
+            if (it == audioFileIdList.end()) {
                 dbOperation[i] = NO_DB_OPERATION;
-            }
-            if (sameIt != audioColumns.end()) {
-                audioColumns.erase(sameIt);
             }
         }
     }
