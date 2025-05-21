@@ -275,8 +275,6 @@ void TestFindlPathByPath(const std::string &path, const std::string &expectedlPa
     restore->mediaLibraryRdb_ = g_rdbStore->GetRaw();
     restore->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, true);
     ASSERT_NE(restore->galleryRdb_, nullptr);
-    // MEDIA_INFO_LOG("Start upgrade");
-    // DataTransfer::GalleryDbUpgrade().OnUpgrade(restore->galleryRdb_);
 
     FileInfo fileInfo;
     fileInfo.sourcePath = path;
