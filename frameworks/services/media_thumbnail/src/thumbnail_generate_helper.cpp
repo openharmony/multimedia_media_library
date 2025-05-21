@@ -67,7 +67,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
     if (isSync) {
         IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
         int32_t err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
-        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
+        CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -92,7 +92,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScanedWithPicture(ThumbRdbOp
     if (isSync) {
         IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
         int32_t err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
-        CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
+        CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
@@ -590,7 +590,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     }
 
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
 
     if (!opts.path.empty()) {
         fileName = GetThumbnailPath(data.path, thumbSuffix);
@@ -618,7 +618,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableKeyFrameFile(ThumbRdbOpt &opts, Thu
     }
 
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
 
     if (!opts.path.empty()) {
         fileName = GetThumbnailPathHighlight(data.path, thumbSuffix, data.timeStamp);
@@ -751,7 +751,7 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
     }
     CacheThumbStatus(opts, thumbType, thumbnailData, err, isLocalThumbnailAvailable);
     err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "PostProcess failed");
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
     return fd;
 }
 
