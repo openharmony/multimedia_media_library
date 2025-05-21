@@ -639,7 +639,6 @@ void UpgradeRestore::RestoreBatchForCloud(int32_t minId)
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
         AddToGalleryFailedOffsets(minId));
     int64_t startUpdateAnalysisTotal = MediaFileUtils::UTCTimeMilliSeconds();
-    this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, infos);
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
     int64_t endUpdateAnalysisTotal = MediaFileUtils::UTCTimeMilliSeconds();

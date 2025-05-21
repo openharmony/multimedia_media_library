@@ -99,11 +99,6 @@ void ClearHighlightData()
         cloneRestoreHighlight->photoUriMap_.Clear();
     }
     if (cloneRestoreCVAnalysis) {
-        cloneRestoreCVAnalysis->assetMapDatas_.clear();
-        cloneRestoreCVAnalysis->sdMapDatas_.clear();
-        cloneRestoreCVAnalysis->fileIdMap_.clear();
-        cloneRestoreCVAnalysis->albumIdMap_.clear();
-        cloneRestoreCVAnalysis->assetIdMap_.clear();
         cloneRestoreCVAnalysis->assetUriMap_.clear();
         cloneRestoreCVAnalysis->intersectionMap_.clear();
         cloneRestoreCVAnalysis->labelInfos_.clear();
@@ -539,8 +534,8 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_001, TestSize
     EXPECT_EQ(restoreHighlight.isCloneHighlight_, true);
     cloneRestoreCVAnalysis->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
     cloneRestoreCVAnalysis->RestoreAlbums(restoreHighlight);
-    EXPECT_NE(cloneRestoreCVAnalysis->sdMapDatas_.size(), 0);
-    EXPECT_NE(cloneRestoreCVAnalysis->assetMapDatas_.size(), 0);
+    EXPECT_NE(cloneRestoreCVAnalysis->saliencyInfos_.size(), 0);
+    EXPECT_NE(cloneRestoreCVAnalysis->recommendInfos_.size(), 0);
     EXPECT_NE(cloneRestoreCVAnalysis->labelInfos_.size(), 0);
 
     ClearCloneSource(cloneHighlightSource, TEST_BACKUP_DB_PATH);
@@ -557,10 +552,23 @@ HWTEST_F(CloneRestoreHighlightTest, clone_restore_cv_analysis_test_002, TestSize
     Init(cloneHighlightSource, TEST_BACKUP_DB_PATH, tableList);
 
     cloneRestoreCVAnalysis->Init(2, "", newRdbStore->GetRaw(), cloneHighlightSource.cloneStorePtr_, "");
-    cloneRestoreCVAnalysis->InsertIntoAssetMap();
+
+    std::vector<NativeRdb::ValuesBucket> values1;
+    NativeRdb::ValuesBucket value1;
+    value1.PutInt("map_asset_source", 1);
+    value1.PutInt("map_asset_destination", 1);
+    values1.emplace_back(value1);
+    cloneRestoreCVAnalysis->InsertIntoAssetSdMap(values1);
     EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 0);
-    cloneRestoreCVAnalysis->InsertIntoSdMap();
+
+    std::vector<NativeRdb::ValuesBucket> values2;
+    NativeRdb::ValuesBucket value2;
+    value2.PutInt("map_album", 1);
+    value2.PutInt("map_asset", 1);
+    values2.emplace_back(value2);
+    cloneRestoreCVAnalysis->InsertIntoAlbumAssetMap(values2);
     EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 0);
+
     cloneRestoreCVAnalysis->InsertIntoAnalysisLabel();
     EXPECT_EQ(cloneRestoreCVAnalysis->failCnt_, 0);
     cloneRestoreCVAnalysis->InsertIntoAnalysisSaliency();

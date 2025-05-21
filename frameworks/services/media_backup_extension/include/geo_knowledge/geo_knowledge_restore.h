@@ -48,8 +48,8 @@ private:
     struct GeoMapInfo {
         int32_t fileIdOld {-1};
         PhotoInfo photoInfo;
-        int64_t latitude {0};
-        int64_t longitude {0};
+        double latitude {0};
+        double longitude {0};
     };
 
     void GetGeoKnowledgeInfos();

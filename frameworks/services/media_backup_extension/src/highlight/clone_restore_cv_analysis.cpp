@@ -24,8 +24,6 @@
 
 namespace OHOS::Media {
 const int32_t PAGE_SIZE = 200;
-const int32_t MAX_GENERATE_TIMES = 100000;
-const int32_t GENERATE_GAP = 10;
 const std::vector<std::string> EFFECTLINE_ID = { "fileId", "prefileId" };
 const std::vector<std::string> EFFECTLINE_URI = { "fileUri", "prefileUri" };
 const std::string EFFECTLINE_TYPE_HITCHCOCK = "TYPE_HITCHCOCK";
@@ -104,6 +102,8 @@ void CloneRestoreCVAnalysis::Init(int32_t sceneCode, const std::string &taskId,
     mediaLibraryRdb_ = mediaLibraryRdb;
     mediaRdb_ = mediaRdb;
     assetPath_ = backupRestoreDir + "/storage/media/local/files/highlight/video/";
+    MEDIA_INFO_LOG("/highlight/video/ source dir %{public}s.",
+        MediaFileUtils::IsDirectory(assetPath_) ? "exist" : "don't exist");
     garblePath_ = backupRestoreDir + GARBLE_DST_PATH;
     failCnt_ = 0;
 }
@@ -114,16 +114,13 @@ void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight
     CHECK_AND_RETURN_LOG(cloneHighlight.IsCloneHighlight(), "clone highlight flag is false.");
 
     MEDIA_INFO_LOG("restore highlight cv analysis album start.");
-    int64_t startGetMapTime = MediaFileUtils::UTCTimeMilliSeconds();
-    GetAssetMapInfos(cloneHighlight);
-    GetAssetAlbumInfos(cloneHighlight);
+    int64_t startRestoreMapTime = MediaFileUtils::UTCTimeMilliSeconds();
+    RestoreAssetSdMap(cloneHighlight);
+    RestoreAlbumAssetMap(cloneHighlight);
     int64_t startUpdatePlayInfoTime = MediaFileUtils::UTCTimeMilliSeconds();
     std::vector<int32_t> updateHighlightIds;
     UpdateHighlightPlayInfos(cloneHighlight, updateHighlightIds);
     cloneHighlight.UpdateHighlightStatus(updateHighlightIds);
-    int64_t startInsertMapTime = MediaFileUtils::UTCTimeMilliSeconds();
-    InsertIntoAssetMap();
-    InsertIntoSdMap();
     int64_t startRestoreLabelTime = MediaFileUtils::UTCTimeMilliSeconds();
     GetAnalysisLabelInfos(cloneHighlight);
     InsertIntoAnalysisLabel();
@@ -134,54 +131,41 @@ void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight
     GetAnalysisRecommendationInfos(cloneHighlight);
     InsertIntoAnalysisRecommendation();
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("RestoreAllCVAlbums cost %{public}" PRId64 ", GetMapInfos cost %{public}" PRId64
-        ", UpdateHighlightPlayInfos cost %{public}" PRId64 ", InsertMapInfos cost %{public}" PRId64
-        ", RestoreLabel cost %{public}" PRId64 ", RestoreSaliency cost %{public}" PRId64
-        ", RestoreRecommendation cost %{public}" PRId64, endTime - startGetMapTime,
-        startUpdatePlayInfoTime - startGetMapTime, startInsertMapTime - startUpdatePlayInfoTime,
-        startRestoreLabelTime - startInsertMapTime, startRestoreSaliencyTime - startRestoreLabelTime,
+    MEDIA_INFO_LOG("RestoreAllCVAlbums cost %{public}" PRId64 ", RestoreAssetMaps cost %{public}" PRId64
+        ", UpdateHighlightPlayInfos cost %{public}" PRId64 ", RestoreLabel cost %{public}" PRId64
+        ", RestoreSaliency cost %{public}" PRId64 ", RestoreRecommendation cost %{public}" PRId64,
+        endTime - startRestoreMapTime, startUpdatePlayInfoTime - startRestoreMapTime,
+        startRestoreLabelTime - startUpdatePlayInfoTime, startRestoreSaliencyTime - startRestoreLabelTime,
         startRestoreRcmdTime - startRestoreSaliencyTime, endTime - startRestoreRcmdTime);
     ReportCloneRestoreCVAnalysisTask();
 }
 
-void CloneRestoreCVAnalysis::GetAssetMapInfos(CloneRestoreHighlight &cloneHighlight)
+void CloneRestoreCVAnalysis::RestoreAssetSdMap(CloneRestoreHighlight &cloneHighlight)
 {
     const std::string QUERY_SQL = "SELECT * FROM tab_analysis_asset_sd_map LIMIT ?, ?";
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
+        std::vector<NativeRdb::ValuesBucket> values;
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
         CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
-
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t oldFileId = GetInt32Val("map_asset_source", resultSet);
             int32_t oldAssetId = GetInt32Val("map_asset_destination", resultSet);
-            sdMapDatas_.emplace_back(std::make_pair(oldFileId, oldAssetId));
-            int32_t newFileId = cloneHighlight.GetNewHighlightPhotoId(oldFileId);
-            CHECK_AND_EXECUTE(assetIdMap_.count(oldAssetId) != 0, assetIdMap_[oldAssetId] = GetNewAssetId(newFileId));
-            fileIdMap_[oldFileId] = newFileId;
+            NativeRdb::ValuesBucket value;
+            value.PutInt("map_asset_source", cloneHighlight.GetNewHighlightPhotoId(oldFileId));
+            value.PutInt("map_asset_destination", cloneHighlight.GetNewHighlightPhotoId(oldAssetId));
+            values.emplace_back(value);
         }
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+        InsertIntoAssetSdMap(values);
+    } while (rowCount == PAGE_SIZE);
 }
 
-int32_t CloneRestoreCVAnalysis::GetNewAssetId(int32_t assetId)
-{
-    for (size_t time = 0; time < MAX_GENERATE_TIMES; time++) {
-        std::string dirPath = "/storage/media/local/files/highlight/video/" + std::to_string(assetId);
-        if (!MediaFileUtils::IsDirectory(dirPath)) {
-            CHECK_AND_RETURN_RET(!MediaFileUtils::CreateDirectory(dirPath), assetId);
-        }
-        assetId += GENERATE_GAP;
-    }
-    MEDIA_ERR_LOG("create dirPath failed");
-    return -1;
-}
-
-void CloneRestoreCVAnalysis::GetAssetAlbumInfos(CloneRestoreHighlight &cloneHighlight)
+void CloneRestoreCVAnalysis::RestoreAlbumAssetMap(CloneRestoreHighlight &cloneHighlight)
 {
     const std::string QUERY_SQL = "SELECT tab_analysis_album_asset_map.* FROM tab_analysis_album_asset_map "
         " INNER JOIN tab_highlight_album AS h ON tab_analysis_album_asset_map.map_album = h.id "
@@ -189,63 +173,49 @@ void CloneRestoreCVAnalysis::GetAssetAlbumInfos(CloneRestoreHighlight &cloneHigh
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
+        std::vector<NativeRdb::ValuesBucket> values;
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
         CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
-
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t oldAlbumId = GetInt32Val("map_album", resultSet);
             int32_t oldAssetId = GetInt32Val("map_asset", resultSet);
-            assetMapDatas_.emplace_back(std::make_pair(oldAlbumId, oldAssetId));
-            CHECK_AND_CONTINUE(albumIdMap_.count(oldAlbumId) <= 0);
-            albumIdMap_[oldAlbumId] = cloneHighlight.GetNewHighlightAlbumId(oldAlbumId);
+            NativeRdb::ValuesBucket value;
+            value.PutInt("map_album", cloneHighlight.GetNewHighlightAlbumId(oldAlbumId));
+            value.PutInt("map_asset", cloneHighlight.GetNewHighlightPhotoId(oldAssetId));
+            values.emplace_back(value);
         }
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
+        InsertIntoAlbumAssetMap(values);
     } while (rowCount == PAGE_SIZE);
 }
 
-void CloneRestoreCVAnalysis::InsertIntoAssetMap()
+void CloneRestoreCVAnalysis::InsertIntoAssetSdMap(std::vector<NativeRdb::ValuesBucket> &values)
 {
-    std::vector<NativeRdb::ValuesBucket> values;
-    for (auto data : assetMapDatas_) {
-        NativeRdb::ValuesBucket value;
-        value.PutInt("map_album", albumIdMap_[data.first]);
-        value.PutInt("map_asset", assetIdMap_[data.second]);
-        values.emplace_back(value);
-    }
-    int64_t rowNum = 0;
-    int32_t errCode = BatchInsertWithRetry("tab_analysis_album_asset_map", values, rowNum);
-    if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
-        int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-        MEDIA_ERR_LOG("insert into assetMap failed, num:%{public}" PRId64, failNums);
-        ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
-            "insert into AssetMap fail. num:" + std::to_string(failNums));
-        failCnt_ += failNums;
-        UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
-    }
-}
-
-void CloneRestoreCVAnalysis::InsertIntoSdMap()
-{
-    std::vector<NativeRdb::ValuesBucket> values;
-    for (auto data : sdMapDatas_) {
-        NativeRdb::ValuesBucket value;
-        value.PutInt("map_asset_source", fileIdMap_[data.first]);
-        value.PutInt("map_asset_destination", assetIdMap_[data.second]);
-        values.emplace_back(value);
-    }
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry("tab_analysis_asset_sd_map", values, rowNum);
-    if (errCode != E_OK || rowNum != static_cast<int64_t>(values.size())) {
-        int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
-        MEDIA_ERR_LOG("insert into sdMap failed, num:%{public}" PRId64, failNums);
-        ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
-            "insert into sdMap fail. num:" + std::to_string(failNums));
-        failCnt_ += failNums;
-        UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
-    }
+    CHECK_AND_RETURN(errCode != E_OK || rowNum != static_cast<int64_t>(values.size()));
+    int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
+    MEDIA_ERR_LOG("insert into sdMap failed, num:%{public}" PRId64, failNums);
+    ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
+        "insert into sdMap fail. num:" + std::to_string(failNums));
+    failCnt_ += failNums;
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+}
+
+void CloneRestoreCVAnalysis::InsertIntoAlbumAssetMap(std::vector<NativeRdb::ValuesBucket> &values)
+{
+    int64_t rowNum = 0;
+    int32_t errCode = BatchInsertWithRetry("tab_analysis_album_asset_map", values, rowNum);
+    CHECK_AND_RETURN(errCode != E_OK || rowNum != static_cast<int64_t>(values.size()));
+    int64_t failNums = static_cast<int64_t>(values.size()) - rowNum;
+    MEDIA_ERR_LOG("insert into assetMap failed, num:%{public}" PRId64, failNums);
+    ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode),
+        "insert into AssetMap fail. num:" + std::to_string(failNums));
+    failCnt_ += failNums;
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
 }
 
 int32_t CloneRestoreCVAnalysis::BatchInsertWithRetry(const std::string &tableName,
@@ -286,7 +256,7 @@ void CloneRestoreCVAnalysis::GetAnalysisLabelInfos(CloneRestoreHighlight &cloneH
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_analysis_label nums: %{public}zu", labelInfos_.size());
 }
 
@@ -384,7 +354,7 @@ void CloneRestoreCVAnalysis::GetAnalysisSaliencyInfos(CloneRestoreHighlight &clo
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_analysis_saliency_detect nums: %{public}zu", saliencyInfos_.size());
 }
 
@@ -457,7 +427,7 @@ void CloneRestoreCVAnalysis::GetAnalysisRecommendationInfos(CloneRestoreHighligh
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
     MEDIA_INFO_LOG("query tab_analysis_recommendation nums: %{public}zu", recommendInfos_.size());
 }
 
@@ -565,7 +535,7 @@ void CloneRestoreCVAnalysis::ParseEffectline(nlohmann::json &newPlayInfo, size_t
                 GetNewPhotoUriByUri(oldEffectVideoUri, cloneHighlight);
         } else if (MediaFileUtils::StartsWith(oldEffectVideoUri, HIGHLIGHT_ASSET_URI_PREFIX)) {
             newPlayInfo["effectline"]["effectline"][effectlineIndex]["effectVideoUri"] =
-                GetNewEffectVideoUri(oldEffectVideoUri);
+                GetNewEffectVideoUri(oldEffectVideoUri, cloneHighlight);
         }
     }
 
@@ -646,15 +616,17 @@ void CloneRestoreCVAnalysis::ParseTimeline(nlohmann::json &newPlayInfo, size_t t
     }
 }
 
-std::string CloneRestoreCVAnalysis::GetNewEffectVideoUri(const std::string &oldVideoUri)
+std::string CloneRestoreCVAnalysis::GetNewEffectVideoUri(const std::string &oldVideoUri,
+    CloneRestoreHighlight &cloneHighlight)
 {
+    CHECK_AND_RETURN_RET(assetUriMap_.find(oldVideoUri) == assetUriMap_.end(), assetUriMap_.at(oldVideoUri));
     CHECK_AND_RETURN_RET(oldVideoUri != "", "");
     size_t rightIndex = oldVideoUri.rfind("/");
     CHECK_AND_RETURN_RET(rightIndex != std::string::npos && rightIndex > 0, "");
     size_t leftIndex = oldVideoUri.rfind("/", rightIndex - 1);
     CHECK_AND_RETURN_RET(leftIndex != std::string::npos && rightIndex > leftIndex + 1, "");
     int32_t oldAssetId = std::atoi((oldVideoUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
-    int32_t newAssetId = assetIdMap_[oldAssetId];
+    int32_t newAssetId = cloneHighlight.GetNewHighlightPhotoId(oldAssetId);
 
     size_t suffixLeftIndex = oldVideoUri.find("_", rightIndex);
     CHECK_AND_RETURN_RET(suffixLeftIndex != std::string::npos, "");
@@ -675,13 +647,14 @@ std::string CloneRestoreCVAnalysis::GetNewEffectVideoUri(const std::string &oldV
 std::string CloneRestoreCVAnalysis::GetNewTransitionVideoUri(const std::string &oldVideoUri,
     CloneRestoreHighlight &cloneHighlight)
 {
+    CHECK_AND_RETURN_RET(assetUriMap_.find(oldVideoUri) == assetUriMap_.end(), assetUriMap_.at(oldVideoUri));
     CHECK_AND_RETURN_RET(oldVideoUri != "", "");
     size_t rightIndex = oldVideoUri.rfind("/");
     CHECK_AND_RETURN_RET(rightIndex != std::string::npos && rightIndex > 0, "");
     size_t leftIndex = oldVideoUri.rfind("/", rightIndex - 1);
     CHECK_AND_RETURN_RET(leftIndex != std::string::npos && rightIndex > leftIndex + 1, "");
     int32_t oldAssetId = std::atoi((oldVideoUri.substr(leftIndex + 1, rightIndex - leftIndex - 1)).c_str());
-    int32_t newAssetId = assetIdMap_[oldAssetId];
+    int32_t newAssetId = cloneHighlight.GetNewHighlightPhotoId(oldAssetId);
 
     size_t secondLeftIndex = oldVideoUri.find("_", rightIndex);
     CHECK_AND_RETURN_RET(secondLeftIndex != std::string::npos, "");
@@ -710,6 +683,7 @@ std::string CloneRestoreCVAnalysis::GetNewTransitionVideoUri(const std::string &
 std::string CloneRestoreCVAnalysis::GetNewPhotoUriByUri(const std::string &oldUri,
     CloneRestoreHighlight &cloneHighlight)
 {
+    CHECK_AND_RETURN_RET(assetUriMap_.find(oldUri) == assetUriMap_.end(), assetUriMap_.at(oldUri));
     CHECK_AND_RETURN_RET(oldUri != "", "");
     size_t rightIndex = oldUri.rfind("/");
     CHECK_AND_RETURN_RET(rightIndex != std::string::npos && rightIndex > 0, "");
@@ -730,11 +704,20 @@ std::string CloneRestoreCVAnalysis::GetNewPhotoUriByUri(const std::string &oldUr
 
 void CloneRestoreCVAnalysis::MoveAnalysisAssets(const std::string &srcPath, const std::string &dstPath)
 {
-    int32_t errCode = BackupFileUtils::MoveFile(srcPath.c_str(), dstPath.c_str(), sceneCode_);
-    CHECK_AND_PRINT_LOG(errCode == E_OK,
-        "move file failed, srcPath:%{public}s, dstPath:%{public}s, errcode:%{public}d",
-        BackupFileUtils::GarbleFilePath(srcPath, sceneCode_, garblePath_).c_str(),
-        BackupFileUtils::GarbleFilePath(dstPath, sceneCode_, GARBLE_DST_PATH).c_str(), errCode);
+    std::string srcGarble = srcPath;
+    srcGarble.replace(0, assetPath_.length(), "*/");
+    std::string dstGarble = MediaFileUtils::DesensitizePath(dstPath);
+    CHECK_AND_RETURN_LOG(MediaFileUtils::IsFileExists(srcPath), "src file doesn't exist, srcPath:%{public}s."
+        "dstPath:%{public}s", srcGarble.c_str(), dstGarble.c_str());
+    CHECK_AND_RETURN_INFO_LOG(!MediaFileUtils::IsFileExists(dstPath),
+        "dst file already exists, srcPath:%{public}s, dstPath:%{public}s.", srcGarble.c_str(), dstGarble.c_str());
+    int32_t errCode = BackupFileUtils::PreparePath(dstPath);
+    CHECK_AND_RETURN_LOG(errCode == E_OK, "PreparePath failed, can't move file, srcPath:%{public}s, "
+        "dstPath:%{public}s, errcode:%{public}d", srcGarble.c_str(), dstGarble.c_str(), errCode);
+    errCode = BackupFileUtils::MoveFile(srcPath, dstPath, sceneCode_);
+    CHECK_AND_RETURN_LOG(errCode == E_OK, "move file failed, srcPath:%{public}s, dstPath:%{public}s, "
+        "errcode:%{public}d", srcGarble.c_str(), dstGarble.c_str(), errCode);
+    MEDIA_INFO_LOG("move file successed, srcPath:%{public}s, dstPath:%{public}s", srcGarble.c_str(), dstGarble.c_str());
 }
 
 void CloneRestoreCVAnalysis::UpdateHighlightPlayInfos(CloneRestoreHighlight &cloneHighlight,
