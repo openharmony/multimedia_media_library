@@ -112,11 +112,11 @@ private:
         }
     };
 
-    void GetAssetMapInfos(CloneRestoreHighlight &cloneHighlight);
-    void GetAssetAlbumInfos(CloneRestoreHighlight &cloneHighlight);
+    void RestoreAssetSdMap(CloneRestoreHighlight &cloneHighlight);
+    void RestoreAlbumAssetMap(CloneRestoreHighlight &cloneHighlight);
+    void InsertIntoAssetSdMap(std::vector<NativeRdb::ValuesBucket> &values);
+    void InsertIntoAlbumAssetMap(std::vector<NativeRdb::ValuesBucket> &values);
     void MoveAnalysisAssets(const std::string &srcPath, const std::string &dstPath);
-    void InsertIntoAssetMap();
-    void InsertIntoSdMap();
     int32_t BatchInsertWithRetry(const std::string &tableName,
         const std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum);
     void GetAnalysisLabelInfos(CloneRestoreHighlight &cloneHighlight);
@@ -139,8 +139,7 @@ private:
     void ParseTimeline(nlohmann::json &newPlayInfo, size_t TimelineIndex, CloneRestoreHighlight &cloneHighlight);
     void UpdateHighlightPlayInfos(CloneRestoreHighlight &cloneHighlight, std::vector<int32_t> &updateHighlightIds);
     void ReportCloneRestoreCVAnalysisTask();
-    int32_t GetNewAssetId(int32_t assetId);
-    std::string GetNewEffectVideoUri(const std::string &oldVideoUri);
+    std::string GetNewEffectVideoUri(const std::string &oldVideoUri, CloneRestoreHighlight &cloneHighlight);
     std::string GetNewTransitionVideoUri(const std::string &oldVideoUri, CloneRestoreHighlight &cloneHighlight);
     std::string GetNewPhotoUriByUri(const std::string &oldUri, CloneRestoreHighlight &cloneHighlight);
 
@@ -152,11 +151,6 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string assetPath_;
     std::string garblePath_;
-    std::vector<std::pair<int32_t, int32_t>> assetMapDatas_;
-    std::vector<std::pair<int32_t, int32_t>> sdMapDatas_;
-    std::unordered_map<int32_t, int32_t> fileIdMap_;
-    std::unordered_map<int32_t, int32_t> albumIdMap_;
-    std::unordered_map<int32_t, int32_t> assetIdMap_;
     std::unordered_map<std::string, std::string> assetUriMap_;
     std::unordered_map<std::string, std::unordered_set<std::string>> intersectionMap_;
     std::vector<AnalysisLabelInfo> labelInfos_;

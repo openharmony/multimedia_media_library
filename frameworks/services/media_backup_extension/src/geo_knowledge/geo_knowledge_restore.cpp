@@ -132,8 +132,8 @@ void GeoKnowledgeRestore::RestoreMaps(const std::unordered_map<int32_t, PhotoInf
             offset = geoMapInfo.fileIdOld;
             CHECK_AND_CONTINUE(photoInfoMap.find(geoMapInfo.fileIdOld) != photoInfoMap.end());
             geoMapInfo.photoInfo = photoInfoMap.at(geoMapInfo.fileIdOld);
-            geoMapInfo.latitude = GetInt64Val("latitude", resultSet);
-            geoMapInfo.longitude = GetInt64Val("longitude", resultSet);
+            geoMapInfo.latitude = GetDoubleVal("latitude", resultSet);
+            geoMapInfo.longitude = GetDoubleVal("longitude", resultSet);
             std::string fileIdString = UpdateMapInsertValues(values, geoMapInfo);
             CHECK_AND_EXECUTE(fileIdString == NOT_MATCH, fileIds.push_back(fileIdString));
         }
