@@ -37,6 +37,7 @@
 #include "clone_restore_classify.h"
 #include "clone_restore_geo.h"
 #include "clone_restore_geo_dictionary.h"
+#include "search_index_clone.h"
 #include "ffrt.h"
 #include "ffrt_inner.h"
 
@@ -215,14 +216,15 @@ private:
     void AddToPhotosFailedOffsets(int32_t offset);
     void ProcessPhotosBatchFailedOffsets(int32_t isRelatedToPhotoMap = 0);
     void ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap = 0);
+    void RestoreAnalysisAlbumStatus();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
         const std::optional<T>& optionalValue);
 
-    template<typename T>
+    template<typename T, typename U>
     void PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
-        const std::optional<T>& optionalValue, const T& defaultValue);
+        const std::optional<T>& optionalValue, const U& defaultValue);
     std::string GetThumbnailLocalPath(const string path);
     void BatchUpdateFileInfoData(std::vector<FileInfo> &fileInfos,
         unordered_map<string, CloudPhotoFileExistFlag> &resultExistMap);
@@ -231,6 +233,7 @@ private:
     int32_t CheckThumbStatus(const FileInfo &fileInfo,
         const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
     int32_t CheckLcdVisitTime(const CloudPhotoFileExistFlag &cloudPhotoFileExistFlag);
+    void AddToPhotoInfoMaps(std::vector<FileInfo> &fileInfos);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
@@ -265,7 +268,9 @@ private:
     std::atomic<uint64_t> thumbMigrateFileNumber_{0};
     std::atomic<uint64_t> migrateCloudSuccessNumber_{0};
     CloneRestoreGeoDictionary cloneRestoreGeoDictionary_;
+    int64_t maxSearchId_ {0};
     int64_t maxAnalysisAlbumId_ {0};
+    std::unordered_map<int32_t, PhotoInfo> photoInfoMap_;
 };
 
 template<typename T>
@@ -285,14 +290,14 @@ void CloneRestore::PutIfPresent(NativeRdb::ValuesBucket& values, const std::stri
     }
 }
 
-template<typename T>
+template<typename T, typename U>
 void CloneRestore::PutWithDefault(NativeRdb::ValuesBucket& values, const std::string& columnName,
-    const std::optional<T>& optionalValue, const T& defaultValue)
+    const std::optional<T>& optionalValue, const U& defaultValue)
 {
     if (optionalValue.has_value()) {
         PutIfPresent(values, columnName, optionalValue);
     } else {
-        PutIfPresent(values, columnName, std::optional<T>(defaultValue));
+        PutIfPresent(values, columnName, std::optional<T>(static_cast<T>(defaultValue)));
     }
 }
 } // namespace Media

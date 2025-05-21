@@ -1038,8 +1038,8 @@ void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
         std::vector<std::string> tagIds;
         vector<PortraitAlbumInfo> portraitAlbumInfos = QueryPortraitAlbumInfos(offset,
             tagNameToDeleteSelection);
-        CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(maxAnalysisAlbumId_, tagNameToDeleteSelection,
-            tagIds, mediaLibraryRdb_), "Batch delete duplicate portrait album failed.");
+        CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(maxAnalysisAlbumId_,
+            tagNameToDeleteSelection, tagIds, mediaLibraryRdb_), "Batch delete duplicate portrait album failed.");
         InsertPortraitAlbum(portraitAlbumInfos);
     }
 

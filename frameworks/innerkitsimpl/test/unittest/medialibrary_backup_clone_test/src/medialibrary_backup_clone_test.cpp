@@ -2885,5 +2885,126 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_delete_dirty_files_in_
     QueryDirtyFileCount(result);
     EXPECT_EQ(result, 0);
 }
+
+void MediaLibraryBackupCloneTest::InsertSampleSearchIndexData(const std::shared_ptr<NativeRdb::RdbStore>& db,
+    int32_t fileId, const std::string& data, const std::string& displayName, double latitude, double longitude,
+    int64_t dateModified, int32_t photoStatus, int32_t cvStatus, int32_t geoStatus, int32_t version,
+    const std::string& systemLanguage)
+{
+    ValuesBucket values;
+    values.PutInt(SEARCH_IDX_COL_FILE_ID, fileId);
+    values.PutString(SEARCH_IDX_COL_DATA, data);
+    values.PutString(SEARCH_IDX_COL_DISPLAY_NAME, displayName);
+    values.PutDouble(SEARCH_IDX_COL_LATITUDE, latitude);
+    values.PutDouble(SEARCH_IDX_COL_LONGITUDE, longitude);
+    values.PutLong(SEARCH_IDX_COL_DATE_MODIFIED, dateModified);
+    values.PutInt(SEARCH_IDX_COL_PHOTO_STATUS, photoStatus);
+    values.PutInt(SEARCH_IDX_COL_CV_STATUS, cvStatus);
+    values.PutInt(SEARCH_IDX_COL_GEO_STATUS, geoStatus);
+    values.PutInt(SEARCH_IDX_COL_VERSION, version);
+    values.PutString(SEARCH_IDX_COL_SYSTEM_LANGUAGE, systemLanguage);
+
+    int64_t rowId;
+    int ret = db->Insert(rowId, ANALYSIS_SEARCH_INDEX_TABLE, values);
+    ASSERT_EQ(ret, NativeRdb::E_OK);
+    MEDIA_INFO_LOG("Inserted sample search index data: fileId=%{public}d", fileId);
+}
+
+void MediaLibraryBackupCloneTest::VerifySearchIndexRestore(const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
+    const std::unordered_map<int32_t, PhotoInfo>& photoInfoMap)
+{
+    if (!destRdb) {
+        FAIL() << "Destination RDB store is null for verification";
+        return;
+    }
+
+    std::string querySql = "SELECT " + SEARCH_IDX_COL_FILE_ID + ", " + SEARCH_IDX_COL_ID +
+                           " FROM " + ANALYSIS_SEARCH_INDEX_TABLE;
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(destRdb, querySql);
+    ASSERT_NE(resultSet, nullptr) << "Failed to query destination DB for verification";
+
+    std::unordered_map<int32_t, int> fileIdCounts;
+    std::unordered_map<int32_t, std::vector<int64_t>> fileIdToIds;
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t fileId = 0;
+        int64_t id = 0;
+        if (resultSet->GetInt(0, fileId) == NativeRdb::E_OK && resultSet->GetLong(1, id) == NativeRdb::E_OK) {
+            fileIdCounts[fileId]++;
+            fileIdToIds[fileId].push_back(id);
+            MEDIA_DEBUG_LOG("Verify: Found entry fileId: %{public}d, id: %{public}" PRId64, fileId, id);
+        }
+    }
+    resultSet->Close();
+
+    for (const auto& pair : fileIdCounts) {
+        int32_t fileId = pair.first;
+        bool foundInMap = false;
+        for (const auto& mapPair : photoInfoMap) {
+            if (mapPair.second.fileIdNew == fileId) {
+                foundInMap = true;
+                break;
+            }
+        }
+        ASSERT_TRUE(foundInMap) << "Unexpected fileId " << fileId << " found in destination DB";
+    }
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_search_index_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clone_restore_search_index_test_001");
+    ClearData();
+
+    CloneSource cloneSource;
+    vector<string> tableList = { ANALYSIS_SEARCH_INDEX_TABLE };
+    Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
+    CHECK_AND_RETURN_LOG(g_rdbStore != nullptr, "Destination RDB store (g_rdbStore) is null");
+
+    int32_t destInitialFileId = 500;
+    InsertSampleSearchIndexData(g_rdbStore->GetRaw(), destInitialFileId,
+        "initial dest data", "Initial Dest Photo.jpg",
+        10.0, 20.0, 1600000000000, 0, 0, 0, 1, "en");
+
+    int64_t maxSearchId = BackupDatabaseUtils::QueryMaxId(g_rdbStore->GetRaw(),
+        ANALYSIS_SEARCH_INDEX_TABLE, SEARCH_IDX_COL_ID);
+    MEDIA_INFO_LOG("Calculated maxSearchId_ from destination DB: %{public}" PRId64, maxSearchId);
+    ASSERT_GE(maxSearchId, 1) << "maxSearchId_ should be at least 1 after inserting initial data";
+
+    int32_t sourceOldFileId1 = 101;
+    int32_t sourceOldFileId2 = 102;
+    int32_t sourceOldFileId3 = 103;
+    int32_t sourceOldFileId4 = 104;
+
+    InsertSampleSearchIndexData(cloneSource.cloneStorePtr_, sourceOldFileId1,
+        "source data 1", "Source Photo 1.jpg",
+        34.0522, -118.2437, 1678886400000, 1, 2, 1, 1, "en");
+    InsertSampleSearchIndexData(cloneSource.cloneStorePtr_, sourceOldFileId2,
+        "source data 2", "Source Photo 2.jpg",
+        40.7128, -74.0060, 1678886401000, 0, 1, 0, 1, "zh");
+    InsertSampleSearchIndexData(cloneSource.cloneStorePtr_, sourceOldFileId3,
+        "source data 3 (new)", "Source Photo 3.jpg",
+        41.0, -75.0, 1678886402000, 0, 0, 0, 1, "fr");
+    InsertSampleSearchIndexData(cloneSource.cloneStorePtr_, sourceOldFileId4,
+        "source data 4 (maps to initial dest)", "Source Photo 4.jpg",
+        10.0, 20.0, 1678886403000, 0, 0, 0, 1, "es");
+
+    std::unordered_map<int32_t, OHOS::Media::PhotoInfo> photoInfoMap;
+    int32_t newFileId1 = 601;
+    int32_t newFileId2 = 602;
+    int32_t newFileId3 = 603;
+    int32_t newFileId4 = destInitialFileId;
+
+    photoInfoMap[sourceOldFileId1] = {.fileIdNew = newFileId1 };
+    photoInfoMap[sourceOldFileId2] = {.fileIdNew = newFileId2 };
+    photoInfoMap[sourceOldFileId3] = {.fileIdNew = newFileId3 };
+    photoInfoMap[sourceOldFileId4] = {.fileIdNew = newFileId4 };
+
+    SearchIndexClone searchIndexClone(cloneSource.cloneStorePtr_, g_rdbStore->GetRaw(), photoInfoMap, maxSearchId);
+    bool cloneSuccess = searchIndexClone.Clone();
+    ASSERT_TRUE(cloneSuccess) << "SearchIndexClone::Clone failed";
+    VerifySearchIndexRestore(g_rdbStore->GetRaw(), photoInfoMap);
+
+    MEDIA_INFO_LOG("End medialibrary_backup_clone_restore_search_index_test_001");
+}
 } // namespace Media
 } // namespace OHOS
