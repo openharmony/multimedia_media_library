@@ -180,6 +180,7 @@ int32_t UpgradeRestore::HandleXmlNode(xmlNodePtr cur)
             if (value != nullptr) {
                 fileMinSize_ = StringToInt((const char *)(value));
                 xmlFree(value);
+                xmlFree(name);
                 return E_SUCCESS;
             }
             xmlFree(name);
