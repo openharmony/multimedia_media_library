@@ -174,6 +174,21 @@ MEDIALIB_PHOTO_ERROR_STATISTIC:
   PHOTO_ERROR_TYPE: {type: INT32, arrsize: 5, desc: User image fault type}
   PHOTO_ERROR_COUNT: {type: INT32, arrsize: 5, desc: Number of user image fault types}
 
+MEDIALIB_PHOTO_RESOLUTION_INFO:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: Image and video resolution statistics, preserve: true }
+  LOCAL_IMAGE_RESOLUTION: { type: STRING, desc: Resolution size statistics of local images }
+  LOCAL_VIDEO_RESOLUTION: { type: STRING, desc: Resolution size statistics of local video }
+  CLOUD_IMAGE_RESOLUTION: { type: STRING, desc: Resolution size statistics of cloud images }
+  CLOUD_VIDEO_RESOLUTION: { type: STRING, desc: Resolution size statistics of cloud video }
+
+MEDIALIB_PHOTO_SIZE_INFO:
+  __BASE: { type: STATISTIC, level: CRITICAL, desc: Image and video size statistics, preserve: true }
+  LOCAL_IMAGE_SIZE: { type: STRING, desc: Local image file size statistics }
+  LOCAL_VIDEO_SIZE: { type: STRING, desc: Local video file size statistics }
+  CLOUD_IMAGE_SIZE: { type: STRING, desc: Cloud image file size statistics }
+  CLOUD_VIDEO_SIZE: { type: STRING, desc: Cloud video file size statistics }
+  PHOTO_MIMETYPE: { type: STRING, desc: Distribution statistics of image types }
+
 MEDIALIB_CUSTOM_RESTORE:
   __BASE: {type: STATISTIC, level: CRITICAL, desc: Report the data transfer result after Upgrade Restore task, preserve: true }
   CUSTOM_RESTORE_PACKAGE_NAME: { type: STRING, desc: custorm restore package name }
