@@ -36,8 +36,9 @@ enum class PhotoPermissionType : int32_t {
     PERSIST_READ_IMAGEVIDEO,
     TEMPORARY_WRITE_IMAGEVIDEO,
     TEMPORARY_READWRITE_IMAGEVIDEO,
-    PERSIST_READWRITE_IMAGEVIDEO,
+    PERSIST_READWRITE_IMAGEVIDEO, // Internal reserved value, not open to the public
     PERSIST_WRITE_IMAGEVIDEO,
+    GRANT_PERSIST_READWRITE_IMAGEVIDEO,
 };
 
 enum class HideSensitiveType : int32_t {
@@ -180,8 +181,9 @@ private:
 
     int32_t userId_;
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
-    int32_t CheckPhotoUriPermissionQueryOperation(const DataShare::DataSharePredicates &predicates,
-        std::map<string, int32_t> &resultMap);
+    int32_t QueryGrantedIndex(const DataShare::DataSharePredicates &predicates,
+        const std::vector<std::string> &urisSource, const std::vector<int32_t> &indexVec,
+        std::vector<int32_t> &grantedIndex);
     int32_t GetPhotoUrisPermission(uint32_t targetTokenId, const std::vector<string> &uris,
         PhotoPermissionType photoPermissionType, std::vector<bool> &result);
     bool ForceReconnect();
