@@ -2924,6 +2924,11 @@ static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds)
     if (changedAlbumIds.size() <= 0) {
         return;
     }
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Can not get rdbstore");
+        return;
+    }
     for (int32_t albumId : changedAlbumIds) {
         MEDIA_DEBUG_LOG("NotifyPortraitAlbum album id is %{public}d", albumId);
         PhotoAlbumType type;
@@ -2933,8 +2938,6 @@ static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds)
             MEDIA_ERR_LOG("Get album type and subType by album id failed");
             continue;
         }
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-        CHECK_AND_CONTINUE_ERR_LOG(rdbStore != nullptr, "Failed to get rdbStore.");
 
         if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
             MediaLibraryRdbUtils::UpdateUserAlbumInternal(
@@ -2947,6 +2950,7 @@ static void NotifyPhotoAlbum(const vector<int32_t> &changedAlbumIds)
         }
     }
     MediaLibraryRdbUtils::UpdateSystemAlbumExcludeSource(true);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
 }
 
 int32_t MediaLibraryAssetOperations::DeleteNormalPhotoPermanently(shared_ptr<FileAsset> &fileAsset)
