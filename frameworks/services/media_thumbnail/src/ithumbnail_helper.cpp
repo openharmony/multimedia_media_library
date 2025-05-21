@@ -67,7 +67,7 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
     }
     DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
-    CHECK_AND_RETURN_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
 
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
@@ -80,7 +80,7 @@ void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
     }
     DoCreateLcd(data->opts_, data->thumbnailData_);
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
-    CHECK_AND_RETURN_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
 }
 
 void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -91,7 +91,7 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
     }
     DoCreateThumbnail(data->opts_, data->thumbnailData_);
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
-    CHECK_AND_RETURN_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -103,7 +103,7 @@ void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
     bool isSuccess = DoCreateAstc(data->opts_, data->thumbnailData_);
     CacheThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
-    CHECK_AND_RETURN_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
     MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime,
         data->thumbnailData_.stats.scene, AstcGenScene::NOCHARGING_SCREENOFF, data->thumbnailData_.id);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
@@ -117,7 +117,7 @@ void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
     }
     DoCreateAstcEx(data->opts_, data->thumbnailData_);
     int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
-    CHECK_AND_RETURN_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
