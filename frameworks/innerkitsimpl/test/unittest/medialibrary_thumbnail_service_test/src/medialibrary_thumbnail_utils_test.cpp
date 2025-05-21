@@ -185,7 +185,7 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, UpdateHighlightInfo_test_001, TestSize.
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailUtilsTest, CacheVisitTime, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailUtilsTest, CacheVisitTime_test_001, TestSize.Level0)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
