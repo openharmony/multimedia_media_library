@@ -28,6 +28,7 @@ public:
     ThumbnailGenerationPostProcess() = delete;
     virtual ~ThumbnailGenerationPostProcess() = delete;
     EXPORT static int32_t PostProcess(const ThumbnailData& data, const ThumbRdbOpt& opts);
+
 private:
     EXPORT static int32_t UpdateCachedRdbValue(const ThumbnailData& data, const ThumbRdbOpt& opts);
     EXPORT static bool HasGeneratedThumb(const ThumbnailData& data); // do not check lcd
