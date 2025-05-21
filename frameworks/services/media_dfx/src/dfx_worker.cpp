@@ -87,6 +87,7 @@ static void HandleLoopTask(DfxData *data)
         prefs->FlushSync();
     }
     CloudMediaAssetManager::GetInstance().CheckStorageAndRecoverDownloadTask();
+    CloudMediaAssetManager::GetInstance().CheckCloudSyncStatus();
 }
 
 void DfxWorker::Prepare()

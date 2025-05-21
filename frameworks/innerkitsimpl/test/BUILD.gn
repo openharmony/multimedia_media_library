@@ -20,7 +20,6 @@ group("test") {
     "unittest/media_albums_refresh_test:unittest",
     "unittest/media_analysis_extension_test:unittest",
     "unittest/media_asset_change_request_impl_test:unittest",
-    "unittest/media_asset_change_request_test:unittest",
     "unittest/media_asset_test:unittest",
     "unittest/media_datashare_ext_ability_test:unittest",
     "unittest/media_event_test:unittest",

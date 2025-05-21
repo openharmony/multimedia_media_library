@@ -156,6 +156,7 @@ const std::string GALLERY_FACE_TABLE_JOIN_TAG = GALLERY_TABLE_MERGE_FACE + " INN
 // Path related
 const std::string INTERNAL_PREFIX = "/storage/emulated";
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
+constexpr int32_t SD_PREFIX_LEVEL = 3;
 const std::string APP_TWIN_DATA_PREFIX = "/AppTwinData";
 const std::string CLONE_STAT_EDIT_DATA_DIR = "/storage/media/local/files/.editData/";
 const std::string CLONE_STAT_RDB_DIR = "/data/storage/el2/database/rdb/";

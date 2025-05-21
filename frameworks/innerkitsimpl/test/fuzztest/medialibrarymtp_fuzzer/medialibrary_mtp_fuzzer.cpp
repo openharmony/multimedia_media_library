@@ -521,7 +521,8 @@ static void MtpDriverTest(const uint8_t* data, size_t size)
     vector<uint8_t> buffer = FuzzVectorUInt8(data, size);
     uint32_t sizeBuf = buffer.size();
     mtpDriver->Read(buffer, sizeBuf);
-    mtpDriver->Write(buffer, sizeBuf);
+    int32_t result;
+    mtpDriver->Write(buffer, sizeBuf, result);
 
     MtpFileRange mfr;
     mtpDriver->SendObj(mfr);
@@ -1345,7 +1346,8 @@ static void PtpHaveMovingPhotesHandleTest(const uint8_t* data, size_t size)
     shared_ptr<UInt32List> outHandles = make_shared<UInt32List>(FuzzVectorUInt32(data + offset, size));
     offset += sizeof(uint32_t);
     const uint32_t parent = FuzzUInt32(data + offset, size);
-    ptpMediaLib_->HaveMovingPhotesHandle(resultSet, outHandles, parent);
+    FileCountInfo fileCountInfo;
+    ptpMediaLib_->HaveMovingPhotesHandle(resultSet, outHandles, parent, fileCountInfo);
     ptpMediaLib_->GetSizeFromOfft(size);
     ptpMediaLib_->GetBurstKeyFromPhotosInfo();
 }

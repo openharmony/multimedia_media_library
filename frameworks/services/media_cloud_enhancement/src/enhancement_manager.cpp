@@ -121,6 +121,17 @@ static int32_t CheckResultSet(shared_ptr<NativeRdb::ResultSet> &resultSet)
     return E_OK;
 }
 
+static int32_t CheckPhotoStatus(shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+    int32_t movingPhotoEffectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
+    if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        movingPhotoEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT)) {
+            return E_FAIL;
+    }
+    return E_OK;
+}
+
 static void GenerateCancelAllUpdatePredicates(int32_t fileId,
     NativeRdb::RdbPredicates &updatePredicates)
 {
@@ -637,13 +648,8 @@ int32_t EnhancementManager::HandleAutoAddOperation(bool isReboot)
     }
     while (resultSet->GoToNextRow() == E_OK) {
         string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
-        int32_t subType = GetInt32Val(MediaColumn::PHOTO_SUBTYPE, resultSet);
-        int32_t movingPhotoEffectMode = GetInt32Val(MediaColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
-        if (subType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) && 
-            movingPhotoEffectMode != static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START))
-        {
-            MEDIA_INFO_LOG("HandleAutoAddOperation picture can not addOperation photo_id: %{public}s",
-                photoId.c_str());
+        if (CheckPhotoStatus(resultSet) != E_OK) {
+            MEDIA_INFO_LOG("addOperation failed photo_id: %{public}s", photoId.c_str());
             continue;
         }
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);

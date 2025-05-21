@@ -17,6 +17,7 @@
 #include "media_log.h"
 #include "media_mtp_utils.h"
 #include "medialibrary_tracer.h"
+#include "mtp_dfx_reporter.h"
 #include "mtp_operation_utils.h"
 #include "mtp_packet_tools.h"
 #include <fcntl.h>
@@ -95,12 +96,20 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
     outBuffer.resize(outReadSize);
 
     tracer.Start("MTP usbfnMtpInterface->Read");
+    auto startTime = std::chrono::high_resolution_clock::now();
     auto ret = usbfnMtpInterface->Read(outBuffer);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<uint16_t, std::milli> duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     tracer.Finish();
 
     MEDIA_DEBUG_LOG("MtpDriver::Read end ret:%{public}d", ret);
     if (ret != 0) {
         outReadSize = 0;
+        int offset = 0;
+        uint16_t operationCode = MtpPacketTool::GetUInt16(outBuffer[offset + OFFSET_6], outBuffer[offset + OFFSET_7]);
+        MtpDfxReporter::GetInstance().DoSendResponseResultDfxReporter(operationCode, ret,
+            duration.count(), OperateMode::readmode);
         MEDIA_ERR_LOG("MtpDriver::Read Out Error: %{public}d", ret);
         return ret;
     }
@@ -109,7 +118,7 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
     return MTP_SUCCESS;
 }
 
-void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize)
+void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize, int32_t &result)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MTP MtpDriver::Write");
@@ -122,6 +131,7 @@ void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize)
     tracer.Finish();
 
     bufferSize = static_cast<uint32_t>(ret);
+    result = ret;
     MEDIA_DEBUG_LOG("MtpDriver::Write end, ret:%{public}d", ret);
 }
 

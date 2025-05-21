@@ -68,11 +68,12 @@ void GeoKnowledgeRestore::Init(int32_t sceneCode, std::string taskId,
     systemLanguage_ = Global::I18n::LocaleConfig::GetSystemLanguage();
 }
 
-void GeoKnowledgeRestore::RestoreGeoKnowledgeInfos()
+void GeoKnowledgeRestore::RestoreGeo(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
 {
-    bool cond = (galleryRdb_ == nullptr || mediaLibraryRdb_ == nullptr);
-    CHECK_AND_RETURN_LOG(!cond, "rdbStore is nullptr");
+    CHECK_AND_RETURN_LOG(galleryRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr");
     GetGeoKnowledgeInfos();
+    RestoreMaps(photoInfoMap);
+    ReportGeoRestoreTask();
 }
 
 void GeoKnowledgeRestore::GetGeoKnowledgeInfos()
@@ -80,7 +81,7 @@ void GeoKnowledgeRestore::GetGeoKnowledgeInfos()
     const std::string QUERY_SQL = "SELECT " + LATITUDE + ", " + LONGITUDE + ", " + LOCATION_KEY + ", " + LANGUAGE + ", "
         + COUNTRY + ", " + ADMIN_AREA + ", " + SUB_ADMIN_AREA + ", " + LOCALITY + ", " + SUB_LOCALITY + ", "
         + THOROUGHFARE + ", " + SUB_THOROUGHFARE + ", " + FEATURE_NAME + " "
-        "FROM t_geo_knowledge WHERE COALESCE(" + LANGUAGE + ", '') <> ' ' LIMIT ?, ?";
+        "FROM t_geo_knowledge WHERE COALESCE(" + LANGUAGE + ", '') <> ' ' AND rowid > ? ORDER BY rowid LIMIT ?";
     int rowCount = 0;
     int offset = 0;
     do {
@@ -109,20 +110,41 @@ void GeoKnowledgeRestore::GetGeoKnowledgeInfos()
     } while (rowCount > 0);
 }
 
-void GeoKnowledgeRestore::RestoreMaps(std::vector<FileInfo> &fileInfos)
+void GeoKnowledgeRestore::RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
 {
-    if (mediaLibraryRdb_ == nullptr) {
+    if (mediaLibraryRdb_ == nullptr || galleryRdb_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         batchCnt_ = 0;
         return;
     }
-    std::vector<std::string> fileIds;
-    std::vector<NativeRdb::ValuesBucket> values;
-    BatchQueryPhoto(fileInfos);
-    for (const auto &fileInfo : fileInfos) {
-        std::string fileIdString = UpdateMapInsertValues(values, fileInfo);
-        CHECK_AND_EXECUTE(fileIdString == NOT_MATCH, fileIds.push_back(fileIdString));
-    }
+    std::string querySql = "SELECT _id, latitude, longitude FROM gallery_media "
+        "WHERE (ABS(latitude) >= 1e-15 OR ABS(longitude) >= 1e-15) AND _id > ? ORDER BY _id ASC LIMIT ?;";
+    int rowCount = 0;
+    int offset = 0;
+    do {
+        std::vector<std::string> fileIds;
+        std::vector<NativeRdb::ValuesBucket> values;
+        std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
+        auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_, querySql, params);
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            GeoMapInfo geoMapInfo;
+            geoMapInfo.fileIdOld = GetInt32Val("_id", resultSet);
+            offset = geoMapInfo.fileIdOld;
+            CHECK_AND_CONTINUE(photoInfoMap.find(geoMapInfo.fileIdOld) != photoInfoMap.end());
+            geoMapInfo.photoInfo = photoInfoMap.at(geoMapInfo.fileIdOld);
+            geoMapInfo.latitude = GetInt64Val("latitude", resultSet);
+            geoMapInfo.longitude = GetInt64Val("longitude", resultSet);
+            std::string fileIdString = UpdateMapInsertValues(values, geoMapInfo);
+            CHECK_AND_EXECUTE(fileIdString == NOT_MATCH, fileIds.push_back(fileIdString));
+        }
+        resultSet->GetRowCount(rowCount);
+        resultSet->Close();
+        UpdateMaps(values, fileIds);
+    } while (rowCount == PAGE_SIZE);
+}
+
+void GeoKnowledgeRestore::UpdateMaps(std::vector<NativeRdb::ValuesBucket> &values, std::vector<std::string> &fileIds)
+{
     int64_t rowNum = 0;
     int32_t errCodeGeo = BatchInsertWithRetry("tab_analysis_geo_knowledge", values, rowNum);
     if (errCodeGeo != E_OK) {
@@ -149,66 +171,30 @@ void GeoKnowledgeRestore::RestoreMaps(std::vector<FileInfo> &fileInfos)
     batchCnt_ = 0;
 }
 
-void GeoKnowledgeRestore::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
-{
-    std::stringstream querySql;
-    querySql << "SELECT " + FILE_ID + ", " + DATA + " FROM Photos WHERE " + DATA + " IN (";
-    std::vector<NativeRdb::ValueObject> params;
-    int32_t count = 0;
-    for (const auto &fileInfo : fileInfos) {
-        // no need query or alreay queried
-        bool cond = ((fabs(fileInfo.latitude) < DOUBLE_EPSILON && fabs(fileInfo.latitude) < DOUBLE_EPSILON)
-            || fileInfo.fileIdNew > 0);
-        CHECK_AND_CONTINUE(!cond);
-        querySql << (count++ > 0 ? "," : "");
-        querySql << "?";
-        params.push_back(fileInfo.cloudPath);
-    }
-    querySql << ")";
-    auto resultSet = mediaLibraryRdb_->QuerySql(querySql.str(), params);
-    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
-
-    std::vector<NativeRdb::ValuesBucket> values;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t fileId = GetInt32Val(FILE_ID, resultSet);
-        std::string data = GetStringVal(DATA, resultSet);
-        auto it = std::find_if(fileInfos.begin(), fileInfos.end(),
-            [data](const FileInfo& info) {
-                return info.cloudPath == data;
-            });
-        CHECK_AND_CONTINUE(it != fileInfos.end());
-        it->fileIdNew = fileId;
-    }
-    resultSet->Close();
-}
-
 std::string GeoKnowledgeRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values,
-    const FileInfo &fileInfo)
+    const GeoMapInfo &geoMapInfo)
 {
     // no need restore or info missing
-    bool cond =  ((fabs(fileInfo.latitude) < DOUBLE_EPSILON && fabs(fileInfo.latitude) < DOUBLE_EPSILON)
-    || fileInfo.fileIdNew <= 0);
-    CHECK_AND_RETURN_RET(!cond, NOT_MATCH);
-    return UpdateByGeoLocation(values, fileInfo, fileInfo.latitude, fileInfo.longitude);
+    CHECK_AND_RETURN_RET(geoMapInfo.photoInfo.fileIdNew > 0, NOT_MATCH);
+    return UpdateByGeoLocation(values, geoMapInfo);
 }
 
 std::string GeoKnowledgeRestore::UpdateByGeoLocation(
-    std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo, const double latitude,
-    const double longitude)
+    std::vector<NativeRdb::ValuesBucket> &values, const GeoMapInfo &geoMapInfo)
 {
     std::string language = systemLanguage_;
     CHECK_AND_EXECUTE(!language.empty(), language = DOUBLE_CH);
     language = (language == SINGLE_EN) ? DOUBLE_EN : DOUBLE_CH;
 
     auto it = std::find_if(albumInfos_.begin(), albumInfos_.end(),
-        [latitude, longitude, language](const GeoKnowledgeInfo& info) {
-            return std::fabs(info.latitude - latitude) < 0.0001
-        && std::fabs(info.longitude - longitude) < 0.0001 && info.language == language;
+        [geoMapInfo, language](const GeoKnowledgeInfo& info) {
+            return std::fabs(info.latitude - geoMapInfo.latitude) < 0.0001
+        && std::fabs(info.longitude - geoMapInfo.longitude) < 0.0001 && info.language == language;
         });
     CHECK_AND_RETURN_RET(it != albumInfos_.end(), NOT_MATCH);
-    values.push_back(GetMapInsertValue(it, fileInfo.fileIdNew));
+    values.push_back(GetMapInsertValue(it, geoMapInfo.photoInfo.fileIdNew));
     batchCnt_++;
-    return std::to_string(fileInfo.fileIdNew);
+    return std::to_string(geoMapInfo.photoInfo.fileIdNew);
 }
 
 NativeRdb::ValuesBucket GeoKnowledgeRestore::GetMapInsertValue(std::vector<GeoKnowledgeInfo>::iterator it,

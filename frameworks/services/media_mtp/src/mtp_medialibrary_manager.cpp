@@ -79,6 +79,10 @@ const std::string MOVING_PHOTO_SUFFIX = ".mp4";
 constexpr int32_t MILLI_TO_SECOND = 1000;
 constexpr int32_t PATH_TIMEVAL_MAX = 2;
 constexpr int32_t MOVING_PHOTO_TYPE = 3;
+constexpr int32_t BURST_COVER_LEVEL_INT = 1;
+constexpr int32_t MEDIA_PHOTO_TYPE = 1;
+constexpr int32_t MEDIA_VIDEO_TYPE = 2;
+constexpr int32_t ALBUM_NAME_MAX = 70;
 namespace {
 std::vector<std::string> g_photoColumns = {
     MediaColumn::MEDIA_ID + " + " + to_string(COMMON_PHOTOS_OFFSET) + " as " + MEDIA_DATA_DB_ID,
@@ -94,6 +98,7 @@ std::vector<std::string> g_photoColumns = {
     PhotoColumn::PHOTO_THUMB_SIZE,
     PhotoColumn::PHOTO_BURST_KEY,
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
+    PhotoColumn::PHOTO_BURST_COVER_LEVEL,
 };
 const std::string ZERO = "0";
 } // namespace
@@ -407,7 +412,7 @@ vector<string> MtpMedialibraryManager::GetBurstKeyFromPhotosInfo()
 }
 
 int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShare::DataShareResultSet> resultSet,
-    shared_ptr<UInt32List> &outHandles, const uint32_t parent)
+    shared_ptr<UInt32List> &outHandles, const uint32_t parent, FileCountInfo &fileCountInfo)
 {
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet is nullptr");
 
@@ -419,12 +424,27 @@ int32_t MtpMedialibraryManager::HaveMovingPhotesHandle(const shared_ptr<DataShar
             continue;
         }
         int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
+        int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
         int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
         if (MtpDataUtils::IsMtpMovingPhoto(subtype, effectMode)) {
             uint32_t videoId = id + (COMMON_MOVING_OFFSET - COMMON_PHOTOS_OFFSET);
             outHandles->push_back(videoId);
+            fileCountInfo.livePhotoCount++;
+        } else if (subtype == static_cast<int32_t>(PhotoSubType::BURST)) {
+            int32_t burstCoverLevel = GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet);
+            if (burstCoverLevel == BURST_COVER_LEVEL_INT) {
+                fileCountInfo.burstCount++;
+            }
+            fileCountInfo.burstTotalCount++;
+        } else if (mediaType == MEDIA_PHOTO_TYPE) {
+            fileCountInfo.normalCount++;
+        } else if (mediaType == MEDIA_VIDEO_TYPE) {
+            fileCountInfo.videoCount++;
+        } else {
+            MEDIA_ERR_LOG("MtpMedialibraryManager::HaveMovingPhotesHandle mediaType is not photo or video");
         }
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    fileCountInfo.pictureCount = fileCountInfo.normalCount + fileCountInfo.livePhotoCount + fileCountInfo.burstCount;
     return E_SUCCESS;
 }
 
@@ -457,7 +477,9 @@ int32_t MtpMedialibraryManager::GetHandles(const shared_ptr<MtpOperationContext>
         return MtpErrorUtils::SolveGetHandlesError(E_SUCCESS);
     }
     resultSet = GetPhotosInfo(context, true);
-    errCode = HaveMovingPhotesHandle(resultSet, outHandles, context->parent);
+    FileCountInfo fileCountInfo;
+    errCode = HaveMovingPhotesHandle(resultSet, outHandles, context->parent, fileCountInfo);
+    CountPhotosNumber(context, fileCountInfo);
     return MtpErrorUtils::SolveGetHandlesError(errCode);
 }
 
@@ -575,7 +597,7 @@ int32_t MtpMedialibraryManager::SetObject(const std::shared_ptr<DataShare::DataS
         }
         outObjectInfo->handle = HandleConvertToAdded(context->handle);
         outObjectInfo->name = GetMovingPhotoVideoDisplayName(displayName, sourcePath);
-        outObjectInfo->parent = GetInt32Val(MediaColumn::MEDIA_PARENT_ID, resultSet);
+        outObjectInfo->parent = static_cast<uint32_t>(GetInt32Val(MediaColumn::MEDIA_PARENT_ID, resultSet));
         outObjectInfo->storageID = context->storageID;
         struct stat statInfo;
         CHECK_AND_RETURN_RET_LOG(stat(sourcePath.c_str(), &statInfo) == 0,
@@ -608,7 +630,7 @@ int32_t MtpMedialibraryManager::SetObjectInfo(const unique_ptr<FileAsset> &fileA
     } else {
         outObjectInfo->size = static_cast<uint32_t>(fileAsset->GetSize()); // need support larger than 4GB file
     }
-    outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetOwnerAlbumId());
+    outObjectInfo->parent = static_cast<uint32_t>(fileAsset->GetParent());
     outObjectInfo->dateCreated = fileAsset->GetDateAdded() / MILLI_TO_SECOND;
     outObjectInfo->dateModified = fileAsset->GetDateModified() / MILLI_TO_SECOND;
     outObjectInfo->storageID = DEFAULT_STORAGE_ID;
@@ -1626,5 +1648,47 @@ int32_t MtpMedialibraryManager::GetCopyObjectPath(uint32_t handle, PathMap &path
     return GetCopyPhotoObjectPath(handle, paths);
 }
 
+void MtpMedialibraryManager::CountPhotosNumber(const std::shared_ptr<MtpOperationContext> &context,
+    FileCountInfo &fileCountInfo)
+{
+    CHECK_AND_RETURN_LOG(context != nullptr, "context is nullptr");
+    string albumName;
+    int32_t errCode = GetAlbumName(context->parent, albumName);
+    CHECK_AND_RETURN_LOG(errCode == MTP_SUCCESS, "GetAlbumName failed");
+    if (albumName.empty()) {
+        MEDIA_ERR_LOG("GetAlbumName failed");
+    } else {
+        if (albumName.size() > ALBUM_NAME_MAX) {
+            albumName = albumName.substr(0, ALBUM_NAME_MAX);
+        }
+        fileCountInfo.albumName = albumName;
+    }
+    int32_t cloudPhotoCount = GetCloudPhotoCountFromAlbum(context);
+    fileCountInfo.onlyInCloudPhotoCount = (cloudPhotoCount < 0) ? 0 : cloudPhotoCount;
+    MtpDfxReporter::GetInstance().DoFileCountInfoStatistics(fileCountInfo);
+}
+
+int32_t MtpMedialibraryManager::GetCloudPhotoCountFromAlbum(const std::shared_ptr<MtpOperationContext> &context)
+{
+    CHECK_AND_RETURN_RET_LOG(context != nullptr, MTP_ERROR_STORE_NOT_AVAILABLE, "context is nullptr");
+    CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr, E_HAS_DB_ERROR,
+        "GetCloudPhotoCountFromAlbum fail to get datasharehelper");
+    Uri uri(PAH_QUERY_PHOTO);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(context->parent));
+    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, POSITION_CLOUD_FLAG);
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, MEDIA_PHOTO_TYPE);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper_->Query(uri, predicates, g_photoColumns);
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_HAS_DB_ERROR, "have no row");
+    int32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet->GetRowCount(count) == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Cannot get row count of resultset");
+    resultSet->Close();
+    return count;
+}
 }  // namespace Media
 }  // namespace OHOS

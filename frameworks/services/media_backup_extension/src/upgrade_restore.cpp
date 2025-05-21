@@ -52,7 +52,6 @@ namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
-constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int32_t RESTORE_CLOUD_QUERY_COUNT = 200;
 const std::string DB_INTEGRITY_CHECK = "ok";
 
@@ -89,10 +88,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         // gallery db may include both internal & external, set flag to differentiate, default false
         shouldIncludeSd_ = BackupFileUtils::ShouldIncludeSd(filePath_);
         backupDatabaseHelper_.Init(sceneCode_, shouldIncludeSd_, filePath_);
-        SetParameterForClone();
-#ifdef CLOUD_SYNC_MANAGER
-        FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
-#endif
+        SetCloneParameterAndStopSync();
     } else {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";
@@ -123,39 +119,9 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
 
 int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 {
-    if (isUpgrade && BaseRestore::Init() != E_OK) {
-        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
-            "InitDb And Xml fail, isUpgrade = " + std::to_string(isUpgrade));
-        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
-        return E_FAIL;
-    }
-    if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
-        MEDIA_ERR_LOG("Gallery media db is not exist.");
-    } else {
-        int32_t galleryErr = BackupDatabaseUtils::InitDb(galleryRdb_, GALLERY_DB_NAME, galleryDbPath_,
-            galleryAppName_, false);
-        if (galleryRdb_ == nullptr) {
-            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
-                "Gallery init rdb fail, err = " + std::to_string(galleryErr));
-            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
-            MEDIA_ERR_LOG("Gallery init rdb fail, err = %{public}d", galleryErr);
-            return E_FAIL;
-        }
-    }
+    int32_t errCode = InitDb(isUpgrade);
+    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
 
-    if (!MediaFileUtils::IsFileExists(audioDbPath_)) {
-        MEDIA_ERR_LOG("audio mediaInfo db is not exist.");
-    } else {
-        int32_t audioErr = BackupDatabaseUtils::InitDb(audioRdb_, AUDIO_DB_NAME, audioDbPath_,
-            audioAppName_, false);
-        if (audioRdb_ == nullptr) {
-            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
-                "audio init rdb fail, err = " + std::to_string(audioErr));
-            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
-            MEDIA_ERR_LOG("audio init rdb fail, err = %{public}d", audioErr);
-            return E_FAIL;
-        }
-    }
     ParseXml(xmlPath);
     this->photoAlbumRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
     this->photosRestore_.OnStart(this->mediaLibraryRdb_, this->galleryRdb_);
@@ -168,7 +134,7 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
 bool UpgradeRestore::HasLowQualityImage()
 {
     std::string sql = "SELECT count(1) AS count FROM gallery_media WHERE (local_media_id != -1) AND \
-        (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
+        (COALESCE(storage_id, 0) IN (0, 65537)) AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM \
         garbage_album WHERE type = 1) AND _size = 0 AND photo_quality = 0";
     int count = BackupDatabaseUtils::QueryInt(galleryRdb_, sql, CUSTOM_COUNT);
     MEDIA_INFO_LOG("HasLowQualityImage count:%{public}d", count);
@@ -247,6 +213,7 @@ int32_t UpgradeRestore::ParseXml(string path)
 
 void UpgradeRestore::RestoreAudio(void)
 {
+    int64_t startRestoreAudio = MediaFileUtils::UTCTimeMilliSeconds();
     if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
         if (!MediaFileUtils::IsFileExists(RESTORE_MUSIC_LOCAL_DIR)) {
             MEDIA_INFO_LOG("music dir is not exists!!!");
@@ -262,6 +229,8 @@ void UpgradeRestore::RestoreAudio(void)
     } else {
         MEDIA_INFO_LOG("restore mode no need to del external db");
     }
+    int64_t endRestoreAudio = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: RestoreAudio cost: %{public}" PRId64, endRestoreAudio - startRestoreAudio);
 }
 
 void UpgradeRestore::RestoreAudioFromFile()
@@ -352,6 +321,20 @@ int32_t UpgradeRestore::GetHighlightCloudMediaCnt()
     return cnt;
 }
 
+void UpgradeRestore::RestoreSmartAlbums()
+{
+    CHECK_AND_RETURN(sceneCode_ == UPGRADE_RESTORE_ID || sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID);
+    MEDIA_INFO_LOG("RestoreSmartAlbums start");
+    int64_t startRestoreGeo = MediaFileUtils::UTCTimeMilliSeconds();
+    geoKnowledgeRestore_.RestoreGeo(photoInfoMap_);
+    int64_t startRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
+    RestoreHighlightAlbums();
+    int64_t endRestoreHighlight = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: RestoreGeo cost: %{public}" PRId64 ", RestoreHighlight cost: %{public}" PRId64,
+        startRestoreHighlight - startRestoreGeo, endRestoreHighlight - startRestoreHighlight);
+    MEDIA_INFO_LOG("RestoreSmartAlbums end");
+}
+
 void UpgradeRestore::RestoreHighlightAlbums()
 {
     int32_t highlightCloudMediaCnt = GetHighlightCloudMediaCnt();
@@ -367,7 +350,7 @@ void UpgradeRestore::RestoreHighlightAlbums()
         || dualDeviceSoftName_.find("4", dualDeviceSoftName_.find(" ")) == dualDeviceSoftName_.find(" ") + 1)
         && (highlightCloudMediaCnt == 0 || IsCloudRestoreSatisfied())) {
         MEDIA_INFO_LOG("start to restore highlight albums");
-        highlightRestore_.RestoreAlbums(albumOdid_);
+        highlightRestore_.RestoreHighlight(albumOdid_, photoInfoMap_);
     }
 }
 
@@ -378,14 +361,22 @@ void UpgradeRestore::RestorePhotoInner()
         MEDIA_INFO_LOG("the isAccountValid is %{public}d, sync switch open is %{public}d", isAccountValid_,
             isSyncSwitchOn_);
         // upgrade gallery.db
+        int64_t startGalleryDbUpgrade = MediaFileUtils::UTCTimeMilliSeconds();
         DataTransfer::GalleryDbUpgrade().OnUpgrade(this->galleryRdb_);
+        int64_t startAnalyzeGallerySource = MediaFileUtils::UTCTimeMilliSeconds();
         AnalyzeGallerySource();
         InitGarbageAlbum();
+        int64_t startAlbumRestore = MediaFileUtils::UTCTimeMilliSeconds();
         // restore PhotoAlbum
         this->photoAlbumRestore_.Restore();
-        RestoreFromGalleryPortraitAlbum();
-        geoKnowledgeRestore_.RestoreGeoKnowledgeInfos();
-        RestoreHighlightAlbums();
+        int64_t startRestorePortrait = MediaFileUtils::UTCTimeMilliSeconds();
+        RestoreAnalysisAlbum();
+        int64_t endRestoreAlbums = MediaFileUtils::UTCTimeMilliSeconds();
+        MEDIA_INFO_LOG("TimeCost: GalleryDbUpgrade cost: %{public}" PRId64
+            ", AnalyzeGallerySource cost: %{public}" PRId64
+            ", photoAlbumRestore cost: %{public}" PRId64 ", RestorePortrait cost: %{public}" PRId64,
+            startAnalyzeGallerySource - startGalleryDbUpgrade, startAlbumRestore - startAnalyzeGallerySource,
+            startRestorePortrait - startAlbumRestore, endRestoreAlbums - startRestorePortrait);
         // restore Photos
         RestoreFromGallery();
         if (IsCloudRestoreSatisfied()) {
@@ -425,13 +416,18 @@ void UpgradeRestore::RestorePhoto()
     }
 
     if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        int64_t startUpdateFace = MediaFileUtils::UTCTimeMilliSeconds();
         UpdateFaceAnalysisStatus();
+        int64_t endUpdateFace = MediaFileUtils::UTCTimeMilliSeconds();
+        MEDIA_INFO_LOG("TimeCost: UpdateFaceAnalysisStatus cost: %{public}" PRId64, endUpdateFace - startUpdateFace);
     } else {
+        int64_t startUpdateDual = MediaFileUtils::UTCTimeMilliSeconds();
         UpdateDualCloneFaceAnalysisStatus();
+        int64_t endUpdateDual = MediaFileUtils::UTCTimeMilliSeconds();
+        MEDIA_INFO_LOG("TimeCost: UpdateDualCloneFaceAnalysisStatus cost: %{public}" PRId64,
+            endUpdateDual - startUpdateDual);
     }
-
-    geoKnowledgeRestore_.ReportGeoRestoreTask();
-    highlightRestore_.UpdateAlbums();
+    RestoreSmartAlbums();
     ReportPortraitStat(sceneCode_);
 
     int32_t restoreMode = BaseRestore::GetRestoreMode();
@@ -504,8 +500,8 @@ void UpgradeRestore::ProcessGalleryFailedOffsets()
     std::lock_guard<ffrt::mutex> lock(galleryFailedMutex_);
     size_t vectorLen = galleryFailedOffsets_.size();
     needReportFailed_ = true;
-    for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestoreBatch(galleryFailedOffsets_[offset]);
+    for (auto minId : galleryFailedOffsets_) {
+        RestoreBatch(minId);
     }
     galleryFailedOffsets_.clear();
 }
@@ -515,8 +511,8 @@ void UpgradeRestore::ProcessCloudGalleryFailedOffsets()
     std::lock_guard<ffrt::mutex> lock(galleryFailedMutex_);
     size_t vectorLen = galleryFailedOffsets_.size();
     needReportFailed_ = true;
-    for (size_t offset = 0; offset < vectorLen; offset++) {
-        RestoreBatchForCloud(galleryFailedOffsets_[offset]);
+    for (auto minId : galleryFailedOffsets_) {
+        RestoreBatchForCloud(minId);
     }
     galleryFailedOffsets_.clear();
 }
@@ -540,64 +536,138 @@ void UpgradeRestore::ProcessExternalFailedOffsets(int32_t maxId, bool isCamera, 
 
 void UpgradeRestore::RestoreFromGallery()
 {
+    MEDIA_INFO_LOG("RestoreFromGallery start");
     this->photosRestore_.LoadPhotoAlbums();
     HasLowQualityImage();
     // local count
     int32_t totalNumber = this->photosRestore_.GetGalleryMediaCount(this->shouldIncludeSd_, this->hasLowQualityImage_);
     MEDIA_INFO_LOG("local totalNumber = %{public}d", totalNumber);
     totalNumber_ += static_cast<uint64_t>(totalNumber);
+    std::vector<int32_t> minIds = GetLocalPhotoMinIds();
     MEDIA_INFO_LOG("onProcess Update totalNumber_: %{public}lld", (long long)totalNumber_);
+    int64_t startRestoreBatch = MediaFileUtils::UTCTimeMilliSeconds();
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     needReportFailed_ = false;
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset }, {},
+    for (auto minId : minIds) {
+        ffrt::submit([this, minId]() { RestoreBatch(minId); }, { &minId }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    int64_t endRestoreBatch = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: RestoreBatch cost: %{public}" PRId64, endRestoreBatch - startRestoreBatch);
     ProcessGalleryFailedOffsets();
+    MEDIA_INFO_LOG("RestoreFromGallery end");
 }
 
 void UpgradeRestore::RestoreCloudFromGallery()
 {
-    MEDIA_INFO_LOG("RestoreCloudFromGallery");
+    MEDIA_INFO_LOG("RestoreCloudFromGallery start");
     this->photosRestore_.LoadPhotoAlbums();
     // cloud count
     int32_t cloudMetaCount = this->photosRestore_.GetCloudMetaCount(this->shouldIncludeSd_, false);
+    std::vector<int32_t> minIds = GetCloudPhotoMinIds();
     MEDIA_INFO_LOG("the cloud count is %{public}d", cloudMetaCount);
+    int64_t startRestoreBatch = MediaFileUtils::UTCTimeMilliSeconds();
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     needReportFailed_ = false;
     totalNumber_ += static_cast<uint64_t>(cloudMetaCount);
-    for (int32_t offset = 0; offset < cloudMetaCount; offset += RESTORE_CLOUD_QUERY_COUNT) {
-        ffrt::submit([this, offset]() { RestoreBatchForCloud(offset); }, { &offset }, {},
+    for (auto minId : minIds) {
+        ffrt::submit([this, minId]() { RestoreBatchForCloud(minId); }, { &minId }, {},
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    int64_t endRestoreBatch = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: RestoreBatchForCloud cost: %{public}" PRId64, endRestoreBatch - startRestoreBatch);
     ProcessCloudGalleryFailedOffsets();
+    MEDIA_INFO_LOG("RestoreCloudFromGallery end");
 }
 
-void UpgradeRestore::RestoreBatchForCloud(int32_t offset)
+std::vector<int32_t> UpgradeRestore::GetCloudPhotoMinIds()
 {
-    std::vector<FileInfo> infos = QueryCloudFileInfos(offset);
+    int64_t startGetCloudPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<int32_t> minIds;
+    std::string querySql = "SELECT _id FROM ("
+        "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
+            "WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' "
+            "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
+                "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
+            "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
+            "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
+            "AND COALESCE(_data, '') <> '' AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
+        "WHERE (row_num - 1) % 200 = 0 ;";
+    std::vector<NativeRdb::ValueObject> params = { hasLowQualityImage_, shouldIncludeSd_ };
+    auto resultSet = galleryRdb_->QuerySql(querySql, params);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        minIds.emplace_back(GetInt32Val("_id", resultSet));
+    }
+    int64_t endGetCloudPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: GetCloudPhotoMinIds cost: %{public}" PRId64,
+        endGetCloudPhotoMinIds - startGetCloudPhotoMinIds);
+    return minIds;
+}
+
+std::vector<int32_t> UpgradeRestore::GetLocalPhotoMinIds()
+{
+    int64_t startGetLocalPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<int32_t> minIds;
+    std::string querySql = "SELECT _id FROM ("
+        "SELECT _id, ROW_NUMBER() OVER (ORDER BY _id ASC) AS row_num FROM gallery_media "
+            "WHERE (local_media_id != -1) "
+            "AND (relative_bucket_id IS NULL OR relative_bucket_id NOT IN ("
+                "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) "
+            "AND (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) "
+            "AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' "
+            "AND COALESCE(_data, '') <> '' AND (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537))) AS numbered "
+        "WHERE (row_num - 1) % 200 = 0 ;";
+    std::vector<NativeRdb::ValueObject> params = { hasLowQualityImage_, shouldIncludeSd_ };
+    auto resultSet = galleryRdb_->QuerySql(querySql, params);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        minIds.emplace_back(GetInt32Val("_id", resultSet));
+    }
+    int64_t endGetLocalPhotoMinIds = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: GetLocalPhotoMinIds cost: %{public}" PRId64,
+        endGetLocalPhotoMinIds - startGetLocalPhotoMinIds);
+    return minIds;
+}
+
+void UpgradeRestore::RestoreBatchForCloud(int32_t minId)
+{
+    int64_t startQueryFileInfos = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<FileInfo> infos = QueryCloudFileInfos(minId);
     MEDIA_INFO_LOG("the infos size is %{public}zu", infos.size());
+    int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     CHECK_AND_EXECUTE(InsertCloudPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
-        AddToGalleryFailedOffsets(offset));
+        AddToGalleryFailedOffsets(minId));
+    int64_t startUpdateAnalysisTotal = MediaFileUtils::UTCTimeMilliSeconds();
     this->tabOldPhotosRestore_.Restore(this->mediaLibraryRdb_, infos);
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
+    int64_t endUpdateAnalysisTotal = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: cloud QueryFileInfos cost: %{public}" PRId64 ", InsertPhoto cost: %{public}" PRId64
+        ", UpdateAnalysisTotal cost: %{public}" PRId64 ", minId: %{public}d", startInsertPhoto - startQueryFileInfos,
+        startUpdateAnalysisTotal - startInsertPhoto, endUpdateAnalysisTotal - startUpdateAnalysisTotal, minId);
 }
 
-void UpgradeRestore::RestoreBatch(int32_t offset)
+void UpgradeRestore::RestoreBatch(int32_t minId)
 {
-    MEDIA_INFO_LOG("start restore from gallery, offset: %{public}d", offset);
-    std::vector<FileInfo> infos = QueryFileInfos(offset);
+    MEDIA_INFO_LOG("start restore from gallery, minId: %{public}d", minId);
+    int64_t startQueryFileInfos = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<FileInfo> infos = QueryFileInfos(minId);
+    int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     CHECK_AND_EXECUTE(InsertPhoto(sceneCode_, infos, SourceType::GALLERY) == E_OK,
-        AddToGalleryFailedOffsets(offset));
+        AddToGalleryFailedOffsets(minId));
+    int64_t startUpdateAnalysisTotal = MediaFileUtils::UTCTimeMilliSeconds();
     auto fileIdPairs = BackupDatabaseUtils::CollectFileIdPairs(infos);
     BackupDatabaseUtils::UpdateAnalysisTotalTblStatus(mediaLibraryRdb_, fileIdPairs);
+    int64_t endUpdateAnalysisTotal = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: QueryFileInfos cost: %{public}" PRId64 ", InsertPhoto cost: %{public}" PRId64
+        ", UpdateAnalysisTotal cost: %{public}" PRId64 ", minId: %{public}d", startInsertPhoto - startQueryFileInfos,
+        startUpdateAnalysisTotal - startInsertPhoto, endUpdateAnalysisTotal - startUpdateAnalysisTotal, minId);
 }
 
 void UpgradeRestore::RestoreFromExternal(bool isCamera)
 {
+    int64_t startRestoreFromExternal = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("start restore from %{public}s", (isCamera ? "camera" : "others"));
     int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, isCamera ?
         QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, CUSTOM_MAX_ID);
@@ -616,6 +686,8 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
     }
     ffrt::wait();
     ProcessExternalFailedOffsets(maxId, isCamera, type);
+    int64_t endstat = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: RestoreFromExternal cost: %{public}" PRId64, endstat - startRestoreFromExternal);
 }
 
 void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)
@@ -637,15 +709,18 @@ int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 
 void UpgradeRestore::HandleRestData(void)
 {
+    int64_t startRestoreThumbnail = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("Start to handle rest data in native.");
     RestoreThumbnail();
-
+    int64_t endRestoreThumbnail = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: RestoreThumbnail cost: %{public}" PRId64, endRestoreThumbnail - startRestoreThumbnail);
     int32_t restoreMode = BaseRestore::GetRestoreMode();
     if (restoreMode != RESTORE_MODE_PROC_ALL_DATA && restoreMode != RESTORE_MODE_PROC_TWIN_DATA) {
         MEDIA_DEBUG_LOG("restore mode no need to del rest data");
         return;
     }
 
+    int64_t startDeleteDir = MediaFileUtils::UTCTimeMilliSeconds();
     std::string photoData = appDataPath_ + "/" + galleryAppName_;
     std::string mediaData = appDataPath_ + "/" + mediaAppName_;
     if (MediaFileUtils::IsFileExists(photoData)) {
@@ -657,15 +732,17 @@ void UpgradeRestore::HandleRestData(void)
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
     BackupFileUtils::DeleteSdDatabase(filePath_);
+    int64_t endDeleteDir = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: DeleteDir cost: %{public}" PRId64, endDeleteDir - startDeleteDir);
 }
 
-std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
+std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t minId)
 {
     std::vector<FileInfo> result;
     result.reserve(QUERY_COUNT);
     CHECK_AND_RETURN_RET_LOG(galleryRdb_ != nullptr, result, "galleryRdb_ is nullptr, Maybe init failed.");
     auto resultSet = this->photosRestore_.GetGalleryMedia(
-        offset, QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
+        minId, QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
@@ -674,13 +751,13 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
     return result;
 }
 
-std::vector<FileInfo> UpgradeRestore::QueryCloudFileInfos(int32_t offset)
+std::vector<FileInfo> UpgradeRestore::QueryCloudFileInfos(int32_t minId)
 {
     std::vector<FileInfo> result;
     result.reserve(RESTORE_CLOUD_QUERY_COUNT);
     CHECK_AND_RETURN_RET_LOG(galleryRdb_ != nullptr, result, "cloud galleryRdb_ is nullptr, Maybe init failed.");
     auto resultSet = this->photosRestore_.GetCloudGalleryMedia(
-        offset, RESTORE_CLOUD_QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
+        minId, RESTORE_CLOUD_QUERY_COUNT, this->shouldIncludeSd_, this->hasLowQualityImage_);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, result, "Query cloud resultSql is null.");
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
@@ -949,7 +1026,8 @@ bool UpgradeRestore::HasSameFileForDualClone(FileInfo &fileInfo)
 void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
 {
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    int64_t maxAlbumId = BackupDatabaseUtils::QueryMaxAlbumId(mediaLibraryRdb_);
+    maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
+        ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
     int32_t totalNumber = QueryPortraitAlbumTotalNumber();
     MEDIA_INFO_LOG("QueryPortraitAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
 
@@ -958,7 +1036,7 @@ void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
         std::vector<std::string> tagIds;
         vector<PortraitAlbumInfo> portraitAlbumInfos = QueryPortraitAlbumInfos(offset,
             tagNameToDeleteSelection);
-        CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(maxAlbumId, tagNameToDeleteSelection,
+        CHECK_AND_RETURN_LOG(BackupDatabaseUtils::DeleteDuplicatePortraitAlbum(maxAnalysisAlbumId_, tagNameToDeleteSelection,
             tagIds, mediaLibraryRdb_), "Batch delete duplicate portrait album failed.");
         InsertPortraitAlbum(portraitAlbumInfos);
     }
@@ -1433,6 +1511,59 @@ std::string UpgradeRestore::CheckGalleryDbIntegrity()
     MEDIA_INFO_LOG("end handle gallery integrity check, cost %{public}lld, size %{public}s.", \
         (long long)(dbIntegrityCheckTime), dbSize.c_str());
     return dbIntegrityCheck;
+}
+
+void UpgradeRestore::RestoreAnalysisAlbum()
+{
+    RestoreFromGalleryPortraitAlbum();
+}
+
+void UpgradeRestore::SetCloneParameterAndStopSync()
+{
+    SetParameterForClone();
+#ifdef CLOUD_SYNC_MANAGER
+    FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
+#endif
+}
+
+int32_t UpgradeRestore::InitDb(bool isUpgrade)
+{
+    if (isUpgrade && BaseRestore::Init() != E_OK) {
+        ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+            "InitDb And Xml fail, isUpgrade = " + std::to_string(isUpgrade));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        return E_FAIL;
+    }
+
+    if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
+        MEDIA_ERR_LOG("Gallery media db is not exist.");
+    } else {
+        int32_t galleryErr = BackupDatabaseUtils::InitDb(galleryRdb_, GALLERY_DB_NAME, galleryDbPath_,
+            galleryAppName_, false);
+        if (galleryRdb_ == nullptr) {
+            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+                "Gallery init rdb fail, err = " + std::to_string(galleryErr));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+            MEDIA_ERR_LOG("Gallery init rdb fail, err = %{public}d", galleryErr);
+            return E_FAIL;
+        }
+    }
+
+    if (!MediaFileUtils::IsFileExists(audioDbPath_)) {
+        MEDIA_ERR_LOG("audio mediaInfo db is not exist.");
+    } else {
+        int32_t audioErr = BackupDatabaseUtils::InitDb(audioRdb_, AUDIO_DB_NAME, audioDbPath_,
+            audioAppName_, false);
+        if (audioRdb_ == nullptr) {
+            ErrorInfo errorInfo(RestoreError::INIT_FAILED, 0, "",
+                "audio init rdb fail, err = " + std::to_string(audioErr));
+            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+            MEDIA_ERR_LOG("audio init rdb fail, err = %{public}d", audioErr);
+            return E_FAIL;
+        }
+    }
+
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

@@ -55,11 +55,12 @@ int MtpDriver::Read(std::vector<uint8_t> &outBuffer, uint32_t &outReadSize)
     return MTP_SUCCESS;
 }
 
-void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize)
+void MtpDriver::Write(std::vector<uint8_t> &buffer, uint32_t &bufferSize, int32_t &result)
 {
     MEDIA_INFO_LOG("MtpDriver::Write");
     MtpTest::GetInstance()->setOutBuffer(buffer);
     MtpPacketTool::Dump(buffer);
+    result = MTP_SUCCESS;
 }
 
 int MtpDriver::ReceiveObj(MtpFileRange &mfr)

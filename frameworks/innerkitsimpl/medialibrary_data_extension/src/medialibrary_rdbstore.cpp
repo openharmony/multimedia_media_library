@@ -4312,6 +4312,19 @@ static void AddFrontAnalysisColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddDcAnalysisColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + DC_INDEX_COUNT + " INT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + DC_OCR_COUNT + " INT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + DC_LABEL_COUNT + " INT DEFAULT 0",
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + DC_MODIFY_TIME_STAMP + " BIGINT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add DC analysis column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("Add DC analysis column end");
+}
+
 static void FixSourceAlbumCreateTriggersToUseLPath(RdbStore& store)
 {
     const vector<string> sqls = {
@@ -4465,6 +4478,17 @@ static void AddAssetAlbumOperationTableForSync(RdbStore &store)
     MEDIA_INFO_LOG("create asset and album operation table sync end");
 }
 
+static void UpgradeAnalysisUpdateSearchTrigger(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start upgrade analysis update search trigger");
+    const vector<string> sqls = {
+        "DROP TRIGGER IF EXISTS " + ANALYSIS_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end upgrade analysis update search trigger");
+}
+
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -4489,6 +4513,14 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
     
     if (oldVersion < VERSION_UPDATE_SEARCH_STATUS_TRIGGER_FOR_IS_FAVORITE) {
         UpdateSearchStatusTriggerForIsFavorite(store);
+    }
+
+    if (oldVersion < VERSION_UPGRADE_ANALYSIS_UPDATE_SEARCH_TRIGGER) {
+        UpgradeAnalysisUpdateSearchTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_DC_ANALYSIS) {
+        AddDcAnalysisColumn(store);
     }
 }
 
