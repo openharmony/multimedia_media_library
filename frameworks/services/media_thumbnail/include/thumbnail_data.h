@@ -179,7 +179,6 @@ public:
     EXPORT bool needResizeLcd {false};
     EXPORT bool isLocalFile {true};
     EXPORT bool isOpeningCloudFile {false};
-    EXPORT bool isNeedStoreSize {true};
     EXPORT bool isRegenerateStage {false};
     EXPORT bool needCheckWaitStatus {false};
     EXPORT bool needUpdateDb {true};

@@ -59,9 +59,11 @@ int32_t ThumbnailGenerationPostProcess::UpdateCachedRdbValue(const ThumbnailData
     int32_t changedRows;
     const string& photosTable = PhotoColumn::PHOTOS_TABLE;
     CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
+
+    ThumbnailUtils::StoreThumbnailSize(opts, data);
+
     CHECK_AND_RETURN_RET_LOG(opts.table == photosTable, false,
         "Not %{public}s table, table: %{public}s", photosTable.c_str(), opts.table.c_str());
-
     MediaLibraryTracer tracer;
     tracer.Start("UpdateCachedRdbValue opts.store->Update");
     err = opts.store->Update(changedRows, photosTable, data.rdbUpdateCache, MEDIA_DATA_DB_ID + " = ?", { data.id });

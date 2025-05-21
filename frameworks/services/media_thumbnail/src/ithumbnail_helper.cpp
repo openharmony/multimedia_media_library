@@ -607,10 +607,6 @@ void CacheLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     CHECK_AND_RETURN_INFO_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, "table: %{public}s, not photos table",
         opts.table.c_str());
-    if (data.isNeedStoreSize) {
-        ThumbnailUtils::StoreThumbnailSize(opts, data);
-    }
-    data.isNeedStoreSize = true;
 
     CHECK_AND_RETURN_LOG(ThumbnailUtils::CacheLcdInfo(opts, data), "CacheLcdInfo faild");
 }
@@ -1057,7 +1053,6 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
 {
     MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
         data.id.c_str(), DfxUtils::GetSafePath(data.path).c_str());
-    data.isNeedStoreSize = false;
     bool isPrevStepSuccess = true;
     if (!DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
