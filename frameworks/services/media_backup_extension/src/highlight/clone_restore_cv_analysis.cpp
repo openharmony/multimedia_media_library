@@ -143,14 +143,13 @@ void CloneRestoreCVAnalysis::RestoreAlbums(CloneRestoreHighlight &cloneHighlight
 void CloneRestoreCVAnalysis::RestoreAssetSdMap(CloneRestoreHighlight &cloneHighlight)
 {
     const std::string QUERY_SQL = "SELECT * FROM tab_analysis_asset_sd_map LIMIT ?, ?";
-    std::vector<NativeRdb::ValuesBucket> values;
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
+        std::vector<NativeRdb::ValuesBucket> values;
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
         CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
-
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t oldFileId = GetInt32Val("map_asset_source", resultSet);
             int32_t oldAssetId = GetInt32Val("map_asset_destination", resultSet);
@@ -162,8 +161,8 @@ void CloneRestoreCVAnalysis::RestoreAssetSdMap(CloneRestoreHighlight &cloneHighl
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
+        InsertIntoAssetSdMap(values);
     } while (rowCount == PAGE_SIZE);
-    InsertIntoAssetSdMap(values);
 }
 
 void CloneRestoreCVAnalysis::RestoreAlbumAssetMap(CloneRestoreHighlight &cloneHighlight)
@@ -171,14 +170,13 @@ void CloneRestoreCVAnalysis::RestoreAlbumAssetMap(CloneRestoreHighlight &cloneHi
     const std::string QUERY_SQL = "SELECT tab_analysis_album_asset_map.* FROM tab_analysis_album_asset_map "
         " INNER JOIN tab_highlight_album AS h ON tab_analysis_album_asset_map.map_album = h.id "
         " WHERE h.highlight_status > 0 LIMIT ?, ?";
-    std::vector<NativeRdb::ValuesBucket> values;
     int32_t rowCount = 0;
     int32_t offset = 0;
     do {
+        std::vector<NativeRdb::ValuesBucket> values;
         std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
         auto resultSet = BackupDatabaseUtils::QuerySql(mediaRdb_, QUERY_SQL, params);
         CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
-
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             int32_t oldAlbumId = GetInt32Val("map_album", resultSet);
             int32_t oldAssetId = GetInt32Val("map_asset", resultSet);
@@ -190,8 +188,8 @@ void CloneRestoreCVAnalysis::RestoreAlbumAssetMap(CloneRestoreHighlight &cloneHi
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
+        InsertIntoAlbumAssetMap(values);
     } while (rowCount == PAGE_SIZE);
-    InsertIntoAlbumAssetMap(values);
 }
 
 void CloneRestoreCVAnalysis::InsertIntoAssetSdMap(std::vector<NativeRdb::ValuesBucket> &values)
