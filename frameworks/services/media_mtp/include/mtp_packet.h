@@ -35,7 +35,7 @@ public:
     int Maker(bool isPayload);
 
     int Read();
-    int Write();
+    int Write(int32_t &result);
     void Init(std::shared_ptr<HeaderData> &headerData);
     void Init(std::shared_ptr<HeaderData> &headerData, std::shared_ptr<PayloadData> &payloadData);
     void Reset();

@@ -47,6 +47,8 @@ group("media_library_fuzztest") {
     "medialibrarymtppackettool_fuzzer:MediaLibraryMtpPacketToolFuzzTest",
     "medialibrarymtppayloaddata_fuzzer:MediaLibraryMtpPayLoadDataFuzzTest",
     "medialibrarymtpproperty_fuzzer:MediaLibraryMtpPropertyFuzzTest",
+    "medialibrarymultistagescapture_fuzzer:MediaLibraryMultistagesCaptureFuzzTest",
+    "medialibrarymultistagesdeferredcapture_fuzzer:MediaLibraryMultistagesDeferredCaptureFuzzTest",
     "medialibraryrefreshmanager_fuzzer:MediaLibraryRefreshManagerFuzzTest",
     "medialibraryrestore_fuzzer:MediaLibraryRestoreFuzzTest",
     "medialibrarythumbnail_fuzzer:MediaLibraryThumbnailFuzzTest",

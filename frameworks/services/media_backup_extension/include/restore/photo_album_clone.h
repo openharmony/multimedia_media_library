@@ -38,14 +38,18 @@ public:
     int32_t GetPhotoAlbumCountInOriginalDb();
     std::shared_ptr<NativeRdb::ResultSet> GetPhotoAlbumInOriginalDb(int32_t offset, int32_t pageSize);
 
-    bool HasSameAlbum(const std::string &lPath)
+    bool HasSameAlbum(const std::string &lPath, int32_t &albumId)
     {
         // Do not allow albums with empty lPath to be created.
         if (lPath.empty()) {
             return true;
         }
         PhotoAlbumDao::PhotoAlbumRowData albumInfo = this->photoAlbumDao_.GetPhotoAlbum(lPath);
-        return !albumInfo.lPath.empty();
+        if (albumInfo.lPath.empty()) {
+            return false;
+        }
+        albumId = albumInfo.albumId;
+        return true;
     }
     void TRACE_LOG(const std::string &tableName, std::vector<AlbumInfo> &albumInfos);
     void TRACE_LOG(std::vector<PhotoAlbumDao::PhotoAlbumRowData> &albumInfos);

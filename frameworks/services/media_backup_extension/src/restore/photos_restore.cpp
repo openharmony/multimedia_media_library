@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <string>
+#include <regex>
 #include <vector>
 
 #include "photos_restore.h"
@@ -22,6 +22,7 @@
 #include "rdb_store.h"
 #include "result_set_utils.h"
 #include "media_log.h"
+#include "moving_photo_file_utils.h"
 #include "photo_album_dao.h"
 #include "album_plugin_config.h"
 #include "backup_file_utils.h"
@@ -36,18 +37,18 @@ static const int32_t SINGLE_CLOUD_ENHANCEMENT_PHOTO = 120;
  * @brief Get the gallery_media to restore to Photos.
  */
 std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetGalleryMedia(
-    int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+    int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    return this->galleryMediaDao_.GetGalleryMedia(offset, pageSize, shouldIncludeSd, hasLowQualityImage);
+    return this->galleryMediaDao_.GetGalleryMedia(minId, pageSize, shouldIncludeSd, hasLowQualityImage);
 }
 
 /**
  * @brief Get the gallery_media for cloud to restore to Photos.
  */
 std::shared_ptr<NativeRdb::ResultSet> PhotosRestore::GetCloudGalleryMedia(
-    int32_t offset, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
+    int32_t minId, int pageSize, bool shouldIncludeSd, bool hasLowQualityImage)
 {
-    return this->galleryMediaDao_.GetCloudGalleryMedia(offset, pageSize, shouldIncludeSd, hasLowQualityImage);
+    return this->galleryMediaDao_.GetCloudGalleryMedia(minId, pageSize, shouldIncludeSd, hasLowQualityImage);
 }
 
 /**
@@ -180,7 +181,9 @@ int32_t PhotosRestore::FindBurstCoverLevel(const FileInfo &fileInfo)
 int32_t PhotosRestore::FindSubtype(const FileInfo &fileInfo)
 {
     CHECK_AND_RETURN_RET(fileInfo.burstKey.size() <= 0, static_cast<int32_t>(PhotoSubType::BURST));
-    CHECK_AND_RETURN_RET(!BackupFileUtils::IsLivePhoto(fileInfo), static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    CHECK_AND_RETURN_RET(!BackupFileUtils::IsLivePhoto(fileInfo) &&
+        !(fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)),
+        static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     return static_cast<int32_t>(PhotoSubType::DEFAULT);
 }
 
@@ -304,11 +307,41 @@ int32_t PhotosRestore::FindStrongAssociation(const FileInfo &fileInfo)
 }
 
 /**
+ * @brief Find enhancement photo quality for the target device by FileInfo displayName, only for cloud backup restore
+ */
+int32_t PhotosRestore::FindStrongAssociationByDisplayName(const FileInfo &fileInfo)
+{
+    return IsEndWithEnhanced(fileInfo.displayName) ? CLOUD_ENHANCEMENT_ALBUM : 0;
+}
+
+/**
  * @brief Find cloud enhancement available for the target device by FileInfo.
  */
 int32_t PhotosRestore::FindCeAvailable(const FileInfo &fileInfo)
 {
     CHECK_AND_RETURN_RET(fileInfo.photoQuality != DUAL_ENHANCEMENT_PHOTO_QUALITY, SINGLE_CLOUD_ENHANCEMENT_PHOTO);
     return 0;
+}
+
+/**
+ * @brief Find cloud enhancement available for the target device by FileInfo displayName, only for cloud backup restore
+ */
+int32_t PhotosRestore::FindCeAvailableByDisplayName(const FileInfo &fileInfo)
+{
+    return IsEndWithEnhanced(fileInfo.displayName) ? SINGLE_CLOUD_ENHANCEMENT_PHOTO : 0;
+}
+
+/**
+ * @brief Find if it is live photo by file format.
+ */
+bool PhotosRestore::FindIsLivePhoto(const FileInfo &fileInfo)
+{
+    return MovingPhotoFileUtils::IsLivePhoto(fileInfo.filePath);
+}
+
+bool PhotosRestore::IsEndWithEnhanced(const std::string &displayName)
+{
+    std::regex pattern(R"(.*_enhanced(\.[^.]+)$)");
+    return std::regex_match(displayName, pattern);
 }
 }  // namespace OHOS::Media

@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,21 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_CHANGE_REQUEST_SET_DISPLAY_NAME_TEST_H
-#define MEDIALIBRARY_CHANGE_REQUEST_SET_DISPLAY_NAME_TEST_H
+#ifndef OHOS_MEDIA_CLOUD_BACKUP_RESTORE_TEST_H
+#define OHOS_MEDIA_CLOUD_BACKUP_RESTORE_TEST_H
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 
-namespace OHOS {
-namespace Media {
-class ChangeRequestSetDisplayNameTest : public testing::Test {
+namespace OHOS::Media {
+class CloudBackupRestoreTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
-    void SetUp() override;
-    void TearDown() override;
+    void SetUp();
+    void TearDown();
 };
-} // namespace Media
-} // namespace OHOS
 
-#endif // MEDIALIBRARY_CHANGE_REQUEST_SET_DISPLAY_NAME_TEST_H
+class CloudBackupRestoreTestUtils {
+public:
+    static void ClearAllData();
+    static void ClearPhotosData();
+};
+}  // namespace OHOS::Media
+#endif  // OHOS_MEDIA_CLOUD_BACKUP_RESTORE_TEST_H

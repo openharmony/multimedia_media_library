@@ -88,8 +88,6 @@ public:
     EXPORT static bool IsDirEmpty(const std::string &path);
     EXPORT static bool CreateFile(const std::string &filePath);
     EXPORT static bool DeleteFile(const std::string &fileName);
-    EXPORT static std::string GetThumbDir(const std::string &photoPath, int32_t userId = -1);
-    EXPORT static std::string AppendUserId(const std::string& path, int32_t userId = -1);
     EXPORT static bool DeleteDir(const std::string &dirName);
     EXPORT static std::string GetFileName(const std::string &filePath);
     EXPORT static std::string GetParentPath(const std::string &path);
@@ -101,6 +99,7 @@ public:
         unsigned short curRecursionDepth = 0);
     EXPORT static bool CopyFileAndDelSrc(const std::string &srcFile, const std::string &destFile);
     EXPORT static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
+    EXPORT static bool CopyFileSafe(const std::string &filePath, const std::string &newPath);
     EXPORT static bool WriteStrToFile(const std::string &filePath, const std::string &str);
     EXPORT static bool ReadStrFromFile(const std::string &filePath, std::string &fileContent);
     EXPORT static bool CopyFile(int32_t rfd, int32_t wfd);
@@ -128,7 +127,6 @@ public:
     EXPORT static MediaType GetMediaType(const std::string &filePath);
     EXPORT static MediaType GetMediaTypeNotSupported(const std::string &filePath);
     EXPORT static std::string SplitByChar(const std::string &str, const char split);
-    EXPORT static std::string UnSplitByChar(const std::string &str, const char split);
     EXPORT static std::string GetExtensionFromPath(const std::string &path);
     EXPORT static int32_t OpenFile(const std::string &path, const std::string &mode,
         const std::string &clientbundleName = "");
@@ -188,7 +186,6 @@ public:
     EXPORT static void SetDeletionRecord(int fd, const std::string &fileName);
     EXPORT static void BackupPhotoDir();
     EXPORT static void RecoverMediaTempDir();
-    EXPORT static std::vector<std::string> GetFileNameFromDir(const std::string &dirName);
     EXPORT static std::string DesensitizePath(const std::string &path);
     EXPORT static void CheckDirStatus(const std::unordered_set<std::string> &dirCheckSet, const std::string &dir);
     EXPORT static int32_t CreateDirectoryAndCopyFiles(const std::string &srcDir, const std::string &dstDir);

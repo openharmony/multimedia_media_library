@@ -115,7 +115,7 @@ private:
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AlbumInfo> &albumInfos,
         std::vector<std::string> &albumIds, const std::string &tableName);
-    bool HasSameAlbum(const AlbumInfo &albumInfo, const std::string &tableName);
+    bool HasSameAlbum(AlbumInfo &albumInfo, const std::string &tableName);
     void BatchQueryAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
     NativeRdb::ValuesBucket GetInsertValue(const MapInfo &mapInfo) const;
@@ -144,7 +144,7 @@ private:
     void RestorePhotoBatch(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreBatchForCloud(int32_t offset, int32_t isRelatedToPhotoMap = 0);
     void RestoreAudioBatch(int32_t offset);
-    void InsertPhotoRelated(std::vector<FileInfo> &fileInfos);
+    void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType) override;
     void SetFileIdReference(const std::vector<FileInfo> &fileInfos, std::string &selection,
         std::unordered_map<int32_t, int32_t> &fileIdMap);
     int32_t QueryMapTotalNumber(const std::string &baseQuerySql);
@@ -265,6 +265,7 @@ private:
     std::atomic<uint64_t> thumbMigrateFileNumber_{0};
     std::atomic<uint64_t> migrateCloudSuccessNumber_{0};
     CloneRestoreGeoDictionary cloneRestoreGeoDictionary_;
+    int64_t maxAnalysisAlbumId_ {0};
 };
 
 template<typename T>

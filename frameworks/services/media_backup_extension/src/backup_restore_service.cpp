@@ -22,12 +22,30 @@
 #include "backup_restore_service.h"
 #include "ffrt_inner.h"
 #include "media_log.h"
+#include "cloud_backup_restore.h"
 #include "clone_restore.h"
 #include "upgrade_restore.h"
 #include "others_clone_restore.h"
+#include "rdb_sql_statistic.h"
+#include "rdb_types.h"
 
 namespace OHOS {
 namespace Media {
+class MediaLibraryBackupObserver : public DistributedRdb::SqlObserver {
+public:
+    virtual ~MediaLibraryBackupObserver() {}
+
+    void OnStatistic(const SqlExecutionInfo &info) override
+    {
+        for (auto sql : info.sql_) {
+            MEDIA_DEBUG_LOG("DEBUG_MediaLibraryBackup totaltime: %{public}lld waitTime: %{public}lld "
+                "prepareTime: %{public}lld executeTime: %{public}lld sql: %{public}s",
+                (long long) info.totalTime_, (long long) info.waitTime_, (long long) info.prepareTime_,
+                (long long) info.executeTime_, sql.c_str());
+        }
+    };
+};
+
 const int DUAL_FIRST_NUMBER = 65;
 const int DUAL_SECOND_NUMBER = 110;
 const int DUAL_THIRD_NUMBER = 100;
@@ -59,24 +77,30 @@ void BackupRestoreService::Init(const RestoreInfo &info)
         return;
     }
     serviceBackupDir_ = info.backupDir;
-    if (info.sceneCode == UPGRADE_RESTORE_ID) {
-        restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName, UPGRADE_RESTORE_ID,
-            GetDualDirName());
-        serviceBackupDir_ = RESTORE_SANDBOX_DIR;
-    } else if (info.sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
-        restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName,
-            DUAL_FRAME_CLONE_RESTORE_ID);
-    } else if (info.sceneCode == I_PHONE_CLONE_RESTORE) {
-        restoreService_ = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE, info.mediaAppName,
-            info.bundleInfo);
-    } else if (info.sceneCode == OTHERS_PHONE_CLONE_RESTORE) {
-        restoreService_ = std::make_unique<OthersCloneRestore>(OTHERS_PHONE_CLONE_RESTORE, info.mediaAppName);
-    } else if (info.sceneCode == LITE_PHONE_CLONE_RESTORE) {
-        restoreService_ = std::make_unique<OthersCloneRestore>(LITE_PHONE_CLONE_RESTORE, info.mediaAppName);
-    } else {
-        restoreService_ = std::make_unique<CloneRestore>();
+    switch (info.sceneCode) {
+        case UPGRADE_RESTORE_ID:
+            restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName, info.sceneCode,
+                GetDualDirName());
+            serviceBackupDir_ = RESTORE_SANDBOX_DIR;
+            break;
+        case DUAL_FRAME_CLONE_RESTORE_ID:
+            restoreService_ = std::make_unique<UpgradeRestore>(info.galleryAppName, info.mediaAppName, info.sceneCode);
+            break;
+        case CLOUD_BACKUP_RESTORE_ID:
+            restoreService_ = std::make_unique<CloudBackupRestore>(info.galleryAppName, info.mediaAppName,
+                info.sceneCode);
+            break;
+        case I_PHONE_CLONE_RESTORE:
+            restoreService_ = std::make_unique<OthersCloneRestore>(info.sceneCode, info.mediaAppName, info.bundleInfo);
+            break;
+        case OTHERS_PHONE_CLONE_RESTORE:
+        case LITE_PHONE_CLONE_RESTORE:
+            restoreService_ = std::make_unique<OthersCloneRestore>(info.sceneCode, info.mediaAppName);
+            break;
+        default:
+            restoreService_ = std::make_unique<CloneRestore>();
     }
-    restoreService_ -> restoreInfo_ = info.bundleInfo;
+    restoreService_->restoreInfo_ = info.bundleInfo;
 }
 
 void BackupRestoreService::StartRestore(const std::shared_ptr<AbilityRuntime::Context> &context,
@@ -92,6 +116,8 @@ void BackupRestoreService::StartRestore(const std::shared_ptr<AbilityRuntime::Co
 void BackupRestoreService::StartRestoreEx(const std::shared_ptr<AbilityRuntime::Context> &context,
     const RestoreInfo &info, std::string &restoreExInfo)
 {
+    shared_ptr<MediaLibraryBackupObserver> sqlPrintObserver = std::make_shared<MediaLibraryBackupObserver>();
+    DistributedRdb::SqlStatistic::Subscribe(sqlPrintObserver);
     MEDIA_INFO_LOG("Start restoreEx service: %{public}d", info.sceneCode);
     Init(info);
     if (restoreService_ == nullptr) {

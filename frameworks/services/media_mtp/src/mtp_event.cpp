@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include "media_log.h"
 #include "media_mtp_utils.h"
+#include "mtp_dfx_reporter.h"
 #include "mtp_packet.h"
 #include "mtp_packet_tools.h"
 #include "mtp_media_library.h"
@@ -155,7 +156,14 @@ void MtpEvent::SendEvent(const int32_t &code)
     int errorCode = eventPacketPtr->Maker(true);
     CHECK_AND_RETURN_LOG(errorCode == MTP_SUCCESS, "MtpEvent::SendEvent  responsePacket Maker err: %{public}d",
         errorCode);
-    errorCode = eventPacketPtr->Write();
+    int32_t result = 0;
+    auto startTime = std::chrono::high_resolution_clock::now();
+    errorCode = eventPacketPtr->Write(result);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<uint16_t, std::milli> duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    MtpDfxReporter::GetInstance().DoSendResponseResultDfxReporter(mtpContextPtr_->operationCode, result,
+        duration.count(), OperateMode::writemode);
     CHECK_AND_RETURN_LOG(errorCode == MTP_SUCCESS, "MtpEvent::SendEvent responsePacket Write err: %{public}d",
         errorCode);
 }

@@ -42,7 +42,8 @@ public:
         uint64_t ongoingTotalNumber);
     UpgradeRestoreTaskReport &ReportTimeout(uint64_t ongoingTotalNumber);
     UpgradeRestoreTaskReport &ReportTotal(const std::string &errorCode, const std::string &totalInfo);
-    UpgradeRestoreTaskReport &ReportTimeCost();
+    UpgradeRestoreTaskReport &ReportTimeCost(const uint64_t successCount, const uint64_t duplicateCount,
+        const size_t failCount);
     UpgradeRestoreTaskReport &ReportUpgradeEnh(const std::string &errorCode, const std::string &info);
     UpgradeRestoreTaskReport &ReportRestoreMode(int32_t restoreMode, uint64_t notFoundFileNum);
 

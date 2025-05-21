@@ -91,9 +91,8 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     bool isDirtyNeedUpdate = (GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet) !=
         static_cast<int32_t>(PhotoPositionType::LOCAL));
+    bool isMovingPhotoEffectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet) > 0;
     resultSet->Close();
-
-    bool isMovingPhotoEffectMode = GetInt64Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet) > 0;
     int ret = MediaLibraryPhotoOperations::ProcessMultistagesVideo(isEdited, isMovingPhoto, isMovingPhotoEffectMode,
         data);
     if (ret != E_OK) {
@@ -115,32 +114,57 @@ void MultiStagesCaptureDeferredVideoProcSessionCallback::OnProcessVideoDone(cons
     MEDIA_INFO_LOG("OnProcessVideoDone, success videoid: %{public}s", videoId.c_str());
 }
 
-void MultiStagesCaptureDeferredVideoProcSessionCallback::OnError(const std::string& videoId,
-    const CameraStandard::DpsErrorCode errorCode)
+void MultiStagesCaptureDeferredVideoProcSessionCallback::VideoFaileProcAsync(AsyncTaskData *data)
 {
-    MEDIA_INFO_LOG("Enter OnError, errorCode: %{public}d", errorCode);
-    switch (errorCode) {
+    auto *taskData = static_cast<VideoFaileProcTaskData *>(data);
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "taskData is null");
+    MEDIA_INFO_LOG("Enter OnError, errorCode: %{public}d", taskData->errorCode_);
+    switch (taskData->errorCode_) {
         case ERROR_SESSION_SYNC_NEEDED:
             MultiStagesVideoCaptureManager::GetInstance().SyncWithDeferredVideoProcSession();
             break;
         case ERROR_VIDEO_PROC_INVALID_VIDEO_ID:
         case ERROR_VIDEO_PROC_FAILED: {
-            MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(videoId, false);
-            UpdateVideoQuality(videoId, false);
-            MEDIA_ERR_LOG("error %{public}d, videoId: %{public}s", static_cast<int32_t>(errorCode), videoId.c_str());
+            MultiStagesVideoCaptureManager::GetInstance().RemoveVideo(taskData->videoId_, false);
+            UpdateVideoQuality(taskData->videoId_, false);
+            MEDIA_ERR_LOG("error %{public}d, videoId: %{public}s", static_cast<int32_t>(taskData->errorCode_),
+                taskData->videoId_.c_str());
             break;
         }
         default:
             break;
     }
 
-    if (errorCode != ERROR_SESSION_SYNC_NEEDED) {
-        int32_t mediaType = (MultiStagesCaptureManager::QuerySubType(videoId) ==
+    if (taskData->errorCode_ != ERROR_SESSION_SYNC_NEEDED) {
+        int32_t mediaType = (MultiStagesCaptureManager::QuerySubType(taskData->videoId_) ==
             static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) ?
             static_cast<int32_t>(MultiStagesCaptureMediaType::MOVING_PHOTO_VIDEO) :
             static_cast<int32_t>(MultiStagesCaptureMediaType::VIDEO);
-        MultiStagesCaptureDfxResult::Report(videoId, static_cast<int32_t>(errorCode), mediaType);
+        MultiStagesCaptureDfxResult::Report(taskData->videoId_, static_cast<int32_t>(taskData->errorCode_), mediaType);
     }
+}
+
+void MultiStagesCaptureDeferredVideoProcSessionCallback::AsyncOnErrorProc(const std::string& videoId,
+    const CameraStandard::DpsErrorCode errorCode)
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    CHECK_AND_RETURN_LOG(asyncWorker != nullptr, "Can not get asyncWorker");
+
+    AsyncTaskData* taskData = new (std::nothrow) VideoFaileProcTaskData(videoId, errorCode);
+    CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to new taskData");
+
+    shared_ptr<MediaLibraryAsyncTask> asyncTask =
+        make_shared<MediaLibraryAsyncTask>(VideoFaileProcAsync, taskData);
+    CHECK_AND_RETURN_LOG(asyncTask != nullptr, "Can not get asyncWorker");
+
+    MEDIA_INFO_LOG("AsyncOnErrorProc add task success");
+    asyncWorker->AddTask(asyncTask, false);
+}
+
+void MultiStagesCaptureDeferredVideoProcSessionCallback::OnError(const std::string& videoId,
+    const CameraStandard::DpsErrorCode errorCode)
+{
+    AsyncOnErrorProc(videoId, errorCode);
 }
 
 void MultiStagesCaptureDeferredVideoProcSessionCallback::OnStateChanged(const CameraStandard::DpsStatusCode state)
