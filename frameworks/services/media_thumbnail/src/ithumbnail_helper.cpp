@@ -553,11 +553,9 @@ bool IThumbnailHelper::TrySavePixelMap(ThumbnailData &data, ThumbnailType type)
 {
     if (!data.needCheckWaitStatus) {
         int err = ThumbnailUtils::TrySaveFile(data, type);
-        if (err < 0) {
-            MEDIA_ERR_LOG("No wait TrySavePixelMap failed: %{public}d, path: %{public}s", err,
-                DfxUtils::GetSafePath(data.path).c_str());
-        }
-        return err == E_OK;
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "No wait TrySavePixelMap failed: %{public}d, path: %{public}s", err,
+            DfxUtils::GetSafePath(data.path).c_str());
+        return true;
     }
     ThumbnailWait thumbnailWait(false);
     if (!thumbnailWait.TrySaveCurrentPixelMap(data, type)) {
@@ -595,12 +593,8 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         data.needUpdateDb = false;
         return ret == WaitStatus::WAIT_SUCCESS;
     }
-
-    if (!IsCreateLcdSuccess(opts, data)) {
-        MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(IsCreateLcdSuccess(opts, data), false,
+        "Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
     if (data.orientation != 0 && !IsCreateLcdExSuccess(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcdEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
     }
