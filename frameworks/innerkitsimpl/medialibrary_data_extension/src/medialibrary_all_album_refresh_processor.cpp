@@ -238,7 +238,7 @@ void MediaLibraryAllAlbumRefreshProcessor::TryRefreshAllAlbums()
             MEDIA_DEBUG_LOG("Not meet the condition of refreshing albums");
             return;
         }
-        MEDIA_INFO_LOG("RefreshAllAlbums! now: %{public}lld, last : %{public}lld",
+        MEDIA_INFO_LOG("RefreshAllAlbums! now: %{public}" PRId64 ", last : %{public}" PRId64,
             GetNowTimeUs(), lastRefreshAllAlbumsTime_);
         lastRefreshAllAlbumsTime_ = GetNowTimeUs();
     }

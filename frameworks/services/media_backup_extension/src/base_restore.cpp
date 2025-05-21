@@ -67,6 +67,7 @@ const int32_t MIGRATE_CLOUD_LCD_TYPE = 1;
 const int32_t APP_MAIN_DATA_USER_ID = 0;
 const int32_t APP_TWIN_DATA_USER_ID_START = 128;
 const int32_t APP_TWIN_DATA_USER_ID_END = 147;
+const int32_t SINGLE_LEN_EXTRADATA = 20;
 
 static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
 {
@@ -356,39 +357,19 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     int32_t sourceType)
 {
     vector<NativeRdb::ValuesBucket> values;
+    int64_t prepareCost = 0;
+    int64_t parseCost = 0;
+    int64_t duplicateCost = 0;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        int32_t errCode = IsFileValid(fileInfos[i], sceneCode);
-        if (errCode != E_OK) {
-            fileInfos[i].needMove = false;
-            if (!NeedReportError(restoreMode_, fileInfos[i].userId)) {
-                MEDIA_WARN_LOG("file not found but no need report, file name:%{public}s",
-                    BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
-                notFoundNumber_++;
-                continue;
-            }
-            std::string fileDbCheckInfo = CheckInvalidFile(fileInfos[i], errCode);
-            ErrorInfo errorInfo(RestoreError::FILE_INVALID, 1, std::to_string(errCode),
-                BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i], { fileDbCheckInfo }));
-            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
-            continue;
-        }
-        std::string cloudPath;
-        int32_t uniqueId = GetUniqueId(fileInfos[i].fileType);
-        errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
-            MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
-        if (errCode != E_OK) {
-            fileInfos[i].needMove = false;
-            ErrorInfo errorInfo(RestoreError::CREATE_PATH_FAILED, 1, std::to_string(errCode),
-                BackupLogUtils::FileInfoToString(sceneCode, fileInfos[i]));
-            UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
-            continue;
-        }
-        fileInfos[i].cloudPath = cloudPath;
-        NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
+        int64_t startPrepare = MediaFileUtils::UTCTimeMilliSeconds();
+        NativeRdb::ValuesBucket value;
+        CHECK_AND_CONTINUE(PrepareInsertValue(sceneCode, fileInfos[i], sourceType, value));
+        int64_t startMetaData = MediaFileUtils::UTCTimeMilliSeconds();
         SetValueFromMetaData(fileInfos[i], value);
+        int64_t startDuplicate = MediaFileUtils::UTCTimeMilliSeconds();
         if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == OTHERS_PHONE_CLONE_RESTORE ||
             sceneCode == LITE_PHONE_CLONE_RESTORE || sceneCode == I_PHONE_CLONE_RESTORE ||
-            sceneCode == UPGRADE_RESTORE_ID) &&
+            sceneCode == UPGRADE_RESTORE_ID || sceneCode == CLOUD_BACKUP_RESTORE_ID) &&
             this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
             RemoveDuplicateDualCloneFiles(fileInfos[i]);
@@ -398,8 +379,48 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             continue;
         }
         CHECK_AND_EXECUTE(!fileInfos[i].isNew, values.emplace_back(value));
+        int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+        prepareCost += startMetaData - startPrepare;
+        parseCost += startDuplicate - startMetaData;
+        duplicateCost += end - startDuplicate;
     }
+    MEDIA_INFO_LOG("TimeCost: batch Prepare cost: %{public}" PRId64 ", SetValueFromMetaData cost: %{public}" PRId64
+        ", DuplicateDualCloneFile cost: %{public}" PRId64, prepareCost, parseCost, duplicateCost);
     return values;
+}
+
+bool BaseRestore::PrepareInsertValue(const int32_t sceneCode, FileInfo &fileInfo, int32_t sourceType,
+    NativeRdb::ValuesBucket &value)
+{
+    int32_t errCode = IsFileValid(fileInfo, sceneCode);
+    if (errCode != E_OK) {
+        fileInfo.needMove = false;
+        if (!NeedReportError(restoreMode_, fileInfo.userId)) {
+            MEDIA_WARN_LOG("file not found but no need report, file name:%{public}s",
+                BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str());
+            notFoundNumber_++;
+            return false;
+        }
+        std::string fileDbCheckInfo = CheckInvalidFile(fileInfo, errCode);
+        ErrorInfo errorInfo(RestoreError::FILE_INVALID, 1, std::to_string(errCode),
+            BackupLogUtils::FileInfoToString(sceneCode, fileInfo, { fileDbCheckInfo }));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        return false;
+    }
+    std::string cloudPath;
+    int32_t uniqueId = GetUniqueId(fileInfo.fileType);
+    errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfo.fileType,
+        MediaFileUtils::GetExtensionFromPath(fileInfo.displayName), cloudPath);
+    if (errCode != E_OK) {
+        fileInfo.needMove = false;
+        ErrorInfo errorInfo(RestoreError::CREATE_PATH_FAILED, 1, std::to_string(errCode),
+            BackupLogUtils::FileInfoToString(sceneCode, fileInfo));
+        UpgradeRestoreTaskReport().SetSceneCode(this->sceneCode_).SetTaskId(this->taskId_).ReportError(errorInfo);
+        return false;
+    }
+    fileInfo.cloudPath = cloudPath;
+    value = GetInsertValue(fileInfo, cloudPath, sourceType);
+    return true;
 }
 
 static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
@@ -430,8 +451,12 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetCloudInsertValues(const int32_t 
     std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     MEDIA_INFO_LOG("START STEP 3 GET INSERT VALUES");
+    int64_t prepareCost = 0;
+    int64_t parseCost = 0;
+    int64_t duplicateCost = 0;
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
+        int64_t startPrepare = MediaFileUtils::UTCTimeMilliSeconds();
         std::string cloudPath;
         int32_t uniqueId = GetUniqueId(fileInfos[i].fileType);
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
@@ -445,7 +470,9 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetCloudInsertValues(const int32_t 
         }
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
+        int64_t startMetaData = MediaFileUtils::UTCTimeMilliSeconds();
         SetValueFromMetaData(fileInfos[i], value);
+        int64_t startDuplicate = MediaFileUtils::UTCTimeMilliSeconds();
         if ((sceneCode == DUAL_FRAME_CLONE_RESTORE_ID || sceneCode == UPGRADE_RESTORE_ID) &&
             this->HasSameFileForDualClone(fileInfos[i])) {
             fileInfos[i].needMove = false;
@@ -456,8 +483,14 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetCloudInsertValues(const int32_t 
             continue;
         }
         values.emplace_back(value);
+        int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+        prepareCost += startMetaData - startPrepare;
+        parseCost += startDuplicate - startMetaData;
+        duplicateCost += end - startDuplicate;
     }
     MEDIA_DEBUG_LOG("END STEP 3 GET INSERT VALUES");
+    MEDIA_INFO_LOG("TimeCost: cloud Prepare cost: %{public}" PRId64 ", SetValueFromMetaData cost: %{public}" PRId64
+        ", DuplicateDualCloneFile cost: %{public}" PRId64, prepareCost, parseCost, duplicateCost);
     return values;
 }
 
@@ -513,8 +546,7 @@ static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
 }
 
-static void SetCoverPosition(const FileInfo &fileInfo,
-    const unique_ptr<Metadata> &imageMetaData, NativeRdb::ValuesBucket &value)
+void BaseRestore::SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     uint64_t coverPosition = 0;
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
@@ -591,7 +623,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, fileInfo.dateTaken));
     value.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, fileInfo.dateTaken));
-    SetCoverPosition(fileInfo, data, value);
+    SetCoverPosition(fileInfo, value);
 }
 
 void BaseRestore::CreateDir(std::string &dir)
@@ -684,6 +716,42 @@ static bool MoveExtraData(const FileInfo &fileInfo, int32_t sceneCode)
     return true;
 }
 
+static bool SaveIosExtraData(const FileInfo &fileInfo, std::string movingPhotoVideoPath, int32_t sceneCode)
+{
+    string localExtraDataDir = BackupFileUtils::GetReplacedPathByPrefixType(
+        PrefixType::CLOUD, PrefixType::LOCAL, MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(fileInfo.cloudPath));
+    if (localExtraDataDir.empty()) {
+        MEDIA_WARN_LOG("Failed to get local extra data dir");
+        return false;
+    }
+    if (!MediaFileUtils::IsFileExists(localExtraDataDir) && !MediaFileUtils::CreateDirectory(localExtraDataDir)) {
+        MEDIA_WARN_LOG("Failed to create local extra data dir, errno:%{public}d", errno);
+        return false;
+    }
+
+    string localExtraDataPath = BackupFileUtils::GetReplacedPathByPrefixType(
+        PrefixType::CLOUD, PrefixType::LOCAL, MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(fileInfo.cloudPath));
+    if (localExtraDataPath.empty()) {
+        MEDIA_WARN_LOG("Failed to get local extra data path");
+        return false;
+    }
+
+    size_t videoSize = 0;
+    MediaFileUtils::GetFileSize(movingPhotoVideoPath, videoSize);
+
+    std::string versionAndFrame = "v7_f0";
+    versionAndFrame.resize(SINGLE_LEN_EXTRADATA, ' ');
+    std::string startEndPosition = "0:0";
+    startEndPosition.resize(SINGLE_LEN_EXTRADATA, ' ');
+    std::string videoLengthStr = "LIVE_" + std::to_string(videoSize + SINGLE_LEN_EXTRADATA);
+    videoLengthStr.resize(SINGLE_LEN_EXTRADATA, ' ');
+    std::string extraData = versionAndFrame + startEndPosition + videoLengthStr;
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(localExtraDataPath) &&
+        MediaFileUtils::WriteStrToFile(localExtraDataPath, extraData), false,
+        "Write to %{public}s failed", BackupFileUtils::GarbleFilePath(localExtraDataPath, sceneCode).c_str());
+    return true;
+}
+
 static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
 {
     string tmpPath = fileInfo.cloudPath;
@@ -694,6 +762,24 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
         BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
         BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errCode, errno);
     BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
+    
+    if (sceneCode == I_PHONE_CLONE_RESTORE && fileInfo.subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        string movSrcPath = fileInfo.filePath.substr(0, fileInfo.filePath.find_last_of(".")) + ".MOV";
+        string movTargetPath = localPath.substr(0, localPath.find_last_of(".")) + ".mp4";
+        
+        errCode = BackupFileUtils::MoveFile(movSrcPath, movTargetPath, sceneCode);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, false,
+            "Move moving photo video failed, src:%{public}s, dest:%{public}s, err:%{public}d, errno:%{public}d",
+            BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
+            BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str(), errCode, errno);
+        BackupFileUtils::ModifyFile(movTargetPath, fileInfo.dateModified / MSEC_TO_SEC);
+        
+        CHECK_AND_RETURN_RET_LOG(SaveIosExtraData(fileInfo, movTargetPath, sceneCode), false,
+            "Save the extraData for ios moving photo failed, src:%{public}s, dest:%{public}s",
+            BackupFileUtils::GarbleFilePath(movSrcPath, sceneCode).c_str(),
+            BackupFileUtils::GarbleFilePath(movTargetPath, sceneCode).c_str());
+        return true;
+    }
 
     if (BackupFileUtils::IsLivePhoto(fileInfo)) {
         string tmpVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(fileInfo.cloudPath);
@@ -839,6 +925,7 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
     int32_t sceneCode)
 {
     vector<std::string> moveFailedData;
+    int64_t startMoveAndModifyFile = MediaFileUtils::UTCTimeMilliSeconds();
     for (size_t i = 0; i < fileInfos.size(); i++) {
         CHECK_AND_CONTINUE(fileInfos[i].needMove);
         CHECK_AND_CONTINUE(IsFileValid(fileInfos[i], sceneCode) == E_OK);
@@ -860,11 +947,17 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
         fileMoveCount++;
         videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
     }
-
+    int64_t startDeleteMoveFailedData = MediaFileUtils::UTCTimeMilliSeconds();
     DeleteMoveFailedData(moveFailedData);
+    int64_t startSetVisiblePhoto = MediaFileUtils::UTCTimeMilliSeconds();
     SetVisiblePhoto(fileInfos);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     migrateFileNumber_ += fileMoveCount;
     migrateVideoFileNumber_ += videoFileMoveCount;
+    MEDIA_INFO_LOG("TimeCost: MoveAndModifyFile cost: %{public}" PRId64
+        ", DeleteMoveFailedData cost: %{public}" PRId64
+        ", SetVisiblePhoto cost: %{public}" PRId64, startDeleteMoveFailedData - startMoveAndModifyFile,
+        startSetVisiblePhoto - startDeleteMoveFailedData, end - startSetVisiblePhoto);
 }
 
 void BaseRestore::MoveMigrateCloudFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount,
@@ -968,8 +1061,8 @@ int BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos, sourceType);
-    geoKnowledgeRestore_.RestoreMaps(fileInfos);
-    highlightRestore_.RestoreMaps(fileInfos);
+    BatchQueryPhoto(fileInfos);
+    AddToPhotoInfoMap(fileInfos);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     migrateDatabaseNumber_ += rowNum;
@@ -1044,7 +1137,8 @@ int BaseRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &file
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
     InsertPhotoRelated(fileInfos, sourceType);
-    highlightRestore_.RestoreMaps(fileInfos);
+    BatchQueryPhoto(fileInfos);
+    AddToPhotoInfoMap(fileInfos);
 
     // create dentry file for cloud origin, save failed cloud id
     std::vector<std::string> dentryFailedOrigin;
@@ -1217,6 +1311,37 @@ void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos, bool isFull, cons
     }
 }
 
+void BaseRestore::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
+{
+    std::stringstream querySql;
+    querySql << "SELECT file_id, data FROM Photos WHERE data IN (";
+    std::vector<NativeRdb::ValueObject> params;
+    int32_t count = 0;
+    for (const auto &fileInfo : fileInfos) {
+        CHECK_AND_CONTINUE(fileInfo.fileIdNew <= 0);
+        querySql << (count++ > 0 ? "," : "");
+        querySql << "?";
+        params.push_back(fileInfo.cloudPath);
+    }
+    querySql << ")";
+    CHECK_AND_RETURN(!params.empty());
+    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql.str(), params);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
+
+    std::vector<NativeRdb::ValuesBucket> values;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t fileId = GetInt32Val("file_id", resultSet);
+        std::string data = GetStringVal("data", resultSet);
+        auto it = std::find_if(fileInfos.begin(), fileInfos.end(),
+            [data](const FileInfo &info) {
+                return info.cloudPath == data;
+            });
+        CHECK_AND_CONTINUE(it != fileInfos.end());
+        it->fileIdNew = fileId;
+    }
+    resultSet->Close();
+}
+
 void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &totalRowNum)
 {
     vector<NativeRdb::ValuesBucket> values;
@@ -1263,7 +1388,7 @@ void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::
         .SetTaskId(this->taskId_)
         .ReportTask(restoreExInfo)
         .ReportTotal(std::to_string(errorCode_), GetRestoreTotalInfo())
-        .ReportTimeCost()
+        .ReportTimeCost(migrateFileNumber_ + audioTotalNumber_, migratePhotoDuplicateNumber_, totalFailCount_)
         .ReportProgress("end", std::to_string(MediaFileUtils::UTCTimeSeconds()))
         .ReportUpgradeEnh(std::to_string(errorCode_), GetUpgradeEnhance());
 }
@@ -1294,6 +1419,7 @@ nlohmann::json BaseRestore::GetCountInfoJson(const std::vector<std::string> &cou
     size_t limit = MAX_FAILED_FILES_LIMIT;
     for (const auto &type : countInfoTypes) {
         SubCountInfo subCountInfo = GetSubCountInfo(type);
+        totalFailCount_ += subCountInfo.failedFiles.size();
         MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, duplicate: %{public}lld, failed: %{public}zu",
             type.c_str(), (long long)subCountInfo.successCount, (long long)subCountInfo.duplicateCount,
             subCountInfo.failedFiles.size());
@@ -1443,8 +1569,8 @@ void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t s
     int64_t portraitPhotoNum = 0;
     InsertFaceAnalysisData(fileInfos, needQueryMap, faceRowNum, portraitMapRowNum, portraitPhotoNum);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("query cost %{public}ld, insert %{public}ld maps cost %{public}ld, insert face analysis data of "
-        "%{public}ld photos (%{public}ld faces + %{public}ld maps) cost %{public}ld",
+    MEDIA_INFO_LOG("TimeCost: query cost %{public}ld, insert %{public}ld maps cost %{public}ld, "
+        "insert face analysis data of %{public}ld photos (%{public}ld faces + %{public}ld maps) cost %{public}ld",
         (long)(startInsertMap - startQuery), (long)mapRowNum, (long)(startInsertPortrait - startInsertMap),
         (long)portraitPhotoNum, (long)faceRowNum, (long)portraitMapRowNum, (long)(end - startInsertPortrait));
 }
@@ -1630,6 +1756,7 @@ nlohmann::json BaseRestore::GetSubProcessInfoJson(const std::string &type, const
 
 void BaseRestore::UpdateDatabase()
 {
+    int64_t startUpdateDatabase = MediaFileUtils::UTCTimeMilliSeconds();
     updateProcessStatus_ = ProcessStatus::START;
     GetUpdateTotalCount();
     MEDIA_INFO_LOG("Start update all albums");
@@ -1643,11 +1770,16 @@ void BaseRestore::UpdateDatabase()
     MEDIA_INFO_LOG("Start notify");
     NotifyAlbum();
     updateProcessStatus_ = ProcessStatus::STOP;
+    int64_t endUpdateDatabase = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("TimeCost: UpdateDatabase cost: %{public}" PRId64, endUpdateDatabase - startUpdateDatabase);
 }
 
-void BaseRestore::UpdatePhotoAlbumDateModified(const vector<string> &albumIds)
+void BaseRestore::UpdatePhotoAlbumDateModified(const vector<string> &albumIds, const string &tableName)
 {
-    MEDIA_INFO_LOG("Start update photoAlbums date modified");
+    CHECK_AND_RETURN(!albumIds.empty());
+    CHECK_AND_RETURN(tableName == PhotoAlbumColumns::TABLE);
+    MEDIA_INFO_LOG("Start update photoAlbums date modified tableName:%{public}s, albumIds count:%{public}zu",
+        tableName.c_str(), albumIds.size());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore, albumIds, false, true);
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore, albumIds, false, true);
@@ -1826,6 +1958,19 @@ int32_t BaseRestore::RemoveDentryFileWithConflict(const FileInfo &fileInfo)
     bool cond = (MediaFileUtils::IsFileExists(thumbPath) && dentryDeleted);
     CHECK_AND_EXECUTE(!cond, (void)MediaFileUtils::DeleteDir(thumbPath));
     return E_OK;
+}
+
+void BaseRestore::AddToPhotoInfoMap(std::vector<FileInfo> &fileInfos)
+{
+    std::lock_guard<ffrt::mutex> lock(photoInfoMutex_);
+    for (auto fileInfo: fileInfos) {
+        PhotoInfo photoInfo;
+        photoInfo.fileIdNew = fileInfo.fileIdNew;
+        photoInfo.fileType = fileInfo.fileType;
+        photoInfo.displayName = fileInfo.displayName;
+        photoInfo.cloudPath = fileInfo.cloudPath;
+        photoInfoMap_.insert(std::make_pair(fileInfo.fileIdOld, photoInfo));
+    }
 }
 
 std::string BaseRestore::GetUpgradeEnhance()

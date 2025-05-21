@@ -440,6 +440,8 @@ void CloneRestore::RestorePhotoForCloud()
 void CloneRestore::RestoreAlbum()
 {
     MEDIA_INFO_LOG("Start clone restore: albums");
+    maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
+        ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {
             MEDIA_ERR_LOG("Column status of %{public}s is not ready for restore album, quit",
@@ -665,7 +667,7 @@ int CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     migrateDatabaseNumber_ += photoRowNum;
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
-    InsertPhotoRelated(fileInfos);
+    InsertPhotoRelated(fileInfos, SourceType::PHOTOS);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
@@ -1427,21 +1429,19 @@ void CloneRestore::InsertAlbum(vector<AlbumInfo> &albumInfos, const string &tabl
 {
     CHECK_AND_RETURN_LOG(mediaLibraryRdb_ != nullptr, "mediaLibraryRdb_ is null");
     CHECK_AND_RETURN_LOG(!albumInfos.empty(), "albumInfos are empty");
-    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
-    BatchQueryAlbum(albumInfos, tableName);
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     vector<string> albumIds{};
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(albumInfos, albumIds, tableName);
-    if (!albumIds.empty()) {
-        UpdatePhotoAlbumDateModified(albumIds);
-    }
+    UpdatePhotoAlbumDateModified(albumIds, tableName);
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
     CHECK_AND_RETURN_LOG(errCode == E_OK, "Batc insert failed");
     migrateDatabaseAlbumNumber_ += rowNum;
+    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
+    BatchQueryAlbum(albumInfos, tableName);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("insert %{public}ld albums cost %{public}ld, query cost %{public}ld.", (long)rowNum,
-        (long)(end - startInsert), (long)(startInsert - startQuery));
+        (long)(startQuery - startInsert), (long)(end - startQuery));
 }
 
 vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> &albumInfos, vector<string> &albumIds,
@@ -1462,11 +1462,11 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(vector<AlbumInfo> 
     return values;
 }
 
-bool CloneRestore::HasSameAlbum(const AlbumInfo &albumInfo, const string &tableName)
+bool CloneRestore::HasSameAlbum(AlbumInfo &albumInfo, const string &tableName)
 {
     // check if the album already exists
     CHECK_AND_RETURN_RET(tableName != PhotoAlbumColumns::TABLE,
-        this->photoAlbumClone_.HasSameAlbum(albumInfo.lPath));
+        this->photoAlbumClone_.HasSameAlbum(albumInfo.lPath, albumInfo.albumIdNew));
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + tableName + " WHERE " +
         PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(albumInfo.albumType) + " AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
@@ -1982,7 +1982,7 @@ int CloneRestore::InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fil
     }
 
     int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
-    InsertPhotoRelated(fileInfos);
+    InsertPhotoRelated(fileInfos, SourceType::PHOTOS);
 
     // create dentry file for cloud origin, save failed cloud id
     std::vector<std::string> dentryFailedOrigin;
@@ -2012,7 +2012,7 @@ void CloneRestore::RestoreAudioBatch(int32_t offset)
     MEDIA_INFO_LOG("end restore audio, offset: %{public}d", offset);
 }
 
-void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos)
+void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
     BatchQueryPhoto(fileInfos);
@@ -2152,7 +2152,6 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     RecordOldPortraitAlbumDfx();
 
-    int64_t maxAlbumId = BackupDatabaseUtils::QueryMaxAlbumId(mediaLibraryRdb_);
     std::string querySql =   "SELECT count(1) AS count FROM " + ANALYSIS_ALBUM_TABLE + " WHERE ";
     std::string whereClause = "(" + SMARTALBUM_DB_ALBUM_TYPE + " = " + std::to_string(SMART) + " AND " +
         "album_subtype" + " = " + std::to_string(PORTRAIT) + ")";
@@ -2177,7 +2176,7 @@ void CloneRestore::RestoreFromGalleryPortraitAlbum()
             }
         }
 
-        InsertPortraitAlbum(analysisAlbumTbl, maxAlbumId);
+        InsertPortraitAlbum(analysisAlbumTbl, maxAnalysisAlbumId_);
     }
 
     LogPortraitCloneDfx();

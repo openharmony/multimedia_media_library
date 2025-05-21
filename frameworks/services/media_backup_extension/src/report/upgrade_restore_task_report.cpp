@@ -112,7 +112,8 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportUpgradeEnh(const std::
     return Report("UpgradeEnh", errorCode, info);
 }
 
-UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTimeCost()
+UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTimeCost(const uint64_t successCount,
+    const uint64_t duplicateCount, const size_t failCount)
 {
     int64_t startTime = std::atoll(this->taskId_.c_str());
     int64_t endTime = MediaFileUtils::UTCTimeSeconds();
@@ -122,7 +123,22 @@ UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportTimeCost()
             (long long)endTime);
         return *this;
     }
-    return Report("TimeCost", std::to_string(timeCost), "");
+    std::string type = "TimeCost";
+    std::string errorCode = std::to_string(timeCost);
+    std::string errorInfo = "";
+    MediaRestoreResultInfo resultInfo = UpgradeRestoreGalleryMediaTask()
+                                            .SetSceneCode(this->sceneCode_)
+                                            .SetTaskId(this->taskId_)
+                                            .Load(type, errorCode, errorInfo);
+    resultInfo.duplicateCount = static_cast<int>(duplicateCount);
+    resultInfo.failedCount = static_cast<int>(failCount);
+    resultInfo.successCount = static_cast<int>(successCount);
+    MEDIA_INFO_LOG("[%{public}s]: %{public}s, successCount: %{public}d, duplicateCount: %{public}d, "
+        "failCount: %{public}d", type.c_str(), errorCode.c_str(), resultInfo.successCount, resultInfo.duplicateCount,
+        resultInfo.failedCount);
+    PostInfoDfx(resultInfo);
+    PostInfoAuditLog(resultInfo);
+    return *this;
 }
 
 UpgradeRestoreTaskReport &UpgradeRestoreTaskReport::ReportRestoreMode(int32_t restoreMode, uint64_t notFoundFileNum)

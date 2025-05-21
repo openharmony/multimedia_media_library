@@ -161,7 +161,8 @@ HWTEST_F(MediaLibraryPTPUnitTest, medialibrary_PTP_message_testlevel0_006, TestS
     const shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
     shared_ptr<UInt32List> outHandles = {};
     const uint32_t parent = DEFAULT_PHOTO_ID;
-    int32_t ret = mtpMedialibraryManager->HaveMovingPhotesHandle(resultSet, outHandles, parent);
+    FileCountInfo fileCountInfo;
+    int32_t ret = mtpMedialibraryManager->HaveMovingPhotesHandle(resultSet, outHandles, parent, fileCountInfo);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 

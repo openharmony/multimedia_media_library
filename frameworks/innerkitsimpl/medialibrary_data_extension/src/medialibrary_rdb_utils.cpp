@@ -1080,9 +1080,7 @@ static int32_t SetUpdateValues(const shared_ptr<MediaLibraryRdbStore> rdbStore,
     } else if (subtype == PhotoAlbumSubType::USER_GENERIC || subtype == PhotoAlbumSubType::SOURCE_GENERIC) {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ALBUM_INDEX);
     } else {
-        if (!(subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END)) {
-            predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
-        }
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     }
     auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
     CHECK_AND_RETURN_RET_LOG(fileResult != nullptr, E_HAS_DB_ERROR, "Failed to query fileResult");
@@ -2869,7 +2867,7 @@ void MediaLibraryRdbUtils::TransformAppId2TokenId(const shared_ptr<MediaLibraryR
         int changeRows = 0;
         CHECK_AND_EXECUTE(store->Update(changeRows, refreshValues, rdbPredicate) != E_OK, successCount++);
     }
-    MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}u, successcount:%{public}d",
+    MEDIA_INFO_LOG("TransformAppId2TokenId updatecount:%{public}zu, successcount:%{public}d",
         tokenIdMap.size(), successCount);
 }
 

@@ -24,9 +24,13 @@ namespace OHOS::Media {
 class PhotoStorageOperation {
 public:
     std::shared_ptr<NativeRdb::ResultSet> FindStorage(std::shared_ptr<MediaLibraryRdbStore> mediaRdbStorePtr);
+    std::shared_ptr<NativeRdb::ResultSet> QueryHighlightDirectorySize(std::shared_ptr<MediaLibraryRdbStore> rdbStore);
 
 private:
     int64_t GetCacheSize();
+    int64_t GetHighlightSize();
+    int64_t GetHighlightSizeFromPreferences();
+    void SaveHighlightSizeToPreferences(int64_t size);
 
 private:
     // media_type : 1-photo, 2-video, -1-thumbnail & cache

@@ -63,6 +63,7 @@ private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &bindArgs);
     PhotoAlbumRowData BuildAlbumInfoByLPath(
         const std::string &lPath, const int32_t albumType, const int32_t albumSubType);
+    std::string FindRootPath(const std::string &path);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;

@@ -57,7 +57,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_CLOUD_META_QUERY_COUNT = "\
         SELECT COUNT(1) AS count \
@@ -77,7 +77,7 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC ;";
     const std::string SQL_GALLERY_MEDIA_QUERY_FOR_RESTORE = "\
         SELECT \
@@ -99,6 +99,7 @@ private:
             title, \
             orientation, \
             date_modified, \
+            date_added, \
             relative_bucket_id, \
             sourcePath, \
             is_hw_burst, \
@@ -128,7 +129,7 @@ private:
             ON gallery_media.albumId=gallery_album.albumId \
             LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
-        WHERE (local_media_id != -1) AND \
+        WHERE _id > ? AND (local_media_id != -1) AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \
@@ -139,9 +140,9 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC \
-        LIMIT ?, ?;";
+        LIMIT ?;";
     const std::string SQL_GALLERY_CLOUD_QUERY_FOR_RESTORE = "\
         SELECT \
             _id, \
@@ -162,6 +163,7 @@ private:
             title, \
             orientation, \
             date_modified, \
+            date_added, \
             relative_bucket_id, \
             sourcePath, \
             is_hw_burst, \
@@ -189,7 +191,7 @@ private:
             ON gallery_media.albumId=gallery_album.albumId \
             LEFT JOIN relative_album \
             ON gallery_media.relative_bucket_id = relative_album.relativeBucketId \
-        WHERE (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
+        WHERE _id > ? AND (local_media_id == -1) AND COALESCE(uniqueId,'') <> '' AND \
             (relative_bucket_id IS NULL OR \
                 relative_bucket_id NOT IN ( \
                     SELECT DISTINCT relative_bucket_id \
@@ -200,15 +202,15 @@ private:
             (_size > 0 OR (1 = ? AND _size = 0 AND photo_quality = 0)) AND \
             _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND \
             COALESCE(_data, '') <> '' AND \
-            (1 = ? OR storage_id IN (0, 65537) ) \
+            (1 = ? OR COALESCE(storage_id, 0) IN (0, 65537) ) \
         ORDER BY _id ASC \
-        LIMIT ?, ?;";
+        LIMIT ?;";
     const std::string SQL_GALLERY_MEDIA_QUERY_NO_NEED_MIGRATE_COUNT = "\
         SELECT COUNT(1) AS count \
         FROM gallery_media \
         WHERE (local_media_id = -1) OR \
             _data LIKE '/storage/emulated/0/Pictures/cloud/Imports%' OR \
-            (0 = ? AND storage_id NOT IN (0, 65537));";
+            (0 = ? AND COALESCE(storage_id, 0) NOT IN (0, 65537));";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTO_ALBUM_DAO_H

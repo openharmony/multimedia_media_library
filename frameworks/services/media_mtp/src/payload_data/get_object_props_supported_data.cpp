@@ -53,12 +53,10 @@ static const std::vector<uint16_t> AUDIO_PROPERTIES = {
 static const std::vector<uint16_t> VIDEO_PROPERTIES = {
     MTP_PROPERTY_ARTIST_CODE,
     MTP_PROPERTY_ALBUM_NAME_CODE,
-    MTP_PROPERTY_DURATION_CODE,
-    MTP_PROPERTY_DESCRIPTION_CODE
+    MTP_PROPERTY_DURATION_CODE
 };
 
 static const std::vector<uint16_t> IMAGE_PROPERTIES = {
-    MTP_PROPERTY_DESCRIPTION_CODE,
 };
 
 GetObjectPropsSupportedData::GetObjectPropsSupportedData(std::shared_ptr<MtpOperationContext> &context)

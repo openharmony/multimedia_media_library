@@ -35,6 +35,7 @@ static constexpr const char *FOREGROUND_ANALYSIS_TASK_ID = "foreground_analysis_
 static const int FRONT_INDEX_MAX_LIMIT = 2000;
 static const int FRONT_CV_MAX_LIMIT = 20;
 static const int FRONT_THREAD_NUM = 4;
+static const int DELAY_BATCH_TRIGGER_TIME_MS = 2000;
 class ForegroundAnalysisMeta {
 public:
     ForegroundAnalysisMeta() = default;
@@ -50,6 +51,7 @@ public:
     }
 
     static std::shared_ptr<NativeRdb::ResultSet> QueryByErrorCode(int32_t errCode);
+    static void StartServiceByOpType(uint32_t opType, const std::vector<std::string> &fileIds, int32_t taskId);
 private:
     bool IsMetaDirtyed();
     int32_t RefreshMeta();
@@ -69,6 +71,21 @@ private:
     uint32_t opType_ = ForegroundAnalysisOpType::FOREGROUND_NOT_HANDLE;
     std::vector<std::string> fileIds_;
     int32_t taskId_ = -1;
+};
+
+class DelayBatchTrigger {
+public:
+    static DelayBatchTrigger &GetTrigger();
+    DelayBatchTrigger(std::function<void(const std::map<int32_t, std::set<std::string>> &)> callback, int delayMs);
+    void Push(const std::vector<std::string> &fileIds, int32_t analysisType);
+private:
+    void StartTimer();
+
+    std::mutex mutex_;
+    std::map<int32_t, std::set<std::string>> requestMap_;
+    std::function<void(const std::map<int32_t, std::set<std::string>> &)> callback_;
+    int delayMs_;
+    std::atomic<bool> timerRunning_;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIA_FOREGROUND_ANALYSIS_META_H

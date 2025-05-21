@@ -26,6 +26,7 @@
 #include "media_file_uri.h"
 #include "media_log.h"
 #include "mtp_data_utils.h"
+#include "mtp_dfx_reporter.h"
 #include "mtp_manager.h"
 #include "photo_album_column.h"
 #include "ptp_album_handles.h"
@@ -82,7 +83,13 @@ void MediaSyncObserver::SendEventPackets(uint32_t objectHandle, uint16_t eventCo
 
     event.data = outBuffer;
     CHECK_AND_RETURN_LOG(context_->mtpDriver != nullptr, "Mtp Ptp mtpDriver is nullptr");
-    context_->mtpDriver->WriteEvent(event);
+    auto startTime = std::chrono::high_resolution_clock::now();
+    int32_t result =  context_->mtpDriver->WriteEvent(event);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<uint16_t, std::milli> duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    MtpDfxReporter::GetInstance().DoSendResponseResultDfxReporter(eventCode, result,
+        duration.count(), OperateMode::writemode);
 }
 
 void MediaSyncObserver::SendEventPacketAlbum(uint32_t objectHandle, uint16_t eventCode)
@@ -100,7 +107,13 @@ void MediaSyncObserver::SendEventPacketAlbum(uint32_t objectHandle, uint16_t eve
     MEDIA_DEBUG_LOG("MtpMediaLibrary album [%{public}d]", objectHandle);
     CHECK_AND_RETURN_LOG(context_ != nullptr, "Mtp Ptp context is nullptr");
     CHECK_AND_RETURN_LOG(context_->mtpDriver != nullptr, "Mtp Ptp mtpDriver is nullptr");
-    context_->mtpDriver->WriteEvent(event);
+    auto startTime = std::chrono::high_resolution_clock::now();
+    int32_t result =  context_->mtpDriver->WriteEvent(event);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<uint16_t, std::milli> duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    MtpDfxReporter::GetInstance().DoSendResponseResultDfxReporter(eventCode, result,
+        duration.count(), OperateMode::writemode);
 }
 
 static bool IsNumber(const string& str)
@@ -376,7 +389,7 @@ void MediaSyncObserver::SendPhotoRemoveEvent(std::string &suffixString)
         CHECK_AND_RETURN_LOG(IsNumber(suffixString), "Mtp SendPhotoRemoveEvent deleteHandle is incorrect ");
         auto specialHandles = PtpSpecialHandles::GetInstance();
         CHECK_AND_RETURN_LOG(specialHandles != nullptr, "specialHandles is nullptr");
-        uint32_t fileId = atoi(suffixString.c_str());
+        uint32_t fileId = static_cast<uint32_t>(atoi(suffixString.c_str()));
         if (FindRealHandle(fileId + COMMON_PHOTOS_OFFSET)) {
             uint32_t actualHandle = specialHandles->HandleConvertToDeleted(fileId + COMMON_PHOTOS_OFFSET);
             SendEventPackets(actualHandle, MTP_EVENT_OBJECT_REMOVED_CODE);

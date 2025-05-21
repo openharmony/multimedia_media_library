@@ -237,11 +237,6 @@ static inline void DenormalizeUriFuzzer(MediaDataShareExtAbility &extension, con
     extension.DenormalizeUri(FuzzUri(data, size));
 }
 
-static inline void StopFuzzer(MediaDataShareExtAbility &extension)
-{
-    extension.OnStop();
-}
-
 static int InitExtention(MediaDataShareExtAbility &extension)
 {
     extension.InitPermissionHandler();
@@ -283,7 +278,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::NotifyChangeFuzzer(extension, data, size);
     OHOS::NormalizeUriFuzzer(extension, data, size);
     OHOS::DenormalizeUriFuzzer(extension, data, size);
-    OHOS::StopFuzzer(extension);
     int sleepTime = 100;
     std::this_thread::sleep_for(std::chrono::microseconds(sleepTime));
     return 0;
