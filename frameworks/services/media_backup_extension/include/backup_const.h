@@ -689,6 +689,7 @@ const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," +
 
 const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM " + DUAL_CLONE_AUDIO_FULL_TABLE;
 
+const std::vector<std::string> EXCLUDED_ANALYSIS_SEARCH_IDX_COLS = {"photo_status", "cv_status", "geo_status"};
 const std::vector<std::string> EXCLUDED_PORTRAIT_COLUMNS = {"album_id", "count", "rank"};
 const std::vector<std::string> EXCLUDED_FACE_TAG_COLUMNS = {"id", "user_operation", "rename_operation", "group_tag",
     "user_display_level", "tag_order", "is_me", "cover_uri", "count", "date_modify", "album_type", "is_removed"};

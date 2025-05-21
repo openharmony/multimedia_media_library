@@ -440,6 +440,8 @@ void CloneRestore::RestorePhotoForCloud()
 void CloneRestore::RestoreAlbum()
 {
     MEDIA_INFO_LOG("Start clone restore: albums");
+    maxSearchId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
+        ANALYSIS_SEARCH_INDEX_TABLE, SEARCH_IDX_COL_ID);
     maxAnalysisAlbumId_ = BackupDatabaseUtils::QueryMaxId(mediaLibraryRdb_,
         ANALYSIS_ALBUM_TABLE, ANALYSIS_COL_ALBUM_ID);
     for (const auto &tableName : CLONE_ALBUMS) {
@@ -1638,7 +1640,26 @@ void CloneRestore::RestoreGallery()
     cloneRestoreGeoDictionary_.ReportGeoRestoreTask();
     cloneRestoreHighlight_.UpdateAlbums();
     cloneRestoreCVAnalysis_.RestoreAlbums(cloneRestoreHighlight_);
+    RestoreAnalysisAlbumStatus();
     ReportPortraitCloneStat(sceneCode_);
+}
+
+void CloneRestore::RestoreAnalysisAlbumStatus()
+{
+    if (!mediaRdb_ || !mediaLibraryRdb_) {
+        MEDIA_ERR_LOG("RDB stores are not initialized. Cannot clone search index.");
+        return;
+    }
+
+    SearchIndexClone searchIndexClone(mediaRdb_, mediaLibraryRdb_, photoInfoMap_, maxSearchId_);
+    if (searchIndexClone.Clone()) {
+        migrateSearchIndexNumber_ = searchIndexClone.GetMigratedCount();
+        migrateSearchIndexTotalTimeCost_ = searchIndexClone.GetTotalTimeCost();
+        MEDIA_INFO_LOG("Search index cloning successful. Migrated %{public}lld records in %{public}lld ms",
+                       (long long)migrateSearchIndexNumber_, (long long)migrateSearchIndexTotalTimeCost_);
+    } else {
+        MEDIA_ERR_LOG("Search index cloning failed.");
+    }
 }
 
 bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
@@ -2012,10 +2033,24 @@ void CloneRestore::RestoreAudioBatch(int32_t offset)
     MEDIA_INFO_LOG("end restore audio, offset: %{public}d", offset);
 }
 
+void CloneRestore::AddToPhotoInfoMaps(std::vector<FileInfo> &fileInfos)
+{
+    std::lock_guard<ffrt::mutex> lock(photosInfoMutex_);
+    for (auto fileInfo: fileInfos) {
+        PhotoInfo photoInfo;
+        photoInfo.fileIdNew = fileInfo.fileIdNew;
+        photoInfo.fileType = fileInfo.fileType;
+        photoInfo.displayName = fileInfo.displayName;
+        photoInfo.cloudPath = fileInfo.cloudPath;
+        photoInfoMap_.insert(std::make_pair(fileInfo.fileIdOld, photoInfo));
+    }
+}
+
 void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
     BatchQueryPhoto(fileInfos);
+    AddToPhotoInfoMaps(fileInfos);
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t mapRowNum = 0;
     BatchInsertMap(fileInfos, mapRowNum);
@@ -2759,7 +2794,7 @@ NativeRdb::ValuesBucket CloneRestore::CreateValuesBucketFromImageFaceTbl(const I
     PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_HEIGHT, imageFaceTbl.beautyBounderHeight);
     PutIfPresent(values, IMAGE_FACE_COL_AESTHETICS_SCORE, imageFaceTbl.aestheticsScore);
     PutIfPresent(values, IMAGE_FACE_COL_BEAUTY_BOUNDER_VERSION, imageFaceTbl.beautyBounderVersion);
-    PutWithDefault(values, IMAGE_FACE_COL_IS_EXCLUDED, imageFaceTbl.isExcluded, 0);
+    PutWithDefault<int>(values, IMAGE_FACE_COL_IS_EXCLUDED, imageFaceTbl.isExcluded, 0);
 
     return values;
 }

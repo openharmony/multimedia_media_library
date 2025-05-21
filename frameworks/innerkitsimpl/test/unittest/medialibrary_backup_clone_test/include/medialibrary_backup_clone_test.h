@@ -40,6 +40,12 @@ public:
     static void VerifyGeoDictionaryRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
     static void VerifyClassifyRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
     static void VerifyClassifyVideoRestore(const std::shared_ptr<NativeRdb::RdbStore>& db);
+    static void InsertSampleSearchIndexData(const std::shared_ptr<NativeRdb::RdbStore>& db,
+        int32_t fileId, const std::string& data, const std::string& displayName, double latitude, double longitude,
+        int64_t dateModified, int32_t photoStatus, int32_t cvStatus, int32_t geoStatus, int32_t version,
+        const std::string& systemLanguage);
+    static void VerifySearchIndexRestore(const std::shared_ptr<NativeRdb::RdbStore>& destRdb,
+        const std::unordered_map<int32_t, PhotoInfo>& photoInfoMap);
 };
 } // namespace Media
 } // namespace OHOS

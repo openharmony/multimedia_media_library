@@ -201,6 +201,8 @@ protected:
     std::atomic<uint64_t> migratePortraitFaceNumber_{0};
     std::atomic<uint64_t> migratePortraitAlbumNumber_{0};
     std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
+    std::atomic<int64_t> migrateSearchIndexTotalTimeCost_ = 0;
+    std::atomic<uint64_t> migrateSearchIndexNumber_ = 0;
     std::atomic<uint32_t> imageNumber_{0};
     std::atomic<uint32_t> videoNumber_{0};
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
@@ -219,6 +221,7 @@ protected:
     ffrt::mutex videoMutex_;
     ffrt::mutex audioMutex_;
     ffrt::mutex photoInfoMutex_;
+    ffrt::mutex photosInfoMutex_;
     std::mutex failedFilesMutex_;
     int32_t errorCode_{RestoreError::SUCCESS};
     std::string errorInfo_;
