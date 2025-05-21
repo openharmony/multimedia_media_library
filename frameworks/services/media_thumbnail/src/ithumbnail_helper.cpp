@@ -911,12 +911,13 @@ int32_t IThumbnailHelper::CacheDirtyState(const ThumbRdbOpt &opts, ThumbnailData
 {
     CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
         "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
-    if (data.isRegenerateStage) {
-        string filePath = GetLocalOriginFilePath(data.path);
-        bool shouldUpdateFDirty = access(filePath.c_str(), F_OK) == 0;
-        data.rdbUpdateCache.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ? static_cast<int32_t>(DirtyType::TYPE_FDIRTY) :
-            static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
-    }
+    CHECK_AND_RETURN_RET(data.isRegenerateStage, E_OK);
+
+    string filePath = GetLocalOriginFilePath(data.path);
+    bool shouldUpdateFDirty = access(filePath.c_str(), F_OK) == 0;
+    data.rdbUpdateCache.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ? static_cast<int32_t>(DirtyType::TYPE_FDIRTY) :
+        static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
+
     return E_OK;
 }
 
