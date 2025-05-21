@@ -42,6 +42,26 @@ const int MediaLibraryAppUriPermissionOperations::SUCCEED = 0;
 const int MediaLibraryAppUriPermissionOperations::ALREADY_EXIST = 1;
 const int MediaLibraryAppUriPermissionOperations::NO_DATA_EXIST = 0;
 
+static void DoSubscribeAppStop(const ValuesBucket &value)
+{
+    ValueObject valueObject;
+    int64_t destTokenId = -1;
+    if (value.GetObject(AppUriPermissionColumn::TARGET_TOKENID, valueObject)) {
+        valueObject.GetLong(destTokenId);
+    }
+
+    int permissionTypeParam = -1;
+    if (value.GetObject(AppUriPermissionColumn::PERMISSION_TYPE, valueObject)) {
+        valueObject.GetInt(permissionTypeParam);
+    }
+    // delete the temporary permission when the app dies
+    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
+        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+        MedialibraryAppStateObserverManager::GetInstance().AddTokenId(destTokenId, false);
+    }
+}
+
 int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     MEDIA_INFO_LOG("insert appUriPermission begin");
@@ -72,12 +92,7 @@ int32_t MediaLibraryAppUriPermissionOperations::HandleInsertOperation(MediaLibra
     if (queryFlag < 0) {
         return ERROR;
     }
-
-    // delete the temporary permission when the app dies
-    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
-        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
-        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
-    }
+    DoSubscribeAppStop(cmd.GetValueBucket());
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -128,6 +143,15 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsertInner(
     std::shared_ptr<TransactionOperations> trans)
 {
     int32_t errCode = NativeRdb::E_OK;
+    bool isValid;
+    int64_t destTokenId = values.at(0).Get(AppUriPermissionColumn::TARGET_TOKENID, isValid);
+    int permissionTypeParam = values.at(0).Get(AppUriPermissionColumn::PERMISSION_TYPE, isValid);
+    // delete the temporary permission when the app dies
+    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
+        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
+        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
+        MedialibraryAppStateObserverManager::GetInstance().AddTokenId(destTokenId, false);
+    }
     std::vector<ValuesBucket> insertVector;
     for (auto it = values.begin(); it != values.end(); it++) {
         ValuesBucket value = RdbUtils::ToValuesBucket(*it);
@@ -136,22 +160,11 @@ int32_t MediaLibraryAppUriPermissionOperations::BatchInsertInner(
         if (queryFlag < 0) {
             return ERROR;
         }
-        // permissionType from param
-        int permissionTypeParam = -1;
-        if (!GetIntFromValuesBucket(value, AppUriPermissionColumn::PERMISSION_TYPE,
-            permissionTypeParam)) {
-            return ERROR;
-        }
 
         value.Delete(AppUriSensitiveColumn::HIDE_SENSITIVE_TYPE);
         value.Delete(AppUriSensitiveColumn::IS_FORCE_SENSITIVE);
 
         if (queryFlag == 0) {
-            // delete the temporary permission when the app dies
-            if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
-                AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
-                MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
-            }
             value.PutLong(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
             insertVector.push_back(value);
         } else if (UpdatePermissionType(resultSet, permissionTypeParam) == ERROR) {
@@ -263,12 +276,6 @@ int MediaLibraryAppUriPermissionOperations::UpdatePermissionType(shared_ptr<Resu
         MediaLibraryRdbStore::GetInt(resultSetDB, AppUriPermissionColumn::PERMISSION_TYPE);
     if (!CanOverride(permissionTypeParam, permissionTypeDB)) {
         return ALREADY_EXIST;
-    }
-
-    // delete the temporary permission when the app dies
-    if (AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.find(permissionTypeParam) !=
-        AppUriPermissionColumn::PERMISSION_TYPES_TEMPORARY.end()) {
-        MedialibraryAppStateObserverManager::GetInstance().SubscribeAppState();
     }
 
     // update permission type

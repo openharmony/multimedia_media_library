@@ -107,6 +107,7 @@
 #include "timer.h"
 #include "trash_async_worker.h"
 #include "value_object.h"
+#include "photo_storage_operation.h"
 #include "post_event_utils.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_facard_operations.h"
@@ -1823,6 +1824,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
 shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
+    if (cmd.GetOprnType() == OperationType::QUERY_HIGHLIGHT_DIRECTORY_SIZE) {
+        auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, nullptr, "uniStore is nullptr!");
+        return PhotoStorageOperation().QueryHighlightDirectorySize(uniStore);
+    }
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
     int32_t albumSubtype = MediaLibraryRdbUtils::GetAlbumSubtypeArgument(rdbPredicates);
     MEDIA_DEBUG_LOG("Query analysis album of subtype: %{public}d", albumSubtype);
@@ -2100,10 +2106,6 @@ void MediaLibraryDataManager::InitACLPermission()
     if (!MediaFileUtils::CreateDirectory(THUMB_DIR)) {
         MEDIA_ERR_LOG("Failed create thumbs Photo dir");
         return;
-    }
-
-    if (Acl::AclSetDefault() != E_OK) {
-        MEDIA_ERR_LOG("Failed to set the acl read permission for the thumbs Photo dir");
     }
 }
 

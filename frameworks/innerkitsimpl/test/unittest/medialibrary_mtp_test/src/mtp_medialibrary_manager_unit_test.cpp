@@ -524,7 +524,8 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_02
     shared_ptr<DataShare::DataShareResultSet> resultSet = nullptr;
     shared_ptr<UInt32List> outHandles = nullptr;
     uint32_t parent = 0;
-    int32_t res = mtpMedialibraryManager_->HaveMovingPhotesHandle(resultSet, outHandles, parent);
+    FileCountInfo fileCountInfo;
+    int32_t res = mtpMedialibraryManager_->HaveMovingPhotesHandle(resultSet, outHandles, parent, fileCountInfo);
 
     mtpMedialibraryManager_->Clear();
     EXPECT_EQ(res, E_HAS_DB_ERROR);
@@ -546,7 +547,8 @@ HWTEST_F(MtpMediaLibraryManagerUnitTest, medialibrary_PTP_message_testlevel_0_02
     ASSERT_NE(resultSet, nullptr);
     shared_ptr<UInt32List> outHandles = nullptr;
     uint32_t parent = 0;
-    int32_t res = mtpMedialibraryManager_->HaveMovingPhotesHandle(resultSet, outHandles, parent);
+    FileCountInfo fileCountInfo;
+    int32_t res = mtpMedialibraryManager_->HaveMovingPhotesHandle(resultSet, outHandles, parent, fileCountInfo);
 
     mtpMedialibraryManager_->Clear();
     EXPECT_EQ(res, E_SUCCESS);

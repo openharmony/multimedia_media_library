@@ -13,10 +13,15 @@
  * limitations under the License.
  */
 
-#include <thread>
-#include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
-#include "kvstore.h"
 #include "medialibrary_thumbnail_utils_test.h"
+
+#include <thread>
+
+#include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
+#include "highlight_column.h"
+#include "kvstore.h"
+#include "vision_db_sqls.h"
+
 #define private public
 #include "thumbnail_service.h"
 #include "ithumbnail_helper.h"
@@ -25,8 +30,7 @@
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
-#include "vision_db_sqls.h"
-#include "highlight_column.h"
+
   
 using namespace std;
 using namespace OHOS;
@@ -244,5 +248,5 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, ConvertStrToInt32_test_001, TestSize.Le
     res = ThumbnailUtils::ConvertStrToInt32(str, ret);
     EXPECT_EQ(res, false);
 }
-}
-}
+} // namespace Media
+} // namespace OHOS

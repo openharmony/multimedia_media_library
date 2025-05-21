@@ -50,8 +50,8 @@ const int PHONE_FIFTH_NUMBER = 110;
 const int PHONE_SIXTH_NUMBER = 101;
 const int QUERY_NUMBER = 200;
 const int STRONG_ASSOCIATION_ENABLE = 1;
-constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int32_t MAX_CLONE_THREAD_NUM = 2;
+const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) + 10;
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const std::string I_PHONE_LPATH = "/Pictures/";
 const std::string PHONE_TYPE = "type";
@@ -65,6 +65,8 @@ const std::string OTHER_CLONE_FILE_ROOT_PATH = "/storage/media/local/files/.back
 const std::string LITE_CLONE_SD_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/";
 const std::string OTHER_CLONE_DB_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/0/";
 const std::string I_PHONE_IMAGE_FILE_PATH = "/storage/media/local/files/.backup/restore/";
+const std::string I_PHONE_DYNAMIC_IMAGE = "_DYNAMIC";
+const std::string I_PHONE_DYNAMIC_VIDEO = "_DYNAMIC.MOV";
 const std::string I_PHONE_VIDEO_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string OTHER_CLONE_FILE_PATH = "/storage/media/local/files/.backup/restore/storage/emulated/";
 const std::string OTHER_CLONE_DISPLAYNAME = "primaryStr";
@@ -620,6 +622,9 @@ void OthersCloneRestore::HandleInsertBatch(int32_t offset)
             MEDIA_WARN_LOG("photo info error : %{public}s", info.displayName.c_str());
             continue;
         }
+        if (sceneCode_ == I_PHONE_CLONE_RESTORE && info.otherSubtype == I_PHONE_DYNAMIC_VIDEO_TYPE) {
+            continue;
+        }
         UpdateAlbumInfo(info);
         insertInfos.push_back(info);
     }
@@ -770,6 +775,7 @@ std::string OthersCloneRestore::ParseSourcePathToLPath(int32_t sceneCode, const 
             BackupFileUtils::GarbleFilePath(filePath, sceneCode).c_str());
         lPath = FILE_SEPARATOR;
     }
+    lPath = lPath == AlbumPlugin::LPATH_HIDDEN_ALBUM ? AlbumPlugin::LPATH_RECOVER : lPath;
     return lPath;
 }
 
@@ -828,6 +834,9 @@ void OthersCloneRestore::RestoreAlbum(std::vector<FileInfo> &fileInfos)
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfos = this->photoAlbumDao_.GetPhotoAlbums();
     std::vector<PhotoAlbumRestore::GalleryAlbumRowData> galleryAlbumInfos;
     for (auto &info : fileInfos) {
+        if (IsIphoneDynamicVideo(info, sceneCode_)) {
+            continue;
+        }
         info.lPath = ParseSourcePathToLPath(sceneCode_, info.filePath, info.fileType);
         AddGalleryAlbum(galleryAlbumInfos, info.lPath);
     }
@@ -895,6 +904,21 @@ void OthersCloneRestore::UpdateAlbumInfo(FileInfo &info)
 void OthersCloneRestore::AnalyzeSource()
 {
     MEDIA_INFO_LOG("analyze source later");
+}
+
+bool OthersCloneRestore::IsIphoneDynamicVideo(FileInfo &fileInfo, int32_t sceneCode)
+{
+    if (sceneCode != I_PHONE_CLONE_RESTORE || fileInfo.filePath.find(I_PHONE_DYNAMIC_IMAGE) == string::npos) {
+        return false;
+    }
+    auto idx = fileInfo.filePath.find(I_PHONE_DYNAMIC_VIDEO);
+    if (idx != string::npos) {
+        fileInfo.otherSubtype = I_PHONE_DYNAMIC_VIDEO_TYPE;
+        return true;
+    } else {
+        fileInfo.subtype = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+    }
+    return false;
 }
 
 } // namespace Media

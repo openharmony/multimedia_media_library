@@ -63,11 +63,17 @@ void HighlightRestore::Init(int32_t sceneCode, std::string taskId,
     tracksParseFailCnt_ = 0;
 }
 
+void HighlightRestore::RestoreHighlight(const std::string &albumOdid,
+    const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
+{
+    CHECK_AND_RETURN_LOG(galleryRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr");
+    RestoreAlbums(albumOdid);
+    RestoreMaps(photoInfoMap);
+    UpdateAlbums();
+}
+
 void HighlightRestore::RestoreAlbums(const std::string &albumOdid)
 {
-    bool cond = (galleryRdb_ == nullptr || mediaLibraryRdb_ == nullptr);
-    CHECK_AND_RETURN_LOG(!cond, "rdbStore is nullptr");
-
     GetAlbumInfos(albumOdid);
     InsertIntoAnalysisAlbum();
     UpdateAlbumIds();
@@ -349,83 +355,73 @@ void HighlightRestore::UpdateHighlightIds()
     } while (rowCount == PAGE_SIZE);
 }
 
-void HighlightRestore::RestoreMaps(std::vector<FileInfo> &fileInfos)
+void HighlightRestore::RestoreMaps(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap)
 {
+    CHECK_AND_RETURN_LOG(galleryRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr");
     CHECK_AND_RETURN_INFO_LOG(!albumInfos_.empty(), "albumInfos_ is empty, no need to restore maps.");
-    std::vector<NativeRdb::ValuesBucket> values;
-    BatchQueryPhoto(fileInfos);
-    for (const auto &fileInfo : fileInfos) {
-        UpdateMapInsertValues(values, fileInfo);
-    }
-    int64_t rowNum = 0;
-    int errCode = BatchInsertWithRetry("AnalysisPhotoMap", values, rowNum);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("RestoreMaps fail.");
-        ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode), "RestoreMaps fail.");
-        UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
-    }
+    std::string querySql = "SELECT _id, story_id, portrait_id, date_modified, hash FROM gallery_media "
+        "WHERE ((story_id IS NOT NULL AND story_id != '') OR (portrait_id IS NOT NULL AND portrait_id != '')) "
+        "AND story_chosen != 0 AND _id > ? ORDER BY _id ASC LIMIT ?;";
+    int rowCount = 0;
+    int offset = 0;
+    do {
+        std::vector<NativeRdb::ValuesBucket> values;
+        std::vector<NativeRdb::ValueObject> params = {offset, PAGE_SIZE};
+        auto resultSet = BackupDatabaseUtils::QuerySql(galleryRdb_, querySql, params);
+        CHECK_AND_BREAK_ERR_LOG(resultSet != nullptr, "resultSet is nullptr");
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            HighlightPhotoInfo highlightPhoto;
+            highlightPhoto.fileIdOld = GetInt32Val("_id", resultSet);
+            offset = highlightPhoto.fileIdOld;
+            CHECK_AND_CONTINUE(photoInfoMap.find(highlightPhoto.fileIdOld) != photoInfoMap.end());
+            highlightPhoto.photoInfo = photoInfoMap.at(highlightPhoto.fileIdOld);
+            highlightPhoto.storyIds = GetStringVal("story_id", resultSet);
+            highlightPhoto.portraitIds = GetStringVal("portrait_id", resultSet);
+            highlightPhoto.hashCode = GetStringVal("hash", resultSet);
+            highlightPhoto.dateModified = GetInt64Val("date_modified", resultSet);
+            UpdateMapInsertValues(values, highlightPhoto);
+        }
+        resultSet->GetRowCount(rowCount);
+        resultSet->Close();
+        int64_t rowNum = 0;
+        int errCode = BatchInsertWithRetry("AnalysisPhotoMap", values, rowNum);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("RestoreMaps fail.");
+            ErrorInfo errorInfo(RestoreError::INSERT_FAILED, 0, std::to_string(errCode), "RestoreMaps fail.");
+            UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_).ReportError(errorInfo);
+        }
+    } while (rowCount == PAGE_SIZE);
 }
 
-void HighlightRestore::BatchQueryPhoto(std::vector<FileInfo> &fileInfos)
+void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values,
+    const HighlightPhotoInfo &highlightPhoto)
 {
-    std::stringstream querySql;
-    querySql << "SELECT file_id, data FROM Photos WHERE data IN (";
-    std::vector<NativeRdb::ValueObject> params;
-    int32_t count = 0;
-    for (const auto &fileInfo : fileInfos) {
-        CHECK_AND_CONTINUE(fileInfo.fileIdNew <= 0);
-        querySql << (count++ > 0 ? "," : "");
-        querySql << "?";
-        params.push_back(fileInfo.cloudPath);
-    }
-    querySql << ")";
-    CHECK_AND_RETURN(!params.empty());
-
-    auto resultSet = BackupDatabaseUtils::QuerySql(mediaLibraryRdb_, querySql.str(), params);
-    CHECK_AND_RETURN_LOG(resultSet != nullptr, "resultSet is nullptr");
-    std::vector<NativeRdb::ValuesBucket> values;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t fileId = GetInt32Val("file_id", resultSet);
-        std::string data = GetStringVal("data", resultSet);
-        auto it = std::find_if(fileInfos.begin(), fileInfos.end(),
-            [data](const FileInfo &info) {
-                return info.cloudPath == data;
-            });
-        CHECK_AND_CONTINUE(it != fileInfos.end());
-        it->fileIdNew = fileId;
-    }
-    resultSet->Close();
-}
-
-void HighlightRestore::UpdateMapInsertValues(std::vector<NativeRdb::ValuesBucket> &values, const FileInfo &fileInfo)
-{
-    CHECK_AND_RETURN(fileInfo.fileIdNew > 0);
-    int32_t fileIdOld = fileInfo.fileIdOld;
+    CHECK_AND_RETURN(highlightPhoto.photoInfo.fileIdNew > 0);
+    int32_t fileIdOld = highlightPhoto.fileIdOld;
     auto it = std::find_if(albumInfos_.begin(), albumInfos_.end(),
         [fileIdOld](const HighlightAlbumInfo &info) { return info.coverId == fileIdOld; });
     if (it != albumInfos_.end()) {
         it->coverUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-            std::to_string(fileInfo.fileIdNew), MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath));
+            std::to_string(highlightPhoto.photoInfo.fileIdNew),
+            MediaFileUtils::GetExtraUri(highlightPhoto.photoInfo.displayName, highlightPhoto.photoInfo.cloudPath));
         MEDIA_INFO_LOG("album %{public}s get coverUri %{public}s.", it->albumName.c_str(), it->coverUri.c_str());
     }
 
-    bool cond = ((fileInfo.storyIds.empty() && fileInfo.portraitIds.empty()) || fileInfo.storyChosen == 0);
-    CHECK_AND_RETURN(!cond);
-    std::stringstream storyIdss(fileInfo.storyIds);
+    std::stringstream storyIdss(highlightPhoto.storyIds);
     std::string storyId;
     while (std::getline(storyIdss, storyId, ',')) {
-        UpdateMapInsertValuesByStoryId(values, fileInfo, storyId);
+        UpdateMapInsertValuesByStoryId(values, highlightPhoto, storyId);
     }
 
-    std::stringstream portraitIdss(fileInfo.portraitIds);
+    std::stringstream portraitIdss(highlightPhoto.portraitIds);
     std::string portraitId;
     while (std::getline(portraitIdss, portraitId, ',')) {
-        UpdateMapInsertValuesByStoryId(values, fileInfo, portraitId);
+        UpdateMapInsertValuesByStoryId(values, highlightPhoto, portraitId);
     }
 }
 
 void HighlightRestore::UpdateMapInsertValuesByStoryId(std::vector<NativeRdb::ValuesBucket> &values,
-    const FileInfo &fileInfo, const std::string &storyId)
+    const HighlightPhotoInfo &highlightPhoto, const std::string &storyId)
 {
     CHECK_AND_RETURN(MediaLibraryDataManagerUtils::IsNumber(storyId));
     int32_t albumIdOld = std::atoi(storyId.c_str());
@@ -433,32 +429,33 @@ void HighlightRestore::UpdateMapInsertValuesByStoryId(std::vector<NativeRdb::Val
         [albumIdOld](const HighlightAlbumInfo &info) { return info.albumIdOld == albumIdOld; });
     bool cond = (it == albumInfos_.end() || it->albumIdNew <= 0 || it->aiAlbumIdNew <= 0);
     CHECK_AND_RETURN_LOG(!cond, "no such album of albumIdOld: %{public}d", albumIdOld);
-    CHECK_AND_EXECUTE(fileInfo.fileType != MediaType::MEDIA_TYPE_VIDEO,
-        it->effectline.push_back(GetEffectline(fileInfo)));
+    CHECK_AND_EXECUTE(highlightPhoto.photoInfo.fileType != MediaType::MEDIA_TYPE_VIDEO,
+        it->effectline.push_back(GetEffectline(highlightPhoto)));
 
     std::lock_guard<mutex> lock(counterMutex_);
     std::string albumName = std::to_string(it->id) + it->albumName;
     CHECK_AND_EXECUTE(albumPhotoCounter_.count(albumName) != 0, albumPhotoCounter_[albumName] = 0);
     albumPhotoCounter_[albumName]++;
-    values.push_back(GetMapInsertValue(it->albumIdNew, fileInfo.fileIdNew));
-    values.push_back(GetMapInsertValue(it->aiAlbumIdNew, fileInfo.fileIdNew));
+    values.push_back(GetMapInsertValue(it->albumIdNew, highlightPhoto.photoInfo.fileIdNew));
+    values.push_back(GetMapInsertValue(it->aiAlbumIdNew, highlightPhoto.photoInfo.fileIdNew));
 }
 
-nlohmann::json HighlightRestore::GetEffectline(const FileInfo &fileInfo)
+nlohmann::json HighlightRestore::GetEffectline(const HighlightPhotoInfo &highlightPhoto)
 {
     nlohmann::json effectline;
     nlohmann::json fileId;
-    fileId.emplace_back(fileInfo.fileIdNew);
+    fileId.emplace_back(highlightPhoto.photoInfo.fileIdNew);
     effectline["fileId"] = fileId;
     nlohmann::json fileUri;
     std::string effectVideoUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX,
-        std::to_string(fileInfo.fileIdNew), MediaFileUtils::GetExtraUri(fileInfo.displayName, fileInfo.cloudPath));
+        std::to_string(highlightPhoto.photoInfo.fileIdNew),
+        MediaFileUtils::GetExtraUri(highlightPhoto.photoInfo.displayName, highlightPhoto.photoInfo.cloudPath));
     fileUri.emplace_back(effectVideoUri);
     effectline["fileUri"] = fileUri;
     nlohmann::json filedatemodified;
-    filedatemodified.emplace_back(fileInfo.dateModified);
+    filedatemodified.emplace_back(highlightPhoto.dateModified);
     effectline["filedatemodified"] = filedatemodified;
-    effectline["effectVideoTrack"] = GetEffectVideoTrack(fileInfo.hashCode);
+    effectline["effectVideoTrack"] = GetEffectVideoTrack(highlightPhoto.hashCode);
 
     effectline["effect"] = "TYPE_HILIGHT_CLIP";
     effectline["effectVideoUri"] = effectVideoUri;
@@ -518,6 +515,7 @@ int32_t HighlightRestore::BatchInsertWithRetry(const std::string &tableName,
 
 void HighlightRestore::UpdateAlbums()
 {
+    CHECK_AND_RETURN_LOG(galleryRdb_ != nullptr && mediaLibraryRdb_ != nullptr, "rdbStore is nullptr");
     const std::string UPDATE_ALBUM_SQL = "UPDATE AnalysisAlbum SET "
         "cover_uri = ?, "
         "count = (SELECT count(1) FROM AnalysisPhotoMap AS apm WHERE apm.map_album = AnalysisAlbum.album_id) "

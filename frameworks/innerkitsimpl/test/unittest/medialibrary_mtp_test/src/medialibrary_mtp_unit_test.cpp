@@ -366,8 +366,8 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_008, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 40, 0, 0, 0, 3, 0, 1, 32, 32, 0, 0, 0, 12, 0, 0, 0, 1, 220, 2, 220,
-        3, 220, 4, 220, 7, 220, 9, 220, 11, 220, 65, 220, 68, 220, 224, 220, 78, 220, 72, 220 };
+    std::vector<uint8_t> targetData = { 38, 0, 0, 0, 3, 0, 1, 32, 32, 0, 0, 0, 11, 0, 0, 0, 1, 220, 2, 220,
+        3, 220, 4, 220, 7, 220, 9, 220, 11, 220, 65, 220, 68, 220, 224, 220, 78, 220 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);
@@ -2076,8 +2076,8 @@ HWTEST_F(MediaLibraryMTPUnitTest, medialibrary_MTP_message_testlevel0_060, TestS
     for (auto && i : output) {
         MEDIA_DEBUG_LOG("i: %{public}d", i);
     }
-    std::vector<uint8_t> targetData = { 40, 0, 0, 0, 3, 0, 1, 32, 32, 0, 0, 0, 12, 0, 0, 0, 1, 220, 2, 220,
-        3, 220, 4, 220, 7, 220, 9, 220, 11, 220, 65, 220, 68, 220, 224, 220, 78, 220, 72, 220 };
+    std::vector<uint8_t> targetData = { 38, 0, 0, 0, 3, 0, 1, 32, 32, 0, 0, 0, 11, 0, 0, 0, 1, 220, 2, 220,
+        3, 220, 4, 220, 7, 220, 9, 220, 11, 220, 65, 220, 68, 220, 224, 220, 78, 220 };
 
     MEDIA_DEBUG_LOG("MtpDriver::output.size: %{public}d", output.size());
     EXPECT_EQ(output, targetData);

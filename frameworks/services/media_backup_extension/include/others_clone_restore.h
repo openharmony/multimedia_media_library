@@ -79,6 +79,7 @@ private:
     static std::string GetFileHeadPath(int32_t sceneCode, int32_t fileType);
     static void AddGalleryAlbum(std::vector<PhotoAlbumRestore::GalleryAlbumRowData> &galleryAlbumInfos,
         const std::string &lPath);
+    static bool IsIphoneDynamicVideo(FileInfo &fileInfo, int32_t sceneCode);
 
 private:
     std::mutex cloneMutex_;

@@ -43,7 +43,6 @@ namespace Media {
 
 static const string MOVING_PHOTO_NAPI_CLASS = "MovingPhoto";
 thread_local napi_ref MovingPhotoNapi::constructor_ = nullptr;
-static std::function<void(int, int, std::string)> callback_;
 static SafeMap<std::string, bool> isMovingPhotoTranscoderMap;
 static SafeMap<std::string, MovingPhotoAsyncContext *> requestContentCompleteResult;
 static std::mutex isMovingPhotoTranscoderMapMutex;
@@ -507,8 +506,28 @@ static bool IsValidResourceType(int32_t resourceType)
                MediaLibraryNapiUtils::IsSystemApp());
 }
 
-static int32_t QueryPhotoPosition(string movingPhotoUri, bool hasReadPermission, int32_t &position)
+static int32_t QueryPhotoPosition(const string &movingPhotoUri, bool hasReadPermission, int32_t &position)
 {
+    if (!MediaFileUtils::IsMediaLibraryUri(movingPhotoUri)) {
+        position = static_cast<int32_t>(PhotoPositionType::LOCAL);
+        return E_OK;
+    }
+
+    std::string MULTI_USER_URI_FLAG = "user=";
+    std::string str = movingPhotoUri;
+    size_t pos = str.find(MULTI_USER_URI_FLAG);
+    std::string userIdStr = "";
+    if (pos != std::string::npos) {
+        pos += MULTI_USER_URI_FLAG.length();
+        size_t end = str.find_first_of("&?", pos);
+        if (end == std::string::npos) {
+            end = str.length();
+        }
+        userIdStr = str.substr(pos, end - pos);
+        NAPI_INFO_LOG("QueryPhotoPosition for other user is %{public}s", userIdStr.c_str());
+    }
+    int32_t userId = userIdStr != "" && MediaFileUtils::IsValidInteger(userIdStr) ? atoi(userIdStr.c_str()) : -1;
+
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, MediaFileUtils::GetIdFromUri(movingPhotoUri));
     std::vector<std::string> fetchColumn { PhotoColumn::PHOTO_POSITION };
@@ -521,7 +540,7 @@ static int32_t QueryPhotoPosition(string movingPhotoUri, bool hasReadPermission,
     }
     Uri uri(queryUri);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode, userId);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         NAPI_ERR_LOG("query resultSet is nullptr");
         return E_ERR;
@@ -605,7 +624,7 @@ static void RequestContentExecute(napi_env env, void *data)
     auto* context = static_cast<MovingPhotoAsyncContext*>(data);
     int32_t ret = QueryPhotoPosition(context->movingPhotoUri, HasReadPermission(), context->position);
     if (ret != E_OK) {
-        NAPI_ERR_LOG("Failed to query position of moving photo");
+        NAPI_ERR_LOG("Failed to query position of moving photo, ret: %{public}d", ret);
         context->SaveError(ret);
         return;
     }

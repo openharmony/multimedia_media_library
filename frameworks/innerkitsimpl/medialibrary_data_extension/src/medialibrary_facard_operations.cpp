@@ -187,10 +187,10 @@ void FaCloudSyncSwitchObserver::OnChange()
 {
     std::lock_guard<std::mutex> lock(FaCloudSyncSwitchObserver::mtx);
     const int CLOUD_SYNC_TYPE = 3;
-    MEDIA_DEBUG_LOG("OnChange assetChangeUri = %{public}s", CLOUD_SYNC_PROXY_URI.c_str());
+    MEDIA_DEBUG_LOG("OnChange assetChangeUri = %{public}s", cloudSyncChangeUri.c_str());
     MEDIA_DEBUG_LOG("OnChange assetChangeType = %{public}d", static_cast<int>(CLOUD_SYNC_TYPE));
     FaCloudSyncSwitchObserver::cloudSyncChanges.insert(
-        CloudSyncChangeInfo(CLOUD_SYNC_PROXY_URI, static_cast<int>(CLOUD_SYNC_TYPE)));
+        CloudSyncChangeInfo(cloudSyncChangeUri, static_cast<int>(CLOUD_SYNC_TYPE)));
 
     PostAssetChangeTask();
 }
@@ -205,11 +205,17 @@ void MediaLibraryFaCardOperations::RegisterObserver(const std::string &formId, c
     sptr<FaCloudSyncSwitchObserver> cloudSyncObserver;
     if (registerUri.find(ASSET_URI_PREFIX) == 0) {
         auto cardAssetUriObserver = std::make_shared<CardAssetUriObserver>(registerUri);
+        if (cardAssetUriObserver == nullptr) {
+            return;
+        }
         MEDIA_DEBUG_LOG("cardAssetUriObserver->uri = %{public}s", cardAssetUriObserver->assetChangeUri.c_str());
         formAssetObserversMap[formId].push_back(cardAssetUriObserver);
         observer = std::static_pointer_cast<DataShare::DataShareObserver>(cardAssetUriObserver);
     } else if (registerUri.find(CLOUD_SYNC_SWITCH_URI_PREFIX) == 0) {
         sptr<FaCloudSyncSwitchObserver> cloudSwitchObserver(new (std::nothrow) FaCloudSyncSwitchObserver(registerUri));
+        if (cloudSwitchObserver == nullptr) {
+            return;
+        }
         MEDIA_DEBUG_LOG("FaCloudSyncuri = %{public}s", cloudSwitchObserver->cloudSyncChangeUri.c_str());
         formCloudSyncObserversMap[formId].push_back(cloudSwitchObserver);
         cloudSyncObserver = cloudSwitchObserver;
