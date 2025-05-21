@@ -28,6 +28,18 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+
+struct QuerySizeAndResolution {
+    std::string localImageSize;
+    std::string localVideoSize;
+    std::string cloudImageSize;
+    std::string cloudVideoSize;
+    std::string localImageResolution;
+    std::string localVideoResolution;
+    std::string cloudImageResolution;
+    std::string cloudVideoResolution;
+};
+
 class DfxDatabaseUtils {
 public:
     EXPORT static int32_t QueryFromPhotos(int32_t mediaType, int32_t position);
@@ -42,13 +54,15 @@ public:
     EXPORT static int32_t QueryLCDThumb(bool isLocal);
     EXPORT static int32_t QueryOperationRecordInfo(OperationRecordInfo &operationRecordInfo);
     EXPORT static int32_t QueryPhotoErrorCount();
+    EXPORT static void GetPhotoMimeType(std::string &photoMimeType);
+    EXPORT static void GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInfo);
 
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,
         const std::string &queryColumn, int32_t &value);
     static int32_t QueryDouble(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,
         const std::string &queryColumn, double &value);
-    static bool CheckChargingAndScreenOff();
+    static bool CheckChargingAndScreenOff(bool isReported);
 };
 } // namespace Media
 } // namespace OHOS

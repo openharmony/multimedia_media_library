@@ -41,7 +41,90 @@ const std::string DFX_OPT_TYPE = "opt_type";
 const std::string OPT_ADD_VALUE = "1";
 const std::string OPT_DEL_VALUE = "2";
 const std::string OPT_UPDATE_VALUE = "3";
-const int32_t BATCH_QUERY_PHOTO_NUMBER = 300;
+const int32_t BATCH_QUERY_PHOTO_NUMBER = 2000;
+const int32_t FILE_HEIGHT_AND_WIDTH_240 = 240;
+const int32_t FILE_HEIGHT_AND_WIDTH_360 = 360;
+const int32_t FILE_HEIGHT_AND_WIDTH_480 = 480;
+const int32_t FILE_HEIGHT_AND_WIDTH_720 = 720;
+const int32_t FILE_HEIGHT_AND_WIDTH_1080 = 1080;
+const int32_t FILE_HEIGHT_AND_WIDTH_1440 = 1440;
+const int32_t FILE_HEIGHT_AND_WIDTH_2000 = 2000;
+const int32_t FILE_HEIGHT_AND_WIDTH_4000 = 4000;
+const int64_t PHOTO_FILE_SIZE = 1024;
+static const std::vector<std::pair<int64_t, std::string>> sizeRanges = {
+    {100, "size100K"},
+    {250, "size250K"},
+    {500, "size500K"},
+    {1 * 1024, "size1M"},
+    {2 * 1024, "size2M"},
+    {3 * 1024, "size3M"},
+    {4 * 1024, "size4M"},
+    {5 * 1024, "size5M"},
+    {7 * 1024, "size7M"},
+    {10 * 1024, "size10M"},
+    {15 * 1024, "size15M"},
+    {20 * 1024, "size20M"},
+    {30 * 1024, "size30M"},
+    {50 * 1024, "size50M"},
+    {100 * 1024, "size100M"},
+    {500 * 1024, "size500M"},
+    {1 * 1024 * 1024, "size1G"},
+    {2 * 1024 * 1024, "size2G"},
+    {5 * 1024 * 1024, "size5G"}
+};
+
+static const std::unordered_map<std::string, int32_t> DEFAULT_PHOTO_SIZE_MAP = {
+    {"size100K", 0},
+    {"size250K", 0},
+    {"size500K", 0},
+    {"size1M", 0},
+    {"size2M", 0},
+    {"size3M", 0},
+    {"size4M", 0},
+    {"size5M", 0},
+    {"size7M", 0},
+    {"size10M", 0},
+    {"size15M", 0},
+    {"size20M", 0},
+    {"size30M", 0},
+    {"size50M", 0},
+    {"size100M", 0},
+    {"size500M", 0},
+    {"size1G", 0},
+    {"size2G", 0},
+    {"size5G", 0},
+    {"sizeOther", 0}
+};
+
+static const std::unordered_map<std::string, int32_t> DEFAULT_PHOTO_RESOLUTION_MAP = {
+    {"resolutionLess240P", 0},
+    {"resolution240P", 0},
+    {"resolution360P", 0},
+    {"resolution480P", 0},
+    {"resolution720P", 0},
+    {"resolution1080P", 0},
+    {"resolution2K", 0},
+    {"resolution4K", 0}
+};
+
+static const std::unordered_map<std::string, int32_t> DEFAULT_VIDEO_RESOLUTION_MAP = {
+    {"resolutionLess720P", 0},
+    {"resolution720P", 0},
+    {"resolution1080P", 0},
+    {"resolution2K", 0},
+    {"resolution4K", 0}
+};
+
+struct SizeAndResolutionInfoMap {
+    unordered_map<std::string, int32_t> localImageSizeMap = DEFAULT_PHOTO_SIZE_MAP;
+    unordered_map<std::string, int32_t> localVideoSizeMap = DEFAULT_PHOTO_SIZE_MAP;
+    unordered_map<std::string, int32_t> cloudImageSizeMap = DEFAULT_PHOTO_SIZE_MAP;
+    unordered_map<std::string, int32_t> cloudVideoSizeMap = DEFAULT_PHOTO_SIZE_MAP;
+    unordered_map<std::string, int32_t> localImageResolutionMap = DEFAULT_PHOTO_RESOLUTION_MAP;
+    unordered_map<std::string, int32_t> localVideoResolutionMap = DEFAULT_VIDEO_RESOLUTION_MAP;
+    unordered_map<std::string, int32_t> cloudImageResolutionMap = DEFAULT_PHOTO_RESOLUTION_MAP;
+    unordered_map<std::string, int32_t> cloudVideoResolutionMap = DEFAULT_VIDEO_RESOLUTION_MAP;
+};
 
 int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, int32_t position)
 {
@@ -409,7 +492,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryPhotoFilePath(
     return rdbStore->QuerySql(querySql);
 }
 
-bool DfxDatabaseUtils::CheckChargingAndScreenOff()
+bool DfxDatabaseUtils::CheckChargingAndScreenOff(bool isReported)
 {
     bool bFlag = PowerEfficiencyManager::IsChargingAndScreenOff();
     if (!bFlag) {
@@ -422,8 +505,13 @@ bool DfxDatabaseUtils::CheckChargingAndScreenOff()
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return bFlag;
     }
-    int64_t time = MediaFileUtils::UTCTimeSeconds() - TWO_DAY;
-    prefs->PutLong(LAST_TWO_DAY_REPORT_TIME, time);
+    if (isReported) {
+        int64_t time = MediaFileUtils::UTCTimeSeconds() - TWO_DAY;
+        prefs->PutLong(LAST_TWO_DAY_REPORT_TIME, time);
+    } else {
+        int64_t time = MediaFileUtils::UTCTimeSeconds() - ONE_WEEK;
+        prefs->PutLong(LAST_WEEK_REPORT_TIME, time);
+    }
     prefs->FlushSync();
     return bFlag;
 }
@@ -448,7 +536,7 @@ int32_t DfxDatabaseUtils::QueryPhotoErrorCount()
     CHECK_AND_RETURN_RET_LOG(count > 0, E_OK, "Failed to get count");
     int32_t photoCount = 0;
     for (int32_t offset = 0; offset < count; offset += BATCH_QUERY_PHOTO_NUMBER) {
-        if (!CheckChargingAndScreenOff()) {
+        if (!CheckChargingAndScreenOff(true)) {
             MEDIA_ERR_LOG("Charging and screen off");
             return E_OK;
         }
@@ -485,5 +573,179 @@ int32_t DfxDatabaseUtils::QueryTotalCloudThumb(int32_t& totalDownload)
     return E_OK;
 }
 
+static void UpdatePhotoSizeMap(const int64_t size, std::unordered_map<std::string, int32_t> &photoSizeMap)
+{
+    if (size <= 0) {
+        MEDIA_ERR_LOG("is wrong size");
+        return;
+    }
+    int64_t fileSize = size / PHOTO_FILE_SIZE;
+    for (const auto &range : sizeRanges) {
+        if (fileSize <= range.first) {
+            photoSizeMap[range.second]++;
+            return;
+        }
+    }
+    photoSizeMap["sizeOther"]++;
+}
+
+static void UpdatePhotoResolutionMap(const int32_t height, const int32_t width,
+    std::unordered_map<std::string, int32_t> &resolutionMap)
+{
+    int32_t min = std::min(height, width);
+    int32_t max = std::max(height, width);
+    if (max < FILE_HEIGHT_AND_WIDTH_2000) {
+        if (min < FILE_HEIGHT_AND_WIDTH_240) {
+            resolutionMap["resolutionLess240P"]++;
+        } else if (min >= FILE_HEIGHT_AND_WIDTH_240 && min < FILE_HEIGHT_AND_WIDTH_360) {
+            resolutionMap["resolution240P"]++;
+        } else if (min >= FILE_HEIGHT_AND_WIDTH_360 && min < FILE_HEIGHT_AND_WIDTH_480) {
+            resolutionMap["resolution360P"]++;
+        } else if (min >= FILE_HEIGHT_AND_WIDTH_480 && min < FILE_HEIGHT_AND_WIDTH_720) {
+            resolutionMap["resolution480P"]++;
+        } else if (min >= FILE_HEIGHT_AND_WIDTH_720 && min < FILE_HEIGHT_AND_WIDTH_1080) {
+            resolutionMap["resolution720P"]++;
+        } else if (min >= FILE_HEIGHT_AND_WIDTH_1080 && min < FILE_HEIGHT_AND_WIDTH_1440) {
+            resolutionMap["resolution1080P"]++;
+        } else {
+            MEDIA_ERR_LOG("is wrong resolution");
+        }
+    } else {
+        if (min >= FILE_HEIGHT_AND_WIDTH_1440 && max < FILE_HEIGHT_AND_WIDTH_4000) {
+            resolutionMap["resolution2K"]++;
+        } else if (min >= FILE_HEIGHT_AND_WIDTH_1440 && max >= FILE_HEIGHT_AND_WIDTH_4000) {
+            resolutionMap["resolution4K"]++;
+        } else {
+            MEDIA_ERR_LOG("is wrong resolution");
+        }
+    }
+}
+
+static void UpdateVideoResolutionMap(const int32_t height, const int32_t width,
+    std::unordered_map<std::string, int32_t> &resolutionMap)
+{
+    int32_t min = std::min(height, width);
+    int32_t max = std::max(height, width);
+    if (min < FILE_HEIGHT_AND_WIDTH_720 && max < FILE_HEIGHT_AND_WIDTH_2000) {
+        resolutionMap["resolutionLess720P"]++;
+    } else if (min >= FILE_HEIGHT_AND_WIDTH_720 && min < FILE_HEIGHT_AND_WIDTH_1080 &&
+        max < FILE_HEIGHT_AND_WIDTH_2000) {
+        resolutionMap["resolution720P"]++;
+    } else if (min >= FILE_HEIGHT_AND_WIDTH_1080 && min < FILE_HEIGHT_AND_WIDTH_1440 &&
+        max < FILE_HEIGHT_AND_WIDTH_2000) {
+        resolutionMap["resolution1080P"]++;
+    } else if (min >= FILE_HEIGHT_AND_WIDTH_1440 && max < FILE_HEIGHT_AND_WIDTH_4000 &&
+        max >= FILE_HEIGHT_AND_WIDTH_2000) {
+        resolutionMap["resolution2K"]++;
+    } else if (min >= FILE_HEIGHT_AND_WIDTH_1440 && max >= FILE_HEIGHT_AND_WIDTH_4000) {
+        resolutionMap["resolution4K"]++;
+    } else {
+        MEDIA_ERR_LOG("is wrong resolution");
+    }
+}
+
+void DfxDatabaseUtils::GetPhotoMimeType(std::string &photoMimeType)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
+    std::string querySql = "SELECT " + MediaColumn::MEDIA_MIME_TYPE + ", COUNT(*) AS count FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
+        PhotoColumn::MEDIA_DATE_TRASHED + " = 0 AND " + PhotoColumn::PHOTO_BURST_COVER_LEVEL +
+        " = 1 GROUP BY " + MediaColumn::MEDIA_MIME_TYPE;
+    shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql);
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query resultCount");
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string mediaType = GetStringVal(MediaColumn::MEDIA_MIME_TYPE, resultSet);
+        int32_t count = GetInt32Val("count", resultSet);
+        photoMimeType += mediaType + ":" + std::to_string(count) + ", ";
+    }
+    resultSet->Close();
+}
+
+static void StatisticsSizeAndResolution(shared_ptr<NativeRdb::ResultSet> &resultSet,
+    SizeAndResolutionInfoMap &infoMap)
+{
+    CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to statistics");
+    int32_t position = GetInt64Val(PhotoColumn::PHOTO_POSITION, resultSet);
+    int32_t mediaType = GetInt64Val(MediaColumn::MEDIA_TYPE, resultSet);
+    int32_t height = GetInt64Val(PhotoColumn::PHOTO_HEIGHT, resultSet);
+    int32_t width = GetInt64Val(PhotoColumn::PHOTO_WIDTH, resultSet);
+    int64_t size = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
+    if (mediaType == MEDIA_TYPE_IMAGE) {
+        if (position == static_cast<int32_t>(PhotoPositionType::LOCAL)) {
+            UpdatePhotoSizeMap(size, infoMap.localImageSizeMap);
+            UpdatePhotoResolutionMap(height, width, infoMap.localImageResolutionMap);
+        } else  {
+            UpdatePhotoSizeMap(size, infoMap.cloudImageSizeMap);
+            UpdatePhotoResolutionMap(height, width, infoMap.cloudImageResolutionMap);
+        }
+    } else if (mediaType == MEDIA_TYPE_VIDEO) {
+        if (position == static_cast<int32_t>(PhotoPositionType::LOCAL)) {
+            UpdatePhotoSizeMap(size, infoMap.localVideoSizeMap);
+            UpdateVideoResolutionMap(height, width, infoMap.localVideoResolutionMap);
+        } else {
+            UpdatePhotoSizeMap(size, infoMap.cloudVideoSizeMap);
+            UpdateVideoResolutionMap(height, width, infoMap.cloudVideoResolutionMap);
+        }
+    } else {
+        MEDIA_ERR_LOG("is wrong mediaType");
+    }
+}
+
+static string GetInfoToString(const unordered_map<string, int32_t>& defaultMap)
+{
+    std::string result;
+    for (const auto& pair : defaultMap) {
+        if (pair.second > 0) {
+            result += pair.first + ":" + std::to_string(pair.second) + "; ";
+        }
+    }
+    return result;
+}
+
+void DfxDatabaseUtils::GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInfo)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
+    std::string querySql = "SELECT count(1) as count FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+        PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " + PhotoColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 ";
+    shared_ptr<NativeRdb::ResultSet> resultCount = rdbStore->QuerySql(querySql);
+    CHECK_AND_RETURN_LOG(resultCount != nullptr, "Failed to query resultCount");
+    int32_t count = 0;
+    if (resultCount->GoToNextRow() == NativeRdb::E_OK) {
+        count = GetInt32Val("count", resultCount);
+    }
+    resultCount->Close();
+    CHECK_AND_RETURN_LOG(count > 0, "Failed to get count");
+    SizeAndResolutionInfoMap infoMap;
+    for (int32_t offset = 0; offset < count; offset += BATCH_QUERY_PHOTO_NUMBER) {
+        if (!CheckChargingAndScreenOff(false)) {
+            MEDIA_ERR_LOG("Charging and screen off");
+            return;
+        }
+        std::string querySql = "SELECT " + PhotoColumn::PHOTO_POSITION + ", " + MediaColumn::MEDIA_TYPE +
+            " , " + MediaColumn::MEDIA_SIZE + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH +
+            " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+            PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " + PhotoColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
+            PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 " +
+            " LIMIT " + std::to_string(offset) + ", " + std::to_string(BATCH_QUERY_PHOTO_NUMBER);
+
+        shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql);
+        CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query resultCount");
+        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            StatisticsSizeAndResolution(resultSet, infoMap);
+        }
+        resultSet->Close();
+    }
+    queryInfo.localImageSize = GetInfoToString(infoMap.localImageSizeMap);
+    queryInfo.localVideoSize = GetInfoToString(infoMap.localVideoSizeMap);
+    queryInfo.cloudImageSize = GetInfoToString(infoMap.cloudImageSizeMap);
+    queryInfo.cloudVideoSize = GetInfoToString(infoMap.cloudVideoSizeMap);
+    queryInfo.localImageResolution = GetInfoToString(infoMap.localImageResolutionMap);
+    queryInfo.localVideoResolution = GetInfoToString(infoMap.localVideoResolutionMap);
+    queryInfo.cloudImageResolution = GetInfoToString(infoMap.cloudImageResolutionMap);
+    queryInfo.cloudVideoResolution = GetInfoToString(infoMap.cloudVideoResolutionMap);
+}
 } // namespace Media
 } // namespace OHOS

@@ -107,6 +107,10 @@ public:
     static int32_t ReportCustomRestoreFusion(const CustomRestoreDfxDataPoint& reportData);
     void ReportOperationRecordInfo();
     static int32_t ReportPhotoError(const PhotoErrorCount& reportData);
+    void ReportPhotoSizeInfo(const std::string &localImageSize, const std::string &localVideoSize,
+        const std::string &cloudImageSize, const std::string &cloudVideoSize, const std::string &photoMimeType);
+    void ReportPhotoResolutionInfo(const std::string &localImageResolution, const std::string &localVideoResolution,
+        const std::string &cloudImageResolution, const std::string &cloudVideoResolution);
 };
 } // namespace Media
 } // namespace OHOS
