@@ -14,14 +14,17 @@
  */
 #include "photo_album_dao.h"
 
-#include "rdb_store.h"
-#include "media_log.h"
-#include "result_set_utils.h"
+#include <regex>
+
 #include "album_plugin_config.h"
-#include "userfile_manager_types.h"
-#include "medialibrary_errno.h"
 #include "backup_database_utils.h"
+#include "backup_file_utils.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_rdb_transaction.h"
+#include "media_log.h"
+#include "rdb_store.h"
+#include "result_set_utils.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 std::string StringUtils::ToLower(const std::string &str)
@@ -248,26 +251,51 @@ void PhotoAlbumDao::LoadPhotoAlbums()
 std::string PhotoAlbumDao::ParseSourcePathToLPath(const std::string &sourcePath)
 {
     std::string result = "/Pictures/其它";
-    CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), result, "Empty sourcePath");
 
-    std::string rootPath = FindRootPath(sourcePath);
-    size_t start_pos = sourcePath.find(rootPath);
-    size_t end_pos = sourcePath.find_last_of("/");
-    CHECK_AND_RETURN_RET(start_pos != std::string::npos && end_pos != std::string::npos, result);
-
-    start_pos += rootPath.length();
-    result = sourcePath.substr(start_pos, end_pos - start_pos);
-    start_pos = result.find_first_of("/");
-    CHECK_AND_EXECUTE(start_pos == std::string::npos, result = result.substr(start_pos));
+    size_t startPos = FindRootPos(sourcePath);
+    size_t endPos = sourcePath.find_last_of("/");
+    CHECK_AND_RETURN_RET(startPos != std::string::npos && endPos != std::string::npos, result);
+    CHECK_AND_RETURN_RET(startPos != endPos, "/");
+    CHECK_AND_RETURN_RET(endPos - startPos > 1, result);
+    result = sourcePath.substr(startPos, endPos - startPos);
 
     result = result == AlbumPlugin::LPATH_HIDDEN_ALBUM ? AlbumPlugin::LPATH_RECOVER : result;
     return result;
 }
 
-std::string PhotoAlbumDao::FindRootPath(const std::string &path)
+/**
+ * @brief Find the end pos of root, if corner cases happen, return std::string::npos
+ */
+size_t PhotoAlbumDao::FindRootPos(const std::string &path)
 {
-    size_t pos = path.find(GALLERY_INTERNAL_ROOT_PATH);
-    return pos != std::string::npos ? GALLERY_INTERNAL_ROOT_PATH : GALLERY_EXTERNAL_ROOT_PATH;
+    std::string rootPath;
+    size_t lastSlashPos = path.find_last_of("/");
+    // corner case 1: no slash
+    if (lastSlashPos == std::string::npos) {
+        MEDIA_ERR_LOG("No slash: %{public}s", BackupFileUtils::GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+        return std::string::npos;
+    }
+
+    std::smatch matchResult;
+    std::regex nestedRootPattern(NESTED_ROOT_PATTERN);
+    std::regex nonNestedRootPattern(NON_NESTED_ROOT_PATTERN);
+    if (std::regex_search(path, matchResult, nestedRootPattern)) {
+        rootPath = matchResult.str(0);
+        // corner case 2: matched with nested pattern, but no more slash
+        if (rootPath.size() > lastSlashPos) {
+            MEDIA_ERR_LOG("No more slash after matched string: %{public}s",
+                BackupFileUtils::GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+            return std::string::npos;
+        }
+    } else if (std::regex_search(path, matchResult, nonNestedRootPattern)) {
+        rootPath = matchResult.str(0);
+    }
+    
+    if (rootPath.empty()) {
+        MEDIA_ERR_LOG("Not matched: %{public}s", BackupFileUtils::GarbleFilePath(path, DEFAULT_RESTORE_ID).c_str());
+        return std::string::npos;
+    }
+    return rootPath.length() - 1; // truncate last slash
 }
 
 /**
