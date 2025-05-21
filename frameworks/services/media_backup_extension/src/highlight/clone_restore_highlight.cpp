@@ -158,8 +158,11 @@ void CloneRestoreHighlight::Init(int32_t sceneCode, const std::string &taskId,
     taskId_ = taskId;
     mediaLibraryRdb_ = mediaLibraryRdb;
     mediaRdb_ = mediaRdb;
-    coverPath_ = backupRestoreDir + "/storage/media/local/files/highlight/cover/";
-    musicDir_ = backupRestoreDir + "/storage/media/local/files/highlight/music";
+    std::string highlightSourcePath = backupRestoreDir + "/storage/media/local/files/highlight/";
+    MEDIA_INFO_LOG("/highlight/ source dir %{public}s.",
+        MediaFileUtils::IsDirectory(highlightSourcePath) ? "exist" : "don't exist");
+    coverPath_ = highlightSourcePath + "cover/";
+    musicDir_ = highlightSourcePath + "/music";
     garblePath_ = backupRestoreDir + GARBLE_DST_PATH;
     albumPhotoCounter_.clear();
     failCnt_ = 0;
@@ -447,7 +450,7 @@ void CloneRestoreHighlight::UpdateMapInsertValues(std::vector<NativeRdb::ValuesB
         resultSet->GetRowCount(rowCount);
         offset += PAGE_SIZE;
         resultSet->Close();
-    } while (rowCount > 0);
+    } while (rowCount == PAGE_SIZE);
 }
 
 void CloneRestoreHighlight::UpdateMapInsertValuesByAlbumId(std::vector<NativeRdb::ValuesBucket> &values,
@@ -767,6 +770,10 @@ int32_t CloneRestoreHighlight::MoveHighlightMusic(const std::string &srcDir, con
         } else {
             std::string tmpFilePath = srcFilePath;
             std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
+            CHECK_AND_CONTINUE_INFO_LOG(!MediaFileUtils::IsFileExists(dstFilePath),
+                "dst file already exists, srcPath:%{public}s, dstPath:%{public}s",
+                BackupFileUtils::GarbleFilePath(srcFilePath, sceneCode_, garblePath_).c_str(),
+                BackupFileUtils::GarbleFilePath(dstFilePath, sceneCode_, GARBLE_DST_PATH).c_str());
             int32_t errCode = BackupFileUtils::MoveFile(srcFilePath.c_str(), dstFilePath.c_str(), sceneCode_);
             CHECK_AND_PRINT_LOG(errCode == E_OK,
                 "move file failed, srcPath:%{public}s, dstPath:%{public}s, errCode:%{public}d",
