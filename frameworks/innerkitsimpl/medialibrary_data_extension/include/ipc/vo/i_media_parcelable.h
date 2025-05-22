@@ -13,34 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_IPC_MEDIA_EMPTY_OBJ_VO_H
-#define OHOS_MEDIA_IPC_MEDIA_EMPTY_OBJ_VO_H
+#ifndef OHOS_MEDIA_IPC_I_MEDIA_PARCELABLE_H
+#define OHOS_MEDIA_IPC_I_MEDIA_PARCELABLE_H
 
 #include <string>
 
-#include "i_media_parcelable.h"
+#include "message_parcel.h"
 
 namespace OHOS::Media::IPC {
-class MediaEmptyObjVo : public IPC::IMediaParcelable {
-public:  // constructors & destructors
-    virtual ~MediaEmptyObjVo() = default;
-
+class IMediaParcelable {
 public:  // functions of Parcelable.
-    bool Unmarshalling(MessageParcel &parcel) override
-    {
-        return true;
-    }
-
-    bool Marshalling(MessageParcel &parcel) const override
-    {
-        return true;
-    }
-
-public:  // basic functions
-    std::string ToString() const
-    {
-        return "";
-    }
+    virtual bool Unmarshalling(MessageParcel &parcel) = 0;
+    virtual bool Marshalling(MessageParcel &parcel) const = 0;
 };
 }  // namespace OHOS::Media::IPC
-#endif  // OHOS_MEDIA_IPC_MEDIA_EMPTY_OBJ_VO_H
+#endif  // OHOS_MEDIA_IPC_I_MEDIA_PARCELABLE_H

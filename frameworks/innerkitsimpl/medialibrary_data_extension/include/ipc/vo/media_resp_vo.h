@@ -19,16 +19,19 @@
 #include <string>
 #include <sstream>
 
-#include "parcel.h"
+#include "i_media_parcelable.h"
 
 namespace OHOS::Media::IPC {
 template <class T>
-class MediaRespVo : public Parcelable {
+class MediaRespVo : public IPC::IMediaParcelable {
 private:
     int32_t errCode;
     std::string traceId;
     bool isSuccess;
     T body;
+
+public:  // constructors & destructors
+    virtual ~MediaRespVo() = default;
 
 public:  // gettter and setter
     int32_t GetErrCode() const
@@ -65,37 +68,22 @@ public:  // gettter and setter
     }
 
 public:  // functions of Parcelable.
-    bool ReadFromParcel(Parcel &parcel)
+    bool Unmarshalling(MessageParcel &parcel) override
     {
         parcel.ReadInt32(this->errCode);
         parcel.ReadString(this->traceId);
         parcel.ReadBool(this->isSuccess);
-        T *bodyPtrTmp = T::Unmarshalling(parcel);
-        if (bodyPtrTmp != nullptr) {
-            this->body = *bodyPtrTmp;
-            delete bodyPtrTmp;
-            bodyPtrTmp = nullptr;
-        }
+        this->body.Unmarshalling(parcel);
         return true;
     }
 
-    bool Marshalling(Parcel &parcel) const override
+    bool Marshalling(MessageParcel &parcel) const override
     {
         parcel.WriteInt32(this->errCode);
         parcel.WriteString(this->traceId);
         parcel.WriteBool(this->isSuccess);
         this->body.Marshalling(parcel);
         return true;
-    }
-
-    static MediaRespVo *Unmarshalling(Parcel &parcel)
-    {
-        MediaRespVo *info = new (std::nothrow) MediaRespVo();
-        if ((info != nullptr) && (!info->ReadFromParcel(parcel))) {
-            delete info;
-            info = nullptr;
-        }
-        return info;
     }
 
 public:  // basic functions
