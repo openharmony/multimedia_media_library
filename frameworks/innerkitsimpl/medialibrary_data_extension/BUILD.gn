@@ -67,10 +67,9 @@ config("media_data_extension_public_config") {
 
   include_media_po =
       [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/po" ]
-  
-  include_media_permission = [
-    "${MEDIALIB_BUSINESS_PATH}/media_permission/include/",
-  ]
+
+  include_media_permission =
+      [ "${MEDIALIB_BUSINESS_PATH}/media_permission/include/" ]
 
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
@@ -261,7 +260,7 @@ ohos_shared_library("medialibrary_data_extension") {
 
   media_ipc_source =
       [ "src/ipc/controller/media_controller_service_factory.cpp" ]
-  
+
   media_permission_check_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_permission_check.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_business_code_permission_map.cpp",
