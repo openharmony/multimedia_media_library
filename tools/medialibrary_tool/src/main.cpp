@@ -18,9 +18,11 @@
 #include "control_main.h"
 #include "media_log.h"
 #include <string>
+#include <sstream>
 #include <unistd.h>
 #include <vector>
 
+using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::Media::MediaTool;
@@ -28,9 +30,20 @@ using namespace OHOS::Media::MediaTool;
 constexpr int32_t SHELL_UID = 2000;
 constexpr int32_t ROOT_UID = 0;
 
+static string BuildCommandLine(std::vector<std::string> args)
+{
+    std::ostringstream commandLine;
+    for (size_t i = 0; i < args.size(); ++i) {
+        commandLine << args[i];
+        if (i != args.size() - 1) {
+            commandLine << " ";
+        }
+    }
+    return commandLine.str();
+}
+
 int main(int argc, char *argv[])
 {
-    MEDIA_INFO_LOG("mediatool main start");
     int32_t id = getuid();
     if (id != ROOT_UID && id != SHELL_UID) {
         MEDIA_ERR_LOG("Invalid uid");
@@ -40,6 +53,9 @@ int main(int argc, char *argv[])
     for (int i = 0; i < argc; i++) {
         args.push_back(std::string(argv[i]));
     }
+
+    MEDIA_INFO_LOG("mediatool main start: %{public}s", BuildCommandLine(args).c_str());
+
     return ControlMain::Main(args);
 }
 

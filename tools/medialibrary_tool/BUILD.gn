@@ -38,6 +38,7 @@ ohos_executable("mediatool") {
     "src/command/command.cpp",
     "src/command/delete_command_v10.cpp",
     "src/command/list_command_v10.cpp",
+    "src/command/ls_command.cpp",
     "src/command/query_command_v10.cpp",
     "src/command/recv_command_v10.cpp",
     "src/command/send_command_v10.cpp",
@@ -46,6 +47,7 @@ ohos_executable("mediatool") {
     "src/exec_env.cpp",
     "src/userfile_client_ex.cpp",
     "src/utils/database_utils.cpp",
+    "src/utils/mediatool_command_utils.cpp",
   ]
 
   defines += [ "MEDIALIBRARY_MEDIATOOL_START=1" ]

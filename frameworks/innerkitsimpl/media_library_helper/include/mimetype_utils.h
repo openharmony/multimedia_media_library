@@ -29,6 +29,7 @@ public:
     EXPORT MimeTypeUtils(MimeTypeUtils&&) = delete;
     EXPORT MimeTypeUtils& operator=(const MimeTypeUtils&) = delete;
     EXPORT MimeTypeUtils& operator=(MimeTypeUtils&&) = delete;
+    EXPORT static bool IsMimeTypeMapEmpty();
     EXPORT static int32_t InitMimeTypeMap();
     EXPORT static std::string GetMimeTypeFromExtension(const std::string &extension);
     EXPORT static std::string GetMimeTypeFromExtension(const std::string &extension,

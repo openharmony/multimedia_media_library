@@ -34,7 +34,7 @@ struct SendParam {
 struct RecvParam {
     bool isRecvAll = false;
     bool isRecvPathDir = false;
-    std::string recvUri;
+    std::string recvTarget;
     std::string recvPath; // real path for the recvPath in optArgs
 };
 
@@ -57,6 +57,7 @@ struct QueryParam {
 struct ExecEnv {
     OptionArgs optArgs;
     std::vector<std::string> args;
+    std::vector<std::string> commandArgs;
     SendParam sendParam;
     RecvParam recvParam;
     ListParam listParam;

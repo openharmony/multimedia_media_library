@@ -19,6 +19,11 @@
 #include <mutex>
 #include <thread>
 #include <nlohmann/json.hpp>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "abs_shared_result_set.h"
 #include "directory_ex.h"
@@ -4166,5 +4171,175 @@ int32_t MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(MediaLibraryCo
         "Update subtype field failed. errCode:%{public}d,", errCode);
     return updateRows;
 }
+
+struct LSOperationFileInfo {
+    std::string permissions;
+    int links;
+    std::string owner;
+    std::string group;
+    long size;
+    std::string modTime;
+    std::string fileName;
+};
+
+static std::string GetFilePermissions(struct stat& fileStat)
+{
+    char permissions[11];
+    snprintf(permissions, sizeof(permissions), "%c%c%c%c%c%c%c%c%c%c",
+             (S_ISDIR(fileStat.st_mode)) ? 'd' : '-',
+             (fileStat.st_mode & S_IRUSR) ? 'r' : '-',
+             (fileStat.st_mode & S_IWUSR) ? 'w' : '-',
+             (fileStat.st_mode & S_IXUSR) ? 'x' : '-',
+             (fileStat.st_mode & S_IRGRP) ? 'r' : '-',
+             (fileStat.st_mode & S_IWGRP) ? 'w' : '-',
+             (fileStat.st_mode & S_IXGRP) ? 'x' : '-',
+             (fileStat.st_mode & S_IROTH) ? 'r' : '-',
+             (fileStat.st_mode & S_IWOTH) ? 'w' : '-',
+             (fileStat.st_mode & S_IXOTH) ? 'x' : '-');
+    return std::string(permissions);
+}
+
+static void GetFileOwnerAndGroup(struct stat& fileStat, std::string& owner, std::string& group)
+{
+    struct passwd pwbuf;
+    struct group grbuf;
+    char pwbuffer[1024];
+    char grbuffer[1024];
+    struct passwd* pw = nullptr;
+    struct group* gr = nullptr;
+    getpwuid_r(fileStat.st_uid, &pwbuf, pwbuffer, sizeof(pwbuffer), &pw);
+    getgrgid_r(fileStat.st_gid, &grbuf, grbuffer, sizeof(grbuffer), &gr);
+    owner = pw ? pw->pw_name : std::to_string(fileStat.st_uid);
+    group = gr ? gr->gr_name : std::to_string(fileStat.st_gid);
+}
+
+static std::string GetFileModificationTime(struct stat& fileStat)
+{
+    char modTime[20];
+    struct tm* timeInfo = localtime(&fileStat.st_mtime);
+    if (timeInfo == nullptr) {
+        return "Error";
+    }
+    strftime(modTime, sizeof(modTime), "%Y-%m-%d %H:%M", timeInfo);
+    return std::string(modTime);
+}
+
+static bool QueryHiddenFilesList(set<string>& hiddenFiles)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr!");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, 1);
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_FILE_PATH);
+    columns.push_back(PhotoColumn::PHOTO_SUBTYPE);
+    shared_ptr<NativeRdb::ResultSet> result = rdbStore->QueryByStep(predicates, columns);
+    CHECK_AND_RETURN_RET_LOG(result != nullptr, false, "Query hidden files failed!");
+    hiddenFiles.clear();
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
+        string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, result);
+        string fileName = MediaFileUtils::GetFileName(filePath);
+        hiddenFiles.insert(fileName);
+        int photoSubtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, result);
+        if (photoSubtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            string movingPhotoVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(filePath);
+            string movingPhotoVideoName = MediaFileUtils::GetFileName(movingPhotoVideoPath);
+            hiddenFiles.insert(movingPhotoVideoName);
+        }
+    }
+
+    return true;
+}
+
+static int32_t ProcessFile(const std::string& dirPath, struct dirent* entry, std::vector<LSOperationFileInfo>& fileInfoList,
+    bool excludeHiddenFiles, std::set<std::string>& hiddenFiles)
+{
+    struct stat fileStat;
+    std::string filePath = dirPath + "/" + entry->d_name;
+
+    if (stat(filePath.c_str(), &fileStat) == -1) {
+        MEDIA_ERR_LOG("stat failed. File path: %{public}s, err: %{public}s", filePath.c_str(), strerror(errno));
+        return E_FAIL;
+    }
+
+    if (std::string(entry->d_name) == "." || std::string(entry->d_name) == "..") {
+        return E_OK;
+    }
+
+    if (excludeHiddenFiles && hiddenFiles.find(entry->d_name) != hiddenFiles.end()) {
+        return E_OK;
+    }
+
+    LSOperationFileInfo fileInfo;
+    fileInfo.permissions = GetFilePermissions(fileStat);
+    fileInfo.links = fileStat.st_nlink;
+    GetFileOwnerAndGroup(fileStat, fileInfo.owner, fileInfo.group);
+    fileInfo.size = fileStat.st_size;
+    fileInfo.modTime = GetFileModificationTime(fileStat);
+    fileInfo.fileName = entry->d_name;
+
+    fileInfoList.push_back(fileInfo);
+
+    return E_OK;
+}
+
+static int32_t ListPhotoDirectory(const std::string& dirPath, std::vector<LSOperationFileInfo>& fileInfoList)
+{
+    DIR* dp = opendir(dirPath.c_str());
+    if (dp == nullptr) {
+        MEDIA_ERR_LOG("opendir failed. Dir path: %{public}s, err: %{public}s", dirPath.c_str(), strerror(errno));
+        return E_INVALID_PATH;
+    }
+
+    bool excludeHiddenFiles = PermissionUtils::IsRootShell() ? false : true;
+    set<string> hiddenFiles;
+    if (excludeHiddenFiles && !QueryHiddenFilesList(hiddenFiles)) {
+        MEDIA_ERR_LOG("Query hidden files failed. dir path: %{public}s", dirPath.c_str());
+        closedir(dp);
+        return E_FAIL;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dp)) != nullptr) {
+        int32_t ret = ProcessFile(dirPath, entry, fileInfoList, excludeHiddenFiles, hiddenFiles);
+    }
+
+    closedir(dp);
+    return E_OK;
+}
+
+static string BuildLSResult(const std::vector<LSOperationFileInfo>& fileInfoList)
+{
+    nlohmann::json result;
+
+    for (const auto& file : fileInfoList) {
+        nlohmann::json fileJson;
+        fileJson["permissions"] = file.permissions;
+        fileJson["links"] = file.links;
+        fileJson["owner"] = file.owner;
+        fileJson["group"] = file.group;
+        fileJson["size"] = file.size;
+        fileJson["modTime"] = file.modTime;
+        fileJson["fileName"] = file.fileName;
+
+        result["files"].push_back(fileJson);
+    }
+
+    return result.dump();
+}
+
+int32_t MediaLibraryPhotoOperations::LSMediaFiles(MediaLibraryCommand& cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    string dirPath;
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, MediaColumn::MEDIA_FILE_PATH, dirPath),
+        E_INVALID_VALUES, "Failed to get dirPath value");
+    std::vector<LSOperationFileInfo> fileInfoList;
+    int32_t ret = ListPhotoDirectory(dirPath, fileInfoList);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to list photo directory, dirPath: %{public}s", dirPath.c_str());
+    cmd.SetResult(BuildLSResult(fileInfoList));
+    return E_OK;
+}
+
 } // namespace Media
 } // namespace OHOS
