@@ -26,49 +26,76 @@
 #include "vision_db_sqls.h"
 
 using namespace testing::ext;
+using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
 
+static constexpr int32_t SLEEP_FIVE_SECONDS = 5;
 shared_ptr<MediaLibraryRdbStore> store = nullptr;
 string dataId;
 
-void MediaLibraryThumbnailSourceLoadingTest::SetUpTestCase()
+class ConfigOpenCallPostProcessTest : public NativeRdb::RdbOpenCallback {
+public:
+    int OnCreate(NativeRdb::RdbStore &rdbStore) override;
+    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
+    static const string CREATE_TABLE_TEST;
+};
+
+const string ConfigOpenCallPostProcessTest::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT EXISTS test ") +
+    "(file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, media_type INTEGER," +
+    " date_added TEXT, display_name TEXT, thumbnail_ready TEXT, position TEXT)";
+
+const int32_t E_GETROUWCOUNT_ERROR = 27394103;
+
+int ConfigOpenCallPostProcessTest::OnCreate(NativeRdb::RdbStore &store)
+{
+    return store.ExecuteSql(CREATE_TABLE_TEST);
+}
+
+int ConfigOpenCallPostProcessTest::OnUpgrade(NativeRdb::RdbStore &store, int oldVersion, int newVersion)
+{
+    return 0;
+}
+
+void MediaLibraryThumbnailGenerationPostProcessTest::SetUpTestCase()
 {
     const string dbPath = "/data/test/medialibrary_thumbnail_generation_post_process_test.db";
     NativeRdb::RdbStoreConfig config(dbPath);
-    ConfigTestOpenCall helper;
+    ConfigOpenCallPostProcessTest helper;
     int32_t ret = MediaLibraryUnitTestUtils::InitUnistore(config, 1, helper);
     EXPECT_EQ(ret, E_OK);
-    storePtr = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    ASSERT_NE(storePtr, nullptr);
+    store = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    ASSERT_NE(store, nullptr);
 
-    ret = storePtr->ExecuteSql(PhotoColumn::CREATE_PHOTO_TABLE);
+    ret = store->ExecuteSql(PhotoColumn::CREATE_PHOTO_TABLE);
     ASSERT_EQ(ret, NativeRdb::E_OK);
 
-    ValuesBucket values;
+    NativeRdb::ValuesBucket values;
     values.PutInt(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 0);
-    ret = store->insert(dataId, PhotoColumn::PHOTOS_TABLE, values);
+    int64_t outRowId;
+    ret = store->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, values);
+    dataId = to_string(outRowId);
     ASSERT_EQ(ret, NativeRdb::E_OK);
 }
 
-void MediaLibraryThumbnailSourceLoadingTest::TearDownTestCase()
+void MediaLibraryThumbnailGenerationPostProcessTest::TearDownTestCase()
 {
     string dropSql = "DROP TABLE " + PhotoColumn::CREATE_PHOTO_TABLE + ";";
-    ret = storePtr->ExecuteSql(dropSql);
-    MEDIA_INFO_LOG("Drop photos table success: ", ret == NativeRdb::E_OK);
+    int32_t ret = store->ExecuteSql(dropSql);
+    MEDIA_INFO_LOG("Drop photos table success: %{public}d", ret == NativeRdb::E_OK);
     MediaLibraryUnitTestUtils::StopUnistore();
     std::this_thread::sleep_for(std::chrono::seconds(SLEEP_FIVE_SECONDS));
 }
 
-void MediaLibraryThumbnailSourceLoadingTest::SetUp() {}
+void MediaLibraryThumbnailGenerationPostProcessTest::SetUp() {}
 
-void MediaLibraryThumbnailSourceLoadingTest::TearDown(void) {}
+void MediaLibraryThumbnailGenerationPostProcessTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, PostProcess_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailGenerationPostProcessTest, PostProcess_test_001, TestSize.Level0)
 {
-    ValuesBucket values;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, ThumbnailReady::GENERATE_THUMB_LATER);
+    NativeRdb::ValuesBucket values;
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_LATER));
     ThumbnailData data;
     data.rdbUpdateCache = values;
     data.id = dataId;
@@ -80,10 +107,10 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, PostProcess_test_001, TestSize
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, PostProcess_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailGenerationPostProcessTest, PostProcess_test_002, TestSize.Level0)
 {
-    ValuesBucket values;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, ThumbnailReady::GENERATE_THUMB_RETRY);
+    NativeRdb::ValuesBucket values;
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
     ThumbnailData data;
     data.rdbUpdateCache = values;
     data.id = dataId;

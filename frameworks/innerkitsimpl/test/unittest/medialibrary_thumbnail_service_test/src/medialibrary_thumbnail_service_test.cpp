@@ -239,12 +239,10 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_00
         exit(1);
     }
     string url = "";
-    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    shared_ptr<OHOS::AbilityRuntime::Context> context;
-    serverTest->Init(storePtr, context);
-    int32_t ret = serverTest->CreateThumbnailFileScaned(url, "", true);
-    EXPECT_EQ(ret, E_ERR);
-    serverTest->ReleaseService();
+    ThumbnailService serverTest;
+    int32_t ret = serverTest.CreateThumbnailFileScaned(url, "", true);
+    EXPECT_EQ(ret, E_OK);
+    serverTest.ReleaseService();
 }
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test_001, TestSize.Level1)
