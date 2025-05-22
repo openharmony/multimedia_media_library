@@ -43,6 +43,9 @@ public:
     static const std::vector<std::string> &GetSupportTables();
     static std::shared_ptr<DataShare::DataShareResultSet> GetResultsetByDisplayName(
         const std::string &tableName, const std::string &displayName);
+    static bool CheckTableName(const std::string &tableName);
+
+    static std::string GetQueryUri(const std::string &tableName);
 };
 } // namespace MediaTool
 } // namespace Media

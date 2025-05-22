@@ -52,7 +52,7 @@ std::string ExecEnv::ToStr() const
         AppendStr(str, "isListAll", listParam.isListAll);
     }
     if (optArgs.cmdType == OptCmdType::TYPE_RECV) {
-        AppendStr(str, "recvUri", recvParam.recvUri);
+        AppendStr(str, "recvTarget", recvParam.recvTarget);
         AppendStr(str, "recvPath", recvParam.recvPath);
         AppendStr(str, "isRecvAll", recvParam.isRecvAll);
         AppendStr(str, "isRecvPathDir", recvParam.isRecvPathDir);

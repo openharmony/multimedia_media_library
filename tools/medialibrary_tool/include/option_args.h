@@ -28,7 +28,8 @@ enum class OptCmdType : uint32_t {
     TYPE_LIST = 3,
     TYPE_DELETE = 4,
     TYPE_QUERY = 5,
-    TYPE_LAST = 6
+    TYPE_LS = 6,
+    TYPE_LAST = 7
 };
 
 struct OptionArgs {

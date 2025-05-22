@@ -2017,5 +2017,54 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, UpdateDateTakenWhenZero_test_001, Test
     int32_t ret =  dataManager->UpdateDateTakenWhenZero();
     EXPECT_EQ(ret, E_OK);
 }
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, LSMediaFiles_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("LSMediaFiles_test_001::Start");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    string result;
+    DataShare::DataShareValuesBucket valuesBucket;
+    string examplePath = "/storage/cloud/files/Photo";
+    valuesBucket.Put(MediaColumn::MEDIA_FILE_PATH, examplePath);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::LS_MEDIA_FILES, MediaLibraryApi::API_10);
+    int32_t ret = dataManager->InsertExt(cmd, valuesBucket, result);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(result.empty());
+    MEDIA_INFO_LOG("LSMediaFiles_test_001::End");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, LSMediaFiles_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("LSMediaFiles_test_002::Start");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    string result;
+    DataShare::DataShareValuesBucket valuesBucket;
+    string invalidPath = "/storage/cloud/files/Photo/invalid";
+    valuesBucket.Put(MediaColumn::MEDIA_FILE_PATH, invalidPath);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::LS_MEDIA_FILES, MediaLibraryApi::API_10);
+    int32_t ret = dataManager->InsertExt(cmd, valuesBucket, result);
+    EXPECT_EQ(ret, E_INVALID_PATH);
+    EXPECT_TRUE(result.empty());
+    MEDIA_INFO_LOG("LSMediaFiles_test_002::End");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, QueryActiveUserID_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("QueryActiveUserID_test_001::Start");
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    ASSERT_NE(dataManager, nullptr);
+    string result;
+    DataShare::DataShareValuesBucket valuesBucket;
+    const string stubValue = "stub";
+    valuesBucket.Put(stubValue, 0);
+    MediaLibraryCommand cmd(OperationObject::MISCELLANEOUS, OperationType::QUERY_ACTIVE_USER_ID, MediaLibraryApi::API_10);
+    int32_t ret = dataManager->InsertExt(cmd, valuesBucket, result);
+    EXPECT_EQ(ret, E_OK);
+    EXPECT_FALSE(result.empty());
+    MEDIA_INFO_LOG("QueryActiveUserID_test_001::End");
+}
+
 } // namespace Media
 } // namespace OHOS

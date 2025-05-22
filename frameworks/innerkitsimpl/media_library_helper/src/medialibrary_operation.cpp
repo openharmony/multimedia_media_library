@@ -370,6 +370,8 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_HIGHLIGHT_SUBTITLE, OperationType::HIGHLIGHT_SUBTITLE},
         { OPRN_UPDATE_SUPPORTED_WATERMARK_TYPE, OperationType::UPDATE_SUPPORTED_WATERMARK_TYPE },
         { OPRN_QUERY_HIGHLIGHT_DIRECTORY_SIZE, OperationType::QUERY_HIGHLIGHT_DIRECTORY_SIZE },
+        { OPRN_LS, OperationType::LS_MEDIA_FILES },
+        { OPRN_QUERY_ACTIVE_USER_ID, OperationType::QUERY_ACTIVE_USER_ID },
     };
     return oprnTypeMap;
 }
