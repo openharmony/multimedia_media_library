@@ -31,22 +31,19 @@ public:
     template <class REQ>
     int32_t ReadRequestBody(MessageParcel &data, REQ &reqBody)
     {
-        IPC::MediaReqVo<REQ> *reqVoPtr = IPC::MediaReqVo<REQ>::Unmarshalling(data);
-        bool errConn = reqVoPtr == nullptr;
-        CHECK_AND_RETURN_RET_LOG(!errConn, E_IPC_SEVICE_UNMARSHALLING_FAIL, "Failed to unmarshalling data");
-        reqBody = reqVoPtr->GetBody();
-        delete reqVoPtr;
+        bool isValid = reqBody.Unmarshalling(data);
+        CHECK_AND_RETURN_RET_LOG(isValid, E_IPC_SEVICE_UNMARSHALLING_FAIL, "Failed to unmarshalling data");
         return E_OK;
     }
 
     template <class RSP>
-    void WriteResponseBody(MessageParcel &reply, const RSP &reqBody, const int32_t errCode = E_OK)
+    void WriteResponseBody(MessageParcel &reply, const RSP &respBody, const int32_t errCode = E_OK)
     {
         IPC::MediaRespVo<RSP> respVo;
-        respVo.SetBody(reqBody);
+        respVo.SetBody(respBody);
         respVo.SetErrCode(errCode);
-        bool errConn = !respVo.Marshalling(reply);
-        CHECK_AND_PRINT_LOG(!errConn, "Failed to marshalling data");
+        bool isValid = respVo.Marshalling(reply);
+        CHECK_AND_PRINT_LOG(isValid, "Failed to marshalling data");
         return;
     }
 

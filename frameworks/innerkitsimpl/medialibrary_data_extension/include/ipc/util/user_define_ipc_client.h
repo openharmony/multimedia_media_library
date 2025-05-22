@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_IPC_USER_DEFINE_IPC_CLIENT_H
 
 #include <string>
+#include <unordered_map>
 
 #include "message_parcel.h"
 #include "userfile_client.h"
@@ -29,43 +30,57 @@
 namespace OHOS::Media::IPC {
 class UserDefineIPCClient {
 private:
+    std::string traceId_;
+    std::unordered_map<std::string, std::string> header_;
+
+private:
     int32_t InitClient();
-    int32_t HeaderMarshalling(MessageParcel &data, uint32_t code);
+    int32_t HeaderMarshalling(MessageParcel &data);
+
+public:  // getters & setters
+    UserDefineIPCClient &SetTraceId(const std::string &traceId);
+    std::string GetTraceId() const;
+    std::unordered_map<std::string, std::string> GetHeader() const;
+    UserDefineIPCClient &SetHeader(const std::unordered_map<std::string, std::string> &header);
 
 private:
     template <class REQ>
-    int32_t BodyMarshalling(MessageParcel &data, const REQ &reqBody)
+    int32_t BodyMarshalling(MessageParcel &data, const uint32_t code, const REQ &reqBody)
     {
         MediaReqVo<REQ> reqVo;
+        // user define command code.
+        reqVo.SetUserId(UserFileClient::GetUserId());
+        reqVo.SetCode(code);
         reqVo.SetBody(reqBody);
-        bool errConn = !reqVo.Marshalling(data);
-        CHECK_AND_RETURN_RET_LOG(!errConn, E_IPC_INVAL_ARG, "Failed to Marshalling");
+        reqVo.SetTraceId(this->GetTraceId());
+        reqVo.SetHeader(this->GetHeader());
+        bool isValid = reqVo.Marshalling(data);
+        CHECK_AND_RETURN_RET_LOG(isValid, E_IPC_INVAL_ARG, "Failed to Marshalling");
         return E_OK;
     }
     template <class RSP>
     int32_t BodyUnmarshalling(MessageParcel &reply, RSP &respBody, int32_t &errCode)
     {
-        MediaRespVo<RSP> *respVoPtr = MediaRespVo<RSP>::Unmarshalling(reply);
-        bool errConn = respVoPtr == nullptr;
-        CHECK_AND_RETURN_RET_LOG(!errConn, E_IPC_INVAL_ARG, "Failed to UnMarshalling");
-        respBody = respVoPtr->GetBody();
-        errCode = respVoPtr->GetErrCode();
-        delete respVoPtr;
+        MediaRespVo<RSP> respVo;
+        bool isValid = respVo.Unmarshalling(reply);
+        CHECK_AND_RETURN_RET_LOG(isValid, E_IPC_INVAL_ARG, "Failed to UnMarshalling");
+        respBody = respVo.GetBody();
+        errCode = respVo.GetErrCode();
         return E_OK;
     }
 
 public:
     template <class REQ, class RSP>
-    int32_t Call(uint32_t code, const REQ &reqBody, RSP &respBody)
+    int32_t Call(const uint32_t code, const REQ &reqBody, RSP &respBody)
     {
         MessageParcel data;
         MessageParcel reply;
         MessageOption option;
-        int32_t ret = this->HeaderMarshalling(data, code);
+        int32_t ret = this->HeaderMarshalling(data);
         bool errConn = ret != E_OK;
         CHECK_AND_RETURN_RET(!errConn, ret);
         // user define request data.
-        ret = this->BodyMarshalling<REQ>(data, reqBody);
+        ret = this->BodyMarshalling<REQ>(data, code, reqBody);
         errConn = ret != E_OK;
         CHECK_AND_RETURN_RET(!errConn, ret);
         ret = this->InitClient();
@@ -74,8 +89,12 @@ public:
         // post user define request to service.
         ret = UserFileClient::UserDefineFunc(data, reply, option);
         errConn = ret != E_OK;
-        CHECK_AND_RETURN_RET_LOG(
-            !errConn, ret, "Failed to connect Server, error code: %{public}d, func: %{public}u", ret, code);
+        CHECK_AND_RETURN_RET_LOG(!errConn,
+            ret,
+            "Failed to connect Server, ret: %{public}d, func: %{public}u, traceId: %{public}s",
+            ret,
+            code,
+            this->GetTraceId().c_str());
         // user define response data.
         int32_t errCode = E_OK;
         ret = this->BodyUnmarshalling<RSP>(reply, respBody, errCode);
@@ -93,6 +112,35 @@ public:
     {
         MediaEmptyObjVo respBody;
         return Call<MediaEmptyObjVo, MediaEmptyObjVo>(code, MediaEmptyObjVo(), respBody);
+    }
+    template <class REQ, class RSP>
+    int32_t Post(const uint32_t code, const REQ &reqBody, RSP &respBody)
+    {
+        return this->Call(code, reqBody, respBody);
+    }
+    template <class REQ>
+    int32_t Post(const uint32_t code, const REQ &reqBody)
+    {
+        MediaEmptyObjVo respBody;
+        return this->Call<REQ, MediaEmptyObjVo>(code, reqBody, respBody);
+    }
+    int32_t Post(const uint32_t code)
+    {
+        MediaEmptyObjVo reqBody;
+        MediaEmptyObjVo respBody;
+        return this->Call<MediaEmptyObjVo, MediaEmptyObjVo>(code, reqBody, respBody);
+    }
+    template <class RSP>
+    int32_t Get(const uint32_t code, RSP &respBody)
+    {
+        MediaEmptyObjVo reqBody;
+        return this->Call<MediaEmptyObjVo, RSP>(code, reqBody, respBody);
+    }
+    int32_t Get(const uint32_t code)
+    {
+        MediaEmptyObjVo reqBody;
+        MediaEmptyObjVo respBody;
+        return this->Call<MediaEmptyObjVo, MediaEmptyObjVo>(code, reqBody, respBody);
     }
 };
 }  // namespace OHOS::Media::IPC

@@ -21,6 +21,28 @@
 namespace OHOS::Media::IPC {
 static const std::u16string DESCRIPTOR = u"OHOS.DataShare.IDataShare";
 static const int STORAGE_MANAGER_MANAGER_ID = 5003;
+UserDefineIPCClient &UserDefineIPCClient::SetTraceId(const std::string &traceId)
+{
+    this->traceId_ = traceId;
+    return *this;
+}
+
+std::string UserDefineIPCClient::GetTraceId() const
+{
+    return this->traceId_;
+}
+
+std::unordered_map<std::string, std::string> UserDefineIPCClient::GetHeader() const
+{
+    return this->header_;
+}
+
+UserDefineIPCClient &UserDefineIPCClient::SetHeader(const std::unordered_map<std::string, std::string> &header)
+{
+    this->header_ = header;
+    return *this;
+}
+
 int32_t UserDefineIPCClient::InitClient()
 {
     bool errConn = UserFileClient::IsValid(UserFileClient::GetUserId());
@@ -35,12 +57,10 @@ int32_t UserDefineIPCClient::InitClient()
     UserFileClient::Init(remoteObj, true, UserFileClient::GetUserId());
     return E_OK;
 }
-int32_t UserDefineIPCClient::HeaderMarshalling(MessageParcel &data, uint32_t code)
+int32_t UserDefineIPCClient::HeaderMarshalling(MessageParcel &data)
 {
     bool errConn = !data.WriteInterfaceToken(DESCRIPTOR);
     CHECK_AND_RETURN_RET_LOG(!errConn, E_FAIL, "WriteInterfaceToken failed");
-    // user define command code.
-    data.WriteUint32(code);
     return E_OK;
 }
 }  // namespace OHOS::Media::IPC
