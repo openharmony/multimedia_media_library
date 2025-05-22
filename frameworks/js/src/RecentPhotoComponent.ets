@@ -14,7 +14,7 @@
  */
 
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
-import { BaseItemInfo } from '@ohos.file.PhotoPickerComponent';
+import { BaseItemInfo, PickerColorMode } from '@ohos.file.PhotoPickerComponent';
 
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
@@ -39,6 +39,8 @@ export struct RecentPhotoComponent {
             filterMediaType: this.convertMIMETypeToFilterType(this.recentPhotoOptions?.MIMEType),
             period: this.recentPhotoOptions?.period as number,
             photoSource: this.recentPhotoOptions?.photoSource as PhotoSource,
+            isAutoRefreshSupported: this.recentPhotoOptions?.isAutoRefreshSupported as boolean,
+            colorMode: this.recentPhotoOptions?.colorMode as PickerColorMode,
             isFromPickerView: true,
             isRecentPhotoCheckResultSet: this.onRecentPhotoCheckResult ? true : false
           }
@@ -123,7 +125,9 @@ export type RecentPhotoCheckInfoCallback = (recentPhotoExists: boolean, info: Re
 export class RecentPhotoOptions {
   period?: number;
   MIMEType?: photoAccessHelper.PhotoViewMIMETypes;
-  photoSource?: PhotoSource
+  photoSource?: PhotoSource;
+  isAutoRefreshSupported?: boolean;
+  colorMode?: PickerColorMode;
 }
 
 export class RecentPhotoInfo {
