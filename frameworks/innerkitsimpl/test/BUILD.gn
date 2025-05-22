@@ -27,6 +27,7 @@ group("test") {
     "unittest/media_library_asset_manager_test:unittest",
     "unittest/media_library_cloud_sync_test:unittest",
     "unittest/media_library_manager_test:unittest",
+    "unittest/media_permission_check_test:unittest",
     "unittest/media_permission_test:unittest",
     "unittest/medialib_statistic_test:unittest",
     "unittest/medialibrary_album_operation_test:unittest",
@@ -76,7 +77,6 @@ group("test") {
     "unittest/notify_test:Notifytest",
     "unittest/photo_album_test:PhotoAlbumTest",
     "unittest/portrait_album_update_test:PortraitAlbumUpdateTest",
-    "unittest/media_permission_check_test:unittest",
   ]
 
   if (defined(global_parts_info.hdf_drivers_interface_usb) &&
