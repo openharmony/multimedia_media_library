@@ -98,7 +98,7 @@ config("media_data_extension_public_config") {
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
-    include_dirs += include_fuse
+  include_dirs += include_fuse
   include_dirs += include_scanner
   include_dirs += include_multistages_capture
   include_dirs += include_dfx
