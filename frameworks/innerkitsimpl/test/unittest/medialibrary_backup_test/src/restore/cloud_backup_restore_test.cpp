@@ -268,19 +268,12 @@ HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_convert_path_to_real_path_
 
 void TestFindlPathByPath(const std::string &path, const std::string &expectedlPath)
 {
-    GallerySource gallerySource;
-    InitGallerySource(gallerySource, TEST_BACKUP_GALLERY_PATH);
     std::unique_ptr<CloudBackupRestore> restore =
         std::make_unique<CloudBackupRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CLOUD_BACKUP_RESTORE_ID);
-    restore->mediaLibraryRdb_ = g_rdbStore->GetRaw();
-    restore->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, true);
-    ASSERT_NE(restore->galleryRdb_, nullptr);
-
     FileInfo fileInfo;
     fileInfo.sourcePath = path;
     std::string lPath = restore->photosRestore_.FindlPath(fileInfo);
     EXPECT_EQ(lPath, expectedlPath);
-    ClearCloneSource(gallerySource, TEST_BACKUP_GALLERY_PATH);
 }
 
 HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_001, TestSize.Level0)
