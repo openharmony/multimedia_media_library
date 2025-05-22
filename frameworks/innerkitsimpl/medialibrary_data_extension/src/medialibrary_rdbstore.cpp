@@ -80,6 +80,7 @@
 #include "preferences_helper.h"
 #include "thumbnail_service.h"
 #include "medialibrary_rdb_transaction.h"
+#include "table_event_handler.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
