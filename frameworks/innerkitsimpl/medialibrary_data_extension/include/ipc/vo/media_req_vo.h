@@ -18,24 +18,38 @@
 
 #include <string>
 #include <sstream>
+#include <unordered_map>
 
-#include "parcel.h"
+#include "i_media_parcelable.h"
+#include "media_log.h"
+#include "media_file_utils.h"
+#include "media_itypes_utils.h"
 
 namespace OHOS::Media::IPC {
 template <class T>
-class MediaReqVo : public Parcelable {
+class MediaReqVo : public IPC::IMediaParcelable {
 private:
-    std::string traceId;
+    uint32_t code_;
+    std::string traceId_;
+    int32_t userId_;
+    std::unordered_map<std::string, std::string> header_;
     T body;
 
+public:  // constructors & destructors
+    virtual ~MediaReqVo() = default;
+
 public:  // gettter and setter
-    const std::string &GetTraceId() const
+    const std::string GetTraceId() const
     {
-        return this->traceId;
+        return this->traceId_;
     }
     void SetTraceId(const std::string &traceId)
     {
-        this->traceId = traceId;
+        this->traceId_ = traceId;
+        if (traceId.empty()) {
+            this->traceId_ = "media_trace_" + std::to_string(MediaFileUtils::UTCTimeSeconds());
+            MEDIA_INFO_LOG("traceId is empty, auto generate traceId: %{public}s", this->traceId_.c_str());
+        }
         return;
     }
     T GetBody() const
@@ -47,35 +61,52 @@ public:  // gettter and setter
         this->body = body;
         return;
     }
+    void SetCode(uint32_t code)
+    {
+        this->code_ = code;
+    }
+    uint32_t GetCode() const
+    {
+        return this->code_;
+    }
+    void SetUserId(const int32_t &userId)
+    {
+        this->userId_ = userId;
+    }
+    int32_t GetUserId() const
+    {
+        return this->userId_;
+    }
+
+    std::unordered_map<std::string, std::string> GetHeader() const
+    {
+        return this->header_;
+    }
+
+    void SetHeader(const std::unordered_map<std::string, std::string> &header)
+    {
+        this->header_ = header;
+    }
 
 public:  // functions of Parcelable.
-    bool ReadFromParcel(Parcel &parcel)
+    bool Unmarshalling(MessageParcel &parcel) override
     {
-        parcel.ReadString(this->traceId);
-        T *bodyPtrTmp = T::Unmarshalling(parcel);
-        if (bodyPtrTmp != nullptr) {
-            this->body = *bodyPtrTmp;
-            delete bodyPtrTmp;
-            bodyPtrTmp = nullptr;
-        }
+        parcel.ReadUint32(this->code_);
+        parcel.ReadString(this->traceId_);
+        parcel.ReadInt32(this->userId_);
+        ITypeMediaUtil::Unmarshalling(this->header_, parcel);
+        this->body.Unmarshalling(parcel);
         return true;
     }
 
-    bool Marshalling(Parcel &parcel) const override
+    bool Marshalling(MessageParcel &parcel) const override
     {
-        parcel.WriteString(this->traceId);
+        parcel.WriteUint32(this->code_);
+        parcel.WriteString(this->traceId_);
+        parcel.WriteInt32(this->userId_);
+        ITypeMediaUtil::Marshalling(this->header_, parcel);
         this->body.Marshalling(parcel);
         return true;
-    }
-
-    static MediaReqVo *Unmarshalling(Parcel &parcel)
-    {
-        MediaReqVo *info = new (std::nothrow) MediaReqVo();
-        if ((info != nullptr) && (!info->ReadFromParcel(parcel))) {
-            delete info;
-            info = nullptr;
-        }
-        return info;
     }
 
 public:  // basic functions
@@ -83,8 +114,14 @@ public:  // basic functions
     {
         std::stringstream ss;
         ss << "{"
-           << "\"traceId\": \"" << this->traceId << "\", "
-           << "\"body\": " << this->body.ToString() << "}";
+           << "\"userId:\": \"" << this->userId_ << "\","
+           << "\"traceId\": \"" << this->traceId_ << "\", ";
+        ss << "\"header\": {";
+        for (auto &item : this->header_) {
+            ss << "\"" << item.first << "\": \"" << item.second << "\", ";
+        }
+        ss << "}";  // header
+        ss << "}";  // end of MediaReqVo
         return ss.str();
     }
 };
