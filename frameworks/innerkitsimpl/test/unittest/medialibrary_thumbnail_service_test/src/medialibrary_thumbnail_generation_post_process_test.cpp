@@ -15,7 +15,9 @@
 
 #include "medialibrary_thumbnail_generation_post_process_test.h"
 
+#define private public
 #include "thumbnail_generation_post_process.h"
+#undef protected
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
