@@ -696,14 +696,15 @@ void CacheThumbStatus(ThumbRdbOpt &opts, ThumbnailType thumbType, ThumbnailData&
 
 int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, ThumbRdbOpt &opts, ThumbnailType thumbType)
 {
+    int32_t err;
     ThumbnailWait thumbnailWait(false);
     thumbnailWait.CheckAndWait(opts.row, thumbType == ThumbnailType::LCD);
     ThumbnailUtils::GetThumbnailInfo(opts, data);
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, data.id, data, err);
 
     string fileName;
-    int32_t err = GetAvailableFile(opts, data, thumbType, fileName);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, "GetAvailableFile failed, path: %{public}s",
+    err = GetAvailableFile(opts, data, thumbType, fileName);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "GetAvailableFile failed, path: %{public}s",
         DfxUtils::GetSafePath(data.path).c_str());
 
     bool isLocalThumbnailAvailable = IsLocalThumbnailAvailable(data, thumbType);
