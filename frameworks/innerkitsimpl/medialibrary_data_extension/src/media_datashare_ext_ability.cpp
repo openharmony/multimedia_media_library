@@ -78,6 +78,10 @@
 #include "cloud_enhancement_uri.h"
 #include "album_operation_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "media_req_vo.h"
+#include "media_empty_obj_vo.h"
+#include "media_permission_check.h"
+#include "user_define_ipc.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -1050,22 +1054,40 @@ Uri MediaDataShareExtAbility::DenormalizeUri(const Uri &uri)
 
 int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
-    PermParam permParam = {.isWrite = false};
     CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_ERR, "permissionHandler_ is nullptr");
-    uint32_t operationCode = data.ReadUint32();
+    IPC::MediaReqVo<IPC::MediaEmptyObjVo> reqVo;
+    bool retReq = reqVo.Unmarshalling(data);
+    CHECK_AND_RETURN_RET_LOG(retReq, E_IPC_SEVICE_UNMARSHALLING_FAIL, "read reqVo from parcel failed");
+    uint32_t operationCode = reqVo.GetCode();
+    std::string traceId = reqVo.GetTraceId();
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t ret = E_IPC_SEVICE_NOT_FOUND;
     for (auto &controllerService : this->serviceFactory_.GetAllMediaControllerService()) {
         if (!controllerService->Accept(operationCode)) {
             continue;
         }
+
+        // check permission
+        PermissionHeaderReq permHeaderReq = PermissionHeaderReq::convertToPermissionHeaderReq(reqVo.GetHeader(),
+            reqVo.GetUserId());
+        int32_t errCode = PermissionCheck::VerifyPermissions(operationCode, permHeaderReq);
+        if (errCode != E_SUCCESS) {
+            MEDIA_ERR_LOG("API code %{public}d verify permission fail", operationCode);
+            IPC::UserDefineIPC().WriteResponseBody(reply, errCode);
+            ret = E_OK;
+            break;
+        }
         controllerService->OnRemoteRequest(operationCode, data, reply, option);
         ret = E_OK;
         break;
     }
+    int32_t userId = reqVo.GetUserId();
     int64_t endTime = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t costTime = endTime - startTime;
-    MEDIA_INFO_LOG("API excuted, code: %{public}d, ret: %{public}d, costTime: %{public}ld",
+    MEDIA_INFO_LOG("API excuted, userId: %{public}d, traceId: %{public}s, "
+                   "code: %{public}d, ret: %{public}d, costTime: %{public}ld",
+        userId,
+        traceId.c_str(),
         static_cast<int32_t>(operationCode),
         ret,
         static_cast<long>(costTime));

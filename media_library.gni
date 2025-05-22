@@ -33,6 +33,7 @@ MEDIALIB_APP_FILE_SERVICE_PATH = "//foundation/filemanagement/app_file_service"
 MEDIALIB_ACCESS_TOKEN_PATH = "//base/security/access_token"
 MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH =
     "//vendor/huawei/domains/device_cloud_gateway/media_cloud_enhance_service"
+MEDIALIB_BUSINESS_PATH = "${MEDIALIB_ROOT_PATH}/services"
 
 declare_args() {
   media_library_link_opt = false
