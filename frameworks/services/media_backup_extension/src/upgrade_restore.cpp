@@ -186,7 +186,9 @@ int32_t UpgradeRestore::HandleXmlNode(xmlNodePtr cur)
             xmlFree(name);
             return E_ERR;
         }
-        xmlFree(name);
+        if (name != nullptr) {
+            xmlFree(name);
+        }
     }
     return E_ERR;
 }
