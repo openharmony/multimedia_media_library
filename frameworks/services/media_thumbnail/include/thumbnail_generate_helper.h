@@ -46,7 +46,7 @@ public:
         int32_t requestId);
     EXPORT static int32_t CreateLocalThumbnail(ThumbRdbOpt &opts);
     EXPORT static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
-    EXPORT static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
+    EXPORT static int32_t GetThumbnailPixelMap(ThumbnailData& data, ThumbRdbOpt &opts, ThumbnailType thumbType);
     EXPORT static int32_t GetKeyFrameThumbnailPixelMap(ThumbRdbOpt &opts, int32_t &timeStamp,
         int32_t &type);
     EXPORT static int32_t CheckLcdSizeAndUpdateStatus(ThumbRdbOpt &opts);

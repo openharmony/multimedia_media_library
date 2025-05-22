@@ -170,7 +170,10 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     if (thumbType != ThumbnailType::THUMB && thumbType != ThumbnailType::THUMB_ASTC) {
         opts.screenSize = screenSize_;
     }
-    int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, thumbType);
+    ThumbnailData data;
+    int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(data, opts, thumbType);
+    err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
     if (fd < 0) {
         MEDIA_ERR_LOG("GetThumbnailPixelMap failed : %{public}d", fd);
     }
