@@ -175,7 +175,7 @@ const std::string PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX = "file://cloudsyn
 const std::string PhotoColumn::PHOTO_HEIGHT_ERROR_URI_PREFIX = "file://cloudsync/Photo/HeightError/";
 const std::string PhotoColumn::PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX = "file://cloudsync/Photo/DownloadSucceed/";
 
-const std::string PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX = "file:://cloudsync/gallery/rebuild/";
+const std::string PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX = "file://cloudsync/gallery/rebuild/";
 
 const std::string PhotoColumn::PHOTO_REQUEST_PICTURE = "file://media/Photo/picture/";
 const std::string PhotoColumn::PHOTO_REQUEST_PICTURE_BUFFER = "file://media/Photo/pictureBuffer/";

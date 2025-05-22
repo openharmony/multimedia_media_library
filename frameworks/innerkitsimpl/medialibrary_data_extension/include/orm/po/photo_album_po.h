@@ -33,6 +33,8 @@ public:
     std::optional<int64_t> dateModified;
     std::optional<std::string> bundleName;
     std::optional<std::string> localLanguage;
+    std::optional<int32_t> albumOrder;
+    std::optional<int32_t> dirty;
 
     /* album_plugin columns */
     std::optional<std::string> albumPluginCloudId;
@@ -40,6 +42,31 @@ public:
     std::optional<std::string> dualAlbumName;
     std::optional<int32_t> priority;
     std::optional<bool> isInWhiteList;
+
+public:
+    std::string ToString()
+    {
+        std::stringstream ss;
+        ss << "{"
+           << "\"albumId\": " << albumId.value_or(-1) << ","
+           << "\"albumType\": " << albumType.value_or(-1) << ","
+           << "\"albumName\": " << albumName.value_or("") << ","
+           << "\"albumSubtype\": " << albumSubtype.value_or(-1) << ","
+           << "\"lpath\": \"" << lpath.value_or("") << "\","
+           << "\"cloudId\": \"" << cloudId.value_or("") << "\","
+           << "\"dateAdded\": " << dateAdded.value_or(-1) << ","
+           << "\"dateModified\": " << dateModified.value_or(-1) << ","
+           << "\"bundleName\": \"" << bundleName.value_or("") << "\","
+           << "\"localLanguage\": \"" << localLanguage.value_or("") << "\","
+           << "\"albumOrder\": " << albumOrder.value_or(-1) << ","
+           << "\"albumPluginCloudId\": \"" << albumPluginCloudId.value_or("") << "\","
+           << "\"albumNameEn\": \"" << albumNameEn.value_or("") << "\","
+           << "\"dualAlbumName\": \"" << dualAlbumName.value_or("") << "\","
+           << "\"priority\": " << priority.value_or(-1) << ","
+           << "\"dirty\": " << dirty.value_or(-1) << ","
+           << "\"isInWhiteList\": " << isInWhiteList.value_or(false) << "," << "}";
+        return ss.str();
+    }
 };
 }  // namespace OHOS::Media::ORM
 #endif  // OHOS_MEDIA_ORM_PHOTO_ALBUM_PO_H

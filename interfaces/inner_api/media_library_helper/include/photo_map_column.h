@@ -31,13 +31,6 @@ public:
     static const std::string ALBUM_ID EXPORT;
     static const std::string ASSET_ID EXPORT;
     static const std::string DIRTY EXPORT;
-
-    // create triggers
-    static const std::string CREATE_NEW_TRIGGER EXPORT;
-    static const std::string CREATE_DELETE_TRIGGER EXPORT;
-
-    // create index
-    static const std::string CREATE_IDX_FILEID_FOR_PHOTO_MAP EXPORT;
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_MAP_COLUMNS_H

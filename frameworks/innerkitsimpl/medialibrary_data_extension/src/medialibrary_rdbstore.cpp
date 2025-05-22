@@ -1737,6 +1737,7 @@ static int32_t ExecuteSql(RdbStore &store)
     if (TabFaCardPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
+    TableEventHandler().OnCreate(MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
     return NativeRdb::E_OK;
 }
 
@@ -4522,6 +4523,9 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_DC_ANALYSIS) {
         AddDcAnalysisColumn(store);
     }
+
+    TableEventHandler().OnUpgrade(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), oldVersion, MEDIA_RDB_VERSION);
 }
 
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)

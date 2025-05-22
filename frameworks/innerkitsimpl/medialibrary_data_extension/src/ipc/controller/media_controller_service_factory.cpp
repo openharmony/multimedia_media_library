@@ -17,12 +17,18 @@
 #include "media_controller_service_factory.h"
 
 #include "cloud_media_data_controller_service.h"
+#include "cloud_media_album_controller_service.h"
+#include "cloud_media_photo_controller_service.h"
+#include "cloud_media_download_controller_service.h"
 
 namespace OHOS::Media::IPC {
 MediaControllerServiceFactory::MediaControllerServiceFactory()
 {
     this->controllerServices_ = {
         std::make_shared<CloudSync::CloudMediaDataControllerService>(),
+        std::make_shared<CloudSync::CloudMediaAlbumControllerService>(),
+        std::make_shared<CloudSync::CloudMediaPhotoControllerService>(),
+        std::make_shared<CloudSync::CloudMediaDownloadControllerService>(),
     };
 }
 

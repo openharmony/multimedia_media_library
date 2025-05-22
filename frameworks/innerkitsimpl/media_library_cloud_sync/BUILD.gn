@@ -24,10 +24,27 @@ ohos_shared_library("media_library_cloud_sync") {
   include_ipc_client_dirs =
       [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/util" ]
 
+  sources = [
+    "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
+    "./src/cloud_media_album_handler.cpp",
+    "./src/cloud_media_data_client.cpp",
+    "./src/cloud_media_data_client_handler.cpp",
+    "./src/cloud_media_data_handler.cpp",
+    "./src/cloud_media_photo_handler.cpp",
+    "./src/cloud_sync_data_convert/cloud_album_data_convert.cpp",
+    "./src/cloud_sync_data_convert/cloud_data_convert_to_vo.cpp",
+    "./src/cloud_sync_data_convert/cloud_file_data_convert.cpp",
+    "./src/mdk_record/mdk_record.cpp",
+    "./src/mdk_record/mdk_record_field.cpp",
+    "./src/processor/cloud_media_data_client_handler_processor.cpp",
+  ]
+
   include_dirs = [
-    "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync/include",
+    "./include",
+    "./include/cloud_sync_data_convert",
+    "./include/processor",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/native/cloud_sync",
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync/vo",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -41,11 +58,6 @@ ohos_shared_library("media_library_cloud_sync") {
   include_dirs += include_ipc_client_dirs
 
   source_ipc_client = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_define_ipc_client.cpp" ]
-
-  sources = [
-    "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
-    "./src/cloud_media_data_client.cpp",
-  ]
 
   sources += source_ipc_client
 
