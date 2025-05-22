@@ -694,31 +694,25 @@ void CacheThumbStatus(ThumbRdbOpt &opts, ThumbnailType thumbType, ThumbnailData&
     }
 }
 
-int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType)
+int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbnailData& data, ThumbRdbOpt &opts, ThumbnailType thumbType)
 {
     ThumbnailWait thumbnailWait(false);
     thumbnailWait.CheckAndWait(opts.row, thumbType == ThumbnailType::LCD);
-    ThumbnailData thumbnailData;
-    ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
-
-    int err;
-    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, thumbnailData.id, thumbnailData, err);
+    ThumbnailUtils::GetThumbnailInfo(opts, data);
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, data.id, data, err);
 
     string fileName;
-    err = GetAvailableFile(opts, thumbnailData, thumbType, fileName);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GetAvailableFile failed, path: %{public}s", DfxUtils::GetSafePath(thumbnailData.path).c_str());
-        return err;
-    }
-    bool isLocalThumbnailAvailable = IsLocalThumbnailAvailable(thumbnailData, thumbType);
+    int32_t err = GetAvailableFile(opts, data, thumbType, fileName);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, "GetAvailableFile failed, path: %{public}s",
+        DfxUtils::GetSafePath(data.path).c_str());
+
+    bool isLocalThumbnailAvailable = IsLocalThumbnailAvailable(data, thumbType);
     DfxTimer dfxTimer(thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN,
         INVALID_DFX, thumbType == ThumbnailType::LCD ? CLOUD_LCD_TIME_OUT : CLOUD_DEFAULT_TIME_OUT, false);
 
     string absFilePath;
-    if (!PathToRealPath(fileName, absFilePath)) {
-        MEDIA_ERR_LOG("file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(fileName, absFilePath), E_ERR,
+        "file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
 
     auto fd = open(absFilePath.c_str(), O_RDONLY);
     dfxTimer.End();
@@ -727,14 +721,14 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
             thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
         return -errno;
     }
-    if (thumbnailData.isOpeningCloudFile && thumbnailData.orientation != 0) {
-        if (thumbnailData.mediaType == MEDIA_TYPE_VIDEO) {
+    if (data.isOpeningCloudFile && data.orientation != 0) {
+        if (data.mediaType == MEDIA_TYPE_VIDEO) {
             MEDIA_INFO_LOG("No need to rotate video file, path: %{public}s",
-                DfxUtils::GetSafePath(thumbnailData.path).c_str());
-            thumbnailData.orientation = 0;
+                DfxUtils::GetSafePath(data.path).c_str());
+            data.orientation = 0;
         }
-        IThumbnailHelper::DoRotateThumbnailEx(opts, thumbnailData, fd, thumbType);
-        fileName = GetThumbnailPath(thumbnailData.path,
+        IThumbnailHelper::DoRotateThumbnailEx(opts, data, fd, thumbType);
+        fileName = GetThumbnailPath(data.path,
             thumbType == ThumbnailType::LCD ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
         if (!PathToRealPath(fileName, absFilePath)) {
             MEDIA_ERR_LOG("file is not real path, file path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
@@ -743,15 +737,13 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
 
         fd = open(absFilePath.c_str(), O_RDONLY);
         if (fd < 0) {
-            MEDIA_ERR_LOG("Rotate thumb failed, path: %{public}s", DfxUtils::GetSafePath(thumbnailData.path).c_str());
+            MEDIA_ERR_LOG("Rotate thumb failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
             DfxManager::GetInstance()->HandleThumbnailError(absFilePath,
                 thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
             return -errno;
         }
     }
-    CacheThumbStatus(opts, thumbType, thumbnailData, err, isLocalThumbnailAvailable);
-    err = ThumbnailGenerationPostProcess::PostProcess(thumbnailData, opts);
-    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
+    CacheThumbStatus(opts, thumbType, data, err, isLocalThumbnailAvailable);
     return fd;
 }
 
