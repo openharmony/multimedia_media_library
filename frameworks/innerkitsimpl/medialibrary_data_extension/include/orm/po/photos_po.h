@@ -88,16 +88,96 @@ public:
     /* Photo Map */
     std::vector<std::string> removeAlbumCloudId;
 
+private:
+    void GetAlbumInfo(std::stringstream &ss) const
+    {
+        ss << "\"albumCloudId\": \"" << albumCloudId.value_or("") << "\", "
+           << "\"albumLPath\": \"" << albumLPath.value_or("") << "\", ";
+    }
+    void GetBasicInfo(std::stringstream &ss) const
+    {
+        ss << "\"fileId\": " << fileId.value_or(0) << ", "
+           << "\"cloudId\": \"" << cloudId.value_or("") << "\", "
+           << "\"size\": " << size.value_or(0) << ", "
+           << "\"displayName\": \"" << displayName.value_or("") << "\", "
+           << "\"isFavorite\": " << isFavorite.value_or(0) << ", "
+           << "\"hidden\": " << hidden.value_or(0) << ", "
+           << "\"hiddenTime\": " << hiddenTime.value_or(0) << ", "
+           << "\"dateTrashed\": " << dateTrashed.value_or(0) << ", "
+           << "\"orientation\": " << orientation.value_or(0) << ", "
+           << "\"sourcePath\": \"" << sourcePath.value_or("") << "\", ";
+    }
+    void GetPropertiesInfo(std::stringstream &ss) const
+    {
+        ss << "\"deviceName\": \"" << deviceName.value_or("") << "\", "
+           << "\"dateAdded\": " << dateAdded.value_or(0) << ", "
+           << "\"dateModified\": " << dateModified.value_or(0) << ", "
+           << "\"dateTaken\": " << dateTaken.value_or(0) << ", "
+           << "\"duration\": " << duration.value_or(0) << ", "
+           << "\"dateYear\": \"" << dateYear.value_or("") << "\", "
+           << "\"dateMonth\": \"" << dateMonth.value_or("") << "\", "
+           << "\"dateDay\": \"" << dateDay.value_or("") << "\", "
+           << "\"detailTime\": \"" << detailTime.value_or("") << "\", "
+           << "\"editTime\": " << editTime.value_or(0) << ", ";
+    }
+    void GetAttributesInfo(std::stringstream &ss) const
+    {
+        ss << "\"ownerAlbumId\": " << ownerAlbumId.value_or(0) << ", "
+           << "\"data\": \"" << data.value_or("") << "\", "
+           << "\"title\": \"" << title.value_or("") << "\", "
+           << "\"mediaType\": " << mediaType.value_or(0) << ", "
+           << "\"mimeType\": \"" << mimeType.value_or("") << "\", "
+           << "\"relativePath\": \"" << relativePath.value_or("") << "\", "
+           << "\"virtualPath\": \"" << virtualPath.value_or("") << "\", "
+           << "\"latitude\": " << latitude.value_or(0.0) << ", "
+           << "\"longitude\": " << longitude.value_or(0.0) << ", "
+           << "\"height\": " << height.value_or(0) << ", "
+           << "\"width\": " << width.value_or(0) << ", "
+           << "\"subtype\": " << subtype.value_or(0) << ", "
+           << "\"burstCoverLevel\": " << burstCoverLevel.value_or(0) << ", "
+           << "\"burstKey\": \"" << burstKey.value_or("") << "\", "
+           << "\"userComment\": \"" << userComment.value_or("") << "\", "
+           << "\"thumbStatus\": " << thumbStatus.value_or(0) << ", "
+           << "\"syncStatus\": " << syncStatus.value_or(0) << ", "
+           << "\"shootingMode\": \"" << shootingMode.value_or("") << "\", "
+           << "\"shootingModeTag\": \"" << shootingModeTag.value_or("") << "\", "
+           << "\"dynamicRangeType\": " << dynamicRangeType.value_or(0) << ", "
+           << "\"frontCamera\": \"" << frontCamera.value_or("") << "\", "
+           << "\"coverPosition\": " << coverPosition.value_or(0) << ", "
+           << "\"movingPhotoEffectMode\": " << movingPhotoEffectMode.value_or(0) << ", "
+           << "\"supportedWatermarkType\": " << supportedWatermarkType.value_or(0) << ", "
+           << "\"strongAssociation\": " << strongAssociation.value_or(0) << ", ";
+    }
+    void GetCloudInfo(std::stringstream &ss) const
+    {
+        ss << "\"position\": \"" << position.value_or(-1) << "\", "
+           << "\"metaDateModified\": " << metaDateModified.value_or(0) << ", "
+           << "\"originalSubtype\": " << originalSubtype.value_or(0) << ", "
+           << "\"dirty\": \"" << dirty.value_or(-1) << "\", "
+           << "\"baseVersion\": \"" << baseVersion.value_or(-1) << "\", "
+           << "\"cloudVersion\": \"" << cloudVersion.value_or(-1) << "\", "
+           << "\"originalAssetCloudId\": \"" << originalAssetCloudId.value_or("") << "\", ";
+    }
+    void GetRemoveAlbumCloudInfo(std::stringstream &ss) const
+    {
+        ss << "\"removeAlbumCloudId\": ";
+        ss << "[";
+        for (auto &albumId : removeAlbumCloudId) {
+            ss << "\"" << albumId << "\",";
+        }
+        ss << "]";
+    }
+
 public:  // basic function
     std::string ToString() const
     {
         std::stringstream ss;
         ss << "{";
-        ss << "\"data\": \"" << data.value_or("") << "\", "
-           << "\"title\": \"" << title.value_or("") << "\", "
-           << "\"size\": " << size.value_or(0) << ", "
-           << "\"displayName\": \"" << displayName.value_or("") << "\", "
-           << "\"mediaType\": " << mediaType.value_or(0) << ", ";
+        this->GetAlbumInfo(ss);
+        this->GetBasicInfo(ss);
+        this->GetCloudInfo(ss);
+        this->GetPropertiesInfo(ss);
+        this->GetAttributesInfo(ss);
         ss << "}";
         return ss.str();
     }

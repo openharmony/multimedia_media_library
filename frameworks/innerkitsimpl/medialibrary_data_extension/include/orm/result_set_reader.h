@@ -21,6 +21,7 @@
 
 #include "cloud_media_sync_const.h"
 #include "i_object_writer.h"
+#include "result_set_utils.h"
 
 namespace OHOS::Media::ORM {
 template <typename OBJECT_WRITER, typename OBJECT_TYPE>
@@ -29,7 +30,7 @@ private:
     std::shared_ptr<NativeRdb::ResultSet> resultSet_;
 
 public:
-    ResultSetReader(const shared_ptr<NativeRdb::ResultSet> resultSet) : resultSet_(resultSet)
+    ResultSetReader(const std::shared_ptr<NativeRdb::ResultSet> resultSet) : resultSet_(resultSet)
     {}
     ~ResultSetReader() = default;
 
@@ -83,7 +84,18 @@ public:
         while (this->resultSet_->GoToNextRow() == NativeRdb::E_OK) {
             records.emplace_back(this->ReadRecord());
         }
+        this->resultSet_->Close();
         return records;
+    }
+    int32_t ReadRecords(std::vector<OBJECT_TYPE> &records)
+    {
+        bool conn = this->resultSet_ != nullptr;
+        CHECK_AND_RETURN_RET_LOG(conn, E_HAS_DB_ERROR, "ReadRecords resultSet is null");
+        while (this->resultSet_->GoToNextRow() == NativeRdb::E_OK) {
+            records.emplace_back(this->ReadRecord());
+        }
+        this->resultSet_->Close();
+        return E_OK;
     }
 };
 }  // namespace OHOS::Media::ORM

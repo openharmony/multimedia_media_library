@@ -52,9 +52,17 @@ config("media_data_extension_public_config") {
       [ "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/include" ]
 
   include_cloud_sync_server = [
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync",
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync/controller",
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include/cloud_sync/service",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/dto",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/vo",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/orm/po",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/controller",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/controller/processor",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/dao",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/service/processor",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/include/utils",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/native/cloud_sync",
   ]
 
@@ -80,7 +88,6 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/event_handler",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/operation",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/photo_album_operation",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/po",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
@@ -91,7 +98,7 @@ config("media_data_extension_public_config") {
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
-  include_dirs += include_fuse
+    include_dirs += include_fuse
   include_dirs += include_scanner
   include_dirs += include_multistages_capture
   include_dirs += include_dfx
@@ -245,10 +252,92 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/media_cloud_asset_download/cloud_media_asset_observer.cpp",
   ]
 
-  media_cloud_sync_server_source = [
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync/controller/cloud_media_data_controller_service.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_sync/service/cloud_media_data_service.cpp",
+  media_cloud_sync_server_source_vo = [
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/cloud_error_detail_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/cloud_file_data_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/cloud_mdkrecord_photos_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/cloud_mdkrecord_photo_album_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/failed_size_resp_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_check_records_album_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_check_records_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_cloud_thm_stat_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_dirty_type_stat_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_download_asset_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_download_thm_by_uri_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_download_thm_num_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_download_thm_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_file_pos_stat_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_retey_records_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_video_to_cache_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/media_operate_result_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_copy_records_photos_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_create_records_album_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_create_records_photos_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/get_aging_file_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_delete_albums_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_delete_records_album_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_delete_records_photos_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_dentry_file_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_download_asset_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_download_thms_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_fetch_photos_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_fetch_records_album_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_fetch_records_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_mdirty_records_album_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_modify_file_dirty_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/on_modify_records_photos_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/photo_album_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/photos_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/update_dirty_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/update_local_file_dirty_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/update_position_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/update_sync_status_vo.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/vo/update_thm_status_vo.cpp",
   ]
+
+  media_cloud_sync_server_source_dto = [
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/cloud_media_pull_data_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/check_file_data_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/cloud_file_data_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/media_operate_result_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/photo_album_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/photos_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/download_thumbnail_query_dto.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dto/aging_file_query_dto.cpp",
+  ]
+
+  media_cloud_sync_server_source = [
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/cloud_media_data_controller_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/cloud_media_album_controller_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/cloud_media_photo_controller_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/cloud_media_download_controller_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/processor/cloud_media_album_controller_processor.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/processor/cloud_media_data_controller_processor.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/processor/cloud_media_photo_controller_processor.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/controller/processor/cloud_media_download_controller_processor.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_album_dao.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_common_dao.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_data_dao.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_photos_dao.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/dao/cloud_media_download_dao.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_data_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_photos_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_album_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/cloud_media_download_service.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_data_service_processor.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_photo_service_processor.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/service/processor/cloud_media_download_service_processor.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_dao_utils.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_sync_utils.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_file_utils.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_uri_utils.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_media_attachment_utils.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/cloud_sync_convert.cpp",
+    "${MEDIALIB_CLOUD_SYNC_SERVICE_PATH}/src/utils/media_gallery_sync_notify.cpp",
+  ]
+
+  media_cloud_sync_server_source += media_cloud_sync_server_source_vo
+  media_cloud_sync_server_source += media_cloud_sync_server_source_dto
 
   media_cloud_dirty_handle_source = [ "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/src/cloud_dirty_handle/cloud_upload_checker.cpp" ]
 
@@ -284,8 +373,11 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/background_cloud_file_download_callback.cpp",
     "src/background_cloud_file_processor.cpp",
     "src/event_handler/album_plugin_table_event_handler.cpp",
+    "src/event_handler/database_utils.cpp",
+    "src/event_handler/photo_map_table_event_handler.cpp",
     "src/event_handler/tab_facard_photos_table_event_handler.cpp",
     "src/event_handler/tab_old_photos_table_event_handler.cpp",
+    "src/event_handler/table_event_handler.cpp",
     "src/foreground_analysis_meta.cpp",
     "src/hi_audit.cpp",
     "src/media_datashare_ext_ability.cpp",
