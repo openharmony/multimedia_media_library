@@ -36,7 +36,7 @@
 using namespace testing::ext;
 
 namespace OHOS::Media {
-const int32_t SLEEP_SECONDS = 2;
+const int32_t SLEEP_SECONDS = 1;
 const std::string TEST_BACKUP_PATH = "/data/test/backup/cloudBackupRestore";
 const std::string TEST_BACKUP_GALLERY_PATH = TEST_BACKUP_PATH + "/gallery.db";
 const std::string TEST_UPGRADE_FILE_DIR = "/data/test/backup/file";
@@ -264,6 +264,104 @@ HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_convert_path_to_real_path_
     EXPECT_EQ(ret, false);
 
     MEDIA_INFO_LOG("End cloud_backup_restore_convert_path_to_real_path_003");
+}
+
+void TestFindlPathByPath(const std::string &path, const std::string &expectedlPath)
+{
+    std::unique_ptr<CloudBackupRestore> restore =
+        std::make_unique<CloudBackupRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CLOUD_BACKUP_RESTORE_ID);
+    FileInfo fileInfo;
+    fileInfo.sourcePath = path;
+    std::string lPath = restore->photosRestore_.FindlPath(fileInfo);
+    EXPECT_EQ(lPath, expectedlPath);
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_001");
+    TestFindlPathByPath("", "/Pictures/其它");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_001");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_002");
+    TestFindlPathByPath("/storage/emulated/0/internal_root.jpg", "/");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_002");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_003");
+    TestFindlPathByPath("/storage/1234-4578/external_root.jpg", "/");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_003");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_004");
+    TestFindlPathByPath("/storage/emulated/128/storage/emulated/0/nested_root.jpg", "/Pictures/其它");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_004");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_005");
+    TestFindlPathByPath("/storage/1234-5678/storage/emulated/128/nested_root.jpg", "/Pictures/其它");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_005");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_006");
+    TestFindlPathByPath("/storage/emulated/0/storage/emulated/128/test/nested_folder.jpg", "/test");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_006");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_007");
+    TestFindlPathByPath("/storage/1234-5678/storage/emulated/0/test/nested_folder.jpg", "/test");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_007");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_008");
+    TestFindlPathByPath("no_slash", "/Pictures/其它");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_008");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_009");
+    TestFindlPathByPath("/no_storage", "/Pictures/其它");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_009");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_010, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_010");
+    TestFindlPathByPath("/not_start_with/storage/emulated/0/pic.jpg", "/Pictures/其它");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_010");
+}
+
+HWTEST_F(CloudBackupRestoreTest, cloud_backup_restore_find_root_pos_011, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start cloud_backup_restore_find_root_pos_011");
+    TestFindlPathByPath("/storage/emulated/0//empty_between_slash.jpg", "/Pictures/其它");
+
+    MEDIA_INFO_LOG("End cloud_backup_restore_find_root_pos_011");
 }
 
 void CloudBackupRestoreTestUtils::ClearAllData()

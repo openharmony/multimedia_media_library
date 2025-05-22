@@ -63,7 +63,7 @@ private:
     std::string ToString(const std::vector<NativeRdb::ValueObject> &bindArgs);
     PhotoAlbumRowData BuildAlbumInfoByLPath(
         const std::string &lPath, const int32_t albumType, const int32_t albumSubType);
-    std::string FindRootPath(const std::string &path);
+    size_t FindRootPos(const std::string &path);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
@@ -175,6 +175,10 @@ private:
             ON INPUT.album_name = NAME.album_name \
         WHERE PhotoAlbum.lpath IS NULL \
         LIMIT 1;";
+    const std::string NESTED_ROOT_PATTERN =
+        R"(^(/storage/emulated/[^/]+/storage/emulated/[^/]+/|/storage/[^/]+/storage/emulated/[^/]+/))";
+    const std::string NON_NESTED_ROOT_PATTERN =
+        R"(^(/storage/emulated/[^/]+/|/storage/[^/]+/))";
 };
 
 class StringUtils {
