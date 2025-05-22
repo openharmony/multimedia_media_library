@@ -882,8 +882,6 @@ bool IThumbnailHelper::CacheFailState(const ThumbRdbOpt &opts, ThumbnailData &da
 
 int32_t IThumbnailHelper::CacheThumbDbState(const ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    ThumbnailUtils::StoreThumbnailSize(opts, data);
-
     CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
         "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
 
