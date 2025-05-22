@@ -338,6 +338,7 @@ const std::string MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS = "stage_video_task_stat
 
 const std::string MEDIA_COLUMN_COUNT = "count(*)";
 const std::string MEDIA_COLUMN_COUNT_1 = "count(1)";
+const std::string MEDIA_SUM_SIZE = "sum(size)";
 
 const std::string PHOTO_INDEX = "photo_index";
 
@@ -391,7 +392,9 @@ const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name
 // moving photo param
 const std::string CREATE_MOVING_PHOTO_VIDEO = "create_video";
 const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
+const std::string OPEN_PRIVATE_MOVING_PHOTO_METADATA = "open_metadata";
 const std::string OPEN_PRIVATE_LIVE_PHOTO = "open_private_live_photo";
+const std::string OPEN_MOVING_PHOTO_VIDEO_CLOUD = "open_moving_photo_video_cloud";
 const std::string NOTIFY_VIDEO_SAVE_FINISHED = "notify_video_save_finished"; // movingPhoto video save finish
 
 // db sandbox directory
