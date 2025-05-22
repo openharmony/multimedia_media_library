@@ -812,7 +812,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_001, T
 {
     ThumbRdbOpt opts;
     ThumbnailType thumbType = ThumbnailType::LCD;
-    auto res = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, thumbType);
+    ThumbnailData data;
+    auto res = ThumbnailGenerateHelper::GetThumbnailPixelMap(data, opts, thumbType);
     EXPECT_EQ(res, -2302);
 }
 
