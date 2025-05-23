@@ -2363,7 +2363,7 @@ int32_t MediaLibraryPhotoOperations::UpdateExtension(const int32_t &fileId, cons
 
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
                                                          OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
-                                                         
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     std::string filePath = fileAsset->GetFilePath();
     std::string displayName = fileAsset->GetDisplayName();
     std::string modifyFilePath;
