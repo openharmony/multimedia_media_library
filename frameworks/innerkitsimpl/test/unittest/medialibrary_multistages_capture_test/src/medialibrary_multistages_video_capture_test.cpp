@@ -35,6 +35,7 @@
 #define protected public
 #include "mock_deferred_video_proc_adapter.h"
 #include "multistages_capture_deferred_video_proc_session_callback.h"
+#include "multistages_capture_manager.h"
 #include "multistages_video_capture_manager.h"
 #undef private
 #undef protected
@@ -523,6 +524,71 @@ HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, callback_on_error_001, TestSiz
     EXPECT_EQ(quality, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
 
     MEDIA_INFO_LOG("callback_on_error_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_remove_video_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_remove_video_002 Start");
+    int32_t fileId = PrepareVideoData();
+    string filePath = GetFilePath(fileId);
+    string videoId = "202408051800";
+    string tempFilePath = GetTempFilePath(filePath);
+    int32_t result = SetVideoId(fileId, videoId);
+    EXPECT_GT(result, E_OK);
+    PrepareBaseVideoFile(filePath);
+    EXPECT_EQ(ReadFileContent(filePath), BASE_VIDEO_FILE_INNER);
+    MultiStagesVideoCaptureManager &instance = MultiStagesVideoCaptureManager::GetInstance();
+    instance.RemoveVideo(videoId, filePath, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), true);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), true);
+    MEDIA_INFO_LOG("manager_remove_video_002 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_remove_video_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_remove_video_003 Start");
+    int32_t fileId = PrepareVideoData();
+    string filePath = GetFilePath(fileId);
+    string videoId = "202408051800";
+    string tempFilePath = GetTempFilePath(filePath);
+    int32_t result = SetVideoId(fileId, videoId);
+    EXPECT_GT(result, E_OK);
+    PrepareBaseVideoFile(filePath);
+    EXPECT_EQ(ReadFileContent(filePath), BASE_VIDEO_FILE_INNER);
+    MultiStagesVideoCaptureManager &instance = MultiStagesVideoCaptureManager::GetInstance();
+    instance.RemoveVideo(videoId, filePath, static_cast<int32_t>(PhotoSubType::DEFAULT), false);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), true);
+    MEDIA_INFO_LOG("manager_remove_video_003 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, manager_remove_video_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_remove_video_004 Start");
+    int32_t fileId = PrepareVideoData();
+    string filePath = GetFilePath(fileId);
+    string videoId = "202408051800";
+    string tempFilePath = GetTempFilePath(filePath);
+    int32_t result = SetVideoId(fileId, videoId);
+    EXPECT_GT(result, E_OK);
+    PrepareBaseVideoFile(filePath);
+    EXPECT_EQ(ReadFileContent(filePath), BASE_VIDEO_FILE_INNER);
+    MultiStagesVideoCaptureManager &instance = MultiStagesVideoCaptureManager::GetInstance();
+    instance.RemoveVideo(videoId, filePath, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), false);
+    EXPECT_EQ(MediaFileUtils::IsFileExists(filePath), true);
+    MEDIA_INFO_LOG("manager_remove_video_004 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, remove_photos_with_result_set_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("remove_photos_with_result_set_001 Start");
+    MultiStagesCaptureManager::RemovePhotosWithResultSet(nullptr, true);
+    MEDIA_INFO_LOG("remove_photos_with_result_set_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesVideoCaptureTest, remove_photos_with_result_set_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("remove_photos_with_result_set_002 Start");
+    MultiStagesCaptureManager::RemovePhotosWithResultSet(nullptr, false);
+    MEDIA_INFO_LOG("remove_photos_with_result_set_002 End");
 }
 
 } // Media
