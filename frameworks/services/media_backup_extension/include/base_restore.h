@@ -90,6 +90,8 @@ protected:
     virtual int InsertCloudPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     void InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
     void SetMetaDataValue(const FileInfo &fileInfo, std::unique_ptr<Metadata> &metadata);
+    double GetDataLongitude(const FileInfo &fileInfo, std::unique_ptr<Metadata> &metadata);
+    double GetDataLatitude(const FileInfo &fileInfo, std::unique_ptr<Metadata> &metadata);
     virtual void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
         int64_t &rowNum);

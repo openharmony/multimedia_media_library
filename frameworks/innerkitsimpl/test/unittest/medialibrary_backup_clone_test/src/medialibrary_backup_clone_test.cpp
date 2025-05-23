@@ -73,7 +73,7 @@ const string TASK_ID = "1";
 const string TEST_DIR_PATH = "test";
 const int32_t TEST_ORIENTATION_ZERO = 0;
 const int32_t TEST_ORIENTATION_NINETY = 90;
-const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) + 10;
+const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = 13;
 const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
     "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " != " +
@@ -2764,39 +2764,39 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_test_geo_knowledge_clo
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_clone_test3 end");
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIphoneDynamicVideo_test_001, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_001, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIphoneDynamicVideo_test_001");
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_001");
     ClearData();
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
     fileInfo.filePath = "/storage/media/100/local/test/test.jpg";
-    bool isDynamic = othersClone->IsIphoneDynamicVideo(fileInfo, I_PHONE_CLONE_RESTORE);
+    bool isDynamic = othersClone->IsIosMovingPhotoVideo(fileInfo, I_PHONE_CLONE_RESTORE);
     EXPECT_FALSE(isDynamic);
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIphoneDynamicVideo_test_002, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_002, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIphoneDynamicVideo_test_002");
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_002");
     ClearData();
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
     fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.jpg";
-    othersClone->IsIphoneDynamicVideo(fileInfo, I_PHONE_CLONE_RESTORE);
+    othersClone->IsIosMovingPhotoVideo(fileInfo, I_PHONE_CLONE_RESTORE);
     EXPECT_EQ(fileInfo.subtype, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
 }
 
-HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIphoneDynamicVideo_test_003, TestSize.Level2)
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_003, TestSize.Level2)
 {
-    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIphoneDynamicVideo_test_003");
+    MEDIA_INFO_LOG("Start medialibrary_backup_others_clone_IsIosMovingPhotoVideo_test_003");
     ClearData();
     unique_ptr<OthersCloneRestore> othersClone = std::make_unique<OthersCloneRestore>(I_PHONE_CLONE_RESTORE,
         "", "{\"type\":\"unicast\",\"details\":[{\"type\":\"iosDeviceType\",\"detail\":\"test\"}]}");
     FileInfo fileInfo;
     fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.MOV";
-    othersClone->IsIphoneDynamicVideo(fileInfo, I_PHONE_CLONE_RESTORE);
+    othersClone->IsIosMovingPhotoVideo(fileInfo, I_PHONE_CLONE_RESTORE);
     EXPECT_EQ(fileInfo.otherSubtype, I_PHONE_DYNAMIC_VIDEO_TYPE);
 }
 } // namespace Media
