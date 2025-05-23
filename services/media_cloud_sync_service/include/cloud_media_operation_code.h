@@ -16,11 +16,13 @@
 #ifndef OHOS_MEDIA_CLOUD_SYNC_CLOUD_OPERATION_CODE_H
 #define OHOS_MEDIA_CLOUD_SYNC_CLOUD_OPERATION_CODE_H
 
+#include "medialibrary_business_code.h"
+
 namespace OHOS::Media::CloudSync {
 enum GLOBAL_CODE {
-    OPERATION_CODE_BASE = 1,
-    OPERATION_PHOTO_CODE_BASE = 100,
-    OPERATION_ALBUM_CODE_BASE = 200,
+    OPERATION_CODE_BASE = MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_START,
+    OPERATION_PHOTO_CODE_BASE = MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_START + 100,
+    OPERATION_ALBUM_CODE_BASE = MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_START + 200,
 };
 
 enum class CloudMediaOperationCode : uint32_t {
