@@ -104,7 +104,7 @@ void CloudMediaDownloadControllerService::GetDownloadThmsByUri(MessageParcel &da
     std::vector<PhotosVo> photosVoList;
     std::vector<PhotosDto> photosDtoList = this->service_.GetDownloadThmsByUri(fileIds, reqBody.thmType);
     MEDIA_INFO_LOG(
-        "GetDownloadThmsByUri Query:%{public}lu, Result:%{public}lu", photosDtoList.size(), photosVoList.size());
+        "GetDownloadThmsByUri Query:%{public}zu, Result:%{public}zu", photosDtoList.size(), photosVoList.size());
     for (auto &photosDto : photosDtoList) {
         PhotosVo photosVo = this->processor_.ConvertPhotosDtoToPhotosVo(photosDto);
         MEDIA_INFO_LOG("GetDownloadThmsByUri PhotoVo: %{public}s", photosVo.ToString().c_str());
@@ -164,7 +164,7 @@ void CloudMediaDownloadControllerService::GetDownloadAsset(MessageParcel &data, 
         MEDIA_INFO_LOG("GetDownloadAsset PhotoVo: %{public}s", photosVo.ToString().c_str());
         photosVoList.push_back(photosVo);
     }
-    MEDIA_INFO_LOG("CloudMediaDataControllerService::GetDownloadAsset Query:%{public}lu, Result:%{public}lu",
+    MEDIA_INFO_LOG("CloudMediaDataControllerService::GetDownloadAsset Query:%{public}zu, Result:%{public}zu",
         photosDtoList.size(),
         photosVoList.size());
     GetDownloadAssetRespBody respBody;

@@ -198,7 +198,7 @@ void CloudMediaDataControllerService::UpdateLocalFileDirty(MessageParcel &data, 
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     ret = this->dataService_.UpdateLocalFileDirty(req.cloudIds);
-    MEDIA_INFO_LOG("UpdateLocalFileDirty %{public}lu, %{public}d", req.cloudIds.size(), ret);
+    MEDIA_INFO_LOG("UpdateLocalFileDirty %{public}zu, %{public}d", req.cloudIds.size(), ret);
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
 }
 }  // namespace OHOS::Media::CloudSync

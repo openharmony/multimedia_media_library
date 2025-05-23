@@ -34,7 +34,7 @@ const int32_t FIRST_MATCH_PARAM = 1;
 const int32_t SECOND_MATCH_PARAM = 2;
 
 constexpr size_t DEFAULT_TIME_SIZE = 32;
-static bool convertToLong(const std::string &str, long &value)
+static bool convertToLong(const std::string &str, int64_t &value)
 {
     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
     return ec == std::errc{} && ptr == str.data() + str.size();

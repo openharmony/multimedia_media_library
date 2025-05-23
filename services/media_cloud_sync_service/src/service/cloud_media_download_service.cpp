@@ -300,7 +300,7 @@ void CloudMediaDownloadService::ResetAssetModifyTime(OnDownloadAssetData &assetD
 int32_t CloudMediaDownloadService::OnDownloadAsset(
     const std::vector<std::string> &cloudIds, std::vector<MediaOperateResultDto> &result)
 {
-    MEDIA_INFO_LOG("enter CloudMediaDownloadService::OnDownloadAsset, %{public}lu", cloudIds.size());
+    MEDIA_INFO_LOG("enter CloudMediaDownloadService::OnDownloadAsset, %{public}zu", cloudIds.size());
     // get downloadAssetDataVec
     std::vector<PhotosPo> photosPoVec;
     int32_t ret = this->dao_.QueryDownloadAssetByCloudIds(cloudIds, photosPoVec);
@@ -308,7 +308,7 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
     // Requirement: If any asset is not in the database, return error. Caller should check the result.
     CHECK_AND_RETURN_RET_LOG(photosPoVec.size() == cloudIds.size(),
         E_CLOUDSYNC_INVAL_ARG,
-        "QueryDownloadAssetByCloudIds failed, cloudIds size:%{public}lu, photosPoVec size:%{public}lu",
+        "QueryDownloadAssetByCloudIds failed, cloudIds size:%{public}zu, photosPoVec size:%{public}zu",
         cloudIds.size(),
         photosPoVec.size());
     // Update

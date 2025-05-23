@@ -343,7 +343,7 @@ int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbum
 
 int32_t CloudMediaAlbumDao::OnCreateRecords(const std::vector<PhotoAlbumDto> &albums, int32_t &failSize)
 {
-    MEDIA_INFO_LOG("enter OnCreateRecords %{public}lu", albums.size());
+    MEDIA_INFO_LOG("enter OnCreateRecords %{public}zu", albums.size());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "OnCreateRecords Failed to get rdbStore.");
     for (const auto &album : albums) {
@@ -514,7 +514,7 @@ int32_t CloudMediaAlbumDao::SetSourceValues(PhotoAlbumDto &record, NativeRdb::Va
     std::string lpath = record.lPath;
     std::transform(lpath.begin(), lpath.end(), lpath.begin(), ::tolower);
     std::unordered_map<std::string, MediaAlbumPluginRowData> writeListMap = QueryWhiteList();
-    MEDIA_INFO_LOG("SetSourceValues writeListMap size:%{public}lu", writeListMap.size());
+    MEDIA_INFO_LOG("SetSourceValues writeListMap size:%{public}zu", writeListMap.size());
     auto it = writeListMap.find(lpath);
     if (it != writeListMap.end()) {
         MEDIA_INFO_LOG("SetSourceValues find lpath: %{public}s, name: %{public}s, bundle: %{public}s",

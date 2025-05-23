@@ -54,8 +54,8 @@ using ChangeType = AAFwk::ChangeInfo::ChangeType;
 void NotifyDateTakenChanged(const CloudMediaPullDataDto &pullData)
 {
     MEDIA_INFO_LOG("NotifyDateTakenChanged localTime: %{public}ld, cloudTime: %{public}ld, fileId: %{public}d",
-        pullData.dateTaken,
-        pullData.basicCreatedTime,
+        (long)pullData.dateTaken,
+        (long)pullData.basicCreatedTime,
         pullData.localFileId);
     if (pullData.dateTaken != pullData.basicCreatedTime) {
         std::string uri = PhotoColumn::PHOTO_CLOUD_URI_PREFIX + std::to_string(pullData.localFileId) + '/' +
@@ -799,8 +799,8 @@ bool CloudMediaPhotosDao::JudgeConflict(
             (localKeyData.exifRotateValue != cloudKeyData.exifRotateValue))) {
         MEDIA_INFO_LOG("local isize %{public}ld, cloud isize %{public}ld, local exifRotateValue %{public}d,\
             cloud exifRotateValue %{public}d",
-            localKeyData.isize,
-            cloudKeyData.isize,
+            (long)localKeyData.isize,
+            (long)cloudKeyData.isize,
             localKeyData.exifRotateValue,
             cloudKeyData.exifRotateValue);
         return false;
@@ -938,7 +938,7 @@ int32_t CloudMediaPhotosDao::GetMetaModifiedRecords(int32_t size, std::vector<Ph
     // Notify caller if no data is returned, it means all data has been processed.
     CHECK_AND_RETURN_RET_LOG(rowCount > 0, E_OK, "GetMetaModifiedRecords Empty Result.");
     std::vector<PhotosPo> tempList = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords();
-    MEDIA_INFO_LOG("GetMetaModifiedRecords Counts: %{public}lu", tempList.size());
+    MEDIA_INFO_LOG("GetMetaModifiedRecords Counts: %{public}zu", tempList.size());
     int32_t ownerAlbumId;
     int32_t fileId;
     bool isValid;
@@ -979,7 +979,7 @@ int32_t CloudMediaPhotosDao::GetFileModifiedRecords(int32_t size, std::vector<Ph
     // Notify caller if no data is returned, it means all data has been processed.
     CHECK_AND_RETURN_RET_LOG(rowCount > 0, E_OK, "GetFileModifiedRecords Empty Result.");
     std::vector<PhotosPo> tempList = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords();
-    MEDIA_INFO_LOG("GetFileModifiedRecords Counts: %{public}lu", tempList.size());
+    MEDIA_INFO_LOG("GetFileModifiedRecords Counts: %{public}zu", tempList.size());
     int32_t ownerAlbumId;
     int32_t fileId;
     bool isValid;
@@ -1046,7 +1046,7 @@ int32_t CloudMediaPhotosDao::GetCopyRecords(int32_t size, std::vector<PhotosPo> 
     // Notify caller if no data is returned, it means all data has been processed.
     CHECK_AND_RETURN_RET_LOG(rowCount > 0, E_OK, "GetCopyRecords Empty Result.");
     std::vector<PhotosPo> tempList = ResultSetReader<PhotosPoWriter, PhotosPo>(resultSet).ReadRecords();
-    MEDIA_INFO_LOG("GetCopyRecords Counts: %{public}lu", tempList.size());
+    MEDIA_INFO_LOG("GetCopyRecords Counts: %{public}zu", tempList.size());
     int32_t ownerAlbumId;
     int32_t fileId;
     bool isValid;
@@ -1210,8 +1210,8 @@ bool CloudMediaPhotosDao::IsTimeChanged(const PhotosDto &record,
     }
     MEDIA_INFO_LOG("IsTimeChanged cloudId: %{public}s lt: %{public}ld, ct: %{public}ld",
         record.cloudId.c_str(),
-        localtime,
-        cloudtime);
+        (long)localtime,
+        (long)cloudtime);
     if (localtime == cloudtime) {
         return false;
     }
