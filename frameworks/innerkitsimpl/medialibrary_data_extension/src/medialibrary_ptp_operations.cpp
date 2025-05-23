@@ -242,8 +242,10 @@ int32_t MediaLibraryPtpOperations::DeleteLocalAndCloudPhotos(vector<shared_ptr<F
     return E_OK;
 }
 
-bool MediaLibraryPtpOperations::IsLastBurstPhoto(const std::string& burstKey)
+int32_t MediaLibraryPtpOperations::GetBurstPhotosInfo(const std::string& burstKey, bool &isLastBurstPhoto,
+    vector<int32_t> &burstFileIds)
 {
+    burstFileIds.clear();
     NativeRdb::RdbPredicates queryPredicates(PhotoColumn::PHOTOS_TABLE);
     vector<string> columns = { MediaColumn::MEDIA_ID };
     queryPredicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, static_cast<int32_t>(BurstCoverLevelType::MEMBER));
@@ -252,10 +254,16 @@ bool MediaLibraryPtpOperations::IsLastBurstPhoto(const std::string& burstKey)
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is null");
     auto resultSet = rdbStore->Query(queryPredicates, columns);
     int32_t count = 0;
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "resultSet is nullptr");
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet is nullptr");
     CHECK_AND_RETURN_RET_LOG(
-        resultSet->GetRowCount(count) == NativeRdb::E_OK, false, "Cannot get row count of resultset");
-    return count == 1;
+        resultSet->GetRowCount(count) == NativeRdb::E_OK, E_HAS_DB_ERROR, "Cannot get row count of resultset");
+    isLastBurstPhoto = count == 1;
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_HAS_DB_ERROR, "have no photo asset");
+    do {
+        burstFileIds.push_back(GetInt32Val(MediaColumn::MEDIA_ID, resultSet));
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    resultSet->Close();
+    return NativeRdb::E_OK;
 }
 
 int32_t MediaLibraryPtpOperations::DeletePtpPhoto(NativeRdb::RdbPredicates &rdbPredicate)
@@ -273,13 +281,25 @@ int32_t MediaLibraryPtpOperations::DeletePtpPhoto(NativeRdb::RdbPredicates &rdbP
     int32_t subType = fileAsset->GetPhotoSubType();
     int32_t burstCoverLevel = fileAsset->GetBurstCoverLevel();
     string burstKey = fileAsset->GetBurstKey();
-    if (subType == static_cast<int32_t>(PhotoSubType::BURST) &&
-        burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER)) {
-        ret = UpdateBurstPhotoInfo(burstKey, true, rdbPredicate);
-    } else if (subType == static_cast<int32_t>(PhotoSubType::BURST)) {
-        ret = UpdateBurstPhotoInfo(burstKey, IsLastBurstPhoto(burstKey), rdbPredicate);
+    bool isBurstCover = false;
+    bool isLastBurstPhoto = false;
+    vector<int32_t> burstFileIds;
+    if (subType == static_cast<int32_t>(PhotoSubType::BURST)) {
+        isBurstCover = burstCoverLevel == static_cast<int32_t>(BurstCoverLevelType::COVER);
+        ret = GetBurstPhotosInfo(burstKey, isLastBurstPhoto, burstFileIds);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "GetBurstPhotosInfo fail.");
+        bool needClearBurst = isLastBurstPhoto || isBurstCover;
+        ret = UpdateBurstPhotoInfo(burstKey, needClearBurst, rdbPredicate);
+        CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "UpdateBurstPhotoInfo fail.");
     }
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_HAS_DB_ERROR, "UpdateBurstPhotoInfo fail.");
+    if (isBurstCover) {
+        auto watch = MediaLibraryNotify::GetInstance();
+        CHECK_AND_RETURN_RET_LOG(watch != nullptr, E_ERR, "Can not get MediaLibraryNotify Instance");
+        for (const auto &fileId : burstFileIds) {
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId), NotifyType::NOTIFY_ADD);
+            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId), NotifyType::NOTIFY_THUMB_ADD);
+        }
+    }
     return MediaLibraryAssetOperations::DeletePermanently(rdbPredicate, true);
 }
 
