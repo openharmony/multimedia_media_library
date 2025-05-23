@@ -17,11 +17,9 @@
 
 #include <cstdint>
 #include <string>
-#include <fuzzer/FuzzedDataProvider.h>
 
 #define private public
 #include "cloud_upload_checker.h"
-#include "medialibrary_subscriber.h"
 #undef private
 #include "ability_context_impl.h"
 #include "media_log.h"
@@ -34,75 +32,72 @@ namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
 static const string PHOTOS_TABLE = "Photos";
+static const int32_t E_ERR = -1;
 std::shared_ptr<Media::MediaLibraryRdbStore> g_rdbStore;
-FuzzedDataProvider *FDP = nullptr;
-static const int32_t NUM_BYTES = 1;
-static const int32_t int32Count = 2;
-static const int8_t boolCount = 1;
-static const int8_t stringCount = 1;
-static const int MIN_SIZE = sizeof(int32_t) * int32Count + sizeof(int64_t) +
-    sizeof(int8_t) * (boolCount + stringCount);
-
-static inline int32_t FuzzPhotoSubType()
+static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
-    int32_t value = FDP->ConsumeIntegral<int32_t>() % 8;
-    if (value >= static_cast<int32_t>(Media::PhotoSubType::DEFAULT) &&
-        value <= static_cast<int32_t>(Media::PhotoSubType::SUBTYPE_END)) {
-        return value;
+    if (data == nullptr || size < sizeof(int32_t)) {
+        return 0;
     }
-    return static_cast<int32_t>(Media::PhotoSubType::MOVING_PHOTO);
+    return static_cast<int32_t>(*data);
 }
 
-static inline int32_t FuzzMovingPhotoEffectMode()
+static inline int64_t FuzzInt64(const uint8_t *data, size_t size)
 {
-    int32_t value = FDP->ConsumeIntegral<int32_t>() % 10;
-    if (value >= static_cast<int32_t>(Media::MovingPhotoEffectMode::EFFECT_MODE_START) &&
-        value <= static_cast<int32_t>(Media::MovingPhotoEffectMode::IMAGE_ONLY)) {
-        return value;
+    if (data == nullptr || size < sizeof(int64_t)) {
+        return 0;
     }
-    return static_cast<int32_t>(Media::MovingPhotoEffectMode::IMAGE_ONLY);
+    return static_cast<int64_t>(*data);
 }
 
-static int32_t InsertPhotoAsset()
+static inline string FuzzString(const uint8_t *data, size_t size)
 {
+    return {reinterpret_cast<const char*>(data), size};
+}
+
+static int32_t InsertPhotoAsset(const uint8_t *data, size_t size)
+{
+    if (g_rdbStore == nullptr || data == nullptr || size < sizeof(int32_t) + sizeof(int64_t)) {
+        return E_ERR;
+    }
+    int offset = 0;
     NativeRdb::ValuesBucket values;
-    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FDP->ConsumeBytesAsString(NUM_BYTES));
-    values.PutInt(Media::PhotoColumn::PHOTO_DIRTY, FDP->ConsumeBool() ? 1 : 100);
-    values.PutLong(Media::MediaColumn::MEDIA_SIZE, FDP->ConsumeIntegral<int64_t>());
-    values.PutLong(Media::PhotoColumn::PHOTO_THUMBNAIL_READY, 3);
-    values.PutLong(Media::PhotoColumn::PHOTO_LCD_VISIT_TIME, 2);
+    values.PutString(Media::MediaColumn::MEDIA_FILE_PATH, FuzzString(data, size));
+    values.PutInt(Media::PhotoColumn::PHOTO_DIRTY, FuzzInt32(data + offset, size));
+    offset += sizeof(int64_t);
+    values.PutLong(Media::MediaColumn::MEDIA_SIZE, FuzzInt64(data + offset, size));
     int64_t fileId = 0;
     g_rdbStore->Insert(fileId, PHOTOS_TABLE, values);
     return static_cast<int32_t>(fileId);
 }
 
-static Media::CheckedPhotoInfo FuzzCheckedPhotoInfo()
+static Media::CheckedPhotoInfo FuzzCheckedPhotoInfo(const uint8_t *data, size_t size)
 {
     Media::CheckedPhotoInfo checkedPhotoInfo = {
-        .fileId = InsertPhotoAsset(),
-        .path = "/storage/cloud/files/Photo/16",
-        .subtype = FuzzPhotoSubType(),
-        .movingPhotoEffectMode = FuzzMovingPhotoEffectMode()
+        .fileId = InsertPhotoAsset(data, size),
+        .path = FuzzString(data, size)
     };
     return checkedPhotoInfo;
 }
 
-static vector<Media::CheckedPhotoInfo> FuzzVectorCheckedPhotoInfo()
+static vector<Media::CheckedPhotoInfo> FuzzVectorCheckedPhotoInfo(const uint8_t *data, size_t size)
 {
-    return {FuzzCheckedPhotoInfo()};
+    return {FuzzCheckedPhotoInfo(data, size)};
 }
 
-static void CloudUploadCheckerTest()
+static void RepairNoOriginPhotoTest(const uint8_t *data, size_t size)
 {
-    InsertPhotoAsset();
-    int32_t startFileId = 0;
+    Media::CloudUploadChecker::QueryLcdPhotoCount(FuzzInt32(data, size));
+    int32_t startFileId = InsertPhotoAsset(data, size);
     int32_t curFileId = -1;
-    Media::CloudUploadChecker::QueryLcdPhotoCount(startFileId);
     Media::CloudUploadChecker::QueryPhotoInfo(startFileId);
-    shared_ptr<Media::MedialibrarySubscriber> subscriber = make_shared<Media::MedialibrarySubscriber>();
-    subscriber->currentStatus_ = true;
-    Media::CloudUploadChecker::HandlePhotoInfos(FuzzVectorCheckedPhotoInfo(), curFileId);
+    Media::CloudUploadChecker::HandlePhotoInfos(FuzzVectorCheckedPhotoInfo(data, size), curFileId);
     Media::CloudUploadChecker::RepairNoOriginPhoto();
+}
+
+static void CloudUploadCheckerTest(const uint8_t *data, size_t size)
+{
+    RepairNoOriginPhotoTest(data, size);
 }
 
 void SetTables()
@@ -147,11 +142,6 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-    FuzzedDataProvider fdp(data, size);
-    OHOS::FDP = &fdp;
-    if (data == nullptr || size < OHOS::MIN_SIZE) {
-        return 0;
-    }
-    OHOS::CloudUploadCheckerTest();
+    OHOS::CloudUploadCheckerTest(data, size);
     return 0;
 }

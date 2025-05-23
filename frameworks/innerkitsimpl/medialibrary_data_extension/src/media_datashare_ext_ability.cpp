@@ -90,7 +90,6 @@ using namespace OHOS::DistributedKv;
 using namespace OHOS::Media;
 using namespace OHOS::DataShare;
 using namespace OHOS::Security::AccessToken;
-std::shared_ptr<MediaDataShareExtAbility> mediaDataShareExtAbility = nullptr;
 
 namespace OHOS {
 namespace AbilityRuntime {
@@ -142,12 +141,7 @@ static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
 {
-    mediaDataShareExtAbility = std::make_shared<MediaDataShareExtAbility>(static_cast<Runtime&>(*runtime));
-    if (!mediaDataShareExtAbility) {
-        MEDIA_ERR_LOG("Failed to create mediaDataShareExtAbility instance");
-        return nullptr;
-    }
-    return mediaDataShareExtAbility.get();
+    return new MediaDataShareExtAbility(static_cast<Runtime&>(*runtime));
 }
 
 MediaDataShareExtAbility::MediaDataShareExtAbility(Runtime& runtime) : DataShareExtAbility(), runtime_(runtime) {}
