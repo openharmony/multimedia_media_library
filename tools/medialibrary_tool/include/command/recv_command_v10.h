@@ -28,6 +28,19 @@ public:
     RecvCommandV10 &operator=(const RecvCommandV10 &recvCommand) = delete;
     RecvCommandV10 &operator=(RecvCommandV10 &&recvCommand) = delete;
     int32_t Start(const ExecEnv &env) override;
+    int32_t RecvAssets(const ExecEnv& env, const std::string& tableName);
+    int32_t QueryAssets(std::shared_ptr<DataShare::DataShareResultSet>& resultSet, const std::string& tableName);
+    bool CheckArgs(const ExecEnv& env);
+    bool QueryMovingPhotoAsset(const string& movingPhotoImagePath, unique_ptr<FileAsset>& movingPhotoAsset);
+    bool IsMovingPhotoVideoPath(unique_ptr<FileAsset>& movingPhotoAsset);
+
+private:
+    string srcPath_;
+    string inputPath_;
+    string uri_;
+    string tableName_;
+
+    bool isRecvAll_ = false;
 };
 } // namespace MediaTool
 } // namespace Media

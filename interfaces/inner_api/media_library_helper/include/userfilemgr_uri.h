@@ -384,8 +384,10 @@ const std::string PAH_DEGENERATE_MOVING_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PA
 const std::string MISC_OPERATION = "miscellaneous_operation";
 
 const std::string OPRN_LOG_MOVING_PHOTO = "log_moving_photo";
+const std::string OPRN_QUERY_ACTIVE_USER_ID = "query_active_user_id";
 
 const std::string LOG_MOVING_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MISC_OPERATION + "/" + OPRN_LOG_MOVING_PHOTO;
+const std::string QUERY_ACTIVE_USER_ID = MEDIALIBRARY_DATA_URI + "/" + MISC_OPERATION + "/" + OPRN_QUERY_ACTIVE_USER_ID;
 
 const std::string OPRN_FINISH_REQUEST_PICTURE = "finish_request_picture";
 const std::string PAH_FINISH_REQUEST_PICTURE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/"

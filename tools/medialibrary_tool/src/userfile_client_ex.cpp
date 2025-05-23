@@ -97,7 +97,7 @@ static std::string GetOperation(const std::string &tableName, MediaToolOperation
     return "";
 }
 
-static bool CheckTableName(const std::string &tableName)
+bool UserFileClientEx::CheckTableName(const std::string &tableName)
 {
     static const std::set<std::string> VALID_TABLENAME_WHITELIST = {
         PhotoColumn::PHOTOS_TABLE,
@@ -134,7 +134,7 @@ static inline std::string GetInsertUri(const std::string &tableName)
     return uri;
 }
 
-static inline std::string GetQueryUri(const std::string &tableName)
+std::string UserFileClientEx::GetQueryUri(const std::string &tableName)
 {
     std::string uri = GetOperation(tableName, MediaToolOperation::QUERY);
     if (uri.empty()) {
@@ -241,6 +241,9 @@ int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::str
     Uri insertUri(insertUriStr);
     DataShare::DataShareValuesBucket values;
     values.Put(MediaColumn::MEDIA_NAME, name);
+    if (MimeTypeUtils::IsMimeTypeMapEmpty()) {
+        MimeTypeUtils::InitMimeTypeMap();
+    }
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(name));
     values.Put(MediaColumn::MEDIA_TYPE, MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
     values.Put(MediaColumn::MEDIA_OWNER_PACKAGE, "com.mediatool.album");

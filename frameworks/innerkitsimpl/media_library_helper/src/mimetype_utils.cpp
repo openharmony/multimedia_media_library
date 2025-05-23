@@ -68,6 +68,11 @@ void MimeTypeUtils::CreateMapFromJson()
     }
 }
 
+bool MimeTypeUtils::IsMimeTypeMapEmpty()
+{
+    return mediaJsonMap_.empty();
+}
+
 int32_t MimeTypeUtils::InitMimeTypeMap()
 {
     CreateMapFromJson();

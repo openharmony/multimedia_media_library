@@ -74,7 +74,6 @@ int32_t ControlMain::Main(const std::vector<std::string> &args)
             MEDIA_ERR_LOG("UserfileClient init failed, res: %{public}d", res);
             break;
         }
-        MimeTypeUtils::InitMimeTypeMap();
         std::unique_ptr<Command> cmd = Command::Create(env);
         if (cmd == nullptr) {
             res = Media::E_ERR;

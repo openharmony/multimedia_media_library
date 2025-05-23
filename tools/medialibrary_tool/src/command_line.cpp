@@ -23,6 +23,7 @@
 #include "file_ex.h"
 #include "media_column.h"
 #include "media_file_utils.h"
+#include "media_log.h"
 #include "medialibrary_errno.h"
 #include "option_args.h"
 #include "userfile_client_ex.h"
@@ -40,6 +41,7 @@ const std::string OPT_STR_RECV = "recv";
 const std::string OPT_STR_LIST = "list";
 const std::string OPT_STR_DELETE = "delete";
 const std::string OPT_STR_QUERY = "query";
+const std::string OPT_STR_LS = "ls";
 const std::string OPT_STR_ALL = "all";
 
 const std::string SEND_CREATE_THUMBNAIL_SYNC = "-ts";
@@ -55,16 +57,19 @@ static void ShowUsage(bool isRoot)
     str.append("usage:\n");
     if (isRoot) {
         str.append("  send file from path to medialibrary\n");
-        str.append("    command: send path (file path or dir path)\n");
-        str.append("  list file in medialibrary\n");
-        str.append("    command: list uri | list all\n");
+        str.append("    command: mediatool send <file-or-dir-path> [-ts] [-tas] [-rf] [-urf]\n");
+        str.append("  list media assets in medialibrary\n");
+        str.append("    command: mediatool list <media-uri>\n");
     }
     str.append("  receive file from medialibrary to path\n");
-    str.append("    command: recv uri path | recv all path\n");
-    str.append("  delete database and files in medialibrary\n");
-    str.append("    command: delete all\n");
+    str.append("    command: mediatool recv <media-uri> <dest-path>\n");
+    str.append("  delete media assets in medialibrary\n");
+    str.append("    command: mediatool delete <media-uri>\n");
     str.append("  query path or uri by displayname in medialibrary\n");
-    str.append("    command: query display_name -p | query display_name -u\n");
+    str.append("    command: mediatool query <display-name> [-p] [-u]\n");
+    str.append("  execute ls -l in system media directory\n");
+    str.append("    command: mediatool ls -l <media-directory>\n");
+
     printf("%s", str.c_str());
 }
 
@@ -102,11 +107,13 @@ static bool CheckRecvPath(ExecEnv &env)
         ForceCreateDirectory(path);
     }
     if (!MediaFileUtils::IsDirectory(path)) {
+        MEDIA_ERR_LOG("recv path issue. path: %{public}s", path.c_str());
         printf("%s path issue. path:%s\n", STR_FAIL.c_str(), path.c_str());
         return false;
     }
     if (!env.recvParam.isRecvPathDir) {
         if (FileExists(env.recvParam.recvPath)) {
+            MEDIA_ERR_LOG("recv file has exist. file: %{public}s", env.recvParam.recvPath.c_str());
             printf("%s file has exist. file:%s\n", STR_FAIL.c_str(), env.recvParam.recvPath.c_str());
             return false;
         }
@@ -138,21 +145,18 @@ static bool CheckList(ExecEnv &env)
 static bool CheckRecv(ExecEnv &env)
 {
     if (env.optArgs.uri == OPT_STR_ALL) {
-        env.recvParam.recvUri.clear();
+        env.recvParam.recvTarget.clear();
         env.recvParam.isRecvAll = true;
     } else if (!env.optArgs.uri.empty()) {
-        std::string tableName = UserFileClientEx::GetTableNameByUri(env.optArgs.uri);
-        if (tableName.empty()) {
-            printf("%s uri issue. uri:%s\n", STR_FAIL.c_str(), env.optArgs.uri.c_str());
-            return false;
-        }
-        env.recvParam.recvUri = env.optArgs.uri;
+        env.recvParam.recvTarget = env.optArgs.uri;
         env.recvParam.isRecvAll = false;
     } else {
-        printf("%s input uri incorrect.\n", STR_FAIL.c_str());
+        MEDIA_ERR_LOG("recv target is empty");
+        printf("%s recv target is empty.\n", STR_FAIL.c_str());
         return false;
     }
     if (env.optArgs.recvPath.empty()) {
+        MEDIA_ERR_LOG("recv path empty");
         printf("%s recv path empty.\n", STR_FAIL.c_str());
         return false;
     }
@@ -279,6 +283,10 @@ static bool Check(ExecEnv &env)
     if (env.optArgs.cmdType == OptCmdType::TYPE_QUERY) {
         return CheckQuery(env);
     }
+    if (env.optArgs.cmdType == OptCmdType::TYPE_LS) {
+        // ls command performs check later
+        return true;
+    }
     return false;
 }
 
@@ -301,6 +309,7 @@ int32_t CommandLine::Parser(ExecEnv &env)
         ShowUsage(env.isRoot);
         return Media::E_ERR;
     }
+    env.commandArgs = std::vector<std::string>(env.args.begin() + MEDIATOOL_ARG_MIN - 1, env.args.end());
     std::string cmd = env.args[MEDIATOOL_ARG_CMD];
     std::string optFirst = (env.args.size() > MEDIATOOL_ARG_FIRST) ? env.args[MEDIATOOL_ARG_FIRST] : "";
     std::string optSecond = (env.args.size() > MEDIATOOL_ARG_SECOND) ? env.args[MEDIATOOL_ARG_SECOND] : "";
@@ -324,6 +333,8 @@ int32_t CommandLine::Parser(ExecEnv &env)
     } else if (cmd == OPT_STR_QUERY) {
         env.optArgs.cmdType = OptCmdType::TYPE_QUERY;
         PutExtraString(env, MEDIATOOL_ARG_FIRST);
+    } else if (cmd == OPT_STR_LS){
+        env.optArgs.cmdType = OptCmdType::TYPE_LS;
     } else {
         ShowUsage(env.isRoot);
         return Media::E_ERR;
@@ -333,6 +344,7 @@ int32_t CommandLine::Parser(ExecEnv &env)
     }
     return Media::E_OK;
 }
+
 } // namespace MediaTool
 } // namespace Media
 } // namespace OHOS

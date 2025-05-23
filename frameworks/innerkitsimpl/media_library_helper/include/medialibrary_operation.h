@@ -215,6 +215,8 @@ enum class EXPORT OperationType : uint32_t {
     MTH_AND_YEAR_ASTC,
     UPDATE_SUPPORTED_WATERMARK_TYPE,
     QUERY_HIGHLIGHT_DIRECTORY_SIZE,
+    LS_MEDIA_FILES,
+    QUERY_ACTIVE_USER_ID,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()

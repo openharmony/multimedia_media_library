@@ -49,7 +49,8 @@ static bool IsHdcShellMediatoolCommand(MediaLibraryCommand &cmd, const std::stri
         cmd.GetOprnType() == Media::OperationType::ALBUM_DELETE_ASSETS ||
         (cmd.GetOprnType() == Media::OperationType::DELETE &&
         cmd.GetOprnObject() == OperationObject::FILESYSTEM_AUDIO) ||
-        (cmd.GetOprnType() == Media::OperationType::OPEN && openFileMode.find('w') == string::npos);
+        (cmd.GetOprnType() == Media::OperationType::OPEN && openFileMode.find('w') == string::npos) ||
+        cmd.GetOprnType() == Media::OperationType::LS_MEDIA_FILES;
 }
 
 bool IsDeveloperMediaTool(MediaLibraryCommand &cmd, const std::string &openFileMode)
