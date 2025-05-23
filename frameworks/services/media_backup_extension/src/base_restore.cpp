@@ -68,6 +68,7 @@ const int32_t APP_MAIN_DATA_USER_ID = 0;
 const int32_t APP_TWIN_DATA_USER_ID_START = 128;
 const int32_t APP_TWIN_DATA_USER_ID_END = 147;
 const int32_t SINGLE_LEN_EXTRADATA = 20;
+const double DOUBLE_EPSILON = 1e-15;
 
 static int32_t GetRestoreModeFromRestoreInfo(const string &restoreInfo)
 {
@@ -577,6 +578,24 @@ void BaseRestore::SetMetaDataValue(const FileInfo &fileInfo, std::unique_ptr<Met
     BackupFileUtils::FillMetadata(data);
 }
 
+double BaseRestore::GetDataLongitude(const FileInfo &fileInfo, std::unique_ptr<Metadata> &data)
+{
+    if (sceneCode_ == I_PHONE_CLONE_RESTORE && (!(std::fabs(fileInfo.longitude - DEFAULT_LONGITUDE) < DOUBLE_EPSILON)
+        || !(std::fabs(fileInfo.latitude - DEFAULT_LATITUDE) < DOUBLE_EPSILON))) {
+            return fileInfo.longitude;
+    }
+    return data->GetLongitude();
+}
+
+double BaseRestore::GetDataLatitude(const FileInfo &fileInfo, std::unique_ptr<Metadata> &data)
+{
+    if (sceneCode_ == I_PHONE_CLONE_RESTORE && (!(std::fabs(fileInfo.longitude - DEFAULT_LONGITUDE) < DOUBLE_EPSILON)
+        || !(std::fabs(fileInfo.latitude - DEFAULT_LATITUDE) < DOUBLE_EPSILON))) {
+            return fileInfo.latitude;
+    }
+    return data->GetLatitude();
+}
+
 void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
@@ -600,8 +619,8 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
-    value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
-    value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
+    value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, GetDataLongitude(fileInfo, data));
+    value.PutDouble(PhotoColumn::PHOTO_LATITUDE, GetDataLatitude(fileInfo, data));
     value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
     value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
     value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());

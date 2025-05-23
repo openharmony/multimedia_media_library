@@ -2742,5 +2742,39 @@ HWTEST_F(MediaLibraryBackupTest, medialibrary_backup_test_geo_knowledge_test5, T
     EXPECT_EQ(restoreService->geoKnowledgeRestore_.batchCnt_, 1);
     MEDIA_INFO_LOG("medialibrary_backup_test_geo_knowledge_test5 end");
 }
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_longitude_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("mmedialib_backup_get_data_longitude_test start");
+    restoreService->sceneCode_ = I_PHONE_CLONE_RESTORE;
+    double setLongitude = 2.0;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetLongitude(setLongitude);
+    FileInfo fileInfo;
+    fileInfo.longitude = 1.0;
+    double ret = restoreService->BaseRestore::GetDataLongitude(fileInfo, data);
+    EXPECT_EQ(ret, fileInfo.longitude);
+
+    fileInfo.longitude = 0.0;
+    ret = restoreService->BaseRestore::GetDataLongitude(fileInfo, data);
+    EXPECT_EQ(ret, setLongitude);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_get_data_latitude_test, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("mmedialib_backup_get_data_latitudetest start");
+    restoreService->sceneCode_ = I_PHONE_CLONE_RESTORE;
+    double setLatitude = 2.0;
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetLatitude(setLatitude);
+    FileInfo fileInfo;
+    fileInfo.latitude= 1.0;
+    double ret = restoreService->BaseRestore::GetDataLatitude(fileInfo, data);
+    EXPECT_EQ(ret, fileInfo.latitude);
+
+    fileInfo.latitude = 0.0;
+    ret = restoreService->BaseRestore::GetDataLatitude(fileInfo, data);
+    EXPECT_EQ(ret, setLatitude);
+}
 } // namespace Media
 } // namespace OHOS
