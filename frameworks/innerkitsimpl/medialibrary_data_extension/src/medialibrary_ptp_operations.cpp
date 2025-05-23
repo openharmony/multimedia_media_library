@@ -242,7 +242,7 @@ int32_t MediaLibraryPtpOperations::DeleteLocalAndCloudPhotos(vector<shared_ptr<F
     return E_OK;
 }
 
-int32_t MediaLibraryPtpOperations::GetBurstPhotosInfo(const std::string& burstKey, bool &isLastBurstPhoto,
+int32_t MediaLibraryPtpOperations::GetBurstPhotosInfo(const std::string &burstKey, bool &isLastBurstPhoto,
     vector<int32_t> &burstFileIds)
 {
     burstFileIds.clear();
