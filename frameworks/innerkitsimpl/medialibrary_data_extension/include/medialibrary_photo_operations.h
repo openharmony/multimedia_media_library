@@ -100,6 +100,7 @@ public:
     EXPORT static int32_t UpdateSupportedWatermarkType(MediaLibraryCommand &cmd);
     static int32_t UpdateExtension(const int32_t &fileId, const int32_t &fileType, PhotoExtInfo &photoExtInfo,
         NativeRdb::ValuesBucket &updateValues);
+    static int32_t LSMediaFiles(MediaLibraryCommand& cmd);
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);

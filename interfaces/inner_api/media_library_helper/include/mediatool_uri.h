@@ -21,7 +21,9 @@ namespace Media {
 const std::string TOOL_PHOTO = "mediatool_photo_operation";
 const std::string TOOL_AUDIO = "mediatool_audio_operation";
 const std::string TOOL_ALBUM = "mediatool_album_operation";
+
 const std::string OPRN_TOOL_QUERY_BY_DISPLAY_NAME = "tool_query_by_display_name";
+const std::string OPRN_LS = "ls_media_files";
 
 const std::string TOOL_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TOOL_PHOTO + "/" + OPRN_CREATE;
 const std::string TOOL_CREATE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + TOOL_AUDIO + "/" + OPRN_CREATE;
@@ -35,6 +37,7 @@ const std::string TOOL_UPDATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TOOL_PHOTO +
 const std::string TOOL_UPDATE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + TOOL_AUDIO + "/" + OPRN_UPDATE;
 const std::string TOOL_DELETE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TOOL_ALBUM + "/" + OPRN_DELETE_PHOTOS;
 const std::string TOOL_DELETE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + TOOL_AUDIO + "/" + OPRN_DELETE;
+const std::string TOOL_LS_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TOOL_PHOTO + "/" + OPRN_LS;
 
 const std::string IS_TOOL_OPEN = "is_mediatool_open_operation";
 const std::string TOOL_OPEN_TRUE = "1";

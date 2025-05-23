@@ -909,6 +909,13 @@ static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValu
                 solved = true;
                 return LogMedialibraryAPI(cmd, dataShareValue);
             }
+            if (cmd.GetOprnType() == OperationType::QUERY_ACTIVE_USER_ID) {
+                solved = true;
+                constexpr int32_t baseUserRange = 200000;
+                uid_t activeUserId = getuid() / baseUserRange;
+                cmd.SetResult(to_string(activeUserId));
+                return E_OK;
+            }
             return E_OK;
         }
         default:

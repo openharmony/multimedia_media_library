@@ -15,6 +15,7 @@
 #include "command/command.h"
 
 #include "command/list_command_v10.h"
+#include "command/ls_command.h"
 #include "command/recv_command_v10.h"
 #include "command/send_command_v10.h"
 #include "command/delete_command_v10.h"
@@ -40,6 +41,9 @@ std::unique_ptr<Command> Command::Create(const ExecEnv &env)
     }
     if (env.optArgs.cmdType == OptCmdType::TYPE_QUERY) {
         return std::make_unique<QueryCommandV10>();
+    }
+    if (env.optArgs.cmdType == OptCmdType::TYPE_LS) {
+        return std::make_unique<LSCommand>();
     }
     return nullptr;
 }
