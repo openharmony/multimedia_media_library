@@ -19,10 +19,11 @@
 #include "medialibrary_business_code.h"
 
 namespace OHOS::Media::CloudSync {
+const uint32_t MEDIA_CLOUD_CODE_START = static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_START);
 enum GLOBAL_CODE {
-    OPERATION_CODE_BASE = MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_START,
-    OPERATION_PHOTO_CODE_BASE = MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_START + 100,
-    OPERATION_ALBUM_CODE_BASE = MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_START + 200,
+    OPERATION_CODE_BASE = MEDIA_CLOUD_CODE_START,
+    OPERATION_PHOTO_CODE_BASE = MEDIA_CLOUD_CODE_START + 100,
+    OPERATION_ALBUM_CODE_BASE = MEDIA_CLOUD_CODE_START + 200,
 };
 
 enum class CloudMediaOperationCode : uint32_t {
