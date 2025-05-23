@@ -29,6 +29,8 @@ struct CloneDbInfo {
     std::string data;
     double dateModified {0.0};
     double dateTaken {0.0};
+    double latitude {0.0};
+    double longitude {0.0};
     bool fileExists {false};
 };
 
@@ -60,6 +62,7 @@ private:
     int32_t GetAllfilesInCurrentDir(const std::string &path);
     bool CheckSamePathForSD(const std::string &dataPath, FileInfo &fileInfo, const std::string &filePath);
     void UpDateFileModifiedTime(FileInfo &fileInfo);
+    void UpdateFileGPS(FileInfo &fileInfo);
     void ReportMissingFilesFromDB(std::vector<CloneDbInfo> &mediaDbInfo, const std::string &dbType);
     void GetDbInfo(int32_t sceneCode, std::vector<CloneDbInfo> &mediaDbInfo,
         const std::shared_ptr<NativeRdb::ResultSet> &resultSet);
@@ -79,7 +82,7 @@ private:
     static std::string GetFileHeadPath(int32_t sceneCode, int32_t fileType);
     static void AddGalleryAlbum(std::vector<PhotoAlbumRestore::GalleryAlbumRowData> &galleryAlbumInfos,
         const std::string &lPath);
-    static bool IsIphoneDynamicVideo(FileInfo &fileInfo, int32_t sceneCode);
+    static bool IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t sceneCode);
 
 private:
     std::mutex cloneMutex_;

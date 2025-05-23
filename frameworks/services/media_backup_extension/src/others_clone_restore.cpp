@@ -51,7 +51,7 @@ const int PHONE_SIXTH_NUMBER = 101;
 const int QUERY_NUMBER = 200;
 const int STRONG_ASSOCIATION_ENABLE = 1;
 constexpr int32_t MAX_CLONE_THREAD_NUM = 2;
-const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) + 10;
+const int32_t I_PHONE_DYNAMIC_VIDEO_TYPE = 13;
 constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 const std::string I_PHONE_LPATH = "/Pictures/";
 const std::string PHONE_TYPE = "type";
@@ -73,6 +73,8 @@ const std::string OTHER_CLONE_DISPLAYNAME = "primaryStr";
 const std::string OTHER_CLONE_DATA = "_data";
 const std::string OTHER_CLONE_MODIFIED = "date_modified";
 const std::string OTHER_CLONE_TAKEN = "datetaken";
+const std::string OTHER_CLONE_LATITUDE = "latitude";
+const std::string OTHER_CLONE_LONGITUDE = "longitude";
 const std::string OTHER_MUSIC_ROOT_PATH = "/storage/emulated/0/";
 
 static constexpr uint32_t CHAR_ARRAY_LENGTH = 5;
@@ -139,6 +141,8 @@ void OthersCloneRestore::GetDbInfo(int32_t sceneCode, std::vector<CloneDbInfo> &
             tmpDbInfo.displayName = GetStringVal(OTHER_CLONE_DISPLAYNAME, resultSet);
             tmpDbInfo.dateModified = GetDoubleVal(OTHER_CLONE_MODIFIED, resultSet);
             tmpDbInfo.dateTaken = GetDoubleVal(OTHER_CLONE_TAKEN, resultSet);
+            tmpDbInfo.latitude = GetDoubleVal(OTHER_CLONE_LATITUDE, resultSet);
+            tmpDbInfo.longitude = GetDoubleVal(OTHER_CLONE_LONGITUDE, resultSet);
         } else {
             tmpDbInfo.dateModified = static_cast<double>(GetInt64Val(OTHER_CLONE_MODIFIED, resultSet));
             tmpDbInfo.dateTaken = static_cast<double>(GetInt64Val(OTHER_CLONE_TAKEN, resultSet));
@@ -158,7 +162,8 @@ void OthersCloneRestore::HandleSelectBatch(std::shared_ptr<NativeRdb::RdbStore> 
     }
     std::string queryExternalMayClonePhoto;
     if (sceneCode == I_PHONE_CLONE_RESTORE) {
-        queryExternalMayClonePhoto = "SELECT _data, primaryStr, date_modified, datetaken FROM mediainfo LIMIT " +
+        queryExternalMayClonePhoto =
+            "SELECT _data, primaryStr, latitude, longitude, date_modified, datetaken FROM mediainfo LIMIT " +
             std::to_string(offset) + ", " + std::to_string(QUERY_NUMBER);
     } else if (sceneCode == LITE_PHONE_CLONE_RESTORE) {
         queryExternalMayClonePhoto = "SELECT _data, date_modified, datetaken FROM mediainfo LIMIT " +
@@ -443,6 +448,7 @@ void OthersCloneRestore::SetFileInfosInCurrentDir(const std::string &file, struc
     }
     if (tmpInfo.fileType  == MediaType::MEDIA_TYPE_IMAGE || tmpInfo.fileType  == MediaType::MEDIA_TYPE_VIDEO) {
         UpDateFileModifiedTime(tmpInfo);
+        UpdateFileGPS(tmpInfo);
         photoInfos_.emplace_back(tmpInfo);
     } else if (tmpInfo.fileType  == MediaType::MEDIA_TYPE_AUDIO) {
         AddAudioFile(tmpInfo);
@@ -504,6 +510,41 @@ bool OthersCloneRestore::CheckSamePathForSD(const std::string &dataPath, FileInf
     std::string newRelativePath = "";
     ConvertPathToRealPath(dataPath, OTHER_CLONE_FILE_ROOT_PATH, newPath, newRelativePath, fileInfo);
     return newPath == filePath;
+}
+
+void OthersCloneRestore::UpdateFileGPS(FileInfo &fileInfo)
+{
+    auto pathMatch = [displayName {fileInfo.displayName}, &fileInfo, this](const auto &info) {
+        return info.displayName == displayName;
+    };
+    CloneDbInfo info;
+    if (fileInfo.fileType == MediaType::MEDIA_TYPE_AUDIO) {
+        auto it = std::find_if(audioDbInfo_.begin(), audioDbInfo_.end(), pathMatch);
+        if (it != audioDbInfo_.end()) {
+            info.latitude = it->latitude;
+            info.longitude = it->longitude;
+        } else {
+            return;
+        }
+    } else if (fileInfo.fileType  == MediaType::MEDIA_TYPE_IMAGE || fileInfo.fileType  == MediaType::MEDIA_TYPE_VIDEO) {
+        auto it = std::find_if(photoDbInfo_.begin(), photoDbInfo_.end(), pathMatch);
+        if (it != photoDbInfo_.end()) {
+            info.latitude = it->latitude;
+            info.longitude = it->longitude;
+        } else {
+            auto it = std::find_if(audioDbInfo_.begin(), audioDbInfo_.end(), pathMatch);
+            if (it != audioDbInfo_.end()) {
+                MEDIA_WARN_LOG("find video in audio info map %{public}s", fileInfo.displayName.c_str());
+                info.latitude = it->latitude;
+                info.longitude = it->longitude;
+            }
+        }
+    } else {
+        MEDIA_WARN_LOG("Not supported file %{public}s", fileInfo.displayName.c_str());
+        return;
+    }
+    fileInfo.latitude = info.latitude;
+    fileInfo.longitude = info.longitude;
 }
 
 void OthersCloneRestore::UpDateFileModifiedTime(FileInfo &fileInfo)
@@ -834,7 +875,7 @@ void OthersCloneRestore::RestoreAlbum(std::vector<FileInfo> &fileInfos)
     std::vector<PhotoAlbumDao::PhotoAlbumRowData> albumInfos = this->photoAlbumDao_.GetPhotoAlbums();
     std::vector<PhotoAlbumRestore::GalleryAlbumRowData> galleryAlbumInfos;
     for (auto &info : fileInfos) {
-        if (IsIphoneDynamicVideo(info, sceneCode_)) {
+        if (IsIosMovingPhotoVideo(info, sceneCode_)) {
             continue;
         }
         info.lPath = ParseSourcePathToLPath(sceneCode_, info.filePath, info.fileType);
@@ -906,7 +947,7 @@ void OthersCloneRestore::AnalyzeSource()
     MEDIA_INFO_LOG("analyze source later");
 }
 
-bool OthersCloneRestore::IsIphoneDynamicVideo(FileInfo &fileInfo, int32_t sceneCode)
+bool OthersCloneRestore::IsIosMovingPhotoVideo(FileInfo &fileInfo, int32_t sceneCode)
 {
     if (sceneCode != I_PHONE_CLONE_RESTORE || fileInfo.filePath.find(I_PHONE_DYNAMIC_IMAGE) == string::npos) {
         return false;
