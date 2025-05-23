@@ -45,10 +45,6 @@ std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::Query(Media
 {
     RdbPredicates clientPredicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
     const vector<string> &whereUriArgs = clientPredicates.GetWhereArgs();
-    if (whereUriArgs.empty()) {
-        MEDIA_ERR_LOG("whereUriArgs is empty!");
-        return nullptr;
-    }
     string uri = whereUriArgs.front();
     if (!MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
         MEDIA_ERR_LOG("invalid URI: %{private}s", uri.c_str());
@@ -312,10 +308,6 @@ std::shared_ptr<NativeRdb::ResultSet> EnhancementDatabaseOperations::GetPair(Med
     RdbPredicates firstServicePredicates(PhotoColumn::PHOTOS_TABLE);
     RdbPredicates clientPredicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
     const vector<string> &whereUriArgs = clientPredicates.GetWhereArgs();
-    if (whereUriArgs.empty()) {
-        MEDIA_ERR_LOG("whereUriArgs is empty!");
-        return nullptr;
-    }
     string UriArg = whereUriArgs.front();
     if (!MediaFileUtils::StartsWith(UriArg, PhotoColumn::PHOTO_URI_PREFIX)) {
         return nullptr;
