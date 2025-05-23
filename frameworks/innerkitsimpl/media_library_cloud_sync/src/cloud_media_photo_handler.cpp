@@ -125,7 +125,7 @@ int32_t CloudMediaPhotoHandler::GetRetryRecords(std::vector<std::string> &record
 int32_t CloudMediaPhotoHandler::GetCheckRecords(
     const std::vector<std::string> &cloudIds, std::unordered_map<std::string, CloudCheckData> &checkRecords)
 {
-    MEDIA_INFO_LOG("enter CloudMediaPhotoHandler::GetCheckRecords %{public}lu", cloudIds.size());
+    MEDIA_INFO_LOG("enter CloudMediaPhotoHandler::GetCheckRecords %{public}zu", cloudIds.size());
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaPhotoOperationCode::CMD_GET_CHECK_RECORDS);
     GetCheckRecordsReqBody reqBody;
     reqBody.cloudIds = cloudIds;
@@ -206,7 +206,7 @@ int32_t CloudMediaPhotoHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
         return ret;
     }
     std::vector<CloudMdkRecordPhotosVo> metaModifiedRecord = respBody.GetPhotosRecords();
-    MEDIA_INFO_LOG("Enter CloudMediaPhotoHandler::GetMetaModifiedRecords size: %{public}lu", metaModifiedRecord.size());
+    MEDIA_INFO_LOG("Enter CloudMediaPhotoHandler::GetMetaModifiedRecords size: %{public}zu", metaModifiedRecord.size());
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_METADATA_MODIFY, userId_};
     Json::FastWriter writer;
     for (auto it = metaModifiedRecord.begin(); it != metaModifiedRecord.end(); ++it) {
@@ -302,7 +302,7 @@ int32_t CloudMediaPhotoHandler::GetCopyRecords(std::vector<MDKRecord> &records, 
         return ret;
     }
     std::vector<CloudMdkRecordPhotosVo> copyRecord = respBody.GetPhotosRecords();
-    MEDIA_INFO_LOG("CloudMediaPhotoHandler::GetCopyRecords result count: %{public}lu", copyRecord.size());
+    MEDIA_INFO_LOG("CloudMediaPhotoHandler::GetCopyRecords result count: %{public}zu", copyRecord.size());
     CloudFileDataConvert dataConvertor{CloudOperationType::FILE_DATA_MODIFY, userId_};
     Json::FastWriter writer;
     for (auto it = copyRecord.begin(); it != copyRecord.end(); ++it) {

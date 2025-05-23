@@ -140,7 +140,7 @@ void CloudMediaAlbumControllerService::GetMetaModifiedRecords(MessageParcel &dat
         CloudMdkRecordPhotoAlbumVo recordVo = this->processor_.ConvertRecordPoToVo(record);
         recordsList.push_back(recordVo);
     }
-    MEDIA_INFO_LOG("Enter CloudMediaAlbumControllerService::GetMetaModifiedRecords size: %{public}lu, %{public}lu",
+    MEDIA_INFO_LOG("Enter CloudMediaAlbumControllerService::GetMetaModifiedRecords size: %{public}zu, %{public}zu",
         photoAlbumPoList.size(),
         recordsList.size());
     CloudMdkRecordPhotoAlbumRespBody respBody{recordsList};
@@ -180,7 +180,7 @@ void CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, Mess
         MEDIA_ERR_LOG("OnCreateRecords Read Req Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
-    MEDIA_INFO_LOG("OnCreateRecords %{public}lu", reqBody.albums.size());
+    MEDIA_INFO_LOG("OnCreateRecords %{public}zu", reqBody.albums.size());
     std::vector<PhotoAlbumDto> albumDtoList;
     for (const auto &album : reqBody.albums) {
         PhotoAlbumDto albumDto;

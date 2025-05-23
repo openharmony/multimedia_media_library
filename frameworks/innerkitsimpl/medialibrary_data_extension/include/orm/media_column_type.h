@@ -134,7 +134,6 @@ static const std::map<std::string, DataType> PHOTO_ALBUM_COLUMNS = {
     {PhotoAlbumColumns::ALBUM_DATE_ADDED, DataType::LONG},
     {PhotoAlbumColumns::ALBUM_LPATH, DataType::STRING},
     {PhotoAlbumColumns::ALBUM_PRIORITY, DataType::INT},
-    {PhotoAlbumColumns::PHOTO_METADATA_FLAGS, DataType::INT},
     {PhotoAlbumColumns::ALBUM_CHECK_FLAG, DataType::INT},
 };
 }  // namespace MediaColumnType

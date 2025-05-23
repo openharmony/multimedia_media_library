@@ -44,12 +44,12 @@ MediaGallerySyncNotify &MediaGallerySyncNotify::GetInstance()
 static void PrintUriList(ChangeType changeType, const list<Uri> &uris)
 {
     if (uris.size() > 0) {
-        MEDIA_INFO_LOG("NotifyChange notify changeType = %{public}d, size = %{public}lu, uri = %{public}s",
+        MEDIA_INFO_LOG("NotifyChange notify changeType = %{public}d, size = %{public}zu, uri = %{public}s",
             changeType,
             uris.size(),
             uris.front().ToString().c_str());
     } else {
-        MEDIA_INFO_LOG("NotifyChange notify changeType = %{public}d, size = %{public}lu", changeType, uris.size());
+        MEDIA_INFO_LOG("NotifyChange notify changeType = %{public}d, size = %{public}zu", changeType, uris.size());
     }
 }
 
@@ -170,7 +170,7 @@ int32_t MediaGallerySyncNotify::NotifyProgress(NotifyTaskType taskType, const st
     changeInfo.uris_.push_back(Uri(GALLERY_PROGRESS_URI));
     changeInfo.data_ = (void *)params.c_str();
     changeInfo.size_ = params.length();
-    MEDIA_INFO_LOG("NotifyProgress params = %{public}s, size is %{public}lu", params.c_str(), params.length());
+    MEDIA_INFO_LOG("NotifyProgress params = %{public}s, size is %{public}zu", params.c_str(), params.length());
     obsMgrClient->NotifyChangeExt(changeInfo);
 
     return E_OK;

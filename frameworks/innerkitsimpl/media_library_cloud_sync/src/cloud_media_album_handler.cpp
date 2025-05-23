@@ -190,7 +190,7 @@ int32_t CloudMediaAlbumHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
         return E_ERR;
     }
     std::vector<CloudMdkRecordPhotoAlbumVo> createdRecord = respBody.GetPhotoAlbumRecords();
-    MEDIA_INFO_LOG("Enter CloudMediaAlbumHandler::GetMetaModifiedRecords size: %{public}lu", createdRecord.size());
+    MEDIA_INFO_LOG("Enter CloudMediaAlbumHandler::GetMetaModifiedRecords size: %{public}zu", createdRecord.size());
     CloudAlbumDataConvert dataConvertor{CloudAlbumOperationType::PHOTO_ALBUM_METADATA_MODIF};
     Json::FastWriter writer;
     for (auto it = createdRecord.begin(); it != createdRecord.end(); ++it) {

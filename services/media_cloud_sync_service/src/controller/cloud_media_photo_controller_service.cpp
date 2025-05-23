@@ -57,7 +57,7 @@ void CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, Messa
     std::vector<PhotosDto> fdirtyData;
     std::vector<int32_t> stats{0, 0, 0, 0, 0};
     std::vector<std::string> failedRecords;
-    MEDIA_INFO_LOG("OnFetchRecords onFetchPhotoDatas size: %{public}lu", onFetchPhotoDatas.size());
+    MEDIA_INFO_LOG("OnFetchRecords onFetchPhotoDatas size: %{public}zu", onFetchPhotoDatas.size());
     for (auto onFetchPhotoData : onFetchPhotoDatas) {
         cloudIds.emplace_back(onFetchPhotoData.cloudId);
         CloudMediaPullDataDto pullData = this->processor_.ConvertToCloudMediaPullData(onFetchPhotoData);
@@ -69,7 +69,7 @@ void CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, Messa
     respBody.failedRecords = failedRecords;
     respBody.newDatas = this->processor_.SetNewDataVoFromDto(newData);
     respBody.fdirtyDatas = this->processor_.SetFdirtyDataVoFromDto(fdirtyData);
-    MEDIA_INFO_LOG("OnFetchRecords Resp: %{public}s, size:%{public}lu", respBody.ToString().c_str(), newData.size());
+    MEDIA_INFO_LOG("OnFetchRecords Resp: %{public}s, size:%{public}zu", respBody.ToString().c_str(), newData.size());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
@@ -143,7 +143,7 @@ void CloudMediaPhotoControllerService::GetCreatedRecords(MessageParcel &data, Me
         createdRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(createdRecord));
     }
     CloudMdkRecordPhotosRespBody respBody{createdRecordsList};
-    MEDIA_INFO_LOG("exit CloudMediaPhotoControllerService::GetCreatedRecords %{public}lu", createdRecordsList.size());
+    MEDIA_INFO_LOG("exit CloudMediaPhotoControllerService::GetCreatedRecords %{public}zu", createdRecordsList.size());
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
 
@@ -171,7 +171,7 @@ void CloudMediaPhotoControllerService::GetMetaModifiedRecords(MessageParcel &dat
     for (const auto &metaModifiedRecord : metaModifiedRecordsPoList) {
         metaModifiedRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(metaModifiedRecord));
     }
-    MEDIA_INFO_LOG("end CloudMediaPhotoControllerService::GetMetaModifiedRecords Query:%{public}lu,Result:%{public}lu",
+    MEDIA_INFO_LOG("end CloudMediaPhotoControllerService::GetMetaModifiedRecords Query:%{public}zu,Result:%{public}zu",
         metaModifiedRecordsList.size(),
         metaModifiedRecordsPoList.size());
     CloudMdkRecordPhotosRespBody respBody{metaModifiedRecordsList};
@@ -227,7 +227,7 @@ void CloudMediaPhotoControllerService::GetDeletedRecords(MessageParcel &data, Me
     for (const auto &deletedRecord : deletedRecordsPoList) {
         deletedRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(deletedRecord));
     }
-    MEDIA_INFO_LOG("exit CloudMediaPhotoControllerService::GetDeletedRecords %{public}lu", deletedRecordsList.size());
+    MEDIA_INFO_LOG("exit CloudMediaPhotoControllerService::GetDeletedRecords %{public}zu", deletedRecordsList.size());
     CloudMdkRecordPhotosRespBody respBody{deletedRecordsList};
     return IPC::UserDefineIPC().WriteResponseBody(reply, respBody);
 }
@@ -256,7 +256,7 @@ void CloudMediaPhotoControllerService::GetCopyRecords(MessageParcel &data, Messa
     for (const auto &copyRecord : copyRecordsPoList) {
         copyRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(copyRecord));
     }
-    MEDIA_INFO_LOG("CloudMediaPhotoControllerService::GetCopyRecords Size: %{public}lu, %{public}lu",
+    MEDIA_INFO_LOG("CloudMediaPhotoControllerService::GetCopyRecords Size: %{public}zu, %{public}zu",
         copyRecordsPoList.size(),
         copyRecordsList.size());
     CloudMdkRecordPhotosRespBody respBody{copyRecordsList};
@@ -347,7 +347,7 @@ void CloudMediaPhotoControllerService::OnDeleteRecords(MessageParcel &data, Mess
         photoDto.isSuccess = photo.isSuccess;
         photoDtoList.emplace_back(photoDto);
     }
-    MEDIA_INFO_LOG("CloudMediaPhotoControllerService::OnDeleteRecords size: %{public}lu", photoDtoList.size());
+    MEDIA_INFO_LOG("CloudMediaPhotoControllerService::OnDeleteRecords size: %{public}zu", photoDtoList.size());
     ret = this->photosService_.OnDeleteRecords(photoDtoList, resp.failSize);
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
 }

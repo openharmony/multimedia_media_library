@@ -381,7 +381,7 @@ int32_t CloudMediaPhotosService::PullInsert(
 
 void CloudMediaPhotosService::NotifyPhotoInserted(const std::vector<NativeRdb::ValuesBucket> &insertFiles)
 {
-    MEDIA_INFO_LOG("NotifyPhotoInserted enter %{public}lu", insertFiles.size());
+    MEDIA_INFO_LOG("NotifyPhotoInserted enter %{public}zu", insertFiles.size());
     std::vector<std::string> cloudIds;
     bool ret = false;
     for (auto const &value : insertFiles) {
@@ -543,10 +543,10 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
     ret = CreateEntry(insertPullDatas, refreshAlbums, newData, stats, failedRecords);
     this->photosDao_.UpdateAlbumInternal(refreshAlbums);
     MediaGallerySyncNotify::GetInstance().FinalNotify();
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, rdbFail: %{public}lu", ret, rdbFail);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, dataFail: %{public}lu", ret, dataFail);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, successDelete: %{public}lu", ret, successDelete);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, successUpdate: %{public}lu", ret, successUpdate);
+    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, rdbFail: %{public}" PRId64, ret, rdbFail);
+    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, dataFail: %{public}" PRId64, ret, dataFail);
+    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, successDelete: %{public}" PRId64, ret, successDelete);
+    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, successUpdate: %{public}" PRId64, ret, successUpdate);
     MEDIA_ERR_LOG("HandleRecord ret: %{public}d, deleteCount: %{public}d", ret, deleteCount);
     MEDIA_ERR_LOG("HandleRecord ret: %{public}d, updateCount: %{public}d", ret, updateCount);
     return ret;
@@ -620,7 +620,7 @@ int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &
             it->second.localPath = "";
         }
     }
-    MEDIA_INFO_LOG("OnFetchRecords cloudIdRelativeMap: %{public}lu.", cloudIdRelativeMap.size());
+    MEDIA_INFO_LOG("OnFetchRecords cloudIdRelativeMap: %{public}zu.", cloudIdRelativeMap.size());
     ret = HandleRecord(cloudIds, cloudIdRelativeMap, newData, fdirtyData, stats, failedRecords);
     return ret;
 }
