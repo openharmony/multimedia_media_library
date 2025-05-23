@@ -84,30 +84,28 @@ HWTEST_F(EventThumbnailTest, medialib_event_GetThumbnail_test_001, TestSize.Leve
     serverTest->ReleaseService();
 }
 
-HWTEST_F(EventThumbnailTest, medialib_event_UpdateLcdInfo_test_001, TestSize.Level1)
+HWTEST_F(EventThumbnailTest, medialib_event_CacheLcdInfo_test_001, TestSize.Level1)
 {
-    string row = "medialib_UpdateLcdInfo_test_001";
-    string table = "medialib_UpdateLcdInfo_test_001";
+    string row = "medialib_CacheLcdInfo_test_001";
+    string table = "medialib_CacheLcdInfo_test_001";
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = table,
         .row = row
     };
     ThumbnailData data;
-    int err = 0;
-    bool ret = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
+    bool ret = ThumbnailUtils::CacheLcdInfo(opts, data);
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(EventThumbnailTest, medialib_event_UpdateVisitTime_test_001, TestSize.Level1)
+HWTEST_F(EventThumbnailTest, medialib_event_CacheVisitTime_test_001, TestSize.Level1)
 {
     ThumbRdbOpt opts = {
         .store = storePtr,
         .networkId = "",
     };
     ThumbnailData data;
-    int err = 0;
-    bool ret = ThumbnailUtils::UpdateVisitTime(opts, data, err);
+    bool ret = ThumbnailUtils::CacheVisitTime(opts, data);
     EXPECT_EQ(ret, false);
 }
 }

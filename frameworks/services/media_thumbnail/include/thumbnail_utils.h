@@ -33,22 +33,6 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-struct ThumbRdbOpt {
-    EXPORT std::shared_ptr<MediaLibraryRdbStore> store;
-    EXPORT std::shared_ptr<AbilityRuntime::Context> context;
-    EXPORT std::string networkId;
-    EXPORT std::string path;
-    EXPORT std::string table;
-    EXPORT std::string udid;
-    EXPORT std::string row;
-    EXPORT std::string uri;
-    EXPORT std::string dateAdded;
-    EXPORT std::string dateTaken;
-    EXPORT std::string dateModified;
-    EXPORT std::string fileUri;
-    EXPORT std::string fileId;
-    EXPORT Size screenSize;
-};
 
 class ThumbnailUtils {
 public:
@@ -75,8 +59,8 @@ public:
     EXPORT static bool SaveAfterPacking(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
     EXPORT static void CancelAfterPacking(const std::string &tempOutputPath);
     EXPORT static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
-    EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool CacheLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool CacheVisitTime(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool UpdateHighlightInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
     EXPORT static bool DoUpdateAstcDateTaken(ThumbRdbOpt &opts, ThumbnailData &data);
@@ -152,7 +136,7 @@ private:
         int index, int64_t &data);
     EXPORT static void ParseHighlightQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
        ThumbnailData &data, int &err);
-    
+
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     EXPORT static bool LoadImageFile(ThumbnailData &data, Size &desiredSize);

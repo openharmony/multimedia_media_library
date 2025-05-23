@@ -19,10 +19,29 @@
 #include <picture.h>
 #include <pixel_map.h>
 
+#include "medialibrary_rdb_utils.h"
 #include "thumbnail_const.h"
 
 namespace OHOS {
 namespace Media {
+
+struct ThumbRdbOpt {
+    EXPORT std::shared_ptr<MediaLibraryRdbStore> store;
+    EXPORT std::shared_ptr<AbilityRuntime::Context> context;
+    EXPORT std::string networkId;
+    EXPORT std::string path;
+    EXPORT std::string table;
+    EXPORT std::string udid;
+    EXPORT std::string row;
+    EXPORT std::string uri;
+    EXPORT std::string dateAdded;
+    EXPORT std::string dateTaken;
+    EXPORT std::string dateModified;
+    EXPORT std::string fileUri;
+    EXPORT std::string fileId;
+    EXPORT Size screenSize;
+};
+
 #define EXPORT __attribute__ ((visibility ("default")))
 enum class SourceState : int32_t {
     BEGIN = -3,
@@ -193,6 +212,7 @@ public:
     EXPORT int64_t thumbnailReady { -1 };
     EXPORT int64_t lcdVisitTime { -1 };
     EXPORT std::shared_ptr<Picture> originalPhotoPicture = nullptr;
+    EXPORT NativeRdb::ValuesBucket rdbUpdateCache;
 };
 } // namespace Media
 } // namespace OHOS

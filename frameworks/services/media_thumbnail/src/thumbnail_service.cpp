@@ -35,6 +35,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_generation_post_process.h"
 #include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "thumbnail_uri_utils.h"
@@ -170,10 +171,11 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     if (thumbType != ThumbnailType::THUMB && thumbType != ThumbnailType::THUMB_ASTC) {
         opts.screenSize = screenSize_;
     }
-    int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, thumbType);
-    if (fd < 0) {
-        MEDIA_ERR_LOG("GetThumbnailPixelMap failed : %{public}d", fd);
-    }
+    ThumbnailData data;
+    int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(data, opts, thumbType);
+    CHECK_AND_PRINT_LOG(fd < 0, "GetThumbnailPixelMap failed : %{public}d", fd);
+    int32_t err = ThumbnailGenerationPostProcess::PostProcess(data, opts);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed! err %{public}d", err);
     return fd;
 }
 

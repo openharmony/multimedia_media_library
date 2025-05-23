@@ -366,7 +366,7 @@ static void ThumbnailGenerateHelperTest(const uint8_t* data, size_t size)
     int32_t timeStamp = FuzzInt32(data, size);
     Media::ThumbnailGenerateHelper::GetAvailableFile(opts, thumbData, FuzzThumbnailType(data, size), fileName);
     Media::ThumbnailGenerateHelper::GetAvailableKeyFrameFile(opts, thumbData, thumbType, fileName);
-    Media::ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, FuzzThumbnailType(data, size));
+    Media::ThumbnailGenerateHelper::GetThumbnailPixelMap(thumbData, opts, FuzzThumbnailType(data, size));
     Media::ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, FuzzBool(data, size));
     Media::ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
     outDatas.clear();
