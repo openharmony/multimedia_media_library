@@ -243,6 +243,26 @@ void MultiStagesVideoCaptureManager::RemoveVideo(const std::string &videoId, con
     }
 }
 
+void MultiStagesVideoCaptureManager::RemoveVideo(const std::string &videoId, const std::string &mediaFilePath,
+    const int32_t &photoSubType, const bool restorable)
+{
+    MEDIA_INFO_LOG("RemoveVideo videoId = %{public}s, restorable = %{public}s",
+        videoId.c_str(), restorable ? "true" : "false");
+
+    deferredProcSession_->RemoveVideo(videoId, restorable);
+    if (restorable) {
+        return;
+    }
+    string data = mediaFilePath;
+    if (photoSubType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        data = MovingPhotoFileUtils::GetMovingPhotoVideoPath(data);
+    }
+    int ret = MediaLibraryPhotoOperations::RemoveTempVideo(data);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Delete temp video file failed. ret: %{public}d, errno: %{public}d", ret, errno);
+    }
+}
+
 void MultiStagesVideoCaptureManager::RestoreVideo(const std::string &videoId)
 {
     deferredProcSession_->RestoreVideo(videoId);
