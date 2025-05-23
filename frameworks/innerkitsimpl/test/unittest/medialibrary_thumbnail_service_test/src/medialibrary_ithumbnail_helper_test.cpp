@@ -112,20 +112,20 @@ HWTEST_F(MediaLibraryIthumbnailHelperTest, TrySavePicture_test_001, TestSize.Lev
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryIthumbnailHelperTest, UpdateSuccessState_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryIthumbnailHelperTest, CacheSuccessState_test_001, TestSize.Level0)
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
     data.id = "";
     opts.row = "";
-    auto res = IThumbnailHelper::UpdateSuccessState(opts, data);
+    auto res = IThumbnailHelper::CacheSuccessState(opts, data);
     EXPECT_EQ(res, false);
     data.id = "validId";
     opts.row = "validRow";
-    res = IThumbnailHelper::UpdateSuccessState(opts, data);
+    res = IThumbnailHelper::CacheSuccessState(opts, data);
     EXPECT_EQ(res, false);
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
-    res = IThumbnailHelper::UpdateSuccessState(opts, data);
+    res = IThumbnailHelper::CacheSuccessState(opts, data);
     EXPECT_EQ(res, false);
 }
 } // namespace Media

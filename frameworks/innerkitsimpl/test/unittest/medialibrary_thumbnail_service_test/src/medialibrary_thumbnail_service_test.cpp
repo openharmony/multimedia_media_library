@@ -812,7 +812,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_001, T
 {
     ThumbRdbOpt opts;
     ThumbnailType thumbType = ThumbnailType::LCD;
-    auto res = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, thumbType);
+    ThumbnailData data;
+    auto res = ThumbnailGenerateHelper::GetThumbnailPixelMap(data, opts, thumbType);
     EXPECT_EQ(res, -2302);
 }
 
@@ -1071,7 +1072,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_038, T
     opts.store = storePtr;
     ThumbnailData data;
     data.path = "/storage/cloud/files/";
-    auto res = IThumbnailHelper::UpdateSuccessState(opts, data);
+    auto res = IThumbnailHelper::CacheSuccessState(opts, data);
     EXPECT_EQ(res, false);
 }
 
@@ -1422,20 +1423,18 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_045, Te
 {
     ThumbRdbOpt opts;
     ThumbnailData data;
-    int err = E_ERR;
-    auto res = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
+    auto res = ThumbnailUtils::CacheLcdInfo(opts, data);
     EXPECT_EQ(res, false);
 }
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_updateLcdInfo_test, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_CacheLcdInfo_test, TestSize.Level0)
 {
     ThumbRdbOpt opts;
     opts.row = "a";
     opts.store = ThumbnailService::GetInstance()->rdbStorePtr_;
     opts.table = "tab_analysis_video_label";
     ThumbnailData data;
-    int err = E_ERR;
-    auto res = ThumbnailUtils::UpdateLcdInfo(opts, data, err);
+    auto res = ThumbnailUtils::CacheLcdInfo(opts, data);
     EXPECT_EQ(res, false);
 }
 
@@ -1445,7 +1444,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_046, Te
     opts.store = storePtr;
     ThumbnailData data;
     int err = E_ERR;
-    auto res = ThumbnailUtils::UpdateVisitTime(opts, data, err);
+    auto res = ThumbnailUtils::CacheVisitTime(opts, data);
     EXPECT_EQ(res, false);
 }
 

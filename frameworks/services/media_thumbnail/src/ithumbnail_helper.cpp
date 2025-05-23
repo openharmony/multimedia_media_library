@@ -41,6 +41,7 @@
 #include "thumbnail_const.h"
 #include "thumbnail_file_utils.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_generation_post_process.h"
 #include "thumbnail_image_framework_utils.h"
 #include "thumbnail_source_loading.h"
 #include "medialibrary_astc_stat.h"
@@ -65,6 +66,9 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
         return;
     }
     DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
+    int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
+
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -75,6 +79,8 @@ void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
         return;
     }
     DoCreateLcd(data->opts_, data->thumbnailData_);
+    int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
 }
 
 void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -84,18 +90,20 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
         return;
     }
     DoCreateThumbnail(data->opts_, data->thumbnailData_);
+    int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
 void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
 {
-    if (data == nullptr) {
-        MEDIA_ERR_LOG("CreateAstc failed, data is null");
-        return;
-    }
+    CHECK_AND_RETURN_LOG(data != nullptr, "Data is null");
+
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     bool isSuccess = DoCreateAstc(data->opts_, data->thumbnailData_);
-    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    CacheThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
+    int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
     MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime,
         data->thumbnailData_.stats.scene, AstcGenScene::NOCHARGING_SCREENOFF, data->thumbnailData_.id);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
@@ -108,6 +116,8 @@ void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
         return;
     }
     DoCreateAstcEx(data->opts_, data->thumbnailData_);
+    int32_t err = ThumbnailGenerationPostProcess::PostProcess(data->thumbnailData_, data->opts_);
+    CHECK_AND_PRINT_LOG(err == E_OK, "PostProcess failed, err %{public}d", err);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -543,11 +553,9 @@ bool IThumbnailHelper::TrySavePixelMap(ThumbnailData &data, ThumbnailType type)
 {
     if (!data.needCheckWaitStatus) {
         int err = ThumbnailUtils::TrySaveFile(data, type);
-        if (err < 0) {
-            MEDIA_ERR_LOG("No wait TrySavePixelMap failed: %{public}d, path: %{public}s", err,
-                DfxUtils::GetSafePath(data.path).c_str());
-        }
-        return err == E_OK;
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "No wait TrySavePixelMap failed: %{public}d, path: %{public}s", err,
+            DfxUtils::GetSafePath(data.path).c_str());
+        return true;
     }
     ThumbnailWait thumbnailWait(false);
     if (!thumbnailWait.TrySaveCurrentPixelMap(data, type)) {
@@ -585,12 +593,8 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         data.needUpdateDb = false;
         return ret == WaitStatus::WAIT_SUCCESS;
     }
-
-    if (!IsCreateLcdSuccess(opts, data)) {
-        MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
-        return false;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(IsCreateLcdSuccess(opts, data), false,
+        "Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
     if (data.orientation != 0 && !IsCreateLcdExSuccess(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcdEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
     }
@@ -599,19 +603,17 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
+void CacheLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (opts.table != PhotoColumn::PHOTOS_TABLE) {
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, "Table: %{public}s, not photos table",
+        opts.table.c_str());
+
     if (data.isNeedStoreSize) {
         ThumbnailUtils::StoreThumbnailSize(opts, data);
     }
     data.isNeedStoreSize = true;
-    int err = 0;
-    if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
-        MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
-    }
+
+    CHECK_AND_RETURN_LOG(ThumbnailUtils::CacheLcdInfo(opts, data), "CacheLcdInfo faild");
 }
 
 void IThumbnailHelper::UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data)
@@ -659,7 +661,7 @@ bool IThumbnailHelper::SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &da
         lcdSource = copySource;
     }
     if (!isSourceEx) {
-        UpdateLcdDbState(opts, data);
+        CacheLcdDbState(opts, data);
     }
     return true;
 }
@@ -706,7 +708,7 @@ bool IThumbnailHelper::SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &d
 
     data.lcd.clear();
     if (!isSourceEx) {
-        UpdateLcdDbState(opts, data);
+        CacheLcdDbState(opts, data);
     }
     return true;
 }
@@ -751,7 +753,7 @@ bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &da
         MEDIA_ERR_LOG("Fail to create directory, fileName: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
         return false;
     }
-    
+
     if (data.source.IsEmptySource()) {
         MEDIA_ERR_LOG("Fail to create lcdEx, source is nullptr");
         return false;
@@ -801,7 +803,7 @@ bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
             DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
     }
-    
+
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
     string dirName = MediaFileUtils::GetParentPath(fileName);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dirName), false,
@@ -846,38 +848,13 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
 
 // After all thumbnails are generated, the value of column "thumbnail_ready" in rdb needs to be updated,
 // And if generate successfully, application should receive a notification at the same time.
-bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess)
+bool IThumbnailHelper::CacheThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess)
 {
     if (data.fileUri.empty()) {
         data.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::DEFAULT_PHOTO_URI + "/", data.id,
             MediaFileUtils::GetExtraUri(data.displayName, data.path));
     }
-    return isSuccess ? UpdateSuccessState(opts, data) : UpdateFailState(opts, data);
-}
-
-// This method has to be called before updating rdb
-static int32_t IsPhotoVisible(const ThumbRdbOpt &opts, const ThumbnailData &data)
-{
-    vector<string> columns = {
-        PhotoColumn::PHOTO_THUMBNAIL_VISIBLE
-    };
-    if (data.id.empty() && opts.row.empty()) {
-        MEDIA_ERR_LOG("SendThumbNotify thumb is empty");
-        return 0;
-    }
-    string fileId = data.id.empty() ? opts.row : data.id;
-    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + fileId;
-    RdbPredicates rdbPredicates(PhotoColumn::PHOTOS_TABLE);
-    rdbPredicates.SetWhereClause(strQueryCondition);
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("SendThumbNotify opts.store is nullptr");
-        return 0;
-    }
-    auto resultSet = opts.store->QueryByStep(rdbPredicates, columns);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, 0, "SendThumbNotify result is null");
-    auto ret = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, 0, "SendThumbNotify go to first row failed");
-    return GetInt32Val(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, resultSet);
+    return isSuccess ? CacheSuccessState(opts, data) : CacheFailState(opts, data);
 }
 
 std::string GetLocalOriginFilePath(const std::string &path)
@@ -888,60 +865,33 @@ std::string GetLocalOriginFilePath(const std::string &path)
     return LOCAL_MEDIA_PREFIX + path.substr(ROOT_MEDIA_DIR.length());
 }
 
-bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+bool IThumbnailHelper::CacheSuccessState(const ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    int thumbnailVisible = IsPhotoVisible(opts, data);
-    int32_t err = UpdateThumbDbState(opts, data);
-    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "update thumbnail_ready failed, err = %{public}d", err);
-    if (data.isRegenerateStage) {
-        string filePath = GetLocalOriginFilePath(data.path);
-        bool shouldUpdateFDirty = access(filePath.c_str(), F_OK) == 0;
-        ValuesBucket values;
-        int changedRows;
-        values.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ?
-            static_cast<int32_t>(DirtyType::TYPE_FDIRTY) : static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
-        MEDIA_ERR_LOG("update thumbnail_ready failed, err = %{public}d", err);
-        int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-            vector<string> { data.id });
-        CHECK_AND_PRINT_LOG(err == NativeRdb::E_OK, "Update Regenerate dirty status failed! %{public}d", err);
-    }
+    int32_t err = CacheThumbDbState(opts, data);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "CacheThumbDbState failed, err = %{public}d", err);
 
-    auto watch = MediaLibraryNotify::GetInstance();
-    CHECK_AND_RETURN_RET_LOG(watch != nullptr, false, "SendThumbNotify watch is nullptr");
-    if (thumbnailVisible) {
-        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_UPDATE);
-    } else {
-        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
-    }
+    err = CacheDirtyState(opts, data);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "CacheDirtyState failed, err = %{public}d", err);
+
     return true;
 }
 
-bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+bool IThumbnailHelper::CacheFailState(const ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("opts.store is nullptr");
-        return false;
-    }
-    ValuesBucket values;
-    int changedRows;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
-    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { data.id });
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        return false;
-    }
-    CHECK_AND_RETURN_RET_LOG(changedRows != 0, false, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
-        data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
+    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
+        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
+    data.rdbUpdateCache.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
+    data.rdbUpdateCache.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
     return true;
 }
 
-int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+int32_t IThumbnailHelper::CacheThumbDbState(const ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    CHECK_AND_RETURN_RET_LOG(opts.store != nullptr, E_ERR, "RdbStore is nullptr");
-    ValuesBucket values;
-    int changedRows;
+    ThumbnailUtils::StoreThumbnailSize(opts, data);
+    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
+        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
+
+    ValuesBucket& values = data.rdbUpdateCache;
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
     values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
     Size lcdSize;
@@ -953,12 +903,21 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::THUMB, thumbSize)) {
         ThumbnailUtils::SetThumbnailSizeValue(values, thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
     }
-    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { data.id });
-    ThumbnailUtils::StoreThumbnailSize(opts, data);
-    CHECK_AND_RETURN_RET_LOG(err == NativeRdb::E_OK, E_ERR, "RdbStore Update failed! %{public}d", err);
-    CHECK_AND_RETURN_RET_LOG(changedRows != 0, E_ERR, "Rdb has no data, id:%{public}s, DeleteThumbnail:%{public}d",
-        data.id.c_str(), ThumbnailUtils::DeleteThumbnailDirAndAstc(opts, data));
+
+    return E_OK;
+}
+
+int32_t IThumbnailHelper::CacheDirtyState(const ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
+        "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
+    CHECK_AND_RETURN_RET(data.isRegenerateStage, E_OK);
+
+    string filePath = GetLocalOriginFilePath(data.path);
+    bool shouldUpdateFDirty = access(filePath.c_str(), F_OK) == 0;
+    data.rdbUpdateCache.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ? static_cast<int32_t>(DirtyType::TYPE_FDIRTY) :
+        static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
+
     return E_OK;
 }
 
@@ -978,7 +937,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     if (!IsCreateThumbnailSuccess(opts, data)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
         if (data.needUpdateDb) {
-            IThumbnailHelper::UpdateThumbnailState(opts, data, false);
+            IThumbnailHelper::CacheThumbnailState(opts, data, false);
         }
         return false;
     }
@@ -990,7 +949,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     data.needCheckWaitStatus = false;
     MediaLibraryAstcStat::GetInstance().AddAstcInfo(startTime, data.stats.scene,
         AstcGenScene::SCREEN_ON, data.id);
-    IThumbnailHelper::UpdateThumbnailState(opts, data, true);
+    IThumbnailHelper::CacheThumbnailState(opts, data, true);
     return true;
 }
 
@@ -1081,7 +1040,7 @@ static bool ScaleLcdToThumbnail(ThumbnailData &data)
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
-    
+
     if (data.orientation != 0 && data.source.HasPictureSource()) {
         MEDIA_INFO_LOG("Scale from picture source, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         auto mainPixelMapEx = data.source.GetPictureEx()->GetMainPixel();
@@ -1118,7 +1077,7 @@ bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData 
             isPrevStepSuccess = false;
         }
     } else if (data.needUpdateDb) {
-        IThumbnailHelper::UpdateThumbnailState(opts, data, false);
+        IThumbnailHelper::CacheThumbnailState(opts, data, false);
     }
 
     if (isPrevStepSuccess && !data.tracks.empty() && (data.trigger == "0")) {
@@ -1273,7 +1232,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
             isPrevStepSuccess = false;
         }
     } else if (data.needUpdateDb) {
-        IThumbnailHelper::UpdateThumbnailState(opts, data, false);
+        IThumbnailHelper::CacheThumbnailState(opts, data, false);
     }
 
     if (isPrevStepSuccess) {
