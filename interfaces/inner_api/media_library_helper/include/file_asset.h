@@ -125,6 +125,10 @@ public:
     EXPORT int64_t GetTimePending() const;
     EXPORT void SetTimePending(int64_t timePending);
 
+    EXPORT int32_t GetVisitCount() const;
+    EXPORT void SetVisitCount(int32_t visitCount);
+    EXPORT int32_t GetLcdVisitCount() const;
+    EXPORT void SetLcdVisitCount(int32_t lcdVisitCount);
     EXPORT bool IsFavorite() const;
     EXPORT void SetFavorite(bool isFavorite);
     EXPORT bool IsRecentShow() const;

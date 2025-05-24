@@ -33,6 +33,7 @@
 #include "medialibrary_data_manager.h"
 #include "media_column.h"
 #include "media_privacy_manager.h"
+#include "media_visit_count_manager.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "rdb_utils.h"
@@ -56,6 +57,7 @@ namespace Media {
 using namespace std;
 
 const std::string FUSE_ROOT_MEDIA_DIR = "/storage/cloud/files/Photo";
+const std::string FUSE_OPEN_PHOTO_PRE = "/Photo";
 const int32_t URI_SLASH_NUM_API9 = 2;
 const int32_t URI_SLASH_NUM_API10 = 4;
 const int32_t FUSE_VIRTUAL_ID_DIVIDER = 5;
@@ -338,6 +340,10 @@ int32_t MediaFuseManager::DoOpen(const char *path, int flags, int &fd)
     }
     GetFileIdFromUri(fileId, path);
     GetPathFromFileId(target, fileId);
+    if (std::string(path).find(FUSE_OPEN_PHOTO_PRE) != std::string::npos) {
+        MEDIA_DEBUG_LOG("MediaFuseManager::DoOpen AddVisitCount fileId[%{public}s]", fileId.c_str());
+        MediaVisitCountManager::AddVisitCount(MediaVisitCountManager::VisitCountType::PHOTO_FS, fileId);
+    }
     fd = OpenFile(target, fileId, MEDIA_OPEN_MODE_MAP.at(realFlag));
     if (fd < 0) {
         MEDIA_ERR_LOG("Open failed, path = %{private}s, errno = %{public}d", target.c_str(), errno);
