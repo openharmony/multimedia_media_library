@@ -53,6 +53,7 @@
 #include "userfilemgr_uri.h"
 #include "album_operation_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "photo_asset_custom_record_manager_napi.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -2365,6 +2366,10 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<CloudEnhancementA
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<CloudMediaAssetAsyncContext>(napi_env env,
     unique_ptr<CloudMediaAssetAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<CustomRecordAsyncContext>(napi_env env,
+    unique_ptr<CustomRecordAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,

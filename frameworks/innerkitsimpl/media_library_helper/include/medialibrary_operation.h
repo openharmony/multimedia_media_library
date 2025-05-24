@@ -113,6 +113,7 @@ enum class EXPORT OperationObject : uint32_t {
     ASSET_ALBUM_OPERATION,
     PTP_ALBUM_OPERATION,
     THUMBNAIL_VISIT_COUNT,
+    CUSTOM_RECORDS_OPERATON,
 };
 
 enum class EXPORT OperationType : uint32_t {
