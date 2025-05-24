@@ -96,7 +96,7 @@ int32_t MediaLibraryKvStore::DeleteBatch(const std::vector<std::string> &batchKe
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryKvStore::DeleteBatch");
     std::vector<Key> batchDeleteKeys;
-    for (const string &key : batchKeys) {
+    for (const std::string &key : batchKeys) {
         Key k(key);
         batchDeleteKeys.push_back(k);
     }
