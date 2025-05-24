@@ -316,6 +316,26 @@ void FileAsset::SetTimePending(int64_t timePending)
     member_[MEDIA_DATA_DB_TIME_PENDING] = timePending;
 }
 
+int32_t FileAsset::GetVisitCount() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_VISIT_COUNT);
+}
+
+void FileAsset::SetVisitCount(int32_t visitCount)
+{
+    member_[PhotoColumn::PHOTO_VISIT_COUNT] = visitCount;
+}
+
+int32_t FileAsset::GetLcdVisitCount() const
+{
+    return GetInt32Member(PhotoColumn::PHOTO_LCD_VISIT_COUNT);
+}
+
+void FileAsset::SetLcdVisitCount(int32_t lcdVisitCount)
+{
+    member_[PhotoColumn::PHOTO_LCD_VISIT_COUNT] = lcdVisitCount;
+}
+
 bool FileAsset::IsFavorite() const
 {
     return GetInt32Member(MEDIA_DATA_DB_IS_FAV);

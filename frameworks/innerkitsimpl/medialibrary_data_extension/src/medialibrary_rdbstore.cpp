@@ -4269,6 +4269,21 @@ static void AddMediaSuffixColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddVisitCountColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME  + " BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_VISIT_COUNT  + " INT NOT NULL DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_LCD_VISIT_COUNT  + " INT NOT NULL DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("add real_lcd_visit_time/visit_count/lcd_visit_count column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("add real_lcd_visit_time/visit_count/lcd_visit_count column end");
+}
+
 static void AddIsRecentShow(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -4502,6 +4517,10 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_DC_ANALYSIS) {
         AddDcAnalysisColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_VISIT_COUNT) {
+        AddVisitCountColumn(store);
     }
 
     TableEventHandler().OnUpgrade(
