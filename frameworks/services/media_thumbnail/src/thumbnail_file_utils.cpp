@@ -205,6 +205,10 @@ bool ThumbnailFileUtils::BatchDeleteAstcData(const ThumbnailDataBatch &dataBatch
 {
     size_t dataBatchSize = dataBatch.ids.size();
     CHECK_AND_RETURN_RET_LOG(dataBatchSize == dataBatch.dateTakens.size(), false, "Failed to check dataBatch");
+    if (dataBatchSize == 0) {
+        return true;
+    }
+
     vector<string> keys;
     for (size_t i = 0; i < dataBatchSize; i++) {
         string key;
@@ -219,8 +223,9 @@ bool ThumbnailFileUtils::BatchDeleteAstcData(const ThumbnailDataBatch &dataBatch
     CHECK_AND_RETURN_RET_LOG(kvStore != nullptr, false, "KvStore is nullptr");
     constexpr int32_t ONE_BATCH_SIZE = 100;
     bool batchDeleteSuccess = true;
-    for (size_t i = 0; i < keys.size(); i += ONE_BATCH_SIZE) {
-        size_t endIndex = std::min(i + ONE_BATCH_SIZE, keys.size());
+    size_t totalSize = keys.size();
+    for (size_t i = 0; i < totalSize; i += ONE_BATCH_SIZE) {
+        size_t endIndex = std::min(i + ONE_BATCH_SIZE, totalSize);
         vector<string> batchKeys(keys.begin() + i, keys.begin() + endIndex);
         int32_t status = kvStore->DeleteBatch(batchKeys);
         if (status != E_OK) {
