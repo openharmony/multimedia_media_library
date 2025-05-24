@@ -183,6 +183,8 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/moving_photo_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/napi_error.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_album_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/photo_asset_custom_record_manager_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/photo_asset_custom_record_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_proxy_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/picture_handle_client.cpp",
     "${MEDIALIB_JS_PATH}/src/request_photo_uris_read_permission_callback.cpp",

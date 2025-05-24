@@ -22,6 +22,8 @@
 #include "media_smart_album_column.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_column.h"
+#include "photo_asset_custom_record.h"
+#include "custom_records_column.h"
 
 using namespace std;
 
@@ -99,6 +101,10 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_MEDIA_SUFFIX, TYPE_STRING },
         { PhotoColumn::PHOTO_IS_RECENT_SHOW, TYPE_INT32 },
         { MEDIA_SUM_SIZE, TYPE_INT64 },
+        { CustomRecordsColumns::FILE_ID, TYPE_INT32 },
+        { CustomRecordsColumns::BUNDLE_NAME, TYPE_STRING },
+        { CustomRecordsColumns::SHARE_COUNT, TYPE_INT32 },
+        { CustomRecordsColumns::LCD_JUMP_COUNT, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;
 }
@@ -117,6 +123,8 @@ FetchResult<T>::FetchResult(const shared_ptr<DataShare::DataShareResultSet> &res
         fetchResType_ = FetchResType::TYPE_PHOTOALBUM;
     } else if constexpr (std::is_same<T, SmartAlbumAsset>::value) {
         fetchResType_ = FetchResType::TYPE_SMARTALBUM;
+    } else if constexpr (std::is_same<T, PhotoAssetCustomRecord>::value) {
+        fetchResType_ = FetchResType::TYPE_CUSTOMRECORD;
     } else {
         MEDIA_ERR_LOG("unsupported FetchResType");
         fetchResType_ = FetchResType::TYPE_FILE;
@@ -483,6 +491,12 @@ void FetchResult<T>::GetObjectFromResultSet(SmartAlbumAsset *asset, shared_ptr<N
 }
 
 template<class T>
+void FetchResult<T>::GetObjectFromResultSet(PhotoAssetCustomRecord *asset, shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    SetPhotoAssetCustomRecordAsset(asset, resultSet);
+}
+
+template<class T>
 unique_ptr<T> FetchResult<T>::GetObject(shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     unique_ptr<T> asset = make_unique<T>();
@@ -622,9 +636,22 @@ void FetchResult<T>::SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData, shared_
     smartAlbumData->SetResultNapiType(resultNapiType_);
 }
 
+template<class T>
+void FetchResult<T>::SetPhotoAssetCustomRecordAsset(PhotoAssetCustomRecord* customRecordData,
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    customRecordData->SetFileId(get<int32_t>(GetRowValFromColumn(CustomRecordsColumns::FILE_ID,
+        TYPE_INT32, resultSet)));
+    customRecordData->SetShareCount(get<int32_t>(GetRowValFromColumn(CustomRecordsColumns::SHARE_COUNT,
+        TYPE_INT32, resultSet)));
+    customRecordData->SetLcdJumpCount(get<int32_t>(GetRowValFromColumn(CustomRecordsColumns::LCD_JUMP_COUNT,
+        TYPE_INT32, resultSet)));
+    customRecordData->SetResultNapiType(resultNapiType_);
+}
 template class FetchResult<FileAsset>;
 template class FetchResult<AlbumAsset>;
 template class FetchResult<PhotoAlbum>;
 template class FetchResult<SmartAlbumAsset>;
+template class FetchResult<PhotoAssetCustomRecord>;
 }  // namespace Media
 }  // namespace OHOS

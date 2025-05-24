@@ -24,7 +24,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t MEDIA_RDB_VERSION = 257;
+const int32_t MEDIA_RDB_VERSION = 258;
 
 enum {
     VERSION_ADD_CLOUD = 2,
@@ -215,6 +215,7 @@ enum {
     VERSION_ADD_DC_ANALYSIS = 255,
     VERSION_CLOUD_MEDIA_UPGRADE = 256,
     VERSION_ADD_VISIT_COUNT = 257,
+    VERSION_CREATE_TAB_CUSTOM_RECORDS = 258,
 };
 enum {
     MEDIA_API_VERSION_DEFAULT = 8,

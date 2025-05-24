@@ -25,6 +25,7 @@
 #include "medialibrary_napi_utils.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "photo_asset_custom_record_napi.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,6 +40,7 @@ public:
     std::shared_ptr<FetchResult<AlbumAsset>> fetchAlbumResult_ = nullptr;
     std::shared_ptr<FetchResult<PhotoAlbum>> fetchPhotoAlbumResult_ = nullptr;
     std::shared_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult_ = nullptr;
+    std::shared_ptr<FetchResult<PhotoAssetCustomRecord>> fetchCustomRecordResult_ = nullptr;
     FetchResType fetchResType_;
 };
 
@@ -55,10 +57,13 @@ public:
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> fileResult);
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<PhotoAlbum>> fileResult);
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<SmartAlbumAsset>> fileResult);
+    static napi_value CreateFetchFileResult(napi_env env,
+        std::unique_ptr<FetchResult<PhotoAssetCustomRecord>> fileResult);
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResultObject();
     std::shared_ptr<FetchResult<AlbumAsset>> GetFetchAlbumResultObject();
     std::shared_ptr<FetchResult<PhotoAlbum>> GetFetchPhotoAlbumResultObject();
     std::shared_ptr<FetchResult<SmartAlbumAsset>> GetFetchSmartAlbumResultObject();
+    std::shared_ptr<FetchResult<PhotoAssetCustomRecord>> GetFetchCustomRecordResultObject();
 
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResult() const;
     FetchResType GetFetchResType();
@@ -67,6 +72,8 @@ public:
     static void SolveConstructorRef(unique_ptr<FetchResult<AlbumAsset>> &fileResult, napi_ref &constructorRef);
     static void SolveConstructorRef(unique_ptr<FetchResult<SmartAlbumAsset>> &fileResult, napi_ref &constructorRef);
     static void SolveConstructorRef(unique_ptr<FetchResult<PhotoAlbum>> &fileResult, napi_ref &constructorRef);
+    static void SolveConstructorRef(unique_ptr<FetchResult<PhotoAssetCustomRecord>> &fileResult,
+        napi_ref &constructorRef);
 
 private:
     EXPORT static void FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
@@ -91,6 +98,8 @@ private:
     static inline thread_local std::unique_ptr<FetchResult<AlbumAsset>> sFetchAlbumResult_ = nullptr;
     static inline thread_local std::unique_ptr<FetchResult<PhotoAlbum>> sFetchPhotoAlbumResult_ = nullptr;
     static inline thread_local std::unique_ptr<FetchResult<SmartAlbumAsset>> sFetchSmartAlbumResult_ = nullptr;
+    static inline thread_local std::unique_ptr<FetchResult<PhotoAssetCustomRecord>>
+        sFetchPhotoAssetCustomRecordResult_ = nullptr;
     static inline thread_local FetchResType sFetchResType_ = FetchResType::TYPE_FILE;
 };
 
@@ -107,10 +116,12 @@ public:
     std::unique_ptr<AlbumAsset> albumAsset;
     std::unique_ptr<PhotoAlbum> photoAlbum;
     std::unique_ptr<SmartAlbumAsset> smartAlbumAsset;
+    std::unique_ptr<PhotoAssetCustomRecord> customRecordAsset;
     std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
     std::vector<std::unique_ptr<AlbumAsset>> fileAlbumArray;
     std::vector<std::unique_ptr<PhotoAlbum>> filePhotoAlbumArray;
     std::vector<std::unique_ptr<SmartAlbumAsset>> fileSmartAlbumArray;
+    std::vector<std::unique_ptr<PhotoAssetCustomRecord>> customRecordArray;
     void GetFirstAsset();
     void GetObjectAtPosition();
     void GetAllObjectFromFetchResult();

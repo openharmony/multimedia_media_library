@@ -21,6 +21,7 @@
 
 #include "album_plugin_table_event_handler.h"
 #include "cloud_sync_helper.h"
+#include "custom_records_column.h"
 #include "dfx_manager.h"
 #include "dfx_timer.h"
 #include "dfx_const.h"
@@ -1720,6 +1721,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::INDEX_LATITUDE,
     PhotoColumn::INDEX_LONGITUDE,
     CREATE_PHOTO_STATUS_FOR_SEARCH_INDEX,
+    CustomRecordsColumns::CREATE_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -4485,6 +4487,15 @@ static void UpgradeAnalysisUpdateSearchTrigger(RdbStore &store)
     MEDIA_INFO_LOG("end upgrade analysis update search trigger");
 }
 
+static void CreateTabCustomRecords(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        CustomRecordsColumns::CREATE_TABLE,
+    };
+    ExecSqls(executeSqlStrs, store);
+    MEDIA_INFO_LOG("create custom and records end");
+}
+
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -4521,6 +4532,10 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_VISIT_COUNT) {
         AddVisitCountColumn(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_TAB_CUSTOM_RECORDS) {
+        CreateTabCustomRecords(store);
     }
 
     TableEventHandler().OnUpgrade(

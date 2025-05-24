@@ -27,6 +27,8 @@
 #include "photo_album.h"
 #include "smart_album_asset.h"
 #include "userfile_manager_types.h"
+#include "photo_asset_custom_record.h"
+#include "custom_records_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -81,12 +83,15 @@ private:
     void SetAlbumAsset(AlbumAsset* albumData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     void SetPhotoAlbum(PhotoAlbum* photoAlbumData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     void SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+    void SetPhotoAssetCustomRecordAsset(PhotoAssetCustomRecord* smartAlbumData,
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     void SetAssetUri(FileAsset *fileAsset);
 
     void GetObjectFromResultSet(FileAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(AlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(PhotoAlbum *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
+    void GetObjectFromResultSet(PhotoAssetCustomRecord *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
 
     std::string networkId_;
     ResultNapiType resultNapiType_;
