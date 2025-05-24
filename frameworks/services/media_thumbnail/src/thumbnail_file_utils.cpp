@@ -224,7 +224,10 @@ bool ThumbnailFileUtils::BatchDeleteAstcData(const ThumbnailDataBatch &dataBatch
         vector<string> batchKeys(keys.begin() + i, keys.begin() + endIndex);
         int32_t status = kvStore->DeleteBatch(batchKeys);
         if (status != E_OK) {
-            MEDIA_ERR_LOG("Failed to delete batch, status:%{public}d", status);
+            string startKey = batchKeys.front();
+            string endKey = batchKeys.back();
+            MEDIA_ERR_LOG("Failed to delete batch from %{public}s to %{public}s, status:%{public}d",
+                startKey.c_str(), endKey.c_str(), status);
             batchDeleteSuccess = false;
         }
     }
