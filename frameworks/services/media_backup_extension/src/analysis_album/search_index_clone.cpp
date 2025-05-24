@@ -91,8 +91,8 @@ bool SearchIndexClone::Clone()
             MEDIA_WARN_LOG("Query returned empty result for offset %{public}d", offset);
             continue;
         }
-
-        InsertAnalysisSearchIndex(analysisSearchIndexTbl);
+        auto searchIdxTbl = ProcessSearchIndexTbls(imageFaceTbls);
+        InsertAnalysisSearchIndex(searchIdxTbl);
     }
 
     totalTimeCost_ = MediaFileUtils::UTCTimeMilliSeconds() - start;
@@ -100,6 +100,29 @@ bool SearchIndexClone::Clone()
         "Total time: %{public}lld ms",
         (long long)migratedCount_, (long long)totalTimeCost_);
     return true;
+}
+
+std::vector<AnalysisSearchIndexTbl> SearchIndexClone::ProcessSearchIndexTbls(
+    const std::vector<AnalysisSearchIndexTbl>& searchIndexTbls)
+{
+    CHECK_AND_RETURN_RET_LOG(!searchIndexTbls.empty(), {}, "search index tbls empty");
+
+    std::vector<AnalysisSearchIndexTbl> newSearchIndexTbls;
+    newSearchIndexTbls.reserve(searchIndexTbls.size());
+
+    for (const auto& tbl : searchIndexTbls) {
+        if (tbl.fileId.has_value()) {
+            const int32_t oldFileId = tbl.fileId.value();
+            const auto it = photoInfoMap_.find(oldFileId);
+            if (it != photoInfoMap_.end()) {
+                AnalysisSearchIndexTbl updatedTbl = tbl;
+                updatedTbl.fileId = it->second.fileIdNew;
+                newSearchIndexTbls.push_back(std::move(updatedTbl));
+            }
+        }
+    }
+
+    return newSearchIndexTbls;
 }
 
 std::vector<AnalysisSearchIndexTbl> SearchIndexClone::QueryAnalysisSearchIndexTbl(int32_t offset,
