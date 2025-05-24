@@ -98,6 +98,14 @@ bool ThumbnailFileUtils::DeleteMonthAndYearAstc(const ThumbnailData &data)
     return isDelete;
 }
 
+bool ThumbnailFileUtils::BatchDeleteMonthAndYearAstc(const ThumbnailDataBatch &dataBatch)
+{
+    bool isBatchDeleteSuccess = true;
+    isBatchDeleteSuccess = BatchDeleteAstcData(dataBatch, ThumbnailType::MTH_ASTC) && isBatchDeleteSuccess;
+    isBatchDeleteSuccess = BatchDeleteAstcData(dataBatch, ThumbnailType::YEAR_ASTC) && isBatchDeleteSuccess;
+    return isBatchDeleteSuccess;
+}
+
 bool ThumbnailFileUtils::DeleteThumbFile(const ThumbnailData &data, ThumbnailType type)
 {
     string fileName = GetThumbnailPath(data.path, GetThumbnailSuffix(type));
@@ -165,6 +173,20 @@ bool ThumbnailFileUtils::CheckRemainSpaceMeetCondition(int32_t freeSizePercentLi
     return true;
 }
 
+std::shared_ptr<MediaLibraryKvStore> GetKvStore(const ThumbnailType &type)
+{
+    if (type == ThumbnailType::MTH_ASTC) {
+        return MediaLibraryKvStoreManager::GetInstance()
+            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
+    } else if (type == ThumbnailType::YEAR_ASTC) {
+        return MediaLibraryKvStoreManager::GetInstance()
+            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC);
+    } else {
+        MEDIA_ERR_LOG("Invalid thumbnailType, type:%{public}d", type);
+        return nullptr;
+    }
+}
+
 bool ThumbnailFileUtils::DeleteAstcDataFromKvStore(const ThumbnailData &data, const ThumbnailType &type)
 {
     string key;
@@ -173,24 +195,48 @@ bool ThumbnailFileUtils::DeleteAstcDataFromKvStore(const ThumbnailData &data, co
         return false;
     }
 
-    std::shared_ptr<MediaLibraryKvStore> kvStore;
-    if (type == ThumbnailType::MTH_ASTC) {
-        kvStore = MediaLibraryKvStoreManager::GetInstance()
-            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
-    } else if (type == ThumbnailType::YEAR_ASTC) {
-        kvStore = MediaLibraryKvStoreManager::GetInstance()
-            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC);
-    } else {
-        MEDIA_ERR_LOG("Invalid thumbnailType, id:%{public}s", data.id.c_str());
-        return false;
-    }
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("KvStore is nullptr");
-        return false;
-    }
-
+    std::shared_ptr<MediaLibraryKvStore> kvStore = GetKvStore(type);
+    CHECK_AND_RETURN_RET_LOG(kvStore != nullptr, false, "KvStore is nullptr");
     int status = kvStore->Delete(key);
     return status == E_OK;
+}
+
+bool ThumbnailFileUtils::BatchDeleteAstcData(const ThumbnailDataBatch &dataBatch, const ThumbnailType &type)
+{
+    size_t dataBatchSize = dataBatch.ids.size();
+    CHECK_AND_RETURN_RET_LOG(dataBatchSize == dataBatch.dateTakens.size(), false, "Failed to check dataBatch");
+    if (dataBatchSize == 0) {
+        return true;
+    }
+
+    vector<string> keys;
+    for (size_t i = 0; i < dataBatchSize; i++) {
+        string key;
+        if (!MediaFileUtils::GenerateKvStoreKey(dataBatch.ids[i], dataBatch.dateTakens[i], key)) {
+            MEDIA_ERR_LOG("GenerateKvStoreKey failed, id:%{public}s", dataBatch.ids[i].c_str());
+            continue;
+        }
+        keys.push_back(key);
+    }
+
+    std::shared_ptr<MediaLibraryKvStore> kvStore = GetKvStore(type);
+    CHECK_AND_RETURN_RET_LOG(kvStore != nullptr, false, "KvStore is nullptr");
+    constexpr int32_t ONE_BATCH_SIZE = 100;
+    bool batchDeleteSuccess = true;
+    size_t totalSize = keys.size();
+    for (size_t i = 0; i < totalSize; i += ONE_BATCH_SIZE) {
+        size_t endIndex = std::min(i + ONE_BATCH_SIZE, totalSize);
+        vector<string> batchKeys(keys.begin() + i, keys.begin() + endIndex);
+        int32_t status = kvStore->DeleteBatch(batchKeys);
+        if (status != E_OK) {
+            string startKey = batchKeys.front();
+            string endKey = batchKeys.back();
+            MEDIA_ERR_LOG("Failed to delete batch from %{public}s to %{public}s, status:%{public}d",
+                startKey.c_str(), endKey.c_str(), status);
+            batchDeleteSuccess = false;
+        }
+    }
+    return batchDeleteSuccess;
 }
 
 bool ThumbnailFileUtils::RemoveDirectoryAndFile(const std::string &path)

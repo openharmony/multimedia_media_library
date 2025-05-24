@@ -86,6 +86,27 @@ int32_t MediaLibraryKvStore::Delete(const std::string &key)
     return static_cast<int32_t>(status);
 }
 
+int32_t MediaLibraryKvStore::DeleteBatch(const std::vector<std::string> &batchKeys)
+{
+    if (kvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("kvStorePtr_ is nullptr");
+        return E_HAS_DB_ERROR;
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryKvStore::DeleteBatch");
+    std::vector<Key> batchDeleteKeys;
+    for (const std::string &key : batchKeys) {
+        Key k(key);
+        batchDeleteKeys.push_back(k);
+    }
+    Status status = kvStorePtr_->DeleteBatch(batchDeleteKeys);
+    if (status != Status::SUCCESS) {
+        MEDIA_ERR_LOG("delete failed, status %{public}d", status);
+    }
+    return static_cast<int32_t>(status);
+}
+
 int32_t MediaLibraryKvStore::GetCount(const std::string& key, int32_t& count)
 {
     if (kvStorePtr_ == nullptr) {

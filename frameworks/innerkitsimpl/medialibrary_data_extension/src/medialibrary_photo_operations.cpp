@@ -1649,20 +1649,31 @@ void UpdateAlbumOnSystemMoveAssets(const int32_t &oriAlbumId, const int32_t &tar
         rdbStore, { to_string(oriAlbumId), to_string(targetAlbumId) }, false, true);
 }
 
-bool IsSystemAlbumMovement(MediaLibraryCommand &cmd)
+int32_t IsSystemAlbumMovement(MediaLibraryCommand &cmd, bool &isSystemAlbum)
 {
+    static vector<int32_t> systemAlbumIds;
+    if (systemAlbumIds.empty()) {
+        auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "rdbstore is nullptr");
+        vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
+        NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
+        rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, static_cast<int32_t>(PhotoAlbumType::SYSTEM));
+        auto resultSet = uniStore->Query(rdbPredicates, columns);
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Failed to query system albums");
+
+        while (resultSet->GoToNextRow() == E_OK) {
+            int32_t albumId =
+                get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet, TYPE_INT32));
+            systemAlbumIds.push_back(albumId);
+        }
+        resultSet->Close();
+    }
+
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     int32_t oriAlbumId = MediaLibraryAssetOperations::GetAlbumIdByPredicates(whereClause, whereArgs);
-    PhotoAlbumType type;
-    PhotoAlbumSubType subType;
-    CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(to_string(oriAlbumId), type, subType) == E_SUCCESS, false,
-        "move assets invalid album uri");
-    bool cond = ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType)));
-    CHECK_AND_RETURN_RET_LOG(!cond, false,
-        "album id %{private}s type:%d subtype:%d", to_string(oriAlbumId).c_str(), type, subType);
-
-    return type == PhotoAlbumType::SYSTEM;
+    isSystemAlbum = std::find(systemAlbumIds.begin(), systemAlbumIds.end(), oriAlbumId) != systemAlbumIds.end();
+    return E_OK;
 }
 
 void GetSystemMoveAssets(AbsRdbPredicates &predicates)
@@ -1742,14 +1753,18 @@ int32_t MediaLibraryPhotoOperations::BatchSetOwnerAlbumId(MediaLibraryCommand &c
     MediaLibraryRdbStore::ReplacePredicatesUriToId(*(cmd.GetAbsRdbPredicates()));
 
     // Check if move from system album
-    if (IsSystemAlbumMovement(cmd)) {
+    bool isSystemAlbum = false;
+    int32_t errCode = IsSystemAlbumMovement(cmd, isSystemAlbum);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to check whether move from system album, errCode=%{public}d", errCode);
+    if (isSystemAlbum) {
         MEDIA_INFO_LOG("Move assets from system album");
         GetSystemMoveAssets(*(cmd.GetAbsRdbPredicates()));
         int32_t updateSysRows = UpdateSystemRows(cmd);
         return updateSysRows;
     }
 
-    int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
+    errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
         "Failed to query file asset vector from db, errCode=%{public}d, predicates=%{public}s",
@@ -3866,6 +3881,41 @@ bool MediaLibraryPhotoOperations::HasDroppedThumbnailSize(const string& photoId)
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, false,
         "Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
     return true;
+}
+
+bool DropThumbnailSize(const vector<string>& photoIds)
+{
+    if (photoIds.size() == 0) {
+        return true;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Medialibrary rdbStore is nullptr!");
+    NativeRdb::RdbPredicates rdbPredicates(PhotoExtColumn::PHOTOS_EXT_TABLE);
+    rdbPredicates.In(PhotoExtColumn::PHOTO_ID, photoIds);
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, rdbPredicates);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK && deletedRows >= 0, false,
+        "Delete thumbnail size failed, errCode = %{public}d, deletedRows = %{public}d",
+        ret, deletedRows);
+    MEDIA_INFO_LOG("Delete %{public}d rows in tab_photos_ext", deletedRows);
+    return true;
+}
+
+bool MediaLibraryPhotoOperations::BatchDropThumbnailSize(const vector<string>& photoIds)
+{
+    if (photoIds.size() == 0) {
+        return true;
+    }
+
+    constexpr int32_t ONE_BATCH_SIZE = 500;
+    bool batchDropSuccess = true;
+    for (size_t i = 0; i < photoIds.size(); i += ONE_BATCH_SIZE) {
+        size_t endIndex = std::min(i + ONE_BATCH_SIZE, photoIds.size());
+        vector<string> batchPhotoIds(photoIds.begin() + i, photoIds.begin() + endIndex);
+        batchDropSuccess = DropThumbnailSize(batchPhotoIds) && batchDropSuccess;
+    }
+    return batchDropSuccess;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(MediaLibraryCommand &cmd,

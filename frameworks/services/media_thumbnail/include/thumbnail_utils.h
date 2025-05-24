@@ -52,6 +52,7 @@ public:
 
     EXPORT static bool DeleteAllThumbFilesAndAstc(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool DeleteThumbnailDirAndAstc(const ThumbRdbOpt &opts, const ThumbnailData &data);
+    EXPORT static bool BatchDeleteThumbnailDirAndAstc(const ThumbRdbOpt &opts, const ThumbnailDataBatch &dataBatch);
     // Steps
     EXPORT static bool LoadSourceImage(ThumbnailData &data);
     EXPORT static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
@@ -114,6 +115,7 @@ public:
         const std::string &table, std::vector<ThumbnailData> &infos);
     EXPORT static void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
     EXPORT static void DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
+    EXPORT static void BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
