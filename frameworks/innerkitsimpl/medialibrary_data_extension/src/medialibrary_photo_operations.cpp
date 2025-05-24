@@ -1648,14 +1648,13 @@ int32_t IsSystemAlbumMovement(MediaLibraryCommand &cmd, bool &isSystemAlbum)
 {
     static vector<int32_t> systemAlbumIds;
     if (systemAlbumIds.empty()) {
+        auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "rdbstore is nullptr");
         vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
         NativeRdb::RdbPredicates rdbPredicates(PhotoAlbumColumns::TABLE);
         rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, static_cast<int32_t>(PhotoAlbumType::SYSTEM));
         auto resultSet = uniStore->Query(rdbPredicates, columns);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Failed to query system albums");
-            return E_HAS_DB_ERROR;
-        }
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Failed to query system albums");
 
         while (resultSet->GoToNextRow() == E_OK) {
             int32_t albumId =
@@ -3890,8 +3889,8 @@ bool DropThumbnailSize(const vector<string>& photoIds)
     NativeRdb::RdbPredicates rdbPredicates(PhotoExtColumn::PHOTOS_EXT_TABLE);
     rdbPredicates.In(PhotoExtColumn::PHOTO_ID, photoIds);
     int32_t deletedRows = -1;
-    auto ret = uniStore->Delete(deletedRows, rdbPredicates);
-    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK && deletedRows >= 0, false,
+    auto ret = rdbStore->Delete(deletedRows, rdbPredicates);
+    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK && deletedRows >= 0, false,
         "Delete thumbnail size failed, errCode = %{public}d, deletedRows = %{public}d",
         ret, deletedRows);
     MEDIA_INFO_LOG("Delete %{public}d rows in tab_photos_ext", deletedRows);
