@@ -47,6 +47,7 @@ public:
     EXPORT int32_t Init(const KvStoreRoleType &roleType, const KvStoreValueType &valueType, const std::string &baseDir);
     EXPORT int32_t Insert(const std::string &key, const std::vector<uint8_t> &value);
     EXPORT int32_t Delete(const std::string &key);
+    EXPORT int32_t DeleteBatch(const std::vector<std::string> &batchKeys);
     EXPORT int32_t Query(const std::string &key, std::vector<uint8_t> &value);
     EXPORT int32_t GetCount(const std::string& key, int32_t& count);
     EXPORT int32_t BatchQuery(std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values);

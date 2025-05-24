@@ -208,8 +208,8 @@ bool ThumbnailFileUtils::BatchDeleteAstcData(const ThumbnailDataBatch &dataBatch
     vector<string> keys;
     for (size_t i = 0; i < dataBatchSize; i++) {
         string key;
-        if (!MediaFileUtils::GenerateKvStoreKey(data.ids[i], data.dateTakens[i], key)) {
-            MEDIA_ERR_LOG("GenerateKvStoreKey failed, id:%{public}s", data.ids[i].c_str());
+        if (!MediaFileUtils::GenerateKvStoreKey(dataBatch.ids[i], dataBatch.dateTakens[i], key)) {
+            MEDIA_ERR_LOG("GenerateKvStoreKey failed, id:%{public}s", dataBatch.ids[i].c_str());
             continue;
         }
         keys.push_back(key);
