@@ -378,7 +378,7 @@ napi_value SendableFetchFileResultNapi::JSGetCount(napi_env env, napi_callback_i
 static void GetNapiResFromAsset(napi_env env, FetchFileResultSendableAsyncContext *context,
     unique_ptr<SendableJSAsyncContextOutput> &jsContext)
 {
-    napi_value jsAsset;
+    napi_value jsAsset = nullptr;
     switch (context->objectPtr->fetchResType_) {
         case FetchResType::TYPE_FILE:
             context->fileAsset->SetUserId(context->objectPtr->fetchFileResult_->GetUserId());

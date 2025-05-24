@@ -464,6 +464,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::unique_ptr<FetchResult<AlbumAsset>> fetchAlbumResult;
     std::unique_ptr<FetchResult<PhotoAlbum>> fetchPhotoAlbumResult;
     std::unique_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult;
+    std::unique_ptr<FetchResult<PhotoAssetCustomRecord>> fetchCustomRecordsResult;
     std::unique_ptr<FileAsset> fileAsset;
     std::unique_ptr<PhotoAlbum> photoAlbumData;
     std::unique_ptr<SmartAlbumAsset> smartAlbumData;

@@ -42,6 +42,8 @@
 #include "mediatool_uri.h"
 #include "cloud_enhancement_uri.h"
 #include "smart_album_column.h"
+#include "custom_record_uri.h"
+#include "custom_records_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -154,6 +156,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
         { PTP_OPERATION, OperationObject::PTP_OPERATION },
         { PTP_ALBUM_OPERATION, OperationObject::PTP_ALBUM_OPERATION },
+        { CUSTOM_RECORDS_OPERATON, OperationObject::CUSTOM_RECORDS_OPERATON},
     };
     return oprnObjMap;
 }
@@ -246,6 +249,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::PTP_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } }},
         { OperationObject::HIGHLIGHT_DELETE, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_ALBUM_TABLE } }},
         { OperationObject::PTP_ALBUM_OPERATION, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
+        { OperationObject::CUSTOM_RECORDS_OPERATON, { { OperationType::UNKNOWN_TYPE, CustomRecordsColumns::TABLE } } },
     };
     return tableNameMap;
 }

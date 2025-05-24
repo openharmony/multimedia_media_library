@@ -130,6 +130,7 @@
 #include "vision_db_sqls.h"
 #include "cloud_media_asset_uri.h"
 #include "album_operation_uri.h"
+#include "custom_record_operations.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -1013,6 +1014,8 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     } else if (cmd.GetOprnObject() == OperationObject::MTH_AND_YEAR_ASTC) {
         return AstcMthAndYearInsert(cmd, values);
+    } else if (cmd.GetOprnObject() == OperationObject::CUSTOM_RECORDS_OPERATON) {
+        return CustomRecordOperations::BatchAddCustomRecords(cmd, values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
@@ -1045,6 +1048,13 @@ int32_t MediaLibraryDataManager::Delete(MediaLibraryCommand &cmd, const DataShar
     string uriString = cmd.GetUri().ToString();
     if (MediaFileUtils::StartsWith(uriString, PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
         return MediaLibraryAssetOperations::DeleteOperation(cmd);
+    }
+    if (MediaFileUtils::StartsWith(uriString, CustomRecordsColumns::CUSTOM_RECORDS_URI_PREFIX)) {
+        NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates,
+            cmd.GetTableName());
+        cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+        cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+        return MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
     }
     CHECK_AND_RETURN_RET_LOG(uriString.find(MEDIALIBRARY_DATA_URI) != string::npos,
         E_INVALID_URI, "Not Data ability Uri");
@@ -2025,6 +2035,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
                 RdbUtils::ToPredicates(predicates, PhotoColumn::TAB_ASSET_AND_ALBUM_OPERATION_TABLE), columns);
         case OperationObject::ANALYSIS_FOREGROUND:
             return MediaLibraryVisionOperations::HandleForegroundAnalysisOperation(cmd);
+        case OperationObject::CUSTOM_RECORDS_OPERATON:
+            return MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, cmd.GetTableName()),
+                columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);

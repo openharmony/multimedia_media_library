@@ -118,6 +118,13 @@ void FetchFileResultNapi::GetFetchResult(unique_ptr<FetchFileResultNapi> &obj)
             obj->propertyPtr->fetchSmartAlbumResult_->SetInfo(sFetchSmartAlbumResult_);
             break;
         }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            auto cRecordResult = make_shared<FetchResult<PhotoAssetCustomRecord>>(
+                move(sFetchPhotoAssetCustomRecordResult_->GetDataShareResultSet()));
+            obj->propertyPtr->fetchCustomRecordResult_ = cRecordResult;
+            obj->propertyPtr->fetchCustomRecordResult_->SetInfo(sFetchPhotoAssetCustomRecordResult_);
+            break;
+        }
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
             break;
@@ -239,6 +246,25 @@ void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<PhotoAlbum>
     }
 }
 
+void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<PhotoAssetCustomRecord>> &fileResult,
+    napi_ref &constructorRef)
+{
+    CHECK_NULL_PTR_RETURN_VOID(fileResult, "fileResult is nullptr");
+    switch(fileResult->GetResultNapiType()) {
+        case ResultNapiType::TYPE_USERFILE_MGR: {
+            constructorRef = userFileMgrConstructor_;
+            break;
+        }
+        case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
+            constructorRef = photoAccessHelperConstructor_;
+            break;
+        }
+        default:
+            constructorRef = sConstructor_;
+            break;
+    }
+}
+
 napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<FetchResult<FileAsset>> fileResult)
 {
     MediaLibraryTracer tracer;
@@ -301,6 +327,23 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
     sFetchSmartAlbumResult_ = nullptr;
+    return result;
+}
+
+napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env,
+    unique_ptr<FetchResult<PhotoAssetCustomRecord>> fileResult)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateFetchFileResult");
+    napi_value constructor;
+    napi_ref constructorRef;
+    FetchFileResultNapi::SolveConstructorRef(fileResult, constructorRef);
+    NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
+    sFetchResType_ = fileResult->GetFetchResType();
+    sFetchPhotoAssetCustomRecordResult_ = move(fileResult);
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
+    sFetchPhotoAssetCustomRecordResult_ = nullptr;
     return result;
 }
 
@@ -397,6 +440,9 @@ napi_value FetchFileResultNapi::JSGetCount(napi_env env, napi_callback_info info
             case FetchResType::TYPE_SMARTALBUM:
                 count = obj->GetFetchSmartAlbumResultObject()->GetCount();
                 break;
+            case FetchResType::TYPE_CUSTOMRECORD:
+                count = obj->GetFetchCustomRecordResultObject()->GetCount();
+                break;
             default:
                 NAPI_ERR_LOG("unsupported FetchResType");
                 break;
@@ -447,6 +493,9 @@ napi_value FetchFileResultNapi::JSIsAfterLast(napi_env env, napi_callback_info i
             case FetchResType::TYPE_SMARTALBUM:
                 isAfterLast = obj->GetFetchSmartAlbumResultObject()->IsAtLastRow();
                 break;
+            case FetchResType::TYPE_CUSTOMRECORD:
+                isAfterLast = obj->GetFetchCustomRecordResultObject()->IsAtLastRow();
+                break;
             default:
                 NAPI_ERR_LOG("unsupported FetchResType");
                 break;
@@ -482,6 +531,10 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultAsyncContext *conte
             break;
         case FetchResType::TYPE_SMARTALBUM:
             jsAsset = SmartAlbumNapi::CreateSmartAlbumNapi(env, context->smartAlbumAsset);
+            break;
+        case FetchResType::TYPE_CUSTOMRECORD:
+            CHECK_NULL_PTR_RETURN_VOID(context, "async context is nullptr");
+            jsAsset = PhotoAssetCustomRecordNapi::CreateCustomRecordNapi(env, context->customRecordAsset);
             break;
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
@@ -841,6 +894,13 @@ std::shared_ptr<FetchResult<SmartAlbumAsset>> FetchFileResultNapi::GetFetchSmart
     return propertyPtr->fetchSmartAlbumResult_;
 }
 
+std::shared_ptr<FetchResult<PhotoAssetCustomRecord>> FetchFileResultNapi::GetFetchCustomRecordResultObject()
+{
+    if (propertyPtr == nullptr) {
+        return nullptr;
+    }
+    return propertyPtr->fetchCustomRecordResult_;
+}
 void GetAllObjectFromFetchResult(const FetchFileResultAsyncContext &asyncContext)
 {
     MediaLibraryTracer tracer;
@@ -951,6 +1011,12 @@ void FetchFileResultAsyncContext::GetFirstAsset()
             smartAlbumAsset = objectPtr->fetchSmartAlbumResult_->GetFirstObject();
             break;
         }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr, "objectPtr is nullptr");
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr->fetchCustomRecordResult_, "fetchCustomRecordResult_ is nullptr");
+            customRecordAsset = objectPtr->fetchCustomRecordResult_->GetFirstObject();
+            break;
+        }
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
             break;
@@ -974,6 +1040,12 @@ void FetchFileResultAsyncContext::GetObjectAtPosition()
         }
         case FetchResType::TYPE_SMARTALBUM: {
             smartAlbumAsset = objectPtr->fetchSmartAlbumResult_->GetObjectAtPosition(position);
+            break;
+        }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr, "objectPtr is nullptr");
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr->fetchCustomRecordResult_, "fetchCustomRecordResult_ is nullptr");
+            customRecordAsset = objectPtr->fetchCustomRecordResult_->GetObjectAtPosition(position);
             break;
         }
         default:
@@ -1001,6 +1073,12 @@ void FetchFileResultAsyncContext::GetLastObject()
             smartAlbumAsset = objectPtr->fetchSmartAlbumResult_->GetLastObject();
             break;
         }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr, "objectPtr is nullptr");
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr->fetchCustomRecordResult_, "fetchCustomRecordResult_ is nullptr");
+            customRecordAsset = objectPtr->fetchCustomRecordResult_->GetLastObject();
+            break;
+        }
         default:
             NAPI_ERR_LOG("unsupported FetchResType");
             break;
@@ -1024,6 +1102,12 @@ void FetchFileResultAsyncContext::GetNextObject()
         }
         case FetchResType::TYPE_SMARTALBUM: {
             smartAlbumAsset = objectPtr->fetchSmartAlbumResult_->GetNextObject();
+            break;
+        }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr, "objectPtr is nullptr");
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr->fetchCustomRecordResult_, "fetchCustomRecordResult_ is nullptr");
+            customRecordAsset = objectPtr->fetchCustomRecordResult_->GetNextObject();
             break;
         }
         default:
@@ -1070,6 +1154,17 @@ void FetchFileResultAsyncContext::GetAllObjectFromFetchResult()
             while (smartAlbum != nullptr) {
                 fileSmartAlbumArray.push_back(move(smartAlbum));
                 smartAlbum = fetchResult->GetNextObject();
+            }
+            break;
+        }
+        case FetchResType::TYPE_CUSTOMRECORD: {
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr, "objectPtr is nullptr");
+            CHECK_NULL_PTR_RETURN_VOID(objectPtr->fetchCustomRecordResult_, "fetchCustomRecordResult_ is nullptr");
+            auto fetchResult = objectPtr->fetchCustomRecordResult_;
+            auto customRecord = fetchResult->GetFirstObject();
+            while (customRecord != nullptr) {
+                customRecordArray.push_back(move(customRecord));
+                customRecord = fetchResult->GetNextObject();
             }
             break;
         }

@@ -26,6 +26,7 @@ namespace Media {
 constexpr int32_t FILEIO_MODULE_CODE = 139;
 constexpr int32_t UFM_MODULE_CODE = 140;
 constexpr int32_t UFM_SYSCAP_BASE = 202;
+constexpr int32_t MEDIA_LIBRARY_ERR_CODE = 238; // Prefix of the new error codes in the media library
 
 constexpr int32_t OHOS_PERMISSION_DENIED_CODE = 201;
 constexpr int32_t OHOS_INVALID_PARAM_CODE = 401;
@@ -63,6 +64,8 @@ constexpr int32_t JS_E_OPERATION_NOT_SUPPORT = UFM_JS_ERR(UFM_MODULE_CODE, 16);
 
 constexpr int32_t JS_E_NAMETOOLONG    = UFM_JS_ERR(UFM_SYSCAP_BASE, 36);
 
+constexpr int32_t JS_E_PARAM_INVALID = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 151);
+constexpr int32_t JS_E_INNER_FAIL = UFM_JS_ERR(MEDIA_LIBRARY_ERR_CODE, 301);
 // trans server errorCode to js Error code
 const std::unordered_map<int, int> trans2JsError = {
     { E_PERMISSION_DENIED,    JS_ERR_PERMISSION_DENIED },
