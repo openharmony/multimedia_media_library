@@ -3387,12 +3387,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_00
     int32_t start = 100;
     int32_t end = 1000;
     bool isSuccess = false;
+    size_t thumbnailSizequeryResult;
     // Insert temporary thumbnail size record
     for (int32_t i = start; i < end; i++) {
         const int32_t testPhotoId = i;
         const string testPhotoPath = "/storage/cloud/files/Photo/1/IMG_drop_testBatch" + to_string(i) + ".jpg";
         MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(testPhotoId), testPhotoPath);
-        size_t thumbnailSizequeryResult;
         isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
         ASSERT_EQ(isSuccess, true);
         ASSERT_EQ(thumbnailSizequeryResult, 0);
