@@ -141,6 +141,9 @@ public:
     static const std::string STAGE_VIDEO_TASK_STATUS EXPORT;
     static const std::string PHOTO_IS_AUTO EXPORT;
     static const std::string PHOTO_MEDIA_SUFFIX EXPORT;
+    static const std::string PHOTO_REAL_LCD_VISIT_TIME EXPORT;
+    static const std::string PHOTO_VISIT_COUNT EXPORT;
+    static const std::string PHOTO_LCD_VISIT_COUNT EXPORT;
     static const std::string PHOTO_IS_RECENT_SHOW EXPORT;
 
     // Photo-only default fetch columns

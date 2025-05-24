@@ -52,6 +52,7 @@
 #include "media_scanner_manager.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
+#include "media_visit_count_manager.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
@@ -160,6 +161,8 @@ const int32_t PHOTO_LOCAL_CLOUD_POSITION = 3;
 const int32_t UPDATE_DIRTY_CLOUD_CLONE_V1 = 1;
 const int32_t UPDATE_DIRTY_CLOUD_CLONE_V2 = 2;
 const int32_t ERROR_OLD_FILE_ID_OFFSET = -1000000;
+constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
+constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
 static const std::string TASK_PROGRESS_XML = "/data/storage/el2/base/preferences/task_progress.xml";
 static const std::string NO_UPDATE_DIRTY = "no_update_dirty";
 static const std::string NO_UPDATE_DIRTY_CLOUD_CLONE_V2 = "no_update_dirty_cloud_clone_v2";
@@ -2044,11 +2047,47 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
     return QuerySet(cmd, columns, predicates, errCode);
 }
 
+static bool AddToMediaVisitCount(OperationObject &oprnObject, MediaLibraryCommand &cmd)
+{
+    bool isBlock = false;
+    bool isValidCount = false;
+    auto visitType = MediaVisitCountManager::VisitCountType::PHOTO_FS;
+    if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
+        isValidCount = true;
+    } else if (oprnObject == OperationObject::THUMBNAIL) {
+        visitType = MediaVisitCountManager::VisitCountType::PHOTO_LCD;
+        auto height = std::atoi(cmd.GetQuerySetParam(MEDIA_DATA_DB_HEIGHT).c_str());
+        auto width = std::atoi(cmd.GetQuerySetParam(MEDIA_DATA_DB_WIDTH).c_str());
+        int min = std::min(width, height);
+        int max = std::max(width, height);
+        if (min == DEFAULT_ORIGINAL && max == DEFAULT_ORIGINAL) {
+            isValidCount = true;
+        } else if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
+            isValidCount = false;
+        } else {
+            isValidCount = true;
+        }
+    } else if (oprnObject == OperationObject::THUMBNAIL_VISIT_COUNT) {
+        visitType = MediaVisitCountManager::VisitCountType::PHOTO_LCD;
+        isValidCount = true;
+        isBlock = true;
+    } else {
+        MEDIA_DEBUG_LOG("AddToMediaVisitCount oprnObject: %{public}d", static_cast<int>(oprnObject));
+    }
+
+    if (isValidCount) {
+        auto fileId = cmd.GetOprnFileId();
+        MediaVisitCountManager::AddVisitCount(visitType, std::move(fileId));
+    }
+    return isBlock;
+}
+
 int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataManager::OpenFile");
     auto oprnObject = cmd.GetOprnObject();
+    CHECK_AND_RETURN_RET(!AddToMediaVisitCount(oprnObject, cmd), E_OK);
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
         oprnObject == OperationObject::HIGHLIGHT_COVER  || oprnObject == OperationObject::HIGHLIGHT_URI ||
         oprnObject == OperationObject::PTP_OPERATION) {
