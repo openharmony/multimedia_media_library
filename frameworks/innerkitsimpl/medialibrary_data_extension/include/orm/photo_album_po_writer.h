@@ -110,6 +110,24 @@ private:
         CHECK_AND_RETURN(!errConn);
         this->objPo_.localLanguage = std::get<std::string>(val);
     }
+    void SetAlbumOrder(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<int32_t>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->objPo_.albumOrder = std::get<int32_t>(val);
+    }
+    void SetPriority(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<int32_t>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->objPo_.priority = std::get<int32_t>(val);
+    }
+    void SetDirty(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<int32_t>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->objPo_.dirty = std::get<int32_t>(val);
+    }
 
     using Handle = void (PhotoAlbumPoWriter::*)(std::variant<int32_t, int64_t, double, std::string> &);
     const std::map<std::string, Handle> HANDLERS = {
@@ -123,6 +141,9 @@ private:
         {PhotoAlbumColumns::ALBUM_DATE_MODIFIED, &PhotoAlbumPoWriter::SetAlbumDateModified},
         {PhotoAlbumColumns::ALBUM_BUNDLE_NAME, &PhotoAlbumPoWriter::SetAlbumBundleName},
         {PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, &PhotoAlbumPoWriter::SetAlbumLocalLanguage},
+        {PhotoAlbumColumns::ALBUM_ORDER, &PhotoAlbumPoWriter::SetAlbumOrder},
+        {PhotoAlbumColumns::ALBUM_PRIORITY, &PhotoAlbumPoWriter::SetPriority},
+        {PhotoAlbumColumns::ALBUM_DIRTY, &PhotoAlbumPoWriter::SetDirty},
     };
 };
 }  // namespace OHOS::Media::ORM

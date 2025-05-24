@@ -22,6 +22,7 @@
 #include "media_column.h"
 #include "i_object_writer.h"
 #include "medialibrary_errno.h"
+#include "media_log.h"
 
 namespace OHOS::Media::ORM {
 class PhotosPoWriter : public IObjectWriter {
@@ -103,6 +104,8 @@ private:
         {PhotoColumn::PHOTO_DIRTY, &PhotosPoWriter::SetDirty},
         {PhotoColumn::PHOTO_POSITION, &PhotosPoWriter::SetPosition},
         {PhotoColumn::PHOTO_CLOUD_VERSION, &PhotosPoWriter::SetCloudVersion},
+        {"album_cloud_id", &PhotosPoWriter::SetAlbumCloudId},
+        {"lpath", &PhotosPoWriter::SetlPath},
     };
 
 private:
@@ -411,6 +414,18 @@ private:
         bool errConn = !std::holds_alternative<int64_t>(val);
         CHECK_AND_RETURN(!errConn);
         this->photosPo_.cloudVersion = std::get<int64_t>(val);
+    }
+    void SetAlbumCloudId(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<std::string>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->photosPo_.albumCloudId = std::get<std::string>(val);
+    }
+    void SetlPath(std::variant<int32_t, int64_t, double, std::string> &val)
+    {
+        bool errConn = !std::holds_alternative<std::string>(val);
+        CHECK_AND_RETURN(!errConn);
+        this->photosPo_.albumLPath = std::get<std::string>(val);
     }
 };
 }  // namespace OHOS::Media::ORM

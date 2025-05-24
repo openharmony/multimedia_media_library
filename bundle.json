@@ -140,6 +140,30 @@
             },
             {
               "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/native/cloud_sync",
+                "header_files": [
+                  "cloud_check_data.h",
+                  "cloud_file_data.h",
+                  "cloud_media_data_client.h",
+                  "i_cloud_media_data_client.h",
+                  "cloud_meta_data.h",
+                  "media_operate_result.h",
+                  "mdk_asset.h",
+                  "mdk_database.h",
+                  "mdk_error.h",
+                  "mdk_record_field.h",
+                  "mdk_record.h",
+                  "mdk_reference.h",
+                  "dk_record_parser.h",
+                  "cloud_media_factory.h",
+                  "i_cloud_media_data_handler.h",
+                  "cloud_media_data_handler.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync"
+            },
+            {
+              "header": {
                 "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
                 "header_files": [
                   "media_library_extend_manager.h"
@@ -207,15 +231,6 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/interfaces/kits/cj:cj_photoaccesshelper_ffi"
-            },
-            {
-              "header": {
-                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/native/cloud_sync",
-                "header_files": [
-                  "cloud_media_data_client.h"
-                ]
-              },
-              "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_cloud_sync:media_library_cloud_sync"
             }
         ],
         "test": [

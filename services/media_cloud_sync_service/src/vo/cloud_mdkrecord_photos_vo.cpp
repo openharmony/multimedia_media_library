@@ -1,0 +1,331 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#define MLOG_TAG "Media_Cloud_Vo"
+
+#include "cloud_mdkrecord_photos_vo.h"
+
+#include <sstream>
+
+#include "media_itypes_utils.h"
+
+namespace OHOS::Media::CloudSync {
+bool CloudMdkRecordPhotosVo::MarshallingBasicInfo(Parcel &parcel) const
+{
+    parcel.WriteString(title);
+    parcel.WriteInt32(mediaType);
+    parcel.WriteInt32(duration);
+    parcel.WriteInt32(hidden);
+    parcel.WriteInt64(hiddenTime);
+    parcel.WriteString(relativePath);
+    parcel.WriteString(virtualPath);
+    parcel.WriteInt64(metaDateModified);
+    parcel.WriteInt32(subtype);
+    parcel.WriteInt32(burstCoverLevel);
+    parcel.WriteString(burstKey);
+    parcel.WriteString(dateYear);
+    parcel.WriteString(dateMonth);
+    parcel.WriteString(dateDay);
+    parcel.WriteString(shootingMode);
+    parcel.WriteString(shootingModeTag);
+    parcel.WriteInt32(dynamicRangeType);
+    parcel.WriteString(frontCamera);
+    parcel.WriteInt64(editTime);
+    parcel.WriteInt32(originalSubtype);  //
+    parcel.WriteInt64(coverPosition);
+    parcel.WriteInt32(movingPhotoEffectMode);
+    parcel.WriteInt32(supportedWatermarkType);
+    parcel.WriteInt32(strongAssociation);
+    return true;
+}
+bool CloudMdkRecordPhotosVo::MarshallingAttributesInfo(Parcel &parcel) const
+{
+    parcel.WriteInt32(fileId);
+    parcel.WriteString(cloudId);
+    parcel.WriteString(originalAssetCloudId);
+    parcel.WriteString(data);
+    parcel.WriteInt64(dateAdded);
+    parcel.WriteInt64(dateModified);
+    parcel.WriteInt32(ownerAlbumId);
+    parcel.WriteDouble(latitude);
+    parcel.WriteDouble(longitude);
+    parcel.WriteString(sourcePath);
+    parcel.WriteString(displayName);
+    parcel.WriteInt64(dateTaken);
+    parcel.WriteString(detailTime);
+    parcel.WriteInt32(height);
+    parcel.WriteInt32(width);
+    parcel.WriteString(deviceName);
+    parcel.WriteInt64(dateTrashed);
+    parcel.WriteInt32(isFavorite);
+    parcel.WriteString(userComment);
+    parcel.WriteInt32(dirty);
+    parcel.WriteInt32(orientation);
+    parcel.WriteInt64(size);
+    parcel.WriteInt64(baseVersion);
+    parcel.WriteString(mimeType);
+    parcel.WriteString(albumCloudId);
+    parcel.WriteString(albumLPath);
+    parcel.WriteString(recordType);
+    parcel.WriteString(recordId);
+    return true;
+}
+bool CloudMdkRecordPhotosVo::ReadBasicInfo(Parcel &parcel)
+{
+    parcel.ReadString(title);
+    parcel.ReadInt32(mediaType);
+    parcel.ReadInt32(duration);
+    parcel.ReadInt32(hidden);
+    parcel.ReadInt64(hiddenTime);
+    parcel.ReadString(relativePath);
+    parcel.ReadString(virtualPath);
+    parcel.ReadInt64(metaDateModified);
+    parcel.ReadInt32(subtype);
+    parcel.ReadInt32(burstCoverLevel);
+    parcel.ReadString(burstKey);
+    parcel.ReadString(dateYear);
+    parcel.ReadString(dateMonth);
+    parcel.ReadString(dateDay);
+    parcel.ReadString(shootingMode);
+    parcel.ReadString(shootingModeTag);
+    parcel.ReadInt32(dynamicRangeType);
+    parcel.ReadString(frontCamera);
+    parcel.ReadInt64(editTime);
+    parcel.ReadInt32(originalSubtype);
+    parcel.ReadInt64(coverPosition);
+    parcel.ReadInt32(movingPhotoEffectMode);
+    parcel.ReadInt32(supportedWatermarkType);
+    parcel.ReadInt32(strongAssociation);
+    return true;
+}
+bool CloudMdkRecordPhotosVo::ReadAttributesInfo(Parcel &parcel)
+{
+    parcel.ReadInt32(fileId);
+    parcel.ReadString(cloudId);
+    parcel.ReadString(originalAssetCloudId);
+    parcel.ReadString(data);
+    parcel.ReadInt64(dateAdded);
+    parcel.ReadInt64(dateModified);
+    parcel.ReadInt32(ownerAlbumId);
+    parcel.ReadDouble(latitude);
+    parcel.ReadDouble(longitude);
+    parcel.ReadString(sourcePath);
+    parcel.ReadString(displayName);
+    parcel.ReadInt64(dateTaken);
+    parcel.ReadString(detailTime);
+    parcel.ReadInt32(height);
+    parcel.ReadInt32(width);
+    parcel.ReadString(deviceName);
+    parcel.ReadInt64(dateTrashed);
+    parcel.ReadInt32(isFavorite);
+    parcel.ReadString(userComment);
+    parcel.ReadInt32(dirty);
+    parcel.ReadInt32(orientation);
+    parcel.ReadInt64(size);
+    parcel.ReadInt64(baseVersion);
+    parcel.ReadString(mimeType);
+    parcel.ReadString(albumCloudId);
+    parcel.ReadString(albumLPath);
+    parcel.ReadString(recordType);
+    parcel.ReadString(recordId);
+    return true;
+}
+bool CloudMdkRecordPhotosVo::Marshalling(MessageParcel &parcel) const
+{
+    this->MarshallingBasicInfo(parcel);
+    this->MarshallingAttributesInfo(parcel);
+    IPC::ITypeMediaUtil::Marshalling<std::string>(this->removeAlbumCloudId, parcel);
+    return true;
+}
+
+bool CloudMdkRecordPhotosVo::Unmarshalling(MessageParcel &parcel)
+{
+    this->ReadBasicInfo(parcel);
+    this->ReadAttributesInfo(parcel);
+    IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->removeAlbumCloudId, parcel);
+    return true;
+}
+
+void CloudMdkRecordPhotosVo::GetAlbumInfo(std::stringstream &ss) const
+{
+    ss << "\"albumCloudId\": " << albumCloudId << "\","
+       << "\"albumLPath\": " << albumLPath << ",";
+}
+
+void CloudMdkRecordPhotosVo::GetBasicInfo(std::stringstream &ss) const
+{
+    ss << "\"displayName\": \"" << displayName << "\","
+       << "\"orientation\": \"" << orientation << "\","
+       << "\"size\": " << size << ","
+       << "\"hidden\": " << hidden << ","
+       << "\"dirty\": " << dirty << ","
+       << "\"dateTrashed\": " << dateTrashed << ","
+       << "\"isFavorite\": " << isFavorite << ","
+       << "\"mediaType\": " << mediaType << ","
+       << "\"subtype\": " << subtype << ","
+       << "\"ownerAlbumId\": " << ownerAlbumId << ",";
+}
+
+void CloudMdkRecordPhotosVo::GetPropertiesInfo(std::stringstream &ss) const
+{
+    ss << "\"editTime\": " << editTime << ","
+       << "\"fileId\": " << fileId << ","
+       << "\"cloudId\": \"" << cloudId << "\","
+       << "\"sourcePath\": \"" << sourcePath << "\","
+       << "\"originalAssetCloudId\": \"" << originalAssetCloudId << "\","
+       << "\"dateAdded\": " << dateAdded << ","
+       << "\"dateModified\": " << dateModified << ","
+       << "\"dateTaken\": " << dateTaken << ","
+       << "\"dateYear\": \"" << dateYear << "\","
+       << "\"dateMonth\": \"" << dateMonth << "\","
+       << "\"dateDay\": \"" << dateDay << "\","
+       << "\"detailTime\": \"" << detailTime << "\","
+       << "\"metaDateModified\": " << metaDateModified << ",";
+}
+
+void CloudMdkRecordPhotosVo::GetCloudInfo(std::stringstream &ss) const
+{
+    ss << "\"recordType\": \"" << recordType << "\","
+       << "\"recordId\": \"" << recordId << ",\""
+       << "\"isNew\": " << isNew << ","
+       << "\"baseVersion\": " << baseVersion << ","
+       << "\"originalSubtype\": " << originalSubtype << ","
+       << "\"hiddenTime\": " << hiddenTime << ",";
+}
+
+void CloudMdkRecordPhotosVo::GetAttributesInfo(std::stringstream &ss) const
+{
+    ss << "\": " << title << ","
+       << "\"duration\": " << duration << ","
+       << "\"relativePath\": \"" << relativePath << "\","
+       << "\"virtualPath\": \"" << virtualPath << "\","
+       << "\"burstCoverLevel\": " << burstCoverLevel << ","
+       << "\"burstKey\": \"" << burstKey << "\","
+       << "\"shootingMode\": \"" << shootingMode << "\","
+       << "\"shootingModeTag\": \"" << shootingModeTag << "\","
+       << "\"dynamicRangeType\": " << dynamicRangeType << ","
+       << "\"frontCamera\": \"" << frontCamera << "\","
+       << "\"coverPosition\": " << coverPosition << ","
+       << "\"movingPhotoEffectMode\": " << movingPhotoEffectMode << ","
+       << "\"supportedWatermarkType\": " << supportedWatermarkType << ","
+       << "\"strongAssociation\": " << strongAssociation << ","
+       << "\"data\": \"" << data << "\","
+       << "\"latitude\": " << latitude << ","
+       << "\"longitude\": " << longitude << ","
+       << "\"height\": " << height << ","
+       << "\"width\": " << width << ","
+       << "\"deviceName\": \"" << deviceName << "\","
+       << "\"userComment\": \"" << userComment << "\","
+       << "\"mimeType\": " << mimeType << ",";
+}
+
+void CloudMdkRecordPhotosVo::GetRemoveAlbumInfo(std::stringstream &ss) const
+{
+    ss << "[";
+    for (uint32_t i = 0; i < removeAlbumCloudId.size(); i++) {
+        ss << removeAlbumCloudId[i];
+        if (i != removeAlbumCloudId.size() - 1) {
+            ss << ",";
+        }
+    }
+    ss << "]";
+}
+
+std::string CloudMdkRecordPhotosVo::ToString()
+{
+    std::stringstream ss;
+    ss << "{";
+    this->GetAlbumInfo(ss);
+    this->GetBasicInfo(ss);
+    this->GetPropertiesInfo(ss);
+    this->GetCloudInfo(ss);
+    this->GetAttributesInfo(ss);
+    this->GetRemoveAlbumInfo(ss);
+    ss << "}";
+    return ss.str();
+}
+
+bool CloudMdkRecordPhotosReqBody::Unmarshalling(MessageParcel &parcel)
+{
+    return IPC::ITypeMediaUtil::Unmarshalling(this->size, parcel);
+}
+
+bool CloudMdkRecordPhotosReqBody::Marshalling(MessageParcel &parcel) const
+{
+    return IPC::ITypeMediaUtil::Marshalling(this->size, parcel);
+}
+
+std::string CloudMdkRecordPhotosReqBody::ToString() const
+{
+    return "";
+}
+
+std::vector<CloudMdkRecordPhotosVo> CloudMdkRecordPhotosRespBody::GetPhotosRecords()
+{
+    return this->cloudPhotosUploadRecord;
+}
+
+bool CloudMdkRecordPhotosRespBody::Marshalling(MessageParcel &parcel) const
+{
+    if (cloudPhotosUploadRecord.size() == 0) {
+        return false;
+    }
+    if (!parcel.WriteInt32(static_cast<int32_t>(cloudPhotosUploadRecord.size()))) {
+        return false;
+    }
+    for (const auto &entry : cloudPhotosUploadRecord) {
+        if (!entry.Marshalling(parcel)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// 服务端->客户端；在客户端反序列化
+bool CloudMdkRecordPhotosRespBody::GetRecords(std::vector<CloudMdkRecordPhotosVo> &val, MessageParcel &parcel)
+{
+    int32_t len = parcel.ReadInt32();
+    if (len < 0) {
+        return false;
+    }
+    size_t readAbleSize = parcel.GetReadableBytes();
+    size_t size = static_cast<size_t>(len);
+    if ((size > readAbleSize) || (size > val.max_size())) {
+        return false;
+    }
+
+    val.clear();
+    bool isValid;
+    for (size_t i = 0; i < size; i++) {
+        CloudMdkRecordPhotosVo nodeObj;
+        isValid = nodeObj.Unmarshalling(parcel);
+        if (!isValid) {
+            return false;
+        }
+        val.emplace_back(nodeObj);
+    }
+    return true;
+}
+
+bool CloudMdkRecordPhotosRespBody::Unmarshalling(MessageParcel &parcel)
+{
+    return GetRecords(this->cloudPhotosUploadRecord, parcel);
+}
+
+std::string CloudMdkRecordPhotosRespBody::ToString() const
+{
+    return "";
+}
+}  // namespace OHOS::Media::CloudSync

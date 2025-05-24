@@ -97,6 +97,7 @@ enum HighlightUserActionType : int32_t {
 };
 
 enum PhotoAlbumType : int32_t {
+    INVALID = -1,
     USER = 0,
     SYSTEM = 1024,
     SOURCE = 2048,

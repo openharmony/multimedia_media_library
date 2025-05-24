@@ -17,13 +17,51 @@
 #define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DATA_CLIENT_H
 
 #include <string>
+#include <vector>
+
+#include "i_cloud_media_data_client.h"
 
 #define EXPORT __attribute__ ((visibility ("default")))
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaDataClient {
+class EXPORT CloudMediaDataClient : public ICloudMediaDataClient {
+public:  // constructors
+    CloudMediaDataClient();
+    virtual ~CloudMediaDataClient() = default;
+
+public:  // getter & setter
+    void SetTraceId(const std::string &traceId) override;
+    std::string GetTraceId() const override;
+
 public:
-    EXPORT int32_t FinishCheck();
+    // 核查
+    int32_t UpdateDirty(const std::string &cloudId, DirtyTypes dirtyType) override;
+    int32_t UpdatePosition(const std::vector<std::string> &cloudIds, int32_t position) override;
+    int32_t UpdateThmStatus(const std::string &cloudId, int32_t thmStatus) override;
+    int32_t GetAgingFile(const int64_t time, int32_t mediaType, int32_t sizeLimit, int32_t offset,
+        std::vector<CloudMetaData> &metaData) override;
+    int32_t GetActiveAgingFile(const int64_t time, int32_t mediaType, int32_t sizeLimit, int32_t offset,
+        std::vector<CloudMetaData> &metaData) override;
+    // 下载
+    int32_t GetDownloadAsset(
+        const std::vector<std::string> &uris, std::vector<CloudMetaData> &cloudMetaDataVec) override;
+    int32_t GetDownloadThmsByUri(
+        const std::vector<std::string> &uri, int32_t type, std::vector<CloudMetaData> &metaData) override;
+    int32_t OnDownloadAsset(const std::vector<std::string> &cloudIds, std::vector<MediaOperateResult> &result) override;
+    int32_t GetDownloadThms(std::vector<CloudMetaData> &cloudMetaDataVec, const DownloadThumPara &param) override;
+    int32_t OnDownloadThms(const std::unordered_map<std::string, int32_t> &resMap, int32_t &failSize) override;
+    int32_t GetDownloadThmNum(int32_t &totalNum, int32_t type) override;
+    // 缓存视频
+    int32_t GetVideoToCache(std::vector<CloudMetaData> &cloudMetaDataVec, int32_t size) override;
+    // 大数据
+    int32_t GetFilePosStat(std::vector<uint64_t> &filePosStat) override;
+    int32_t GetCloudThmStat(std::vector<uint64_t> &cloudThmStat) override;
+    int32_t GetDirtyTypeStat(std::vector<uint64_t> &dirtyTypeStat) override;
+    int32_t UpdateLocalFileDirty(std::vector<MDKRecord> &records) override;
+    int32_t UpdateSyncStatus(const std::string &cloudId, int32_t syncStatus) override;
+
+private:
+    std::shared_ptr<ICloudMediaDataClient> dataHandler_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DATA_CLIENT_H
