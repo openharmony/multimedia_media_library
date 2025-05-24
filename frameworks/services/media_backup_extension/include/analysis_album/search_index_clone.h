@@ -60,6 +60,8 @@ private:
     void ParseAnalysisSearchIndexResultSet(const std::shared_ptr<NativeRdb::ResultSet>& resultSet,
         AnalysisSearchIndexTbl& analysisSearchIndexTbl);
 
+    std::vector<AnalysisSearchIndexTbl> ProcessSearchIndexTbls(
+        const std::vector<AnalysisSearchIndexTbl>& searchIndexTbls);
     void InsertAnalysisSearchIndex(std::vector<AnalysisSearchIndexTbl>& analysisSearchIndexTbl);
 
     std::pair<std::unordered_set<int32_t>, std::unordered_set<int32_t>> QueryExistingIdsWithStrategy(const
