@@ -91,7 +91,7 @@ bool SearchIndexClone::Clone()
             MEDIA_WARN_LOG("Query returned empty result for offset %{public}d", offset);
             continue;
         }
-        auto searchIdxTbl = ProcessSearchIndexTbls(imageFaceTbls);
+        auto searchIdxTbl = ProcessSearchIndexTbls(analysisSearchIndexTbl);
         InsertAnalysisSearchIndex(searchIdxTbl);
     }
 
