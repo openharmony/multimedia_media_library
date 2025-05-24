@@ -2883,7 +2883,8 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     }
     DeletedFilesParams fileParams;
     int32_t deletedRows = 0;
-    QueryFileInfoAndHandleRemovePhotos(predicates, fileParams);
+    int32_t ret = QueryFileInfoAndHandleRemovePhotos(predicates, fileParams);
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_HAS_DB_ERROR, "query db error");
     GetAlbumNamesById(fileParams);
     CHECK_AND_RETURN_RET_LOG(!fileParams.ids.empty(), deletedRows, "Failed to delete files in db, ids size: 0");
 
