@@ -18,6 +18,7 @@
 
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
+#include "message_parcel.h"
 #include "napi_base_context.h"
 #include "message_parcel.h"
 #include "napi_error.h"
@@ -68,6 +69,7 @@ public:
     EXPORT static void SetUserId(const int32_t userId);
     EXPORT static int32_t GetUserId();
     EXPORT static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelperByUser(const int32_t userId);
+
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info,

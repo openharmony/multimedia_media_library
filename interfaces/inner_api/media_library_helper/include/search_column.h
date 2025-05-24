@@ -132,29 +132,9 @@ const std::string CREATE_SEARCH_DELETE_TRIGGER =
 
 // Listening of photoMap: insert
 const std::string ALBUM_MAP_INSERT_SEARCH_TRIGGER = "album_map_insert_search_trigger";
-const std::string CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER =
-    std::string("CREATE TRIGGER IF NOT EXISTS album_map_insert_search_trigger AFTER INSERT ON ") +
-    PhotoMap::TABLE + " FOR EACH ROW " +
-    " BEGIN " +
-    " UPDATE " + SEARCH_TOTAL_TABLE +
-    " SET " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::NEED_UPDATE) +
-    " WHERE " + " (" + TBL_SEARCH_FILE_ID + " = NEW.map_asset " +
-    " AND (" + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) +
-    " OR " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED_NEW) + "));" +
-    " END;";
 
 // Listening of photoMap: delete
 const std::string ALBUM_MAP_DELETE_SEARCH_TRIGGER = "album_map_delete_search_trigger";
-const std::string CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER =
-    std::string("CREATE TRIGGER IF NOT EXISTS album_map_delete_search_trigger AFTER DELETE ON ") +
-    PhotoMap::TABLE + " FOR EACH ROW " +
-    " BEGIN " +
-    " UPDATE " + SEARCH_TOTAL_TABLE +
-    " SET " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::NEED_UPDATE) +
-    " WHERE " + " (" + TBL_SEARCH_FILE_ID + " = old.map_asset " +
-    " AND (" + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED) +
-    " OR " + TBL_SEARCH_PHOTO_STATUS + " = " + std::to_string(TblSearchPhotoStatus::INDEXED_NEW) + "));" +
-    " END;";
 
 // Listening of photoAlbum: update of(album_name)
 const std::string ALBUM_UPDATE_SEARCH_TRIGGER = "album_update_search_trigger";

@@ -80,6 +80,7 @@
 #include "preferences_helper.h"
 #include "thumbnail_service.h"
 #include "medialibrary_rdb_transaction.h"
+#include "table_event_handler.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1625,9 +1626,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER,
     PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER,
     PhotoMap::CREATE_TABLE,
-    PhotoMap::CREATE_NEW_TRIGGER,
-    PhotoMap::CREATE_DELETE_TRIGGER,
-    PhotoMap::CREATE_IDX_FILEID_FOR_PHOTO_MAP,
     TriggerDeleteAlbumClearMap(),
     TriggerDeletePhotoClearMap(),
     CREATE_TAB_ANALYSIS_OCR,
@@ -1701,8 +1699,6 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
     CREATE_SEARCH_DELETE_TRIGGER,
     CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
-    CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
-    CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
     CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
     CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
     CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
@@ -1737,6 +1733,7 @@ static int32_t ExecuteSql(RdbStore &store)
     if (TabFaCardPhotosTableEventHandler().OnCreate(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
+    TableEventHandler().OnCreate(MediaLibraryUnistoreManager::GetInstance().GetRdbStore());
     return NativeRdb::E_OK;
 }
 
@@ -2306,8 +2303,6 @@ static void AddSearchTable(RdbStore &store)
         CREATE_SEARCH_UPDATE_TRIGGER,
         CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
         CREATE_SEARCH_DELETE_TRIGGER,
-        CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
-        CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
         CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
         CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
     };
@@ -2451,17 +2446,6 @@ void UpdateCloudAlbum(RdbStore &store)
     ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(addAlbumMapColumns); });
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("upgrade fail %{public}d: add ablum columns", ret);
-        UpdateFail(__FILE__, __LINE__);
-    }
-    /* album map - add triggers */
-    ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(PhotoMap::CREATE_NEW_TRIGGER); });
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("upgrade fail %{public}d: create album map insert trigger", ret);
-        UpdateFail(__FILE__, __LINE__);
-    }
-    ret = ExecSqlWithRetry([&]() { return store.ExecuteSql(PhotoMap::CREATE_DELETE_TRIGGER); });
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("upgrade fail %{public}d: create album map delete trigger", ret);
         UpdateFail(__FILE__, __LINE__);
     }
 }
@@ -2814,7 +2798,6 @@ static void AddIndexForFileId(RdbStore& store)
     const vector<string> sqls = {
         CREATE_IDX_FILEID_FOR_SEARCH_INDEX,
         CREATE_IDX_FILEID_FOR_ANALYSIS_TOTAL,
-        PhotoMap::CREATE_IDX_FILEID_FOR_PHOTO_MAP,
         CREATE_IDX_FILEID_FOR_ANALYSIS_PHOTO_MAP,
     };
     MEDIA_INFO_LOG("start AddIndexForFileId");
@@ -3517,9 +3500,7 @@ static void UpdateSearchIndexTrigger(RdbStore &store)
         "DROP TRIGGER IF EXISTS update_search_status_trigger",
         CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
         "DROP TRIGGER IF EXISTS album_map_insert_search_trigger",
-        CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
         "DROP TRIGGER IF EXISTS album_map_delete_search_trigger",
-        CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
     };
     MEDIA_INFO_LOG("start update search index");
     ExecSqls(sqls, store);
@@ -4522,6 +4503,9 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_DC_ANALYSIS) {
         AddDcAnalysisColumn(store);
     }
+
+    TableEventHandler().OnUpgrade(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStore(), oldVersion, MEDIA_RDB_VERSION);
 }
 
 static void UpgradeExtensionPart5(RdbStore &store, int32_t oldVersion)

@@ -185,6 +185,9 @@ std::shared_ptr<PermissionCheck> PermissionCheck::BuildPermissionCheckChain(uint
 int32_t PermissionCheck::VerifyPermissions(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     MEDIA_INFO_LOG("VerifyPermissions API code=%{public}d", businessCode);
+    bool isSkip = businessCode >= static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_START);
+    isSkip &= businessCode <= static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_END);
+    CHECK_AND_RETURN_RET(!isSkip, E_SUCCESS);
     if (businessCode == static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN)) {
         auto ret = VerifyOpenFilePermissions(businessCode, data);
         MEDIA_INFO_LOG("Verify OpenFile Permissions ret=%{public}d, API code=%{public}d", ret, businessCode);

@@ -107,6 +107,8 @@ static const std::map<std::string, DataType> PHOTOS_COLUMNS = {
     {PhotoColumn::STAGE_VIDEO_TASK_STATUS, DataType::INT},
     {PhotoColumn::PHOTO_IS_AUTO, DataType::INT},
     {MediaColumn::MEDIA_ID, DataType::INT},
+    {"album_cloud_id", DataType::STRING},
+    {"lpath", DataType::STRING},
 };
 
 static const std::map<std::string, DataType> PHOTO_ALBUM_COLUMNS = {
@@ -126,13 +128,12 @@ static const std::map<std::string, DataType> PHOTO_ALBUM_COLUMNS = {
     {PhotoAlbumColumns::ALBUM_ORDER, DataType::INT},
     {PhotoAlbumColumns::ALBUM_IMAGE_COUNT, DataType::INT},
     {PhotoAlbumColumns::ALBUM_VIDEO_COUNT, DataType::INT},
-    {PhotoAlbumColumns::ALBUM_BUNDLE_NAME, DataType::LONG},
-    {PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, DataType::LONG},
+    {PhotoAlbumColumns::ALBUM_BUNDLE_NAME, DataType::STRING},
+    {PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, DataType::STRING},
     {PhotoAlbumColumns::ALBUM_IS_LOCAL, DataType::INT},
     {PhotoAlbumColumns::ALBUM_DATE_ADDED, DataType::LONG},
     {PhotoAlbumColumns::ALBUM_LPATH, DataType::STRING},
     {PhotoAlbumColumns::ALBUM_PRIORITY, DataType::INT},
-    {PhotoColumn::PHOTO_METADATA_FLAGS, DataType::INT},
     {PhotoAlbumColumns::ALBUM_CHECK_FLAG, DataType::INT},
 };
 }  // namespace MediaColumnType
