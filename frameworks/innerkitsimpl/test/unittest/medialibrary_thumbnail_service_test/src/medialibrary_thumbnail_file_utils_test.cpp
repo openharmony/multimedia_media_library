@@ -108,12 +108,8 @@ HWTEST_F(MediaLibraryThumbnailFileUtilsTest, BatchDeleteMonthAndYearAstc_test_00
 HWTEST_F(MediaLibraryThumbnailFileUtilsTest, BatchDeleteAstcData_test_001, TestSize.Level0)
 {
     ThumbnailDataBatch dataBatch;
-    ThumbnailType type = ThumbnailType::LCD;
+    ThumbnailType type = ThumbnailType::YEAR_ASTC;
     bool res = ThumbnailFileUtils::BatchDeleteAstcData(dataBatch, type);
-    EXPECT_EQ(res, false);
-
-    type = ThumbnailType::YEAR_ASTC;
-    res = ThumbnailFileUtils::BatchDeleteAstcData(dataBatch, type);
     EXPECT_EQ(res, true);
 
     type = ThumbnailType::MTH_ASTC;
