@@ -776,6 +776,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     }
     PhotoMimetypeOperation::UpdateInvalidMimeType();
     DfxManager::GetInstance()->HandleTwoDayMissions();
+    DfxManager::GetInstance()->HandleOneWeekMissions();
 }
 
 static void PauseBackgroundDownloadCloudMedia()

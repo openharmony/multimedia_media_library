@@ -586,5 +586,38 @@ int32_t DfxReporter::ReportPhotoError(const PhotoErrorCount& reportData)
     return ret;
 }
 
+void DfxReporter::ReportPhotoSizeInfo(const std::string &localImageSize, const std::string &localVideoSize,
+    const std::string &cloudImageSize, const std::string &cloudVideoSize, const std::string &photoMimeType)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_PHOTO_SIZE_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "LOCAL_IMAGE_SIZE", localImageSize,
+        "LOCAL_VIDEO_SIZE", localVideoSize,
+        "CLOUD_IMAGE_SIZE", cloudImageSize,
+        "CLOUD_VIDEO_SIZE", cloudVideoSize,
+        "PHOTO_MIMETYPE", photoMimeType);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report ReportPhotoSizeInfo error: %{public}d", ret);
+    }
+}
+
+void DfxReporter::ReportPhotoResolutionInfo(const std::string &localImageResolution,
+    const std::string &localVideoResolution, const std::string &cloudImageResolution,
+    const std::string &cloudVideoResolution)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_PHOTO_RESOLUTION_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "LOCAL_IMAGE_RESOLUTION", localImageResolution,
+        "LOCAL_VIDEO_RESOLUTION", localVideoResolution,
+        "CLOUD_IMAGE_RESOLUTION", cloudImageResolution,
+        "CLOUD_VIDEO_RESOLUTION", cloudVideoResolution);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report ReportPhotoResolutionInfo error: %{public}d", ret);
+    }
+}
 } // namespace Media
 } // namespace OHOS

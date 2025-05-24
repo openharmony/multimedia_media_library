@@ -79,6 +79,7 @@ public:
     void HandleAdaptationToMovingPhoto(const std::string &appName, bool adapted);
     void IsDirectoryExist(const std::string &dirName);
     void CheckStatus();
+    void HandleOneWeekMissions();
 
 private:
     void Init();

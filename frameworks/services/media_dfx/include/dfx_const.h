@@ -39,6 +39,7 @@ constexpr int32_t SIX_HOUR = 6 * 60 * 60;
 constexpr int32_t HALF_DAY = 12 * 60 * 60;
 constexpr int32_t ONE_DAY = 24 * 60 * 60;
 constexpr int32_t TWO_DAY = 48 * 60 * 60;
+constexpr int32_t ONE_WEEK = 7 * 24 * 60 * 60;
 
 constexpr int32_t NOT_INIT = -1;
 constexpr int32_t COMMON_IMAGE = 0;
@@ -112,6 +113,7 @@ const std::string LAST_REPORT_TIME = "last_report_time";
 const std::string LAST_MIDDLE_REPORT_TIME = "last_middle_report_time";
 const std::string LAST_HALF_DAY_REPORT_TIME = "last_half_day_report_time";
 const std::string LAST_TWO_DAY_REPORT_TIME = "last_two_day_report_time";
+const std::string LAST_WEEK_REPORT_TIME = "last_week_report_time";
 const std::string THUMBNAIL_ERROR_VERSION = "thumbnail_error_version";
 const std::string DELETE_STATISTIC_VERSION = "delete_statistic_version";
 const std::string MOVING_PHOTO_KEY_UNADAPTED_NUM = "unadapted_app_num";
