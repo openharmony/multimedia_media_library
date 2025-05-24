@@ -1291,7 +1291,7 @@ int32_t MtpMedialibraryManager::SetAlbumObjectPropValue(const std::shared_ptr<Mt
     CHECK_AND_RETURN_RET_LOG(dataShareHelper_ != nullptr,
         MtpErrorUtils::SolveGetHandlesError(E_HAS_DB_ERROR), "fail to get datasharehelper");
     int32_t errCode = dataShareHelper_->Update(uri, predicates, valuesBucket);
-    CHECK_AND_RETURN_RET_LOG(errCode > 0,
+    CHECK_AND_RETURN_RET_LOG(errCode > 0 && errCode != NativeRdb::E_INVALID_ARGS,
         MtpErrorUtils::SolveCloseFdError(E_HAS_DB_ERROR), "fail to update albumName");
     Uri queryUri(PAH_QUERY_PHOTO_ALBUM);
     vector<string> columns;
@@ -1302,7 +1302,7 @@ int32_t MtpMedialibraryManager::SetAlbumObjectPropValue(const std::shared_ptr<Mt
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr,
         MtpErrorUtils::SolveDeleteObjectError(E_NO_SUCH_FILE), "fail to get albummInfo");
     CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK,
-        MtpErrorUtils::SolveDeleteObjectError(E_SUCCESS), "have no handles");
+        MtpErrorUtils::SolveDeleteObjectError(E_NO_SUCH_FILE), "have no handles");
     int32_t newAlbumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
     resultSet->Close();
     auto ptpSpecialHandles = PtpSpecialHandles::GetInstance();
