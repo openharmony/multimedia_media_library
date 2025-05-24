@@ -757,8 +757,11 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     int32_t type = static_cast<int32_t>(command.GetOprnType());
     DfxTimer dfxTimer(type, object, OPEN_FILE_TIME_OUT, true);
 
-    CHECK_AND_EXECUTE(command.GetUri().ToString().find(MEDIA_DATA_DB_THUMBNAIL) == string::npos,
-        command.SetOprnObject(OperationObject::THUMBNAIL));
+    if (command.GetUri().ToString().find(MEDIA_DATA_DB_THUMBNAIL) != string::npos) {
+        command.SetOprnObject(OperationObject::THUMBNAIL);
+        CHECK_AND_EXECUTE(command.GetUri().ToString().find(PhotoColumn::PHOTO_LCD_VISIT_COUNT) == string::npos,
+            command.SetOprnObject(OperationObject::THUMBNAIL_VISIT_COUNT));
+    }
 
     CHECK_AND_EXECUTE(command.GetUri().ToString().find(MEDIA_DATA_DB_THUMB_ASTC) == string::npos,
         command.SetOprnObject(OperationObject::THUMBNAIL_ASTC));

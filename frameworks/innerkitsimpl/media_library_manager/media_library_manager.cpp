@@ -524,6 +524,10 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     }
     string sandboxPath = GetSandboxPath(path, size, isAstc);
     int32_t fd = GetFdFromSandbox(path, sandboxPath, isAstc);
+    if (fd > 0 && sandboxPath.find("LCD.jpg") != std::string::npos) {
+        Uri openUri(uriStr + PhotoColumn::PHOTO_LCD_VISIT_COUNT);
+        dataShareHelper->OpenFile(openUri, "R");
+    }
     CHECK_AND_RETURN_RET(fd <= 0, fd);
     MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, errno %{public}d path :%{public}s fd %{public}d",
         errno, MediaFileUtils::DesensitizePath(path).c_str(), fd);

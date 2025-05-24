@@ -95,6 +95,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_SERVICES_PATH}/media_permission/include",
     "${MEDIALIB_SERVICES_PATH}/media_power_efficiency/include",
+    "${MEDIALIB_SERVICES_PATH}/media_visit_count/include",
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
@@ -348,6 +349,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_albums_refresh/src/albums_refresh_worker.cpp",
   ]
 
+  media_visit_count = [ "${MEDIALIB_SERVICES_PATH}/media_visit_count/src/media_visit_count_manager.cpp" ]
+
   media_ipc_source =
       [ "src/ipc/controller/media_controller_service_factory.cpp" ]
 
@@ -460,6 +463,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_cloud_dirty_handle_source
   sources += media_albums_refresh_source
   sources += media_cloud_sync_server_source
+  sources += media_visit_count
   sources += media_ipc_source
   sources += media_permission_check_source
 

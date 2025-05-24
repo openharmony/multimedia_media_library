@@ -119,6 +119,9 @@ const std::string PhotoColumn::PHOTO_CHECK_FLAG = "check_flag";
 const std::string PhotoColumn::STAGE_VIDEO_TASK_STATUS = "stage_video_task_status";
 const std::string PhotoColumn::PHOTO_IS_AUTO = "is_auto";
 const std::string PhotoColumn::PHOTO_MEDIA_SUFFIX = "media_suffix";
+const std::string PhotoColumn::PHOTO_REAL_LCD_VISIT_TIME = "real_lcd_visit_time";
+const std::string PhotoColumn::PHOTO_VISIT_COUNT = "visit_count";
+const std::string PhotoColumn::PHOTO_LCD_VISIT_COUNT = "lcd_visit_count";
 const std::string PhotoColumn::PHOTO_IS_RECENT_SHOW = "is_recent_show";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
@@ -266,7 +269,11 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     STAGE_VIDEO_TASK_STATUS + " INT NOT NULL DEFAULT 0, " +
     PHOTO_IS_AUTO + " INT NOT NULL DEFAULT 0, " +
     PHOTO_MEDIA_SUFFIX + " TEXT, " +
-    PHOTO_IS_RECENT_SHOW + " INT NOT NULL DEFAULT 1) ";
+    PHOTO_IS_RECENT_SHOW + " INT NOT NULL DEFAULT 1, " +
+    PHOTO_REAL_LCD_VISIT_TIME + " BIGINT NOT NULL DEFAULT 0, " +
+    PHOTO_VISIT_COUNT + " INT NOT NULL DEFAULT 0, " +
+    PHOTO_LCD_VISIT_COUNT + " INT NOT NULL DEFAULT 0" +
+    ") ";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
