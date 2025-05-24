@@ -490,6 +490,54 @@ void DfxManager::HandleAdaptationToMovingPhoto(const string &appName, bool adapt
     dfxCollector_->CollectAdaptationToMovingPhotoInfo(appName, adapted);
 }
 
+static void HandleGetSizeAndResolutionInfo(std::shared_ptr<DfxReporter>& dfxReporter)
+{
+    MEDIA_INFO_LOG("HandleGetSizeAndResolutionInfo start");
+    CHECK_AND_RETURN_LOG(dfxReporter != nullptr, "Failed to get dfxReporter for HandleGetSizeAndResolutionInfo!");
+    QuerySizeAndResolution queryInfo = {};
+    DfxDatabaseUtils::GetSizeAndResolutionInfo(queryInfo);
+    dfxReporter->ReportPhotoResolutionInfo(queryInfo.localImageResolution, queryInfo.localVideoResolution,
+        queryInfo.cloudImageResolution, queryInfo.cloudVideoResolution);
+    std::string photoMimeType;
+    DfxDatabaseUtils::GetPhotoMimeType(photoMimeType);
+    dfxReporter->ReportPhotoSizeInfo(queryInfo.localImageSize, queryInfo.localVideoSize,
+        queryInfo.cloudImageSize, queryInfo.cloudVideoSize, photoMimeType);
+}
+
+static void HandleCheckOneWeekDayTask(DfxData *data)
+{
+    CHECK_AND_RETURN_LOG(data != nullptr, "Failed to get data for Handle Check One Week Day Task!");
+    auto *taskData = static_cast<StatisticData *>(data);
+    std::shared_ptr<DfxReporter> dfxReporter = taskData->dfxReporter_;
+    CHECK_AND_RETURN_LOG(dfxReporter != nullptr, "Failed to get dfxReporter for Handle Check One Week Day Task!");
+    HandleGetSizeAndResolutionInfo(dfxReporter);
+}
+
+void DfxManager::HandleOneWeekMissions()
+{
+    MEDIA_INFO_LOG("HandlePhotoInfo start");
+    CHECK_AND_RETURN_LOG(isInitSuccess_, "DfxManager not init");
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+    NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    int64_t lastReportTime = prefs->GetLong(LAST_WEEK_REPORT_TIME, 0);
+    if (MediaFileUtils::UTCTimeSeconds() - lastReportTime > ONE_WEEK && dfxWorker_ != nullptr) {
+        MEDIA_INFO_LOG("start handle statistic behavior");
+        auto *taskData = new (nothrow) StatisticData(dfxReporter_);
+        CHECK_AND_RETURN_LOG(taskData != nullptr, "Failed to alloc async data for Handle Week Day Missions!");
+        auto oneWeekTask = make_shared<DfxTask>(HandleCheckOneWeekDayTask, taskData);
+        CHECK_AND_RETURN_LOG(oneWeekTask != nullptr, "Failed to create dfx task.");
+        dfxWorker_->AddTask(oneWeekTask);
+        int64_t time = MediaFileUtils::UTCTimeSeconds();
+        prefs->PutLong(LAST_WEEK_REPORT_TIME, time);
+        prefs->FlushSync();
+    }
+}
+
 bool IsReported()
 {
     int32_t errCode;
