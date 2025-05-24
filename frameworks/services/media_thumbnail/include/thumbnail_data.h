@@ -214,6 +214,12 @@ public:
     EXPORT std::shared_ptr<Picture> originalPhotoPicture = nullptr;
     EXPORT NativeRdb::ValuesBucket rdbUpdateCache;
 };
+
+struct ThumbnailDataBatch {
+    EXPORT std::vector<std::string> ids;
+    EXPORT std::vector<std::string> paths;
+    EXPORT std::vector<std::string> dateTakens;
+};
 } // namespace Media
 } // namespace OHOS
 
