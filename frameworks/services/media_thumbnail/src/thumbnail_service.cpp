@@ -557,6 +557,23 @@ bool ThumbnailService::DeleteThumbnailDirAndAstc(const std::string &id,
     return true;
 }
 
+bool ThumbnailService::BatchDeleteThumbnailDirAndAstc(const std::string &tableName,
+    const std::vector<std::string> &ids, const std::vector<std::string> &paths,
+    const std::vector<std::string> &dateTakens)
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = tableName,
+    };
+    ThumbnailDataBatch dataBatch;
+    dataBatch.ids = ids;
+    dataBatch.paths = paths;
+    dataBatch.dateTakens = dateTakens;
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::BatchDeleteThumbnailDirAndAstc(opts, dataBatch), false,
+        "Failed to batch delete thumbnail");
+    return true;
+}
+
 int32_t ThumbnailService::GetAgingDataSize(const int64_t &time, int &count)
 {
     int32_t err = 0;

@@ -2470,10 +2470,9 @@ static void TaskDataFileProccess(DeleteFilesTask *taskData)
                 errno, livePhotoPath.c_str());
         }
     }
-    for (size_t i = 0; i < taskData->ids_.size(); i++) {
-        ThumbnailService::GetInstance()->DeleteThumbnailDirAndAstc(
-            taskData->ids_[i], taskData->table_, taskData->paths_[i], taskData->dateTakens_[i]);
-    }
+
+    ThumbnailService::GetInstance()->BatchDeleteThumbnailDirAndAstc(
+        taskData->table_, taskData->ids_, taskData->paths_, taskData->dateTakens_);
     if (taskData->table_ == PhotoColumn::PHOTOS_TABLE) {
         for (const auto &path : taskData->paths_) {
             MediaLibraryPhotoOperations::DeleteRevertMessage(path);

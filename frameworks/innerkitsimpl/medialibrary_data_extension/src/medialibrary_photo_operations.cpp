@@ -3879,6 +3879,41 @@ bool MediaLibraryPhotoOperations::HasDroppedThumbnailSize(const string& photoId)
     return true;
 }
 
+bool DropThumbnailSize(const vector<string>& photoIds)
+{
+    if (photoIds.size() == 0) {
+        return true;
+    }
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "Medialibrary rdbStore is nullptr!");
+    NativeRdb::RdbPredicates rdbPredicates(PhotoExtColumn::PHOTOS_EXT_TABLE);
+    rdbPredicates.In(PhotoExtColumn::PHOTO_ID, photoIds);
+    int32_t deletedRows = -1;
+    auto ret = uniStore->Delete(deletedRows, rdbPredicates);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK && deletedRows >= 0, false,
+        "Delete thumbnail size failed, errCode = %{public}d, deletedRows = %{public}d",
+        ret, deletedRows);
+    MEDIA_INFO_LOG("Delete %{public}d rows in tab_photos_ext", deletedRows);
+    return true;
+}
+
+bool MediaLibraryPhotoOperations::BatchDropThumbnailSize(const vector<string>& photoIds)
+{
+    if (photoIds.size() == 0) {
+        return true;
+    }
+
+    constexpr int32_t ONE_BATCH_SIZE = 500;
+    bool batchDropSuccess = true;
+    for (size_t i = 0; i < photoIds.size(); i += ONE_BATCH_SIZE) {
+        size_t endIndex = std::min(i + ONE_BATCH_SIZE, photoIds.size());
+        vector<string> batchPhotoIds(photoIds.begin() + i, photoIds.begin() + endIndex);
+        batchDropSuccess = DropThumbnailSize(batchPhotoIds) && batchDropSuccess;
+    }
+    return batchDropSuccess;
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {

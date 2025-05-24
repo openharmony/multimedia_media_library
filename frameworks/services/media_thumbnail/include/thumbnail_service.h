@@ -62,6 +62,8 @@ public:
         const std::string &path = "", const std::string &dateTaken = "");
     EXPORT bool DeleteThumbnailDirAndAstc(const std::string &id, const std::string &tableName,
         const std::string &path, const std::string &dateTaken);
+    EXPORT bool BatchDeleteThumbnailDirAndAstc(const std::string &tableName, const std::vector<std::string> &ids,
+        const std::vector<std::string> &paths, const std::vector<std::string> &dateTakens);
     EXPORT void Init(const std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     EXPORT int32_t GetAgingDataSize(const int64_t &time, int &count);
