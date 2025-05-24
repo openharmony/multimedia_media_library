@@ -32,11 +32,13 @@ public:
     EXPORT static bool DeleteThumbnailDir(const ThumbnailData &data);
     EXPORT static bool DeleteAllThumbFiles(const ThumbnailData &data);
     EXPORT static bool DeleteMonthAndYearAstc(const ThumbnailData &data);
+    EXPORT static bool BatchDeleteMonthAndYearAstc(const ThumbnailDataBatch &dataBatch);
     EXPORT static bool DeleteThumbFile(const ThumbnailData &data, ThumbnailType type);
     EXPORT static bool DeleteThumbExDir(const ThumbnailData &data);
     EXPORT static bool DeleteBeginTimestampDir(const ThumbnailData &data);
     EXPORT static bool CheckRemainSpaceMeetCondition(int32_t freeSizePercentLimit);
     EXPORT static bool DeleteAstcDataFromKvStore(const ThumbnailData &data, const ThumbnailType &type);
+    EXPORT static bool BatchDeleteAstcData(const ThumbnailDataBatch &dataBatch, const ThumbnailType &type);
     EXPORT static bool RemoveDirectoryAndFile(const std::string &path);
 };
 } // namespace Media

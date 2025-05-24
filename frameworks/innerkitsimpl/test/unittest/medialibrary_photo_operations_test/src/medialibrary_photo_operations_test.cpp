@@ -3327,6 +3327,90 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_00
     MEDIA_INFO_LOG("end tdd photo_oprn_drop_thumbnail_size_test_001");
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_drop_thumbnail_size_test_002");
+
+    // Insert temporary thumbnail size record
+    const int32_t testPhotoId1 = 3;
+    const string testPhotoPath1 = "/storage/cloud/files/Photo/1/IMG_drop_testbatch1.jpg";
+    MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(testPhotoId1), testPhotoPath1);
+    size_t thumbnailSizequeryResult;
+    bool isSuccess = QueryPhotoThumbnailVolumn(testPhotoId1, thumbnailSizequeryResult);
+    ASSERT_EQ(isSuccess, true);
+    ASSERT_EQ(thumbnailSizequeryResult, 0);
+
+    const int32_t testPhotoId2 = 4;
+    const string testPhotoPath2 = "/storage/cloud/files/Photo/1/IMG_drop_testbatch2.jpg";
+    MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(testPhotoId2), testPhotoPath2);
+    isSuccess = QueryPhotoThumbnailVolumn(testPhotoId1, thumbnailSizequeryResult);
+    ASSERT_EQ(isSuccess, true);
+    ASSERT_EQ(thumbnailSizequeryResult, 0);
+
+    // Test BatchDropThumbnailSize function
+    vector<string> testPhotoIds = {to_string(testPhotoId1), to_string(testPhotoId2)};
+    MediaLibraryPhotoOperations::BatchDropThumbnailSize(testPhotoIds);
+    isSuccess = QueryPhotoThumbnailVolumn(testPhotoId1, thumbnailSizequeryResult);
+    EXPECT_EQ(isSuccess, false);
+    isSuccess = QueryPhotoThumbnailVolumn(testPhotoId2, thumbnailSizequeryResult);
+    EXPECT_EQ(isSuccess, false);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_drop_thumbnail_size_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_drop_thumbnail_size_test_003");
+
+    // Insert temporary thumbnail size record
+    const int32_t testPhotoId = 5;
+    const string testPhotoPath = "/storage/cloud/files/Photo/1/IMG_drop_testSingleBatch.jpg";
+    MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(testPhotoId), testPhotoPath);
+    size_t thumbnailSizequeryResult;
+    bool isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
+    ASSERT_EQ(isSuccess, true);
+    ASSERT_EQ(thumbnailSizequeryResult, 0);
+
+    // Test BatchDropThumbnailSize function
+    vector<string> testPhotoIds = {to_string(testPhotoId)};
+    MediaLibraryPhotoOperations::BatchDropThumbnailSize(testPhotoIds);
+    isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
+    EXPECT_EQ(isSuccess, false);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_drop_thumbnail_size_test_003");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_004, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_drop_thumbnail_size_test_004");
+
+    int32_t start = 100;
+    int32_t end = 1000;
+    bool isSuccess = false;
+    size_t thumbnailSizequeryResult;
+    // Insert temporary thumbnail size record
+    for (int32_t i = start; i < end; i++) {
+        const int32_t testPhotoId = i;
+        const string testPhotoPath = "/storage/cloud/files/Photo/1/IMG_drop_testBatch" + to_string(i) + ".jpg";
+        MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(testPhotoId), testPhotoPath);
+        isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
+        ASSERT_EQ(isSuccess, true);
+        ASSERT_EQ(thumbnailSizequeryResult, 0);
+    }
+
+    // Test BatchDropThumbnailSize function
+    vector<string> testPhotoIds;
+    for (int32_t i = start; i < end; i++) {
+        testPhotoIds.push_back(to_string(i));
+    }
+    MediaLibraryPhotoOperations::BatchDropThumbnailSize(testPhotoIds);
+    for (int32_t i = start; i < end; i++) {
+        isSuccess = QueryPhotoThumbnailVolumn(i, thumbnailSizequeryResult);
+        EXPECT_EQ(isSuccess, false);
+    }
+    MEDIA_INFO_LOG("end tdd photo_oprn_drop_thumbnail_size_test_004");
+}
+
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_empty_columns, TestSize.Level2)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_scan_movingphoto_empty_columns");

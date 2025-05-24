@@ -28,6 +28,7 @@
 #include "ffrt_inner.h"
 #include "directory_ex.h"
 #include "ithumbnail_helper.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_photo_operations.h"
@@ -689,7 +690,8 @@ void CacheThumbStatus(ThumbRdbOpt &opts, ThumbnailType thumbType, ThumbnailData&
     if (!isLocalThumbnailAvailable) {
         CacheStreamReadThumbDbStatus(opts, thumbnailData, thumbType);
     }
-    if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE) {
+    if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE &&
+        !MediaLibraryBundleManager::GetInstance()->GetClientBundleName().empty()) {
         ThumbnailUtils::CacheVisitTime(opts, thumbnailData);
     }
 }

@@ -97,5 +97,28 @@ HWTEST_F(MediaLibraryThumbnailFileUtilsTest, DeleteAstcDataFromKvStore_test_001,
     auto res = ThumbnailFileUtils::DeleteAstcDataFromKvStore(data, type);
     EXPECT_EQ(res, false);
 }
+
+HWTEST_F(MediaLibraryThumbnailFileUtilsTest, BatchDeleteMonthAndYearAstc_test_001, TestSize.Level0)
+{
+    ThumbnailDataBatch dataBatch;
+    bool res = ThumbnailFileUtils::BatchDeleteMonthAndYearAstc(dataBatch);
+    EXPECT_EQ(res, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailFileUtilsTest, BatchDeleteAstcData_test_001, TestSize.Level0)
+{
+    ThumbnailDataBatch dataBatch;
+    ThumbnailType type = ThumbnailType::LCD;
+    bool res = ThumbnailFileUtils::BatchDeleteAstcData(dataBatch, type);
+    EXPECT_EQ(res, false);
+
+    type = ThumbnailType::YEAR_ASTC;
+    res = ThumbnailFileUtils::BatchDeleteAstcData(dataBatch, type);
+    EXPECT_EQ(res, true);
+
+    type = ThumbnailType::MTH_ASTC;
+    res = ThumbnailFileUtils::BatchDeleteAstcData(dataBatch, type);
+    EXPECT_EQ(res, true);
+}
 } // namespace Media
 } // namespace OHOS

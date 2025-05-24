@@ -1643,6 +1643,30 @@ bool ThumbnailUtils::DeleteThumbnailDirAndAstc(const ThumbRdbOpt &opts, const Th
     return isDeleteThumbnailDir && isDeleteAstc;
 }
 
+bool ThumbnailUtils::BatchDeleteThumbnailDirAndAstc(const ThumbRdbOpt &opts, const ThumbnailDataBatch &dataBatch)
+{
+    size_t dataBatchSize = dataBatch.ids.size();
+    CHECK_AND_RETURN_RET_LOG(dataBatchSize == dataBatch.paths.size() && dataBatchSize == dataBatch.dateTakens.size(),
+        false, "Failed to check dataBatch");
+    MEDIA_INFO_LOG("Start BatchDeleteThumbnailDirAndAstc, table:%{public}s, size:%{public}d",
+        opts.table.c_str(), static_cast<int32_t>(dataBatchSize));
+
+    bool isDeleteThumbnailDir = true;
+    for (const string &path : dataBatch.paths) {
+        ThumbnailData data;
+        data.path = path;
+        isDeleteThumbnailDir = ThumbnailFileUtils::DeleteThumbnailDir(data) && isDeleteThumbnailDir;
+    }
+
+    if (opts.table == AudioColumn::AUDIOS_TABLE) {
+        return isDeleteThumbnailDir;
+    }
+
+    BatchDropThumbnailSize(dataBatch);
+    bool isDeleteAstc = ThumbnailFileUtils::BatchDeleteMonthAndYearAstc(dataBatch);
+    return isDeleteThumbnailDir && isDeleteAstc;
+}
+
 bool ThumbnailUtils::DoUpdateAstcDateTaken(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     MEDIA_INFO_LOG("Start DoUpdateAstcDateTaken, id: %{public}s", opts.row.c_str());
@@ -2309,6 +2333,19 @@ void ThumbnailUtils::DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailD
     if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
         MediaLibraryPhotoOperations::HasDroppedThumbnailSize(photoId);
     }
+}
+
+void ThumbnailUtils::BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch)
+{
+    size_t dataBatchSize = dataBatch.ids.size();
+    CHECK_AND_RETURN_LOG(dataBatchSize == dataBatch.paths.size(), "Failed to check dataBatch");
+    vector<string> photoIds;
+    for (size_t i = 0; i < dataBatchSize; i++) {
+        if (dataBatch.paths[i].find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+            photoIds.push_back(dataBatch.ids[i]);
+        }
+    }
+    MediaLibraryPhotoOperations::BatchDropThumbnailSize(photoIds);
 }
 } // namespace Media
 } // namespace OHOS
