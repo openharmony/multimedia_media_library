@@ -92,7 +92,8 @@ enum class FetchResType : int32_t {
     TYPE_FILE = 1,
     TYPE_ALBUM,
     TYPE_SMARTALBUM,
-    TYPE_PHOTOALBUM
+    TYPE_PHOTOALBUM,
+    TYPE_CUSTOMRECORD,
 };
 
 enum class DirtyType : int32_t {
@@ -302,6 +303,9 @@ static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
 static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
 
+const int32_t DEFAULT_FILE_ID = 0;
+const int32_t DEFAULT_SHARE_COUNT = 0;
+const int32_t DEFAULT_LCD_JUMO_COUNT = 0;
 } // namespace OHOS
 } // namespace Media
 

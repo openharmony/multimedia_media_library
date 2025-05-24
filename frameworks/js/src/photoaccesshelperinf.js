@@ -991,4 +991,6 @@ export default {
   CloudMediaAssetTaskStatus: photoAccessHelper.CloudMediaAssetTaskStatus,
   CloudMediaTaskPauseCause: photoAccessHelper.CloudMediaTaskPauseCause,
   CloudMediaAssetStatus: photoAccessHelper.CloudMediaAssetStatus,
+  PhotoAssetCustomRecordManager: photoAccessHelper.PhotoAssetCustomRecordManager,
+  PhotoAssetCustomRecord: photoAccessHelper.PhotoAssetCustomRecord,
 };
