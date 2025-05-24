@@ -914,10 +914,9 @@ static int64_t QueryAlbumDateModifiedById(int32_t albumId)
         MEDIA_ERR_LOG("resultSet is null!");
         return 0;
     }
-    int32_t datemodified = get<int64_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
-        resultSet, TYPE_INT64));
+    int64_t datemodified = GetInt64Val(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, resultSet);
     if (datemodified < 0) {
-        MEDIA_ERR_LOG("Invalid datemodified from database: %{public}d", datemodified);
+        MEDIA_ERR_LOG("Invalid datemodified from database: %{public}" PRId64, datemodified);
         return 0;
     }
     return datemodified;
@@ -3874,29 +3873,21 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_date_modified_001, T
     EXPECT_GT(albumId, 0);
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
     EXPECT_GE(fileId, 0);
-    std::string uriStr = PAH_BATCH_UPDATE_OWNER_ALBUM_ID;
-    MediaFileUtils::UriAppendKeyValue(uriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
-    DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    DataShareValuesBucket values;
-    values.Put(PhotoColumn::PHOTO_OWNER_ALBUM_ID, albumId);
-    Uri uri(uriStr);
-    MediaLibraryCommand cmd(uri);
-    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
-    EXPECT_EQ(changedRows, 1);
+
+    unordered_map<string, string> updateMap1 = {{ PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(albumId) }};
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId), updateMap1, [] (int32_t result) {
+        EXPECT_GE(result, E_OK);
+    });
 
     std::string newDisplayName = "photo_oprn_update_date_modified_001.jpg";
-    std::string updateUriStr = PAH_UPDATE_PHOTO;
-    MediaFileUtils::UriAppendKeyValue(updateUriStr, "api_version", to_string(MEDIA_API_VERSION_V10));
-    MediaFileUtils::UriAppendKeyValue(updateUriStr, "set_displayName", newDisplayName);
-    MediaFileUtils::UriAppendKeyValue(updateUriStr, "old_displayName", "photo.jpg");
-    MediaFileUtils::UriAppendKeyValue(updateUriStr, "can_fallback", "1");
-    Uri updateUri(updateUriStr);
-    MediaLibraryCommand updateCmd(updateUri);
-    DataShareValuesBucket values2;
-    values2.Put(MediaColumn::MEDIA_NAME, newDisplayName);
-    values2.Put(MediaColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(newDisplayName));
-    MediaLibraryDataManager::GetInstance()->Update(updateCmd, values2, predicates);
+    unordered_map<string, string> updateMap2 = {
+        { PhotoColumn::MEDIA_NAME, newDisplayName },
+        { PhotoColumn::MEDIA_TITLE, MediaFileUtils::GetTitleFromDisplayName(newDisplayName) }
+    };
+    TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId), updateMap2, [] (int32_t result) {
+        EXPECT_GE(result, E_OK);
+    });
+
     int64_t datemodified = QueryAlbumDateModifiedById(albumId);
     EXPECT_GT(datemodified, 0);
     
