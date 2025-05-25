@@ -1392,8 +1392,8 @@ static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates,
     return deletedRows;
 }
 
-static inline int32_t DeletePhotoAssetsCompleted(const DataSharePredicates &predicates,
-    const bool isAging)
+int32_t MediaLibraryAlbumOperations::DeletePhotoAssetsCompleted(
+    const DataSharePredicates &predicates, const bool isAging)
 {
     MEDIA_DEBUG_LOG("DeletePhotoAssetsCompleted start.");
     DealWithHighlightSdTable(predicates);

@@ -83,6 +83,11 @@ MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, cons
 MediaLibraryCommand::~MediaLibraryCommand() {}
 
 // set functions
+void MediaLibraryCommand::SetApiParam(const std::string &key, const std::string &param)
+{
+    querySetMap_[key] = param;
+}
+
 void MediaLibraryCommand::SetOprnObject(OperationObject object)
 {
     oprnObject_ = object;

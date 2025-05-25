@@ -1,0 +1,58 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
+#define MLOG_TAG "MediaAlbumsRdbOperations"
+ 
+#include "media_albums_rdb_operations.h"
+
+#include <string>
+
+#include "abs_rdb_predicates.h"
+#include "media_log.h"
+#include "medialibrary_rdbstore.h"
+#include "media_file_uri.h"
+#include "medialibrary_errno.h"
+#include "story_album_column.h"
+#include "photo_album_column.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_rdb_utils.h"
+#include "media_file_utils.h"
+#include "result_set_utils.h"
+
+using namespace std;
+using namespace OHOS::NativeRdb;
+
+namespace OHOS::Media {
+static constexpr int32_t HIGHLIGHT_DELETED = -2;
+const std::string ALBUM_LPATH_PREFIX = "/Pictures/Users/";
+
+MediaAlbumsRdbOperations::MediaAlbumsRdbOperations() {}
+
+int32_t MediaAlbumsRdbOperations::DeleteHighlightAlbums(const vector<string>& albumIds)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR,
+        "rdbStore is nullptr");
+    NativeRdb::RdbPredicates predicates(HIGHLIGHT_ALBUM_TABLE);
+    predicates.In(PhotoAlbumColumns::ALBUM_ID, albumIds);
+    ValuesBucket values;
+    values.PutInt(HIGHLIGHT_STATUS, HIGHLIGHT_DELETED);
+    int32_t changedRows = 0;
+    int32_t result = rdbStore->Update(changedRows, values, predicates);
+    CHECK_AND_RETURN_RET_LOG(result == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Delete highlight album failed, result is %{private}d", result);
+    return changedRows;
+}
+} // namespace OHOS::Media

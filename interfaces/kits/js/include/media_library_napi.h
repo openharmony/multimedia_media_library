@@ -508,6 +508,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool isContainsAlbumUri = false;
     int32_t taskId = -1;
     bool isFullAnalysis = false;
+    uint32_t businessCode = 0;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

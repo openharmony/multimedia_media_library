@@ -154,6 +154,9 @@ struct MediaAlbumChangeRequestAsyncContext : public NapiError {
     std::vector<AlbumChangeOperation> albumChangeOperations;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
+    std::vector<std::string> deleteIds;
+    std::vector<int32_t> photoAlbumTypes;
+    std::vector<int32_t> photoAlbumSubtypes;
 };
 } // namespace Media
 } // namespace OHOS

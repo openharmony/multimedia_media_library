@@ -1059,6 +1059,7 @@ int32_t MediaDataShareExtAbility::UserDefineFunc(MessageParcel &data, MessagePar
     std::string traceId = reqVo.GetTraceId();
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t ret = E_IPC_SEVICE_NOT_FOUND;
+    DfxTimer dfxTimer(0, operationCode, COMMON_TIME_OUT, true);
     for (auto &controllerService : this->serviceFactory_.GetAllMediaControllerService()) {
         if (!controllerService->Accept(operationCode)) {
             continue;

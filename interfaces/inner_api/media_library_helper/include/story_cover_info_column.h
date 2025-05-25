@@ -19,6 +19,8 @@
 
 #include <string>
 
+#include "base_data_uri.h"
+
 namespace OHOS {
 namespace Media {
 // highlight cover info table name
