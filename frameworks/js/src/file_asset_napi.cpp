@@ -82,6 +82,11 @@
 #include "vision_video_label_column.h"
 #include "vision_multi_crop_column.h"
 #include "album_operation_uri.h"
+#include "commit_edited_asset_vo.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "clone_asset_vo.h"
+#include "revert_to_original_vo.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -99,6 +104,8 @@ static const std::string MEDIA_FILEMODE = "mode";
 static const std::string ANALYSIS_NO_RESULTS = "[]";
 static const std::string ANALYSIS_INIT_VALUE = "0";
 static const std::string ANALYSIS_STATUS_ANALYZED = "Analyzed, no results";
+static const std::string URI_TPYE = "uriType";
+static const std::string TPYE_PHOTOS = "1";
 
 const std::string LANGUAGE_ZH = "zh-Hans";
 const std::string LANGUAGE_EN = "en-Latn-US";
@@ -4100,13 +4107,19 @@ static void CloneAssetHandlerExecute(napi_env env, void *data)
         return;
     }
 
-    DataShare::DataShareValuesBucket valuesBucket;
-    string uri = PAH_CLONE_ASSET;
-    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    valuesBucket.Put(MediaColumn::MEDIA_ID, fileAsset->GetId());
-    valuesBucket.Put(MediaColumn::MEDIA_TITLE, context->title);
-    Uri cloneAssetUri(uri);
-    int32_t newAssetId = UserFileClient::Insert(cloneAssetUri, valuesBucket);
+    CloneAssetReqBody reqBody;
+    reqBody.fileId = fileAsset->GetId();
+    reqBody.title = context->title;
+    reqBody.displayName = fileAsset->GetDisplayName();
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_ASSET);
+    IPC::UserDefineIPCClient client;
+    // db permission
+    std::unordered_map<std::string, std::string> headerMap = {
+        { MediaColumn::MEDIA_ID, to_string(reqBody.fileId) },
+        { URI_TPYE, TPYE_PHOTOS },
+    };
+    client.SetHeader(headerMap);
+    int32_t newAssetId = client.Call(businessCode, reqBody);
     if (newAssetId < 0) {
         context->SaveError(newAssetId);
         NAPI_ERR_LOG("Failed to clone asset, ret: %{public}d", newAssetId);
@@ -5172,6 +5185,35 @@ static int32_t GetFileUriFd(FileAssetAsyncContext *context)
     return fd;
 }
 
+static void CommitEditSetError(FileAssetAsyncContext *context, int32_t ret)
+{
+    if (ret != E_SUCCESS) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        NAPI_ERR_LOG("File commit edit execute failed");
+    }
+}
+
+static int32_t CommitEditCall(int32_t fileId, const string& editData)
+{
+    IPC::UserDefineIPCClient client;
+    // db permission
+    std::unordered_map<std::string, std::string> headerMap = {
+        { MediaColumn::MEDIA_ID, to_string(fileId) },
+        { URI_TPYE, TPYE_PHOTOS },
+    };
+    client.SetHeader(headerMap);
+    CommitEditedAssetReqBody reqBody;
+    reqBody.editData = editData;
+    reqBody.fileId = fileId;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::COMMIT_EDITED_ASSET);
+    int32_t ret = client.Call(businessCode, reqBody);
+    return ret;
+}
+
 static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -5210,18 +5252,14 @@ static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
             return;
         }
         NAPI_INFO_LOG("commit edit asset copy file finished, fileUri:%{public}s", fileUri.c_str());
-        string insertUriStr = PAH_COMMIT_EDIT_PHOTOS;
-        MediaLibraryNapiUtils::UriAppendKeyValue(insertUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-        Uri insertUri(insertUriStr);
-        int32_t ret = UserFileClient::Insert(insertUri, context->valuesBucket);
-        if (ret != E_SUCCESS) {
-            if (ret == E_PERMISSION_DENIED) {
-                context->error = OHOS_PERMISSION_DENIED_CODE;
-            } else {
-                context->SaveError(ret);
-            }
-            NAPI_ERR_LOG("File commit edit execute failed");
+        string editData = context->valuesBucket.Get(EDIT_DATA, isValid);
+        int32_t fileId = context->valuesBucket.Get(MediaColumn::MEDIA_ID, isValid);
+        if (!isValid) {
+            context->error = OHOS_INVALID_PARAM_CODE;
+            return;
         }
+        int32_t ret = CommitEditCall(fileId, editData);
+        CommitEditSetError(context, ret);
     }
 }
 
@@ -5287,10 +5325,25 @@ static void PhotoAccessHelperRevertToOriginalExecute(napi_env env, void *data)
     tracer.Start("PhotoAccessHelperRevertToOriginalExecute");
     auto *context = static_cast<FileAssetAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    string uriString = PAH_REVERT_EDIT_PHOTOS;
-    MediaFileUtils::UriAppendKeyValue(uriString, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri uri(uriString);
-    int32_t ret = UserFileClient::Insert(uri, context->valuesBucket);
+
+    bool isValid = false;
+    int32_t fileId = context->valuesBucket.Get(PhotoColumn::MEDIA_ID, isValid);
+    if (!isValid) {
+        context->error = OHOS_INVALID_PARAM_CODE;
+        return;
+    }
+    RevertToOriginalReqBody reqBody;
+    reqBody.fileId = fileId;
+    reqBody.fileUri = PAH_REVERT_EDIT_PHOTOS;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REVERT_TO_ORIGINAL);
+    IPC::UserDefineIPCClient client;
+    // db permission
+    std::unordered_map<std::string, std::string> headerMap = {
+        { MediaColumn::MEDIA_ID, to_string(fileId) },
+        { URI_TPYE, TPYE_PHOTOS },
+    };
+    client.SetHeader(headerMap);
+    int32_t ret = client.Call(businessCode, reqBody);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;

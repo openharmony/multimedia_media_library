@@ -66,6 +66,7 @@ public:
     EXPORT const DataShare::DataSharePredicates &GetDataSharePred() const;
     EXPORT const std::string &GetResult();
 
+    EXPORT void SetApiParam(const std::string &key, const std::string &param);
     EXPORT void SetOprnObject(OperationObject object);
     EXPORT void SetOprnAssetId(const std::string &oprnId);
     EXPORT void SetValueBucket(const NativeRdb::ValuesBucket &value);

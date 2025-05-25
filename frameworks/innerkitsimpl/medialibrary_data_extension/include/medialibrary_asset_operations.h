@@ -176,6 +176,8 @@ public:
         int32_t &value);
     EXPORT static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
+    static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        const std::vector<std::string> &columns);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
@@ -245,8 +247,6 @@ private:
         std::string &name);
     static int32_t SetPendingTrue(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t SetPendingFalse(const std::shared_ptr<FileAsset> &fileAsset);
-    static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        const std::vector<std::string> &columns);
 
     static constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 

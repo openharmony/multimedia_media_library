@@ -59,7 +59,7 @@ const std::string HIGHLIGHT_VIDEO_COUNT_CAN_PACK = "video_count_can_pack";
 const std::string HIGHLIGHT_PIN_TIME = "pin_time";
 const std::string HIGHLIGHT_USE_SUBTITLE = "use_subtitle";
 
-const std::string URI_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_ALBUM_TABLE;
+const std::string URI_HIGHLIGHT_ALBUM = "datashare:///media/" + HIGHLIGHT_ALBUM_TABLE;
 } // namespace Media
 } // namespace OHOS
 #endif // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_STORY_ALBUM_COLUMN_H

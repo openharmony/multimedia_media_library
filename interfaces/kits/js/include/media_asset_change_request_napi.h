@@ -190,6 +190,7 @@ struct MediaAssetChangeRequestAsyncContext : public NapiError {
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     std::vector<std::string> uris;
+    std::vector<std::string> fileIds;
     std::string appName;
     std::string realPath;
     int32_t fd;

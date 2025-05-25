@@ -53,6 +53,9 @@
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
 #include "want.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "delete_photos_completed_vo.h"
 
 using namespace std;
 using namespace OHOS::Security::AccessToken;
@@ -2682,21 +2685,27 @@ static napi_value ParseArgsDeleteLocalAssetsPermanently(
             deleteIds.push_back(to_string(obj->GetFileId()));
         }
     }
-    context->predicates.In(PhotoColumn::MEDIA_ID, deleteIds);
+    context->fileIds = deleteIds;
     RETURN_NAPI_TRUE(env);
 }
 
-static void DeleteLocalAssetsPermanentlydExecute(napi_env env, void* data)
+static void DeleteLocalAssetsPermanentlydExecute(napi_env env, void *data)
 {
     NAPI_DEBUG_LOG("enter DeleteLocalAssetsPermanentlydExecute.");
     MediaLibraryTracer tracer;
     tracer.Start("DeleteLocalAssetsPermanentlydExecute");
 
-    auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
-    Uri deleteLocalAssetsCompletedUri(URI_DELETE_PHOTOS_COMPLETED);
-    int ret = UserFileClient::Update(deleteLocalAssetsCompletedUri, context->predicates, valuesBucket);
+    auto *context = static_cast<MediaAssetChangeRequestAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->fileIds.empty(), "fileIds is empty");
+
+    DeletePhotosCompletedReqBody reqBody;
+    reqBody.fileIds = context->fileIds;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_PHOTOS_COMPLETED);
+    NAPI_INFO_LOG("test before IPC::UserDefineIPCClient().Call");
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("test after IPC::UserDefineIPCClient().Call");
+
     if (ret < 0) {
         context->SaveError(ret);
         NAPI_ERR_LOG("Failed to delete assets from local album permanently, err: %{public}d", ret);
