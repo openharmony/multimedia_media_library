@@ -131,8 +131,15 @@ int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, Pe
     CHECK_AND_RETURN_RET_LOG(!cond, E_INVALID_FILEID, "invalid input");
 
     DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause("file_id = ? and (appid = ? or target_tokenId = ?) and uri_type = ?");
-    predicates.SetWhereArgs({fileId, appId, to_string(tokenId), to_string(uriType)});
+    predicates.EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
+    predicates.EqualTo(AppUriPermissionColumn::URI_TYPE, uriType);
+    predicates.And()->BeginWrap()->EqualTo(AppUriPermissionColumn::APP_ID, appId)
+        ->Or()->EqualTo(AppUriPermissionColumn::TARGET_TOKENID, to_string(tokenId))->EndWrap();
+    if (isWrite) {
+        predicates.In(FIELD_PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TYPES_WRITE_STR);
+    } else {
+        predicates.In(FIELD_PERMISSION_TYPE, AppUriPermissionColumn::PERMISSION_TYPES_READ_STR);
+    }
     vector<string> columns;
     auto queryResultSet =
         MediaLibraryRdbStore::QueryWithFilter(RdbUtils::ToPredicates(predicates, TABLE_PERMISSION), columns);
@@ -140,18 +147,7 @@ int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, Pe
     int count = 0;
     auto ret = queryResultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK && count > 0, E_PERMISSION_DENIED, "db is no permission record");
-    ret = queryResultSet->GoToFirstRow();
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_PERMISSION_DENIED, "GoToFirstRow fail");
-    int index = -1;
-    ret = queryResultSet->GetColumnIndex(FIELD_PERMISSION_TYPE, index);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_PERMISSION_DENIED, "GetColumnIndex fail");
-    int32_t permissionType = 0;
-    ret = queryResultSet->GetInt(index, permissionType);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_PERMISSION_DENIED, "GetInt fail");
-    if (!isWrite) {
-        return ConvertPermResult(AppUriPermissionColumn::PERMISSION_TYPES_ALL.count(permissionType));
-    }
-    return ConvertPermResult(AppUriPermissionColumn::PERMISSION_TYPE_WRITE.count(permissionType));
+    return E_SUCCESS;
 }
 
 } // namespace name

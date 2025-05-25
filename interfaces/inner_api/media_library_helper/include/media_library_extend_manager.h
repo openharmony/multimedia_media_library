@@ -181,11 +181,10 @@ private:
 
     int32_t userId_;
     shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
-    int32_t QueryGrantedIndex(const DataShare::DataSharePredicates &predicates,
-        const std::vector<std::string> &urisSource, const std::vector<int32_t> &indexVec,
-        std::vector<int32_t> &grantedIndex);
     int32_t GetPhotoUrisPermission(uint32_t targetTokenId, const std::vector<string> &uris,
         PhotoPermissionType photoPermissionType, std::vector<bool> &result);
+    int32_t QueryGrantedIndex(const DataShare::DataSharePredicates &predicates,
+        std::map<std::string, pair<bool, bool>> &permissionMap);
     bool ForceReconnect();
 };
 } // namespace Media
