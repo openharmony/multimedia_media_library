@@ -42,6 +42,8 @@ enum class MediaLibraryBusinessCode : uint32_t {
     DELETE_HIGH_LIGHT_ALBUMS,
     PAH_SYSTEM_CREATE_ALBUM,
     PAH_DELETE_PHOTO_ALBUMS,
+    MEDIA_CLOUD_CODE_START = 30000,
+    MEDIA_CLOUD_CODE_END = 39999,
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_BUSINESS_CODE_H
