@@ -50,15 +50,15 @@ ohos_unittest("media_albums_controller_service_test") {
   include_dirs += include_media_ipc
 
   sources = [
-    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "./src/delete_highlight_albums_test.cpp",
-    "./src/create_album_test.cpp",
-    "./src/delete_albums_test.cpp",
-    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_highlight_albums_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_album_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_albums_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_highlight_albums_vo.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_album_operations.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/create_album_test.cpp",
+    "./src/delete_albums_test.cpp",
+    "./src/delete_highlight_albums_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
@@ -71,8 +71,8 @@ ohos_unittest("media_albums_controller_service_test") {
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
-    "ability_runtime:napi_base_context",
     "ability_runtime:app_context",
+    "ability_runtime:napi_base_context",
     "ability_runtime:runtime",
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",

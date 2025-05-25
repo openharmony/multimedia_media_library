@@ -75,14 +75,14 @@ config("media_data_extension_public_config") {
 
   include_media_po =
       [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/po" ]
-  
+
   include_media_assets_manager = [
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/controller",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/dto",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/vo",
   ]
- 
+
   include_media_albums_manager = [
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/controller",
@@ -369,7 +369,7 @@ ohos_shared_library("medialibrary_data_extension") {
 
   media_ipc_source =
       [ "src/ipc/controller/media_controller_service_factory.cpp" ]
-  
+
   media_assets_manager_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/media_assets_rdb_operations.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/media_assets_service.cpp",
@@ -386,7 +386,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/trash_photos_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/revert_to_original_vo.cpp",
   ]
- 
+
   media_assets_manager_dto_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/commit_edited_asset_dto.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/form_info_dto.cpp",
@@ -403,10 +403,8 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_albums_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_highlight_albums_vo.cpp",
   ]
- 
-  media_albums_manager_dto_source = [
 
-  ]
+  media_albums_manager_dto_source = []
 
   media_permission_check_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_permission_check.cpp",
