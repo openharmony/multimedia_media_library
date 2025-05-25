@@ -113,7 +113,9 @@ int32_t MediaAssetsService::CommitEditedAsset(const CommitEditedAssetDto& commit
 int32_t MediaAssetsService::TrashPhotos(const std::vector<std::string> &uris)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::TRASH_PHOTO, MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->In(PhotoColumn::MEDIA_ID, uris);
+    DataShare::DataSharePredicates predicates;
+    predicates.In(PhotoColumn::MEDIA_ID, uris);
+    cmd.SetDataSharePred(predicates);
     NativeRdb::ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(values);
