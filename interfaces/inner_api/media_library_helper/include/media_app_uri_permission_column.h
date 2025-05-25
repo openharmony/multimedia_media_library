@@ -52,6 +52,8 @@ public:
     static const std::set<int> PERMISSION_TYPES_PICKER EXPORT;
     static const std::set<int> PERMISSION_TYPES_TEMPORARY EXPORT;
     static const std::set<int> PERMISSION_TYPES_PERSIST EXPORT;
+    static const std::vector<std::string> PERMISSION_TYPES_READ_STR EXPORT;
+    static const std::vector<std::string> PERMISSION_TYPES_WRITE_STR EXPORT;
 
     // index
     static const std::string URI_URITYPE_APPID_INDEX EXPORT;

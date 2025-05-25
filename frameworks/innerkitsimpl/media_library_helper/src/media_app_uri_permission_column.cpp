@@ -56,6 +56,18 @@ const std::set<int> AppUriPermissionColumn::PERMISSION_TYPES_PERSIST = {
     AppUriPermissionColumn::PERMISSION_PERSIST_READ, AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE,
     AppUriPermissionColumn::PERMISSION_PERSIST_WRITE};
 
+const std::vector<std::string> AppUriPermissionColumn::PERMISSION_TYPES_READ_STR = {
+    std::to_string(AppUriPermissionColumn::PERMISSION_TEMPORARY_READ),
+    std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_READ),
+    std::to_string(AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE),
+    std::to_string(AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE),
+    std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)};
+const std::vector<std::string> AppUriPermissionColumn::PERMISSION_TYPES_WRITE_STR = {
+    std::to_string(AppUriPermissionColumn::PERMISSION_TEMPORARY_WRITE),
+    std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_WRITE),
+    std::to_string(AppUriPermissionColumn::PERMISSION_TEMPORARY_READ_WRITE),
+    std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)};
+
 const std::string AppUriPermissionColumn::URI_URITYPE_APPID_INDEX = "uri_uritype_appid_index";
 
 const std::string AppUriPermissionColumn::APP_URI_PERMISSION_TABLE = "UriPermission";
