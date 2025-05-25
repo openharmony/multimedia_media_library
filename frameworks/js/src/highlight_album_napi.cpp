@@ -38,6 +38,9 @@
 #include "vision_photo_map_column.h"
 #include "highlight_column.h"
 #include "album_operation_uri.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "delete_highlight_albums_vo.h"
 
 using namespace std;
 
@@ -698,8 +701,12 @@ static void DeleteHighlightAlbumsExecute(napi_env env, void* data)
     NAPI_INFO_LOG("Start delete highlight album(s)");
 
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
-    Uri deleteAlbumUri(PAH_DELETE_HIGHLIGHT_ALBUM);
-    int ret = UserFileClient::Delete(deleteAlbumUri, context->predicates);
+    DeleteHighLightAlbumsReqBody reqBody;
+    reqBody.albumIds = context->deleteIds;
+    reqBody.photoAlbumTypes = context->photoAlbumTypes;
+    reqBody.photoAlbumSubtypes = context->photoAlbumSubtypes;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         context->SaveError(ret);
         NAPI_ERR_LOG("Failed to delete highlight albums, err: %{public}d", ret);
@@ -730,7 +737,6 @@ static napi_value ParseArgsDeleteHighlightAlbums(
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
  
-    vector<string> deleteIds;
     for (const auto& napiValue : napiValues) {
         PhotoAlbumNapi* obj = nullptr;
         CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
@@ -738,9 +744,10 @@ static napi_value ParseArgsDeleteHighlightAlbums(
         CHECK_COND_WITH_MESSAGE(env,
             PhotoAlbum::IsHighlightAlbum(obj->GetPhotoAlbumType(), obj->GetPhotoAlbumSubType()),
             "Only highlight album can be deleted");
-        deleteIds.push_back(to_string(obj->GetAlbumId()));
+        context->deleteIds.push_back(to_string(obj->GetAlbumId()));
+        context->photoAlbumTypes.push_back(static_cast<int32_t>(obj->GetPhotoAlbumType()));
+        context->photoAlbumSubtypes.push_back(static_cast<int32_t>(obj->GetPhotoAlbumSubType()));
     }
-    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
     RETURN_NAPI_TRUE(env);
 }
 

@@ -75,6 +75,20 @@ config("media_data_extension_public_config") {
 
   include_media_po =
       [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/po" ]
+  
+  include_media_assets_manager = [
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/controller",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/dto",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/include/vo",
+  ]
+ 
+  include_media_albums_manager = [
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/controller",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/dto",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/include/vo",
+  ]
 
   include_media_permission =
       [ "${MEDIALIB_BUSINESS_PATH}/media_permission/include/" ]
@@ -110,6 +124,8 @@ config("media_data_extension_public_config") {
   include_dirs += include_media_ipc
   include_dirs += include_media_po
   include_dirs += include_media_permission
+  include_dirs += include_media_assets_manager
+  include_dirs += include_media_albums_manager
 
   if (media_library_feature_cloud_enhancement) {
     include_cloud_enhancement = [
@@ -353,6 +369,44 @@ ohos_shared_library("medialibrary_data_extension") {
 
   media_ipc_source =
       [ "src/ipc/controller/media_controller_service_factory.cpp" ]
+  
+  media_assets_manager_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/media_assets_rdb_operations.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/media_assets_service.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/controller/media_assets_controller_service.cpp",
+  ]
+
+  media_assets_manager_vo_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/commit_edited_asset_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/form_info_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/create_asset_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/clone_asset_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/delete_photos_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/delete_photos_completed_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/trash_photos_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/revert_to_original_vo.cpp",
+  ]
+ 
+  media_assets_manager_dto_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/commit_edited_asset_dto.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/dto/form_info_dto.cpp",
+  ]
+
+  media_albums_manager_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/media_albums_rdb_operations.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/media_albums_service.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/controller/media_albums_controller_service.cpp",
+  ]
+
+  media_albums_manager_vo_source = [
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/create_album_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_albums_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_albums_manager/src/vo/delete_highlight_albums_vo.cpp",
+  ]
+ 
+  media_albums_manager_dto_source = [
+
+  ]
 
   media_permission_check_source = [
     "${MEDIALIB_BUSINESS_PATH}/media_permission/src/media_permission_check.cpp",
@@ -374,6 +428,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_UTILS_PATH}/src/common_event_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/cpu_utils.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
+    "${MEDIALIB_UTILS_PATH}/src/parameter_utils.cpp",
     "src/background_cloud_file_download_callback.cpp",
     "src/background_cloud_file_processor.cpp",
     "src/custom_record_operations.cpp",
@@ -467,6 +522,12 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_visit_count
   sources += media_ipc_source
   sources += media_permission_check_source
+  sources += media_assets_manager_source
+  sources += media_assets_manager_vo_source
+  sources += media_assets_manager_dto_source
+  sources += media_albums_manager_source
+  sources += media_albums_manager_vo_source
+  sources += media_albums_manager_dto_source
 
   if (media_library_feature_cloud_enhancement) {
     media_cloud_enhancement_source = [

@@ -835,7 +835,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     return deleteRows;
 }
 
-void MediaLibraryPhotoOperations::TrashPhotosSendNotify(vector<string> &notifyUris,
+void MediaLibraryPhotoOperations::TrashPhotosSendNotify(const vector<string> &notifyUris,
     shared_ptr<AlbumData> albumData)
 {
     auto watch = MediaLibraryNotify::GetInstance();
