@@ -27,4 +27,4 @@ public:  // functions of Parcelable.
     virtual bool Marshalling(MessageParcel &parcel) const = 0;
 };
 }  // namespace OHOS::Media::IPC
-#endif  // OHOS_MEDIA_IPC_I_MEDIA_PARCELABLE_H
+#endif  // OHOS_MEDIA_IPC_I_MEDIA_PARCELABLE_H

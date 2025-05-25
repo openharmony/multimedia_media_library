@@ -59,6 +59,7 @@ public:
     static std::shared_ptr<NativeRdb::ResultSet> QueryPhotoAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates);
+    static int32_t DeletePhotoAssetsCompleted(const DataShare::DataSharePredicates &predicates, const bool isAging);
     static int32_t DeleteHighlightAlbums(NativeRdb::RdbPredicates &predicates);
     static int32_t AddPhotoAssets(const vector<DataShare::DataShareValuesBucket> &values);
     static int32_t HandlePhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,

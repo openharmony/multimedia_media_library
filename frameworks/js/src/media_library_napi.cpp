@@ -89,6 +89,13 @@
 #include "smart_album_column.h"
 #include "album_operation_uri.h"
 #include "data_secondary_directory_uri.h"
+#include "user_define_ipc_client.h"
+#include "form_info_vo.h"
+#include "medialibrary_business_code.h"
+#include "create_asset_vo.h"
+#include "create_album_vo.h"
+#include "delete_albums_vo.h"
+#include "trash_photos_vo.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -5071,6 +5078,7 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     napi_valuetype valueType;
     NAPI_ASSERT(env, napi_typeof(env, context->argv[ARGS_ZERO], &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) {
+        context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET);
         context->isCreateByComponent = false;
         context->needSystemApp = true;
         if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -5079,6 +5087,7 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
         }
         return ParseArgsCreatePhotoAssetSystem(env, info, context);
     } else if (valueType == napi_number) {
+        context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET);
         context->isCreateByComponent = true;
         return ParseArgsCreatePhotoAssetComponent(env, info, context);
     } else {
@@ -6213,9 +6222,18 @@ static void SaveGalleryFormInfoExec(napi_env env, void *data, ResultNapiType typ
 {
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     context->resultNapiType = type;
-    string uri = PAH_STORE_FACARD_PHOTO;
-    Uri createFormIdUri(uri);
-    auto ret = UserFileClient::BatchInsert(createFormIdUri, context->valuesBucketArray);
+    vector<string> formIds;
+    vector<string> fileUris;
+    bool isValid = false;
+    for (const auto& valueBucket : context->valuesBucketArray) {
+        formIds.emplace_back(valueBucket.Get(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, isValid));
+        fileUris.emplace_back(valueBucket.Get(TabFaCardPhotosColumn::FACARD_PHOTOS_ASSET_URI, isValid));
+    }
+    FormInfoReqBody reqBody;
+    reqBody.formIds = formIds;
+    reqBody.fileUris = fileUris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -6232,9 +6250,14 @@ static void SaveFormInfoExec(napi_env env, void *data, ResultNapiType type)
 {
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     context->resultNapiType = type;
-    string uri = PAH_STORE_FORM_MAP;
-    Uri createFormIdUri(uri);
-    auto ret = UserFileClient::Insert(createFormIdUri, context->valuesBucket);
+    bool isValid = false;
+    string formId = context->valuesBucket.Get(FormMap::FORMMAP_FORM_ID, isValid);
+    string fileUri = context->valuesBucket.Get(FormMap::FORMMAP_URI, isValid);
+    FormInfoReqBody reqBody;
+    reqBody.formIds.emplace_back(formId);
+    reqBody.fileUris.emplace_back(fileUri);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_FORM_INFO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -6347,10 +6370,10 @@ static void RemoveGalleryFormInfoExec(napi_env env, void *data, ResultNapiType t
         context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
-    context->predicates.EqualTo(TabFaCardPhotosColumn::FACARD_PHOTOS_FORM_ID, formId);
-    string deleteUri = PAH_REMOVE_FACARD_PHOTO;
-    Uri uri(deleteUri);
-    int ret = UserFileClient::Delete(uri, context->predicates);
+    FormInfoReqBody reqBody;
+    reqBody.formIds.emplace_back(formId);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -6373,10 +6396,10 @@ static void RemoveFormInfoExec(napi_env env, void *data, ResultNapiType type)
         context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
-    context->predicates.EqualTo(FormMap::FORMMAP_FORM_ID, formId);
-    string deleteUri = PAH_REMOVE_FORM_MAP;
-    Uri uri(deleteUri);
-    int ret = UserFileClient::Delete(uri, context->predicates);
+    FormInfoReqBody reqBody;
+    reqBody.formIds.emplace_back(formId);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_FORM_INFO);
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -8059,23 +8082,37 @@ static void GetPhotoAlbumById(const int32_t id, const string &albumName, MediaLi
     context->photoAlbumData = move(photoAlbum);
 }
 
+int32_t CallPhotoAccessCreateAlbum(MediaLibraryAsyncContext *context, const std::string &albumName)
+{
+    CreateAlbumReqBody reqBody;
+    reqBody.albumName = albumName;
+    int32_t result = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody);
+    return result;
+}
+
 static void JSCreatePhotoAlbumExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSCreatePhotoAlbumExecute");
 
-    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    string createAlbumUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-        UFM_CREATE_PHOTO_ALBUM : PAH_CREATE_PHOTO_ALBUM;
-    Uri createPhotoAlbumUri(createAlbumUri);
-    auto ret = UserFileClient::Insert(createPhotoAlbumUri, context->valuesBucket);
-
     bool isValid = false;
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     string albumName = context->valuesBucket.Get(PhotoAlbumColumns::ALBUM_NAME, isValid);
     if (!isValid) {
         context->SaveError(-EINVAL);
         return;
     }
+
+    int32_t ret = -EINVAL;
+    if (context->businessCode != 0) {
+        ret = CallPhotoAccessCreateAlbum(context, albumName);
+    } else {
+        string createAlbumUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+            UFM_CREATE_PHOTO_ALBUM : PAH_CREATE_PHOTO_ALBUM;
+        Uri createPhotoAlbumUri(createAlbumUri);
+        ret = UserFileClient::Insert(createPhotoAlbumUri, context->valuesBucket);
+    }
+
     if (ret == -1) {
         // The album is already existed
         context->SaveError(-EEXIST);
@@ -8173,6 +8210,7 @@ napi_value MediaLibraryNapi::PhotoAccessCreatePhotoAlbum(napi_env env, napi_call
     tracer.Start("PhotoAccessCreatePhotoAlbum");
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ALBUM);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CHECK_NULLPTR_RET(ParseArgsCreatePhotoAlbum(env, info, asyncContext));
 
@@ -8221,7 +8259,7 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
         CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
         return result;
     }
-    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+    context->albumIds = deleteIds;
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -8233,15 +8271,26 @@ static void JSDeletePhotoAlbumsExecute(napi_env env, void *data)
     MediaLibraryTracer tracer;
     tracer.Start("JSDeletePhotoAlbumsExecute");
 
-    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
 
-    if (context->predicates.GetOperationList().empty()) {
-        return;
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->albumIds.empty(), "albumIds is empty");
+
+    int ret = E_OK;
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        context->predicates.In(PhotoAlbumColumns::ALBUM_ID, context->albumIds);
+        string deleteAlbumUri = UFM_DELETE_PHOTO_ALBUM;
+        Uri uri(deleteAlbumUri);
+        ret = UserFileClient::Delete(uri, context->predicates);
+    } else {
+        DeleteAlbumsReqBody reqBody;
+        reqBody.albumIds = context->albumIds;
+        uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS);
+        NAPI_INFO_LOG("test before IPC::UserDefineIPCClient().Call");
+        ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+        NAPI_INFO_LOG("test after IPC::UserDefineIPCClient().Call");
     }
-    string deleteAlbumUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-        UFM_DELETE_PHOTO_ALBUM : PAH_DELETE_PHOTO_ALBUM;
-    Uri uri(deleteAlbumUri);
-    int ret = UserFileClient::Delete(uri, context->predicates);
+
     if (ret < 0) {
         context->SaveError(ret);
     } else {
@@ -8595,6 +8644,34 @@ static bool CheckTitleCompatible(MediaLibraryAsyncContext* context)
     return MediaFileUtils::CheckTitleCompatible(title) == E_OK;
 }
 
+static int32_t CallPhotoAccessCreateAsset(MediaLibraryAsyncContext* context, std::string &outUri)
+{
+    bool isValid = false;
+    CreateAssetReqBody reqBody;
+    reqBody.mediaType = context->valuesBucket.Get(MEDIA_DATA_DB_MEDIA_TYPE, isValid);
+    if (context->needSystemApp) {
+        reqBody.photoSubtype = context->valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
+        string displayName = context->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
+        string cameraShotKey = context->valuesBucket.Get(PhotoColumn::CAMERA_SHOT_KEY, isValid);
+        reqBody.displayName = displayName;
+        reqBody.cameraShotKey = cameraShotKey;
+    } else {
+        string title = context->valuesBucket.Get(MediaColumn::MEDIA_TITLE, isValid);
+        string extension = context->valuesBucket.Get(ASSET_EXTENTION, isValid);
+        reqBody.title = title;
+        reqBody.extension = extension;
+    }
+
+    CreateAssetRspBody rspBody;
+    int32_t errCode = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody, rspBody);
+    if (errCode != 0) {
+        NAPI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+        return errCode;
+    }
+    outUri = rspBody.outUri;
+    return rspBody.fileId;
+}
+
 static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -8614,12 +8691,16 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
         return;
     }
 
-    string uri;
-    GetCreateUri(context, uri);
-    Uri createFileUri(uri);
     string outUri;
-    int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri,
-        GetUserIdFromContext(context));
+    int index = -EINVAL;
+    if (context->businessCode != 0) {
+        index = CallPhotoAccessCreateAsset(context, outUri);
+    } else {
+        string uri;
+        GetCreateUri(context, uri);
+        Uri createFileUri(uri);
+        index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri, GetUserIdFromContext(context));
+    }
     if (index < 0) {
         context->SaveError(index);
         NAPI_ERR_LOG("InsertExt fail, index: %{public}d.", index);
@@ -8816,16 +8897,45 @@ static bool CheckAlbumUri(napi_env env, OHOS::DataShare::DataShareValuesBucket &
     return true;
 }
 
+static int32_t CallPhotoAccessCreateAssetForApp(MediaLibraryAsyncContext* context,
+    const DataShareValuesBucket &valuesBucket, std::string &outUri)
+{
+    bool isValid = false;
+    CreateAssetForAppReqBody reqBody;
+    reqBody.tokenId = context->tokenId;
+    reqBody.mediaType = valuesBucket.Get(MEDIA_DATA_DB_MEDIA_TYPE, isValid);
+    reqBody.photoSubtype = valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
+
+    string extension = valuesBucket.Get(ASSET_EXTENTION, isValid);
+    string title = valuesBucket.Get(MediaColumn::MEDIA_TITLE, isValid);
+    string appId = valuesBucket.Get(MEDIA_DATA_DB_OWNER_APPID, isValid);
+    string bundleName = valuesBucket.Get(MEDIA_DATA_DB_OWNER_PACKAGE, isValid);
+    string packageName = valuesBucket.Get(MEDIA_DATA_DB_PACKAGE_NAME, isValid);
+    string ownerAlbumId = valuesBucket.Get(PhotoColumn::PHOTO_OWNER_ALBUM_ID, isValid);
+    reqBody.title = title;
+    reqBody.extension = extension;
+    reqBody.bundleName = bundleName;
+    reqBody.packageName = packageName;
+    reqBody.appId = appId;
+    reqBody.ownerAlbumId = ownerAlbumId;
+
+    CreateAssetForAppRspBody rspBody;
+    int32_t errCode = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody, rspBody);
+    if (errCode != 0) {
+        NAPI_ERR_LOG("after IPC::UserDefineIPCClient().Call, errCode: %{public}d.", errCode);
+        return errCode;
+    }
+    outUri = rspBody.outUri;
+    return rspBody.fileId;
+}
+
 static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSCreateAssetExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    if (context == nullptr) {
-        NAPI_ERR_LOG("Async context is null");
-        return;
-    }
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string uri;
     GetCreateUri(context, uri);
@@ -8850,7 +8960,12 @@ static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
             continue;
         }
         string outUri;
-        int index = UserFileClient::InsertExt(createFileUri, valuesBucket, outUri, GetUserIdFromContext(context));
+        int index = -EINVAL;
+        if (context->businessCode != 0) {
+            index = CallPhotoAccessCreateAssetForApp(context, valuesBucket, outUri);
+        } else {
+            index = UserFileClient::InsertExt(createFileUri, valuesBucket, outUri, GetUserIdFromContext(context));
+        }
         if (index < 0) {
             if (index == E_PERMISSION_DENIED || index == -E_CHECK_SYSTEMAPP_FAIL) {
                 context->SaveError(index);
@@ -8971,6 +9086,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssetsWithMode(napi_env
     int32_t authorizationMode = -1;
     int32_t tokenId = -1;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP_WITH_MODE);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
     NAPI_ASSERT(env, ParseArgsAgentCreateAssetsWithMode(env, info, asyncContext), "Failed to parse js args");
@@ -9012,6 +9128,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssets(napi_env env, na
 
     NAPI_INFO_LOG("enter");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP_WITH_ALBUM);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
     asyncContext->needSystemApp = true;
@@ -9032,6 +9149,7 @@ napi_value MediaLibraryNapi::CreateAssetsForAppWithAlbum(napi_env env, napi_call
 
     NAPI_INFO_LOG("enter");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
     asyncContext->needSystemApp = true;
@@ -9052,6 +9170,7 @@ napi_value MediaLibraryNapi::CreateAssetsHasPermission(napi_env env, napi_callba
 
     NAPI_INFO_LOG("enter");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET_FOR_APP);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
     NAPI_ASSERT(env, ParseArgsAgentCreateAssets(env, info, asyncContext), "Failed to parse js args");
@@ -9194,15 +9313,16 @@ static void PhotoAccessHelperTrashExecute(napi_env env, void *data)
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperTrashExecute");
 
-    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    string trashUri = PAH_SYS_TRASH_PHOTO;
-    MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(trashUri);
-    DataSharePredicates predicates;
-    predicates.In(MediaColumn::MEDIA_ID, context->uris);
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    auto *context = static_cast<MediaLibraryAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->uris.empty(), "uris is empty");
+
+    TrashPhotosReqBody reqBody;
+    reqBody.uris = context->uris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYS_TRASH_PHOTOS);
+    NAPI_INFO_LOG("test before IPC::UserDefineIPCClient().Call");
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("test after IPC::UserDefineIPCClient().Call");
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Media asset delete failed, err: %{public}d", changedRows);

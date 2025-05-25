@@ -28,6 +28,9 @@
 #include "result_set_utils.h"
 #include "userfile_client.h"
 #include "album_operation_uri.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "delete_photos_vo.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -1425,15 +1428,84 @@ napi_value PhotoAlbumNapi::PrivateAlbumDeletePhotos(napi_env env, napi_callback_
         DeletePhotosExecute, DeletePhotosComplete);
 }
 
+static napi_value DeletePhotosParseArgs(
+    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (!PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check trash album type");
+        return nullptr;
+    }
+
+    /* Parse the first argument */
+    vector<napi_value> napiValues;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM0], napiValues));
+    if (napiValues.empty()) {
+        return result;
+    }
+    napi_valuetype valueType = napi_undefined;
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_ERR_PARAMETER_INVALID);
+    vector<string> uris;
+    if (valueType == napi_string) {
+        // The input should be an array of asset uri.
+        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetStringArray(env, napiValues, uris));
+    } else if (valueType == napi_object) {
+        // The input should be an array of asset object.
+        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetUriArrayFromAssets(env, napiValues, uris));
+    }
+    if (uris.empty()) {
+        return result;
+    }
+    context->uris = uris;
+
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void PahDeletePhotosExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("DeletePhotosExecute");
+
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->uris.empty(), "uris is empty");
+
+    DeletePhotosReqBody reqBody;
+    reqBody.uris = context->uris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_TRASH_PHOTO);
+    NAPI_INFO_LOG("test before IPC::UserDefineIPCClient().Call");
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("test after IPC::UserDefineIPCClient().Call");
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("pah delete photos executed, changeRows: %{public}d.", changedRows);
+        return;
+    }
+    context->changedRows = changedRows;
+}
+
 napi_value PhotoAlbumNapi::PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info)
 {
     NAPI_INFO_LOG("enter");
     auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
-    CHECK_NULLPTR_RET(TrashAlbumParseArgs(env, info, asyncContext));
+    CHECK_NULLPTR_RET(DeletePhotosParseArgs(env, info, asyncContext));
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
 
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSDeletePhotos", DeletePhotosExecute,
-        DeletePhotosComplete);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "JSDeletePhotos", PahDeletePhotosExecute, DeletePhotosComplete);
 }
 
 static napi_value ParseArgsSetCoverUri(napi_env env, napi_callback_info info,

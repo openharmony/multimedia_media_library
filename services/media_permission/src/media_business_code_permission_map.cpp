@@ -34,9 +34,9 @@ namespace OHOS::Media {
 std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> PermissionCheck::businessCodeToPermissions = {
     // MEDIA_BUSINESS_CODE_START begin
     {static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_FORM_INFO), {{SYSTEMAPI_PERM, WRITE_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO), {}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_FORM_INFO), {{SYSTEMAPI_PERM, WRITE_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO), {}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_ASSET), {{WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::REVERT_TO_ORIGINAL), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN), {{}}},
@@ -50,20 +50,36 @@ std::unordered_map<uint32_t, std::vector<std::vector<PermissionType>>> Permissio
         {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP_WITH_ALBUM),
         {{SYSTEMAPI_PERM, WRITE_PERM, READ_PERM}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYS_TRASH_PHOTOS), {{}}},
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTOS), {{WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYS_TRASH_PHOTOS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_TRASH_PHOTO), {{WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_PHOTOS_COMPLETED), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     // ALBUMS_BUSINESS_CODE_START begin
-    {static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS), {{}}},
+    {static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ALBUM), {{SYSTEMAPI_PERM, WRITE_PERM}}},
     {static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS), {{SYSTEMAPI_PERM, WRITE_PERM}}},
 };
 
 // API blacklist for deprecated read or write permission
 std::unordered_set<uint32_t> PermissionCheck::deprecatedReadPermissionSet = {
-    static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)};
+    static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_ASSET),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::COMMIT_EDITED_ASSET),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::REVERT_TO_ORIGINAL),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_FORM_INFO),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_FORM_INFO),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS),
+};
 std::unordered_set<uint32_t> PermissionCheck::deprecatedWritePermissionSet = {
-    static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)};
+    static_cast<uint32_t>(MediaLibraryBusinessCode::CLONE_ASSET),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::COMMIT_EDITED_ASSET),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::REVERT_TO_ORIGINAL),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_FORM_INFO),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::SAVE_GALLERY_FORM_INFO),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_FORM_INFO),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::REMOVE_GALLERY_FORM_INFO),
+    static_cast<uint32_t>(MediaLibraryBusinessCode::DELETE_HIGH_LIGHT_ALBUMS),
+};
 // API whitelist for check grant operation permission
 std::unordered_set<uint32_t> PermissionCheck::grantOperationPermissionSet = {
     static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_BUSINESS_CODE_START)};

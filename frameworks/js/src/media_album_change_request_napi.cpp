@@ -35,6 +35,9 @@
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
 #include "album_operation_uri.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "delete_albums_vo.h"
 
 using namespace std;
 
@@ -438,7 +441,7 @@ static napi_value DealWithDeletedAlbumsDefault(napi_env env, vector<napi_value>&
             "Only user and highlight album can be deleted");
         deleteIds.push_back(to_string(obj->GetAlbumId()));
     }
-    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+    context->deleteIds = deleteIds;
     RETURN_NAPI_TRUE(env);
 }
 
@@ -471,7 +474,7 @@ napi_value DealWithDeletedAlbumsByUri(napi_env env, vector<napi_value> &napiValu
         deleteIds.push_back(albumId);
     }
 
-    context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
+    context->deleteIds = deleteIds;
     RETURN_NAPI_TRUE(env);
 }
 
@@ -507,14 +510,21 @@ static napi_value ParseArgsDeleteAlbums(
     RETURN_NAPI_TRUE(env);
 }
 
-static void DeleteAlbumsExecute(napi_env env, void* data)
+static void DeleteAlbumsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("DeleteAlbumsExecute");
 
-    auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
-    Uri deleteAlbumUri(PAH_DELETE_PHOTO_ALBUM);
-    int ret = UserFileClient::Delete(deleteAlbumUri, context->predicates);
+    auto *context = static_cast<MediaAlbumChangeRequestAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->deleteIds.empty(), "albumIds is empty");
+
+    DeleteAlbumsReqBody reqBody;
+    reqBody.albumIds = context->deleteIds;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTO_ALBUMS);
+    NAPI_INFO_LOG("test before IPC::UserDefineIPCClient().Call");
+    int ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("test after IPC::UserDefineIPCClient().Call");
     if (ret < 0) {
         context->SaveError(ret);
         NAPI_ERR_LOG("Failed to delete albums, err: %{public}d", ret);

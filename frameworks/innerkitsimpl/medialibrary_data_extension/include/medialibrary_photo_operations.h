@@ -85,8 +85,8 @@ public:
         const std::string& editDataCameraSourcePath, const std::string& mimeType);
     EXPORT static void UpdateSourcePath(const std::vector<std::string> &whereArgs,
         std::shared_ptr<AlbumData> AlbumData = nullptr);
-    EXPORT static void TrashPhotosSendNotify(std::vector<std::string> &notifyUris,
-        std::shared_ptr<AlbumData> AlbumData = nullptr);
+    EXPORT static void TrashPhotosSendNotify(const std::vector<std::string> &notifyUris,
+        std::shared_ptr<AlbumData> albumData = nullptr);
     EXPORT static int32_t ProcessMultistagesVideo(bool isEdited, bool isMovingPhoto,
         bool isMovingPhotoEffectMode, const std::string &path);
     EXPORT static int32_t RemoveTempVideo(const std::string &path);
@@ -102,13 +102,17 @@ public:
     static int32_t UpdateExtension(const int32_t &fileId, const int32_t &fileType, PhotoExtInfo &photoExtInfo,
         NativeRdb::ValuesBucket &updateValues);
     static int32_t LSMediaFiles(MediaLibraryCommand& cmd);
+    static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &editData);
+    static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t TrashPhotos(MediaLibraryCommand &cmd);
+
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
     static int32_t DeletePhoto(const std::shared_ptr<FileAsset> &fileAsset, MediaLibraryApi api);
     static int32_t UpdateV9(MediaLibraryCommand &cmd);
     static int32_t UpdateV10(MediaLibraryCommand &cmd);
-    static int32_t TrashPhotos(MediaLibraryCommand &cmd);
     static void SolvePhotoAlbumInCreate(MediaLibraryCommand &cmd, FileAsset &fileAsset);
     static int32_t OpenCache(MediaLibraryCommand &cmd, const std::string &mode, bool &isCacheOperation);
     static int32_t DeleteCache(MediaLibraryCommand &cmd);
@@ -117,9 +121,6 @@ private:
     static int32_t RequestEditSource(MediaLibraryCommand &cmd);
     static int32_t CommitEditOpen(MediaLibraryCommand &cmd);
     static int32_t CommitEditOpenExecute(const std::shared_ptr<FileAsset> &fileAsset);
-    static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
-        const std::string &editData);
-    static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
     static void ParseCloudEnhancementEditData(std::string& editData);
     static void CreateThumbnailFileScan(const std::shared_ptr<FileAsset> &fileAsset, std::string &extraUri,
