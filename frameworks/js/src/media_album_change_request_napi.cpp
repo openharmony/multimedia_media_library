@@ -215,6 +215,11 @@ int32_t MediaAlbumChangeRequestNapi::GetUserId() const
     return userId_;
 }
 
+DataShare::DataShareValuesBucket MediaAlbumChangeRequestNapi::GetValuesBucket() const
+{
+    return valuesBucket_;
+}
+
 void MediaAlbumChangeRequestNapi::RecordMoveAssets(vector<string>& assetArray, shared_ptr<PhotoAlbum>& targetAlbum)
 {
     if (targetAlbum == nullptr || assetArray.empty()) {
@@ -753,6 +758,7 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAssetsImplement(napi_env env, na
     if (parameterType == ParameterType::ASSET_URI) {
         CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
             "Failed to parse assets");
+        changeRequest->valuesBucket_.Put("ParamType", "ASSET_URI");
     } else {
         CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
             "Failed to parse assets");
@@ -1320,6 +1326,11 @@ static bool DeleteAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
     DataShare::DataSharePredicates predicates;
     predicates.In(PhotoColumn::MEDIA_ID, context.objectInfo->GetDeleteAssetArray());
+    bool isValid = false;
+    auto value = context.objectInfo->GetValuesBucket().Get("ParamType", isValid);
+    if (isValid) {
+        predicates.GreaterThan(PhotoColumn::MEDIA_DATE_TRASHED, 0);
+    }
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
 
