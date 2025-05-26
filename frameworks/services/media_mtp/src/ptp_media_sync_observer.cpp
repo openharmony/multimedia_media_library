@@ -45,7 +45,8 @@ constexpr int32_t MAX_PARCEL_LEN_LIMIT = 5000;
 const string IS_LOCAL = "2";
 const std::string HIDDEN_ALBUM = ".hiddenAlbum";
 const string INVALID_FILE_ID = "-1";
-constexpr uint64_t DELAY_MS = 5000;
+constexpr uint64_t DELAY_FOR_MOVING_MS = 5000;
+constexpr uint64_t DELAY_FOR_BURST_MS = 12000;
 bool startsWith(const std::string& str, const std::string& prefix)
 {
     bool cond = (prefix.size() > str.size() || prefix.empty() || str.empty());
@@ -237,13 +238,20 @@ void MediaSyncObserver::DelayInfoThread()
         if (now < delayInfo.tp) {
             std::this_thread::sleep_until(delayInfo.tp);
         }
-        SendEventPackets(delayInfo.objectHandle, delayInfo.eventCode);
+        if (delayInfo.objectHandle > COMMON_MOVING_OFFSET) {
+            SendEventPackets(delayInfo.objectHandle, delayInfo.eventCode);
+        } else {
+            AddBurstPhotoHandle(delayInfo.burstKey);
+        }
         SendEventPacketAlbum(delayInfo.objectHandleAlbum, delayInfo.eventCodeAlbum);
     }
 }
 
 void MediaSyncObserver::AddBurstPhotoHandle(string burstKey)
 {
+    if (needAddMemberBurstKeys_.find(burstKey) == needAddMemberBurstKeys_.end()) {
+        return;
+    }
     Uri uri(PAH_QUERY_PHOTO);
     vector<string> columns;
     DataShare::DataSharePredicates predicates;
@@ -265,6 +273,26 @@ void MediaSyncObserver::AddBurstPhotoHandle(string burstKey)
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         SendEventPackets(fileId + COMMON_PHOTOS_OFFSET, MTP_EVENT_OBJECT_ADDED_CODE);
     } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
+    needAddMemberBurstKeys_.erase(burstKey);
+}
+
+void MediaSyncObserver::AddDelayInfo(uint32_t handle, uint32_t ownerAlbumId, const string &burstKey, uint64_t delayMs)
+{
+    DelayInfo delayInfo = {
+        .objectHandle = handle,
+        .eventCode = MTP_EVENT_OBJECT_ADDED_CODE,
+        .objectHandleAlbum = ownerAlbumId,
+        .eventCodeAlbum = MTP_EVENT_OBJECT_INFO_CHANGED_CODE,
+        .burstKey = burstKey,
+        .tp = std::chrono::steady_clock::now() + std::chrono::milliseconds(delayMs)
+    };
+    {
+        std::lock_guard<std::mutex> lock(mutexDelay_);
+        if (isRunningDelay_.load()) {
+            delayQueue_.push(delayInfo);
+        }
+    }
+    cvDelay_.notify_all();
 }
 
 void MediaSyncObserver::AddPhotoHandle(int32_t handle)
@@ -292,23 +320,13 @@ void MediaSyncObserver::AddPhotoHandle(int32_t handle)
     int32_t subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
     int32_t effectMode = GetInt32Val(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, resultSet);
     if (MtpDataUtils::IsMtpMovingPhoto(subtype, effectMode)) {
-        DelayInfo delayInfo = {
-            .objectHandle = handle + COMMON_MOVING_OFFSET,
-            .eventCode = MTP_EVENT_OBJECT_ADDED_CODE,
-            .objectHandleAlbum = ownerAlbumId,
-            .eventCodeAlbum = MTP_EVENT_OBJECT_INFO_CHANGED_CODE,
-            .tp = std::chrono::steady_clock::now() + std::chrono::milliseconds(DELAY_MS)
-        };
-        {
-            std::lock_guard<std::mutex> lock(mutexDelay_);
-            if (isRunningDelay_.load()) {
-                delayQueue_.push(delayInfo);
-            }
-        }
-        cvDelay_.notify_all();
+        AddDelayInfo(handle + COMMON_MOVING_OFFSET, ownerAlbumId, "", DELAY_FOR_MOVING_MS);
     } else if (subtype == static_cast<int32_t>(PhotoSubType::BURST)) {
         string burstKey = GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet);
-        AddBurstPhotoHandle(burstKey);
+        needAddMemberBurstKeys_.insert(burstKey);
+        AddBurstPhotoHandle(previousAddedBurstKey_);
+        previousAddedBurstKey_ = burstKey;
+        AddDelayInfo(handle + COMMON_PHOTOS_OFFSET, ownerAlbumId, burstKey, DELAY_FOR_BURST_MS);
     }
     auto albumHandles = PtpAlbumHandles::GetInstance();
     if (!albumHandles->FindHandle(ownerAlbumId)) {
