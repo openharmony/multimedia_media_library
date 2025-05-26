@@ -926,11 +926,8 @@ void MediaLibraryPhotoOperations::UpdateSourcePath(const vector<string> &whereAr
             "LIMIT 1 "
         ") "
         "WHERE file_id IN (" + inClause + ")";
-    std::thread([=] {
-        int32_t result = rdbStore->ExecuteSql(updateSql);
-        CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Failed to update source path, error code: %{private}d",
-            result);
-    }).detach();
+    int32_t result = rdbStore->ExecuteSql(updateSql);
+    CHECK_AND_PRINT_LOG(result == NativeRdb::E_OK, "Failed to update source path, error code: %{private}d", result);
 }
 
 static void GetAlbumNamesById(DeleteBehaviorParams &filesParams)
@@ -1006,8 +1003,7 @@ static void HandleQualityAndHiddenSingle(NativeRdb::AbsRdbPredicates predicates,
 {
     vector<string> columns { MediaColumn::MEDIA_ID, MEDIA_DATA_DB_PHOTO_ID, MEDIA_DATA_DB_PHOTO_QUALITY,
         MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_STAGE_VIDEO_TASK_STATUS, MediaColumn::MEDIA_FILE_PATH,
-        PhotoColumn::PHOTO_SUBTYPE, MediaColumn::MEDIA_HIDDEN, PhotoColumn::PHOTO_QUALITY,
-        PhotoColumn::STAGE_VIDEO_TASK_STATUS };
+        PhotoColumn::PHOTO_SUBTYPE, MediaColumn::MEDIA_HIDDEN };
     auto resultSet = MediaLibraryRdbStore::QueryWithFilter(predicates, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Result set is empty");
@@ -1058,7 +1054,7 @@ static void HandleQualityAndHiddenBatch(NativeRdb::AbsRdbPredicates predicates, 
     }
     do {
         MultiStagesCaptureManager::RemovePhotosWithResultSet(resultSet, true);
-    } while (!resultSet->GoToNextRow());
+    } while (resultSet->GoToNextRow() == NativeRdb::E_OK);
     resultSet->Close();
 }
 
@@ -1458,7 +1454,7 @@ static int32_t GetFavoriteState(const ValuesBucket& values)
     return favoriteState;
 }
 
-static bool CheckExistsHidePhoto(std::shared_ptr<MediaLibraryRdbStore> rdbStore, RdbPredicates predicates)
+static bool CheckExistsHiddenPhoto(std::shared_ptr<MediaLibraryRdbStore> rdbStore, RdbPredicates predicates)
 {
     string where = predicates.GetWhereClause() + " AND " + MediaColumn::MEDIA_HIDDEN + " > 0";
     NativeRdb::AbsRdbPredicates predicatesNew(predicates.GetTableName());
@@ -1472,7 +1468,7 @@ static bool CheckExistsHidePhoto(std::shared_ptr<MediaLibraryRdbStore> rdbStore,
     }
     int32_t rowCount = 0;
     int32_t ret = resultSet->GetRowCount(rowCount);
-    if (ret != 0) {
+    if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("result set get row count err %{public}d", ret);
         return false;
     }
@@ -1495,7 +1491,7 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Failed to set favorite, err: %{public}d", updatedRows);
 
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
-    if (CheckExistsHidePhoto(rdbStore, predicates)) {
+    if (CheckExistsHiddenPhoto(rdbStore, predicates)) {
         MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore, { to_string(PhotoAlbumSubType::FAVORITE) });
     }
     auto watch = MediaLibraryNotify::GetInstance();
