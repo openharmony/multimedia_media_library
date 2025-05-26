@@ -73,6 +73,7 @@
 #include "file_asset_napi.h"
 #include "form_map.h"
 #include "media_facard_photos_column.h"
+#include "rdb_utils.h"
 #ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
 #endif
@@ -7323,6 +7324,8 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
     MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(queryUri);
     int errCode = 0;
+    RdbPredicates rdbPredicates = RdbDataShareAdapter::RdbUtils::ToPredicates(context->predicates, "Photos");
+    NAPI_INFO_LOG("Predicates: %{public}s", rdbPredicates.ToString().c_str());
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
         context->predicates, context->fetchColumn, errCode, GetUserIdFromContext(context));
     if (resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
