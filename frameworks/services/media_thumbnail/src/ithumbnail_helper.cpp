@@ -553,8 +553,9 @@ bool IThumbnailHelper::TrySavePixelMap(ThumbnailData &data, ThumbnailType type)
 {
     if (!data.needCheckWaitStatus) {
         int err = ThumbnailUtils::TrySaveFile(data, type);
-        CHECK_AND_RETURN_RET_LOG(err == E_OK, false, "No wait TrySavePixelMap failed: %{public}d, path: %{public}s", err,
-            DfxUtils::GetSafePath(data.path).c_str());
+        CHECK_AND_RETURN_RET_LOG(err == E_OK, false,
+            "No wait TrySavePixelMap failed: %{public}d, path: %{public}s",
+            err, DfxUtils::GetSafePath(data.path).c_str());
         return true;
     }
     ThumbnailWait thumbnailWait(false);
@@ -880,7 +881,8 @@ bool IThumbnailHelper::CacheFailState(const ThumbRdbOpt &opts, ThumbnailData &da
 {
     CHECK_AND_RETURN_RET_LOG(opts.table == PhotoColumn::PHOTOS_TABLE, E_ERR,
         "Not %{public}s table, table: %{public}s", PhotoColumn::PHOTOS_TABLE.c_str(), opts.table.c_str());
-    data.rdbUpdateCache.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
+    data.rdbUpdateCache.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY,
+        static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
     data.rdbUpdateCache.PutLong(PhotoColumn::PHOTO_THUMBNAIL_VISIBLE, 1);
     return true;
 }
@@ -915,7 +917,8 @@ int32_t IThumbnailHelper::CacheDirtyState(const ThumbRdbOpt &opts, ThumbnailData
 
     string filePath = GetLocalOriginFilePath(data.path);
     bool shouldUpdateFDirty = access(filePath.c_str(), F_OK) == 0;
-    data.rdbUpdateCache.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ? static_cast<int32_t>(DirtyType::TYPE_FDIRTY) :
+    data.rdbUpdateCache.PutInt(PhotoColumn::PHOTO_DIRTY, shouldUpdateFDirty ?
+        static_cast<int32_t>(DirtyType::TYPE_FDIRTY) :
         static_cast<int32_t>(DirtyType::TYPE_TDIRTY));
 
     return E_OK;
