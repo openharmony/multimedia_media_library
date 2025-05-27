@@ -18,6 +18,7 @@
 
 #include <sstream>
 
+#include "album_plugin_config.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "userfile_manager_types.h"
@@ -370,6 +371,7 @@ std::string PhotoOwnerAlbumIdOperation::ParseSourcePathToLPath(const std::string
             result = result.substr(start_pos);
         }
     }
+    result = result == AlbumPlugin::LPATH_HIDDEN_ALBUM ? AlbumPlugin::LPATH_RECOVER : result;
     return result;
 }
 
