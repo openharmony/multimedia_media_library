@@ -20,6 +20,7 @@
 #include <sys/time.h>
 #include <shared_mutex>
 #include "mtp_data_utils.h"
+#include "media_exif.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -27,6 +28,7 @@
 #include "mtp_file_observer.h"
 #include "mtp_packet_tools.h"
 #include "mtp_storage_manager.h"
+#include "post_proc.h"
 #include "image_packer.h"
 #include "avmetadatahelper.h"
 
@@ -610,7 +612,11 @@ int32_t MtpMediaLibrary::GetPictureThumb(const std::shared_ptr<MtpOperationConte
     std::unique_ptr<PixelMap> cropPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     CondCloseFd(cropPixelMap == nullptr, fd);
     CHECK_AND_RETURN_RET_LOG(cropPixelMap != nullptr, MTP_ERROR_NO_THUMBNAIL_PRESENT, "cropPixelMap is nullptr");
-
+    int32_t imageOrientation = 0;
+    errorCode = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, imageOrientation);
+    if (errorCode == E_OK && imageOrientation != 0) {
+        PostProc::RotateInRectangularSteps(*(cropPixelMap.get()), static_cast<float>(imageOrientation), true);
+    }
     CloseFd(context, fd);
     bool isCompressImageSuccess = CompressImage(*cropPixelMap, *outThumb);
     CHECK_AND_RETURN_RET_LOG(isCompressImageSuccess == true, MTP_ERROR_NO_THUMBNAIL_PRESENT, "CompressImage is fail");
