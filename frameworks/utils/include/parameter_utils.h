@@ -34,12 +34,13 @@ public:
 
     static int32_t CheckPublicCreateAsset(const CreateAssetReqBody &reqBody);
     static int32_t CheckSystemCreateAsset(const CreateAssetReqBody &reqBody);
-    static int32_t CheckCreateAssetForApp(const CreateAssetForAppReqBody &reqBody);
+    static int32_t CheckPublicCreateAssetForApp(const CreateAssetForAppReqBody &reqBody);
+    static int32_t CheckSystemCreateAssetForApp(const CreateAssetForAppReqBody &reqBody);
     static int32_t CheckCreateAssetForAppWithAlbum(const CreateAssetForAppReqBody &reqBody);
     static int32_t CheckCreatePhotoAlbum(const CreateAlbumReqBody &reqBody);
 
     static int32_t CheckCreateAssetSubtype(int32_t photoSubtype);
-    static int32_t CheckCreateAssetTitle(const std::string &title);
+    static int32_t CheckCreateAssetTitle(const std::string &title, bool isSystem = false);
     static int32_t CheckCreateAssetMediaType(int32_t mediaType, const std::string &extension);
     static int32_t CheckCreateAssetCameraShotKey(int32_t photoSubtype, const std::string &cameraShotKey);
     static int32_t GetTitleAndExtension(const std::string &displayName, std::string &title, std::string &ext);

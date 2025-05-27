@@ -80,15 +80,15 @@ const std::map<uint32_t, RequestHandle> HANDLERS = {
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET_FOR_APP),
-        &MediaAssetsControllerService::CreateAssetForApp
+        &MediaAssetsControllerService::PublicCreateAssetForApp
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP),
-        &MediaAssetsControllerService::CreateAssetForApp
+        &MediaAssetsControllerService::SystemCreateAssetForApp
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP_WITH_MODE),
-        &MediaAssetsControllerService::CreateAssetForApp
+        &MediaAssetsControllerService::SystemCreateAssetForApp
     },
     {
         static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET_FOR_APP_WITH_ALBUM),
@@ -348,7 +348,7 @@ void MediaAssetsControllerService::SystemCreateAsset(MessageParcel &data, Messag
     IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
 }
 
-void MediaAssetsControllerService::CreateAssetForApp(MessageParcel &data, MessageParcel &reply)
+void MediaAssetsControllerService::PublicCreateAssetForApp(MessageParcel &data, MessageParcel &reply)
 {
     CreateAssetForAppReqBody reqBody;
     CreateAssetForAppRspBody rspBody;
@@ -359,7 +359,34 @@ void MediaAssetsControllerService::CreateAssetForApp(MessageParcel &data, Messag
         return;
     }
 
-    ret = ParameterUtils::CheckCreateAssetForApp(reqBody);
+    ret = ParameterUtils::CheckPublicCreateAssetForApp(reqBody);
+    if (ret != E_OK) {
+        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        MEDIA_ERR_LOG("reqBody:%{public}s", reqBody.ToString().c_str());
+        return;
+    }
+
+    CreateAssetDto dto;
+    reqBody.Convert2Dto(dto);
+    ret = MediaAssetsService::GetInstance().CreateAssetForApp(dto);
+    if (ret == E_OK) {
+        rspBody.InitByDto(dto);
+    }
+    IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+}
+
+void MediaAssetsControllerService::SystemCreateAssetForApp(MessageParcel &data, MessageParcel &reply)
+{
+    CreateAssetForAppReqBody reqBody;
+    CreateAssetForAppRspBody rspBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
+        MEDIA_ERR_LOG("CreateAssetForApp Read Request Error");
+        return;
+    }
+
+    ret = ParameterUtils::CheckSystemCreateAssetForApp(reqBody);
     if (ret != E_OK) {
         IPC::UserDefineIPC().WriteResponseBody(reply, rspBody, ret);
         MEDIA_ERR_LOG("reqBody:%{public}s", reqBody.ToString().c_str());
