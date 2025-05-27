@@ -81,7 +81,6 @@ public:
     std::vector<std::pair<std::string, int32_t>> GetIdOrderPositionPairs() const;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> GetMoveMap() const;
     int32_t GetUserId() const;
-    DataShare::DataShareValuesBucket GetValuesBucket() const;
     void RecordMoveAssets(std::vector<std::string>& assetArray, std::shared_ptr<PhotoAlbum>& targetAlbum);
     void ClearAddAssetArray();
     void ClearRemoveAssetArray();
@@ -142,7 +141,6 @@ private:
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> moveMap_;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
     std::vector<std::pair<std::string, int32_t>> idOrderPositionPairs_;
-    DataShare::DataShareValuesBucket valuesBucket_;
 };
 
 struct MediaAlbumChangeRequestAsyncContext : public NapiError {
