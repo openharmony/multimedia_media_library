@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "command/query_command_v10.h"
+
 #include <string>
 #include <vector>
+
 #include "media_log.h"
-#include "command/query_command_v10.h"
 #include "userfile_client_ex.h"
 #include "media_file_utils.h"
 #include "utils/database_utils.h"
+#include "utils/mediatool_command_utils.h"
 #include "medialibrary_errno.h"
 #include "datashare_predicates.h"
 #include "userfile_client.h"
@@ -53,12 +57,16 @@ static int32_t QueryMediaFiles(const QueryParam &queryParam)
     }
     printf("find %d result\n", count);
     if (queryParam.pathFlag) {
+        string activeUserId = "100";
+        if (MediatoolCommandUtils::QueryActiveUserId(activeUserId) != E_OK) {
+            MEDIA_ERR_LOG("Query active user id failed. Use 100 for safety.");
+        }
         printf("path\n");
         do {
             auto path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
             auto pos = path.find("/storage/cloud/file", 0);
             if (pos != string::npos) {
-                path.insert(pos + PATH_HEAD.length(), "100/");
+                path.insert(pos + PATH_HEAD.length(), activeUserId + "/");
             }
             printf("%s\n", path.c_str());
         } while (!resultSet->GoToNextRow());
