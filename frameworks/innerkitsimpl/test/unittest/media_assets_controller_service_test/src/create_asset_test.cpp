@@ -129,13 +129,10 @@ static int32_t GetAlbumId(const std::string &albumName)
     return albumId;
 }
 
-int32_t ServicePublicCreateAsset(const std::string &ext, const std::string &title = "")
-{
-    CreateAssetReqBody reqBody;
-    reqBody.mediaType = MEDIA_TYPE_IMAGE;
-    reqBody.title = title;
-    reqBody.extension = ext;
+using ServiceCall = std::function<void(MessageParcel &data, MessageParcel &reply)>;
 
+int32_t ServiceCreateAsset(CreateAssetReqBody &reqBody, ServiceCall call)
+{
     MessageParcel data;
     if (reqBody.Marshalling(data) != true) {
         MEDIA_ERR_LOG("reqBody.Marshalling failed");
@@ -143,8 +140,7 @@ int32_t ServicePublicCreateAsset(const std::string &ext, const std::string &titl
     }
 
     MessageParcel reply;
-    auto service = make_shared<MediaAssetsControllerService>();
-    service->PublicCreateAsset(data, reply);
+    call(data, reply);
 
     IPC::MediaRespVo<CreateAssetRspBody> respVo;
     if (respVo.Unmarshalling(reply) != true) {
@@ -162,15 +158,8 @@ int32_t ServicePublicCreateAsset(const std::string &ext, const std::string &titl
     return respVo.GetBody().fileId;
 }
 
-int32_t ServiceSystemCreateAsset(const std::string &displayName, int32_t photoSubtype,
-    const std::string &cameraShotKey = "")
+int32_t ServiceCreateAssetForApp(CreateAssetForAppReqBody &reqBody, ServiceCall call)
 {
-    CreateAssetReqBody reqBody;
-    reqBody.mediaType = MEDIA_TYPE_IMAGE;
-    reqBody.photoSubtype = photoSubtype;
-    reqBody.displayName = displayName;
-    reqBody.cameraShotKey = cameraShotKey;
-
     MessageParcel data;
     if (reqBody.Marshalling(data) != true) {
         MEDIA_ERR_LOG("reqBody.Marshalling failed");
@@ -178,46 +167,7 @@ int32_t ServiceSystemCreateAsset(const std::string &displayName, int32_t photoSu
     }
 
     MessageParcel reply;
-    auto service = make_shared<MediaAssetsControllerService>();
-    service->SystemCreateAsset(data, reply);
-
-    IPC::MediaRespVo<CreateAssetRspBody> respVo;
-    if (respVo.Unmarshalling(reply) != true) {
-        MEDIA_ERR_LOG("respVo.Unmarshalling failed");
-        return -1;
-    }
-
-    int32_t errCode = respVo.GetErrCode();
-    if (errCode != 0) {
-        MEDIA_ERR_LOG("respVo.GetErrCode: %{public}d", errCode);
-        return errCode;
-    }
-
-    MEDIA_INFO_LOG("RspBody:%{public}s", respVo.GetBody().ToString().c_str());
-    return respVo.GetBody().fileId;
-}
-
-int32_t ServiceCreateAssetForApp(int32_t tokenId, const std::string &ext, const std::string &title = "")
-{
-    CreateAssetForAppReqBody reqBody;
-    reqBody.tokenId = tokenId;
-    reqBody.mediaType = MEDIA_TYPE_IMAGE;
-    reqBody.photoSubtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
-    reqBody.title = title;
-    reqBody.extension = ext;
-    reqBody.appId = "unittest";
-    reqBody.packageName = "media_assets_controler_service_test";
-    reqBody.bundleName = "create_asset_test.cpp";
-
-    MessageParcel data;
-    if (reqBody.Marshalling(data) != true) {
-        MEDIA_ERR_LOG("reqBody.Marshalling failed");
-        return -1;
-    }
-
-    MessageParcel reply;
-    auto service = make_shared<MediaAssetsControllerService>();
-    service->CreateAssetForApp(data, reply);
+    call(data, reply);
 
     IPC::MediaRespVo<CreateAssetForAppRspBody> respVo;
     if (respVo.Unmarshalling(reply) != true) {
@@ -235,7 +185,78 @@ int32_t ServiceCreateAssetForApp(int32_t tokenId, const std::string &ext, const 
     return respVo.GetBody().fileId;
 }
 
-int32_t ServiceCreateAssetForAppWithAlbum(int32_t tokenId, int32_t albumId,
+int32_t PublicCreateAsset(const std::string &ext, const std::string &title = "")
+{
+    CreateAssetReqBody reqBody;
+    reqBody.mediaType = MEDIA_TYPE_IMAGE;
+    reqBody.title = title;
+    reqBody.extension = ext;
+
+    ServiceCall call = [](MessageParcel &data, MessageParcel &reply) {
+        auto service = make_shared<MediaAssetsControllerService>();
+        service->PublicCreateAsset(data, reply);
+    };
+
+    return ServiceCreateAsset(reqBody, call);
+}
+
+int32_t SystemCreateAsset(const std::string &displayName, int32_t photoSubtype, const std::string &cameraShotKey = "")
+{
+    CreateAssetReqBody reqBody;
+    reqBody.mediaType = MEDIA_TYPE_IMAGE;
+    reqBody.photoSubtype = photoSubtype;
+    reqBody.displayName = displayName;
+    reqBody.cameraShotKey = cameraShotKey;
+
+    ServiceCall call = [](MessageParcel &data, MessageParcel &reply) {
+        auto service = make_shared<MediaAssetsControllerService>();
+        service->SystemCreateAsset(data, reply);
+    };
+
+    return ServiceCreateAsset(reqBody, call);
+}
+
+int32_t PublicCreateAssetForApp(int32_t tokenId, const std::string &ext, const std::string &title = "")
+{
+    CreateAssetForAppReqBody reqBody;
+    reqBody.tokenId = tokenId;
+    reqBody.mediaType = MEDIA_TYPE_IMAGE;
+    reqBody.photoSubtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
+    reqBody.title = title;
+    reqBody.extension = ext;
+    reqBody.appId = "unittest";
+    reqBody.packageName = "media_assets_controler_service_test";
+    reqBody.bundleName = "create_asset_test.cpp";
+
+    ServiceCall call = [](MessageParcel &data, MessageParcel &reply) {
+        auto service = make_shared<MediaAssetsControllerService>();
+        service->PublicCreateAssetForApp(data, reply);
+    };
+
+    return ServiceCreateAssetForApp(reqBody, call);
+}
+
+int32_t SystemCreateAssetForApp(int32_t tokenId, const std::string &ext, const std::string &title = "")
+{
+    CreateAssetForAppReqBody reqBody;
+    reqBody.tokenId = tokenId;
+    reqBody.mediaType = MEDIA_TYPE_IMAGE;
+    reqBody.photoSubtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
+    reqBody.title = title;
+    reqBody.extension = ext;
+    reqBody.appId = "unittest";
+    reqBody.packageName = "media_assets_controler_service_test";
+    reqBody.bundleName = "create_asset_test.cpp";
+
+    ServiceCall call = [](MessageParcel &data, MessageParcel &reply) {
+        auto service = make_shared<MediaAssetsControllerService>();
+        service->SystemCreateAssetForApp(data, reply);
+    };
+
+    return ServiceCreateAssetForApp(reqBody, call);
+}
+
+int32_t CreateAssetForAppWithAlbum(int32_t tokenId, int32_t albumId,
     const std::string &ext, const std::string &title = "")
 {
     CreateAssetForAppReqBody reqBody;
@@ -249,51 +270,33 @@ int32_t ServiceCreateAssetForAppWithAlbum(int32_t tokenId, int32_t albumId,
     reqBody.bundleName = "create_asset_test.cpp";
     reqBody.ownerAlbumId = to_string(albumId);
 
-    MessageParcel data;
-    if (reqBody.Marshalling(data) != true) {
-        MEDIA_ERR_LOG("reqBody.Marshalling failed");
-        return -1;
-    }
+    ServiceCall call = [](MessageParcel &data, MessageParcel &reply) {
+        auto service = make_shared<MediaAssetsControllerService>();
+        service->CreateAssetForAppWithAlbum(data, reply);
+    };
 
-    MessageParcel reply;
-    auto service = make_shared<MediaAssetsControllerService>();
-    service->CreateAssetForAppWithAlbum(data, reply);
-
-    IPC::MediaRespVo<CreateAssetForAppRspBody> respVo;
-    if (respVo.Unmarshalling(reply) != true) {
-        MEDIA_ERR_LOG("respVo.Unmarshalling failed");
-        return -1;
-    }
-
-    int32_t errCode = respVo.GetErrCode();
-    if (errCode != 0) {
-        MEDIA_ERR_LOG("respVo.GetErrCode: %{public}d", errCode);
-        return errCode;
-    }
-
-    MEDIA_INFO_LOG("RspBody:%{public}s", respVo.GetBody().ToString().c_str());
-    return respVo.GetBody().fileId;
+    return ServiceCreateAssetForApp(reqBody, call);
 }
 
 HWTEST_F(CreateAssetTest, PublicCreateAsset_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start PublicCreateAsset_Test_001");
-    int32_t fileId = ServicePublicCreateAsset("xxx");
+    int32_t fileId = PublicCreateAsset("xxx");
     ASSERT_LT(fileId, 0);
 
-    fileId = ServicePublicCreateAsset("jpg", "Public_002.xxx");
+    fileId = PublicCreateAsset("jpg", "Public_002.xxx");
     ASSERT_LT(fileId, 0);
 }
 
 HWTEST_F(CreateAssetTest, PublicCreateAsset_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start PublicCreateAsset_Test_002");
-    int32_t fileId = ServicePublicCreateAsset("jpg");
+    int32_t fileId = PublicCreateAsset("jpg");
     ASSERT_GT(fileId, 0);
     bool hasAsset = CheckAsset(fileId);
     ASSERT_EQ(hasAsset, true);
 
-    fileId = ServicePublicCreateAsset("jpg", "Public_002");
+    fileId = PublicCreateAsset("jpg", "Public_002");
     ASSERT_GT(fileId, 0);
     hasAsset = CheckAsset(fileId);
     ASSERT_EQ(hasAsset, true);
@@ -302,11 +305,11 @@ HWTEST_F(CreateAssetTest, PublicCreateAsset_Test_002, TestSize.Level0)
 HWTEST_F(CreateAssetTest, SystemCreateAsset_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start SystemCreateAsset_Test_001");
-    int32_t fileId = ServiceSystemCreateAsset("System_001.jpg",
+    int32_t fileId = SystemCreateAsset("System_001.jpg",
         static_cast<int32_t>(PhotoSubType::DEFAULT), "SystemCreateAsset_Test_001");
     ASSERT_LT(fileId, 0);
 
-    fileId = ServiceSystemCreateAsset("System_001.jpg",
+    fileId = SystemCreateAsset("System_001.jpg",
         static_cast<int32_t>(PhotoSubType::SCREENSHOT), "SystemCreateAsset_Test_001AAAAAA");
     ASSERT_LT(fileId, 0);
 }
@@ -314,38 +317,72 @@ HWTEST_F(CreateAssetTest, SystemCreateAsset_Test_001, TestSize.Level0)
 HWTEST_F(CreateAssetTest, SystemCreateAsset_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start SystemCreateAsset_Test_002");
-    int32_t fileId = ServiceSystemCreateAsset("System_002.jpg",
-        static_cast<int32_t>(PhotoSubType::DEFAULT));
+    int32_t fileId = SystemCreateAsset("System_002.jpg", static_cast<int32_t>(PhotoSubType::DEFAULT));
     ASSERT_GT(fileId, 0);
     bool hasAsset = CheckAsset(fileId);
     ASSERT_EQ(hasAsset, true);
 
-    fileId = ServiceSystemCreateAsset("System_001.jpg",
+    fileId = SystemCreateAsset("System_002.jpg",
+        static_cast<int32_t>(PhotoSubType::DEFAULT), "SystemCreateAsset_Test_001AAAAAA");
+    ASSERT_GT(fileId, 0);
+    hasAsset = CheckAsset(fileId);
+    ASSERT_EQ(hasAsset, true);
+
+    fileId = SystemCreateAsset("System.002.jpg",
         static_cast<int32_t>(PhotoSubType::DEFAULT), "SystemCreateAsset_Test_001AAAAAA");
     ASSERT_GT(fileId, 0);
     hasAsset = CheckAsset(fileId);
     ASSERT_EQ(hasAsset, true);
 }
 
-HWTEST_F(CreateAssetTest, CreateAssetForApp_Test_001, TestSize.Level0)
+HWTEST_F(CreateAssetTest, PublicCreateAssetForApp_Test_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Start CreateAssetForApp_Test_001");
-    int32_t fileId = ServiceCreateAssetForApp(0, "xxx");
+    MEDIA_INFO_LOG("Start PublicCreateAssetForApp_Test_001");
+    int32_t fileId = PublicCreateAssetForApp(0, "xxx");
     ASSERT_LT(fileId, 0);
 
-    fileId = ServiceCreateAssetForApp(0, "jpg", "ForApp_001.xxx");
+    fileId = PublicCreateAssetForApp(0, "jpg", "ForApp_001.xxx");
     ASSERT_LT(fileId, 0);
 }
 
-HWTEST_F(CreateAssetTest, CreateAssetForApp_Test_002, TestSize.Level0)
+HWTEST_F(CreateAssetTest, PublicCreateAssetForApp_Test_002, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Start CreateAssetForApp_Test_002");
-    int32_t fileId = ServiceCreateAssetForApp(0, "jpg");
+    MEDIA_INFO_LOG("Start PublicCreateAssetForApp_Test_002");
+    int32_t fileId = PublicCreateAssetForApp(0, "jpg");
     ASSERT_GT(fileId, 0);
     bool hasAsset = CheckAsset(fileId);
     ASSERT_EQ(hasAsset, true);
 
-    fileId = ServiceCreateAssetForApp(0, "jpg", "ForApp_002");
+    fileId = PublicCreateAssetForApp(0, "jpg", "ForApp_002");
+    ASSERT_GT(fileId, 0);
+    hasAsset = CheckAsset(fileId);
+    ASSERT_EQ(hasAsset, true);
+}
+
+HWTEST_F(CreateAssetTest, SystemCreateAssetForApp_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start SystemCreateAssetForApp_Test_001");
+    int32_t fileId = SystemCreateAssetForApp(0, "xxx");
+    ASSERT_LT(fileId, 0);
+
+    fileId = SystemCreateAssetForApp(0, "jpg", "ForApp_001?xxx");
+    ASSERT_LT(fileId, 0);
+}
+
+HWTEST_F(CreateAssetTest, SystemCreateAssetForApp_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Start SystemCreateAssetForApp_Test_002");
+    int32_t fileId = SystemCreateAssetForApp(0, "jpg");
+    ASSERT_GT(fileId, 0);
+    bool hasAsset = CheckAsset(fileId);
+    ASSERT_EQ(hasAsset, true);
+
+    fileId = SystemCreateAssetForApp(0, "jpg", "ForApp_002");
+    ASSERT_GT(fileId, 0);
+    hasAsset = CheckAsset(fileId);
+    ASSERT_EQ(hasAsset, true);
+
+    fileId = SystemCreateAssetForApp(0, "jpg", "ForApp_002.xxx");
     ASSERT_GT(fileId, 0);
     hasAsset = CheckAsset(fileId);
     ASSERT_EQ(hasAsset, true);
@@ -354,13 +391,16 @@ HWTEST_F(CreateAssetTest, CreateAssetForApp_Test_002, TestSize.Level0)
 HWTEST_F(CreateAssetTest, CreateAssetForAppWithAlbum_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Start CreateAssetForAppWithAlbum_Test_001");
-    int32_t fileId = ServiceCreateAssetForAppWithAlbum(0, 0, "xxx");
+    int32_t fileId = CreateAssetForAppWithAlbum(0, 0, "xxx");
     ASSERT_LT(fileId, 0);
 
-    fileId = ServiceCreateAssetForAppWithAlbum(0, 0, "jpg");
+    fileId = CreateAssetForAppWithAlbum(0, 0, "jpg");
     ASSERT_LT(fileId, 0);
 
-    fileId = ServiceCreateAssetForAppWithAlbum(0, 0, "jpg", "WithAlbum_001.xxx");
+    fileId = CreateAssetForAppWithAlbum(0, 0, "jpg", "WithAlbum_001?xxx");
+    ASSERT_LT(fileId, 0);
+
+    fileId = CreateAssetForAppWithAlbum(0, 0, "jpg", "WithAlbum_001");
     ASSERT_LT(fileId, 0);
 }
 
@@ -370,12 +410,17 @@ HWTEST_F(CreateAssetTest, CreateAssetForAppWithAlbum_Test_002, TestSize.Level0)
     int32_t albumId = GetAlbumId("media_assets_controler_service_test");
     ASSERT_GT(albumId, 0);
 
-    int32_t fileId = ServiceCreateAssetForAppWithAlbum(0, albumId, "jpg");
+    int32_t fileId = CreateAssetForAppWithAlbum(0, albumId, "jpg");
     ASSERT_GT(fileId, 0);
     bool hasAsset = CheckAsset(fileId);
     ASSERT_EQ(hasAsset, true);
 
-    fileId = ServiceCreateAssetForAppWithAlbum(0, albumId, "jpg", "WithAlbum_002");
+    fileId = CreateAssetForAppWithAlbum(0, albumId, "jpg", "WithAlbum_002");
+    ASSERT_GT(fileId, 0);
+    hasAsset = CheckAsset(fileId);
+    ASSERT_EQ(hasAsset, true);
+
+    fileId = CreateAssetForAppWithAlbum(0, albumId, "jpg", "WithAlbum_002.xxx");
     ASSERT_GT(fileId, 0);
     hasAsset = CheckAsset(fileId);
     ASSERT_EQ(hasAsset, true);
