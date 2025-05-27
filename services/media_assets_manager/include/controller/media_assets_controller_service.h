@@ -37,7 +37,8 @@ public:
     EXPORT void DeletePhotosCompleted(MessageParcel &data, MessageParcel &reply);
     EXPORT void PublicCreateAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT void SystemCreateAsset(MessageParcel &data, MessageParcel &reply);
-    EXPORT void CreateAssetForApp(MessageParcel &data, MessageParcel &reply);
+    EXPORT void PublicCreateAssetForApp(MessageParcel &data, MessageParcel &reply);
+    EXPORT void SystemCreateAssetForApp(MessageParcel &data, MessageParcel &reply);
     EXPORT void CreateAssetForAppWithAlbum(MessageParcel &data, MessageParcel &reply);
     EXPORT void CloneAsset(MessageParcel &data, MessageParcel &reply);
     EXPORT void RevertToOriginal(MessageParcel &data, MessageParcel &reply);
