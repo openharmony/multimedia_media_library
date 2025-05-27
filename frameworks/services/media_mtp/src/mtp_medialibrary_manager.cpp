@@ -1261,7 +1261,9 @@ int32_t MtpMedialibraryManager::SetPhotoObjectPropValue(const std::shared_ptr<Mt
         MTP_ERROR_INVALID_OBJECTPROP_VALUE, "get photo name fail");
     CHECK_AND_RETURN_RET_LOG(CheckRenameSuffix(context, colValueStr) == MTP_SUCCESS,
         MTP_ERROR_INVALID_OBJECTPROP_VALUE, "rename media asset fail");
-    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + OPRN_UPDATE);
+    string updateUri = MEDIALIBRARY_DATA_URI + "/" + PTP_OPERATION + "/" + OPRN_UPDATE;
+    MediaFileUtils::UriAppendKeyValue(updateUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(updateUri);
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_NAME, colValueStr);
