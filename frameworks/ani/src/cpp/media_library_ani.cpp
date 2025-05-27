@@ -74,9 +74,12 @@
 #include "get_analysis_process_vo.h"
 #include "get_photo_album_object_vo.h"
 #include "set_photo_album_order_vo.h"
+#include <ani_signature_builder.h>
 
 namespace OHOS {
 namespace Media {
+using namespace arkts::ani_signature;
+
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
 using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
 using DataShareResultSet = OHOS::DataShare::DataShareResultSet;
@@ -496,16 +499,16 @@ ani_status SetValueEnum(ani_env *env, ani_class cls, ani_object handle,
 {
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     ani_method setter;
-    std::string setterName = "<set>" + key;
-    ani_status status = env->Class_FindMethod(cls, setterName.c_str(), nullptr, &setter);
+    const char *setterName = Builder::BuildSetterName(key).c_str();
+    ani_status status = env->Class_FindMethod(cls, setterName, nullptr, &setter);
     if (status != ANI_OK) {
-        ANI_ERR_LOG("no %{public}s", setterName.c_str());
+        ANI_ERR_LOG("no %{public}s", setterName);
         return status;
     }
 
     status = env->Object_CallMethod_Void(handle, setter, value);
     if (status != ANI_OK) {
-        ANI_ERR_LOG("%{public}s fail", setterName.c_str());
+        ANI_ERR_LOG("%{public}s fail", setterName);
         return status;
     }
     return ANI_OK;

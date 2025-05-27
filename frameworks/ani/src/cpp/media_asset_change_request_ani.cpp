@@ -51,9 +51,12 @@
 #include "submit_cache_vo.h"
 #include "save_camera_photo_vo.h"
 #include "add_image_vo.h"
+#include <ani_signature_builder.h>
 
 namespace OHOS::Media {
 namespace {
+using namespace arkts::ani_signature;
+
 static const string addResourceByFileUriSignature = "C{" + PAH_ANI_CLASS_ENUM_RESOURCE_TYPE + "}" +
     "C{std.core.String}:";
 static const string addResourceByArrayBufferSignature = "C{" + PAH_ANI_CLASS_ENUM_RESOURCE_TYPE + "}" +
@@ -1015,7 +1018,7 @@ static ani_status ParseArgsDeleteAssets(ani_env *env, ani_object assets, std::ve
     CHECK_COND_RET(MediaLibraryAniUtils::IsArray(env, assets) == ANI_TRUE, ANI_ERROR, "invalid parameter.");
     ani_int length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(assets, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
     if (length <= 0) {
         return ANI_ERROR;
     }

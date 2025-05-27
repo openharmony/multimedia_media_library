@@ -42,9 +42,12 @@
 #include "vision_pose_column.h"
 #include "vision_image_face_column.h"
 #include "userfilemgr_uri.h"
+#include <ani_signature_builder.h>
 
 namespace OHOS {
 namespace Media {
+using namespace arkts::ani_signature;
+
 static constexpr int32_t FIELD_IDX = 0;
 static constexpr int32_t VALUE_IDX = 1;
 static constexpr int PARSE_ERROR = -1;
@@ -453,7 +456,7 @@ ani_status MediaLibraryAniUtils::GetUint32Array(ani_env *env, ani_object arg, st
 
     ani_int length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
 
     for (int i = 0; i < length; i++) {
         ani_ref value;
@@ -476,7 +479,7 @@ ani_status MediaLibraryAniUtils::GetInt32Array(ani_env *env, ani_object arg, std
 
     ani_int length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
 
     for (int i = 0; i < length; i++) {
         ani_ref ref;
@@ -535,7 +538,7 @@ ani_status MediaLibraryAniUtils::GetStringArray(ani_env *env, ani_object arg, st
 
     ani_int length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
 
     for (int i = 0; i < length; i++) {
         ani_ref value {};
@@ -576,7 +579,7 @@ ani_status MediaLibraryAniUtils::GetObjectArray(ani_env *env, ani_object arg, st
 
     ani_int length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
 
     for (ani_int i = 0; i < length; i++) {
         ani_ref value {};
@@ -644,7 +647,7 @@ ani_status MediaLibraryAniUtils::GetAniValueArray(ani_env *env, ani_object arg, 
 
     ani_int length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
 
     for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
@@ -832,7 +835,7 @@ ani_status MediaLibraryAniUtils::GetUriArrayFromAssets(ani_env *env, ani_object 
 
     ani_int length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
 
     for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
@@ -863,7 +866,7 @@ ani_status MediaLibraryAniUtils::GetArrayFromAssets(ani_env *env, ani_object arg
 
     ani_int length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
 
     for (ani_int i = 0; i < length; i++) {
         ani_ref asset {};
@@ -960,7 +963,7 @@ ani_status MediaLibraryAniUtils::GetPhotoAlbumAniArray(ani_env *env, ani_object 
 
     ani_int length;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(arg, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
 
     for (int i = 0; i < length; i++) {
         ani_ref value {};
@@ -1895,7 +1898,7 @@ ani_status MediaLibraryAniUtils::ParseAssetIdArray(ani_env *env, ani_object phot
 
     ani_int length = 0;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(photoAssets, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
     if (length <= 0) {
         ANI_ERR_LOG("Failed to check array length: %{public}d", length);
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array length");
