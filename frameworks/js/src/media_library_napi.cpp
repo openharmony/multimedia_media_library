@@ -5083,7 +5083,6 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     napi_valuetype valueType;
     NAPI_ASSERT(env, napi_typeof(env, context->argv[ARGS_ZERO], &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) {
-        context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET);
         context->isCreateByComponent = false;
         context->needSystemApp = true;
         if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -5092,7 +5091,6 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
         }
         return ParseArgsCreatePhotoAssetSystem(env, info, context);
     } else if (valueType == napi_number) {
-        context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET);
         context->isCreateByComponent = true;
         return ParseArgsCreatePhotoAssetComponent(env, info, context);
     } else {
@@ -8811,7 +8809,10 @@ napi_value MediaLibraryNapi::PhotoAccessHelperCreatePhotoAsset(napi_env env, nap
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;
     NAPI_ASSERT(env, ParseArgsCreatePhotoAsset(env, info, asyncContext), "Failed to parse js args");
-
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_CREATE_ASSET);
+    if (asyncContext->needSystemApp) {
+        asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_CREATE_ASSET);
+    }
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperCreatePhotoAsset",
         PhotoAccessCreateAssetExecute, JSCreateAssetCompleteCallback);
 }

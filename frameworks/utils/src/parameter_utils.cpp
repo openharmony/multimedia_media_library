@@ -87,12 +87,21 @@ int32_t ParameterUtils::CheckCreateAssetSubtype(int32_t photoSubtype)
     return E_OK;
 }
 
-int32_t ParameterUtils::CheckCreateAssetTitle(const std::string &title)
+int32_t ParameterUtils::CheckCreateAssetTitle(const std::string &title, bool isSystem)
 {
-    if (!title.empty()) {
-        if (MediaFileUtils::CheckTitleCompatible(title) != E_OK) {
-            return -EINVAL;
+    if (title.empty()) {
+        return E_OK;
+    }
+
+    if (isSystem) {
+        if (MediaFileUtils::CheckTitle(title) != E_OK) {
+            return E_INVALID_DISPLAY_NAME;
         }
+        return E_OK;
+    }
+
+    if (MediaFileUtils::CheckTitleCompatible(title) != E_OK) {
+        return E_INVALID_DISPLAY_NAME;
     }
     return E_OK;
 }
@@ -104,7 +113,7 @@ int32_t ParameterUtils::CheckCreateAssetMediaType(int32_t mediaType, const std::
     }
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     if (MimeTypeUtils::GetMediaTypeFromMimeType(mimeType) != mediaType) {
-        return -EINVAL;
+        return E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL;
     }
     return E_OK;
 }
@@ -128,7 +137,7 @@ int32_t ParameterUtils::GetTitleAndExtension(const std::string &displayName, std
         ext = displayName.substr(pos + 1);
         return E_OK;
     }
-    return -EINVAL;
+    return E_INVALID_DISPLAY_NAME;
 }
 
 int32_t ParameterUtils::CheckPublicCreateAsset(const CreateAssetReqBody &reqBody)
@@ -158,13 +167,14 @@ int32_t ParameterUtils::CheckSystemCreateAsset(const CreateAssetReqBody &reqBody
     errCode = MediaFileUtils::CheckDisplayName(reqBody.displayName);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Invalid displayName");
     std::string extension = MediaFileUtils::GetExtensionFromPath(reqBody.displayName);
+    CHECK_AND_RETURN_RET_LOG(!extension.empty(), E_INVALID_DISPLAY_NAME, "Invalid extension");
     errCode = CheckCreateAssetMediaType(reqBody.mediaType, extension);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Invalid mediaType");
 
     return E_OK;
 }
 
-int32_t ParameterUtils::CheckCreateAssetForApp(const CreateAssetForAppReqBody &reqBody)
+int32_t ParameterUtils::CheckPublicCreateAssetForApp(const CreateAssetForAppReqBody &reqBody)
 {
     CHECK_AND_RETURN_RET_LOG(reqBody.displayName.empty(), -EINVAL, "Invalid displayName");
     CHECK_AND_RETURN_RET_LOG(reqBody.ownerAlbumId.empty(), -EINVAL, "Invalid ownerAlbumId");
@@ -179,13 +189,28 @@ int32_t ParameterUtils::CheckCreateAssetForApp(const CreateAssetForAppReqBody &r
     return E_OK;
 }
 
+int32_t ParameterUtils::CheckSystemCreateAssetForApp(const CreateAssetForAppReqBody &reqBody)
+{
+    CHECK_AND_RETURN_RET_LOG(reqBody.displayName.empty(), -EINVAL, "Invalid displayName");
+    CHECK_AND_RETURN_RET_LOG(reqBody.ownerAlbumId.empty(), -EINVAL, "Invalid ownerAlbumId");
+
+    int32_t errCode = CheckCreateAssetSubtype(reqBody.photoSubtype);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Invalid photoSubtype");
+    errCode = CheckCreateAssetTitle(reqBody.title, true);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Invalid title");
+    errCode = CheckCreateAssetMediaType(reqBody.mediaType, reqBody.extension);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Invalid mediaType or extension");
+
+    return E_OK;
+}
+
 int32_t ParameterUtils::CheckCreateAssetForAppWithAlbum(const CreateAssetForAppReqBody &reqBody)
 {
     CHECK_AND_RETURN_RET_LOG(reqBody.displayName.empty(), -EINVAL, "Invalid displayName");
 
     int32_t errCode = CheckCreateAssetSubtype(reqBody.photoSubtype);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Invalid photoSubtype");
-    errCode = CheckCreateAssetTitle(reqBody.title);
+    errCode = CheckCreateAssetTitle(reqBody.title, true);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Invalid title");
     errCode = CheckCreateAssetMediaType(reqBody.mediaType, reqBody.extension);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Invalid mediaType or extension");
