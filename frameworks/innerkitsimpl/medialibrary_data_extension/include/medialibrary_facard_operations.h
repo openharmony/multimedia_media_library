@@ -44,6 +44,8 @@ public:
     EXPORT static void RegisterObserver(const std::string &formId, const std::string &registerUri);
     EXPORT static void UnregisterObserver(const std::string &formId);
     EXPORT static std::map<std::string, std::vector<std::string>> GetUris();
+    EXPORT static void InitRegisterObserver();
+    EXPORT static void InitFaCard();
     
 private:
     EXPORT static std::mutex mutex_;
