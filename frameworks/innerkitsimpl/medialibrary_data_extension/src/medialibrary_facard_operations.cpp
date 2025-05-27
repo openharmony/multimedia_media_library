@@ -38,6 +38,8 @@
 #include "ability_manager_client.h"
 #include "application_context.h"
 #include "resource_type.h"
+#include "ffrt.h"
+#include "ffrt_inner.h"
  
 using namespace OHOS::DataShare;
 using ChangeType = OHOS::DataShare::DataShareObserver::ChangeType;
@@ -304,6 +306,35 @@ int32_t MediaLibraryFaCardOperations::HandleRemoveGalleryFormOperation(NativeRdb
     string formId = rdbPredicate.GetWhereArgs()[0];
     MediaLibraryFaCardOperations::UnregisterObserver(formId);
     return MediaLibraryRdbStore::Delete(rdbPredicate);
+}
+
+void MediaLibraryFaCardOperations::InitRegisterObserver()
+{
+    const int INIT_NUM = 0;
+    const int END_NUM = 10;
+    const int DELAY_NUM = 100;
+    int cnt = INIT_NUM;
+    std::map<std::string, std::vector<std::string>> urisMap = MediaLibraryFaCardOperations::GetUris();
+    for (const auto& pair : urisMap) {
+        const std::string& formId = pair.first;
+        MEDIA_DEBUG_LOG("InitRegisterObserver formId = %{public}s", formId.c_str());
+        const std::vector<std::string>& uris = pair.second;
+        MEDIA_DEBUG_LOG("InitRegisterObserver uris.size = %{public}d", uris.size());
+        for (const std::string& uri : uris) {
+            MediaLibraryFaCardOperations::RegisterObserver(formId, uri);
+            MEDIA_DEBUG_LOG("InitRegisterObserver uri = %{public}s", uri.c_str());
+            cnt ++;
+            if (cnt == END_NUM) {
+                cnt = INIT_NUM;
+                std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_NUM));
+            }
+        }
+    }
+}
+
+void MediaLibraryFaCardOperations::InitFaCard()
+{
+    ffrt::submit([]() { MediaLibraryFaCardOperations::InitRegisterObserver(); });
 }
 } // namespace Media
 } // namespace OHOS
