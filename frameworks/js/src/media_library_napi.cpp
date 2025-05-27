@@ -122,6 +122,7 @@ const string DATE_FUNCTION = "DATE(";
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
+mutex MediaLibraryNapi::objectinfoMutex_;
 string ChangeListenerNapi::trashAlbumUri_;
 static SafeMap<int32_t, std::shared_ptr<ThumbnailBatchGenerateObserver>> thumbnailGenerateObserverMap;
 static SafeMap<int32_t, std::shared_ptr<ThumbnailGenerateHandler>> thumbnailGenerateHandlerMap;
@@ -494,6 +495,7 @@ static int32_t ParseUserIdFormCbInfo(napi_env env, napi_callback_info info)
 
 static int32_t GetUserIdFromContext(MediaLibraryAsyncContext *context)
 {
+    lock_guard<mutex> lock(MediaLibraryNapi::objectinfoMutex_);
     if (context == nullptr || context->objectInfo == nullptr) {
         return -1;
     }
@@ -3449,9 +3451,11 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
         }
     }
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
-
-    NAPI_CALL(env, napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
-    asyncContext->objectInfo = nullptr;
+    {
+        lock_guard<mutex> lock(MediaLibraryNapi::objectinfoMutex_);
+        NAPI_CALL(env, napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
+        asyncContext->objectInfo = nullptr;
+    }
     NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
     MediaLibraryAsyncContext *context = asyncContext.get();
     std::function<void()> task = [env, status, context]() {
