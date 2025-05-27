@@ -15,8 +15,10 @@
 
 #include "ani_class_name.h"
 #include "cloud_enhancement_task_state_ani.h"
+#include <ani_signature_builder.h>
 
 using namespace std;
+using namespace arkts::ani_signature;
 
 namespace OHOS {
 namespace Media {
@@ -56,11 +58,14 @@ ani_status CloudEnhancementTaskStateAni::BindAniAttributes(ani_env *env, ani_cla
     CHECK_COND_RET(env != nullptr, ANI_ERROR, "env is nullptr");
     CHECK_COND_RET(nativeHandle != nullptr, ANI_ERROR, "CloudEnhancementTaskStateAni is nullptr");
     ani_method taskStageSetter {};
-    CHECK_STATUS_RET(env->Class_FindMethod(cls, "<set>taskStage", nullptr, &taskStageSetter), "No <set>taskStage");
+    const char *taskStageSetterName = Builder::BuildSetterName("taskStage").c_str();
+    CHECK_STATUS_RET(env->Class_FindMethod(cls, taskStageSetterName, nullptr, &taskStageSetter),
+        "No %{public}s", taskStageSetterName);
     ani_enum_item taskStage = 0;
     CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, nativeHandle->GetCloudEnhancementTaskStage(), taskStage),
         "Get taskStage index fail");
-    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, taskStageSetter, taskStage), "<set>taskStage fail");
+    CHECK_STATUS_RET(env->Object_CallMethod_Void(object, taskStageSetter, taskStage),
+        "%{public}s fail", taskStageSetterName);
     return ANI_OK;
 }
 

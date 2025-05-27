@@ -36,8 +36,11 @@
 #include "album_photo_query_vo.h"
 #include "album_get_assets_vo.h"
 #include "get_face_id_vo.h"
+#include <ani_signature_builder.h>
 
 namespace OHOS::Media {
+using namespace arkts::ani_signature;
+
 using DataSharePredicates = OHOS::DataShare::DataSharePredicates;
 using DataShareValuesBucket = OHOS::DataShare::DataShareValuesBucket;
 struct PhotoAlbumAttributes {
@@ -147,20 +150,27 @@ ani_status PhotoAlbumAni::InitAniPhotoAlbumOperator(ani_env *env, AniPhotoAlbumO
     CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<ctor>", nullptr, &(photoAlbumOperator.ctor)),
         "Can't find method <ctor>");
     if (photoAlbumOperator.clsName.compare(PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE) == 0) {
-        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>albumType", nullptr,
-            &(photoAlbumOperator.setAlbumType)), "No <set>albumType");
-        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>albumSubtype", nullptr,
-            &(photoAlbumOperator.setAlbumSubtype)), "No <set>subtype");
-        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>albumName", nullptr,
-            &(photoAlbumOperator.setAlbumName)), "No <set>albumName");
-        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>albumUri", nullptr,
-            &(photoAlbumOperator.setAlbumUri)), "No <set>albumUri");
-        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>count", nullptr,
-            &(photoAlbumOperator.setCount)), "No <set>count");
-        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>coverUri", nullptr,
-            &(photoAlbumOperator.setCoverUri)), "No <set>coverUri");
-        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, "<set>lpath", nullptr,
-            &(photoAlbumOperator.setLPath)), "No <set>lPath");
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, Builder::BuildSetterName("albumType").c_str(),
+            nullptr, &(photoAlbumOperator.setAlbumType)),
+            "No %{public}s", Builder::BuildSetterName("albumType").c_str());
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, Builder::BuildSetterName("albumSubtype").c_str(),
+            nullptr, &(photoAlbumOperator.setAlbumSubtype)),
+            "No %{public}s", Builder::BuildSetterName("albumSubtype").c_str());
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, Builder::BuildSetterName("albumName").c_str(),
+            nullptr, &(photoAlbumOperator.setAlbumName)),
+            "No %{public}s", Builder::BuildSetterName("albumName").c_str());
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, Builder::BuildSetterName("albumUri").c_str(),
+            nullptr, &(photoAlbumOperator.setAlbumUri)),
+            "No %{public}s", Builder::BuildSetterName("albumUri").c_str());
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, Builder::BuildSetterName("count").c_str(),
+            nullptr, &(photoAlbumOperator.setCount)),
+            "No %{public}s", Builder::BuildSetterName("count").c_str());
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, Builder::BuildSetterName("coverUri").c_str(),
+            nullptr, &(photoAlbumOperator.setCoverUri)),
+            "No %{public}s", Builder::BuildSetterName("coverUri").c_str());
+        CHECK_STATUS_RET(env->Class_FindMethod(photoAlbumOperator.cls, Builder::BuildSetterName("lpath").c_str(),
+            nullptr, &(photoAlbumOperator.setLPath)),
+            "No %{public}s", Builder::BuildSetterName("lpath").c_str());
     }
     return ANI_OK;
 }
@@ -221,35 +231,41 @@ static ani_status BindAniAttributes(ani_env *env, const AniPhotoAlbumOperator &o
     if (opt.clsName.compare(PAH_ANI_CLASS_PHOTO_ALBUM_HANDLE) == 0) {
         ani_enum_item albumType = 0;
         CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.albumType, albumType), "Get albumType index fail");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumType, albumType), "<set>albumType fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumType, albumType),
+            "%{public}s fail", Builder::BuildSetterName("albumType").c_str());
 
         ani_enum_item albumSubtype = 0;
         CHECK_STATUS_RET(MediaLibraryEnumAni::ToAniEnum(env, attrs.albumSubtype, albumSubtype),
             "Get albumSubtype index fail");
         CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumSubtype, albumSubtype),
-            "<set>albumSubtype fail");
+            "%{public}s fail", Builder::BuildSetterName("albumSubtype").c_str());
 
         ani_string albumName {};
         CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.albumName, albumName),
             "ToAniString albumName fail");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumName, albumName), "<set>albumName fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumName, albumName),
+            "%{public}s fail", Builder::BuildSetterName("albumName").c_str());
 
         ani_string albumUri {};
         CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.albumUri, albumUri),
             "ToAniString albumUri fail");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumUri, albumUri), "<set>albumUri fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setAlbumUri, albumUri),
+            "%{public}s fail", Builder::BuildSetterName("albumUri").c_str());
 
         ani_double count = static_cast<ani_double>(attrs.count);
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setCount, count), "<set>count fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setCount, count),
+            "%{public}s fail", Builder::BuildSetterName("count").c_str());
 
         ani_string coverUri {};
         CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.coverUri, coverUri),
             "ToAniString coverUri fail");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setCoverUri, coverUri), "<set>coverUri fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setCoverUri, coverUri),
+            "%{public}s fail", Builder::BuildSetterName("coverUri").c_str());
 
         ani_string lPath {};
         CHECK_STATUS_RET(MediaLibraryAniUtils::ToAniString(env, attrs.lPath, lPath), "ToAniString lPath fail");
-        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setLPath, lPath), "<set>lPath fail");
+        CHECK_STATUS_RET(env->Object_CallMethod_Void(object, opt.setLPath, lPath),
+            "%{public}s fail", Builder::BuildSetterName("lPath").c_str());
     }
     return ANI_OK;
 }
@@ -663,7 +679,7 @@ static ani_status GetAssetsIdArray(ani_env *env, ani_object photoAssets, std::ve
 
     ani_int length = 0;
     CHECK_STATUS_RET(env->Object_GetPropertyByName_Int(photoAssets, "length", &length),
-        "Call method <get>length failed.");
+        "Call method %{public}s failed.", Builder::BuildGetterName("length").c_str());
     if (length <= 0) {
         ANI_ERR_LOG("Failed to check array length: %{public}d", length);
         AniError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array length");
