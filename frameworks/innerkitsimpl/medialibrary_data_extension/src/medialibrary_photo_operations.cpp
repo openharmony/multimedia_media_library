@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sstream>
 
 #include "abs_shared_result_set.h"
 #include "directory_ex.h"
@@ -4058,19 +4059,18 @@ struct LSOperationFileInfo {
 
 static std::string GetFilePermissions(struct stat& fileStat)
 {
-    char permissions[11];
-    snprintf(permissions, sizeof(permissions), "%c%c%c%c%c%c%c%c%c%c",
-             (S_ISDIR(fileStat.st_mode)) ? 'd' : '-',
-             (fileStat.st_mode & S_IRUSR) ? 'r' : '-',
-             (fileStat.st_mode & S_IWUSR) ? 'w' : '-',
-             (fileStat.st_mode & S_IXUSR) ? 'x' : '-',
-             (fileStat.st_mode & S_IRGRP) ? 'r' : '-',
-             (fileStat.st_mode & S_IWGRP) ? 'w' : '-',
-             (fileStat.st_mode & S_IXGRP) ? 'x' : '-',
-             (fileStat.st_mode & S_IROTH) ? 'r' : '-',
-             (fileStat.st_mode & S_IWOTH) ? 'w' : '-',
-             (fileStat.st_mode & S_IXOTH) ? 'x' : '-');
-    return std::string(permissions);
+    std::ostringstream ss;
+    ss << (S_ISDIR(fileStat.st_mode) ? 'd' : '-');
+    ss << ((fileStat.st_mode & S_IRUSR) ? 'r' : '-');
+    ss << ((fileStat.st_mode & S_IWUSR) ? 'w' : '-');
+    ss << ((fileStat.st_mode & S_IXUSR) ? 'x' : '-');
+    ss << ((fileStat.st_mode & S_IRGRP) ? 'r' : '-');
+    ss << ((fileStat.st_mode & S_IWGRP) ? 'w' : '-');
+    ss << ((fileStat.st_mode & S_IXGRP) ? 'x' : '-');
+    ss << ((fileStat.st_mode & S_IROTH) ? 'r' : '-');
+    ss << ((fileStat.st_mode & S_IWOTH) ? 'w' : '-');
+    ss << ((fileStat.st_mode & S_IXOTH) ? 'x' : '-');
+    return ss.str();
 }
 
 static void GetFileOwnerAndGroup(struct stat& fileStat, std::string& owner, std::string& group)
@@ -4125,22 +4125,21 @@ static bool QueryHiddenFilesList(set<string>& hiddenFiles)
     return true;
 }
 
-static int32_t ProcessFile(const std::string& dirPath, struct dirent* entry, std::vector<LSOperationFileInfo>& fileInfoList,
-    bool excludeHiddenFiles, std::set<std::string>& hiddenFiles)
+static int32_t ProcessFile(const string& filePath, const string fileName,
+    std::vector<LSOperationFileInfo>& fileInfoList, bool excludeHiddenFiles, std::set<std::string>& hiddenFiles)
 {
     struct stat fileStat;
-    std::string filePath = dirPath + "/" + entry->d_name;
 
     if (stat(filePath.c_str(), &fileStat) == -1) {
         MEDIA_ERR_LOG("stat failed. File path: %{public}s, err: %{public}s", filePath.c_str(), strerror(errno));
         return E_FAIL;
     }
 
-    if (std::string(entry->d_name) == "." || std::string(entry->d_name) == "..") {
+    if (std::string(fileName) == "." || std::string(fileName) == "..") {
         return E_OK;
     }
 
-    if (excludeHiddenFiles && hiddenFiles.find(entry->d_name) != hiddenFiles.end()) {
+    if (excludeHiddenFiles && hiddenFiles.find(fileName) != hiddenFiles.end()) {
         return E_OK;
     }
 
@@ -4150,32 +4149,43 @@ static int32_t ProcessFile(const std::string& dirPath, struct dirent* entry, std
     GetFileOwnerAndGroup(fileStat, fileInfo.owner, fileInfo.group);
     fileInfo.size = fileStat.st_size;
     fileInfo.modTime = GetFileModificationTime(fileStat);
-    fileInfo.fileName = entry->d_name;
+    fileInfo.fileName = fileName;
 
     fileInfoList.push_back(fileInfo);
 
     return E_OK;
 }
 
-static int32_t ListPhotoDirectory(const std::string& dirPath, std::vector<LSOperationFileInfo>& fileInfoList)
+static int32_t ListPhotoPath(const std::string& path, std::vector<LSOperationFileInfo>& fileInfoList)
 {
-    DIR* dp = opendir(dirPath.c_str());
-    if (dp == nullptr) {
-        MEDIA_ERR_LOG("opendir failed. Dir path: %{public}s, err: %{public}s", dirPath.c_str(), strerror(errno));
-        return E_INVALID_PATH;
-    }
-
     bool excludeHiddenFiles = PermissionUtils::IsRootShell() ? false : true;
     set<string> hiddenFiles;
     if (excludeHiddenFiles && !QueryHiddenFilesList(hiddenFiles)) {
-        MEDIA_ERR_LOG("Query hidden files failed. dir path: %{public}s", dirPath.c_str());
-        closedir(dp);
+        MEDIA_ERR_LOG("Query hidden files failed. dir path: %{public}s", path.c_str());
         return E_FAIL;
+    }
+
+    struct stat pathStat;
+    if (stat(path.c_str(), &pathStat) == -1) {
+        MEDIA_ERR_LOG("stat failed. Path: %{public}s, err: %{public}s", path.c_str(), strerror(errno));
+        return E_INVALID_PATH;
+    }
+
+    if (S_ISREG(pathStat.st_mode)) {
+        std::string fileName = MediaFileUtils::GetFileName(path);
+        return ProcessFile(path, fileName, fileInfoList, excludeHiddenFiles, hiddenFiles);
+    }
+
+    DIR* dp = opendir(path.c_str());
+    if (dp == nullptr) {
+        MEDIA_ERR_LOG("opendir failed. Dir path: %{public}s, err: %{public}s", path.c_str(), strerror(errno));
+        return E_INVALID_PATH;
     }
 
     struct dirent* entry;
     while ((entry = readdir(dp)) != nullptr) {
-        int32_t ret = ProcessFile(dirPath, entry, fileInfoList, excludeHiddenFiles, hiddenFiles);
+        ProcessFile(path + "/" + string(entry->d_name), string(entry->d_name),
+            fileInfoList, excludeHiddenFiles, hiddenFiles);
     }
 
     closedir(dp);
@@ -4208,8 +4218,16 @@ int32_t MediaLibraryPhotoOperations::LSMediaFiles(MediaLibraryCommand& cmd)
     string dirPath;
     CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, MediaColumn::MEDIA_FILE_PATH, dirPath),
         E_INVALID_VALUES, "Failed to get dirPath value");
+    string realPath;
+    CHECK_AND_RETURN_RET_LOG(PathToRealPath(dirPath, realPath),
+        E_INVALID_PATH, "real path failed: %{public}s, errno: %{public}d", dirPath.c_str(), errno);
+    if (!MediaFileUtils::StartsWith(realPath, "/storage/cloud/files/Photo")) {
+        MEDIA_ERR_LOG("dirPath: %{public}s is not under photo directory", dirPath.c_str());
+        return E_INVALID_PATH;
+    }
+
     std::vector<LSOperationFileInfo> fileInfoList;
-    int32_t ret = ListPhotoDirectory(dirPath, fileInfoList);
+    int32_t ret = ListPhotoPath(dirPath, fileInfoList);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to list photo directory, dirPath: %{public}s", dirPath.c_str());
     cmd.SetResult(BuildLSResult(fileInfoList));
     return E_OK;
