@@ -373,14 +373,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     CloudSyncSwitchManager cloudSyncSwitchManager;
     cloudSyncSwitchManager.RegisterObserver();
     SubscriberPowerConsumptionDetection();
-    std::map<std::string, std::vector<std::string>> urisMap = MediaLibraryFaCardOperations::GetUris();
-    for (const auto& pair : urisMap) {
-        const std::string& formId = pair.first;
-        const std::vector<std::string>& uris = pair.second;
-        for (const std::string& uri : uris) {
-            MediaLibraryFaCardOperations::RegisterObserver(formId, uri);
-        }
-    }
+    MediaLibraryFaCardOperations::InitFaCard();
 
     refCnt_++;
 
