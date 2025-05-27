@@ -319,7 +319,7 @@ void MediaLibraryFaCardOperations::InitRegisterObserver()
         const std::string& formId = pair.first;
         MEDIA_DEBUG_LOG("InitRegisterObserver formId = %{public}s", formId.c_str());
         const std::vector<std::string>& uris = pair.second;
-        MEDIA_DEBUG_LOG("InitRegisterObserver uris.size = %{public}d", uris.size);
+        MEDIA_DEBUG_LOG("InitRegisterObserver uris.size = %{public}d", uris.size());
         for (const std::string& uri : uris) {
             MediaLibraryFaCardOperations::RegisterObserver(formId, uri);
             MEDIA_DEBUG_LOG("InitRegisterObserver uri = %{public}s", uri.c_str());
