@@ -51,6 +51,17 @@ struct CustomRestoreDfxDataPoint {
     uint64_t totalTime = 0;
 };
 
+struct QuerySizeAndResolution {
+    std::string localImageSize;
+    std::string localVideoSize;
+    std::string cloudImageSize;
+    std::string cloudVideoSize;
+    std::string localImageResolution;
+    std::string localVideoResolution;
+    std::string cloudImageResolution;
+    std::string cloudVideoResolution;
+};
+
 struct PhotoStatistics {
     int32_t localImageCount;   // 纯本地照片数量
     int32_t localVideoCount;   // 纯本地视频数量
@@ -107,10 +118,8 @@ public:
     static int32_t ReportCustomRestoreFusion(const CustomRestoreDfxDataPoint& reportData);
     void ReportOperationRecordInfo();
     static int32_t ReportPhotoError(const PhotoErrorCount& reportData);
-    void ReportPhotoSizeInfo(const std::string &localImageSize, const std::string &localVideoSize,
-        const std::string &cloudImageSize, const std::string &cloudVideoSize, const std::string &photoMimeType);
-    void ReportPhotoResolutionInfo(const std::string &localImageResolution, const std::string &localVideoResolution,
-        const std::string &cloudImageResolution, const std::string &cloudVideoResolution);
+    void ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution& querySizeAndResolution,
+        const std::string& photoMimeType);
 };
 } // namespace Media
 } // namespace OHOS
