@@ -32,13 +32,21 @@ private:
     void HandleDirtyFilesBatch(int32_t offset);
     int32_t CleanDirtyFiles(const std::vector<PhotosDao::PhotosRowData> &dirtyFiles);
     int32_t DeleteDirtyFilesInDb();
+    int32_t SetVisibleFilesInDb();
+    bool DeleteDirtyFile(const PhotosDao::PhotosRowData &dirtyFile);
+    bool ShouldSetVisible(const PhotosDao::PhotosRowData &dirtyFile);
+    void AddToCleanFailedFiles(const PhotosDao::PhotosRowData &dirtyFile);
+    void AddToSetVisibleFiles(const PhotosDao::PhotosRowData &dirtyFile);
+    bool IsFileExist(const PhotosDao::PhotosRowData &dirtyFile);
 
 private:
     int32_t sceneCode_ {-1};
     std::string taskId_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::mutex cleanFailedFilesMutex_;
+    std::mutex setVisibleFilesMutex_;
     std::vector<std::string> cleanFailedFiles_;
+    std::vector<std::string> setVisibleFiles_;
     PhotosDao photosDao_;
     std::atomic<int32_t> dirtyFileCleanNumber_ {0};
     std::atomic<int32_t> failedDirtyFileCleanNumber_ {0};
