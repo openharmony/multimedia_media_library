@@ -67,6 +67,7 @@ private:
     void GetAddEditPhotoHandles(int32_t handle);
     int32_t GetAddEditAlbumHandle(int32_t handle);
     void AddBurstPhotoHandle(std::string burstKey);
+    void AddDelayInfo(uint32_t handle, uint32_t ownerAlbumId, const std::string &burstKey, uint64_t delayMs);
     void AddPhotoHandle(int32_t handle);
     void SendPhotoRemoveEvent(std::string &suffixString);
     bool ParseNotifyData(const ChangeInfo &changeInfo, std::vector<std::string> &fileIds);
@@ -85,6 +86,7 @@ private:
         uint16_t eventCode;
         uint32_t objectHandleAlbum;
         uint16_t eventCodeAlbum;
+        std::string burstKey;
         std::chrono::steady_clock::time_point tp;
     };
     std::thread delayThread_;
@@ -92,6 +94,8 @@ private:
     std::mutex mutexDelay_;
     std::condition_variable cvDelay_;
     std::atomic<bool> isRunningDelay_ {false};
+    std::set<std::string> needAddMemberBurstKeys_;
+    std::string previousAddedBurstKey_ ;
 };
 
 class MediaSyncNotifyData : public AsyncTaskData {
