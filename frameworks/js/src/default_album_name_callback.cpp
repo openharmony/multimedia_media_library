@@ -104,8 +104,8 @@ void DefaultAlbumNameCallback::SendMessageBack(const string &defaultAlbumName)
         JS_INNER_FAIL);
 
     napi_value data = nullptr;
-    CHECK_ARGS_RET_VOID(this->env_, napi_create_string_utf8(this->env_, defaultAlbumName.c_str(), NAPI_AUTO_LENGTH, &data),
-        JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(this->env_,
+        napi_create_string_utf8(this->env_, defaultAlbumName.c_str(), NAPI_AUTO_LENGTH, &data), JS_INNER_FAIL);
     CHECK_ARGS_RET_VOID(this->env_, napi_set_named_property(this->env_, results[PARAM0], DATA_PARAM.c_str(), data),
         JS_INNER_FAIL);
 
