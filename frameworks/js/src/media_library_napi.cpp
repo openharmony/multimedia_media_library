@@ -10412,7 +10412,7 @@ napi_value MediaLibraryNapi::PhotoAccessGetSharedPhotoAssets(napi_env env, napi_
     return jsFileArray;
 }
 
-static bool InitDefaultAlbumNameRequest(OHOS::AAFwk::Want &want, shared_ptr<ShortTermCallback> &callback,
+static bool InitDefaultAlbumNameRequest(OHOS::AAFwk::Want &want, shared_ptr<DefaultAlbumNameCallback> &callback,
                                         napi_env env, napi_value args[], size_t argsLen)
 {
     if (argsLen < ARGS_TWO) {
