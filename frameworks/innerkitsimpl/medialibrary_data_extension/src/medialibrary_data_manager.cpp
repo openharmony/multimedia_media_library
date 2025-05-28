@@ -465,6 +465,21 @@ void AddAssetAlbumOperationTable(const shared_ptr<MediaLibraryRdbStore>& store)
     MEDIA_INFO_LOG("end create asset and album operation table");
 }
 
+static void FixTabExtDirtyData(const shared_ptr<MediaLibraryRdbStore>& store)
+{
+    MEDIA_INFO_LOG("start to fix tab ext dirty data");
+    std::string cleanExtDirtyDataSql = "DELETE FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
+                            " WHERE NOT EXISTS (" +
+                            " SELECT 1 " +
+                            " FROM " + PhotoColumn::PHOTOS_TABLE +
+                            " WHERE " + PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID +
+                            " = " + PhotoExtColumn::PHOTOS_EXT_TABLE + "." + PhotoExtColumn::PHOTO_ID +
+                            ");";
+    int ret = store->ExecuteSql(cleanExtDirtyDataSql);
+    CHECK_AND_PRINT_LOG(ret == NativeRdb::E_OK, "FixTabExtDirtyData failed: execute sql failed");
+    MEDIA_INFO_LOG("end fix tab ext dirty data");
+}
+
 void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_PHOTO_QUALITY_CLONED) {
@@ -499,6 +514,11 @@ void HandleUpgradeRdbAsyncPart1(const shared_ptr<MediaLibraryRdbStore> rdbStore,
 
     if (oldVersion < VERSION_CREATE_TAB_ASSET_ALBUM_OPERATION) {
         AddAssetAlbumOperationTable(rdbStore);
+    }
+
+    if (oldVersion < VERSION_FIX_TAB_EXT_DIRTY_DATA) {
+        FixTabExtDirtyData(rdbStore);
+        rdbStore->SetOldVersion(VERSION_FIX_TAB_EXT_DIRTY_DATA);
     }
 }
 
