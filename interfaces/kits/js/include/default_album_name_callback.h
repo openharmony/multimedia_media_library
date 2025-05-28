@@ -45,7 +45,7 @@ private:
     napi_env env_ = nullptr;
     napi_ref callbackRef = nullptr;
     Ace::UIContent *uiContent = nullptr;
-    void SendMessageBack(const std::string &desFileUri);
+    void SendMessageBack(const std::string &defaultAlbumName);
     void CloseModalUIExtension();
 };
 }
