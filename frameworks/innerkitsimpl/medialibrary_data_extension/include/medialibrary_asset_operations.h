@@ -118,6 +118,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID, MEMBER_TYPE_STRING },
     { PhotoColumn::PHOTO_METADATA_FLAGS, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_IS_AUTO, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_MEDIA_SUFFIX, MEMBER_TYPE_STRING },
     { PhotoColumn::STAGE_VIDEO_TASK_STATUS, MEMBER_TYPE_INT32 },
 };
 
