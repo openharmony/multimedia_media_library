@@ -26,9 +26,10 @@
 #include "mdk_reference.h"
 #include "mdk_database.h"
 #include "on_fetch_records_album_vo.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaAlbumHandler : public ICloudMediaDataHandler {
+class EXPORT CloudMediaAlbumHandler : public ICloudMediaDataHandler {
 public:
     CloudMediaAlbumHandler() = default;
     virtual ~CloudMediaAlbumHandler() = default;
