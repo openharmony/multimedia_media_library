@@ -113,6 +113,8 @@ const int32_t EXPECTED_COUNT_0 = 0;
 const int32_t EXPECTED_ALBUM_TOTAL_COUNT = 4;
 const int32_t EXPECTED_AUDIO_COUNT = 3;
 const int32_t INVALID_ERROR_CODE = -1;
+const std::string DIRTY_FILE_ID_TO_SET_VISIBLE = "1000";
+const std::string DIRTY_FILE_PATH = "/storage/cloud/files/Documents/1.jpg";
 
 const int PHONE_FIRST_NUMBER = 105;
 const int PHONE_SECOND_NUMBER = 80;
@@ -2798,6 +2800,56 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_others_clone_IsIosMovi
     fileInfo.filePath = "/storage/media/100/local/test/test_DYNAMIC.MOV";
     othersClone->IsIosMovingPhotoVideo(fileInfo, I_PHONE_CLONE_RESTORE);
     EXPECT_EQ(fileInfo.otherSubtype, I_PHONE_DYNAMIC_VIDEO_TYPE);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clean_dirty_files_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clean_dirty_files_test_001");
+    PhotosDao::PhotosRowData dirtyFileNotLocal;
+    dirtyFileNotLocal.position = static_cast<int32_t>(PhotoPositionType::CLOUD);
+
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
+    int32_t count = photosDataHandler_.CleanDirtyFiles({ dirtyFileNotLocal });
+    EXPECT_EQ(photosDataHandler_.setVisibleFiles_.size(), EXPECTED_COUNT_0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clean_dirty_files_test_002, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clean_dirty_files_test_002");
+    PhotosDao::PhotosRowData dirtyFileNotExist;
+    dirtyFileNotExist.data = "";
+
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
+    int32_t count = photosDataHandler_.CleanDirtyFiles({ dirtyFileNotExist });
+    EXPECT_EQ(photosDataHandler_.setVisibleFiles_.size(), EXPECTED_COUNT_0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clean_dirty_files_test_003, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_clean_dirty_files_test_003");
+    PhotosDao::PhotosRowData dirtyFileNotSameSize;
+    dirtyFileNotSameSize.data = DIRTY_FILE_PATH;
+
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
+    int32_t count = photosDataHandler_.CleanDirtyFiles({ dirtyFileNotSameSize });
+    EXPECT_EQ(photosDataHandler_.setVisibleFiles_.size(), EXPECTED_COUNT_0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_set_visible_files_in_db_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_set_visible_files_in_db_test_001");
+    const std::string INSERT_SQL = "INSERT INTO Photos (file_id, data, sync_status) VALUES (1000, 'test', -1)";
+    int32_t errCode = g_rdbStore->GetRaw()->ExecuteSql(INSERT_SQL);
+    ASSERT_EQ(errCode, E_OK);
+
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
+    photosDataHandler_.setVisibleFiles_.emplace_back(DIRTY_FILE_ID_TO_SET_VISIBLE);
+    int32_t count = photosDataHandler_.SetVisibleFilesInDb();
+    EXPECT_GT(count, EXPECTED_COUNT_0);
 }
 } // namespace Media
 } // namespace OHOS
