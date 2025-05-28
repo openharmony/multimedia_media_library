@@ -199,6 +199,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/thumbnail_manager.cpp",
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/ipc/util/user_define_ipc_client.cpp",
+    "${MEDIALIB_JS_PATH}/src/default_album_name_callback.cpp",
   ]
 
   media_asset_service_vo_source = [
