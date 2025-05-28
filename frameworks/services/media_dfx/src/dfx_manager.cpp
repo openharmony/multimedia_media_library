@@ -496,12 +496,9 @@ static void HandleGetSizeAndResolutionInfo(std::shared_ptr<DfxReporter>& dfxRepo
     CHECK_AND_RETURN_LOG(dfxReporter != nullptr, "Failed to get dfxReporter for HandleGetSizeAndResolutionInfo!");
     QuerySizeAndResolution queryInfo = {};
     DfxDatabaseUtils::GetSizeAndResolutionInfo(queryInfo);
-    dfxReporter->ReportPhotoResolutionInfo(queryInfo.localImageResolution, queryInfo.localVideoResolution,
-        queryInfo.cloudImageResolution, queryInfo.cloudVideoResolution);
     std::string photoMimeType;
     DfxDatabaseUtils::GetPhotoMimeType(photoMimeType);
-    dfxReporter->ReportPhotoSizeInfo(queryInfo.localImageSize, queryInfo.localVideoSize,
-        queryInfo.cloudImageSize, queryInfo.cloudVideoSize, photoMimeType);
+    dfxReporter->ReportPhotoSizeAndResolutionInfo(queryInfo, photoMimeType);
 }
 
 static void HandleCheckOneWeekDayTask(DfxData *data)

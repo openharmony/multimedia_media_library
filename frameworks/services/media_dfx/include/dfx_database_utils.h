@@ -29,16 +29,7 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
-struct QuerySizeAndResolution {
-    std::string localImageSize;
-    std::string localVideoSize;
-    std::string cloudImageSize;
-    std::string cloudVideoSize;
-    std::string localImageResolution;
-    std::string localVideoResolution;
-    std::string cloudImageResolution;
-    std::string cloudVideoResolution;
-};
+struct QuerySizeAndResolution;
 
 class DfxDatabaseUtils {
 public:
