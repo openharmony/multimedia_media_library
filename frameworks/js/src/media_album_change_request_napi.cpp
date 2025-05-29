@@ -652,16 +652,20 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssetsImplement(napi_env env, napi
     CHECK_COND_WITH_MESSAGE(
         env, ParsePhotoAlbum(env, asyncContext->argv[PARAM1], targetAlbum), "Failed to parse targetAlbum");
     CHECK_COND_WITH_MESSAGE(env, targetAlbum->GetAlbumId() != photoAlbum->GetAlbumId(), "targetAlbum cannot be self");
-    CHECK_ARGS_WITH_MESSAGE(env,
-        PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
-        PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()),
-        "Only user and source albums can be set as target album.");
 
     vector<string> assetUriArray;
     if (parameterType == ParameterType::ASSET_URI) {
+        CHECK_ARGS_WITH_MESSAGE(env,
+            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()),
+            "Only user and source albums can be set as target album.");
         CHECK_ARGS_WITH_MESSAGE(env, ParseUriArray(env, asyncContext->argv[PARAM0], assetUriArray),
             "Failed to parse assets");
     } else {
+        CHECK_COND_WITH_MESSAGE(env,
+            PhotoAlbum::IsUserPhotoAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSourceAlbum(targetAlbum->GetPhotoAlbumType(), targetAlbum->GetPhotoAlbumSubType()),
+            "Only user and source albums can be set as target album.");
         CHECK_COND_WITH_MESSAGE(env, ParseAssetArray(env, asyncContext->argv[PARAM0], assetUriArray),
             "Failed to parse assets");
     }
