@@ -2941,7 +2941,7 @@ napi_value ChangeListenerNapi::BuildSharedPhotoAssetsObj(const napi_env& env,
     ChangeListenerNapi::JsOnChangeCallbackWrapper *wrapper, bool isPhoto)
 {
     napi_value value = nullptr;
-    napi_status status = napi_create_array_with_length(env, wrapper->uriSize_, &value);
+    napi_status status = napi_create_array_with_length(env, wrapper->sharedAssetsRowObjVector_.size(), &value);
     CHECK_COND_RET(status == napi_ok, nullptr, "Create array error!");
     napi_value tmpValue = nullptr;
     status = napi_create_array_with_length(env, 0, &tmpValue);
