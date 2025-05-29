@@ -947,6 +947,13 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
     }
+    // visit count
+    if (cmd.GetUri().ToString().find(MEDIA_DATA_DB_THUMBNAIL) != string::npos &&
+        cmd.GetUri().ToString().find(PhotoColumn::PHOTO_LCD_VISIT_COUNT) != string::npos) {
+        auto fileId = cmd.GetOprnFileId();
+        MediaVisitCountManager::AddVisitCount(MediaVisitCountManager::VisitCountType::PHOTO_LCD, std::move(fileId));
+        return E_SUCCESS;
+    }
 
     ValuesBucket value = RdbUtils::ToValuesBucket(dataShareValue);
     if (value.IsEmpty()) {
@@ -2073,9 +2080,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
     return QuerySet(cmd, columns, predicates, errCode);
 }
 
-static bool AddToMediaVisitCount(OperationObject &oprnObject, MediaLibraryCommand &cmd)
+static void AddToMediaVisitCount(OperationObject &oprnObject, MediaLibraryCommand &cmd)
 {
-    bool isBlock = false;
     bool isValidCount = false;
     auto visitType = MediaVisitCountManager::VisitCountType::PHOTO_FS;
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
@@ -2093,10 +2099,6 @@ static bool AddToMediaVisitCount(OperationObject &oprnObject, MediaLibraryComman
         } else {
             isValidCount = true;
         }
-    } else if (oprnObject == OperationObject::THUMBNAIL_VISIT_COUNT) {
-        visitType = MediaVisitCountManager::VisitCountType::PHOTO_LCD;
-        isValidCount = true;
-        isBlock = true;
     } else {
         MEDIA_DEBUG_LOG("AddToMediaVisitCount oprnObject: %{public}d", static_cast<int>(oprnObject));
     }
@@ -2105,7 +2107,6 @@ static bool AddToMediaVisitCount(OperationObject &oprnObject, MediaLibraryComman
         auto fileId = cmd.GetOprnFileId();
         MediaVisitCountManager::AddVisitCount(visitType, std::move(fileId));
     }
-    return isBlock;
 }
 
 int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string &mode)
@@ -2113,7 +2114,7 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataManager::OpenFile");
     auto oprnObject = cmd.GetOprnObject();
-    CHECK_AND_RETURN_RET(!AddToMediaVisitCount(oprnObject, cmd), E_OK);
+    AddToMediaVisitCount(oprnObject, cmd);
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO ||
         oprnObject == OperationObject::HIGHLIGHT_COVER  || oprnObject == OperationObject::HIGHLIGHT_URI ||
         oprnObject == OperationObject::PTP_OPERATION) {
