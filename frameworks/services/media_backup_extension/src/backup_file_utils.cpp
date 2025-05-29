@@ -849,5 +849,19 @@ int32_t BackupFileUtils::IsCloneCloudSyncSwitchOn(int32_t sceneCode)
     }
     return (switchOn == MOBILE_NETWORK_STATUS_ON) ? CheckSwitchType::SUCCESS_ON : CheckSwitchType::SUCCESS_OFF;
 }
+
+bool BackupFileUtils::IsValidFile(const std::string &path)
+{
+    size_t fileSize = 0;
+    MediaFileUtils::GetFileSize(path, fileSize);
+    return fileSize > 0 && MediaFileUtils::IsFileExists(path);
+}
+
+bool BackupFileUtils::IsMovingPhotoExist(const std::string &path)
+{
+    string videoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(path);
+    string extraDataPath = MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(path);
+    return IsValidFile(videoPath) && IsValidFile(extraDataPath);
+}
 } // namespace Media
 } // namespace OHOS
