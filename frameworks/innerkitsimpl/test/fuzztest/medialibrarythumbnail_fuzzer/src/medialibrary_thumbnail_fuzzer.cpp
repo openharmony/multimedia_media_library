@@ -25,8 +25,10 @@
 #include "image_type.h"
 #include "ithumbnail_helper.h"
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_kvstore_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "rdb_predicates.h"
 #include "userfile_manager_types.h"
@@ -184,6 +186,10 @@ static Media::ThumbnailData FuzzThumbnailData(const uint8_t* data, size_t size)
     Media::ThumbnailData datas;
     datas.path = FuzzString(data, size);
     datas.mediaType = FuzzMediaType(data, size);
+    if (FuzzBool(data, size)) {
+        datas.id = to_string(FuzzInt32(data, size));
+        datas.dateTaken = to_string(FuzzInt32(data, size));
+    }
     return datas;
 }
 
@@ -310,6 +316,39 @@ static std::shared_ptr<Media::Picture> FuzzPicture(const uint8_t* data, size_t s
     CHECK_AND_RETURN_RET_LOG(auxiliaryPicture != nullptr, nullptr, "Create auxiliaryPicture failed");
     picture->SetAuxiliaryPicture(auxiliaryPicture);
     return picture;
+}
+
+static std::string FuzzThumbnailPath(const uint8_t* data, size_t size)
+{
+    std::string path = "/storage/cloud/files/" + to_string(FuzzInt32(data, size)) + "/fuzztest";
+    Media::ThumbnailData thumbnailData;
+    thumbnailData.path = path;
+    std::string thumbnailDir = Media::ThumbnailFileUtils::GetThumbnailDir(thumbnailData);
+    Media::MediaFileUtils::CreateDirectory(thumbnailDir);
+
+    std::string lcdPath = thumbnailDir + "/LCD.jpg";
+    Media::MediaFileUtils::CreateFile(lcdPath);
+
+    std::string thumbPath = thumbnailDir + "/THM.jpg";
+    Media::MediaFileUtils::CreateFile(thumbPath);
+
+    std::string astcPath = thumbnailDir + "/THM_ASTC.astc";
+    Media::MediaFileUtils::CreateFile(astcPath);
+
+    std::string thumbExDir = thumbnailDir + "/THM_EX";
+    Media::MediaFileUtils::CreateDirectory(thumbExDir);
+    std::string thumbExFile = thumbExDir + "/THM.jpg";
+    Media::MediaFileUtils::CreateFile(thumbExFile);
+    thumbExFile = thumbExDir + "/LCD.jpg";
+    Media::MediaFileUtils::CreateFile(thumbExFile);
+
+    std::string beginTimeStampDir = thumbnailDir + "/beginTimeStampDir0";
+    Media::MediaFileUtils::CreateDirectory(beginTimeStampDir);
+    std::string beginTimeStampFile = beginTimeStampDir + "/THM.jpg";
+    Media::MediaFileUtils::CreateFile(beginTimeStampFile);
+    beginTimeStampFile = beginTimeStampDir + "/LCD.jpg";
+    Media::MediaFileUtils::CreateFile(beginTimeStampFile);
+    return path;
 }
 
 static void ThumbnailAgingHelperTest(const uint8_t* data, size_t size)
@@ -442,6 +481,11 @@ static void Init()
     SetTables();
 }
 
+static void Finish()
+{
+    Media::MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
+}
+
 static void ThumhnailTest(const uint8_t* data, size_t size)
 {
     const int32_t int32Count = 4;
@@ -533,30 +577,7 @@ static void ThumbnailSourceTest2(const uint8_t* data, size_t size)
     thumbnailData.originalPhotoPicture = FuzzPicture(data, size, false, false, true);
     Media::SourceLoader sourceLoader5(desiredSize, thumbnailData);
     sourceLoader5.CreateSourceWithOriginalPictureMainPixel();
-}
 
-static void ThumbnailRemainTest(const uint8_t* data, size_t size)
-{
-    Media::ThumbnailData thumbnailData;
-    Media::ThumbnailType type;
-    Media::ThumbRdbOpt opt;
-    Media::Size desiredSize;
-    string str;
-
-    // thumbnail_file_utils
-    thumbnailData = FuzzThumbnailData(data, size);
-    Media::ThumbnailFileUtils::DeleteAllThumbFiles(thumbnailData);
-    thumbnailData = FuzzThumbnailData(data, size);
-    type = FuzzThumbnailType(data, size);
-    Media::ThumbnailFileUtils::DeleteThumbFile(thumbnailData, type);
-    thumbnailData = FuzzThumbnailData(data, size);
-    Media::ThumbnailFileUtils::DeleteBeginTimestampDir(thumbnailData);
-
-    // thumbnail_generate_helper
-    opt = FuzzThumbRdbOpt(data, size, false);
-    Media::ThumbnailGenerateHelper::TriggerHighlightThumbnail(opt, str, str, str, str);
-
-    // thumbnail_source_loading
     thumbnailData = FuzzThumbnailData(data, size);
     desiredSize = FuzzSize(data, size);
     thumbnailData.path = TEST_IMAGE_PATH;
@@ -566,7 +587,7 @@ static void ThumbnailRemainTest(const uint8_t* data, size_t size)
         { Media::SourceState::LOCAL_ORIGIN, Media::SourceState::FINISH },
     };
     Media::SourceLoader sourceLoader6(desiredSize, thumbnailData);
-    bool ret = sourceLoader6.RunLoading();
+    int32_t ret = sourceLoader6.RunLoading();
     MEDIA_INFO_LOG("sourceLoader6.RunLoading image path: %{public}s. ret: %{public}d", TEST_IMAGE_PATH.c_str(), ret);
 }
 
@@ -592,7 +613,7 @@ static void ParseFileUriTest(const uint8_t* data, size_t size)
     Media::ThumbnailUriUtils::GetTableFromUri(uri);
 }
 
-static void ThumhnailImageFrameworkUtilsTest(const uint8_t* data, size_t size)
+static void ThumbnailImageFrameworkUtilsTest(const uint8_t* data, size_t size)
 {
     int32_t orientation = 0;
     std::shared_ptr<Media::PixelMap> pixelMap = FuzzNormalPixelMap(data, size, true);
@@ -610,6 +631,18 @@ static void ThumhnailImageFrameworkUtilsTest(const uint8_t* data, size_t size)
     Media::ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
     Media::ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
     Media::ThumbnailImageFrameWorkUtils::GetPictureOrientation(picture, orientation);
+}
+
+static void ThumbnailFileUtilsTest(const uint8_t* data, size_t size)
+{
+    Media::ThumbnailData thumbnailData;
+    thumbnailData.path = FuzzThumbnailPath(data, size);
+    Media::ThumbnailFileUtils::DeleteThumbnailDir(thumbnailData);
+    thumbnailData.path = FuzzThumbnailPath(data, size);
+    Media::ThumbnailFileUtils::DeleteAllThumbFiles(thumbnailData);
+    Media::ThumbnailFileUtils::DeleteMonthAndYearAstc(thumbnailData);
+    Media::ThumbnailFileUtils::CheckRemainSpaceMeetCondition(FuzzInt32(data, size));
+    Media::ThumbnailFileUtils::DeleteAstcDataFromKvStore(thumbnailData, FuzzThumbnailType(data, size));
 }
 } // namespace OHOS
 
@@ -630,7 +663,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::ThumbnailSourceTest(data, size);
     OHOS::ThumbnailSourceTest2(data, size);
     OHOS::ParseFileUriTest(data, size);
-    OHOS::ThumhnailImageFrameworkUtilsTest(data, size);
-    OHOS::ThumbnailRemainTest(data, size);
+    OHOS::ThumbnailImageFrameworkUtilsTest(data, size);
+    OHOS::ThumbnailFileUtilsTest(data, size);
+    OHOS::Finish();
     return 0;
 }
