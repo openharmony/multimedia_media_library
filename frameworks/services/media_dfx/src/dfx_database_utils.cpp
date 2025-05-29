@@ -496,7 +496,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryPhotoFilePath(
 bool DfxDatabaseUtils::CheckChargingAndScreenOff(bool isReported)
 {
     bool bFlag = PowerEfficiencyManager::IsChargingAndScreenOff();
-    if (!bFlag) {
+    if (bFlag) {
         return bFlag;
     }
     int32_t errCode;
@@ -508,9 +508,11 @@ bool DfxDatabaseUtils::CheckChargingAndScreenOff(bool isReported)
     }
     if (isReported) {
         int64_t time = MediaFileUtils::UTCTimeSeconds() - TWO_DAY;
+        MEDIA_INFO_LOG("change to last two day time");
         prefs->PutLong(LAST_TWO_DAY_REPORT_TIME, time);
     } else {
         int64_t time = MediaFileUtils::UTCTimeSeconds() - ONE_WEEK;
+        MEDIA_INFO_LOG("change to last week day time");
         prefs->PutLong(LAST_WEEK_REPORT_TIME, time);
     }
     prefs->FlushSync();
@@ -542,7 +544,7 @@ int32_t DfxDatabaseUtils::QueryPhotoErrorCount()
             return E_OK;
         }
         auto resultSet = QueryPhotoFilePath(rdbStore, offset);
-        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_FAIL, "Failed to query resultSet");
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_OK, "Failed to query resultSet");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             string filePath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
             if (!PhotoFileUtils::IsThumbnailExists(filePath)) {
@@ -704,26 +706,26 @@ static string GetInfoToString(const unordered_map<string, int32_t>& defaultMap)
     return result;
 }
 
-void DfxDatabaseUtils::GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInfo)
+bool DfxDatabaseUtils::GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInfo)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    CHECK_AND_RETURN_LOG(rdbStore != nullptr, "rdbStore is nullptr");
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, false, "rdbStore is nullptr");
     std::string querySql = "SELECT count(1) as count FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
         PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " + PhotoColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
         PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = 1 ";
     shared_ptr<NativeRdb::ResultSet> resultCount = rdbStore->QuerySql(querySql);
-    CHECK_AND_RETURN_LOG(resultCount != nullptr, "Failed to query resultCount");
+    CHECK_AND_RETURN_RET_LOG(resultCount != nullptr, false, "Failed to query resultCount");
     int32_t count = 0;
     if (resultCount->GoToNextRow() == NativeRdb::E_OK) {
         count = GetInt32Val("count", resultCount);
     }
     resultCount->Close();
-    CHECK_AND_RETURN_LOG(count > 0, "Failed to get count");
+    CHECK_AND_RETURN_RET_LOG(count > 0, false, "Failed to get count");
     SizeAndResolutionInfoMap infoMap;
     for (int32_t offset = 0; offset < count; offset += BATCH_QUERY_PHOTO_NUMBER) {
         if (!CheckChargingAndScreenOff(false)) {
             MEDIA_ERR_LOG("Charging and screen off");
-            return;
+            return false;
         }
         std::string querySql = "SELECT " + PhotoColumn::PHOTO_POSITION + ", " + MediaColumn::MEDIA_TYPE +
             " , " + MediaColumn::MEDIA_SIZE + ", " + PhotoColumn::PHOTO_HEIGHT + ", " + PhotoColumn::PHOTO_WIDTH +
@@ -733,7 +735,7 @@ void DfxDatabaseUtils::GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInf
             " LIMIT " + std::to_string(offset) + ", " + std::to_string(BATCH_QUERY_PHOTO_NUMBER);
 
         shared_ptr<NativeRdb::ResultSet> resultSet = rdbStore->QuerySql(querySql);
-        CHECK_AND_RETURN_LOG(resultSet != nullptr, "Failed to query resultCount");
+        CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Failed to query resultCount");
         while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
             StatisticsSizeAndResolution(resultSet, infoMap);
         }
@@ -747,6 +749,7 @@ void DfxDatabaseUtils::GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInf
     queryInfo.localVideoResolution = GetInfoToString(infoMap.localVideoResolutionMap);
     queryInfo.cloudImageResolution = GetInfoToString(infoMap.cloudImageResolutionMap);
     queryInfo.cloudVideoResolution = GetInfoToString(infoMap.cloudVideoResolutionMap);
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
