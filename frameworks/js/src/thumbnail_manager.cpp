@@ -55,7 +55,6 @@ namespace Media {
 shared_ptr<ThumbnailManager> ThumbnailManager::instance_ = nullptr;
 mutex ThumbnailManager::mutex_;
 bool ThumbnailManager::init_ = false;
-static constexpr int32_t DEFAULT_FD = -1;
 
 ThumbnailRequest::ThumbnailRequest(const RequestPhotoParams &params, napi_env env,
     napi_ref callback) : callback_(env, callback), requestPhotoType(params.type), uri_(params.uri),
@@ -572,32 +571,31 @@ bool ThumbnailManager::RequestFastImage(const RequestSharedPtr &request)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ThumbnailManager::RequestFastImage");
-    request->SetFd(DEFAULT_FD);
     Size fastSize;
     if (!GetFastThumbNewSize(request->GetRequestSize(), fastSize)) {
+        NAPI_ERR_LOG("Can not get fastThumb size, uri=%{private}s", request->GetUri().c_str());
         return false;
     }
     UniqueFd uniqueFd(OpenThumbnail(request->GetPath(), GetThumbType(fastSize.width, fastSize.height)));
-    if (uniqueFd.Get() < 0) {
+    if (uniqueFd.Get() <= 0) {
         // Can not get fast image in sandbox
-        int32_t outFd = GetPixelMapFromServer(request->GetUri(), request->GetRequestSize(), request->GetPath());
-        if (outFd <= 0) {
-            NAPI_ERR_LOG("Can not get thumbnail from server, uri=%{private}s", request->GetUri().c_str());
-            request->error = E_FAIL;
-            return false;
-        }
-        request->SetFd(outFd);
+        uniqueFd = UniqueFd(GetPixelMapFromServer(request->GetUri(), fastSize, request->GetPath()));
+    }
+    if (uniqueFd.Get() <= 0) {
+        NAPI_ERR_LOG("Can not get pixelmap from uri, uri=%{private}s", request->GetUri().c_str());
+        request->error = E_FAIL;
+        return false;
     }
 
     ThumbnailType thumbType = GetThumbType(fastSize.width, fastSize.height);
     PixelMapPtr pixelMap = nullptr;
-    if (request->GetFd().Get() == DEFAULT_FD &&
-        (thumbType == ThumbnailType::MTH || thumbType == ThumbnailType::YEAR)) {
+    if (thumbType == ThumbnailType::MTH || thumbType == ThumbnailType::YEAR) {
         pixelMap = CreateThumbnailByAshmem(uniqueFd, fastSize);
     } else {
-        pixelMap = DecodeThumbnail(request->GetFd(), fastSize);
+        pixelMap = DecodeThumbnail(uniqueFd, fastSize);
     }
     if (pixelMap == nullptr) {
+        NAPI_ERR_LOG("Create pixelmap failed, uri=%{private}s", request->GetUri().c_str());
         request->error = E_FAIL;
         return false;
     }
@@ -628,14 +626,8 @@ void ThumbnailManager::DealWithQualityRequest(const RequestSharedPtr &request)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ThumbnailManager::DealWithQualityRequest");
-
-    unique_ptr<PixelMap> pixelMapPtr = nullptr;
-    if (request->GetFd().Get() > 0) {
-        pixelMapPtr = DecodeThumbnail(request->GetFd(), request->GetRequestSize());
-    } else {
-        pixelMapPtr = QueryThumbnail(request->GetUri(), request->GetRequestSize(), request->GetPath());
-    }
-
+    unique_ptr<PixelMap> pixelMapPtr =
+        QueryThumbnail(request->GetUri(), request->GetRequestSize(), request->GetPath());
     if (pixelMapPtr == nullptr) {
         NAPI_ERR_LOG("Can not get pixelMap");
         request->error = E_FAIL;
