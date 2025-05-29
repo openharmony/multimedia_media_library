@@ -4323,6 +4323,16 @@ static void AddDcAnalysisColumn(RdbStore &store)
     MEDIA_INFO_LOG("Add DC analysis column end");
 }
 
+static void AddDcAnalysisIndexUpdateColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + USER_PHOTOGRAPHY_INFO_TABLE + " ADD COLUMN " + DC_INDEX_UPDATE_COUNT + " INT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("Add DC analysis index update column start");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("Add DC analysis index update column end");
+}
+
 static void FixSourceAlbumCreateTriggersToUseLPath(RdbStore& store)
 {
     const vector<string> sqls = {
@@ -4536,6 +4546,10 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_CREATE_TAB_CUSTOM_RECORDS) {
         CreateTabCustomRecords(store);
+    }
+
+    if (oldVersion < VERSION_ADD_DC_ANALYSIS_INDEX_UPDATE) {
+        AddDcAnalysisIndexUpdateColumn(store);
     }
 
     TableEventHandler().OnUpgrade(
