@@ -38,6 +38,7 @@ const std::string FRONT_INDEX_COUNT = "front_index_count";
 const std::string FRONT_CV_MODIFIED = "front_cv_modified";
 const std::string FRONT_CV_COUNT = "front_cv_count";
 const std::string DC_INDEX_COUNT = "dc_index_count";
+const std::string DC_INDEX_UPDATE_COUNT = "dc_index_update_count";
 const std::string DC_OCR_COUNT = "dc_ocr_count";
 const std::string DC_LABEL_COUNT = "dc_label_count";
 const std::string DC_MODIFY_TIME_STAMP = "dc_modify_time_stamp";
