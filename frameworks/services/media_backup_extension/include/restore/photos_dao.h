@@ -25,12 +25,13 @@ namespace OHOS::Media {
 class PhotosDao {
 public:
     struct PhotosRowData {
-        int32_t fileId;
+        int32_t fileId {0};
         std::string data;
-        int32_t ownerAlbumId;
+        int32_t ownerAlbumId {0};
         std::string burstKey;
-        int32_t cleanFlag;
-        int32_t position;
+        int32_t cleanFlag {0};
+        int32_t position {0};
+        int32_t subtype {0};
     };
 
     struct PhotosBasicInfo {
@@ -176,7 +177,7 @@ private:
     const std::string SQL_PHOTOS_GET_DIRTY_FILES_COUNT =
         "SELECT count(1) as count FROM Photos WHERE sync_status = ?";
     const std::string SQL_PHOTOS_GET_DIRTY_FILES =
-        "SELECT file_id, data FROM Photos WHERE sync_status = ? LIMIT ?, ?";
+        "SELECT file_id, data, position, subtype FROM Photos WHERE sync_status = ? LIMIT ?, ?";
 };
 }  // namespace OHOS::Media
 #endif  // OHOS_MEDIA_PHOTOS_DAO

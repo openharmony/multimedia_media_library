@@ -56,6 +56,7 @@ void PhotosDataHandler::HandleDirtyFiles()
     int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t totalNumber = photosDao_.GetDirtyFilesCount();
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    CHECK_AND_RETURN(totalNumber > 0);
     ffrt_set_cpu_worker_max_num(ffrt::qos_utility, MAX_THREAD_NUM);
     int64_t startClean = MediaFileUtils::UTCTimeMilliSeconds();
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
@@ -63,6 +64,8 @@ void PhotosDataHandler::HandleDirtyFiles()
             ffrt::task_attr().qos(static_cast<int32_t>(ffrt::qos_utility)));
     }
     ffrt::wait();
+    int64_t startSetVisible = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t setCount = PhotosDataHandler::SetVisibleFilesInDb();
     int64_t startDelete = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t deleteCount = PhotosDataHandler::DeleteDirtyFilesInDb();
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
@@ -73,6 +76,8 @@ void PhotosDataHandler::HandleDirtyFiles()
             "; clean files count: " + std::to_string(dirtyFileCleanNumber_) +
             ", clean files cost: " + std::to_string(startDelete - startClean) +
             ", failed clean files count: " + std::to_string(failedDirtyFileCleanNumber_) +
+            "; set visible count: " + std::to_string(setCount) +
+            ", update in db cost: " + std::to_string(end - startSetVisible) +
             "; clean db count: " + std::to_string(deleteCount) +
             ", delete in db cost: " + std::to_string(end - startDelete));
 }
@@ -83,8 +88,7 @@ void PhotosDataHandler::HandleDirtyFilesBatch(int32_t offset)
     int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
     std::vector<PhotosDao::PhotosRowData> dirtyFiles = photosDao_.GetDirtyFiles(offset);
     int64_t startClean = MediaFileUtils::UTCTimeMilliSeconds();
-    int32_t count = CleanDirtyFiles(dirtyFiles);
-    dirtyFileCleanNumber_ += count;
+    dirtyFileCleanNumber_ += CleanDirtyFiles(dirtyFiles);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("query %{public}zu dirty files cost %{public}" PRId64", clean cost %{public}" PRId64,
         dirtyFiles.size(), startClean - startQuery, end - startClean);
@@ -95,24 +99,34 @@ int32_t PhotosDataHandler::CleanDirtyFiles(const std::vector<PhotosDao::PhotosRo
     int32_t count = 0;
     CHECK_AND_RETURN_RET(!dirtyFiles.empty(), count);
     for (const auto &dirtyFile : dirtyFiles) {
-        // clean cloud path
-        bool deleteFileRet = MediaFileUtils::DeleteFileOrFolder(dirtyFile.data, true);
-        // clean thumbs folder
-        std::string thumbsFolder =
-            BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::CLOUD_THUMB, dirtyFile.data);
-        bool deleteThumbsRet = MediaFileUtils::DeleteFileOrFolder(thumbsFolder, false);
-        if (!deleteFileRet || !deleteThumbsRet) {
-            std::lock_guard<mutex> lock(cleanFailedFilesMutex_);
-            MEDIA_ERR_LOG("Clean file failed, path: %{public}s, deleteFileRet: %{public}d, deleteThumbsRet: %{public}d,"
-                " errno: %{public}d", BackupFileUtils::GarbleFilePath(dirtyFile.data, sceneCode_).c_str(),
-                static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);
-            cleanFailedFiles_.push_back(to_string(dirtyFile.fileId));
-            failedDirtyFileCleanNumber_++;
+        if (ShouldSetVisible(dirtyFile)) {
+            IsFileExist(dirtyFile) ? AddToSetVisibleFiles(dirtyFile) : AddToCleanFailedFiles(dirtyFile);
+            continue;
+        }
+        if (!DeleteDirtyFile(dirtyFile)) {
+            AddToCleanFailedFiles(dirtyFile);
             continue;
         }
         count++;
     }
     return count;
+}
+
+bool PhotosDataHandler::DeleteDirtyFile(const PhotosDao::PhotosRowData &dirtyFile)
+{
+    // clean cloud path
+    bool deleteFileRet = MediaFileUtils::DeleteFileOrFolder(dirtyFile.data, true);
+    // clean thumbs folder
+    std::string thumbsFolder =
+        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::CLOUD_THUMB, dirtyFile.data);
+    bool deleteThumbsRet = MediaFileUtils::DeleteFileOrFolder(thumbsFolder, false);
+    if (!deleteFileRet || !deleteThumbsRet) {
+        MEDIA_ERR_LOG("Clean file failed, path: %{public}s, deleteFileRet: %{public}d, deleteThumbsRet: %{public}d,"
+            " errno: %{public}d", BackupFileUtils::GarbleFilePath(dirtyFile.data, sceneCode_).c_str(),
+            static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);
+        return false;
+    }
+    return true;
 }
 
 int32_t PhotosDataHandler::DeleteDirtyFilesInDb()
@@ -125,5 +139,46 @@ int32_t PhotosDataHandler::DeleteDirtyFilesInDb()
     int32_t deleteDbRet = BackupDatabaseUtils::Delete(predicates, changedRows, mediaLibraryRdb_);
     MEDIA_INFO_LOG("changedRows: %{public}d, deleteRet: %{public}d", changedRows, deleteDbRet);
     return changedRows;
+}
+
+int32_t PhotosDataHandler::SetVisibleFilesInDb()
+{
+    NativeRdb::ValuesBucket valuesBucket;
+    valuesBucket.PutInt(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+    std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+        std::make_unique<NativeRdb::AbsRdbPredicates>(PhotoColumn::PHOTOS_TABLE);
+    predicates->EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_BACKUP));
+    predicates->In(MediaColumn::MEDIA_ID, setVisibleFiles_);
+
+    int32_t changedRows = 0;
+    int32_t updateRet = BackupDatabaseUtils::Update(mediaLibraryRdb_, changedRows, valuesBucket, predicates);
+    MEDIA_INFO_LOG("changedRows: %{public}d, updateRet: %{public}d", changedRows, updateRet);
+    return changedRows;
+}
+
+bool PhotosDataHandler::ShouldSetVisible(const PhotosDao::PhotosRowData &dirtyFile)
+{
+    return sceneCode_ == UPGRADE_RESTORE_ID && dirtyFile.position == static_cast<int32_t>(PhotoPositionType::LOCAL);
+}
+
+void PhotosDataHandler::AddToCleanFailedFiles(const PhotosDao::PhotosRowData &dirtyFile)
+{
+    std::lock_guard<mutex> lock(cleanFailedFilesMutex_);
+    cleanFailedFiles_.emplace_back(std::to_string(dirtyFile.fileId));
+    failedDirtyFileCleanNumber_++;
+}
+
+void PhotosDataHandler::AddToSetVisibleFiles(const PhotosDao::PhotosRowData &dirtyFile)
+{
+    std::lock_guard<mutex> lock(setVisibleFilesMutex_);
+    setVisibleFiles_.emplace_back(std::to_string(dirtyFile.fileId));
+}
+
+bool PhotosDataHandler::IsFileExist(const PhotosDao::PhotosRowData &dirtyFile)
+{
+    if (dirtyFile.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        return BackupFileUtils::IsValidFile(dirtyFile.data);
+    }
+    return BackupFileUtils::IsValidFile(dirtyFile.data) && BackupFileUtils::IsMovingPhotoExist(dirtyFile.data);
 }
 }  // namespace OHOS::Media

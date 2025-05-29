@@ -214,6 +214,8 @@ std::vector<PhotosDao::PhotosRowData> PhotosDao::GetDirtyFiles(int32_t offset)
         PhotosDao::PhotosRowData rowData;
         rowData.data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
         rowData.fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        rowData.position = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
+        rowData.subtype = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
         rowDataList.emplace_back(rowData);
     }
     resultSet->Close();
