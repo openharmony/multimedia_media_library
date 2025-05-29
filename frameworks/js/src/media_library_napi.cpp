@@ -179,7 +179,6 @@ const std::string CONFIRM_BOX_PHOTO_SUB_TYPE_ARRAY = "photoSubTypeArray";
 const std::string CONFIRM_BOX_BUNDLE_NAME = "bundleName";
 const std::string CONFIRM_BOX_APP_NAME = "appName";
 const std::string CONFIRM_BOX_APP_ID = "appId";
-const std::string CONFIRM_BOX_DEFAULT_ALBUM_NAME = "defaultAlbumName";
 const std::string TARGET_PAGE = "targetPage";
 const std::string TOKEN_ID = "tokenId";
 
@@ -10421,9 +10420,6 @@ static bool InitDefaultAlbumNameRequest(OHOS::AAFwk::Want &want, shared_ptr<Defa
 
     want.SetElementName(CONFIRM_BOX_PACKAGE_NAME, CONFIRM_BOX_EXT_DEFAULT_ALBUM_NAME_ABILITY_NAME);
     want.SetParam(CONFIRM_BOX_EXTENSION_TYPE, CONFIRM_BOX_REQUEST_TYPE);
-
-    string defaultAlbumName = "";
-    want.SetParam(CONFIRM_BOX_DEFAULT_ALBUM_NAME, defaultAlbumName);
 
     callback->SetFunc(args[PARAM1]);
     return true;
