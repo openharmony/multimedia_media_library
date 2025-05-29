@@ -2811,8 +2811,7 @@ int32_t MediaLibraryPhotoOperations::AddFilters(MediaLibraryCommand& cmd)
         ScanMovingPhoto(cmd, columns);
 
         vector<string> fileAssetColumns = {PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
-            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_ID,
-            PhotoColumn::STAGE_VIDEO_TASK_STATUS };
+            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_ID };
         shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
             PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, fileAssetColumns);
         CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
@@ -3323,7 +3322,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
 
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
         PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
-        PhotoColumn::PHOTO_EDIT_TIME };
+        PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
