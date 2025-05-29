@@ -21,9 +21,10 @@
 
 #include "i_cloud_media_data_client.h"
 #include "get_aging_file_vo.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaDataClientHandler : public ICloudMediaDataClient {
+class EXPORT CloudMediaDataClientHandler : public ICloudMediaDataClient {
 public:  // constructors & destructors
     CloudMediaDataClientHandler() = default;
     virtual ~CloudMediaDataClientHandler() = default;
