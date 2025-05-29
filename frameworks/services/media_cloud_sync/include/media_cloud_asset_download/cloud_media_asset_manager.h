@@ -82,6 +82,7 @@ private:
     EXPORT int32_t UpdateLocalAndCloudAssets(const std::vector<std::string> &updateFileIds);
     EXPORT void SetCloudsyncStatusKey(const int32_t statusKey);
     EXPORT void TryToStartSync();
+    EXPORT int32_t ClearDeletedDbData();
 
 private:
     static std::shared_ptr<CloudMediaAssetDownloadOperation> operation_;
