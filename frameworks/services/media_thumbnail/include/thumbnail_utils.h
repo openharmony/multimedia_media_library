@@ -42,8 +42,8 @@ public:
     EXPORT static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size,
         std::unique_ptr<PixelMap> &pixelMap);
     EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
-        bool isAstc = false, bool forceSdr = true, const uint8_t quality = THUMBNAIL_MID);
-    EXPORT static bool CompressPicture(ThumbnailData &data, bool isSourceEx, std::string &tempOutputPath);
+        bool isAstc = false, bool forceSdr = true, const ThumbnailQulity quality = ThumbnailQulity::DEFAULT);
+    EXPORT static bool CompressPicture(ThumbnailData &data, const bool isSourceEx, std::string &tempOutputPath);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
     // RDB Store Query
@@ -57,7 +57,7 @@ public:
     EXPORT static bool LoadSourceImage(ThumbnailData &data);
     EXPORT static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
 
-    EXPORT static bool SaveAfterPacking(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
+    EXPORT static bool SaveAfterPacking(ThumbnailData &data, const bool isSourceEx, const std::string &tempOutputPath);
     EXPORT static void CancelAfterPacking(const std::string &tempOutputPath);
     EXPORT static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
     EXPORT static bool CacheLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data);
@@ -97,7 +97,7 @@ public:
         ThumbnailData &data, int &err);
     EXPORT static bool CheckDateTaken(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
-    EXPORT static bool ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx);
+    EXPORT static bool ScaleThumbnailFromSource(ThumbnailData &data, const bool isSourceEx);
     EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize,
         const AntiAliasingOption &option);
     EXPORT static bool CenterScaleEx(std::shared_ptr<PixelMap> &dataSource, const Size &desiredSize,
@@ -116,6 +116,9 @@ public:
     EXPORT static void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
     EXPORT static void DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
     EXPORT static void BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch);
+
+    EXPORT static bool IsPictureValid(const std::shared_ptr<Picture>& picture);
+    EXPORT static bool IsPixelMapValid(const std::shared_ptr<PixelMapPtr>& pixelMap);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);

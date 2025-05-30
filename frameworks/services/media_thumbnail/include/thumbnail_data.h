@@ -173,7 +173,7 @@ public:
     EXPORT int32_t photoHeight {0};
     EXPORT int32_t photoWidth {0};
     EXPORT int32_t dirty {-1};
-    EXPORT uint8_t thumbnailQuality {THUMBNAIL_MID};
+    EXPORT ThumbnailQulity thumbnailQuality {ThumbnailQulity::DEFAULT};
 
     // Loaded lcd source can be resized to generate thumbnail in order
     EXPORT bool needResizeLcd {false};
@@ -209,8 +209,6 @@ public:
     EXPORT Size thumbDesiredSize;
     EXPORT GenerateStats stats;
     EXPORT SourceLoaderOptions loaderOpts;
-    EXPORT int64_t thumbnailReady { -1 };
-    EXPORT int64_t lcdVisitTime { -1 };
     EXPORT std::shared_ptr<Picture> originalPhotoPicture = nullptr;
     EXPORT NativeRdb::ValuesBucket rdbUpdateCache;
 };

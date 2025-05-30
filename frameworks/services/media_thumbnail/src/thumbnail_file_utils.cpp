@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <ftw.h>
+#include <unordered_map>
 
 #include "dfx_utils.h"
 #include "medialibrary_errno.h"
@@ -35,6 +36,15 @@ namespace Media {
 const int32_t OPEN_FDS = 64;
 const int32_t BEGIN_TIMESTAMP_DIR_LEVEL = 1;
 const std::string BEGIN_TIMESTAMP_DIR_PREFIX = "beginTimeStamp";
+
+const std::string LCD_FILE_NAME = "LCD.jpg";
+const std::string THUMB_FILE_NAME = "THM.jpg";
+const std::string THUMB_ASTC_FILE_NAME = "THM_ASTC.astc";
+static const std::unordered_map<ThumbnailType, std::string> THUMB_FILE_NAME_MAP = {
+    { ThumbnailType::LCD, LCD_FILE_NAME },
+    { ThumbnailType::THUMB, THUMB_FILE_NAME },
+    { ThumbnailType::THUMB_ASTC, THUMB_ASTC_FILE_NAME }
+};
 
 std::string ThumbnailFileUtils::GetThumbnailSuffix(ThumbnailType type)
 {
@@ -67,6 +77,16 @@ std::string ThumbnailFileUtils::GetThumbExDir(const ThumbnailData &data)
     CHECK_AND_RETURN_RET_LOG(!data.path.empty(), "", "Path is empty");
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
     return MediaFileUtils::GetParentPath(fileName);
+}
+
+bool ThumbnailFileUtils::GetThumbFileSize(const ThumbnailData& data, const ThumbnailType type, size_t& size)
+{
+    CHECK_AND_RETURN_RET_LOG(THUMB_FILE_NAME_MAP.find(type) != THUMB_FILE_NAME_MAP.end(), false,
+        "invalid ThumbnailType: %{public}d", type);
+    std::string thumbDir = GetThumbnailDir(data);
+    CHECK_AND_RETURN_RET_LOG(thumbDir != "", false, "GetThumbnailDir failed");
+    std::string thumbPath = thumbDir + THUMB_FILE_NAME_MAP.at(type);
+    return MediaFileUtils::GetFileSize(thumbPath, size);
 }
 
 bool ThumbnailFileUtils::DeleteThumbnailDir(const ThumbnailData &data)

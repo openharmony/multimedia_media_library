@@ -81,7 +81,7 @@ public:
     void UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, bool isLoadSuccess);
 
     EXPORT bool TrySaveCurrentPixelMap(ThumbnailData &data, ThumbnailType type);
-    EXPORT bool TrySaveCurrentPicture(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
+    EXPORT bool TrySaveCurrentPicture(ThumbnailData &data, const bool isSourceEx, const std::string &tempOutputPath);
 
 private:
     void Notify();
@@ -125,9 +125,9 @@ public:
     EXPORT static void UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &data);
 private:
     EXPORT static bool TrySavePixelMap(ThumbnailData &data, ThumbnailType type);
-    EXPORT static bool TrySavePicture(ThumbnailData &data, bool isSourceEx, const std::string &tempOutputPath);
-    EXPORT static bool SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx);
-    EXPORT static bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, bool isSourceEx);
+    EXPORT static bool TrySavePicture(ThumbnailData &data, const bool isSourceEx, const std::string &tempOutputPath);
+    EXPORT static bool SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &data, const bool isSourceEx);
+    EXPORT static bool SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, const bool isSourceEx);
     EXPORT static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     EXPORT static bool GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data);
@@ -141,6 +141,12 @@ private:
     EXPORT static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool NeedGenerateExFile(ThumbnailData &data);
+    EXPORT static bool CompressAndSavePicture(ThumbnailData &data, const bool isSourceEx);
+    // sizeLimit unit: Byte
+    EXPORT static bool CompressAndSavePictureLowQuality(ThumbnailData &data,
+        const bool isSourceEx, const size_t sizeLimit);
+    EXPORT static bool CompressAndSaveLcdPixelMapLowQuality(ThumbnailData& data,
+        const bool isSourceEx, const size_t sizeLimit);
 };
 } // namespace Media
 } // namespace OHOS

@@ -387,11 +387,11 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
 }
 
 bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isAstc,
-    bool forceSdr, const uint8_t quality)
+    bool forceSdr, const ThumbnailQulity quality)
 {
     PackOption option = {
         .format = isAstc ? THUMBASTC_FORMAT : THUMBNAIL_FORMAT,
-        .quality = isAstc ? ASTC_LOW_QUALITY : quality,
+        .quality = static_cast<uint8_t>(isAstc ? ThumbnailQulity::ASTC_LOW_QUALITY : quality),
         .numberHint = NUMBER_HINT_1,
         .desiredDynamicRange = forceSdr ? EncodeDynamicRange::SDR :EncodeDynamicRange::AUTO
     };
@@ -427,13 +427,13 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_
     return true;
 }
 
-bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, string &tempOutputPath)
+bool ThumbnailUtils::CompressPicture(ThumbnailData &data, const bool isSourceEx, string &tempOutputPath)
 {
     CHECK_AND_RETURN_RET_LOG(
         THUMBNAIL_QUALITY_SET.count(data.thumbnailQuality),
         false,
-        "compress thumbnail quality not in thumbnail quality set, quality: %{public}d",
-        data.thumbnailQuality);
+        "compress thumbnail quality not in thumbnail quality set, quality: %{public}u",
+        static_cast<uint8_t>(data.thumbnailQuality));
 
     MEDIA_INFO_LOG("CompressPicture %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     auto outputPath = GetThumbnailPath(data.path, isSourceEx ? THUMBNAIL_LCD_EX_SUFFIX : THUMBNAIL_LCD_SUFFIX);
@@ -462,7 +462,7 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
     Media::ImagePacker imagePacker;
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
-        .quality = data.thumbnailQuality,
+        .quality = static_cast<uint8_t>(data.thumbnailQuality),
         .numberHint = NUMBER_HINT_1,
         .desiredDynamicRange = EncodeDynamicRange::AUTO,
         .needsPackProperties = false
@@ -473,7 +473,7 @@ bool ThumbnailUtils::CompressPicture(ThumbnailData &data, bool isSourceEx, strin
     return true;
 }
 
-bool ThumbnailUtils::SaveAfterPacking(ThumbnailData &data, bool isSourceEx, const string &tempOutputPath)
+bool ThumbnailUtils::SaveAfterPacking(ThumbnailData &data, const bool isSourceEx, const string &tempOutputPath)
 {
     size_t size = -1;
     MediaFileUtils::GetFileSize(tempOutputPath, size);
@@ -2053,7 +2053,7 @@ void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
     }
 }
 
-bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx)
+bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, const bool isSourceEx)
 {
     std::shared_ptr<PixelMap> dataSource = isSourceEx ? data.source.GetPixelMapEx() : data.source.GetPixelMap();
     if (dataSource == nullptr) {
@@ -2346,6 +2346,28 @@ void ThumbnailUtils::BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch)
         }
     }
     MediaLibraryPhotoOperations::BatchDropThumbnailSize(photoIds);
+}
+
+bool ThumbnailUtils::IsPictureValid(const std::shared_ptr<Picture>& picture)
+{
+    CHECK_AND_RETURN_RET_LOG(picture != nullptr, false, "Picture is null");
+    CHECK_AND_RETURN_RET_LOG(picture->GetMainPixel() != nullptr, false, "Picture main pixel is null");
+    CHECK_AND_RETURN_RET_LOG(picture->GetGainPixel() != nullptr, false, "Picture gain pixel is null");
+    auto mainWidth = picture->GetMainPixel()->GetWidth();
+    auto mainHeight = picture->GetMainPixel()->GetHeight();
+    CHECK_AND_RETURN_RET_LOG(mainWidth > 0 && mainHeight > 0, false,
+        "Invalid main pixel map size: width %{public}d, height: %{public}d", mainWidth, mainHeight);
+    return true;
+}
+
+bool ThumbnailUtils::IsPixelMapValid(const std::shared_ptr<PixelMapPtr>& pixelMap)
+{
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "Picture is null");
+    auto width = pixelMap->GetMainPixel()->GetWidth();
+    auto height = pixelMap->GetMainPixel()->GetHeight();
+    CHECK_AND_RETURN_RET_LOG(width > 0 && height > 0, false,
+        "Invalid pixel map size: width %{public}d, height: %{public}d", width, height);
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

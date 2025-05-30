@@ -92,6 +92,16 @@ const std::unordered_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
     { ThumbnailType::YEAR_ASTC, "YEAR_ASTC" },
 };
 
+enum class ThumbnailQulity : uint8_t {
+    ASTC_LOW_QUALITY = 20,
+    POOR = 50,
+    NOT_BAD = 60,
+    MID = 70,
+    GOOD = 80,
+    DEFAULT = 90,
+    HIGH = 100,
+};
+
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
 
 constexpr int32_t THUMBNAIL_LCD_GENERATE_THRESHOLD = 5000;
@@ -132,10 +142,6 @@ const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
 
 const std::string THUMBNAIL_FORMAT = "image/jpeg";
 const std::string THUMBASTC_FORMAT = "image/astc/4*4";
-constexpr uint8_t THUMBNAIL_EIGHTY = 80;
-constexpr uint8_t THUMBNAIL_MID = 90;
-constexpr uint8_t THUMBNAIL_HIGH = 100;
-constexpr uint8_t ASTC_LOW_QUALITY = 20;
 
 constexpr uint32_t THUMBNAIL_QUERY_MAX = 2000;
 constexpr uint32_t THUMBNAIL_QUERY_MIN = 200;
@@ -183,10 +189,13 @@ const size_t LCD_UPLOAD_LIMIT_SIZE = 2048000;
 // Only check the latest 3000 data to avoid opreation taking too long time
 const uint32_t MAXIMUM_LCD_CHECK_NUM = 3000;
 
-const std::unordered_set<uint8_t> THUMBNAIL_QUALITY_SET = {
-    THUMBNAIL_EIGHTY,
-    THUMBNAIL_MID,
-    THUMBNAIL_HIGH,
+const std::unordered_set<ThumbnailQulity> THUMBNAIL_QUALITY_SET = {
+    ThumbnailQulity::POOR,
+    ThumbnailQulity::NOT_BAD,
+    ThumbnailQulity::MID,
+    ThumbnailQulity::GOOD,
+    ThumbnailQulity::DEFAULT,
+    ThumbnailQulity::HIGH,
 };
 
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
