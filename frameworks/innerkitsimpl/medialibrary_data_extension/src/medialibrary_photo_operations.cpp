@@ -4267,8 +4267,8 @@ int32_t MediaLibraryPhotoOperations::LSMediaFiles(MediaLibraryCommand& cmd)
     string realPath;
     CHECK_AND_RETURN_RET_LOG(PathToRealPath(dirPath, realPath),
         E_INVALID_PATH, "real path failed: %{public}s, errno: %{public}d", dirPath.c_str(), errno);
-    if (!MediaFileUtils::StartsWith(realPath, "/storage/cloud/files/Photo")) {
-        MEDIA_ERR_LOG("dirPath: %{public}s is not under photo directory", dirPath.c_str());
+    if (!MediaFileUtils::StartsWith(realPath, "/storage/media/local/files/Photo")) {
+        MEDIA_ERR_LOG("dirPath: %{public}s is not under local photo directory", dirPath.c_str());
         return E_INVALID_PATH;
     }
 

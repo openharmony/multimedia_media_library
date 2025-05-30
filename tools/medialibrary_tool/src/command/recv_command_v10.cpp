@@ -110,6 +110,23 @@ static bool IsRoot()
     return getuid() == rootUid;
 }
 
+static string ConvertToCloudPath(const string& inputPath)
+{
+    std::string tmpPath = inputPath;
+    const std::string localPrefix = "/storage/media/local/files/Photo";
+    const std::string cloudPrefix = "/storage/cloud/files/Photo";
+
+    // Checks if input path starts with /storage/media/local/files/Photo
+    if (tmpPath.rfind(localPrefix, 0) == 0) {
+        tmpPath.replace(0, localPrefix.length(), cloudPrefix);
+    } else {
+        MEDIA_ERR_LOG("Convert to cloud path failed, input path format incorrect");
+        return tmpPath;
+    }
+
+    return tmpPath;
+}
+
 int32_t RecvCommandV10::QueryAssets(std::shared_ptr<DataShare::DataShareResultSet>& resultSet,
     const std::string& tableName)
 {
@@ -131,7 +148,7 @@ int32_t RecvCommandV10::QueryAssets(std::shared_ptr<DataShare::DataShareResultSe
             std::string id = fileUri.GetFileId();
             predicates.EqualTo(MediaColumn::MEDIA_ID, id);
         } else if (!srcPath_.empty()) {
-            predicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, srcPath_);
+            predicates.EqualTo(MediaColumn::MEDIA_FILE_PATH, ConvertToCloudPath(srcPath_));
         }
     }
 
@@ -164,12 +181,13 @@ bool RecvCommandV10::QueryMovingPhotoAsset(const string& filePath, unique_ptr<Fi
         return false;
     }
 
-    string::size_type lastDotPos = filePath.find_last_of('.');
+    string queryPath = ConvertToCloudPath(filePath);
+    string::size_type lastDotPos = queryPath.find_last_of('.');
     if (lastDotPos == string::npos) {
         MEDIA_ERR_LOG("filePath does not have an extension: %{public}s", filePath.c_str());
         return false;
     }
-    string pathPrefix = filePath.substr(0, lastDotPos);
+    string pathPrefix = queryPath.substr(0, lastDotPos + 1);
 
     OHOS::DataShare::DataSharePredicates predicates;
     predicates.Like(MediaColumn::MEDIA_FILE_PATH, pathPrefix + "%");
