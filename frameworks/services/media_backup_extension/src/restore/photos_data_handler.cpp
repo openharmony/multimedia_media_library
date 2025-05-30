@@ -100,7 +100,7 @@ int32_t PhotosDataHandler::CleanDirtyFiles(const std::vector<PhotosDao::PhotosRo
     CHECK_AND_RETURN_RET(!dirtyFiles.empty(), count);
     for (const auto &dirtyFile : dirtyFiles) {
         if (ShouldSetVisible(dirtyFile)) {
-            IsFileExist(dirtyFile) ? AddToSetVisibleFiles(dirtyFile) : AddToCleanFailedFiles(dirtyFile);
+            IsLocalFileValid(dirtyFile) ? AddToSetVisibleFiles(dirtyFile) : AddToCleanFailedFiles(dirtyFile);
             continue;
         }
         if (!DeleteDirtyFile(dirtyFile)) {
@@ -158,7 +158,8 @@ int32_t PhotosDataHandler::SetVisibleFilesInDb()
 
 bool PhotosDataHandler::ShouldSetVisible(const PhotosDao::PhotosRowData &dirtyFile)
 {
-    return sceneCode_ == UPGRADE_RESTORE_ID && dirtyFile.position == static_cast<int32_t>(PhotoPositionType::LOCAL);
+    return sceneCode_ == UPGRADE_RESTORE_ID && dirtyFile.position == static_cast<int32_t>(PhotoPositionType::LOCAL) &&
+        IsLocalFileExist(dirtyFile);
 }
 
 void PhotosDataHandler::AddToCleanFailedFiles(const PhotosDao::PhotosRowData &dirtyFile)
@@ -174,11 +175,24 @@ void PhotosDataHandler::AddToSetVisibleFiles(const PhotosDao::PhotosRowData &dir
     setVisibleFiles_.emplace_back(std::to_string(dirtyFile.fileId));
 }
 
-bool PhotosDataHandler::IsFileExist(const PhotosDao::PhotosRowData &dirtyFile)
+bool PhotosDataHandler::IsLocalFileExist(const PhotosDao::PhotosRowData &dirtyFile)
 {
-    if (dirtyFile.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        return BackupFileUtils::IsValidFile(dirtyFile.data);
-    }
-    return BackupFileUtils::IsValidFile(dirtyFile.data) && BackupFileUtils::IsMovingPhotoExist(dirtyFile.data);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::StartsWith(dirtyFile.data, RESTORE_FILES_CLOUD_DIR), false,
+        "Invalid prefix, path: %{public}s", BackupFileUtils::GarbleFilePath(dirtyFile.data, sceneCode_).c_str());
+    std::string localPath =
+        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, dirtyFile.data);
+    return MediaFileUtils::IsFileExists(localPath);
+}
+
+bool PhotosDataHandler::IsLocalFileValid(const PhotosDao::PhotosRowData &dirtyFile)
+{
+    std::string localPath =
+        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, dirtyFile.data);
+    bool ret = dirtyFile.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ?
+        BackupFileUtils::IsValidFile(localPath) :
+        BackupFileUtils::IsValidFile(localPath) && BackupFileUtils::IsMovingPhotoExist(localPath);
+    CHECK_AND_EXECUTE(ret, MEDIA_ERR_LOG("Invalid file, path: %{public}s",
+        BackupFileUtils::GarbleFilePath(dirtyFile.data, sceneCode_).c_str()));
+    return ret;
 }
 }  // namespace OHOS::Media
