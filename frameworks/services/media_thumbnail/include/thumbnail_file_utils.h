@@ -29,6 +29,7 @@ public:
     EXPORT static std::string GetThumbnailSuffix(ThumbnailType type);
     EXPORT static std::string GetThumbnailDir(const ThumbnailData &data);
     EXPORT static std::string GetThumbExDir(const ThumbnailData &data);
+    EXPORT static bool GetThumbFileSize(const ThumbnailData &data, const ThumbnailType type, size_t& size);
     EXPORT static bool DeleteThumbnailDir(const ThumbnailData &data);
     EXPORT static bool DeleteAllThumbFiles(const ThumbnailData &data);
     EXPORT static bool DeleteMonthAndYearAstc(const ThumbnailData &data);
