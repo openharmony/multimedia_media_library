@@ -37,7 +37,8 @@ private:
     bool ShouldSetVisible(const PhotosDao::PhotosRowData &dirtyFile);
     void AddToCleanFailedFiles(const PhotosDao::PhotosRowData &dirtyFile);
     void AddToSetVisibleFiles(const PhotosDao::PhotosRowData &dirtyFile);
-    bool IsFileExist(const PhotosDao::PhotosRowData &dirtyFile);
+    bool IsLocalFileExist(const PhotosDao::PhotosRowData &dirtyFile);
+    bool IsLocalFileValid(const PhotosDao::PhotosRowData &dirtyFile);
 
 private:
     int32_t sceneCode_ {-1};
