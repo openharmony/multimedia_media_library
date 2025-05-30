@@ -473,11 +473,34 @@ int32_t CloudMediaAssetManager::UpdateLocalAndCloudAssets(const std::vector<std:
     return E_OK;
 }
 
+int32_t CloudMediaAssetManager::ClearDeletedDbData()
+{
+    MEDIA_INFO_LOG("start ClearDeletedDbData.");
+    MediaLibraryTracer tracer;
+    tracer.Start("ClearDeletedDbData");
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_ERR, "ClearDeletedDbData failed. rdbStore is null.");
+
+    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::PHOTO_DIRTY, to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED)));
+
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, predicates);
+    CHECK_AND_RETURN_RET_LOG((ret == E_OK && deletedRows >= 0), E_ERR,
+        "Failed to ClearDeletedDbData, ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+    MEDIA_INFO_LOG("ClearDeletedDbData successfully. ret: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+    return E_OK;
+}
+
 int32_t CloudMediaAssetManager::UpdateBothLocalAndCloudAssets()
 {
     MEDIA_INFO_LOG("start UpdateBothLocalAndCloudAssets.");
     MediaLibraryTracer tracer;
     tracer.Start("UpdateBothLocalAndCloudAssets");
+
+    int32_t deleteRet = ClearDeletedDbData();
+    CHECK_AND_PRINT_LOG(deleteRet == E_OK, "ClearDeletedDbData failed. ret %{public}d.", deleteRet);
 
     int32_t cycleNumber = 0;
     std::vector<std::string> updateFileIds = {};
