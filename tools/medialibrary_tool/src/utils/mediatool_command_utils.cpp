@@ -48,19 +48,9 @@ int32_t MediatoolCommandUtils::QueryActiveUserId(string& activeUserId)
 bool MediatoolCommandUtils::CheckAndReformatPathParam(const std::string& inputPath, std::string& reformattedPath)
 {
     const string basePath = "/storage/media/local/files/Photo";
-    const string cloudPath = "/storage/cloud/files/Photo";
 
     if (MediaFileUtils::StartsWith(inputPath, basePath)) {
-        // reformat "/storage/media/local/files/Photo" into "/storage/cloud/files/Photo"
-        string extendedPath = inputPath.substr(basePath.length());
-        reformattedPath = cloudPath + extendedPath;
-        return true;
-    }
-
-    if (MediaFileUtils::StartsWith(inputPath, cloudPath)) {
-        // reformat "/storage/media/local/files/Photo" into "/storage/cloud/files/Photo"
-        string extendedPath = inputPath.substr(cloudPath.length());
-        reformattedPath = cloudPath + extendedPath;
+        reformattedPath = inputPath;
         return true;
     }
 
@@ -71,19 +61,11 @@ bool MediatoolCommandUtils::CheckAndReformatPathParam(const std::string& inputPa
     }
 
     const string allowedBaseUIDPath = "/storage/media/" + activeUserId + "/local/files/Photo";
-    const string allowedCloudUIDPath = "/storage/cloud/" + activeUserId + "/files/Photo";
 
     if (MediaFileUtils::StartsWith(inputPath, allowedBaseUIDPath)) {
-        // reformat "/storage/media/xxx/local/files/Photo" into "/storage/cloud/files/Photo"
+        // reformat "/storage/media/xxx/local/files/Photo" into "/storage/media/local/files/Photo"
         string extendedPath = inputPath.substr(allowedBaseUIDPath.length());
-        reformattedPath = cloudPath + extendedPath;
-        return true;
-    }
-
-    if (MediaFileUtils::StartsWith(inputPath, allowedCloudUIDPath)) {
-        // reformat "/storage/media/xxx/local/files/Photo" into "/storage/cloud/files/Photo"
-        string extendedPath = inputPath.substr(allowedCloudUIDPath.length());
-        reformattedPath = cloudPath + extendedPath;
+        reformattedPath = basePath + extendedPath;
         return true;
     }
 
