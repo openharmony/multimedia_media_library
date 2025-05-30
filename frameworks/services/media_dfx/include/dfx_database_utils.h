@@ -46,7 +46,7 @@ public:
     EXPORT static int32_t QueryOperationRecordInfo(OperationRecordInfo &operationRecordInfo);
     EXPORT static int32_t QueryPhotoErrorCount();
     EXPORT static void GetPhotoMimeType(std::string &photoMimeType);
-    EXPORT static void GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInfo);
+    EXPORT static bool GetSizeAndResolutionInfo(QuerySizeAndResolution &queryInfo);
 
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,

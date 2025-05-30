@@ -591,7 +591,7 @@ void DfxReporter::ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution&
 {
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
-        "MEDIALIB_SIZE_RESOLUTION_STAT",
+        "PHOTO_INFO_EXT",
         HiviewDFX::HiSysEvent::EventType::STATISTIC,
         "LOCAL_IMAGE_SIZE", querySizeAndResolution.localImageSize,
         "LOCAL_VIDEO_SIZE", querySizeAndResolution.localVideoSize,
