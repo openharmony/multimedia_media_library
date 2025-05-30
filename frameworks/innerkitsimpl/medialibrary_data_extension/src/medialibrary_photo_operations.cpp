@@ -3174,6 +3174,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToVideoExecute(const shared_ptr<F
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editData, path = %{public}s", editDataCameraPath.c_str());
+        VideoCompositionCallbackImpl::EraseWatermarkTag(editData);
+        
         // erase sticker field
         auto index = editData.find(FRAME_STICKER);
         if (index != std::string::npos) {
