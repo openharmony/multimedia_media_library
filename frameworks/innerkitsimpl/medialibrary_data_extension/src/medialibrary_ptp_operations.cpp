@@ -178,11 +178,11 @@ FileManagement::CloudSync::CleanFileInfo MediaLibraryPtpOperations::GetCleanFile
     FileManagement::CloudSync::CleanFileInfo cleanFileInfo;
     ExternalInfo externalInfo;
     externalInfo.size = fileAssetPtr->GetSize();
+    externalInfo.path = fileAssetPtr->GetPath();
     if (externalInfo.size == INVALID_SIZE) {
         externalInfo.size = GetAssetSize(externalInfo.path);
         CHECK_AND_RETURN_RET_LOG(externalInfo.size > INVALID_SIZE, {}, "failed to get asset size.");
     }
-    externalInfo.path = fileAssetPtr->GetPath();
     externalInfo.cloudId = fileAssetPtr->GetCloudId();
     externalInfo.subType = fileAssetPtr->GetPhotoSubType();
     externalInfo.effectMode = fileAssetPtr->GetMovingPhotoEffectMode();
@@ -196,7 +196,7 @@ FileManagement::CloudSync::CleanFileInfo MediaLibraryPtpOperations::GetCleanFile
     cleanFileInfo.size = externalInfo.size;
     cleanFileInfo.modifiedTime = externalInfo.dateModified;
     cleanFileInfo.path = externalInfo.path;
-    cleanFileInfo.fileName = externalInfo.displayName;
+    cleanFileInfo.fileName = MediaFileUtils::GetFileName(externalInfo.path);
     return cleanFileInfo;
 }
 
