@@ -495,7 +495,8 @@ static void HandleGetSizeAndResolutionInfo(std::shared_ptr<DfxReporter>& dfxRepo
     MEDIA_INFO_LOG("HandleGetSizeAndResolutionInfo start");
     CHECK_AND_RETURN_LOG(dfxReporter != nullptr, "Failed to get dfxReporter for HandleGetSizeAndResolutionInfo!");
     QuerySizeAndResolution queryInfo = {};
-    DfxDatabaseUtils::GetSizeAndResolutionInfo(queryInfo);
+    bool bQueryInfo = DfxDatabaseUtils::GetSizeAndResolutionInfo(queryInfo);
+    CHECK_AND_RETURN_LOG(bQueryInfo, "E_OK");
     std::string photoMimeType;
     DfxDatabaseUtils::GetPhotoMimeType(photoMimeType);
     dfxReporter->ReportPhotoSizeAndResolutionInfo(queryInfo, photoMimeType);
