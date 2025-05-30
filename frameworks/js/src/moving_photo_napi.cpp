@@ -22,6 +22,7 @@
 #include "accesstoken_kit.h"
 #include "directory_ex.h"
 #include "file_uri.h"
+#include "js_native_api.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "moving_photo_file_utils.h"
@@ -32,7 +33,7 @@
 #include "medialibrary_napi_utils.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
-#include "media_call_transcode.h"
+#include "moving_photo_call_transcoder.h"
 #include "permission_utils.h"
 
 using namespace std;
@@ -43,11 +44,6 @@ namespace Media {
 
 static const string MOVING_PHOTO_NAPI_CLASS = "MovingPhoto";
 thread_local napi_ref MovingPhotoNapi::constructor_ = nullptr;
-static SafeMap<std::string, bool> isMovingPhotoTranscoderMap;
-static SafeMap<std::string, MovingPhotoAsyncContext *> requestContentCompleteResult;
-static std::mutex isMovingPhotoTranscoderMapMutex;
-static std::mutex requestContentCompleteResultMutex;
-
 enum class MovingPhotoResourceType : int32_t {
     DEFAULT = 0,
     CLOUD_IMAGE,
@@ -104,6 +100,10 @@ void MovingPhotoNapi::Destructor(napi_env env, void* nativeObject, void* finaliz
     if (movingPhotoNapi == nullptr) {
         return;
     }
+    if (env != nullptr && movingPhotoNapi->progressHandlerRef_ != nullptr) {
+        napi_delete_reference(env, movingPhotoNapi->progressHandlerRef_);
+        movingPhotoNapi->progressHandlerRef_ = nullptr;
+    }
 
     delete movingPhotoNapi;
     movingPhotoNapi = nullptr;
@@ -134,14 +134,14 @@ void MovingPhotoNapi::SetCompatibleMode(const CompatibleMode compatibleMode)
     compatibleMode_ = compatibleMode;
 }
 
-void MovingPhotoNapi::SetMovingPhotoCallback(const std::function<void(int, int, std::string)> callback)
+napi_ref MovingPhotoNapi::GetProgressHandlerRef()
 {
-    callback_ = callback;
+    return progressHandlerRef_;
 }
 
-std::function<void(int, int, std::string)> MovingPhotoNapi::GetMovingPhotoCallback()
+void MovingPhotoNapi::SetProgressHandlerRef(napi_ref &progressHandlerRef)
 {
-    return callback_;
+    progressHandlerRef_ = progressHandlerRef;
 }
 
 std::string MovingPhotoNapi::GetRequestId()
@@ -152,6 +152,16 @@ std::string MovingPhotoNapi::GetRequestId()
 void MovingPhotoNapi::SetRequestId(const std::string requestId)
 {
     requestId_ = requestId;
+}
+
+napi_env MovingPhotoNapi::GetMediaAssetEnv()
+{
+    return media_asset_env_;
+}
+
+void MovingPhotoNapi::setMediaAssetEnv(napi_env mediaAssetEnv)
+{
+    media_asset_env_ = mediaAssetEnv;
 }
 
 static int32_t OpenReadOnlyVideo(const std::string& videoUri, bool isMediaLibUri, int32_t position)
@@ -423,26 +433,19 @@ int32_t MovingPhotoNapi::GetFdFromUri(const std::string &uri)
     return MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
 }
 
+static int32_t CallDoTranscoder(shared_ptr<OHOS::Media::MovingPhotoProgressHandler> movingPhotoProgressHandler)
+{
+    if (!MovingPhotoCallTranscoder::DoTranscode(movingPhotoProgressHandler)) {
+        NAPI_INFO_LOG("DoTranscode fail");
+        return E_ERR;
+    }
+    return E_OK;
+}
+
 static int32_t ArrayBufferToTranscode(napi_env env, MovingPhotoAsyncContext* context, int32_t fd)
 {
     CHECK_COND_RET(context != nullptr, E_ERR, "context is null");
-    {
-        std::lock_guard<std::mutex> lockMutex(requestContentCompleteResultMutex);
-        requestContentCompleteResult.Insert(context->requestId, context);
-    }
-    auto abilityContext = AbilityRuntime::Context::GetApplicationContext();
-    CHECK_COND_RET(abilityContext != nullptr, E_ERR, "abilityContext is null");
-    string cachePath = abilityContext->GetCacheDir();
-    string destUri = cachePath + "/" +context->requestId + ".mp4";
-    NAPI_DEBUG_LOG("destUri:%{public}s", destUri.c_str());
-    int destFd = MovingPhotoNapi::GetFdFromUri(destUri);
-    if (destFd < 0) {
-        context->error = JS_INNER_FAIL;
-        NAPI_ERR_LOG("get destFd fail");
-        return E_ERR;
-    }
     UniqueFd uniqueFd(fd);
-    UniqueFd uniqueDestFd(destFd);
     int64_t offset = 0;
     int64_t videoSize = 0;
     int64_t extraDataSize = 0;
@@ -462,20 +465,36 @@ static int32_t ArrayBufferToTranscode(napi_env env, MovingPhotoAsyncContext* con
         }
         videoSize = statSrc.st_size;
     }
-    MediaCallTranscode::RegisterCallback(context->callback);
-    if (!MediaCallTranscode::DoTranscode(uniqueFd.Get(), uniqueDestFd.Get(), videoSize, context->requestId, offset)) {
-        NAPI_INFO_LOG("DoTranscode fail");
-        return E_GET_PRAMS_FAIL;
+    auto abilityContext = AbilityRuntime::Context::GetApplicationContext();
+    CHECK_COND_RET(abilityContext != nullptr, E_ERR, "abilityContext is null");
+    string cachePath = abilityContext->GetCacheDir();
+    string destUri = cachePath + "/" +context->requestId + ".mp4";
+    NAPI_DEBUG_LOG("destUri:%{public}s", destUri.c_str());
+    int destFd = MovingPhotoNapi::GetFdFromUri(destUri);
+    if (destFd < 0) {
+        context->error = JS_INNER_FAIL;
+        NAPI_ERR_LOG("get destFd fail");
+        return E_ERR;
     }
-    {
-        std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
-        isMovingPhotoTranscoderMap.Insert(context->requestId, true);
-    }
-    return E_OK;
+    UniqueFd uniqueDestFd(destFd);
+    context->isTranscoder = true;
+    auto movingPhotoProgressHandler = std::make_shared<OHOS::Media::MovingPhotoProgressHandler>();
+    CHECK_COND_RET(movingPhotoProgressHandler != nullptr, E_ERR, "movingPhotoProgressHandler is null");
+    movingPhotoProgressHandler->env = env;
+    movingPhotoProgressHandler->srcFd = std::move(uniqueFd);
+    movingPhotoProgressHandler->destFd = std::move(uniqueDestFd);
+    movingPhotoProgressHandler->progressHandlerRef = context->progressHandlerRef;
+    movingPhotoProgressHandler->callbackFunc = MovingPhotoNapi::CallRequestContentCallBack;
+    movingPhotoProgressHandler->mediaAssetEnv = context->mediaAssetEnv;
+    movingPhotoProgressHandler->offset = offset;
+    movingPhotoProgressHandler->size = videoSize;
+    movingPhotoProgressHandler->contextData = context;
+    return CallDoTranscoder(std::move(movingPhotoProgressHandler));
 }
 
 static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext* context)
 {
+    NAPI_INFO_LOG("RequestContentToArrayBuffer");
     if (context == nullptr) {
         NAPI_INFO_LOG("context is null");
         return E_ERR;
@@ -486,10 +505,6 @@ static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext
     }
     if (context->resourceType == ResourceType::VIDEO_RESOURCE &&
         context->compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
-        {
-            std::lock_guard<std::mutex> lockMutex(requestContentCompleteResultMutex);
-            requestContentCompleteResult.Insert(context->requestId, context);
-        }
         return ArrayBufferToTranscode(env, context, fd);
     }
     MovingPhotoNapi::SubRequestContent(fd, context);
@@ -571,9 +586,9 @@ static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const na
     context->movingPhotoUri = thisArg->GetUri();
     context->sourceMode = thisArg->GetSourceMode();
     context->compatibleMode = thisArg->GetCompatibleMode();
-    context->callback = thisArg->GetMovingPhotoCallback();
     context->requestId = thisArg->GetRequestId();
-
+    context->progressHandlerRef = thisArg->GetProgressHandlerRef();
+    context->mediaAssetEnv = thisArg->GetMediaAssetEnv();
     int32_t resourceType = 0;
     if (argc == ARGS_ONE) {
         // return by array buffer
@@ -646,20 +661,11 @@ static void RequestContentExecute(napi_env env, void *data)
     }
 }
 
-static void RequestContentComplete(napi_env env, napi_status status, void *data)
+static void RequestContentCompleteImpl(napi_env env, napi_status status, void *data)
 {
     MovingPhotoAsyncContext *context = static_cast<MovingPhotoAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-    bool isTranscoder = false;
-    {
-        std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
-        isMovingPhotoTranscoderMap.Find(context->requestId, isTranscoder);
-    }
-    if (isTranscoder) {
-        std::lock_guard<std::mutex> lockMutex(requestContentCompleteResultMutex);
-        requestContentCompleteResult.EnsureInsert(context->requestId, context);
-        return;
-    }
+
     napi_value outBuffer = nullptr;
     if (context->error == E_OK && context->requestContentMode == MovingPhotoAsyncContext::WRITE_TO_ARRAY_BUFFER) {
         napi_status status = napi_create_external_arraybuffer(
@@ -698,6 +704,16 @@ static void RequestContentComplete(napi_env env, napi_status status, void *data)
     delete context;
 }
 
+static void RequestContentComplete(napi_env env, napi_status status, void *data)
+{
+    MovingPhotoAsyncContext *context = static_cast<MovingPhotoAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (context->isTranscoder) {
+        return;
+    }
+    RequestContentCompleteImpl(env, status, data);
+}
+
 napi_value MovingPhotoNapi::JSRequestContent(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_TWO;
@@ -715,7 +731,7 @@ napi_value MovingPhotoNapi::JSRequestContent(napi_env env, napi_callback_info in
 }
 
 napi_value MovingPhotoNapi::NewMovingPhotoNapi(napi_env env, const string& photoUri, SourceMode sourceMode,
-    MovingPhotoParam movingPhotoParam, const std::function<void(int, int, std::string)> callbacks)
+    MovingPhotoParam &movingPhotoParam)
 {
     napi_value constructor = nullptr;
     napi_value instance = nullptr;
@@ -738,7 +754,8 @@ napi_value MovingPhotoNapi::NewMovingPhotoNapi(napi_env env, const string& photo
     movingPhotoNapi->SetSourceMode(sourceMode);
     movingPhotoNapi->SetRequestId(movingPhotoParam.requestId);
     movingPhotoNapi->SetCompatibleMode(movingPhotoParam.compatibleMode);
-    movingPhotoNapi->SetMovingPhotoCallback(callbacks);
+    movingPhotoNapi->SetProgressHandlerRef(movingPhotoParam.progressHandlerRef);
+    movingPhotoNapi->setMediaAssetEnv(env);
     return instance;
 }
 
@@ -799,66 +816,19 @@ int32_t MovingPhotoNapi::DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, 
         return E_HAS_FS_ERROR;
     }
     UniqueFd uniqueDestFd(destFd);
-    MediaCallTranscode::RegisterCallback(context->callback);
-    bool result = MediaCallTranscode::DoTranscode(uniqueVideoFd.Get(), uniqueDestFd.Get(), videoSize,
-        context->requestId, offset);
-    if (!result) {
-        NAPI_ERR_LOG("DoTranscode fail");
-        return E_GET_PRAMS_FAIL;
-    }
-    {
-        std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
-        isMovingPhotoTranscoderMap.Insert(context->requestId, true);
-    }
-    return E_OK;
-}
-
-static void DeleteProcessHandlerSafe(ProgressHandler *handler, napi_env env)
-{
-    if (handler == nullptr) {
-        return;
-    }
-    if (handler->progressRef != nullptr && env != nullptr) {
-        napi_delete_reference(env, handler->progressRef);
-        handler->progressRef = nullptr;
-    }
-    delete handler;
-    handler = nullptr;
-}
-
-void CallMovingProgressCallback(napi_env env, ProgressHandler &progressHandler, int32_t process)
-{
-    napi_value result;
-    napi_status status = napi_create_int32(env, process, &result);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("OnProgress napi_create_int32 fail");
-    }
-    napi_value callback;
-    status = napi_get_reference_value(env, progressHandler.progressRef, &callback);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("OnProgress napi_get_reference_value fail, napi status: %{public}d",
-            static_cast<int>(status));
-        DeleteProcessHandlerSafe(&progressHandler, env);
-        return;
-    }
-    napi_value jsOnProgress;
-    status = napi_get_named_property(env, callback, ON_PROGRESS_FUNC, &jsOnProgress);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("jsOnProgress napi_get_named_property fail, napi status: %{public}d",
-            static_cast<int>(status));
-        DeleteProcessHandlerSafe(&progressHandler, env);
-        return;
-    }
-    napi_value argv[1];
-    size_t argc = ARGS_ONE;
-    argv[PARAM0] = result;
-    napi_value promise;
-    status = napi_call_function(env, nullptr, jsOnProgress, argc, argv, &promise);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("call js function failed %{public}d", static_cast<int32_t>(status));
-        NapiError::ThrowError(env, JS_INNER_FAIL, "calling onDataPrepared failed");
-    }
-    NAPI_DEBUG_LOG("CallProgressCallback process %{public}d", process);
+    context->isTranscoder = true;
+    auto movingPhotoProgressHandler = std::make_shared<OHOS::Media::MovingPhotoProgressHandler>();
+    CHECK_COND_RET(movingPhotoProgressHandler != nullptr, E_ERR, "movingPhotoProgressHandler is null");
+    movingPhotoProgressHandler->env = env;
+    movingPhotoProgressHandler->srcFd = std::move(uniqueVideoFd);
+    movingPhotoProgressHandler->destFd = std::move(uniqueDestFd);
+    movingPhotoProgressHandler->progressHandlerRef = context->progressHandlerRef;
+    movingPhotoProgressHandler->callbackFunc = MovingPhotoNapi::CallRequestContentCallBack;
+    movingPhotoProgressHandler->mediaAssetEnv = context->mediaAssetEnv;
+    movingPhotoProgressHandler->offset = offset;
+    movingPhotoProgressHandler->size = videoSize;
+    movingPhotoProgressHandler->contextData = context;
+    return CallDoTranscoder(std::move(movingPhotoProgressHandler));
 }
 
 void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context)
@@ -976,63 +946,55 @@ void CallArrayBufferRequestContentComplete(napi_env env, MovingPhotoAsyncContext
     return;
 }
 
-void MovingPhotoNapi::OnProgress(napi_env env, napi_value cb, void *context, void *data)
+static void RequestCompletCallback(napi_env env, napi_status status, void *data)
 {
-    ProgressHandler *progressHandler = reinterpret_cast<ProgressHandler *>(data);
-    if (progressHandler == nullptr) {
-        NAPI_ERR_LOG("progressHandler handler is nullptr");
-        DeleteProcessHandlerSafe(progressHandler, env);
-        return;
-    }
-    int32_t process = progressHandler->retProgressValue.progress;
-    int32_t type = progressHandler->retProgressValue.type;
-    if ((type == INFO_TYPE_TRANSCODER_COMPLETED) || type == INFO_TYPE_ERROR) {
-        MediaCallTranscode::CallTranscodeRelease(progressHandler->requestId);
-        bool isTranscoder;
-        {
-            std::lock_guard<std::mutex> lock(isMovingPhotoTranscoderMapMutex);
-            if (isMovingPhotoTranscoderMap.Find(progressHandler->requestId, isTranscoder)) {
-                isMovingPhotoTranscoderMap.Erase(progressHandler->requestId);
-            }
-        }
-        MovingPhotoAsyncContext* context;
-        {
-            std::lock_guard<std::mutex> lockMutex(requestContentCompleteResultMutex);
-            if (!requestContentCompleteResult.Find(progressHandler->requestId, context)) {
-                NAPI_ERR_LOG("find context fail requestId:%{public}s", progressHandler->requestId.c_str());
-                return;
-            }
-            requestContentCompleteResult.Erase(progressHandler->requestId);
-        }
-        CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
-        if (type == INFO_TYPE_ERROR) {
-            context->error = JS_INNER_FAIL;
-        }
-        CallRequestContentCallBack(env, context);
-        NAPI_INFO_LOG("OnProgress INFO_TYPE_TRANSCODER_COMPLETED type:%{public}d, process:%{public}d", type, process);
-        DeleteProcessHandlerSafe(progressHandler, env);
-        return;
-    }
-    CHECK_NULL_PTR_RETURN_VOID(progressHandler->progressRef, "Onprogress callback is null");
-    CallMovingProgressCallback(env, *progressHandler, process);
-}
-
-void MovingPhotoNapi::CallRequestContentCallBack(napi_env env, MovingPhotoAsyncContext* context)
-{
-    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
-    napi_status status = napi_ok;
-    switch (context->requestContentMode) {
+    MovingPhotoAsyncContext* asyncContext = static_cast<MovingPhotoAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(asyncContext, "asyncContext is null");
+    switch (asyncContext->requestContentMode) {
         case MovingPhotoAsyncContext::WRITE_TO_SANDBOX:
-            RequestContentComplete(env, status, context);
+            RequestContentCompleteImpl(env, status, asyncContext);
             return;
         case MovingPhotoAsyncContext::WRITE_TO_ARRAY_BUFFER:
-            CallArrayBufferRequestContentComplete(env, context);
-            RequestContentComplete(env, status, context);
+            CallArrayBufferRequestContentComplete(env, asyncContext);
+            RequestContentCompleteImpl(env, status, asyncContext);
             return;
         default:
-            NAPI_ERR_LOG("Request content mode: %{public}d", static_cast<int32_t>(context->requestContentMode));
-            context->error = OHOS_INVALID_PARAM_CODE;
+            NAPI_ERR_LOG("Request content mode: %{public}d", static_cast<int32_t>(asyncContext->requestContentMode));
+            asyncContext->error = OHOS_INVALID_PARAM_CODE;
             return;
+    }
+}
+
+void MovingPhotoNapi::CallRequestContentCallBack(napi_env env, void* context, int32_t errorCode)
+{
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    MovingPhotoAsyncContext* mContext = static_cast<MovingPhotoAsyncContext*>(context);
+    CHECK_NULL_PTR_RETURN_VOID(mContext, "context is null");
+    if (errorCode != E_OK) {
+        NAPI_ERR_LOG("MovingPhotoNapi::CallRequestContentCallBack errorCode is %{public}d", errorCode);
+        mContext->error = errorCode;
+    }
+    if (mContext->error == E_INVALID_MODE) {
+        mContext->isTranscoder = false;
+        return;
+    }
+
+    napi_status status;
+    napi_value result = nullptr;
+    napi_value resource = nullptr;
+    unique_ptr<MovingPhotoAsyncContext> asyncContext = make_unique<MovingPhotoAsyncContext>();
+
+    NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "CallRequestContentCallBack", asyncContext);
+    status = napi_create_async_work(
+        env, nullptr, resource, [](napi_env env, void *data) {},
+        reinterpret_cast<napi_async_complete_callback>(RequestCompletCallback),
+        context, &asyncContext->work);
+    if (status != napi_ok) {
+        napi_get_undefined(env, &result);
+    } else {
+        napi_queue_async_work_with_qos(env, asyncContext->work, napi_qos_user_initiated);
+        (void)asyncContext.release();
     }
 }
 } // namespace Media
