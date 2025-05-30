@@ -115,6 +115,20 @@ struct DeletedFilesParams {
     bool containsHidden = false;
 };
 
+int32_t MediaLibraryAssetOperations::HandleInsertOperationExt(MediaLibraryCommand& cmd)
+{
+    int errCode = E_ERR;
+    switch (cmd.GetOprnType()) {
+        case OperationType::LS_MEDIA_FILES:
+            errCode = MediaLibraryPhotoOperations::LSMediaFiles(cmd);
+            break;
+        default:
+            MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
+            break;
+    }
+    return errCode;
+}
+
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     int errCode = E_ERR;
@@ -158,11 +172,8 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
         case OperationType::CLONE_ASSET:
             errCode = MediaLibraryPhotoOperations::CloneSingleAsset(cmd);
             break;
-        case OperationType::LS_MEDIA_FILES:
-            errCode = MediaLibraryPhotoOperations::LSMediaFiles(cmd);
-            break;
         default:
-            MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
+            errCode = HandleInsertOperationExt(cmd);
             break;
     }
     return errCode;

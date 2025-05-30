@@ -46,7 +46,6 @@ bool LSCommand::ParsePositionalArgs(const std::vector<std::string>& positionalAr
     }
 
     inputPath_ = positionalArgs[0];
-    inputPath_ = positionalArgs[0];
     return true;
 }
 
@@ -115,8 +114,7 @@ string LSCommand::ToString()
 string LSCommand::ErrorCodeToMsg(int32_t errorCode)
 {
     switch (errorCode) {
-        case E_INVALID_PATH:
-        {
+        case E_INVALID_PATH: {
             std::ostringstream errMsgOss;
             errMsgOss << "Path error: " << inputPath_;
             return errMsgOss.str();

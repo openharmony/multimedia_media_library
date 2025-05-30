@@ -38,7 +38,6 @@ int32_t MediatoolCommandUtils::QueryActiveUserId(string& activeUserId)
     const string stubValue = "stub";
     values.Put(stubValue, 0); // used for not getting error prompt when performing insert operation.
     auto ret = UserFileClient::InsertExt(queryUserIdUri, values, activeUserId);
-
     if (ret != E_OK) {
         MEDIA_ERR_LOG("mediatool query active user id failed. ret: %{public}d", ret);
         return ret;
@@ -58,17 +57,32 @@ bool MediatoolCommandUtils::CheckAndReformatPathParam(const std::string& inputPa
         return true;
     }
 
+    if (MediaFileUtils::StartsWith(inputPath, cloudPath)) {
+        // reformat "/storage/media/local/files/Photo" into "/storage/cloud/files/Photo"
+        string extendedPath = inputPath.substr(cloudPath.length());
+        reformattedPath = cloudPath + extendedPath;
+        return true;
+    }
+
     string activeUserId = "-1";
     int32_t ret = QueryActiveUserId(activeUserId);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to get active user: %{public}d", ret);
     }
 
-    const string allowedUserPath = "/storage/media/" + activeUserId + "/local/files/Photo";
+    const string allowedBaseUIDPath = "/storage/media/" + activeUserId + "/local/files/Photo";
+    const string allowedCloudUIDPath = "/storage/cloud/" + activeUserId + "/files/Photo";
 
-    if (MediaFileUtils::StartsWith(inputPath, allowedUserPath)) {
+    if (MediaFileUtils::StartsWith(inputPath, allowedBaseUIDPath)) {
         // reformat "/storage/media/xxx/local/files/Photo" into "/storage/cloud/files/Photo"
-        string extendedPath = inputPath.substr(allowedUserPath.length());
+        string extendedPath = inputPath.substr(allowedBaseUIDPath.length());
+        reformattedPath = cloudPath + extendedPath;
+        return true;
+    }
+
+    if (MediaFileUtils::StartsWith(inputPath, allowedCloudUIDPath)) {
+        // reformat "/storage/media/xxx/local/files/Photo" into "/storage/cloud/files/Photo"
+        string extendedPath = inputPath.substr(allowedCloudUIDPath.length());
         reformattedPath = cloudPath + extendedPath;
         return true;
     }

@@ -147,6 +147,7 @@ typedef struct {
 class MediaLibraryAssetOperations {
 public:
     static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
+    static int32_t HandleInsertOperationExt(MediaLibraryCommand& cmd);
     static int32_t DeleteOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
