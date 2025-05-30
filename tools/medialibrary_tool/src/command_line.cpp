@@ -62,7 +62,7 @@ static void ShowUsage(bool isRoot)
         str.append("    command: mediatool list <media-uri>\n");
     }
     str.append("  receive file from medialibrary to path\n");
-    str.append("    command: mediatool recv <media-uri> <dest-path>\n");
+    str.append("    command: mediatool recv <src-media> <dest-path>\n");
     str.append("  delete media assets in medialibrary\n");
     str.append("    command: mediatool delete <media-uri>\n");
     str.append("  query path or uri by displayname in medialibrary\n");
@@ -333,7 +333,7 @@ int32_t CommandLine::Parser(ExecEnv &env)
     } else if (cmd == OPT_STR_QUERY) {
         env.optArgs.cmdType = OptCmdType::TYPE_QUERY;
         PutExtraString(env, MEDIATOOL_ARG_FIRST);
-    } else if (cmd == OPT_STR_LS){
+    } else if (cmd == OPT_STR_LS) {
         env.optArgs.cmdType = OptCmdType::TYPE_LS;
     } else {
         ShowUsage(env.isRoot);
