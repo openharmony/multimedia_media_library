@@ -2716,12 +2716,12 @@ static CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr)
 
     CleanFileInfo cleanFileInfo;
     ExternalInfo externalInfo;
+    externalInfo.path = fileAssetPtr->GetPath();
     externalInfo.size = fileAssetPtr->GetSize();
     if (externalInfo.size == INVALID_SIZE) {
         externalInfo.size = GetAssetSize(externalInfo.path);
         CHECK_AND_RETURN_RET_LOG(externalInfo.size > INVALID_SIZE, {}, "failed to get asset size.");
     }
-    externalInfo.path = fileAssetPtr->GetPath();
     MEDIA_INFO_LOG("path is %{public}s", DfxUtils::GetSafePath(externalInfo.path).c_str());
     externalInfo.cloudId = fileAssetPtr->GetCloudId();
     externalInfo.subType = fileAssetPtr->GetPhotoSubType();
@@ -2737,7 +2737,7 @@ static CleanFileInfo GetCleanFileInfo(shared_ptr<FileAsset> &fileAssetPtr)
     cleanFileInfo.size = externalInfo.size;
     cleanFileInfo.modifiedTime = externalInfo.dateModified;
     cleanFileInfo.path = externalInfo.path;
-    cleanFileInfo.fileName = externalInfo.displayName;
+    cleanFileInfo.fileName = MediaFileUtils::GetFileName(externalInfo.path);
     return cleanFileInfo;
 }
 
