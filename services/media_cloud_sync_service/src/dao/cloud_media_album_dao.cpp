@@ -276,9 +276,7 @@ int32_t CloudMediaAlbumDao::UpdateCloudAlbumInner(
         values.PutString(PhotoAlbumColumns::ALBUM_LPATH, record.lPath);
     }
     int32_t ret = SetSourceValues(record, values);
-    if (ret != E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "UpdateCloudAlbumInner fail, ret: %{public}d", ret);
     if (!record.bundleName.empty()) {
         values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, record.bundleName);
     }
