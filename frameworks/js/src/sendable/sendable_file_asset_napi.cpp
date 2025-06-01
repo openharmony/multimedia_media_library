@@ -111,7 +111,6 @@ shared_ptr<ThumbnailManager> SendableFileAssetNapi::thumbnailManager_ = nullptr;
 
 constexpr int32_t IS_TRASH = 1;
 constexpr int32_t NOT_TRASH = 0;
-constexpr int64_t SECONDS_LEVEL_LIMIT = 1e10;
 
 using CompleteCallback = napi_async_complete_callback;
 
@@ -953,91 +952,12 @@ static napi_value HandleGettingSpecialKey(napi_env env, const string &key, const
     return jsResult;
 }
 
-static bool GetDateTakenFromResultSet(const shared_ptr<DataShare::DataShareResultSet> &resultSet,
-    int64_t &dateTaken)
-{
-    if (resultSet == nullptr) {
-        NAPI_ERR_LOG("ResultSet is null");
-        return false;
-    }
-    int32_t count = 0;
-    int32_t errCode = resultSet->GetRowCount(count);
-    if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("Can not get row count from resultSet, errCode=%{public}d", errCode);
-        return false;
-    }
-    if (count == 0) {
-        NAPI_ERR_LOG("Can not find photo edit time from database");
-        return false;
-    }
-    errCode = resultSet->GoToFirstRow();
-    if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("ResultSet GotoFirstRow failed, errCode=%{public}d", errCode);
-        return false;
-    }
-    int32_t index = 0;
-    errCode = resultSet->GetColumnIndex(PhotoColumn::MEDIA_DATE_TAKEN, index);
-    if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("ResultSet GetColumnIndex failed, errCode=%{public}d", errCode);
-        return false;
-    }
-    errCode = resultSet->GetLong(index, dateTaken);
-    if (errCode != DataShare::E_OK) {
-        NAPI_ERR_LOG("ResultSet GetLong failed, errCode=%{public}d", errCode);
-        return false;
-    }
-    return true;
-}
-
-static void UpdateDetailTimeByDateTaken(napi_env env, const shared_ptr<FileAsset> &fileAssetPtr,
-    const string &detailTime, int64_t &dateTaken)
-{
-    string uri = PAH_UPDATE_PHOTO;
-    SendableMediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(uri);
-    DataSharePredicates predicates;
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_DETAIL_TIME, detailTime);
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ MediaFileUtils::GetIdFromUri(fileAssetPtr->GetUri()) });
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
-    if (changedRows <= 0) {
-        NAPI_ERR_LOG("Failed to modify detail time, err: %{public}d", changedRows);
-        NapiError::ThrowError(env, JS_INNER_FAIL);
-    } else {
-        NAPI_INFO_LOG("success to modify detial time, detailTime: %{public}s, dateTaken: %{public}" PRId64,
-            detailTime.c_str(), dateTaken);
-    }
-}
-
 static napi_value HandleGettingDetailTimeKey(napi_env env, const shared_ptr<FileAsset> &fileAssetPtr)
 {
     napi_value jsResult = nullptr;
     auto detailTimeValue = fileAssetPtr->GetMemberMap().at(PhotoColumn::PHOTO_DETAIL_TIME);
     if (detailTimeValue.index() == MEMBER_TYPE_STRING && !get<string>(detailTimeValue).empty()) {
         napi_create_string_utf8(env, get<string>(detailTimeValue).c_str(), NAPI_AUTO_LENGTH, &jsResult);
-    } else {
-        string fileId = MediaFileUtils::GetIdFromUri(fileAssetPtr->GetUri());
-        string queryUriStr = PAH_QUERY_PHOTO;
-        SendableMediaLibraryNapiUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-        Uri uri(queryUriStr);
-        DataShare::DataSharePredicates predicates;
-        predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-        DataShare::DataShareValuesBucket values;
-        vector<string> columns = { MediaColumn::MEDIA_DATE_TAKEN };
-        int32_t errCode = 0;
-        int64_t dateTaken = 0;
-        shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
-        if (GetDateTakenFromResultSet(resultSet, dateTaken)) {
-            if (dateTaken > SECONDS_LEVEL_LIMIT) {
-                dateTaken = dateTaken / MSEC_TO_SEC;
-            }
-            string detailTime = MediaFileUtils::StrCreateTimeSafely(PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, dateTaken);
-            napi_create_string_utf8(env, detailTime.c_str(), NAPI_AUTO_LENGTH, &jsResult);
-            UpdateDetailTimeByDateTaken(env, fileAssetPtr, detailTime, dateTaken);
-        } else {
-            NapiError::ThrowError(env, JS_INNER_FAIL);
-        }
     }
     return jsResult;
 }
