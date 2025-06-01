@@ -1203,17 +1203,6 @@ string MediaFileUtils::StrCreateTime(const string &format, int64_t time)
     return strTime;
 }
 
-string MediaFileUtils::StrCreateTimeSafely(const string &format, int64_t time)
-{
-    char strTime[DEFAULT_TIME_SIZE] = "";
-    struct tm localTm;
-    CHECK_AND_RETURN_RET_LOG(localtime_noenv_r(&time, &localTm) != nullptr, strTime,
-        "localtime_noenv_r error: %{public}d", errno);
-    CHECK_AND_PRINT_LOG(strftime(strTime, sizeof(strTime), format.c_str(), &localTm) != 0,
-        "strftime error: %{public}d", errno);
-    return strTime;
-}
-
 std::string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";
