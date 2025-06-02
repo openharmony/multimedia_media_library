@@ -162,6 +162,7 @@ const std::string CLONE_STAT_EDIT_DATA_DIR = "/storage/media/local/files/.editDa
 const std::string CLONE_STAT_RDB_DIR = "/data/storage/el2/database/rdb/";
 const std::string CLONE_STAT_KVDB_DIR = "/data/storage/el2/database/kvdb/";
 const std::string CLONE_STAT_HIGHLIGHT_DIR = "/storage/media/local/files/highlight/";
+const std::string DEFAULT_PATH_PREFIX = "/storage";
 } // namespace Media
 } // namespace OHOS
 

@@ -227,7 +227,7 @@ string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t scen
     } else if (sceneCode == LITE_PHONE_CLONE_RESTORE) {
         path = filePath.substr(0, displayNameIndex).replace(0, OTHER_CLONE_PATH.length(), GARBLE);
     } else {
-        path = filePath.substr(0, displayNameIndex);
+        path = filePath.substr(0, displayNameIndex).replace(0, DEFAULT_PATH_PREFIX.length(), GARBLE);
     }
     path += "/" + garbleDisplayName;
     return path;
