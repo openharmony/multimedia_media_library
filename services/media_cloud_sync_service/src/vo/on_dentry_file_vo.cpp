@@ -61,11 +61,7 @@ std::string OnDentryFileReqBody::ToString() const
 
 bool OnDentryFileRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool ret = IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel);
-    if (!ret) {
-        return ret;
-    }
-    return ret;
+    return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel);
 }
 
 bool OnDentryFileRespBody::Marshalling(MessageParcel &parcel) const

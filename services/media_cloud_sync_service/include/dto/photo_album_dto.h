@@ -18,9 +18,10 @@
 
 #include <string>
 #include <vector>
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class PhotoAlbumDto {
+class EXPORT PhotoAlbumDto {
 public:
     int32_t albumId;
     int32_t albumType;

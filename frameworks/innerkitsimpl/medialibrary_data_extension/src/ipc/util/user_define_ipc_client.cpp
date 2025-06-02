@@ -32,6 +32,17 @@ std::string UserDefineIPCClient::GetTraceId() const
     return this->traceId_;
 }
 
+UserDefineIPCClient &UserDefineIPCClient::SetUserId(const int32_t &userId)
+{
+    this->userId_ = userId;
+    return *this;
+}
+
+int32_t UserDefineIPCClient::GetUserId() const
+{
+    return this->userId_;
+}
+
 std::unordered_map<std::string, std::string> UserDefineIPCClient::GetHeader() const
 {
     return this->header_;
@@ -43,9 +54,10 @@ UserDefineIPCClient &UserDefineIPCClient::SetHeader(const std::unordered_map<std
     return *this;
 }
 
-int32_t UserDefineIPCClient::InitClient()
+int32_t UserDefineIPCClient::InitClient(const int32_t &userId)
 {
-    bool errConn = UserFileClient::IsValid(UserFileClient::GetUserId());
+    userId_ = userId;
+    bool errConn = UserFileClient::IsValid(userId);
     CHECK_AND_RETURN_RET(!errConn, E_OK);
     MEDIA_ERR_LOG("Call IPC UserFileClient::IsInValid");
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
@@ -54,7 +66,7 @@ int32_t UserDefineIPCClient::InitClient()
     auto remoteObj = saManager->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
     errConn = remoteObj == nullptr;
     CHECK_AND_RETURN_RET_LOG(!errConn, E_ERR, "GetSystemAbility Service Failed.");
-    UserFileClient::Init(remoteObj, true, UserFileClient::GetUserId());
+    UserFileClient::Init(remoteObj, true, userId);
     return E_OK;
 }
 int32_t UserDefineIPCClient::HeaderMarshalling(MessageParcel &data)

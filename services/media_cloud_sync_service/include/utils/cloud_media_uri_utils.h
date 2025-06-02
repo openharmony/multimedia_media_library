@@ -20,7 +20,8 @@
 #include <vector>
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaUriUtils {
+#define EXPORT __attribute__ ((visibility ("default")))
+class EXPORT CloudMediaUriUtils {
 public:
     static int32_t GetFileIds(const std::vector<std::string> &uris, std::vector<int32_t> &fileIds);
 

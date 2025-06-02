@@ -16,9 +16,8 @@
 #ifndef OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DEFINE_H
 #define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DEFINE_H
 
-#include <string>
-#include <map>
-
+#ifndef EXPORT
 #define EXPORT __attribute__ ((visibility ("default")))
+#endif
 
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DEFINE_H

@@ -73,10 +73,10 @@ const int32_t ROTATE_ANGLE_180 = 180;
 const int32_t ROTATE_ANGLE_270 = 270;
 
 const std::map<int32_t, int32_t> FILE_ROTATIONS = {
-    { ORIENTATION_NORMAL, ROTATE_ANGLE_0 },
-    { ORIENTATION_ROTATE_90, ROTATE_ANGLE_90 },
-    { ORIENTATION_ROTATE_180, ROTATE_ANGLE_180 },
-    { ORIENTATION_ROTATE_270, ROTATE_ANGLE_270 },
+    {ORIENTATION_NORMAL, ROTATE_ANGLE_0},
+    {ORIENTATION_ROTATE_90, ROTATE_ANGLE_90},
+    {ORIENTATION_ROTATE_180, ROTATE_ANGLE_180},
+    {ORIENTATION_ROTATE_270, ROTATE_ANGLE_270},
 };
 
 /* hash*/
@@ -93,7 +93,7 @@ enum class DataType : int32_t {
     INT,
     LONG,
     DOUBLE,
-    STRING
+    STRING,
 };
 
 enum {
@@ -156,7 +156,7 @@ const std::vector<std::string> QUERY_ALBUM_COLUMNS = {
     PhotoAlbumColumns::ALBUM_DATE_ADDED,
     PhotoAlbumColumns::ALBUM_DATE_MODIFIED,
     PhotoAlbumColumns::ALBUM_BUNDLE_NAME,
-    PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE
+    PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE,
 };
 
 const std::vector<std::string> MEDIA_CLOUD_SYNC_COLUMNS = {
@@ -208,7 +208,7 @@ const std::vector<std::string> MEDIA_CLOUD_SYNC_COLUMNS = {
     PhotoColumn::PHOTO_STRONG_ASSOCIATION,
     /* keep cloud_id at the last, so RecordToValueBucket can skip it*/
     MediaColumn::MEDIA_ID,
-    PhotoColumn::PHOTO_CLOUD_ID
+    PhotoColumn::PHOTO_CLOUD_ID,
 };
 
 const std::vector<std::string> ALBUM_LOCAL_QUERY_COLUMNS = {
@@ -505,13 +505,14 @@ enum CloudSyncServiceErrCode {
     E_CONTENT_SOURCE_BASIC = E_SOURCE_BASIC + 3000,
     E_CONTENT_SIZE_IS_ZERO = E_CONTENT_SOURCE_BASIC + 201,
     E_CONTENT_COVERT_LIVE_PHOTO = E_CONTENT_SIZE_IS_ZERO + 1,
+    E_CONTENT_RAW_SIZE_IS_ZERO = E_CONTENT_COVERT_LIVE_PHOTO + 1,
 
     E_FIELD_BASIC = 20000,
 
     E_DB_FIELD_BASIC = E_FIELD_BASIC + 1000,
-    E_SIZE_IS_ZERO = E_DB_FIELD_BASIC + 1,
-    E_ALBUM_NOT_FOUND = E_SIZE_IS_ZERO + 1,
-    E_ALBUM_ID_IS_EMPTY = E_ALBUM_NOT_FOUND + 1,
+    E_DB_SIZE_IS_ZERO = E_DB_FIELD_BASIC + 1,
+    E_DB_ALBUM_NOT_FOUND = E_DB_SIZE_IS_ZERO + 1,
+    E_DB_ALBUM_ID_IS_EMPTY = E_DB_ALBUM_NOT_FOUND + 1,
 
     E_DK_FIELD_BASIC = E_FIELD_BASIC + 2000,
     E_NO_ATTRIBUTES = E_DK_FIELD_BASIC + 1,
@@ -519,7 +520,7 @@ enum CloudSyncServiceErrCode {
 
 enum AlbumSource {
     ALBUM_FROM_LOCAL = 1,
-    ALBUM_FROM_CLOUD = 2
+    ALBUM_FROM_CLOUD = 2,
 };
 
 enum Clean {
@@ -536,7 +537,7 @@ enum ThmLcdState {
 enum PhotoPosition {
     POSITION_LOCAL = 1,
     POSITION_CLOUD,
-    POSITION_BOTH
+    POSITION_BOTH,
 };
 
 enum StatsIndex {

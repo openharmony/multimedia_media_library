@@ -42,7 +42,7 @@ public:
         if (iter != this->DATA_HANDLER.end()) {
             handler = iter->second;
         }
-        handler->userId_ = userId;
+        handler->SetUserId(userId);
         return handler;
     }
 };

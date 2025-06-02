@@ -19,9 +19,10 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class AgingFileQueryDto {
+class EXPORT AgingFileQueryDto {
 public:
     int64_t time;
     int32_t mediaType;

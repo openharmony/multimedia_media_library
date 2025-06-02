@@ -21,10 +21,11 @@
 
 #include "photos_po.h"
 #include "photos_dto.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace OHOS::Media::ORM;
-class CloudMediaDataServiceProcessor {
+class EXPORT CloudMediaDataServiceProcessor {
 public:
     void GetPhotosDto(const std::vector<PhotosPo> &photosPos, std::vector<PhotosDto> &photosDtos);
     void GetPhotosDtoOfVideoCache(const std::vector<PhotosPo> &photosPos, std::vector<PhotosDto> &photosDtos);

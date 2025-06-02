@@ -17,9 +17,11 @@
 
 #include "cloud_media_download_service.h"
 
+#include "directory_ex.h"
 #include "parameters.h"
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "moving_photo_file_utils.h"
 #include "cloud_media_file_utils.h"
 #include "cloud_media_attachment_utils.h"
 #include "cloud_media_sync_utils.h"
@@ -28,8 +30,12 @@
 #include "thumbnail_service.h"
 #include "cloud_media_asset_manager.h"
 #include "cloud_media_asset_types.h"
+#include "cloud_media_dfx_service.h"
+#include "dfx_const.h"
+#include "media_gallery_sync_notify.h"
 
 namespace OHOS::Media::CloudSync {
+using ChangeType = AAFwk::ChangeInfo::ChangeType;
 int32_t CloudMediaDownloadService::GetDownloadThmNum(const int32_t type, int32_t &totalNum)
 {
     return this->dao_.GetDownloadThmNum(type, totalNum);
@@ -55,9 +61,9 @@ std::vector<PhotosDto> CloudMediaDownloadService::GetDownloadThmsByUri(
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, photosDtoVec, "GetDownloadAsset failed, ret:%{public}d", ret);
     std::vector<DownloadAssetData> downloadAssetDataVec;
     this->processor_.GetDownloadAssetData(photosPos, downloadAssetDataVec);
+    MEDIA_INFO_LOG("GetDownloadThmsByUri size of downloadAssetDataVec: %{public}zu", downloadAssetDataVec.size());
     CHECK_AND_RETURN_RET_LOG(
         !downloadAssetDataVec.empty(), photosDtoVec, "GetDownloadThmsByUri Failed to get downloadAssetDataVec.");
-    MEDIA_INFO_LOG("GetDownloadThmsByUri size of downloadAssetDataVec: %{public}zu", downloadAssetDataVec.size());
     for (const auto &downloadAssetData : downloadAssetDataVec) {
         std::string filePath;
         std::string fileName;
@@ -88,7 +94,7 @@ std::vector<PhotosDto> CloudMediaDownloadService::GetDownloadThmsByUri(
         if ((retThm != E_OK) && (retLcd != E_OK)) {
             continue;
         }
-        MEDIA_INFO_LOG("GetDownloadThmsByUri Photo: %{public}s", photosDto.ToString().c_str());
+        MEDIA_DEBUG_LOG("GetDownloadThmsByUri Photo: %{public}s", photosDto.ToString().c_str());
         photosDtoVec.push_back(photosDto);
     }
     return photosDtoVec;
@@ -101,10 +107,15 @@ int32_t CloudMediaDownloadService::OnDownloadThm(
     MEDIA_INFO_LOG("size of thmVector is %{public}zu", thmVector.size());
     int32_t ret = this->dao_.UpdateDownloadThm(thmVector);
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to UpdateDownloadThms.");
+    if (ret == E_OK && !thmVector.empty()) {
+        CloudMediaDfxService::UpdateAttachmentStat(INDEX_THUMB_SUCCESS, thmVector.size());
+    }
     /* 通知
      DataSyncNotifier::GetInstance().TryNotify(PHOTO_URI_PREFIX, ChangeType::INSERT, "");
      DataSyncNotifier::GetInstance().FinalNotify();
     */
+    MediaGallerySyncNotify::GetInstance().TryNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, ChangeType::INSERT, "");
+    MediaGallerySyncNotify::GetInstance().FinalNotify();
     for (auto &thm : thmVector) {  // collect results
         MediaOperateResultDto mediaResult;
         mediaResult.cloudId = thm;
@@ -121,6 +132,9 @@ int32_t CloudMediaDownloadService::OnDownloadLcd(
     MEDIA_INFO_LOG("size of lcdVector is %{public}zu", lcdVector.size());
     int32_t ret = this->dao_.UpdateDownloadLcd(lcdVector);
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to UpdateDownloadLcd.");
+    if (ret == E_OK && !lcdVector.empty()) {
+        CloudMediaDfxService::UpdateAttachmentStat(INDEX_LCD_SUCCESS, lcdVector.size());
+    }
     for (auto &thm : lcdVector) {  // collect results
         MediaOperateResultDto mediaResult;
         mediaResult.cloudId = thm;
@@ -137,6 +151,10 @@ int32_t CloudMediaDownloadService::OnDownloadThmAndLcd(
     MEDIA_INFO_LOG("size of bothVector is %{public}zu", bothVector.size());
     int32_t ret = this->dao_.UpdateDownloadThmAndLcd(bothVector);
     CHECK_AND_PRINT_LOG(ret == E_OK, "Failed to UpdateDownloadThmAndLcd.");
+    if (ret == E_OK && !bothVector.empty()) {
+        CloudMediaDfxService::UpdateAttachmentStat(INDEX_THUMB_SUCCESS, bothVector.size());
+        CloudMediaDfxService::UpdateAttachmentStat(INDEX_LCD_SUCCESS, bothVector.size());
+    }
     for (auto &thm : bothVector) {  // collect results
         MediaOperateResultDto mediaResult;
         mediaResult.cloudId = thm;
@@ -146,34 +164,24 @@ int32_t CloudMediaDownloadService::OnDownloadThmAndLcd(
     return ret;
 }
 
+void CloudMediaDownloadService::NotifyDownloadLcd(const std::vector<std::string> &cloudIds)
+{
+    std::vector<std::string> fileIds;
+    this->dao_.GetFileIdFromCloudId(cloudIds, fileIds);
+    MEDIA_INFO_LOG("size of fileIds is %{public}zu", fileIds.size());
+    for (auto &fileId : fileIds) {
+        std::string uri = PhotoColumn::PHOTO_CLOUD_URI_PREFIX + fileId;
+        MediaGallerySyncNotify::GetInstance().TryNotify(uri, ChangeType::INSERT, "");
+    }
+    MediaGallerySyncNotify::GetInstance().FinalNotify();
+}
+
 bool CloudMediaDownloadService::IsCloudInsertTaskPriorityHigh()
 {
     int32_t cloudSyncStatus = static_cast<int32_t>(system::GetParameter(CLOUDSYNC_STATUS_KEY, "0").at(0) - '0');
     MEDIA_INFO_LOG("cloudSyncStatus: %{public}d", cloudSyncStatus);
     return cloudSyncStatus == CloudSyncStatus::FIRST_FIVE_HUNDRED ||
            cloudSyncStatus == CloudSyncStatus::INCREMENT_DOWNLOAD;
-}
-
-void CloudMediaDownloadService::CreateAstcCloudDownload(const std::vector<std::string> &cloudIds)
-{
-    MEDIA_INFO_LOG("enter CreateAstcCloudDownload");
-    CHECK_AND_RETURN_LOG(!cloudIds.empty(), "cloudIds is empty");
-    std::vector<std::string> fileIds;
-    int32_t ret = this->dao_.GetFileIdFromCloudId(cloudIds, fileIds);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to get fileIds");
-
-    // 缩略图纹理
-    bool isCloudInsertTaskPriorityHigh = this->IsCloudInsertTaskPriorityHigh();
-    if (!isCloudInsertTaskPriorityHigh && !ThumbnailService::GetInstance()->GetCurrentStatusForTask()) {
-        MEDIA_INFO_LOG("current status is not suitable for task");
-        return;
-    }
-    for (auto &fileId : fileIds) {
-        MEDIA_INFO_LOG("CreateAstcCloudDownload, fileId: %{public}s", fileId.c_str());
-        ThumbnailService::GetInstance()->CreateAstcCloudDownload(fileId, isCloudInsertTaskPriorityHigh);
-    }
-    // 原图低优先级下载
-    CloudMediaAssetManager::GetInstance().SetIsThumbnailUpdate();
 }
 
 int32_t CloudMediaDownloadService::OnDownloadThms(
@@ -207,7 +215,7 @@ int32_t CloudMediaDownloadService::OnDownloadThms(
         astcVector.insert(astcVector.end(), bothVector.begin(), bothVector.end());
     }
     MEDIA_INFO_LOG("size of astcVector is %{public}zu", astcVector.size());
-    this->CreateAstcCloudDownload(astcVector);
+    this->NotifyDownloadLcd(astcVector);
     return E_OK;
 }
 
@@ -220,9 +228,9 @@ std::vector<PhotosDto> CloudMediaDownloadService::GetDownloadAsset(const std::ve
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, photosDtoVec, "GetDownloadAsset failed, ret:%{public}d", ret);
     std::vector<DownloadAssetData> downloadAssetDataVec;
     this->processor_.GetDownloadAssetData(photosPos, downloadAssetDataVec);
+    MEDIA_INFO_LOG("GetDownloadAsset size of downloadAssetDataVec: %{public}zu", downloadAssetDataVec.size());
     CHECK_AND_RETURN_RET_LOG(
         !downloadAssetDataVec.empty(), photosDtoVec, "GetDownloadAsset Failed to get downloadAssetDataVec.");
-    MEDIA_INFO_LOG("GetDownloadAsset size of downloadAssetDataVec: %{public}zu", downloadAssetDataVec.size());
     for (const auto &downloadAssetData : downloadAssetDataVec) {
         std::string filePath;
         std::string fileName;
@@ -245,7 +253,7 @@ std::vector<PhotosDto> CloudMediaDownloadService::GetDownloadAsset(const std::ve
             CloudMediaAttachmentUtils::GetAttachment("content", downloadAssetData, photosDto) == E_OK,
             photosDtoVec,
             "failed to GetAttachment");
-        MEDIA_INFO_LOG("GetDownloadAsset Photo: %{public}s", photosDto.ToString().c_str());
+        MEDIA_DEBUG_LOG("GetDownloadAsset Photo: %{public}s", photosDto.ToString().c_str());
 
         photosDtoVec.push_back(photosDto);
     }
@@ -260,8 +268,10 @@ CloudMediaDownloadService::OnDownloadAssetData CloudMediaDownloadService::GetOnD
     bool isMovingPhoto = CloudMediaSyncUtils::IsMovingPhoto(photosPo);
     bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photosPo);
     bool isLivePhoto = CloudMediaSyncUtils::IsLivePhoto(photosPo);
+    MEDIA_INFO_LOG("GetOnDownloadAssetData %{public}d,%{public}d,%{public}d", isMovingPhoto, isGraffiti, isLivePhoto);
     assetData.fixFileType = isMovingPhoto && !isGraffiti && !isLivePhoto;
-    assetData.needSlice = (isMovingPhoto && !isGraffiti) || isLivePhoto;
+    assetData.needSliceContent = (isMovingPhoto && !isGraffiti) && isLivePhoto;
+    assetData.needSliceRaw = isMovingPhoto;
     assetData.path = photosPo.data.value_or("");
     assetData.localPath = CloudMediaSyncUtils::GetLocalPath(assetData.path);
     assetData.dateModified = photosPo.dateModified.value_or(0);
@@ -276,25 +286,102 @@ void CloudMediaDownloadService::UnlinkAsset(OnDownloadAssetData &assetData)
         assetData.errorMsg = "unlink failed";
         MEDIA_WARN_LOG("DownloadAsset unlink %{public}s failed", assetData.localPath.c_str());
     }
-    return;
 }
 
 void CloudMediaDownloadService::ResetAssetModifyTime(OnDownloadAssetData &assetData)
 {
-    MEDIA_INFO_LOG("UpdateModifyTime: %{public}s,%{public}d, %{public}s,%{public}d",
-        assetData.path.c_str(),
-        access(assetData.path.c_str(), F_OK),
+    MEDIA_INFO_LOG("UpdateModifyTime: %{public}s,%{public}d",
         assetData.localPath.c_str(),
-        access(assetData.localPath.c_str(), F_OK));
-    int32_t err = CloudMediaSyncUtils::UpdateModifyTime(
-        assetData.needSlice ? assetData.path : assetData.localPath, assetData.dateModified);
+        access(assetData.localPath.c_str(), F_OK) == 0);
+    if (access(assetData.localPath.c_str(), F_OK) != 0) {
+        MEDIA_ERR_LOG("ResetAssetModifyTime file not exist %{public}s", assetData.localPath.c_str());
+        return;
+    }
+    int32_t err = CloudMediaSyncUtils::UpdateModifyTime(assetData.localPath, assetData.dateModified);
     if (err != E_OK) {
         assetData.err = err;
         assetData.errorMsg = "Update ModifyTime failed";
         MEDIA_WARN_LOG("DownloadAsset UpdateModifyTime %{public}s failed",
             MediaFileUtils::DesensitizePath(assetData.localPath).c_str());
     }
-    return;
+}
+
+int32_t CloudMediaDownloadService::SliceAssetFile(const std::string &originalFile, const std::string &path,
+    const std::string &videoPath, const std::string &extraDataPath)
+{
+    MEDIA_INFO_LOG("SliceAssetFile");
+    if (access(originalFile.c_str(), F_OK) != F_OK) {
+        MEDIA_ERR_LOG("SliceAssetFile Not exist %{public}s", originalFile.c_str());
+        return E_PATH;
+    }
+    std::string temp = originalFile + ".slicetemp";
+    if (rename(originalFile.c_str(), temp.c_str()) == 0) {
+        MEDIA_INFO_LOG("SliceAssetFile originalFile:%{public}s, path:%{public}s, videoPath:%{public}s, "
+                       "extraDataPath:%{public}s, temp:%{public}s",
+            originalFile.c_str(),
+            path.c_str(),
+            videoPath.c_str(),
+            extraDataPath.c_str(),
+            temp.c_str());
+        if (MovingPhotoFileUtils::ConvertToMovingPhoto(temp, path, videoPath, extraDataPath) != 0) {
+            MEDIA_INFO_LOG("SliceAssetFile convert to moving photo fail %{public}s", originalFile.c_str());
+            if (unlink(temp.c_str()) != 0) {
+                MEDIA_WARN_LOG("SliceAssetFile convert failed delete temp");
+            }
+            return E_PATH;
+        }
+        if (unlink(temp.c_str()) != 0) {
+            MEDIA_WARN_LOG("SliceAssetFile convert success delete temp");
+        }
+    } else {
+        MEDIA_ERR_LOG("SliceAssetFile rename failed path:%{public}s, to temp:%{public}s", path.c_str(), temp.c_str());
+        return E_PATH;
+    }
+    return E_OK;
+}
+
+int32_t CloudMediaDownloadService::SliceAsset(const OnDownloadAssetData &assetData, const PhotosPo &photo)
+{
+    MEDIA_INFO_LOG("SliceAsset enter");
+    if (assetData.needSliceRaw) {
+        std::string rawFilePath = PhotoFileUtils::GetEditDataSourcePath(assetData.path);
+        bool isLivePhoto = MovingPhotoFileUtils::IsLivePhoto(rawFilePath);
+        if (isLivePhoto) {
+            std::string sourceImage = CloudMediaSyncUtils::GetSourceMovingPhotoImagePath(assetData.path);
+            std::string sourceVideo = CloudMediaSyncUtils::GetSourceMovingPhotoVideoPath(assetData.path);
+            return SliceAssetFile(rawFilePath, sourceImage, sourceVideo, "");
+        } else {
+            MEDIA_WARN_LOG("OnDownloadAsset need slice raw, but file is not live photo");
+        }
+    }
+    if (assetData.needSliceContent) {
+        bool isGraffiti = CloudMediaSyncUtils::IsGraffiti(photo);
+        std::string videoPath = CloudMediaSyncUtils::GetMovingPhotoVideoPath(assetData.path);
+        std::string extraDir = CloudMediaSyncUtils::GetMovingPhotoExtraDataDir(assetData.path);
+        std::string extraDataPath =
+            isGraffiti ? CloudMediaSyncUtils::GetMovingPhotoExtraDataPath(assetData.path) : "";
+        if (!ForceCreateDirectory(extraDir)) {
+            MEDIA_ERR_LOG("HandleAssetFile %{public}s error %{public}d", extraDir.c_str(), errno);
+            return E_PATH;
+        }
+        return SliceAssetFile(assetData.localPath, assetData.localPath, videoPath, extraDataPath);
+    }
+    return E_OK;
+}
+
+std::string CloudMediaDownloadService::PrintOnDownloadAssetData(const OnDownloadAssetData &assetData)
+{
+    std::stringstream ss;
+    ss << "{"
+       << "\"fixFileType\": " << std::to_string(assetData.fixFileType) << ","
+       << "\"needSliceContent\": " << std::to_string(assetData.needSliceContent) << ","
+       << "\"needSliceRaw\": " << std::to_string(assetData.needSliceRaw) << ","
+       << "\"err\": " << assetData.err << ","
+       << "\"dateModified\": " << assetData.dateModified << ","
+       << "\"path\": \"" << assetData.path << "\","
+       << "\"localPath\": \"" << assetData.localPath << "\","
+       << "\"errorMsg\": \"" << assetData.errorMsg << "\"}";
+    return ss.str();
 }
 
 int32_t CloudMediaDownloadService::OnDownloadAsset(
@@ -308,23 +395,17 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
     // Requirement: If any asset is not in the database, return error. Caller should check the result.
     CHECK_AND_RETURN_RET_LOG(photosPoVec.size() == cloudIds.size(),
         E_CLOUDSYNC_INVAL_ARG,
-        "QueryDownloadAssetByCloudIds failed, cloudIds size:%{public}zu, photosPoVec size:%{public}zu",
+        "QueryDownloadAssetByCloudIds failed, cloudIds size:%{public}lu, photosPoVec size:%{public}lu",
         cloudIds.size(),
         photosPoVec.size());
     // Update
     OnDownloadAssetData assetData;
     for (auto &photosPo : photosPoVec) {
-        MEDIA_INFO_LOG("OnDownloadAsset %{public}s", photosPo.ToString().c_str());
         assetData = this->GetOnDownloadAssetData(photosPo);
-        ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.needSlice, assetData.path);
-        if (ret != E_OK) {
-            MEDIA_INFO_LOG("Failed to Handle DownloadAsset %{public}s", assetData.localPath.c_str());
-            assetData.errorMsg = "UpdateDownloadAsset failed";
-            assetData.err = ret;
-            this->UnlinkAsset(assetData);
-        } else if (assetData.dateModified > 0) {
-            this->ResetAssetModifyTime(assetData);
-        }
+        MEDIA_DEBUG_LOG("OnDownloadAsset %{public}s, %{public}s",
+            photosPo.ToString().c_str(),
+            PrintOnDownloadAssetData(assetData).c_str());
+        HandlePhoto(photosPo, assetData);
         // record result
         MediaOperateResultDto mediaResult;
         mediaResult.cloudId = photosPo.cloudId.value_or("");
@@ -333,5 +414,25 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
         result.emplace_back(mediaResult);
     }
     return E_OK;
+}
+
+void CloudMediaDownloadService::HandlePhoto(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData)
+{
+    int32_t ret = SliceAsset(assetData, photo);
+    if (ret != E_OK) {
+        MEDIA_INFO_LOG("HandlePhoto Failed to Slice %{public}s", assetData.localPath.c_str());
+        assetData.errorMsg = "Slice Moving File Failed";
+        assetData.err = ret;
+        return;
+    }
+    ret = this->dao_.UpdateDownloadAsset(assetData.fixFileType, assetData.path);
+    if (ret != E_OK) {
+        MEDIA_INFO_LOG("Failed to Handle HandlePhoto %{public}s", assetData.localPath.c_str());
+        assetData.errorMsg = "UpdateDownloadAsset failed";
+        assetData.err = ret;
+        this->UnlinkAsset(assetData);
+    } else if (assetData.dateModified > 0 && (assetData.needSliceContent || assetData.needSliceRaw)) {
+        this->ResetAssetModifyTime(assetData);
+    }
 }
 }  // namespace OHOS::Media::CloudSync

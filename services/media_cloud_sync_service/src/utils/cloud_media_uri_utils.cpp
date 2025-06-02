@@ -75,7 +75,7 @@ int32_t CloudMediaUriUtils::GetFileIds(const std::vector<std::string> &uris, std
         auto ret = CloudMediaUriUtils::GetFileIdFromUri(uri, fileId);
         CHECK_AND_CONTINUE_ERR_LOG(ret == E_OK, "Failed to get fileId from uri: %{public}s", uri.c_str());
         fileIds.push_back(fileId);
-        MEDIA_INFO_LOG("GetFileIds uri:%{public}s, fileId:%{public}d", uri.c_str(), fileId);
+        MEDIA_DEBUG_LOG("GetFileIds uri:%{public}s, fileId:%{public}d", uri.c_str(), fileId);
     }
     return uris.size() == fileIds.size() ? E_OK : E_INVAL_ARG;
 }

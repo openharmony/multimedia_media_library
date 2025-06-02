@@ -25,9 +25,10 @@
 #include "get_download_thm_vo.h"
 #include "media_operate_result_vo.h"
 #include "media_operate_result_dto.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaDownloadControllerProcessor {
+class EXPORT CloudMediaDownloadControllerProcessor {
 public:
     PhotosVo ConvertPhotosDtoToPhotosVo(const PhotosDto &photosDto);
     DownloadThumbnailQueryDto GetDownloadThumbnailQueryDto(const GetDownloadThmReqBody &reqBody);

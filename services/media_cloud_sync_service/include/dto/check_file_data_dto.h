@@ -19,9 +19,10 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CheckFileDataDto {
+class EXPORT CheckFileDataDto {
 public:
     class FileData {
     public:

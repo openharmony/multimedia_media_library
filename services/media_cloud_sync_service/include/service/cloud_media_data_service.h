@@ -29,9 +29,10 @@
 #include "cloud_media_data_dao.h"
 #include "cloud_media_data_service_processor.h"
 #include "cloud_media_common_dao.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaDataService {
+class EXPORT CloudMediaDataService {
 public:
     // 核查相关
     int32_t UpdateDirty(const std::string &cloudId, const int32_t dirtyType);

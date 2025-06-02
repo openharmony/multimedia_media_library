@@ -19,9 +19,10 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class DownloadThumbnailQueryDto {
+class EXPORT DownloadThumbnailQueryDto {
 public:
     int32_t size;
     int32_t type;

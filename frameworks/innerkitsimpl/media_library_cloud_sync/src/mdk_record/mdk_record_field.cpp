@@ -326,15 +326,6 @@ bool MDKRecordField::ParseBoolFromJson(const Json::Value &jvData)
 
 bool MDKRecordField::ParseBlobFromJson(const Json::Value &jvData)
 {
-    // auto ret = jvData.isString() ? true : false;
-    // if (ret) {
-    //     std::string data = jvData.asString();
-    //     std::vector<uint8_t> v;
-    //     if (Base64Decode(data, v)) {
-    //         value_ = v;
-    //     }
-    // }
-    // return ret;
     return false;
 }
 
@@ -353,8 +344,6 @@ bool MDKRecordField::ParseListFromJson(MDKRecordFieldType listType, const Json::
             lst.push_back(field);
         } else {
             ret = false;
-            // CHECK_AND_PRINT_LOG("Parse field list from json failed, listType:%{public}d, data:%{public}s",\
-            //     static_cast<int>(listType), JsonHelper::JsonToString(jvData).c_str());
         }
     }
     value_ = lst;
@@ -386,8 +375,6 @@ bool MDKRecordField::ParseMapFromJson(const Json::Value &jvData)
             field.value_ = jvValue.asBool();
         } else {
             ret = false;
-            // CHECK_AND_PRINT_LOG("Parse field map from json failed, data:%{public}s",\
-            //     JsonHelper::JsonToString(jvValue).c_str());
             continue;
         }
         fieldMap[key] = field;

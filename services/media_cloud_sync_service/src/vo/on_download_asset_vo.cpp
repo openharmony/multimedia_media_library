@@ -24,8 +24,7 @@
 namespace OHOS::Media::CloudSync {
 bool OnDownloadAssetReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel);
-    return true;
+    return IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->cloudIds, parcel);
 }
 
 bool OnDownloadAssetReqBody::Marshalling(MessageParcel &parcel) const

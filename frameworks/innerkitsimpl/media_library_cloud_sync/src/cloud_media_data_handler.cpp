@@ -27,13 +27,14 @@
 #include "cloud_media_operation_code.h"
 #include "medialibrary_errno.h"
 #include "cloud_media_data_handler_factory.h"
+#include "cloud_media_thread_limiter.h"
 
 namespace OHOS::Media::CloudSync {
 CloudMediaDataHandler::CloudMediaDataHandler(const std::string &tableName, int32_t cloudType, int32_t userId)
     : cloudType_(cloudType), userId_(userId), tableName_(tableName)
 {
     this->dataHandler_ = CloudMediaDataHandlerFactory().GetDataHandler(tableName, userId);
-    UserFileClient::SetUserId(userId);
+    MEDIA_INFO_LOG("media-ipc userId: %{public}d", userId);
 }
 
 int32_t CloudMediaDataHandler::GetCloudType() const
@@ -41,7 +42,7 @@ int32_t CloudMediaDataHandler::GetCloudType() const
     return this->cloudType_;
 }
 
-void CloudMediaDataHandler::SetUserId(int32_t userId)
+void CloudMediaDataHandler::SetUserId(const int32_t &userId)
 {
     this->userId_ = userId;
 }
@@ -150,6 +151,7 @@ int32_t CloudMediaDataHandler::OnCreateRecords(const std::map<std::string, MDKRe
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnCreateRecords(map, failSize);
 }
 
@@ -160,6 +162,7 @@ int32_t CloudMediaDataHandler::OnMdirtyRecords(const std::map<std::string, MDKRe
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnMdirtyRecords(map, failSize);
 }
 
@@ -170,6 +173,7 @@ int32_t CloudMediaDataHandler::OnFdirtyRecords(const std::map<std::string, MDKRe
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnFdirtyRecords(map, failSize);
 }
 
@@ -180,6 +184,7 @@ int32_t CloudMediaDataHandler::OnDeleteRecords(const std::map<std::string, MDKRe
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnDeleteRecords(map, failSize);
 }
 
@@ -190,6 +195,7 @@ int32_t CloudMediaDataHandler::OnCopyRecords(const std::map<std::string, MDKReco
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnCopyRecords(map, failSize);
 }
 
@@ -201,6 +207,7 @@ int32_t CloudMediaDataHandler::OnFetchRecords(const std::vector<MDKRecord> &reco
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnFetchRecords(records, newData, fdirtyData, failedRecords, stats);
 }
 
@@ -211,6 +218,7 @@ int32_t CloudMediaDataHandler::OnDentryFileInsert(
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnDentryFileInsert(records, failedRecords);
 }
 
@@ -229,6 +237,7 @@ int32_t CloudMediaDataHandler::OnStartSync()
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnStartSync();
 }
 
@@ -238,6 +247,7 @@ int32_t CloudMediaDataHandler::OnCompleteSync()
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnCompleteSync();
 }
 
@@ -247,6 +257,7 @@ int32_t CloudMediaDataHandler::OnCompletePull()
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnCompletePull();
 }
 
@@ -256,6 +267,7 @@ int32_t CloudMediaDataHandler::OnCompletePush()
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnCompletePush();
 }
 
@@ -265,6 +277,7 @@ int32_t CloudMediaDataHandler::OnCompleteCheck()
         MEDIA_ERR_LOG("No data handler found! tableName: %{public}s", this->tableName_.c_str());
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnCompleteCheck();
 }
 }  // namespace OHOS::Media::CloudSync

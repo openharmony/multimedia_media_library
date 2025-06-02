@@ -134,7 +134,7 @@ private:
            << "\"height\": " << height.value_or(0) << ", "
            << "\"width\": " << width.value_or(0) << ", "
            << "\"subtype\": " << subtype.value_or(0) << ", "
-           << "\"burstCoverLevel\": " << burstCoverLevel.value_or(0) << ", "
+           << "\"burstCoverLevel\": " << burstCoverLevel.value_or(1) << ", "
            << "\"burstKey\": \"" << burstKey.value_or("") << "\", "
            << "\"userComment\": \"" << userComment.value_or("") << "\", "
            << "\"thumbStatus\": " << thumbStatus.value_or(0) << ", "

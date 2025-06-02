@@ -497,6 +497,28 @@ bool MediaFileUtils::DeleteFile(const string &fileName)
     return (remove(fileName.c_str()) == E_SUCCESS);
 }
 
+bool MediaFileUtils::DeleteFileWithRetry(const string &fileName)
+{
+    int32_t maxRetryCount = 3;
+    int32_t retryCount = 0;
+    bool isRemoved = false;
+    bool isExists = false;
+    bool isDeleted = false;
+    while (!isDeleted && retryCount++ < maxRetryCount) {
+        isRemoved = DeleteFile(fileName);
+        isExists = IsFileExists(fileName);
+        isDeleted = isRemoved && !isExists;
+        CHECK_AND_PRINT_LOG(isDeleted,
+            "DeleteFileWithRetry fail, retryCount: %{public}d, "
+            "isRemoved: %{public}d, isExists: %{public}d, fileName: %{public}s",
+            retryCount,
+            isRemoved,
+            isExists,
+            fileName.c_str());
+    }
+    return isDeleted;
+}
+
 bool MediaFileUtils::DeleteDir(const string &dirName)
 {
     bool errRet = false;

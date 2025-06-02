@@ -22,6 +22,7 @@
 
 #include "message_parcel.h"
 #include "datashare_stub.h"
+#include "sys_utils.h"
 #include "photos_dto.h"
 #include "photos_vo.h"
 #include "rdb_store.h"
@@ -33,9 +34,10 @@
 #include "user_define_ipc.h"
 #include "cloud_media_data_controller_processor.h"
 #include "cloud_media_data_service.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaDataControllerService : public IPC::IMediaControllerService {
+class EXPORT CloudMediaDataControllerService : public IPC::IMediaControllerService {
 private:
     void UpdateDirty(MessageParcel &data, MessageParcel &reply);
     void UpdatePosition(MessageParcel &data, MessageParcel &reply);
@@ -88,6 +90,7 @@ public:
         if (!this->Accept(code) || it == this->HANDLERS.end()) {
             return IPC::UserDefineIPC().WriteResponseBody(reply, E_IPC_SEVICE_NOT_FOUND);
         }
+        SysUtils::SlowDown();
         return (this->*(it->second))(data, reply);
     }
 
