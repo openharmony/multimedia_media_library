@@ -55,17 +55,21 @@ static void PrintUriList(ChangeType changeType, const list<Uri> &uris)
 
 static int32_t TryNotifyChange()
 {
-    auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
-    if (obsMgrClient == nullptr) {
-        MEDIA_ERR_LOG("TryNotifyChange %{public}s obsMgrClient is nullptr", __func__);
-        return E_SA_LOAD_FAILED;
+    MediaGallerySyncNotify::recordAdded_++;
+    if (MediaGallerySyncNotify::recordAdded_ % NOTIFY_INTERVALS == 0) {
+        auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
+        if (obsMgrClient == nullptr) {
+            MEDIA_ERR_LOG("TryNotifyChange %{public}s obsMgrClient is nullptr", __func__);
+            return E_SA_LOAD_FAILED;
+        }
+        for (auto it = MediaGallerySyncNotify::notifyListMap_.begin();
+                  it != MediaGallerySyncNotify::notifyListMap_.end(); ++it) {
+            obsMgrClient->NotifyChangeExt({it->first, it->second});
+            PrintUriList(it->first, it->second);
+        }
+        MediaGallerySyncNotify::notifyListMap_.clear();
+        MediaGallerySyncNotify::recordAdded_ = 0;
     }
-    for (auto it = MediaGallerySyncNotify::notifyListMap_.begin(); it != MediaGallerySyncNotify::notifyListMap_.end();
-         ++it) {
-        obsMgrClient->NotifyChangeExt({it->first, it->second});
-        PrintUriList(it->first, it->second);
-    }
-    MediaGallerySyncNotify::notifyListMap_.clear();
     return E_OK;
 }
 
@@ -136,6 +140,7 @@ int32_t MediaGallerySyncNotify::TryNotify(
 
 int32_t MediaGallerySyncNotify::FinalNotify()
 {
+    MEDIA_INFO_LOG("FinalNotify");
     auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
     if (obsMgrClient == nullptr) {
         MEDIA_ERR_LOG("FinalNotify %{public}s obsMgrClient is nullptr", __func__);

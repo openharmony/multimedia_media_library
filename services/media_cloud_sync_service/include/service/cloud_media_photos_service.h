@@ -28,9 +28,18 @@
 #include "cloud_media_photos_dao.h"
 #include "cloud_media_pull_data_dto.h"
 #include "cloud_media_common_dao.h"
+#include "report_failure_dto.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaPhotosService {
+class EXPORT CloudMediaPhotosService {
+private:
+    struct DataMergeResult {
+        int32_t mergeCount;
+        std::string failCloudId;
+        std::string refreshAlbumId;
+    };
+
 public:
     std::vector<PhotosDto> GetCheckRecords(const std::vector<std::string> &cloudIds);
     int32_t GetCreatedRecords(int32_t size, std::vector<PhotosPo> &createdRecords);
@@ -54,6 +63,7 @@ public:
     int32_t OnCompletePull();
     int32_t OnCompletePush();
     int32_t OnCompleteCheck();
+    int32_t ReportFailure(const ReportFailureDto &reportFailureDto);
 
 private:
     int32_t HandleRecord(const std::vector<std::string> &cloudIds,
@@ -69,7 +79,6 @@ private:
         std::vector<PhotosDto> &newData, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords);
     int32_t PullRecordsConflictProc(std::vector<CloudMediaPullDataDto> &allPullDatas,
         std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats, std::vector<std::string> &failedRecords);
-    void ConvertRotateValue(int32_t exifRotateValue, int32_t &outRotateValue);
     int32_t GetCloudKeyData(const CloudMediaPullDataDto &pullData, KeyData &keyData);
     void GetMergeDataMap(
         const std::vector<CloudMediaPullDataDto> &pullDatas, std::map<std::string, KeyData> &mergeDataMap);
@@ -86,6 +95,10 @@ private:
     void NotifyPhotoInserted(const std::vector<NativeRdb::ValuesBucket> &insertFiles);
     void Notify(const std::string &uri, NotifyType type);
     void ConvertPullDataToPhotosDto(const CloudMediaPullDataDto &data, PhotosDto &dto);
+    int32_t NotifyUploadErr(const int32_t errorCode, const std::string fileId);
+    int32_t OnRecordFailedErrorDetails(PhotosDto &photo);
+    int32_t PullRecordsDataMerge(std::vector<CloudMediaPullDataDto> &allPullDatas, const KeyData &localKeyData,
+        std::map<std::string, KeyData> &mergeDataMap, DataMergeResult &mergeResult);
 
 private:
     CloudMediaPhotoServiceProcessor processor_;

@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool CloudFileDataVo::Unmarshalling(MessageParcel &parcel)
@@ -39,9 +40,7 @@ bool CloudFileDataVo::Marshalling(MessageParcel &parcel) const
 
 bool CloudFileDataVo::Marshalling(const std::map<std::string, CloudFileDataVo> &result, MessageParcel &parcel)
 {
-    if (!parcel.WriteInt32(static_cast<int32_t>(result.size()))) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(result.size())), false);
     for (const auto &entry : result) {
         if (!parcel.WriteString(entry.first) || !entry.second.Marshalling(parcel)) {
             return false;
@@ -52,12 +51,8 @@ bool CloudFileDataVo::Marshalling(const std::map<std::string, CloudFileDataVo> &
 bool CloudFileDataVo::Unmarshalling(std::map<std::string, CloudFileDataVo> &val, MessageParcel &parcel)
 {
     int32_t size = 0;
-    if (!parcel.ReadInt32(size)) {
-        return false;
-    }
-    if (size < 0) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(parcel.ReadInt32(size), false);
+    CHECK_AND_RETURN_RET(size >= 0, false);
     size_t readAbleSize = parcel.GetReadableBytes();
     if ((static_cast<size_t>(size) > readAbleSize) || static_cast<size_t>(size) > val.max_size()) {
         return false;
@@ -65,14 +60,10 @@ bool CloudFileDataVo::Unmarshalling(std::map<std::string, CloudFileDataVo> &val,
     bool isValid;
     for (int32_t i = 0; i < size; i++) {
         std::string key;
-        if ((!parcel.ReadString(key))) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(parcel.ReadString(key), false);
         CloudFileDataVo nodeObj;
         isValid = nodeObj.Unmarshalling(parcel);
-        if (!isValid) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(isValid, false);
         val.emplace(key, nodeObj);
     }
     return true;

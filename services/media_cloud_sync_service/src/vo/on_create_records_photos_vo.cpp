@@ -114,8 +114,7 @@ std::string OnCreateRecord::ToString() const
 
 bool OnCreateRecordsPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel);
-    return true;
+    return IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel);
 }
 
 bool OnCreateRecordsPhotosReqBody::Marshalling(MessageParcel &parcel) const

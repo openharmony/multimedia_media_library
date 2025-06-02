@@ -2616,7 +2616,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     }
 
     if (MediaFileUtils::IsFileExists(path)) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(path), E_HAS_FS_ERROR,
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFileWithRetry(path), E_HAS_FS_ERROR,
             "Failed to delete asset, path:%{private}s", path.c_str());
     }
 

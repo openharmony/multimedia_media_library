@@ -28,12 +28,10 @@
 namespace OHOS::Media::CloudSync {
 #define EXPORT __attribute__ ((visibility ("default")))
 class EXPORT ICloudMediaDataHandler {
-public:
-    int32_t userId_;
-
 public:  // getter & setter
     virtual void SetTraceId(const std::string &traceId) = 0;
     virtual std::string GetTraceId() const = 0;
+    virtual void SetUserId(const int32_t &userId) = 0;
 
 public:
     virtual int32_t GetCheckRecords(const std::vector<std::string> &cloudIds,

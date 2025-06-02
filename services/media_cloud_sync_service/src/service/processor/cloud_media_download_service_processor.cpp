@@ -54,7 +54,7 @@ std::vector<PhotosDto> CloudMediaDownloadServiceProcessor::GetPhotosDto(std::vec
         int32_t orientation = photosPo.orientation.value_or(0);
         int32_t thumbState = photosPo.thumbStatus.value_or(0);
         CloudMediaSyncUtils::FillPhotosDto(photosDto, path, orientation, thumbState);
-        MEDIA_INFO_LOG("GetDownloadThms: %{public}s", photosDto.ToString().c_str());
+        MEDIA_DEBUG_LOG("GetDownloadThms: %{public}s", photosDto.ToString().c_str());
         photosDtos.push_back(photosDto);
     }
     return photosDtos;

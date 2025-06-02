@@ -35,6 +35,7 @@ class EXPORT ICloudMediaDataClient {
 public:  // getter & setter
     virtual void SetTraceId(const std::string &traceId) = 0;
     virtual std::string GetTraceId() const = 0;
+    virtual void SetUserId(const int32_t &userId) = 0;
 
 public:
     // 核查

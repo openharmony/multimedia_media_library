@@ -27,22 +27,23 @@
 #include "on_fetch_records_album_vo.h"
 #include "dataobs_mgr_changeinfo.h"
 #include "cloud_media_album_dao.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaAlbumService {
+class EXPORT CloudMediaAlbumService {
 public:
     std::vector<PhotoAlbumPo> GetCheckRecords(const std::vector<std::string> &cloudIds);
     std::vector<PhotoAlbumPo> GetAlbumCreatedRecords(int32_t size);
     std::vector<PhotoAlbumPo> GetAlbumMetaModifiedRecords(int32_t size);
-    std::vector<PhotoAlbumPo> GetAlbumFileModifiedRecords(int32_t size);    // it's not exist
+    std::vector<PhotoAlbumPo> GetAlbumFileModifiedRecords(int32_t size);  // it's not exist
     std::vector<PhotoAlbumPo> GetAlbumDeletedRecords(int32_t size);
-    std::vector<PhotoAlbumPo> GetAlbumCopyRecords(int32_t size);    // it's not exist
+    std::vector<PhotoAlbumPo> GetAlbumCopyRecords(int32_t size);  // it's not exist
     int32_t OnCreateRecords(std::vector<PhotoAlbumDto> &albumDtoList, int32_t &failSize);
     int32_t OnMdirtyRecords(std::vector<PhotoAlbumDto> &albumDtoList, int32_t &failSize);
     int32_t OnFdirtyRecords();
     int32_t OnDeleteRecords(std::vector<PhotoAlbumDto> &albumDtoList, int32_t &failSize);
     int32_t OnCopyRecords();
-    int32_t OnFetchRecords(std::vector<PhotoAlbumDto> &albumDtoList, OnFetchRecordsAlbumRespBody& resp);
+    int32_t OnFetchRecords(std::vector<PhotoAlbumDto> &albumDtoList, OnFetchRecordsAlbumRespBody &resp);
     int32_t OnDentryFileInsert();
     int32_t OnStartSync();
     int32_t OnCompleteSync();
@@ -51,17 +52,17 @@ public:
     int32_t OnCompleteCheck();
 
 private:
-    int32_t OnDeleteAlbums(std::vector<std::string>& failedAlbumIds);
-    int32_t OnFetchOldRecords(std::vector<PhotoAlbumDto> &records,
-        OnFetchRecordsAlbumRespBody& resp);
-    int32_t OnFetchLPathRecords(std::vector<PhotoAlbumDto> &records,
-        OnFetchRecordsAlbumRespBody& resp);
-    int32_t HandleFetchOldRecord(PhotoAlbumDto& record, bool& bContinue,
-        OHOS::AAFwk::ChangeInfo::ChangeType& changeType, OnFetchRecordsAlbumRespBody& resp);
-    int32_t HandleLPathRecords(PhotoAlbumDto& record, const std::map<std::string, int> &lpathRowIdMap,
-        const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-        OHOS::AAFwk::ChangeInfo::ChangeType& changeType, OnFetchRecordsAlbumRespBody& resp);
-    int32_t ConvertToSingleScreenshots(PhotoAlbumDto& album, std::vector<PhotoAlbumDto> &records);
+    int32_t OnDeleteAlbums(std::vector<std::string> &failedAlbumIds);
+    int32_t OnFetchOldRecords(std::vector<PhotoAlbumDto> &records, OnFetchRecordsAlbumRespBody &resp);
+    int32_t OnFetchLPathRecords(std::vector<PhotoAlbumDto> &records, OnFetchRecordsAlbumRespBody &resp);
+    int32_t HandleFetchOldRecord(PhotoAlbumDto &record, bool &bContinue,
+        OHOS::AAFwk::ChangeInfo::ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp);
+    int32_t HandleLPathRecords(PhotoAlbumDto &record, const std::map<std::string, int> &lpathRowIdMap,
+        const std::shared_ptr<NativeRdb::ResultSet> &resultSet, OHOS::AAFwk::ChangeInfo::ChangeType &changeType,
+        OnFetchRecordsAlbumRespBody &resp);
+    int32_t ConvertToSingleScreenshots(PhotoAlbumDto &album, std::vector<PhotoAlbumDto> &records);
+    int32_t HandleFetchOldRecordNew(
+        PhotoAlbumDto &record, AAFwk::ChangeInfo::ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp);
 
 private:
     CloudMediaAlbumDao albumDao_;

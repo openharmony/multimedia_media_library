@@ -85,8 +85,7 @@ std::string OnModifyRecord::ToString() const
 
 bool OnModifyRecordsPhotosReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel);
-    return true;
+    return IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel);
 }
 
 bool OnModifyRecordsPhotosReqBody::Marshalling(MessageParcel &parcel) const

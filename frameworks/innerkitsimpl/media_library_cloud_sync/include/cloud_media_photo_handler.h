@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTO_CLIENT_H
-#define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTO_CLIENT_H
+#ifndef OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTO_HANDLER_H
+#define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTO_HANDLER_H
 
 #include <string>
 #include <vector>
@@ -26,9 +26,11 @@
 #include "mdk_reference.h"
 #include "mdk_database.h"
 #include "cloud_media_data_client_handler_processor.h"
+#include "report_failure_vo.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaPhotoHandler : public ICloudMediaDataHandler {
+class EXPORT CloudMediaPhotoHandler : public ICloudMediaDataHandler {
 public:
     CloudMediaPhotoHandler() = default;
     virtual ~CloudMediaPhotoHandler() = default;
@@ -36,6 +38,7 @@ public:
 public:  // getter & setter
     void SetTraceId(const std::string &traceId) override;
     std::string GetTraceId() const override;
+    void SetUserId(const int32_t &userId) override;
 
 public:
     int32_t GetCheckRecords(const std::vector<std::string> &cloudIds,
@@ -62,8 +65,12 @@ public:
     int32_t OnCompleteCheck() override;
 
 private:
+    int32_t ReportFailure(const ReportFailureReqBody &reqBody);
+
+private:
     CloudMediaDataClientHandlerProcessor processor_;
     std::string traceId_;
+    int32_t userId_;
 };
 }  // namespace OHOS::Media::CloudSync
-#endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTO_CLIENT_H
+#endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_PHOTO_HANDLER_H

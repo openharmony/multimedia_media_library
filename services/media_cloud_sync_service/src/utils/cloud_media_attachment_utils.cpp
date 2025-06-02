@@ -35,9 +35,11 @@ bool CloudMediaAttachmentUtils::AddRawIntoContent(const DownloadAssetData &downl
     MEDIA_INFO_LOG("download rawFilePath %{public}s", rawFilePath.c_str());
     MEDIA_INFO_LOG("download editDataCameraPath %{public}s", editDataCameraPath.c_str());
     bool hasEditDataCamera = (!editDataCameraPath.empty() && access(editDataCameraPath.c_str(), F_OK) == 0);
-    bool isValid = PhotoFileUtils::HasSource(hasEditDataCamera, downloadData.editTime, downloadData.effectMode) &&
-                   access(rawFilePath.c_str(), F_OK) != 0;
+    bool hasSource = PhotoFileUtils::HasSource(hasEditDataCamera, downloadData.editTime, downloadData.effectMode);
+    bool rawFileExist = access(rawFilePath.c_str(), F_OK) == 0;
+    bool isValid = hasSource && !rawFileExist;
     if (!isValid) {
+        MEDIA_INFO_LOG("download not add raw %{public}d, %{public}d", hasSource, rawFileExist);
         return isAdded;
     }
     MEDIA_INFO_LOG("enter add raw");
@@ -72,7 +74,6 @@ bool CloudMediaAttachmentUtils::AddEditDataIntoContent(const DownloadAssetData &
     MEDIA_INFO_LOG("download rawFilePath %{public}s", rawFilePath.c_str());
     MEDIA_INFO_LOG("download editDataPath %{public}s", editDataPath.c_str());
     MEDIA_INFO_LOG("download editDataCameraPath %{public}s", editDataCameraPath.c_str());
-    bool hasEditDataCamera = (!editDataCameraPath.empty() && access(editDataCameraPath.c_str(), F_OK) == 0);
     bool isValid = PhotoFileUtils::HasEditData(downloadData.editTime) && access(editDataPath.c_str(), F_OK) != 0;
     if (!isValid) {
         return isAdded;
@@ -115,7 +116,10 @@ int32_t CloudMediaAttachmentUtils::GetContent(
 
     bool added = false;
     added = CloudMediaAttachmentUtils::AddRawIntoContent(downloadData, photosDto);
-    added = added || CloudMediaAttachmentUtils::AddEditDataIntoContent(downloadData, photosDto);
+    if (PhotoFileUtils::HasEditData(downloadData.editTime)) {
+        bool editAdded = CloudMediaAttachmentUtils::AddEditDataIntoContent(downloadData, photosDto);
+        added = added || editAdded;
+    }
     if (added) {
         std::string parentPath;
         std::string parentName;

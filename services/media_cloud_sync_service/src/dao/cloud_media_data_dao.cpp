@@ -215,7 +215,6 @@ int32_t CloudMediaDataDao::GetAgingFile(const AgingFileQueryDto &queryDto, std::
     int64_t time = queryDto.time;
     int32_t mediaType = queryDto.mediaType;
     int32_t sizeLimit = queryDto.sizeLimit;
-    int32_t offset = queryDto.offset;
     auto currentTime = MediaFileUtils::UTCTimeSeconds();
     MEDIA_INFO_LOG("enter GetAgingFile, queryDto: %{public}s", queryDto.ToString().c_str());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -242,7 +241,6 @@ int32_t CloudMediaDataDao::GetActiveAgingFile(const AgingFileQueryDto &queryDto,
     int64_t time = queryDto.time;
     int32_t mediaType = queryDto.mediaType;
     int32_t sizeLimit = queryDto.sizeLimit;
-    int32_t offset = queryDto.offset;
     auto currentTime = MediaFileUtils::UTCTimeSeconds();
     MEDIA_INFO_LOG("enter GetActiveAgingFile, queryDto: %{public}s", queryDto.ToString().c_str());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();

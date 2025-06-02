@@ -20,7 +20,8 @@
 #include <vector>
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaDaoUtils {
+#define EXPORT __attribute__ ((visibility ("default")))
+class EXPORT CloudMediaDaoUtils {
 public:
     static std::string ToStringWithCommaAndQuote(const std::vector<std::string> &values);
     static std::string ToStringWithComma(const std::vector<std::string> &fileIds);

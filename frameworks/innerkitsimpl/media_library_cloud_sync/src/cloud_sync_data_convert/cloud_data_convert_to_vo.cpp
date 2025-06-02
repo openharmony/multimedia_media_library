@@ -38,7 +38,6 @@ CloudMetaData CloudDataConvertToVo::ConvertPhotosVoToCloudMetaData(const PhotosV
         CloudFileData fileData;
         fileData.filePath = nodePair.second.filePath;
         fileData.fileName = nodePair.second.fileName;
-        // MediaFileUtils::GetParentPathAndFilename(nodePair.second.filePath, fileData.filePath, fileData.fileName);
         fileData.size = nodePair.second.size;
         cloudMetaData.attachment[nodePair.first] = fileData;
     }

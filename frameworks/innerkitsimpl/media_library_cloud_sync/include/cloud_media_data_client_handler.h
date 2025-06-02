@@ -32,6 +32,7 @@ public:  // constructors & destructors
 public:  // getter & setter
     void SetTraceId(const std::string &traceId) override;
     std::string GetTraceId() const override;
+    void SetUserId(const int32_t &userId) override;
 
 public:
     // 核查
@@ -72,6 +73,7 @@ private:
 
 private:
     std::string traceId_;
+    int32_t userId_;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_DATA_CLIENT_HANDLER_H

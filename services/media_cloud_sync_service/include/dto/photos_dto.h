@@ -26,9 +26,10 @@
 #include "cloud_media_sync_const.h"
 #include "on_copy_records_photos_vo.h"
 #include "userfile_manager_types.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class PhotosDto {
+class EXPORT PhotosDto {
 public:
     std::string data;
     std::string path;

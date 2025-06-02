@@ -21,6 +21,7 @@
 
 #include "media_itypes_utils.h"
 #include "cloud_media_sync_const.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnFetchRecordsReqBody::Unmarshalling(MessageParcel &parcel)
@@ -52,34 +53,17 @@ std::string OnFetchRecordsReqBody::ToString() const
 
 bool OnFetchRecordsRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool ret = IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel);
-    if (!ret) {
-        return ret;
-    }
-    ret = IPC::ITypeMediaUtil::UnmarshallingParcelable<PhotosVo>(this->newDatas, parcel);
-    if (!ret) {
-        return ret;
-    }
-    ret = IPC::ITypeMediaUtil::UnmarshallingParcelable<PhotosVo>(this->fdirtyDatas, parcel);
-    if (!ret) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel), false);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<PhotosVo>(this->newDatas, parcel), false);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::UnmarshallingParcelable<PhotosVo>(this->fdirtyDatas, parcel), false);
     return IPC::ITypeMediaUtil::Unmarshalling<int32_t>(this->stats, parcel);
 }
+
 bool OnFetchRecordsRespBody::Marshalling(MessageParcel &parcel) const
 {
-    bool ret = IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel);
-    if (!ret) {
-        return ret;
-    }
-    ret = IPC::ITypeMediaUtil::MarshallingParcelable<PhotosVo>(this->newDatas, parcel);
-    if (!ret) {
-        return ret;
-    }
-    ret = IPC::ITypeMediaUtil::MarshallingParcelable<PhotosVo>(this->fdirtyDatas, parcel);
-    if (!ret) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel), false);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<PhotosVo>(this->newDatas, parcel), false);
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::MarshallingParcelable<PhotosVo>(this->fdirtyDatas, parcel), false);
     return IPC::ITypeMediaUtil::Marshalling<int32_t>(this->stats, parcel);
 }
 
