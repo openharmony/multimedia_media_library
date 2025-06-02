@@ -88,7 +88,7 @@ public:
     EXPORT static bool IsDirEmpty(const std::string &path);
     EXPORT static bool CreateFile(const std::string &filePath);
     EXPORT static bool DeleteFile(const std::string &fileName);
-    EXPORT static bool MediaFileUtils::DeleteFileWithRetry(const string &fileName);
+    EXPORT static bool DeleteFileWithRetry(const std::string &fileName);
     EXPORT static bool DeleteDir(const std::string &dirName);
     EXPORT static std::string GetFileName(const std::string &filePath);
     EXPORT static std::string GetParentPath(const std::string &path);
