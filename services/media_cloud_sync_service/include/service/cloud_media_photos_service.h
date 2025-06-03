@@ -99,6 +99,9 @@ private:
     int32_t OnRecordFailedErrorDetails(PhotosDto &photo);
     int32_t PullRecordsDataMerge(std::vector<CloudMediaPullDataDto> &allPullDatas, const KeyData &localKeyData,
         std::map<std::string, KeyData> &mergeDataMap, DataMergeResult &mergeResult);
+    int32_t ClearLocalData(const CloudMediaPullDataDto &pullData, std::vector<PhotosDto> &fdirtyData);
+    int32_t UpdateMetaStat(const std::vector<NativeRdb::ValuesBucket> &insertFiles,
+        const std::vector<CloudMediaPullDataDto> &allPullDatas, const uint64_t dataFail);
 
 private:
     CloudMediaPhotoServiceProcessor processor_;

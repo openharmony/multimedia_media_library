@@ -135,6 +135,33 @@ void CloudMediaPhotosService::ExtractEditDataCamera(const CloudMediaPullDataDto 
     }
 }
 
+int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pullData,
+    std::vector<PhotosDto> &fdirtyData)
+{
+    PhotosDto dto;
+    dto.cloudId = pullData.cloudId;
+    if (!CloudMediaFileUtils::GetParentPathAndFilename(pullData.localPath, dto.path, dto.displayName)) {
+        MEDIA_WARN_LOG("Failed to get parent path and real filename.");
+    }
+    dto.size = pullData.basicSize;
+    dto.mediaType = pullData.localMediaType;
+    dto.modifiedTime = pullData.modifiedTime;
+    dto.originalCloudId = pullData.localOriginalAssetCloudId;
+    CloudMediaSyncUtils::FillPhotosDto(
+        dto, pullData.localPath, pullData.localOrientation, pullData.localThumbState);
+    fdirtyData.emplace_back(dto);
+    bool isLocal = CloudMediaSyncUtils::FileIsLocal(pullData.localPosition);
+    if (isLocal) {
+        CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
+        CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
+        CloudMediaSyncUtils::RemoveMovingPhoto(pullData.localPath);
+        if (pullData.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+            CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);
+        }
+    }
+    return E_OK;
+}
+
 int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullData, std::set<std::string> &refreshAlbums,
     std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats)
 {
@@ -143,13 +170,11 @@ int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullDat
     CHECK_AND_RETURN_RET_INFO_LOG(!CloudMediaSyncUtils::IsLocalDirty(pullData.localDirty, false),
         E_OK,
         "local record dirty, ignore cloud update");
-
     bool mtimeChanged = false;
     int32_t ret = IsMtimeChanged(pullData, mtimeChanged);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("cloudId: %{public}s get mtime changed failed, ret: %{public}d.", cloudId.c_str(), ret);
     }
-
     bool isLocal = CloudMediaSyncUtils::FileIsLocal(pullData.localPosition);
     if (isLocal && mtimeChanged) {
         if (CloudMediaFileUtils::LocalWriteOpen(pullData.localPath)) {
@@ -161,7 +186,6 @@ int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullDat
             return ret;
         }
     }
-
     // UpdateRecordToDatabase更新成功，stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT]会增加
     int32_t updateCount = stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT];
     ret = this->photosDao_.UpdateRecordToDatabase(pullData, isLocal, mtimeChanged, refreshAlbums, stats);
@@ -177,26 +201,7 @@ int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullDat
     ExtractEditDataCamera(pullData);
 
     if (mtimeChanged && (updateCount != stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT])) {
-        PhotosDto dto;
-        dto.cloudId = cloudId;
-        if (!CloudMediaFileUtils::GetParentPathAndFilename(pullData.localPath, dto.path, dto.displayName)) {
-            MEDIA_WARN_LOG("Failed to get parent path and real filename.");
-        }
-        dto.size = pullData.basicSize;
-        dto.mediaType = pullData.localMediaType;
-        dto.modifiedTime = pullData.modifiedTime;
-        dto.originalCloudId = pullData.localOriginalAssetCloudId;
-        CloudMediaSyncUtils::FillPhotosDto(
-            dto, pullData.localPath, pullData.localOrientation, pullData.localThumbState);
-        fdirtyData.emplace_back(dto);
-        if (isLocal) {
-            CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
-            CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
-            CloudMediaSyncUtils::RemoveMovingPhoto(pullData.localPath);
-            if (pullData.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
-                CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);
-            }
-        }
+        this->ClearLocalData(pullData, fdirtyData);
     }
     return E_OK;
 }
@@ -399,6 +404,21 @@ void CloudMediaPhotosService::Notify(const std::string &uri, NotifyType type)
     watcher->Notify(uri, type);
 }
 
+int32_t CloudMediaPhotosService::UpdateMetaStat(const std::vector<NativeRdb::ValuesBucket> &insertFiles,
+    const std::vector<CloudMediaPullDataDto> &allPullDatas, const uint64_t dataFail)
+{
+    if (insertFiles.size() != allPullDatas.size()) {
+        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_ERROR_RDB, allPullDatas.size() - insertFiles.size());
+    }
+    if (!insertFiles.empty()) {
+        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_SUCCESS, insertFiles.size(), META_DL_INSERT);
+    }
+    if (dataFail > 0) {
+        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_ERROR_DATA, dataFail);
+    }
+    return E_OK;
+}
+
 int32_t CloudMediaPhotosService::CreateEntry(const std::vector<CloudMediaPullDataDto> &pullDatas,
     std::set<std::string> &refreshAlbums, std::vector<PhotosDto> &newData, std::vector<int32_t> &stats,
     std::vector<std::string> &failedRecords)
@@ -451,20 +471,7 @@ int32_t CloudMediaPhotosService::CreateEntry(const std::vector<CloudMediaPullDat
         MEDIA_DEBUG_LOG("CreateEntry NewData: %{public}s", dto.ToString().c_str());
         newData.emplace_back(dto);
     }
-    MEDIA_INFO_LOG("CreateEntry insert %{public}zu, update %{public}d, delete %{public}d, map %{public}zu",
-        insertFiles.size(),
-        stats[StatsIndex::META_MODIFY_RECORDS_COUNT],
-        stats[StatsIndex::DELETE_RECORDS_COUNT],
-        recordAlbumMaps.size());
-    if (insertFiles.size() != allPullDatas.size()) {
-        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_ERROR_RDB, allPullDatas.size() - insertFiles.size());
-    }
-    if (!insertFiles.empty()) {
-        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_SUCCESS, insertFiles.size(), META_DL_INSERT);
-    }
-    if (dataFail > 0) {
-        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_ERROR_DATA, dataFail);
-    }
+    this->UpdateMetaStat(insertFiles, allPullDatas, dataFail);
     return E_OK;
 }
 
@@ -475,11 +482,6 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
     std::set<std::string> refreshAlbums;
     std::vector<CloudMediaPullDataDto> insertPullDatas;
     uint64_t rdbFail = 0;
-    uint64_t dataFail = 0;
-    uint64_t successDelete = 0;
-    uint64_t successUpdate = 0;
-    int32_t deleteCount = 0;
-    int32_t updateCount = 0;
     int32_t ret = E_OK;
     for (auto &cloudId : cloudIds) {
         ChangeType changeType = ChangeType::INVAILD;
@@ -493,12 +495,10 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
         } else if (!pullData.localPath.empty()) {
             if (pullData.basicIsDelete) {
                 ret = PullDelete(pullData, refreshAlbums);
-                deleteCount++;
                 changeType = ChangeType::DELETE;
                 stats[StatsIndex::DELETE_RECORDS_COUNT]++;
             } else {
                 ret = PullUpdate(pullData, refreshAlbums, fdirtyData, stats);
-                updateCount++;
                 changeType = ChangeType::UPDATE;
             }
         }
@@ -513,35 +513,14 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
                 continue;
             }
             /* might need to specifiy which type error */
-            dataFail++;
             failedRecords.emplace_back(pullData.cloudId);
             ret = E_OK;
-        } else if (changeType != ChangeType::INSERT && changeType != ChangeType::INVAILD) {
-            if (cloudIdRelativeMap.at(cloudId).basicIsDelete) {
-                successDelete++;
-            } else {
-                successUpdate++;
-            }
         }
     }
-    /*
-    大数据打点
-    GetDfxHandler()->InsertRecordtoDB(valuesList);
-    UpdateMetaStat(INDEX_DL_META_SUCCESS, successDelete, META_DL_DELETE);
-    UpdateMetaStat(INDEX_DL_META_SUCCESS, successUpdate, META_DL_UPDATE);
-    UpdateMetaStat(INDEX_DL_META_ERROR_RDB, rdbFail);
-    UpdateMetaStat(INDEX_DL_META_ERROR_DATA, dataFail);
-    */
     CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_ERROR_RDB, rdbFail);
     ret = CreateEntry(insertPullDatas, refreshAlbums, newData, stats, failedRecords);
     this->photosDao_.UpdateAlbumInternal(refreshAlbums);
     MediaGallerySyncNotify::GetInstance().FinalNotify();
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, rdbFail: %{public}" PRId64, ret, rdbFail);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, dataFail: %{public}" PRId64, ret, dataFail);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, successDelete: %{public}" PRId64, ret, successDelete);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, successUpdate: %{public}" PRId64, ret, successUpdate);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, deleteCount: %{public}d", ret, deleteCount);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, updateCount: %{public}d", ret, updateCount);
     return ret;
 }
 
