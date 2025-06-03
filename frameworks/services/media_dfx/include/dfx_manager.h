@@ -25,6 +25,7 @@
 
 #include "ipc_skeleton.h"
 #include "dfx_worker.h"
+#include "dfx_cloud_const.h"
 
 namespace OHOS {
 namespace Media {
@@ -79,11 +80,21 @@ public:
     void HandleAdaptationToMovingPhoto(const std::string &appName, bool adapted);
     void IsDirectoryExist(const std::string &dirName);
     void CheckStatus();
+    void HandleSyncStart(const std::string& taskId, const int32_t syncReason = 1);
+    void HandleUpdateMetaStat(uint32_t index, uint64_t diff, uint32_t syncType = 0);
+    void HandleUpdateAttachmentStat(uint32_t index, uint64_t diff);
+    void HandleUpdateAlbumStat(uint32_t index, uint64_t diff);
+    void HandleUpdateUploadMetaStat(uint32_t index, uint64_t diff);
+    void HandleUpdateUploadDetailError(int32_t error);
+    void HandleSyncEnd(const int32_t stopReason = 0);
+    void HandleReportSyncFault(const std::string& position, const SyncFaultEvent& event);
     void HandleOneWeekMissions();
 
 private:
     void Init();
     void HandleAlbumInfoBySubtype(int32_t albumSubType);
+    void ResetStatistic();
+    void CopyStatistic(CloudSyncStat& stat);
 
 private:
     static std::mutex instanceLock_;
@@ -93,6 +104,17 @@ private:
     std::shared_ptr<DfxAnalyzer> dfxAnalyzer_;
     std::shared_ptr<DfxReporter> dfxReporter_;
     std::shared_ptr<DfxWorker> dfxWorker_;
+
+    std::vector<std::atomic<uint64_t>> downloadMeta_;
+    std::vector<std::atomic<uint64_t>> uploadMeta_;
+    std::vector<std::atomic<uint64_t>> downloadThumb_;
+    std::vector<std::atomic<uint64_t>> downloadLcd_;
+    std::vector<std::atomic<uint64_t>> uploadAlbum_;
+    std::vector<std::atomic<uint64_t>> downloadAlbum_;
+    std::vector<std::atomic<uint64_t>> updateDetails_;
+    std::vector<std::atomic<uint64_t>> uploadMetaErr_;
+    CloudSyncInfo syncInfo_;
+    std::string taskId_;
 };
 } // namespace Media
 } // namespace OHOS

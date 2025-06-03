@@ -48,6 +48,7 @@
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
 #include "cloud_media_asset_uri.h"
+#include "dfx_const.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

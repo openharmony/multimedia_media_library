@@ -38,8 +38,6 @@ enum CloudSyncStatus : int32_t {
     CLOUD_CLEANING,                              // 关云退云场景清理本地的云数据
 };
 
-const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
-
 class CloudSyncNotifyHandler {
 public:
     CloudSyncNotifyHandler(const CloudSyncNotifyInfo &info):notifyInfo_(info) {};

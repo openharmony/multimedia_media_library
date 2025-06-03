@@ -22,11 +22,18 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "cloud_media_data_client_handler.h"
+#include "cloud_media_thread_limiter.h"
 
 namespace OHOS::Media::CloudSync {
-CloudMediaDataClient::CloudMediaDataClient()
+CloudMediaDataClient::CloudMediaDataClient(const int32_t &userId) : userId_(userId)
 {
     this->dataHandler_ = std::make_shared<CloudMediaDataClientHandler>();
+    this->dataHandler_->SetUserId(userId);
+}
+
+void CloudMediaDataClient::SetUserId(const int32_t &userId)
+{
+    this->userId_ = userId;
 }
 
 void CloudMediaDataClient::SetTraceId(const std::string &traceId)
@@ -53,6 +60,7 @@ int32_t CloudMediaDataClient::UpdateDirty(const std::string &cloudId, DirtyTypes
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->UpdateDirty(cloudId, dirtyType);
 }
 
@@ -62,6 +70,7 @@ int32_t CloudMediaDataClient::UpdatePosition(const std::vector<std::string> &clo
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->UpdatePosition(cloudIds, position);
 }
 
@@ -71,6 +80,7 @@ int32_t CloudMediaDataClient::UpdateSyncStatus(const std::string &cloudId, int32
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->UpdateSyncStatus(cloudId, syncStatus);
 }
 
@@ -80,6 +90,7 @@ int32_t CloudMediaDataClient::UpdateThmStatus(const std::string &cloudId, int32_
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->UpdateThmStatus(cloudId, thmStatus);
 }
 
@@ -130,6 +141,7 @@ int32_t CloudMediaDataClient::OnDownloadAsset(
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnDownloadAsset(cloudIds, result);
 }
 
@@ -149,6 +161,7 @@ int32_t CloudMediaDataClient::OnDownloadThms(const std::unordered_map<std::strin
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->OnDownloadThms(resMap, failSize);
 }
 
@@ -203,6 +216,7 @@ int32_t CloudMediaDataClient::UpdateLocalFileDirty(std::vector<MDKRecord> &recor
         MEDIA_ERR_LOG("No data handler found!");
         return E_IPC_INVAL_ARG;
     }
+    CLOUD_SYNC_HANDLER_WRITE_LOCK;
     return this->dataHandler_->UpdateLocalFileDirty(records);
 }
 }  // namespace OHOS::Media::CloudSync

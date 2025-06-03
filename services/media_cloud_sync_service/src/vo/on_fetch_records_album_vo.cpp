@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool OnFetchRecordsAlbumReqBody::AlbumReqData::Unmarshalling(MessageParcel &parcel)
@@ -73,7 +74,7 @@ std::string OnFetchRecordsAlbumReqBody::AlbumReqData::ToString() const
        << "\"albumDateCreated\": \"" << albumDateCreated << "\","
        << "\"albumDateAdded\": \"" << albumDateAdded << "\","
        << "\"albumDateModified\": \"" << albumDateModified << "\","
-       << "\"cloudId\": \"" << cloudId << "\""
+       << "\"isDelete\": \"" << isDelete << "\""
        << "}";
     return ss.str();
 }
@@ -106,19 +107,13 @@ std::string OnFetchRecordsAlbumReqBody::ToString() const
 
 bool OnFetchRecordsAlbumRespBody::Unmarshalling(MessageParcel &parcel)
 {
-    bool ret = IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel);
-    if (!ret) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Unmarshalling<std::string>(this->failedRecords, parcel), false);
     return IPC::ITypeMediaUtil::Unmarshalling<int32_t>(this->stats, parcel);
 }
 
 bool OnFetchRecordsAlbumRespBody::Marshalling(MessageParcel &parcel) const
 {
-    bool ret = IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel);
-    if (!ret) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET(IPC::ITypeMediaUtil::Marshalling<std::string>(this->failedRecords, parcel), false);
     return IPC::ITypeMediaUtil::Marshalling<int32_t>(this->stats, parcel);
 }
 

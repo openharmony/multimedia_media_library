@@ -198,10 +198,8 @@ int32_t CloudMediaDataService::UpdateLocalFileDirty(const std::vector<std::strin
         PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_DIRTY};
     std::vector<PhotosPo> photos;
     int32_t ret = this->commonDao_.QueryLocalByCloudId(cloudIds, queryColums, photos);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("UpdateLocalFileDirty Query Error");
-        return E_ERR;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_ERR, "UpdateLocalFileDirty Query Error");
+
     for (auto &photo : photos) {
         std::string cloudId = photo.cloudId.value_or("");
         MEDIA_INFO_LOG("UpdateLocalFileDirty Query CloudId: %{public}s", cloudId.c_str());

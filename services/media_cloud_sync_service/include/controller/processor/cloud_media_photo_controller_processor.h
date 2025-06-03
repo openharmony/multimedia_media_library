@@ -28,10 +28,13 @@
 #include "on_create_records_photos_vo.h"
 #include "on_modify_file_dirty_vo.h"
 #include "on_modify_records_photos_vo.h"
+#include "report_failure_vo.h"
+#include "report_failure_dto.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace OHOS::Media::ORM;
-class CloudMediaPhotoControllerProcessor {
+class EXPORT CloudMediaPhotoControllerProcessor {
 public:
     std::vector<PhotosVo> SetFdirtyDataVoFromDto(std::vector<PhotosDto> &fdirtyDataDtos);
     std::vector<PhotosVo> SetNewDataVoFromDto(std::vector<PhotosDto> &newDataDtos);
@@ -42,6 +45,7 @@ public:
     PhotosDto ConvertToPhotoDto(const OnCreateRecord &recordVo);
     void ConvertToPhotosDto(const OnFileDirtyRecord &recordVo, PhotosDto &dto);
     void ConvertToPhotosDto(const OnModifyRecord &recordVo, PhotosDto &dto);
+    ReportFailureDto GetReportFailureDto(const ReportFailureReqBody &reqBody);
 
 private:
     // functions for ConvertRecordPoToVo

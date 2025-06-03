@@ -66,6 +66,7 @@ enum class CloudMediaPhotoOperationCode : uint32_t {
     CMD_ON_COMPLETE_PULL,
     CMD_ON_COMPLETE_PUSH,
     CMD_ON_COMPLETE_CHECK,
+    CMD_REPORT_FAILURE,
 };
 
 enum class CloudMediaAlbumOperationCode : uint32_t {

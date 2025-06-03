@@ -39,10 +39,8 @@ void CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, Messa
     OnFetchRecordsAlbumReqBody req;
     OnFetchRecordsAlbumRespBody resp;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, req);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("OnFetchRecords Read Req Error");
-        return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret),
+        "OnFetchRecords Read Req Error");
     if (req.albums.empty()) {
         MEDIA_ERR_LOG("OnFetchRecords Param Error");
         return IPC::UserDefineIPC().WriteResponseBody(reply, resp, E_ERR);
@@ -65,8 +63,8 @@ void CloudMediaAlbumControllerService::OnFetchRecords(MessageParcel &data, Messa
         albumDto.albumDateModified = album.albumDateModified;
         albumDto.isDelete = album.isDelete;
         albumDtoList.emplace_back(albumDto);
-        MEDIA_INFO_LOG("OnFetchRecords albumDto: %{public}s", albumDto.ToString().c_str());
-        MEDIA_INFO_LOG("OnFetchRecords album: %{public}s", album.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnFetchRecords albumDto: %{public}s", albumDto.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnFetchRecords album: %{public}s", album.ToString().c_str());
     }
     ret = this->albumService_.OnFetchRecords(albumDtoList, resp);
     MEDIA_INFO_LOG("OnFetchRecords Resp: %{public}s", resp.ToString().c_str());
@@ -103,6 +101,7 @@ void CloudMediaAlbumControllerService::GetCreatedRecords(MessageParcel &data, Me
     CloudMdkRecordPhotoAlbumReqBody reqBody;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
+        MEDIA_ERR_LOG("ReadRequestBody failed, ret: %{public}d", ret);
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
     }
     int32_t size = reqBody.size;
@@ -188,7 +187,7 @@ void CloudMediaAlbumControllerService::OnCreateRecords(MessageParcel &data, Mess
         albumDto.newCloudId = album.newCloudId;
         albumDto.isSuccess = album.isSuccess;
         albumDtoList.emplace_back(albumDto);
-        MEDIA_INFO_LOG("OnCreateRecords record:%{public}s", albumDto.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnCreateRecords record:%{public}s", albumDto.ToString().c_str());
     }
     FailedSizeResp resp;
     ret = this->albumService_.OnCreateRecords(albumDtoList, resp.failedSize);

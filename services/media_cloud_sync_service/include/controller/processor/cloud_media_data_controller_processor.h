@@ -26,9 +26,10 @@
 #include "media_operate_result_dto.h"
 #include "aging_file_query_dto.h"
 #include "get_aging_file_vo.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaDataControllerProcessor {
+class EXPORT CloudMediaDataControllerProcessor {
 public:
     PhotosDto ConvertPhotosVoToPhotosDto(const PhotosVo &photosVo);
     PhotosVo ConvertPhotosDtoToPhotosVo(const PhotosDto &photosDto);

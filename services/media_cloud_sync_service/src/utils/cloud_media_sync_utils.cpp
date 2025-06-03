@@ -236,6 +236,25 @@ static bool CheckPhotoPath(const std::string &localPath)
     return localPath.length() >= ROOT_MEDIA_DIR.length() && MediaFileUtils::StartsWith(localPath, ROOT_MEDIA_DIR);
 }
 
+std::string CloudMediaSyncUtils::GetEditDataSourcePath(const string& photoPath)
+{
+    string parentPath = GetEditDataDir(photoPath);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/source." + MediaFileUtils::GetExtensionFromPath(photoPath);
+}
+
+std::string CloudMediaSyncUtils::GetSourceMovingPhotoImagePath(const string& imagePath)
+{
+    return GetEditDataSourcePath(imagePath);
+}
+
+std::string CloudMediaSyncUtils::GetSourceMovingPhotoVideoPath(const string& imagePath)
+{
+    return GetMovingPhotoVideoPath(GetSourceMovingPhotoImagePath(imagePath));
+}
+
 std::string CloudMediaSyncUtils::GetEditDataDir(const std::string &localPath)
 {
     if (!CheckPhotoPath(localPath)) {

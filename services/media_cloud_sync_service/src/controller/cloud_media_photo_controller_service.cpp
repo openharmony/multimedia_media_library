@@ -38,6 +38,7 @@
 #include "on_fetch_photos_vo.h"
 #include "failed_size_resp_vo.h"
 #include "get_check_records_vo.h"
+#include "report_failure_vo.h"
 
 namespace OHOS::Media::CloudSync {
 void CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, MessageParcel &reply)
@@ -62,7 +63,7 @@ void CloudMediaPhotoControllerService::OnFetchRecords(MessageParcel &data, Messa
         cloudIds.emplace_back(onFetchPhotoData.cloudId);
         CloudMediaPullDataDto pullData = this->processor_.ConvertToCloudMediaPullData(onFetchPhotoData);
         cloudIdRelativeMap[onFetchPhotoData.cloudId] = pullData;
-        MEDIA_INFO_LOG("OnFetchRecords CloudMediaPullData: %{public}s", pullData.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnFetchRecords CloudMediaPullData: %{public}s", pullData.ToString().c_str());
     }
     ret = this->photosService_.OnFetchRecords(cloudIds, cloudIdRelativeMap, newData, fdirtyData, stats, failedRecords);
     respBody.stats = stats;
@@ -89,7 +90,7 @@ void CloudMediaPhotoControllerService::OnDentryFileInsert(MessageParcel &data, M
     for (auto onDentryRecord : onDentryRecords) {
         CloudMediaPullDataDto pullData = this->processor_.ConvertToCloudMediaPullData(onDentryRecord);
         pullDatas.emplace_back(pullData);
-        MEDIA_INFO_LOG("OnDentryFileInsert PullData: %{public}s", pullData.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnDentryFileInsert PullData: %{public}s", pullData.ToString().c_str());
     }
     ret = this->photosService_.OnDentryFileInsert(pullDatas, failedRecords);
     respBody.failedRecords = failedRecords;
@@ -201,7 +202,7 @@ void CloudMediaPhotoControllerService::GetFileModifiedRecords(MessageParcel &dat
     }
     std::vector<CloudMdkRecordPhotosVo> fileModifiedRecordsList;
     for (const auto &fileModifiedRecord : fileModifiedRecordsPoList) {
-        MEDIA_INFO_LOG("GetFileModifiedRecords PO: %{public}s", fileModifiedRecord.ToString().c_str());
+        MEDIA_DEBUG_LOG("GetFileModifiedRecords PO: %{public}s", fileModifiedRecord.ToString().c_str());
         fileModifiedRecordsList.emplace_back(this->processor_.ConvertRecordPoToVo(fileModifiedRecord));
     }
     CloudMdkRecordPhotosRespBody respBody{fileModifiedRecordsList};
@@ -211,7 +212,6 @@ void CloudMediaPhotoControllerService::GetFileModifiedRecords(MessageParcel &dat
 void CloudMediaPhotoControllerService::GetDeletedRecords(MessageParcel &data, MessageParcel &reply)
 {
     CloudMdkRecordPhotosReqBody reqBody;
-    MediaTableType tableType;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetDeletedRecords ReadRequestBody error %{public}d", ret);
@@ -236,7 +236,6 @@ void CloudMediaPhotoControllerService::GetCopyRecords(MessageParcel &data, Messa
 {
     MEDIA_INFO_LOG("enter CloudMediaPhotoControllerService::GetCopyRecords");
     CloudMdkRecordPhotosReqBody reqBody;
-    MediaTableType tableType;
     int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
     if (ret != E_OK) {
         return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
@@ -275,7 +274,7 @@ void CloudMediaPhotoControllerService::OnCreateRecords(MessageParcel &data, Mess
     std::vector<PhotosDto> photos;
     for (const auto &record : req.records) {
         PhotosDto photo = this->processor_.ConvertToPhotoDto(record);
-        MEDIA_INFO_LOG("OnCreateRecords record: %{public}s", record.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnCreateRecords record: %{public}s", record.ToString().c_str());
         photos.emplace_back(photo);
     }
     FailedSizeResp resp;
@@ -300,7 +299,7 @@ void CloudMediaPhotoControllerService::OnMdirtyRecords(MessageParcel &data, Mess
         PhotosDto photo;
         this->processor_.ConvertToPhotosDto(record, photo);
         photos.emplace_back(photo);
-        MEDIA_INFO_LOG("OnMdirtyRecords OnModifyRecord: %{public}s", record.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnMdirtyRecords OnModifyRecord: %{public}s", record.ToString().c_str());
     }
     ret = this->photosService_.OnMdirtyRecords(photos, resp.failedSize);
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
@@ -382,7 +381,7 @@ void CloudMediaPhotoControllerService::OnCopyRecords(MessageParcel &data, Messag
         photo.serverErrorCode = record.serverErrorCode;
         photo.errorDetails = record.errorDetails;
         photos.emplace_back(photo);
-        MEDIA_INFO_LOG("OnCopyRecords record: %{public}s", record.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnCopyRecords record: %{public}s", record.ToString().c_str());
     }
     ret = this->photosService_.OnCopyRecords(photos, resp.failedSize);
     return IPC::UserDefineIPC().WriteResponseBody(reply, resp, ret);
@@ -428,5 +427,18 @@ void CloudMediaPhotoControllerService::OnCompleteCheck(MessageParcel &data, Mess
 {
     int32_t ret = this->photosService_.OnCompleteCheck();
     return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+}
+
+void CloudMediaPhotoControllerService::ReportFailure(MessageParcel &data, MessageParcel &reply)
+{
+    MEDIA_INFO_LOG("enter CloudMediaPhotoControllerService::ReportFailure");
+    ReportFailureReqBody reqBody;
+    int32_t ret = IPC::UserDefineIPC().ReadRequestBody(data, reqBody);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("ReportFailure Read Req Error");
+        return IPC::UserDefineIPC().WriteResponseBody(reply, ret);
+    }
+    ret = this->photosService_.ReportFailure(this->processor_.GetReportFailureDto(reqBody));
+    return IPC::UserDefineIPC().WriteResponseBody(reply);
 }
 }  // namespace OHOS::Media::CloudSync

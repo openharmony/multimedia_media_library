@@ -214,39 +214,10 @@ int32_t CloudMediaDownloadDao::QueryDownloadAssetByCloudIds(
     return E_OK;
 }
 
-void CloudMediaDownloadDao::SliceAssetFile(const std::string &path)
+int32_t CloudMediaDownloadDao::UpdateDownloadAsset(const bool fixFileType, const std::string &path)
 {
-    MEDIA_INFO_LOG("UpdateDownloadAsset need slice file");
-    std::string localPath = CloudMediaSyncUtils::GetLocalPath(path);
-    std::string temp = localPath + ".temp";
-    if (rename(localPath.c_str(), temp.c_str()) == 0) {
-        std::string videoPath = CloudMediaSyncUtils::GetMovingPhotoVideoPath(path);
-        std::string extraDataPath = CloudMediaSyncUtils::GetMovingPhotoExtraDataPath(path);
-        MEDIA_INFO_LOG("UpdateDownloadAsset videoPath:%{public}s, exist: %{public}d, extraDataPath:%{public}s, "
-                       "exist: %{public}d, temp:%{public}s, exist: %{public}d",
-            videoPath.c_str(),
-            access(videoPath.c_str(), F_OK),
-            extraDataPath.c_str(),
-            access(videoPath.c_str(), F_OK),
-            temp.c_str(),
-            access(videoPath.c_str(), F_OK));
-        if (MovingPhotoFileUtils::ConvertToMovingPhoto(temp, path, videoPath, extraDataPath) != 0) {
-            MEDIA_INFO_LOG("UpdateDownloadAsset convert to moving photo fail %{public}s", path.c_str());
-        }
-        if (rename(temp.c_str(), localPath.c_str()) != 0) {
-            MEDIA_WARN_LOG("restore temp file failed");
-        }
-    } else {
-        MEDIA_INFO_LOG(
-            "UpdateDownloadAsset rename failed path:%{public}s, to temp:%{public}s", path.c_str(), temp.c_str());
-    }
-    return;
-}
-
-int32_t CloudMediaDownloadDao::UpdateDownloadAsset(
-    const bool fixFileType, const bool needSlice, const std::string &path)
-{
-    MEDIA_INFO_LOG("enter UpdateDownloadAsset %{public}d, %{public}s", fixFileType, path.c_str());
+    MEDIA_INFO_LOG("enter UpdateDownloadAsset %{public}d, %{public}s",
+        fixFileType, path.c_str());
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "UpdateDownloadAsset Failed to get rdbStore.");
     NativeRdb::AbsRdbPredicates predicates = NativeRdb::AbsRdbPredicates(PhotoColumn::PHOTOS_TABLE);
@@ -256,9 +227,6 @@ int32_t CloudMediaDownloadDao::UpdateDownloadAsset(
     if (fixFileType) {
         MEDIA_INFO_LOG("UpdateDownloadAsset file is not real moving photo, need fix subtype");
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    }
-    if (needSlice) {
-        this->SliceAssetFile(path);
     }
     int32_t changedRows = -1;
     int32_t ret = rdbStore->Update(changedRows, values, predicates);

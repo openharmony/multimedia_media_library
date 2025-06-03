@@ -49,7 +49,7 @@ public:  // getter & setter
     std::string GetTableName() const;
     void SetTableName(const std::string &tableName);
     int32_t GetUserId() const;
-    void SetUserId(int32_t userId);
+    void SetUserId(const int32_t &userId) override;
     void SetTraceId(const std::string &traceId) override;
     std::string GetTraceId() const override;
 

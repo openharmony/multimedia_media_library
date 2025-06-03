@@ -57,7 +57,7 @@ static int32_t GetLocalMatchDirty(NativeRdb::ResultSet &resultSet)
 int32_t CloudMediaAlbumService::ConvertToSingleScreenshots(PhotoAlbumDto &album, std::vector<PhotoAlbumDto> &records)
 {
     for (const auto &it : screensMap) {
-        MEDIA_INFO_LOG(
+        MEDIA_DEBUG_LOG(
             "ConvertToSingleScreenshots Key : %{public}s, Value: %{public}s", it.first.c_str(), it.second[0].c_str());
         album.lPath = it.first;
         album.albumName = it.second[0];
@@ -73,11 +73,10 @@ int32_t CloudMediaAlbumService::OnFetchRecords(
     MEDIA_INFO_LOG("OnFetchRecords enter");
     std::vector<PhotoAlbumDto> oldRecords;
     std::vector<PhotoAlbumDto> lpathRecords;
+    int32_t ret = E_OK;
     for (auto &album : albumDtoList) {
-        if (this->albumDao_.HandleLPathAndAlbumType(album) != E_OK) {
-            MEDIA_ERR_LOG("OnFetchRecords HandleLPathAndAlbumType Error");
-            return E_STOP;
-        }
+        ret = this->albumDao_.HandleLPathAndAlbumType(album);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_STOP, "OnFetchRecords HandleLPathAndAlbumType Error");
         if (IsDoubleScreenshot(album.lPath, album.cloudId)) {
             MEDIA_INFO_LOG("OnFetchRecords IsDoubleScreenshot");
             ConvertToSingleScreenshots(album, lpathRecords);
@@ -91,7 +90,7 @@ int32_t CloudMediaAlbumService::OnFetchRecords(
         MEDIA_INFO_LOG("OnFetchRecords add to old record");
         oldRecords.emplace_back(album);
     }
-    int32_t ret = OnFetchOldRecords(oldRecords, resp);
+    ret = OnFetchOldRecords(oldRecords, resp);
     if (ret == E_STOP) {
         MEDIA_ERR_LOG("OnFetchRecords OnFetchOldRecords Error");
         return ret;
@@ -146,6 +145,25 @@ int32_t CloudMediaAlbumService::HandleLPathRecords(PhotoAlbumDto &record,
     return ret;
 }
 
+int32_t CloudMediaAlbumService::HandleFetchOldRecordNew(
+    PhotoAlbumDto &record, ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp)
+{
+    if (!record.isDelete) {
+        /* insert */
+        int32_t ret = this->albumDao_.InsertCloudByCloudId(record);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG(
+                "HandleFetchOldRecord InsertCloudByCloudId error %{public}s, %{public}d", record.cloudId.c_str(), ret);
+            resp.failedRecords.emplace_back(record.cloudId);
+        }
+        MEDIA_INFO_LOG("HandleFetchOldRecord insert %{public}s, %{public}d", record.cloudId.c_str(), ret);
+        resp.stats[StatsIndex::NEW_RECORDS_COUNT]++;
+        MEDIA_INFO_LOG("HandleFetchOldRecord insert stats %{public}d", resp.stats[StatsIndex::NEW_RECORDS_COUNT]);
+        changeType = ChangeType::INSERT;
+    }
+    return E_OK;
+}
+
 int32_t CloudMediaAlbumService::HandleFetchOldRecord(
     PhotoAlbumDto &record, bool &bContinue, ChangeType &changeType, OnFetchRecordsAlbumRespBody &resp)
 {
@@ -159,20 +177,7 @@ int32_t CloudMediaAlbumService::HandleFetchOldRecord(
     }
     /* need to handle album cover uri */
     if (rowCount == 0) {
-        if (!record.isDelete) {
-            /* insert */
-            ret = this->albumDao_.InsertCloudByCloudId(record);
-            if (ret != E_OK) {
-                MEDIA_ERR_LOG("HandleFetchOldRecord InsertCloudByCloudId error %{public}s, %{public}d",
-                    record.cloudId.c_str(),
-                    ret);
-                resp.failedRecords.emplace_back(record.cloudId);
-            }
-            MEDIA_INFO_LOG("HandleFetchOldRecord insert %{public}s, %{public}d", record.cloudId.c_str(), ret);
-            resp.stats[StatsIndex::NEW_RECORDS_COUNT]++;
-            MEDIA_INFO_LOG("HandleFetchOldRecord insert stats %{public}d", resp.stats[StatsIndex::NEW_RECORDS_COUNT]);
-            changeType = ChangeType::INSERT;
-        }
+        this->HandleFetchOldRecordNew(record, changeType, resp);
     } else if (rowCount == 1) {
         resultSet->GoToNextRow();
         int32_t dirty = GetLocalMatchDirty(*resultSet);
@@ -214,9 +219,6 @@ int32_t CloudMediaAlbumService::OnFetchOldRecords(
 {
     MEDIA_INFO_LOG("OnFetchOldRecords enter %{public}zu", records.size());
     int32_t ret = E_OK;
-    uint64_t success = 0;
-    uint64_t rdbFail = 0;
-    uint64_t dataFail = 0;
     for (auto &record : records) {
         bool bContinue = false;
         ChangeType changeType = ChangeType::INVAILD;
@@ -251,14 +253,11 @@ int32_t CloudMediaAlbumService::OnFetchLPathRecords(
 {
     MEDIA_INFO_LOG("OnFetchLPathRecords enter %{public}zu", records.size());
     int32_t ret = E_OK;
-    uint64_t success = 0;
-    uint64_t rdbFail = 0;
-    uint64_t dataFail = 0;
     auto lpaths = std::vector<std::string>();
     for (auto &record : records) {
         auto lpath = record.lPath;
         lpaths.emplace_back(lpath);
-        MEDIA_INFO_LOG("OnFetchLPathRecords Record: %{public}s", record.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnFetchLPathRecords Record: %{public}s", record.ToString().c_str());
     }
     auto [resultSet, lpathRowIdMap] = this->albumDao_.QueryLocalAlbum(PhotoAlbumColumns::ALBUM_LPATH, lpaths);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "resultset is null");
@@ -312,9 +311,7 @@ std::vector<PhotoAlbumPo> CloudMediaAlbumService::GetAlbumCreatedRecords(int32_t
     MEDIA_INFO_LOG("CloudMediaAlbumService::GetAlbumCreatedRecords enter");
     std::vector<PhotoAlbumPo> photoAlbumList;
     int32_t ret = this->albumDao_.GetCreatedAlbum(size, photoAlbumList);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("failed to get createdAlbum record");
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "failed to get createdAlbum record");
     return photoAlbumList;
 }
 
@@ -323,9 +320,7 @@ std::vector<PhotoAlbumPo> CloudMediaAlbumService::GetAlbumMetaModifiedRecords(in
     MEDIA_INFO_LOG("CloudMediaAlbumService::GetAlbumMetaModifiedRecords enter");
     std::vector<PhotoAlbumPo> photoAlbumList;
     int32_t ret = this->albumDao_.GetMetaModifiedAlbum(size, photoAlbumList);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("failed to get metaModifiedAlbum record");
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "failed to get metaModifiedAlbum record");
     return photoAlbumList;
 }
 
@@ -340,9 +335,7 @@ std::vector<PhotoAlbumPo> CloudMediaAlbumService::GetAlbumDeletedRecords(int32_t
     MEDIA_INFO_LOG("CloudMediaAlbumService::GetAlbumDeletedRecords enter %{public}d", size);
     std::vector<PhotoAlbumPo> photoAlbumList;
     int32_t ret = this->albumDao_.GetDeletedRecordsAlbum(size, photoAlbumList);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("failed to get metaModifiedAlbum record");
-    }
+    CHECK_AND_PRINT_LOG(ret == E_OK, "failed to get metaModifiedAlbum record");
     return photoAlbumList;
 }
 std::vector<PhotoAlbumPo> CloudMediaAlbumService::GetAlbumCopyRecords(int32_t size)

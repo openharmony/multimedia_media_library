@@ -20,9 +20,10 @@
 #include <vector>
 
 #include "photos_dto.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaAttachmentUtils {
+class EXPORT CloudMediaAttachmentUtils {
 public:
     static int32_t GetThumbnail(
         const std::string &fileKey, const DownloadAssetData &downloadData, PhotosDto &photosDto);

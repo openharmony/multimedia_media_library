@@ -23,15 +23,17 @@
 #include "message_parcel.h"
 #include "datashare_stub.h"
 #include "rdb_store.h"
+#include "sys_utils.h"
 #include "user_define_ipc.h"
 #include "i_media_controller_service.h"
 #include "cloud_media_operation_code.h"
 #include "medialibrary_errno.h"
 #include "cloud_media_download_controller_processor.h"
 #include "cloud_media_download_service.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaDownloadControllerService : public IPC::IMediaControllerService {
+class EXPORT CloudMediaDownloadControllerService : public IPC::IMediaControllerService {
 private:
     void GetDownloadThms(MessageParcel &data, MessageParcel &reply);
     void GetDownloadThmNum(MessageParcel &data, MessageParcel &reply);
@@ -69,6 +71,7 @@ public:
         if (!this->Accept(code) || it == this->HANDLERS.end()) {
             return IPC::UserDefineIPC().WriteResponseBody(reply, E_IPC_SEVICE_NOT_FOUND);
         }
+        SysUtils::SlowDown();
         return (this->*(it->second))(data, reply);
     }
 

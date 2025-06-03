@@ -37,6 +37,7 @@
 #include "cloud_media_dao_const.h"
 #include "cloud_media_pull_data_dto.h"
 #include "cloud_media_common_dao.h"
+#include "report_failure_dto.h"
 
 namespace OHOS::Media::CloudSync {
 class CloudMediaPhotosDao {
@@ -56,16 +57,16 @@ public:
     int32_t UpdateAssetInPhotoMap(const int32_t &fileId, std::set<int> cloudMapIds);
     int32_t UpdateRecordToDatabase(const CloudMediaPullDataDto &pullData, bool isLocal, bool mtimeChanged,
         std::set<std::string> &refreshAlbums, std::vector<int32_t> &stats);
-    int32_t ConflictDataMerge(const CloudMediaPullDataDto &pullData, const bool cloudStd, std::set<int32_t> albumIds,
-        std::set<std::string> &refreshAlbums);
-    int32_t GetInsertParams(const CloudMediaPullDataDto &pullData, std::map<std::string, int> recordAnalysisAlbumMaps,
+    int32_t ConflictDataMerge(const CloudMediaPullDataDto &pullData, const std::string fullPath, const bool cloudStd,
+        std::set<int32_t> albumIds, std::set<std::string> &refreshAlbums);
+    int32_t GetInsertParams(const CloudMediaPullDataDto &pullData, std::map<std::string, int> &recordAnalysisAlbumMaps,
         std::map<std::string, std::set<int>> &recordAlbumMaps, std::set<std::string> &refreshAlbums,
         std::vector<NativeRdb::ValuesBucket> &insertFiles);
     int32_t UpdateFixDB(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values, int32_t &albumId,
         std::set<int32_t> &albumIds, std::set<std::string> &refreshAlbums);
     bool IsNeededFix(const CloudMediaPullDataDto &data);
     void HandleShootingMode(const std::string &cloudId, const NativeRdb::ValuesBucket &valuebucket,
-        std::map<std::string, int> recordAnalysisAlbumMaps);
+        std::map<std::string, int> &recordAnalysisAlbumMaps);
     int32_t GetLocalKeyData(KeyData &localKeyData, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     bool JudgeConflict(const CloudMediaPullDataDto &pullData, const KeyData &localKeyData, const KeyData &cloudKeyData);
     void UpdateAlbumInternal(std::set<std::string> &refreshAlbums);

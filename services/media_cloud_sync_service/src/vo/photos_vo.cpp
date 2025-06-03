@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool PhotosVo::Unmarshalling(MessageParcel &parcel)
@@ -54,9 +55,7 @@ bool PhotosVo::Marshalling(MessageParcel &parcel) const
 
 bool PhotosVo::Marshalling(const std::vector<PhotosVo> &result, MessageParcel &parcel)
 {
-    if (!parcel.WriteInt32(static_cast<int32_t>(result.size()))) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(result.size())), false);
     for (const auto &entry : result) {
         if (!entry.Marshalling(parcel)) {
             return false;
@@ -68,9 +67,7 @@ bool PhotosVo::Marshalling(const std::vector<PhotosVo> &result, MessageParcel &p
 bool PhotosVo::Unmarshalling(std::vector<PhotosVo> &val, MessageParcel &parcel)
 {
     int32_t len = parcel.ReadInt32();
-    if (len < 0) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(len >= 0, false);
 
     size_t readAbleSize = parcel.GetReadableBytes();
     size_t size = static_cast<size_t>(len);
@@ -83,9 +80,7 @@ bool PhotosVo::Unmarshalling(std::vector<PhotosVo> &val, MessageParcel &parcel)
     for (size_t i = 0; i < size; i++) {
         PhotosVo nodeObj;
         isValid = nodeObj.Unmarshalling(parcel);
-        if (!isValid) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(isValid, false);
         val.emplace_back(nodeObj);
     }
     return true;

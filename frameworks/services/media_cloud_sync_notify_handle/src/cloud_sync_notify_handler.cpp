@@ -31,6 +31,7 @@
 #include "parameters.h"
 #include "photo_album_column.h"
 #include "media_log.h"
+#include "dfx_const.h"
 
 using namespace std;
 

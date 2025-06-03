@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "dfx_cloud_const.h"
 #include "thumbnail_data.h"
 
 namespace OHOS {
@@ -118,6 +119,11 @@ public:
     static int32_t ReportCustomRestoreFusion(const CustomRestoreDfxDataPoint& reportData);
     void ReportOperationRecordInfo();
     static int32_t ReportPhotoError(const PhotoErrorCount& reportData);
+
+    static int32_t ReportSyncFault(const std::string& taskId, const std::string& position,
+        const SyncFaultEvent& event);
+    static int32_t ReportSyncStat(const std::string& taskId, const CloudSyncInfo& info, const CloudSyncStat& stat,
+        const std::string& syncInfo);
     void ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution& querySizeAndResolution,
         const std::string& photoMimeType);
 };

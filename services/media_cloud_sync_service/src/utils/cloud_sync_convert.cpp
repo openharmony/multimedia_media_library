@@ -51,15 +51,19 @@ int32_t CloudSyncConvert::CompensateAttTitle(const CloudMediaPullDataDto &data, 
 int32_t CloudSyncConvert::CompensateAttMediaType(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int32_t mediaType = data.attributesMediaType;
+    if (mediaType == -1) {
+        mediaType = data.basicFileType == FILE_TYPE_VIDEO ? static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)
+                                                          : static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE);
+    }
     CHECK_AND_RETURN_RET_WARN_LOG(mediaType != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::mediaType.");
     values.PutInt(PhotoColumn::MEDIA_TYPE, mediaType);
     return E_OK;
 }
 
-int32_t CloudSyncConvert::CompensateAttDuration(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
+int32_t CloudSyncConvert::CompensateDuration(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
-    int32_t duration = data.attributesDuration;
-    CHECK_AND_RETURN_RET_WARN_LOG(duration != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::duration.");
+    int32_t duration = data.duration;
+    CHECK_AND_RETURN_RET_WARN_LOG(duration != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find basic::duration.");
     values.PutInt(PhotoColumn::MEDIA_DURATION, duration);
     return E_OK;
 }
@@ -121,6 +125,11 @@ int32_t CloudSyncConvert::CompensateAttBurstCoverLevel(
     int32_t burstCoverLevel = data.attributesBurstCoverLevel;
     CHECK_AND_RETURN_RET_WARN_LOG(
         burstCoverLevel != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::burstCoverLevel.");
+    int32_t maxLevel = static_cast<int32_t>(BurstCoverLevelType::MEMBER);
+    int32_t minLevel = static_cast<int32_t>(BurstCoverLevelType::DEFAULT);
+    if (burstCoverLevel > maxLevel || burstCoverLevel < minLevel) {
+        burstCoverLevel = minLevel;
+    }
     values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, burstCoverLevel);
     return E_OK;
 }
@@ -265,40 +274,11 @@ int32_t CloudSyncConvert::CompensatePropTitle(const CloudMediaPullDataDto &data,
     return E_OK;
 }
 
-int32_t CloudSyncConvert::CompensatePropDuration(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
-{
-    int32_t duration = data.propertiesDuration;
-    if (duration == -1) {
-        MEDIA_ERR_LOG("bad duration in props");
-        values.PutInt(PhotoColumn::MEDIA_DURATION, 0);
-        return E_OK;
-    }
-    values.PutInt(PhotoColumn::MEDIA_DURATION, duration);
-    return E_OK;
-}
-
 int32_t CloudSyncConvert::CompensatePropOrientation(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     int32_t exifRotateValue = data.propertiesRotate;
     CHECK_AND_RETURN_RET_WARN_LOG(
         exifRotateValue != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find attributes::exifRotateValue.");
-    switch (exifRotateValue) {
-        case ORIENTATION_NORMAL:
-            exifRotateValue = ROTATE_ANGLE_0;
-            break;
-        case ORIENTATION_ROTATE_90:
-            exifRotateValue = ROTATE_ANGLE_90;
-            break;
-        case ORIENTATION_ROTATE_180:
-            exifRotateValue = ROTATE_ANGLE_180;
-            break;
-        case ORIENTATION_ROTATE_270:
-            exifRotateValue = ROTATE_ANGLE_270;
-            break;
-        default:
-            exifRotateValue = ROTATE_ANGLE_0;
-            break;
-    }
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, exifRotateValue);
     return E_OK;
 }
@@ -585,7 +565,6 @@ int32_t CloudSyncConvert::TryCompensateValue(const CloudMediaPullDataDto &data, 
     CHECK_AND_RETURN_RET_LOG(CompensateBasicMediaType(data, values) == E_OK, E_ERR, "CompensateMediaType Error");
     CHECK_AND_RETURN_RET_LOG(CompensateBasicMetaDateModified(data, values) == E_OK, E_ERR, "MetaModified Error");
     CHECK_AND_RETURN_RET_LOG(CompensateBasicSubtype(data, values) == E_OK, E_ERR, "CompensateSubtype Error");
-    CHECK_AND_RETURN_RET_LOG(CompensatePropDuration(data, values) == E_OK, E_ERR, "CompensateDuration Error");
 
     // Prevent device-cloud inconsistency caused by the value of the PHOTO_BURST_COVER_LEVEL field out of range.
     CHECK_AND_RETURN_RET(CompensateBasicBurstCoverLevel(data, values) == E_OK, E_ERR);
@@ -597,7 +576,6 @@ int32_t CloudSyncConvert::ExtractAttributeValue(const CloudMediaPullDataDto &dat
     CHECK_AND_RETURN_RET_WARN_LOG(data.hasAttributes, E_OK, "Data cannot find hasAttributes");
     CompensateAttTitle(data, values);
     CompensateAttMediaType(data, values);
-    CompensateAttDuration(data, values);
     CompensateAttHidden(data, values);
     CompensateAttHiddenTime(data, values);
     CompensateAttRelativePath(data, values);
@@ -636,6 +614,7 @@ int32_t CloudSyncConvert::ExtractCompatibleValue(const CloudMediaPullDataDto &da
     CompensateBasicCloudId(data, values);
     CompensateBasicDescription(data, values);
     CompensateBasicFixLivePhoto(data, values);
+    CompensateDuration(data, values);
 
     /* extract value in properties*/
     CompensatePropOrientation(data, values);
@@ -651,7 +630,7 @@ int32_t CloudSyncConvert::ExtractCompatibleValue(const CloudMediaPullDataDto &da
 bool CloudSyncConvert::RecordToValueBucket(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values)
 {
     std::string title = data.attributesTitle;
-    if (title.empty()) {
+    if (!data.hasAttributes) {
         int32_t ret = TryCompensateValue(data, values);
         CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "PullData lose key value, ret: %{public}d.", ret);
     } else {

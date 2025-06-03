@@ -22,75 +22,20 @@
 #include "mdk_record.h"
 #include "mdk_reference.h"
 #include "mdk_database.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class MDKRecordReader {
+class EXPORT MDKRecordReader {
 public:
-    std::optional<MDKAsset> GetAssetValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
-    {
-        std::optional<MDKAsset> valueOpt;
-        auto it = fields.find(key);
-        if (it == fields.end()) {
-            return valueOpt;
-        }
-        MDKAsset value;
-        MDKLocalErrorCode errorCode = it->second.GetAsset(value);
-        if (errorCode != MDKLocalErrorCode::NO_ERROR) {
-            return valueOpt;
-        }
-        return value;
-    }
-    std::optional<std::string> GetStringValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
-    {
-        std::optional<std::string> valueOpt;
-        auto it = fields.find(key);
-        if (it == fields.end()) {
-            return valueOpt;
-        }
-        std::string value;
-        MDKLocalErrorCode errorCode = it->second.GetString(value);
-        if (errorCode != MDKLocalErrorCode::NO_ERROR) {
-            return valueOpt;
-        }
-        return value;
-    }
-    std::optional<int64_t> GetLongValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
-    {
-        std::optional<int64_t> valueOpt;
-        auto it = fields.find(key);
-        if (it == fields.end()) {
-            return valueOpt;
-        }
-        int64_t value;
-        MDKLocalErrorCode errorCode = it->second.GetLong(value);
-        if (errorCode != MDKLocalErrorCode::NO_ERROR) {
-            return valueOpt;
-        }
-        return value;
-    }
-    std::optional<int32_t> GetIntValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
-    {
-        std::optional<int32_t> resultOpt;
-        std::optional<int64_t> valueOpt = this->GetLongValue(fields, key);
-        if (valueOpt) {
-            resultOpt = static_cast<int32_t>(valueOpt.value());
-        }
-        return resultOpt;
-    }
-    std::optional<bool> GetBoolValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const
-    {
-        std::optional<bool> valueOpt;
-        auto it = fields.find(key);
-        if (it == fields.end()) {
-            return valueOpt;
-        }
-        bool value;
-        MDKLocalErrorCode errorCode = it->second.GetBool(value);
-        if (errorCode != MDKLocalErrorCode::NO_ERROR) {
-            return valueOpt;
-        }
-        return value;
-    }
+    std::optional<MDKAsset> GetAssetValue(
+        const std::map<std::string, MDKRecordField> &fields, const std::string &key) const;
+    std::optional<std::string> GetStringValue(
+        const std::map<std::string, MDKRecordField> &fields, const std::string &key) const;
+    std::optional<int64_t> GetLongValue(
+        const std::map<std::string, MDKRecordField> &fields, const std::string &key) const;
+    std::optional<int32_t> GetIntValue(
+        const std::map<std::string, MDKRecordField> &fields, const std::string &key) const;
+    std::optional<bool> GetBoolValue(const std::map<std::string, MDKRecordField> &fields, const std::string &key) const;
 };
 }  // namespace OHOS::Media::CloudSync
 #endif  // OHOS_MEDIA_CLOUD_SYNC_MDK_RECORD_READER_H
