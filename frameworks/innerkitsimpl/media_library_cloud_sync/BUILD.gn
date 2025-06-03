@@ -100,6 +100,7 @@ ohos_shared_library("media_library_cloud_sync") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
+    "hisysevent:libhisysevent",
   ]
 
   ldflags = [ "-Wl,--gc-sections" ]
