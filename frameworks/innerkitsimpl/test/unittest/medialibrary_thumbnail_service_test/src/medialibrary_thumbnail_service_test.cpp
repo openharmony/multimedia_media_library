@@ -49,6 +49,8 @@ const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT
     "(file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, media_type INTEGER," +
     " date_added TEXT, display_name TEXT, thumbnail_ready TEXT, position TEXT)";
 
+const int32_t TEST_PIXELMAP_WIDTH_AND_HEIGHT = 100;
+
 const int32_t E_GETROUWCOUNT_ERROR = 27394103;
 
 int ConfigTestOpenCall::OnCreate(RdbStore &store)
@@ -1549,5 +1551,6 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_AddThumbnai
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
     EXPECT_NE(thumbnailWorker, nullptr);
 }
+
 } // namespace Media
 } // namespace OHOS

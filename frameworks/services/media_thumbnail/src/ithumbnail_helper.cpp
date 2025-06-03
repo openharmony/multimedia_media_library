@@ -649,8 +649,7 @@ bool IThumbnailHelper::StorePictureLowQuality(ThumbnailData &data,
         ThumbnailQulity::NOT_BAD, ThumbnailQulity::POOR };
     for (const ThumbnailQulity quality : tryQualityList) {
         data.thumbnailQuality = quality;
-        CHECK_AND_RETURN_RET_LOG(StorePicture(data, picture, isSourceEx),
-            false, "CompressAndSavePicture failed.");
+        CHECK_AND_RETURN_RET_LOG(StorePicture(data, picture, isSourceEx), false, "StorePicture failed.");
         CHECK_AND_RETURN_RET_LOG(ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize),
             false, "GetThumbFileSize failed");
         if (lastGeneratedSize <= sizeLimit) {
