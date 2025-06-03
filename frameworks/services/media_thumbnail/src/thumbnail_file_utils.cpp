@@ -85,8 +85,10 @@ bool ThumbnailFileUtils::GetThumbFileSize(const ThumbnailData& data, const Thumb
         "invalid ThumbnailType: %{public}d", type);
     std::string thumbDir = GetThumbnailDir(data);
     CHECK_AND_RETURN_RET_LOG(thumbDir != "", false, "GetThumbnailDir failed");
-    std::string thumbPath = thumbDir + THUMB_FILE_NAME_MAP.at(type);
-    return MediaFileUtils::GetFileSize(thumbPath, size);
+    std::string thumbPath = thumbDir + "/" + THUMB_FILE_NAME_MAP.at(type);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::GetFileSize(thumbPath, size), false,
+        "GetFileSize failed. path: %{public}s", DfxUtils::GetSafePath(thumbPath).c_str());
+    return true;
 }
 
 bool ThumbnailFileUtils::DeleteThumbnailDir(const ThumbnailData &data)

@@ -141,12 +141,14 @@ private:
     EXPORT static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static bool NeedGenerateExFile(ThumbnailData &data);
-    EXPORT static bool CompressAndSavePicture(ThumbnailData &data, const bool isSourceEx);
+    EXPORT static bool StorePicture(ThumbnailData &data,
+        const std::shared_ptr<Picture>& picture, const bool isSourceEx);
+    EXPORT static Size GetLcdDesiredSize(const ThumbnailData& data, const bool isSourceEx);
     // sizeLimit unit: Byte
-    EXPORT static bool CompressAndSavePictureLowQuality(ThumbnailData &data,
-        const bool isSourceEx, const size_t sizeLimit);
-    EXPORT static bool CompressAndSaveLcdPixelMapLowQuality(ThumbnailData& data,
-        const bool isSourceEx, const size_t sizeLimit);
+    EXPORT static bool StorePictureLowQuality(ThumbnailData &data,
+        const std::shared_ptr<Picture>& picture, const bool isSourceEx, const size_t sizeLimit);
+    EXPORT static bool StoreLcdPixelMapLowQuality(ThumbnailData& data,
+        const std::shared_ptr<PixelMap>& pixelMap, const bool isSourceEx, const size_t sizeLimit);
 };
 } // namespace Media
 } // namespace OHOS

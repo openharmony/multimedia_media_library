@@ -41,9 +41,10 @@ public:
     // utils
     EXPORT static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size,
         std::unique_ptr<PixelMap> &pixelMap);
-    EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
+    EXPORT static bool CompressImage(const std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
         bool isAstc = false, bool forceSdr = true, const ThumbnailQulity quality = ThumbnailQulity::DEFAULT);
-    EXPORT static bool CompressPicture(ThumbnailData &data, const bool isSourceEx, std::string &tempOutputPath);
+    EXPORT static bool CompressPicture(ThumbnailData &data, const std::shared_ptr<Picture>& picture,
+        const bool isSourceEx, std::string &tempOutputPath);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
     // RDB Store Query
@@ -118,7 +119,11 @@ public:
     EXPORT static void BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch);
 
     EXPORT static bool IsPictureValid(const std::shared_ptr<Picture>& picture);
-    EXPORT static bool IsPixelMapValid(const std::shared_ptr<PixelMapPtr>& pixelMap);
+    EXPORT static bool IsPixelMapValid(const std::shared_ptr<PixelMap>& pixelMap);
+    EXPORT static std::shared_ptr<Picture> CopyAndScalePicture(const std::shared_ptr<Picture>& picture,
+        const Size& desiredSize);
+    EXPORT static std::shared_ptr<PixelMap> CopyAndScalePixelMap(const std::shared_ptr<PixelMap>& pixelMap,
+        const Size& desiredSize);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
