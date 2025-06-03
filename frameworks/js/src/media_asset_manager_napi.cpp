@@ -261,7 +261,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
     mediaAssetDataHandler->SetCompatibleMode(asyncContext->compatibleMode);
     mediaAssetDataHandler->SetNotifyMode(notifyMode);
     mediaAssetDataHandler->SetRequestId(asyncContext->requestId);
-
+    mediaAssetDataHandler->SetProgressHandlerRef(asyncContext->progressHandlerRef);
     AssetHandler *assetHandler = CreateAssetHandler(asyncContext->photoId, asyncContext->requestId,
         asyncContext->photoUri, mediaAssetDataHandler, threadSafeFunc);
     assetHandler->photoQuality = asyncContext->photoQuality;
@@ -1182,8 +1182,9 @@ static napi_value GetNapiValueOfMedia(napi_env env, const std::shared_ptr<NapiMe
         MovingPhotoParam movingPhotoParam;
         movingPhotoParam.compatibleMode =  dataHandler->GetCompatibleMode();
         movingPhotoParam.requestId = dataHandler->GetRequestId();
+        movingPhotoParam.progressHandlerRef = dataHandler->GetProgressHandlerRef();
         napiValueOfMedia = MovingPhotoNapi::NewMovingPhotoNapi(env, dataHandler->GetRequestUri(),
-            dataHandler->GetSourceMode(), movingPhotoParam, MediaAssetManagerNapi::NotifyOnProgress);
+            dataHandler->GetSourceMode(), movingPhotoParam);
     } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
         MediaAssetManagerNapi::GetPictureNapiObject(dataHandler->GetRequestUri(), napiValueOfMedia,
             dataHandler->GetSourceMode() == SourceMode::ORIGINAL_MODE, env, isPicture);
@@ -1651,9 +1652,11 @@ napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callba
         NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
         return nullptr;
     }
-    if (!CreateOnProgressHandlerInfo(env, asyncContext)) {
-        NAPI_ERR_LOG("CreateOnProgressHandlerInfo failed");
-        return nullptr;
+    if (asyncContext->mediaAssetProgressHandler != nullptr) {
+        if (CreateProgressHandlerRef(env, asyncContext, asyncContext->progressHandlerRef) != napi_ok) {
+            NAPI_ERR_LOG("CreateProgressHandlerRef failed");
+            return nullptr;
+        }
     }
     asyncContext->requestId = GenerateRequestId();
 
@@ -1914,13 +1917,8 @@ napi_status MediaAssetManagerNapi::CreateOnProgressThreadSafeFunc(napi_env env,
     napi_value workName = nullptr;
     napi_create_string_utf8(env, "ProgressThread", NAPI_AUTO_LENGTH, &workName);
     napi_status status = napi_ok;
-    if (context->subType == PhotoSubType::MOVING_PHOTO) {
-        status = napi_create_threadsafe_function(env, context->mediaAssetProgressHandler, NULL, workName, 0, 1,
-            NULL, NULL, NULL, MovingPhotoNapi::OnProgress, &progressFunc);
-    } else {
-        status = napi_create_threadsafe_function(env, context->mediaAssetProgressHandler, NULL, workName, 0, 1,
-            NULL, NULL, NULL, MediaAssetManagerNapi::OnProgress, &progressFunc);
-    }
+    status = napi_create_threadsafe_function(env, context->mediaAssetProgressHandler, NULL, workName, 0, 1,
+        NULL, NULL, NULL, MediaAssetManagerNapi::OnProgress, &progressFunc);
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_create_threadsafe_function fail");
         progressFunc = nullptr;
@@ -1943,9 +1941,6 @@ void MediaAssetManagerNapi::JSRequestExecute(napi_env env, void *data)
         string result;
         valuesBucket.Put("adapted", context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO);
         UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result, context->userId);
-        if (context->compatibleMode == CompatibleMode::COMPATIBLE_FORMAT_MODE) {
-            OnHandleProgress(env, context);
-        }
     }
 }
 

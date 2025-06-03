@@ -19,7 +19,6 @@
 #include <memory>
 
 #include "media_asset_data_handler.h"
-#include "media_asset_manager_napi.h"
 #include "media_library_napi.h"
 
 namespace OHOS {
@@ -38,7 +37,9 @@ struct MovingPhotoAsyncContext : public NapiError {
     std::string movingPhotoUri;
     SourceMode sourceMode;
     CompatibleMode compatibleMode;
-    std::function<void(int, int, std::string)> callback;
+    napi_ref progressHandlerRef;
+    napi_env mediaAssetEnv;
+    bool isTranscoder = false;
     std::string requestId;
     ResourceType resourceType;
     std::string destImageUri;
@@ -54,6 +55,9 @@ struct MovingPhotoAsyncContext : public NapiError {
 struct MovingPhotoParam {
     std::string requestId;
     CompatibleMode compatibleMode;
+    napi_ref progressHandlerRef;
+    MovingPhotoParam() : requestId(""), compatibleMode(CompatibleMode::ORIGINAL_FORMAT_MODE),
+        progressHandlerRef(nullptr) {};
 };
 
 class MovingPhotoNapi {
@@ -65,8 +69,7 @@ public:
     static int32_t OpenReadOnlyLivePhoto(const string& destLivePhotoUri, int32_t position);
     static int32_t OpenReadOnlyMetadata(const string& movingPhotoUri);
     static napi_value NewMovingPhotoNapi(napi_env env, const string& photoUri, SourceMode sourceMode,
-        MovingPhotoParam movingPhotoParam,
-        const std::function<void(int, int, std::string)> cb = [](int, int, std::string) {});
+        MovingPhotoParam &movingPhotoParam);
     std::string GetUri();
     SourceMode GetSourceMode();
     void SetSourceMode(SourceMode sourceMode);
@@ -74,14 +77,16 @@ public:
     void SetRequestId(const std::string requestId);
     CompatibleMode GetCompatibleMode();
     void SetCompatibleMode(const CompatibleMode compatibleMode);
-    void SetMovingPhotoCallback(const std::function<void(int, int, std::string)> callback);
-    std::function<void(int, int, std::string)> GetMovingPhotoCallback();
+    napi_ref GetProgressHandlerRef();
+    void SetProgressHandlerRef(napi_ref &progressHandlerRef);
+    napi_env GetMediaAssetEnv();
+    void setMediaAssetEnv(napi_env mediaAssetEnv);
     static int32_t DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, MovingPhotoAsyncContext* context);
     static void OnProgress(napi_env env, napi_value cb, void *context, void *data);
     static int32_t GetFdFromUri(const std::string &sandBoxUri);
     static void SubRequestContent(int32_t fd, MovingPhotoAsyncContext* context);
     static void RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context);
-    static void CallRequestContentCallBack(napi_env env, MovingPhotoAsyncContext* context);
+    static void CallRequestContentCallBack(napi_env env, void* context, int32_t errorCode);
 private:
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
     EXPORT static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
@@ -94,7 +99,8 @@ private:
     SourceMode sourceMode_ = SourceMode::EDITED_MODE;
     CompatibleMode compatibleMode_ = CompatibleMode::COMPATIBLE_FORMAT_MODE;
     std::string requestId_;
-    std::function<void(int, int, std::string)> callback_ = nullptr;
+    napi_ref progressHandlerRef_ = nullptr;
+    napi_env media_asset_env_ = nullptr;
 };
 
 } // Media
