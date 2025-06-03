@@ -116,5 +116,14 @@ HWTEST_F(MediaLibraryThumbnailFileUtilsTest, BatchDeleteAstcData_test_001, TestS
     res = ThumbnailFileUtils::BatchDeleteAstcData(dataBatch, type);
     EXPECT_EQ(res, true);
 }
+
+HWTEST_F(MediaLibraryThumbnailFileUtilsTest, ThumbnailFileUtils_GetThumbFileSize, TestSize.Level0)
+{
+    size_t size;
+    ThumbnailData data;
+    bool ret = ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, size);
+    EXPECT_EQ(ret, false);
+}
+
 } // namespace Media
 } // namespace OHOS
