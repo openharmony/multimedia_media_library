@@ -369,6 +369,7 @@ shared_ptr<DataShare::DataShareResultSet> MtpMedialibraryManager::GetPhotosInfo(
         predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
         predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0");
         predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
+        predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
         if (!burstKeys.empty()) {
             predicates.BeginWrap()
                 ->BeginWrap()
