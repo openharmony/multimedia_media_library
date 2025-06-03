@@ -395,7 +395,7 @@ int32_t CloudMediaDownloadService::OnDownloadAsset(
     // Requirement: If any asset is not in the database, return error. Caller should check the result.
     CHECK_AND_RETURN_RET_LOG(photosPoVec.size() == cloudIds.size(),
         E_CLOUDSYNC_INVAL_ARG,
-        "QueryDownloadAssetByCloudIds failed, cloudIds size:%{public}lu, photosPoVec size:%{public}lu",
+        "QueryDownloadAssetByCloudIds failed, cloudIds size:%{public}zu, photosPoVec size:%{public}zu",
         cloudIds.size(),
         photosPoVec.size());
     // Update
