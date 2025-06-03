@@ -625,18 +625,19 @@ void IThumbnailHelper::UpdateHighlightDbState(ThumbRdbOpt &opts, ThumbnailData &
         "UpdateHighlightInfo faild err : %{public}d", err);
 }
 
-bool IThumbnailHelper::CompressAndSavePicture(ThumbnailData &data, const bool isSourceEx)
+bool IThumbnailHelper::StorePicture(ThumbnailData &data,
+    const std::shared_ptr<Picture>& picture, const bool isSourceEx)
 {
     std::string tempOutputPath;
-    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CompressPicture(data, isSourceEx, tempOutputPath), false,
-        "CompressPicture failed. path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-    CHECK_AND_RETURN_RET_LOG(TrySavePicture(data, isSourceEx, tempOutputPath), false,
-        "TrySavePicture picture failed. path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CompressPicture(data, picture, isSourceEx, tempOutputPath),
+        false, "CompressPicture failed. path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    CHECK_AND_RETURN_RET_LOG(TrySavePicture(data, isSourceEx, tempOutputPath),
+        false, "TrySavePicture picture failed. path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     return true;
 }
 
-bool IThumbnailHelper::CompressAndSavePictureLowQuality(ThumbnailData &data,
-    const bool isSourceEx, const size_t sizeLimit)
+bool IThumbnailHelper::StorePictureLowQuality(ThumbnailData &data,
+    const std::shared_ptr<Picture>& picture, const bool isSourceEx, const size_t sizeLimit)
 {
     size_t lastGeneratedSize;
     if (ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize)) {
@@ -644,11 +645,12 @@ bool IThumbnailHelper::CompressAndSavePictureLowQuality(ThumbnailData &data,
     } else {
         MEDIA_INFO_LOG("SizeLimit: %{public}zu, GetThumbFileSize failed, continue generate.", sizeLimit);
     }
-    vector<ThumbnailQulity> tryQulityList = { ThumbnailQulity::GOOD, ThumbnailQulity::MID,
+    vector<ThumbnailQulity> tryQualityList = { ThumbnailQulity::GOOD, ThumbnailQulity::MID,
         ThumbnailQulity::NOT_BAD, ThumbnailQulity::POOR };
-    for (const ThumbnailQulity qulity : tryQulityList) {
-        data.thumbnailQuality = qulity;
-        CHECK_AND_RETURN_RET_LOG(CompressAndSavePicture(data, isSourceEx), false, "CompressAndSavePicture failed.");
+    for (const ThumbnailQulity quality : tryQualityList) {
+        data.thumbnailQuality = quality;
+        CHECK_AND_RETURN_RET_LOG(StorePicture(data, picture, isSourceEx),
+            false, "CompressAndSavePicture failed.");
         CHECK_AND_RETURN_RET_LOG(ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize),
             false, "GetThumbFileSize failed");
         if (lastGeneratedSize <= sizeLimit) {
@@ -660,7 +662,7 @@ bool IThumbnailHelper::CompressAndSavePictureLowQuality(ThumbnailData &data,
     return false;
 }
 
-Size GetLcdDesiredSize(const ThumbnailData& data, const bool isSourceEx)
+Size IThumbnailHelper::GetLcdDesiredSize(const ThumbnailData& data, const bool isSourceEx)
 {
     bool shouldReverseSize = !isSourceEx && (data.orientation % FLAT_ANGLE != 0);
     int desiredWidth = shouldReverseSize ? data.lcdDesiredSize.height : data.lcdDesiredSize.width;
@@ -668,55 +670,38 @@ Size GetLcdDesiredSize(const ThumbnailData& data, const bool isSourceEx)
     return { desiredWidth, desiredHeight };
 }
 
-bool ScalePictureToDesiredSize(ThumbnailData& data, const bool isSourceEx, const Size& desiredSize)
-{
-    shared_ptr<Picture> lcdSource = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
-    CHECK_AND_RETURN_RET_LOG(desiredSize.width > 0 && desiredSize.height > 0, false,
-        "Invalid desired size: width: %{public}d, height: %{publilc}d", desiredSize.width, desiredSize.height);
-    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::IsPictureValid(lcdSource), false, "LcdSource is invalid");
-    float widthScale = (1.0f * desiredSize.width) / lcdSource->GetMainPixel()->GetWidth();
-    float heightScale = (1.0f * desiredSize.height) / lcdSource->GetMainPixel()->GetHeight();
-    lcdSource->GetMainPixel()->scale(widthScale, heightScale);
-    lcdSource->GetGainmapPixelMap()->scale(widthScale, heightScale);
-    return true;
-}
-
 bool IThumbnailHelper::SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &data, const bool isSourceEx)
 {
     shared_ptr<Picture> lcdSource = isSourceEx ? data.source.GetPictureEx() : data.source.GetPicture();
     CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::IsPictureValid(lcdSource), false, "LcdSource is invalid");
 
-    std::shared_ptr<Picture> copySource;
     Size desiredSize = GetLcdDesiredSize(data, isSourceEx);
     if (desiredSize.width != lcdSource->GetMainPixel()->GetWidth()) {
         MEDIA_INFO_LOG("Copy and resize picture source for lcd desiredSize: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
-        copySource = ThumbnailImageFrameWorkUtils::CopyPictureSource(lcdSource);
-        CHECK_AND_RETURN_RET_LOG(copySource != nullptr, false, "CopyPictureSource failed");
-        ScalePictureToDesiredSize(data, isSourceEx, desiredSize);
+        lcdSource = ThumbnailUtils::CopyAndScalePicture(lcdSource, desiredSize);
+        CHECK_AND_RETURN_RET_LOG(lcdSource != nullptr, false, "CopyAndScalePicture failed");
     }
     
-    if (data.thumbnailQuality < ThumbnailQulity::DEFAULT) {
-        CHECK_AND_RETURN_RET_LOG(CompressAndSavePictureLowQuality(data, isSourceEx, LCD_UPLOAD_LIMIT_SIZE), false,
-            "CompressAndSavePicture with limit failed");
+    if (data.thumbnailQuality == ThumbnailQulity::DEFAULT) {
+        CHECK_AND_RETURN_RET_LOG(StorePicture(data, lcdSource, isSourceEx),
+            false, "StorePicture failed");
     } else {
-        CHECK_AND_RETURN_RET_LOG(CompressAndSavePicture(data, isSourceEx), false, "CompressAndSavePicture failed");
+        MEDIA_INFO_LOG("Create low quality lcd");
+        CHECK_AND_RETURN_RET_LOG(StorePictureLowQuality(data, lcdSource, isSourceEx, LCD_UPLOAD_LIMIT_SIZE),
+            false, "StorePictureLowQuality with limit failed");
     }
 
-    if (copySource != nullptr) {
-        isSourceEx ? data.source.SetPictureEx(copySource) : data.source.SetPicture(copySource);
-    }
     if (!isSourceEx) {
         CacheLcdDbState(opts, data);
     }
     return true;
 }
 
-bool IThumbnailHelper::CompressAndSaveLcdPixelMapLowQuality(ThumbnailData& data,
+bool IThumbnailHelper::StoreLcdPixelMapLowQuality(ThumbnailData& data, const std::shared_ptr<PixelMap>& pixelMap,
     const bool isSourceEx, const size_t sizeLimit)
 {
-    shared_ptr<PixelMap> lcdSource = isSourceEx ? data.source.GetPixelMapEx() : data.source.GetPixelMap();
-    CHECK_AND_RETURN_RET_LOG(lcdSource != nullptr, false, "PixelMap is null, isSourceEx: %{public}d", isSourceEx);
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is null, isSourceEx: %{public}d", isSourceEx);
 
     size_t lastGeneratedSize;
     if (ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize)) {
@@ -724,18 +709,13 @@ bool IThumbnailHelper::CompressAndSaveLcdPixelMapLowQuality(ThumbnailData& data,
     } else {
         MEDIA_INFO_LOG("SizeLimit: %{public}zu, GetThumbFileSize failed, continue generate.", sizeLimit);
     }
-    vector<ThumbnailQulity> tryQulityList = { ThumbnailQulity::GOOD, ThumbnailQulity::MID,
+    vector<ThumbnailQulity> tryQualityList = { ThumbnailQulity::GOOD, ThumbnailQulity::MID,
         ThumbnailQulity::NOT_BAD, ThumbnailQulity::POOR };
-    for (const ThumbnailQulity qulity : tryQulityList) {
-        if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, false, false, qulity)) {
-            MEDIA_ERR_LOG("CompressImage failed");
-            return false;
-        }
-
-        if (!TrySavePixelMap(data, isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD)) {
-            MEDIA_ERR_LOG("SaveLcd PixelMap failed: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-            return false;
-        }
+    for (const ThumbnailQulity quality : tryQualityList) {
+        CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CompressImage(pixelMap, data.lcd, false, false, quality),
+            false, "CompressImage failed");
+        CHECK_AND_RETURN_RET_LOG(TrySavePixelMap(data, isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD),
+            false, "SaveLcd PixelMap failed: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         CHECK_AND_RETURN_RET_LOG(ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize),
             false, "GetThumbFileSize failed");
         if (lastGeneratedSize <= sizeLimit) {
@@ -747,44 +727,28 @@ bool IThumbnailHelper::CompressAndSaveLcdPixelMapLowQuality(ThumbnailData& data,
     return false;
 }
 
-bool ScalePixelMapToDesiredSize(const ThumbnailData& data, const bool isSourceEx,
-    const Size& desiredSize, std::shared_ptr<PixelMap> pixelMap)
-{
-    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::IsPixelMapValid(pixelMap), "PixelMap is invalid");
-    CHECK_AND_RETURN_RET_LOG(desiredSize.width > 0 && desiredSize.height > 0, false,
-        "Invalid desired size: width: %{public}d, height: %{publilc}d", desiredSize.width, desiredSize.height);
-    float widthScale = (1.0f * desiredSize.width) / pixelMap->GetWidth();
-    float heightScale = (1.0f * desiredSize.height) / pixelMap->GetHeight();
-    pixelMap->scale(widthScale, heightScale);
-    return true;
-}
-
 bool IThumbnailHelper::SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &data, const bool isSourceEx)
 {
     shared_ptr<PixelMap> lcdSource = isSourceEx ? data.source.GetPixelMapEx() : data.source.GetPixelMap();
-    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::IsPixelMapValid(pixelMap), "PixelMap is invalid");
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::IsPixelMapValid(lcdSource), false, "lcdSource is invalid");
     Size desiredSize = GetLcdDesiredSize(data, isSourceEx);
     if (desiredSize.width != lcdSource->GetWidth()) {
         MEDIA_INFO_LOG("Copy and resize data source for lcd desiredSize: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
-        auto copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(lcdSource);
-        CHECK_AND_RETURN_RET_LOG(copySource != nullptr, false, "CopySource is null");
-        ScalePixelMapToDesiredSize(data, isSourceEx, desiredSize, copySource);
+        lcdSource = ThumbnailUtils::CopyAndScalePixelMap(lcdSource, desiredSize);
+        CHECK_AND_RETURN_RET_LOG(lcdSource != nullptr, false, "CopyAndScalePixelMap failed");
     }
 
-    if (data.thumbnailQuality < ThumbnailQulity::DEFAULT) {
-        CHECK_AND_RETURN_RET_LOG(CompressAndSaveLcdPixelMapLowQuality(data, isSourceEx, LCD_UPLOAD_LIMIT_SIZE), false,
-            "CompressAndSaveLcdPixelMapLowQuality failed");
+    if (data.thumbnailQuality == ThumbnailQulity::DEFAULT) {
+        CHECK_AND_RETURN_RET_LOG(
+            ThumbnailUtils::CompressImage(lcdSource, data.lcd, false, false, data.thumbnailQuality),
+            false, "CompressImage failed");
+        CHECK_AND_RETURN_RET_LOG(TrySavePixelMap(data, isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD),
+            false, "SaveLcd PixelMap failed: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
     } else {
-        if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, false, false, data.thumbnailQuality)) {
-            MEDIA_ERR_LOG("CompressImage failed");
-            return false;
-        }
-
-        if (!TrySavePixelMap(data, isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD)) {
-            MEDIA_ERR_LOG("SaveLcd PixelMap failed: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
-            return false;
-        }
+        MEDIA_INFO_LOG("Create low quality lcd");
+        CHECK_AND_RETURN_RET_LOG(StoreLcdPixelMapLowQuality(data, lcdSource, isSourceEx, LCD_UPLOAD_LIMIT_SIZE), false,
+            "StoreLcdPixelMapLowQuality failed");
     }
 
     data.lcd.clear();

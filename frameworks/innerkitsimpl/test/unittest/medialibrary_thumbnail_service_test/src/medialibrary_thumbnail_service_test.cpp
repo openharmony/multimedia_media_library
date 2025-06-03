@@ -874,10 +874,10 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumnail_utils_test_023, Tes
     std::shared_ptr<Picture> pictureEx = Picture::Create(pixelMap);
     data.source.SetPictureEx(pictureEx);
     std::string tempOutputPath;
-    auto res = ThumbnailUtils::CompressPicture(data, isSourceEx, tempOutputPath);
+    auto res = ThumbnailUtils::CompressPicture(data, pictureEx, isSourceEx, tempOutputPath);
     EXPECT_EQ(res, false);
     bool isSourceEx2 = false;
-    auto res2 = ThumbnailUtils::CompressPicture(data, isSourceEx2, tempOutputPath);
+    auto res2 = ThumbnailUtils::CompressPicture(data, pictureEx, isSourceEx2, tempOutputPath);
     EXPECT_EQ(res2, false);
 }
 
