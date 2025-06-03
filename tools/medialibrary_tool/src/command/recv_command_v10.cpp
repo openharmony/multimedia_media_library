@@ -239,6 +239,7 @@ bool RecvCommandV10::IsMovingPhotoVideoPath(unique_ptr<FileAsset>& movingPhotoAs
 
 int32_t RecvCommandV10::RecvAssets(const ExecEnv& env, const std::string& tableName)
 {
+    printf("Table Name: %s\n", tableName.c_str());
     std::shared_ptr<DataShare::DataShareResultSet> resultSet;
     auto res = QueryAssets(resultSet, tableName);
     std::shared_ptr<FetchResult<FileAsset>> fetchResult = std::make_shared<FetchResult<FileAsset>>(resultSet);
@@ -314,7 +315,6 @@ int32_t RecvCommandV10::Start(const ExecEnv &env)
         bool hasError = false;
         auto tables = UserFileClientEx::GetSupportTables();
         for (auto tableName : tables) {
-            printf("Table Name: %s\n", tableName.c_str());
             if (RecvAssets(env, tableName) != Media::E_OK) {
                 hasError = true;
             }
