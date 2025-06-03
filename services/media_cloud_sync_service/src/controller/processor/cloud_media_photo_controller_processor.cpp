@@ -76,8 +76,9 @@ std::vector<PhotosVo> CloudMediaPhotoControllerProcessor::SetNewDataVoFromDto(st
     }
     return newDatas;
 }
-std::unordered_map<std::string, GetCheckRecordsRespBodyCheckData>
-    CloudMediaPhotoControllerProcessor::GetCheckRecordsRespBody(std::vector<PhotosDto> photosDtoVec)
+using CheckData = GetCheckRecordsRespBodyCheckData;
+std::unordered_map<std::string, CheckData> CloudMediaPhotoControllerProcessor::GetCheckRecordsRespBody(
+    std::vector<PhotosDto> photosDtoVec)
 {
     std::unordered_map<std::string, GetCheckRecordsRespBodyCheckData> checkDataList;
     for (auto &photosDto : photosDtoVec) {
@@ -102,7 +103,7 @@ std::unordered_map<std::string, GetCheckRecordsRespBodyCheckData>
             checkData.attachment[key] = vo;
         }
         checkDataList[checkData.cloudId] = checkData;
-        MEDIA_INFO_LOG("CloudMediaDataControllerProcessor CheckData: %{public}s", checkData.ToString().c_str());
+        MEDIA_DEBUG_LOG("CloudMediaDataControllerProcessor CheckData: %{public}s", checkData.ToString().c_str());
     }
     return checkDataList;
 }
@@ -128,7 +129,7 @@ bool CloudMediaPhotoControllerProcessor::GetBasicInfo(const PhotosPo &record, Cl
 bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const PhotosPo &record, CloudMdkRecordPhotosVo &photosVo)
 {
     photosVo.subtype = record.subtype.value_or(0);
-    photosVo.burstCoverLevel = record.burstCoverLevel.value_or(0);
+    photosVo.burstCoverLevel = record.burstCoverLevel.value_or(1);
     photosVo.burstKey = record.burstKey.value_or("");
     photosVo.dateYear = record.dateYear.value_or("");
     photosVo.dateMonth = record.dateMonth.value_or("");
@@ -222,7 +223,7 @@ bool CloudMediaPhotoControllerProcessor::GetAttributesInfo(const OnFetchPhotosVo
     data.propertiesDetailTime = photosVo.detailTime;
     data.attributesTitle = photosVo.title;
     data.attributesMediaType = photosVo.mediaType;
-    data.attributesDuration = photosVo.duration;
+    data.duration = photosVo.duration;
     data.attributesHiddenTime = photosVo.hiddenTime;
     data.attributesRelativePath = photosVo.relativePath;
     data.attributesVirtualPath = photosVo.virtualPath;
@@ -344,5 +345,15 @@ void CloudMediaPhotoControllerProcessor::ConvertToPhotosDto(const OnModifyRecord
     dto.serverErrorCode = recordVo.serverErrorCode;
     dto.errorDetails = recordVo.errorDetails;
     return;
+}
+
+ReportFailureDto CloudMediaPhotoControllerProcessor::GetReportFailureDto(const ReportFailureReqBody &reqBody)
+{
+    ReportFailureDto reportFailureDto;
+    reportFailureDto.apiCode = reqBody.apiCode;
+    reportFailureDto.errorCode = reqBody.errorCode;
+    reportFailureDto.fileId = reqBody.fileId;
+    reportFailureDto.cloudId = reqBody.cloudId;
+    return reportFailureDto;
 }
 }  // namespace OHOS::Media::CloudSync

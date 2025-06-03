@@ -98,8 +98,7 @@ std::string OnFileDirtyRecord::ToString() const
 
 bool OnFileDirtyRecordsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel);
-    return true;
+    return IPC::ITypeMediaUtil::UnmarshallingParcelable(this->records, parcel);
 }
 
 bool OnFileDirtyRecordsReqBody::Marshalling(MessageParcel &parcel) const

@@ -32,10 +32,11 @@
 
 namespace OHOS::Media::CloudSync {
 const std::string CloudAlbumDataConvert::recordType_ = "album";
-CloudAlbumDataConvert::CloudAlbumDataConvert(CloudAlbumOperationType type) : type_(type) {}
+CloudAlbumDataConvert::CloudAlbumDataConvert(CloudAlbumOperationType type) : type_(type)
+{}
 
-int32_t CloudAlbumDataConvert::HandleAlbumName(std::map<std::string, MDKRecordField> &map,
-    const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::HandleAlbumName(
+    std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     int32_t albumType = albumData.albumType;
     if (albumType == AlbumType::SOURCE) {
@@ -59,8 +60,8 @@ int32_t CloudAlbumDataConvert::HandleAlbumName(std::map<std::string, MDKRecordFi
 }
 
 /* properties - general */
-int32_t CloudAlbumDataConvert::HandleGeneral(std::map<std::string, MDKRecordField> &map,
-    const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::HandleGeneral(
+    std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     map[PhotoAlbumColumns::ALBUM_TYPE] = MDKRecordField(albumData.albumType);
     map[PhotoAlbumColumns::ALBUM_SUBTYPE] = MDKRecordField(albumData.albumSubtype);
@@ -71,8 +72,8 @@ int32_t CloudAlbumDataConvert::HandleGeneral(std::map<std::string, MDKRecordFiel
     return E_OK;
 }
 
-int32_t CloudAlbumDataConvert::HandleProperties(std::shared_ptr<MDKRecord> &record, std::map<std::string, MDKRecordField> &data,
-    const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::HandleProperties(std::shared_ptr<MDKRecord> &record,
+    std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     std::map<std::string, MDKRecordField> map;
     /* general */
@@ -82,22 +83,22 @@ int32_t CloudAlbumDataConvert::HandleProperties(std::shared_ptr<MDKRecord> &reco
     return E_OK;
 }
 
-int32_t CloudAlbumDataConvert::HandleAlbumLogicType(std::map<std::string, MDKRecordField> &map,
-    const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::HandleAlbumLogicType(
+    std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     map["logicType"] = MDKRecordField(LogicType::PHYSICAL);
     return E_OK;
 }
 
-int32_t CloudAlbumDataConvert::HandleType(std::map<std::string, MDKRecordField> &map,
-    const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::HandleType(
+    std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     map["type"] = MDKRecordField(AlbumType::NORMAL);
     return E_OK;
 }
 
-int32_t CloudAlbumDataConvert::HandleAlbumId(std::map<std::string, MDKRecordField> &map,
-    const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::HandleAlbumId(
+    std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     map["albumId"] = MDKRecordField(albumData.albumId);
     return E_OK;
@@ -106,14 +107,15 @@ int32_t CloudAlbumDataConvert::HandleAlbumId(std::map<std::string, MDKRecordFiel
 int32_t HandleHashCode(const std::string &str) __attribute__((no_sanitize("signed-integer-overflow")))
 {
     int32_t hash = 0;
-    for (uint32_t i  = 0; i < str.length(); i++) {
+    for (uint32_t i = 0; i < str.length(); i++) {
         char c = str.at(i);
         hash = hash * HASH_VLAUE + c;
     }
     return hash;
 }
 
-int32_t CloudAlbumDataConvert::HandleRecordId(std::shared_ptr<MDKRecord> record, const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::HandleRecordId(
+    std::shared_ptr<MDKRecord> record, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     std::map<std::string, MDKRecordField> data;
     record->GetRecordData(data);
@@ -144,8 +146,8 @@ int32_t CloudAlbumDataConvert::HandleRecordId(std::shared_ptr<MDKRecord> record,
     return E_OK;
 }
 
-int32_t CloudAlbumDataConvert::HandlePath(std::map<std::string, MDKRecordField> &map,
-    const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::HandlePath(
+    std::map<std::string, MDKRecordField> &map, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     std::string val = albumData.lpath;
     if (!val.empty()) {
@@ -156,15 +158,16 @@ int32_t CloudAlbumDataConvert::HandlePath(std::map<std::string, MDKRecordField> 
 }
 
 /* record id */
-int32_t CloudAlbumDataConvert::FillRecordId(std::shared_ptr<MDKRecord> record, const CloudMdkRecordPhotoAlbumVo& albumData)
+int32_t CloudAlbumDataConvert::FillRecordId(
+    std::shared_ptr<MDKRecord> record, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     std::string val = albumData.cloudId;
     record->SetRecordId(val);
     return E_OK;
 }
 
-void CloudAlbumDataConvert::HandleEmptyShow(std::shared_ptr<MDKRecord> record, std::map<std::string,
-    MDKRecordField> &data, const CloudMdkRecordPhotoAlbumVo& albumData)
+void CloudAlbumDataConvert::HandleEmptyShow(std::shared_ptr<MDKRecord> record,
+    std::map<std::string, MDKRecordField> &data, const CloudMdkRecordPhotoAlbumVo &albumData)
 {
     if (record->GetRecordId() == DEFAULT_HIDE_ALBUM_CLOUDID) {
         std::map<std::string, MDKRecordField> map = data["properties"];
@@ -174,12 +177,11 @@ void CloudAlbumDataConvert::HandleEmptyShow(std::shared_ptr<MDKRecord> record, s
     }
 }
 
-int32_t CloudAlbumDataConvert::ConvertToDoubleScreenshot(std::shared_ptr<MDKRecord> record,
-    std::map<std::string, MDKRecordField> &data)
+int32_t CloudAlbumDataConvert::ConvertToDoubleScreenshot(
+    std::shared_ptr<MDKRecord> record, std::map<std::string, MDKRecordField> &data)
 {
     std::string lPath;
-    if (data.find("localPath") == data.end() ||
-        data.at("localPath").GetString(lPath) != MDKLocalErrorCode::NO_ERROR) {
+    if (data.find("localPath") == data.end() || data.at("localPath").GetString(lPath) != MDKLocalErrorCode::NO_ERROR) {
         MEDIA_ERR_LOG("ConvertToDoubleScreenshot  lpath error");
         return E_MEDIA_CLOUD_ARGS_INVAILD;
     }

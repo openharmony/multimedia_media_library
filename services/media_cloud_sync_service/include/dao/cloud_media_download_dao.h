@@ -37,12 +37,11 @@ public:
     int32_t UpdateDownloadThmAndLcd(const std::vector<std::string> &cloudIds);
     int32_t GetFileIdFromCloudId(const std::vector<std::string> &cloudIds, std::vector<std::string> &fileIds);
     int32_t QueryDownloadAssetByCloudIds(const std::vector<std::string> &cloudIds, std::vector<PhotosPo> &result);
-    int32_t UpdateDownloadAsset(const bool fixFileType, const bool needSlice, const std::string &path);
+    int32_t UpdateDownloadAsset(const bool fixFileType, const std::string &path);
 
 private:
     NativeRdb::AbsRdbPredicates GetDownloadThmsConditions(const int32_t type);
     int32_t GetFileIdFromUri(const std::string &uri, int32_t &fileUniqueId);
-    void SliceAssetFile(const std::string &path);
 
 private:
     const std::vector<std::string> DOWNLOAD_THUMBNAIL_COLUMNS = {

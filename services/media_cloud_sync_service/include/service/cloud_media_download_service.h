@@ -25,9 +25,10 @@
 #include "photos_po.h"
 #include "download_thumbnail_query_dto.h"
 #include "media_operate_result_dto.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaDownloadService {
+class EXPORT CloudMediaDownloadService {
 public:
     int32_t GetDownloadThmNum(const int32_t type, int32_t &totalNum);
     int32_t GetDownloadThms(const DownloadThumbnailQueryDto &queryDto, std::vector<PhotosDto> &photosDtos);
@@ -40,7 +41,8 @@ public:
 private:
     struct OnDownloadAssetData {
         bool fixFileType;
-        bool needSlice;
+        bool needSliceContent;
+        bool needSliceRaw;
         std::string path;
         int64_t dateModified;
         std::string localPath;
@@ -51,13 +53,18 @@ private:
 private:
     bool IsCloudInsertTaskPriorityHigh();
     // functions for OnDownloadThms API
-    void CreateAstcCloudDownload(const std::vector<std::string> &cloudIds);
     int32_t OnDownloadThm(const std::vector<std::string> &thmVector, std::vector<MediaOperateResultDto> &result);
     int32_t OnDownloadLcd(const std::vector<std::string> &lcdVector, std::vector<MediaOperateResultDto> &result);
     int32_t OnDownloadThmAndLcd(const std::vector<std::string> &bothVector, std::vector<MediaOperateResultDto> &result);
     OnDownloadAssetData GetOnDownloadAssetData(PhotosPo &photosPo);
     void UnlinkAsset(OnDownloadAssetData &assetData);
     void ResetAssetModifyTime(OnDownloadAssetData &assetData);
+    int32_t SliceAssetFile(const std::string &originalFile, const std::string &path,
+        const std::string &videoPath, const std::string &extraDataPath);
+    int32_t SliceAsset(const OnDownloadAssetData &assetData, const PhotosPo &photo);
+    void HandlePhoto(const ORM::PhotosPo &photo, OnDownloadAssetData &assetData);
+    std::string PrintOnDownloadAssetData(const OnDownloadAssetData &assetData);
+    void NotifyDownloadLcd(const std::vector<std::string> &cloudIds);
 
 private:
     enum {

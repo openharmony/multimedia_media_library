@@ -21,9 +21,10 @@
 
 #include "photo_album_po.h"
 #include "cloud_mdkrecord_photo_album_vo.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaAlbumControllerProcessor {
+class EXPORT CloudMediaAlbumControllerProcessor {
 public:
     CloudMdkRecordPhotoAlbumVo ConvertRecordPoToVo(PhotoAlbumPo record);
 };

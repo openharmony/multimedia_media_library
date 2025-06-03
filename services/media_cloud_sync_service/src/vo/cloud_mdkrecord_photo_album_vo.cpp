@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include "media_itypes_utils.h"
+#include "media_log.h"
 
 namespace OHOS::Media::CloudSync {
 bool CloudMdkRecordPhotoAlbumVo::Marshalling(MessageParcel &parcel) const
@@ -91,9 +92,7 @@ bool CloudMdkRecordPhotoAlbumRespBody::Marshalling(MessageParcel &parcel) const
     if (baseAlbumUploadVo.size() == 0) {
         return false;
     }
-    if (!parcel.WriteInt32(static_cast<int32_t>(baseAlbumUploadVo.size()))) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET(parcel.WriteInt32(static_cast<int32_t>(baseAlbumUploadVo.size())), false);
     for (const auto &entry : baseAlbumUploadVo) {
         if (!entry.Marshalling(parcel)) {
             return false;
@@ -120,9 +119,7 @@ bool CloudMdkRecordPhotoAlbumRespBody::GetRecords(std::vector<CloudMdkRecordPhot
     for (size_t i = 0; i < size; i++) {
         CloudMdkRecordPhotoAlbumVo nodeObj;
         isValid = nodeObj.Unmarshalling(parcel);
-        if (!isValid) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET(isValid, false);
         val.emplace_back(nodeObj);
     }
     return true;

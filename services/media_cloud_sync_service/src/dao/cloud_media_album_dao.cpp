@@ -196,8 +196,8 @@ int32_t CloudMediaAlbumDao::InsertCloudByLPath(PhotoAlbumDto &record)
     if (rowCount == 0) {
         return InsertAlbums(record);
     }
-    int albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
     resultSet->GoToNextRow();
+    int albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
     if (albumId < 0) {
         return E_RDB;
     }
@@ -207,7 +207,6 @@ int32_t CloudMediaAlbumDao::InsertCloudByLPath(PhotoAlbumDto &record)
 int32_t CloudMediaAlbumDao::InsertCloudByCloudId(PhotoAlbumDto &record)
 {
     MEDIA_INFO_LOG("insert of record %{public}s", record.cloudId.c_str());
-    int32_t albumId;
     if (IsConflict(record)) {
         int32_t ret = MergeAlbumOnConflict(record);
         if (ret != E_OK) {
@@ -331,7 +330,7 @@ int32_t CloudMediaAlbumDao::OnDeleteAlbums(std::vector<std::string> &failedAlbum
         if (cloudId.empty()) {
             continue;
         }
-        MEDIA_INFO_LOG("OnDeleteAlbums Notify Delete: %{public}s", cloudId.c_str());
+        MEDIA_DEBUG_LOG("OnDeleteAlbums Notify Delete: %{public}s", cloudId.c_str());
         MediaGallerySyncNotify::GetInstance().AddNotify(
             PhotoAlbumColumns::ALBUM_GALLERY_CLOUD_URI_PREFIX, ChangeType::DELETE, cloudId);
     }
@@ -359,7 +358,7 @@ int32_t CloudMediaAlbumDao::OnCreateRecords(const std::vector<PhotoAlbumDto> &al
         std::vector<std::string> whereArgs = {album.cloudId};
         int32_t changedRows = -1;
         int32_t ret = rdbStore->Update(changedRows, PhotoAlbumColumns::TABLE, valuesBucket, whereClause, whereArgs);
-        MEDIA_INFO_LOG("OnCreateRecords changedRows %{public}d", changedRows);
+        MEDIA_DEBUG_LOG("OnCreateRecords changedRows %{public}d", changedRows);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("OnCreateRecords Failed to UpdateAlbumAfterUpload.");
             InsertAlbumCreateFailedRecord(album.cloudId);
@@ -403,7 +402,7 @@ int32_t CloudMediaAlbumDao::QueryConflict(PhotoAlbumDto &record, std::shared_ptr
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_RDB_STORE_NULL, "Query Album Conflict Failed to get rdbStore.");
     std::string albumName = record.albumName;
-    ;
+
     if (albumName.empty()) {
         MEDIA_ERR_LOG("no album name in record");
         return E_INVAL_ARG;
@@ -543,9 +542,8 @@ int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record)
         values.PutString(PhotoAlbumColumns::ALBUM_LPATH, record.lPath);
     }
     int32_t ret = SetSourceValues(record, values);
-    if (ret != E_OK) {
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "SetSourceValues failed");
+
     if (!record.bundleName.empty()) {
         values.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, record.bundleName);
     }
@@ -561,19 +559,7 @@ int32_t CloudMediaAlbumDao::InsertAlbums(PhotoAlbumDto &record)
     /* update if a album with the same name exists? */
     int64_t rowId;
     ret = rdbStore->Insert(rowId, PhotoAlbumColumns::TABLE, values);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Insert pull record failed, rdb ret = %{public}d", ret);
-        return E_RDB;
-    }
-    // if (values.HasColumn(PhotoAlbumColumns::ALBUM_BUNDLE_NAME)) {
-    //     NativeRdb::ValueObject obj;
-    //     values.GetObject(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, obj);
-    //     std::string b;
-    //     obj.GetString(b);
-    //     MEDIA_INFO_LOG("InsertAlbums bundle : %{public}s", b.c_str());
-    // } else {
-    //     MEDIA_INFO_LOG("InsertAlbums no bundle");
-    // }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_RDB, "Insert pull record failed, rdb ret = %{public}d", ret);
     return E_OK;
 }
 
@@ -664,15 +650,6 @@ int32_t CloudMediaAlbumDao::QueryDeleteAlbums(int32_t size, std::vector<PhotoAlb
     /* query */
     auto resultSet = rdbStore->Query(predicates, QUERY_ALBUM_COLUMNS);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "resultset is null");
-    int32_t rowCount = 0;
-    int32_t ret = resultSet->GetRowCount(rowCount);
-    MEDIA_INFO_LOG("QueryDeleteAlbums count %{public}d", rowCount);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "QueryDeleteAlbums get count error.");
-    if (rowCount == 0) {
-        MEDIA_ERR_LOG("QueryDeleteAlbums count is zero");
-        resultSet->Close();
-        return E_QUERY_CONTENT_IS_EMPTY;
-    }
     resultList = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(resultSet).ReadRecords();
     resultSet->Close();
     return E_OK;
@@ -699,7 +676,7 @@ int32_t CloudMediaAlbumDao::GetDeletedRecordsAlbum(int32_t size, std::vector<Pho
             if (ResetAlbumDirty(rdbStore, albumCloudId, DirtyType::TYPE_NEW) != E_OK) {
                 InsertAlbumModifyFailedRecord(albumCloudId);
             } else {
-                MEDIA_INFO_LOG("ResetAlbumDirty ok albumCloudId: %{public}s", albumCloudId.c_str());
+                MEDIA_DEBUG_LOG("ResetAlbumDirty ok albumCloudId: %{public}s", albumCloudId.c_str());
             }
             continue;
         }
@@ -732,15 +709,7 @@ int32_t CloudMediaAlbumDao::GetMetaModifiedAlbum(int32_t size, std::vector<Photo
     /* query */
     auto resultSet = rdbStore->Query(predicates, QUERY_ALBUM_COLUMNS);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "resultset is null");
-    int32_t rowCount = 0;
-    int32_t ret = resultSet->GetRowCount(rowCount);
-    if (rowCount == 0) {
-        MEDIA_ERR_LOG("GetMetaModifiedAlbum get empty");
-        return E_QUERY_CONTENT_IS_EMPTY;
-    }
     /* results to records */
-    cloudRecordPoList.reserve(rowCount);
-    CHECK_AND_RETURN_RET_LOG(ret >= 0, E_ERR, "GetMetaModifiedAlbum Failed to query.");
     std::vector<PhotoAlbumPo> tempList = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(resultSet).ReadRecords();
     resultSet->Close();
     std::unordered_map<std::string, MediaAlbumPluginRowData> writeListMap = QueryWhiteList();
@@ -790,14 +759,6 @@ int32_t CloudMediaAlbumDao::QueryCreatedAlbums(int32_t size, std::vector<PhotoAl
 
     auto resultSet = rdbStore->Query(createPredicates, QUERY_ALBUM_COLUMNS);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_RESULT_SET_NULL, "resultset is null");
-    int32_t rowCount = 0;
-    int32_t ret = resultSet->GetRowCount(rowCount);
-    MEDIA_INFO_LOG("QueryCreatedAlbums rowCount: %{public}d", rowCount);
-    CHECK_AND_RETURN_RET_LOG(ret == NativeRdb::E_OK, E_ERR, "QueryCreatedAlbums Failed to query.");
-    if (rowCount == 0) {
-        resultSet->Close();
-        return E_QUERY_CONTENT_IS_EMPTY;
-    }
     resultList = ResultSetReader<PhotoAlbumPoWriter, PhotoAlbumPo>(resultSet).ReadRecords();
     resultSet->Close();
     return E_OK;
@@ -817,13 +778,13 @@ int32_t CloudMediaAlbumDao::GetCreatedAlbum(int32_t size, std::vector<PhotoAlbum
     int32_t albumId;
     std::unordered_map<std::string, MediaAlbumPluginRowData> writeListMap = QueryWhiteList();
     for (auto &record : tempList) {
-        int32_t ret = CloudMediaSyncUtils::GenerateCloudIdWithHash(record);
         RelateToAlbumPluginInfo(record, writeListMap);
+        CloudMediaSyncUtils::GenerateCloudIdWithHash(record);
         cloudId = record.cloudId.value_or("");
         albumId = record.albumId.value_or(-1);
-        MEDIA_INFO_LOG("GetCreatedAlbum Record: %{public}s", record.ToString().c_str());
+        MEDIA_DEBUG_LOG("GetCreatedAlbum Record: %{public}s", record.ToString().c_str());
         cloudRecordPoList.emplace_back(move(record));
-        if (ret == E_OK && !cloudId.empty() && albumId >= 0) {
+        if (!cloudId.empty() && albumId > 0) {
             NativeRdb::AbsRdbPredicates updatePredicates = NativeRdb::AbsRdbPredicates(PhotoAlbumColumns::TABLE);
             updatePredicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
             NativeRdb::ValuesBucket values;
@@ -851,8 +812,10 @@ void CloudMediaAlbumDao::RelateToAlbumPluginInfo(
         // CloudAlbumDataConvert::HandleRecordId 先cloudId然后return,导致isInWhiteList无效,
         // 系统相册cloudId没有使用正确的WriteListMap中的cloudId
         record.isInWhiteList = true;
-        record.cloudId = writeListMap.at(lpath).cloudId;
-        record.albumPluginCloudId = writeListMap.at(lpath).cloudId;
+        if (!writeListMap.at(lpath).cloudId.empty()) {
+            record.cloudId = writeListMap.at(lpath).cloudId;
+            record.albumPluginCloudId = writeListMap.at(lpath).cloudId;
+        }
         record.albumNameEn = writeListMap.at(lpath).albumNameEn;
         record.dualAlbumName = writeListMap.at(lpath).dualAlbumName;
         record.priority = writeListMap.at(lpath).priority;
@@ -911,9 +874,9 @@ int32_t CloudMediaAlbumDao::DeleteCloudAlbum(const std::string &field, const std
         MEDIA_ERR_LOG("delete in rdb failed, ret: %{public}d", ret);
         return E_RDB;
     } else {
-        MEDIA_ERR_LOG(" FixData: update success, changerow is %{public}d", changedRows);
+        MEDIA_INFO_LOG(" FixData: update success, changerow is %{public}d", changedRows);
+        return E_OK;
     }
-    return E_OK;
 }
 
 void CloudMediaAlbumDao::InsertAlbumModifyFailedRecord(const std::string &cloudId)
@@ -1020,7 +983,6 @@ std::unordered_map<std::string, std::string> CloudMediaAlbumDao::GetLocalAlbumMa
         ret,
         rowCount);
     std::string lpath = "";
-    int32_t priority = 1;
     for (int rowId = 0; rowId < rowCount; ++rowId) {
         ret = resultSet->GoToNextRow();
         if (ret != NativeRdb::E_OK) {

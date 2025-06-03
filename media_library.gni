@@ -38,10 +38,11 @@ MEDIALIB_ACCESS_TOKEN_PATH = "//base/security/access_token"
 MEDIALIB_CLOUD_ENHANCEMENT_SERVICE_PATH =
     "//vendor/huawei/domains/device_cloud_gateway/media_cloud_enhance_service"
 MEDIALIB_BUSINESS_PATH = "${MEDIALIB_ROOT_PATH}/services"
+MEDIALIB_CLOUD_SYNC_CLIENT = "${MEDIALIB_INNERKITS_PATH}/media_library_cloud_sync"
 
 declare_args() {
   media_library_link_opt = false
-  resourceschedule_device_standby = true
+    resourceschedule_device_standby = true
   if (defined(global_parts_info) &&
       !defined(global_parts_info.resourceschedule_device_standby)) {
     resourceschedule_device_standby = false

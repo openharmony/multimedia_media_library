@@ -39,22 +39,11 @@
 #include "cloud_media_dao_const.h"
 #include "media_gallery_sync_notify.h"
 #include "cloud_media_sync_const.h"
+#include "cloud_media_operation_code.h"
+#include "cloud_media_dfx_service.h"
 
 using ChangeType = OHOS::AAFwk::ChangeInfo::ChangeType;
 namespace OHOS::Media::CloudSync {
-static void NotifyDataChange(ChangeType changeType, int32_t fileId, const std::string &dateAdded)
-{
-    if (changeType != ChangeType::INVAILD) {
-        std::string notifyUri =
-            PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX +
-            to_string(fileId);  // PHOTO_GALLERY_CLOUD_URI_PREFIX = "file://cloudsync/gallery/Photo/";
-        if (changeType == ChangeType::DELETE) {
-            notifyUri += '/' + dateAdded;
-        }
-        MediaGallerySyncNotify::GetInstance().TryNotify(notifyUri, changeType, to_string(fileId));
-    }
-}
-
 int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, std::set<std::string> &refreshAlbums)
 {
     std::string cloudId = data.cloudId;
@@ -68,12 +57,22 @@ int32_t CloudMediaPhotosService::PullDelete(const CloudMediaPullDataDto &data, s
     }
 
     if (CloudMediaFileUtils::LocalWriteOpen(localPath)) {
-        return this->photosDao_.SetRetry(cloudId);
+        int32_t ret = this->photosDao_.SetRetry(cloudId);
+        if (ret != E_OK) {
+            std::string errMsg = "update retry flag failed, ret = " + to_string(ret);
+            REPORT_SYNC_FAULT({FaultScenario::CLOUD_SYNC_PULL, FaultType::MODIFY_DATABASE, ret, errMsg});
+        }
+        return ret;
     }
     int32_t ret = this->photosDao_.DeleteLocalByCloudId(cloudId);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("delete in rdb failed, ret:%{public}d", ret);
-        return this->photosDao_.SetRetry(cloudId);
+        int32_t ret = this->photosDao_.SetRetry(cloudId);
+        if (ret != E_OK) {
+            std::string errMsg = "update retry flag failed, ret = " + to_string(ret);
+            REPORT_SYNC_FAULT({FaultScenario::CLOUD_SYNC_PULL, FaultType::MODIFY_DATABASE, ret, errMsg});
+        }
+        return ret;
     }
     if (!cloudId.empty()) {
         std::string notifyUri =
@@ -136,29 +135,57 @@ void CloudMediaPhotosService::ExtractEditDataCamera(const CloudMediaPullDataDto 
     }
 }
 
+int32_t CloudMediaPhotosService::ClearLocalData(const CloudMediaPullDataDto &pullData,
+    std::vector<PhotosDto> &fdirtyData)
+{
+    PhotosDto dto;
+    dto.cloudId = pullData.cloudId;
+    if (!CloudMediaFileUtils::GetParentPathAndFilename(pullData.localPath, dto.path, dto.displayName)) {
+        MEDIA_WARN_LOG("Failed to get parent path and real filename.");
+    }
+    dto.size = pullData.basicSize;
+    dto.mediaType = pullData.localMediaType;
+    dto.modifiedTime = pullData.modifiedTime;
+    dto.originalCloudId = pullData.localOriginalAssetCloudId;
+    CloudMediaSyncUtils::FillPhotosDto(
+        dto, pullData.localPath, pullData.localOrientation, pullData.localThumbState);
+    fdirtyData.emplace_back(dto);
+    bool isLocal = CloudMediaSyncUtils::FileIsLocal(pullData.localPosition);
+    if (isLocal) {
+        CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
+        CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
+        CloudMediaSyncUtils::RemoveMovingPhoto(pullData.localPath);
+        if (pullData.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+            CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);
+        }
+    }
+    return E_OK;
+}
+
 int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullData, std::set<std::string> &refreshAlbums,
     std::vector<PhotosDto> &fdirtyData, std::vector<int32_t> &stats)
 {
-    // RETURN_ON_ERR(IsStop());
     std::string cloudId = pullData.cloudId;
     MEDIA_INFO_LOG("Update cloudId: %{public}s.", cloudId.c_str());
     CHECK_AND_RETURN_RET_INFO_LOG(!CloudMediaSyncUtils::IsLocalDirty(pullData.localDirty, false),
         E_OK,
         "local record dirty, ignore cloud update");
-
     bool mtimeChanged = false;
     int32_t ret = IsMtimeChanged(pullData, mtimeChanged);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("cloudId: %{public}s get mtime changed failed, ret: %{public}d.", cloudId.c_str(), ret);
     }
-
     bool isLocal = CloudMediaSyncUtils::FileIsLocal(pullData.localPosition);
     if (isLocal && mtimeChanged) {
         if (CloudMediaFileUtils::LocalWriteOpen(pullData.localPath)) {
-            return this->photosDao_.SetRetry(cloudId);
+            ret = this->photosDao_.SetRetry(cloudId);
+            if (ret != E_OK) {
+                std::string errMsg = "update retry flag failed, ret = " + to_string(ret);
+                REPORT_SYNC_FAULT({FaultScenario::CLOUD_SYNC_PULL, FaultType::MODIFY_DATABASE, ret, errMsg});
+            }
+            return ret;
         }
     }
-
     // UpdateRecordToDatabase更新成功，stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT]会增加
     int32_t updateCount = stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT];
     ret = this->photosDao_.UpdateRecordToDatabase(pullData, isLocal, mtimeChanged, refreshAlbums, stats);
@@ -166,8 +193,6 @@ int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullDat
         MEDIA_ERR_LOG("PullUpdate database Error cloudId: %{public}s, ret: %{public}d.", cloudId.c_str(), ret);
         return ret;
     }
-    // Notify(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX + std::to_string(pullData.localFileId) + "/" +
-    //     pullData.localDateAdded, NotifyType::NOTIFY_UPDATE);
     std::string notifyUri = PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX + std::to_string(pullData.localFileId);
     MediaGallerySyncNotify::GetInstance().TryNotify(
         notifyUri, ChangeType::UPDATE, std::to_string(pullData.localFileId));
@@ -176,49 +201,9 @@ int32_t CloudMediaPhotosService::PullUpdate(const CloudMediaPullDataDto &pullDat
     ExtractEditDataCamera(pullData);
 
     if (mtimeChanged && (updateCount != stats[StatsIndex::FILE_MODIFY_RECORDS_COUNT])) {
-        PhotosDto dto;
-        dto.cloudId = cloudId;
-        if (!CloudMediaFileUtils::GetParentPathAndFilename(pullData.localPath, dto.path, dto.displayName)) {
-            MEDIA_WARN_LOG("Failed to get parent path and real filename.");
-        }
-        dto.size = pullData.localSize;
-        dto.mediaType = pullData.localMediaType;
-        dto.modifiedTime = pullData.modifiedTime;
-        dto.originalCloudId = pullData.localOriginalAssetCloudId;
-        CloudMediaSyncUtils::FillPhotosDto(
-            dto, pullData.localPath, pullData.localOrientation, pullData.localThumbState);
-        fdirtyData.emplace_back(dto);
-        if (isLocal) {
-            CloudMediaSyncUtils::RemoveThmParentPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
-            CloudMediaSyncUtils::RemoveMetaDataPath(pullData.localPath, PhotoColumn::FILES_CLOUD_DIR);
-            CloudMediaSyncUtils::RemoveMovingPhoto(pullData.localPath);
-            if (pullData.attributesMediaType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
-                CloudMediaSyncUtils::InvalidVideoCache(pullData.localPath);
-            }
-        }
+        this->ClearLocalData(pullData, fdirtyData);
     }
     return E_OK;
-}
-
-void CloudMediaPhotosService::ConvertRotateValue(int32_t exifRotateValue, int32_t &outRotateValue)
-{
-    switch (exifRotateValue) {
-        case ORIENTATION_NORMAL:
-            outRotateValue = ROTATE_ANGLE_0;
-            break;
-        case ORIENTATION_ROTATE_90:
-            outRotateValue = ROTATE_ANGLE_90;
-            break;
-        case ORIENTATION_ROTATE_180:
-            outRotateValue = ROTATE_ANGLE_180;
-            break;
-        case ORIENTATION_ROTATE_270:
-            outRotateValue = ROTATE_ANGLE_270;
-            break;
-        default:
-            outRotateValue = ROTATE_ANGLE_0;
-            break;
-    }
 }
 
 int32_t CloudMediaPhotosService::GetCloudKeyData(const CloudMediaPullDataDto &pullData, KeyData &keyData)
@@ -239,10 +224,8 @@ int32_t CloudMediaPhotosService::GetCloudKeyData(const CloudMediaPullDataDto &pu
     if (pullData.propertiesRotate != -1) {
         exifRotateValue = pullData.propertiesRotate;
     }
-
+    keyData.exifRotateValue = exifRotateValue;
     keyData.lPath = CloudMediaSyncUtils::GetLpath(pullData);
-    ConvertRotateValue(exifRotateValue, keyData.exifRotateValue);
-
     int32_t fileType = pullData.basicFileType;
     CHECK_AND_RETURN_RET_LOG(fileType != -1, E_CLOUDSYNC_INVAL_ARG, "Cannot find basic::fileType");
 
@@ -275,7 +258,8 @@ int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullDa
         cloudStd = true;
     }
 
-    int32_t ret = this->photosDao_.ConflictDataMerge(pullData, cloudStd, cloudMapIds, refreshAlbums);
+    int32_t ret =
+        this->photosDao_.ConflictDataMerge(pullData, localKeyData.filePath, cloudStd, cloudMapIds, refreshAlbums);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Conflict dataMerge fail");
         return ret;
@@ -285,10 +269,41 @@ int32_t CloudMediaPhotosService::DoDataMerge(const CloudMediaPullDataDto &pullDa
     if (cloudStd && localKeyData.createTime != cloudKeyData.createTime) {
         std::string notifyUri = PhotoColumn::PHOTO_CLOUD_URI_PREFIX + to_string(pullData.attributesFileId) + '/' +
                                 to_string(localKeyData.createTime) + '/' + to_string(cloudKeyData.createTime);
-        // Notify(notifyUri, static_cast<NotifyType>(ExtraChangeType::PHOTO_TIME_UPDATE));
         MediaGallerySyncNotify::GetInstance().TryNotify(notifyUri,
             static_cast<ChangeType>(ExtraChangeType::PHOTO_TIME_UPDATE),
             to_string(pullData.attributesFileId));
+    }
+    return E_OK;
+}
+
+int32_t CloudMediaPhotosService::PullRecordsDataMerge(std::vector<CloudMediaPullDataDto> &allPullDatas,
+    const KeyData &localKeyData, std::map<std::string, KeyData> &mergeDataMap, DataMergeResult &mergeResult)
+{
+    KeyData cloudKeyData;
+    std::set<std::string> refreshAlbums;
+    for (auto mergeData = allPullDatas.begin(); mergeData != allPullDatas.end();) {
+        std::string id = mergeData->cloudId;
+        if (mergeDataMap.find(id) == mergeDataMap.end()) {
+            MEDIA_INFO_LOG("PullRecordsConflictProc GetLocalKey Data failed: %{public}s", id.c_str());
+            ++mergeData;
+            continue;
+        }
+        cloudKeyData = mergeDataMap[id];
+        auto isMatchConflict = this->photosDao_.JudgeConflict(*mergeData, localKeyData, cloudKeyData);
+        if (isMatchConflict) {
+            MEDIA_INFO_LOG("PullRecordsConflictProc merge record, recordId:%{public}s", id.c_str());
+            mergeResult.mergeCount = 1;
+            int32_t ret = DoDataMerge(*mergeData, localKeyData, cloudKeyData, refreshAlbums);
+            CHECK_AND_EXECUTE(ret == E_OK, mergeResult.failCloudId = mergeData->cloudId);
+            mergeData = allPullDatas.erase(mergeData);  // 把合一数据剔除，剩下的就是纯新增数据
+            break;
+        } else {
+            ++mergeData;
+        }
+    }
+    if (!refreshAlbums.empty()) {
+        std::set<std::string>::iterator it = refreshAlbums.begin();
+        mergeResult.refreshAlbumId = *it;
     }
     return E_OK;
 }
@@ -310,30 +325,12 @@ int32_t CloudMediaPhotosService::PullRecordsConflictProc(std::vector<CloudMediaP
     KeyData localKeyData;
     while (resultSet->GoToNextRow() == 0) {
         this->photosDao_.GetLocalKeyData(localKeyData, resultSet);
-
-        KeyData cloudKeyData;
-        for (auto mergeData = allPullDatas.begin(); mergeData != allPullDatas.end();) {
-            string id = mergeData->cloudId;
-            if (mergeDataMap.find(id) == mergeDataMap.end()) {
-                MEDIA_INFO_LOG("PullRecordsConflictProc GetLocalKey Data failed: %{public}s", id.c_str());
-                ++mergeData;
-                continue;
-            }
-            cloudKeyData = mergeDataMap[id];
-            auto isMatchConflict = this->photosDao_.JudgeConflict(*mergeData, localKeyData, cloudKeyData);
-            if (isMatchConflict) {
-                MEDIA_INFO_LOG("PullRecordsConflictProc merge record, recordId:%{public}s", id.c_str());
-                stats[StatsIndex::MERGE_RECORDS_COUNT]++;
-                int32_t ret = DoDataMerge(*mergeData, localKeyData, cloudKeyData, refreshAlbums);
-                if (ret != E_OK) {
-                    failedRecords.emplace_back(mergeData->cloudId);
-                }
-                mergeData = allPullDatas.erase(mergeData);  // 把合一数据剔除，剩下的就是纯新增数据
-                break;
-            } else {
-                ++mergeData;
-            }
-        }
+        DataMergeResult mergeResult;
+        this->PullRecordsDataMerge(allPullDatas, localKeyData, mergeDataMap, mergeResult);
+        CHECK_AND_EXECUTE(
+            mergeResult.mergeCount == 0, stats[StatsIndex::MERGE_RECORDS_COUNT] += mergeResult.mergeCount);
+        CHECK_AND_EXECUTE(mergeResult.failCloudId.empty(), failedRecords.emplace_back(mergeResult.failCloudId));
+        CHECK_AND_EXECUTE(mergeResult.refreshAlbumId.empty(), refreshAlbums.emplace(mergeResult.refreshAlbumId));
     }
     MEDIA_INFO_LOG("PullRecordsConflictProc end");
     return E_OK;
@@ -354,8 +351,7 @@ int32_t CloudMediaPhotosService::PullInsert(
     std::vector<CloudMediaPullDataDto> allPullDatas = pullDatas;
     PullRecordsConflictProc(allPullDatas, refreshAlbums, stats, failedRecords);
     for (auto insertData : allPullDatas) {
-        // RETURN_ON_ERR(IsStop());
-        MEDIA_INFO_LOG("PullInsert insert of record %{public}s", insertData.cloudId.c_str());
+        MEDIA_DEBUG_LOG("PullInsert insert of record %{public}s", insertData.cloudId.c_str());
         ExtractEditDataCamera(insertData);
         ret = this->photosDao_.GetInsertParams(
             insertData, recordAnalysisAlbumMaps, recordAlbumMaps, refreshAlbums, insertFiles);
@@ -365,9 +361,6 @@ int32_t CloudMediaPhotosService::PullInsert(
             continue;
         }
     }
-    /*
-    MetaFileMgr::GetInstance().ClearAll();
-    */
     MEDIA_INFO_LOG("PullInsert insert %{public}zu, update %{public}d, delete %{public}d, map %{public}zu",
         insertFiles.size(),
         stats[StatsIndex::META_MODIFY_RECORDS_COUNT],
@@ -407,10 +400,23 @@ void CloudMediaPhotosService::NotifyPhotoInserted(const std::vector<NativeRdb::V
 void CloudMediaPhotosService::Notify(const std::string &uri, NotifyType type)
 {
     auto watcher = MediaLibraryNotify::GetInstance();
-    if (watcher == nullptr) {
-        return;
-    }
+    CHECK_AND_RETURN_INFO_LOG(watcher != nullptr, "watcher is nullptr");
     watcher->Notify(uri, type);
+}
+
+int32_t CloudMediaPhotosService::UpdateMetaStat(const std::vector<NativeRdb::ValuesBucket> &insertFiles,
+    const std::vector<CloudMediaPullDataDto> &allPullDatas, const uint64_t dataFail)
+{
+    if (insertFiles.size() != allPullDatas.size()) {
+        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_ERROR_RDB, allPullDatas.size() - insertFiles.size());
+    }
+    if (!insertFiles.empty()) {
+        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_SUCCESS, insertFiles.size(), META_DL_INSERT);
+    }
+    if (dataFail > 0) {
+        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_ERROR_DATA, dataFail);
+    }
+    return E_OK;
 }
 
 int32_t CloudMediaPhotosService::CreateEntry(const std::vector<CloudMediaPullDataDto> &pullDatas,
@@ -433,7 +439,7 @@ int32_t CloudMediaPhotosService::CreateEntry(const std::vector<CloudMediaPullDat
         uniqueId = 0;
     }
     for (auto insertData : allPullDatas) {
-        MEDIA_INFO_LOG("CreateEntry insert of record %{public}s", insertData.cloudId.c_str());
+        MEDIA_DEBUG_LOG("CreateEntry insert of record %{public}s", insertData.cloudId.c_str());
         uniqueId++;
         int32_t mediaType =
             (insertData.basicFileType == FILE_TYPE_VIDEO) ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
@@ -462,14 +468,10 @@ int32_t CloudMediaPhotosService::CreateEntry(const std::vector<CloudMediaPullDat
         dto.modifiedTime = insertData.attributesEditedTimeMs;
         // new data 不更新 originalCloudId (无)
         CloudMediaSyncUtils::FillPhotosDto(dto, insertData);
-        MEDIA_INFO_LOG("CreateEntry NewData: %{public}s", dto.ToString().c_str());
+        MEDIA_DEBUG_LOG("CreateEntry NewData: %{public}s", dto.ToString().c_str());
         newData.emplace_back(dto);
     }
-    MEDIA_INFO_LOG("CreateEntry insert %{public}zu, update %{public}d, delete %{public}d, map %{public}zu",
-        insertFiles.size(),
-        stats[StatsIndex::META_MODIFY_RECORDS_COUNT],
-        stats[StatsIndex::DELETE_RECORDS_COUNT],
-        recordAlbumMaps.size());
+    this->UpdateMetaStat(insertFiles, allPullDatas, dataFail);
     return E_OK;
 }
 
@@ -480,32 +482,23 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
     std::set<std::string> refreshAlbums;
     std::vector<CloudMediaPullDataDto> insertPullDatas;
     uint64_t rdbFail = 0;
-    uint64_t dataFail = 0;
-    uint64_t successDelete = 0;
-    uint64_t successUpdate = 0;
-    int32_t deleteCount = 0;
-    int32_t updateCount = 0;
     int32_t ret = E_OK;
     for (auto &cloudId : cloudIds) {
-        // RETURN_ON_ERR(IsStop());
-        int32_t fileId = 0;
-        std::string dateAdded;
         ChangeType changeType = ChangeType::INVAILD;
 
         CloudMediaPullDataDto pullData = cloudIdRelativeMap.at(cloudId);
-        MEDIA_ERR_LOG("HandleRecord pullData: %{public}s", pullData.ToString().c_str());
+        std::string dateAdded = pullData.localDateAdded;
+        MEDIA_INFO_LOG("HandleRecord pullData: %{public}s", pullData.ToString().c_str());
         if (pullData.localPath.empty() && !pullData.basicIsDelete) {
             insertPullDatas.emplace_back(pullData);
-            stats[StatsIndex::NEW_RECORDS_COUNT]++;
+            stats[StatsIndex::NEW_RECORDS_COUNT]++;     // crash, stats的长度组要手动设置
         } else if (!pullData.localPath.empty()) {
             if (pullData.basicIsDelete) {
                 ret = PullDelete(pullData, refreshAlbums);
-                deleteCount++;
                 changeType = ChangeType::DELETE;
                 stats[StatsIndex::DELETE_RECORDS_COUNT]++;
             } else {
                 ret = PullUpdate(pullData, refreshAlbums, fdirtyData, stats);
-                updateCount++;
                 changeType = ChangeType::UPDATE;
             }
         }
@@ -520,35 +513,14 @@ int32_t CloudMediaPhotosService::HandleRecord(const std::vector<std::string> &cl
                 continue;
             }
             /* might need to specifiy which type error */
-            dataFail++;
             failedRecords.emplace_back(pullData.cloudId);
             ret = E_OK;
-        } else if (changeType != ChangeType::INSERT && changeType != ChangeType::INVAILD) {
-            if (cloudIdRelativeMap.at(cloudId).basicIsDelete) {
-                successDelete++;
-            } else {
-                successUpdate++;
-            }
         }
-        NotifyDataChange(changeType, fileId, dateAdded);
     }
-    /*
-    大数据打点
-    GetDfxHandler()->InsertRecordtoDB(valuesList);
-    UpdateMetaStat(INDEX_DL_META_SUCCESS, successDelete, META_DL_DELETE);
-    UpdateMetaStat(INDEX_DL_META_SUCCESS, successUpdate, META_DL_UPDATE);
-    UpdateMetaStat(INDEX_DL_META_ERROR_RDB, rdbFail);
-    UpdateMetaStat(INDEX_DL_META_ERROR_DATA, dataFail);
-    */
+    CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_ERROR_RDB, rdbFail);
     ret = CreateEntry(insertPullDatas, refreshAlbums, newData, stats, failedRecords);
     this->photosDao_.UpdateAlbumInternal(refreshAlbums);
     MediaGallerySyncNotify::GetInstance().FinalNotify();
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, rdbFail: %{public}" PRId64, ret, rdbFail);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, dataFail: %{public}" PRId64, ret, dataFail);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, successDelete: %{public}" PRId64, ret, successDelete);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, successUpdate: %{public}" PRId64, ret, successUpdate);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, deleteCount: %{public}d", ret, deleteCount);
-    MEDIA_ERR_LOG("HandleRecord ret: %{public}d, updateCount: %{public}d", ret, updateCount);
     return ret;
 }
 
@@ -575,11 +547,11 @@ int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &
 {
     MEDIA_INFO_LOG("OnFetchRecords: %{public}d.", static_cast<int32_t>(cloudIds.size()));
 
-    // std::lock_guard<std::mutex> lock(updateDBMutex_);
     std::vector<PhotosPo> photos;
     int32_t ret = this->commonDao_.QueryLocalByCloudId(cloudIds, PULL_QUERY_COLUMNS, photos);
     if (ret != E_OK) {
         /* 打点 UpdateMetaStat(INDEX_DL_META_ERROR_RDB, recordIds.size());  */
+        CloudMediaDfxService::UpdateMetaStat(INDEX_DL_META_ERROR_RDB, cloudIds.size() - photos.size());
         MEDIA_ERR_LOG("OnFetchRecords query error.");
         return E_CLOUDSYNC_RDB_QUERY_FAILED;
     }
@@ -604,16 +576,16 @@ int32_t CloudMediaPhotosService::OnFetchRecords(const std::vector<std::string> &
             pullData.localDateModified = std::to_string(photo.dateModified.value_or(-1));
             pullData.localDirty = photo.dirty.value_or(-1);
             pullData.localPosition = photo.position.value_or(-1);
-            pullData.localOwnerAlbumId = photo.ownerAlbumId.value_or(-1);
+            pullData.localOwnerAlbumId = std::to_string(photo.ownerAlbumId.value_or(-1));
             pullData.localOrientation = photo.orientation.value_or(-1);
             pullData.localThumbState = photo.thumbStatus.value_or(-1);
             pullData.modifiedTime = photo.dateModified.value_or(-1);
-            pullData.dateTaken =  photo.dateTaken.value_or(0);
+            pullData.dateTaken = photo.dateTaken.value_or(0);
             pullData.localOriginalAssetCloudId = photo.originalAssetCloudId.value_or("");
             pullData.cloudId = cloudId;
 
             cloudIdRelativeMap[cloudId] = pullData;
-            MEDIA_INFO_LOG("OnFetchRecords CloudMediaPullData: %{public}s.", pullData.ToString().c_str());
+            MEDIA_DEBUG_LOG("OnFetchRecords CloudMediaPullData: %{public}s.", pullData.ToString().c_str());
         }
         if (!found) {
             MEDIA_WARN_LOG("OnFetchRecords Record need insert cloudId: %{public}s.", it->first.c_str());
@@ -639,6 +611,10 @@ int32_t CloudMediaPhotosService::GetRetryRecords(std::vector<std::string> &cloud
                    "ret: %{public}d, size: %{public}zu",
         ret,
         cloudIds.size());
+    if (ret != E_OK) {
+        std::string errMsg = "gallery data syncer pull file err";
+        REPORT_SYNC_FAULT({FaultScenario::CLOUD_SYNC_PULL, FaultType::QUERY_DATABASE, ret, errMsg});
+    }
     return ret;
 }
 
@@ -705,22 +681,18 @@ int32_t CloudMediaPhotosService::OnCreateRecords(std::vector<PhotosDto> &records
 {
     MEDIA_ERR_LOG("enter OnCreateRecords");
     std::unordered_map<std::string, LocalInfo> localMap;
-    uint64_t success = 0;
-    uint64_t failure = 0;
 
     int32_t ret = this->photosDao_.GetPhotoLocalInfo(records, localMap, PhotoColumn::MEDIA_ID);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("OnCreateRecords get local match info err %{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "OnCreateRecords get local match info err %{public}d", ret);
 
     for (auto &record : records) {
-        MEDIA_INFO_LOG("OnCreateRecords Record: %{public}s", record.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnCreateRecords Record: %{public}s", record.ToString().c_str());
         int32_t err;
         if (record.isSuccess) {
             err = OnCreateRecordSuccess(record, localMap);
         } else {
             err = OnRecordFailed(record);
+            CloudMediaDfxService::UpdateUploadDetailError(err);
             this->photosDao_.UpdateFailRecordsCloudId(record, localMap);
             failedSize++;
         }
@@ -738,6 +710,7 @@ int32_t CloudMediaPhotosService::OnCreateRecords(std::vector<PhotosDto> &records
         }
         DeleteTempLivePhotoFile(record);
     }
+    MediaGallerySyncNotify::GetInstance().FinalNotify();
     return ret;
 }
 
@@ -759,16 +732,19 @@ int32_t CloudMediaPhotosService::OnCreateRecordSuccess(
     /* local file deleted */
     if (localMap.find(std::to_string(localId)) == localMap.end()) {
         MEDIA_INFO_LOG("OnCreateRecordSuccess local file is deleted %{public}d", localId);
+        CloudMediaDfxService::UpdateMetaStat(INDEX_UL_META_ERROR_DATA, 1);
         return E_OK;
     }
 
     int32_t ret = this->photosDao_.UpdateLocalAlbumMap(record.cloudId);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("OnCreateRecordSuccess update local album map err %{public}d, %{public}d", ret, localId);
+        CloudMediaDfxService::UpdateMetaStat(INDEX_UL_META_ERROR_RDB, 1);
     }
     ret = this->photosDao_.UpdatePhotoCreatedRecord(record, localMap);
     if (ret != 0) {
         MEDIA_ERR_LOG("OnCreateRecordSuccess update synced err %{public}d, %{public}d", ret, localId);
+        CloudMediaDfxService::UpdateMetaStat(INDEX_UL_META_ERROR_RDB, 1);
         return ret;
     }
     std::string fileId = std::to_string(record.fileId);
@@ -787,6 +763,7 @@ int32_t CloudMediaPhotosService::OnMdirtyRecords(std::vector<PhotosDto> &records
             err = this->photosDao_.OnModifyPhotoRecord(photo);
         } else {
             err = OnRecordFailed(photo);
+            CloudMediaDfxService::UpdateUploadDetailError(err);
         }
         if (err == E_OK) {
             Notify(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX + std::to_string(photo.fileId) + "/" +
@@ -797,6 +774,7 @@ int32_t CloudMediaPhotosService::OnMdirtyRecords(std::vector<PhotosDto> &records
             failedSize++;
             MEDIA_ERR_LOG("OnMdirtyRecords error %{public}d", err);
             this->photosDao_.InsertPhotoModifyFailedRecord(photo.cloudId);
+            CloudMediaDfxService::UpdateMetaStat(INDEX_UL_META_ERROR_RDB, 1);
         }
         if (err == E_SYNC_STOP || err == E_SYNC_FAILED_NETWORK_NOT_AVAILABLE || err == E_CLOUD_STORAGE_FULL ||
             err == E_STOP || err == E_BUSINESS_MODE_CHANGED) {
@@ -810,22 +788,18 @@ int32_t CloudMediaPhotosService::OnFdirtyRecords(std::vector<PhotosDto> &records
 {
     MEDIA_INFO_LOG("OnFdirtyRecords enter");
     std::unordered_map<std::string, LocalInfo> localMap;
-    uint64_t success = 0;
-    uint64_t failure = 0;
 
     int32_t ret = this->photosDao_.GetPhotoLocalInfo(records, localMap, PhotoColumn::PHOTO_CLOUD_ID);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("OnFdirtyRecords get local match info err %{public}d", ret);
-        return ret;
-    }
+    CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "OnFdirtyRecords get local match info err %{public}d", ret);
 
     for (auto &record : records) {
-        MEDIA_INFO_LOG("OnFdirtyRecords Record: %{public}s", record.ToString().c_str());
+        MEDIA_DEBUG_LOG("OnFdirtyRecords Record: %{public}s", record.ToString().c_str());
         int32_t err;
         if (record.isSuccess) {
             err = OnFdirtyRecordSuccess(record, localMap);
         } else {
             err = OnRecordFailed(record);
+            CloudMediaDfxService::UpdateUploadDetailError(err);
         }
         if (err != E_OK) {
             failedSize++;
@@ -855,13 +829,18 @@ int32_t CloudMediaPhotosService::OnFdirtyRecordSuccess(
     int32_t ret = this->photosDao_.UpdateLocalAlbumMap(cloudId);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("OnFdirtyRecordSuccess update local album map err %{public}d", ret);
+        CloudMediaDfxService::UpdateMetaStat(INDEX_UL_META_ERROR_RDB, 1);
         return ret;
     }
     if (record.metaDateModified == -1) {
         MEDIA_ERR_LOG("OnFdirtyRecordSuccess metaDateModified error");
         return E_INVAL_ARG;
     }
-    return this->photosDao_.UpdateFdirtyVersion(record);
+    ret = this->photosDao_.UpdateFdirtyVersion(record);
+    if (ret != E_OK) {
+        CloudMediaDfxService::UpdateMetaStat(INDEX_UL_META_ERROR_RDB, 1);
+    }
+    return ret;
 }
 
 int32_t CloudMediaPhotosService::OnDeleteRecords(std::vector<PhotosDto> &records, int32_t &failSize)
@@ -870,14 +849,17 @@ int32_t CloudMediaPhotosService::OnDeleteRecords(std::vector<PhotosDto> &records
     int32_t ret = E_OK;
     for (auto &photo : records) {
         int32_t err;
-        MEDIA_INFO_LOG("CloudMediaPhotosService::OnDeleteRecords isSuccess: %{public}d", photo.isSuccess);
+        MEDIA_DEBUG_LOG("CloudMediaPhotosService::OnDeleteRecords isSuccess: %{public}d", photo.isSuccess);
         if (photo.isSuccess) {
             err = this->photosDao_.OnDeleteRecordsAsset(photo);
         } else {
             err = OnRecordFailed(photo);
+            CloudMediaDfxService::UpdateUploadDetailError(err);
         }
         if (err != E_OK) {
             this->photosDao_.InsertPhotoModifyFailedRecord(photo.cloudId);
+            std::string errMsg = "on delete records update err : " + to_string(err);
+            REPORT_SYNC_FAULT({FaultScenario::CLOUD_SYNC_PULL, FaultType::DELETE_DATABASE, err, errMsg});
         }
         if (ret == E_OK) {
             Notify(PhotoColumn::PHOTO_GALLERY_CLOUD_URI_PREFIX + std::to_string(photo.fileId) + "/" +
@@ -886,7 +868,6 @@ int32_t CloudMediaPhotosService::OnDeleteRecords(std::vector<PhotosDto> &records
         }
         if (err != E_OK) {
             failSize++;
-            // modifyFailSet_.PushBack(photo.dkRecordId);
             MEDIA_ERR_LOG("delete record fail: cloud id: %{private}s", photo.dkRecordId.c_str());
         }
         if (err == E_SYNC_STOP || err == E_SYNC_FAILED_NETWORK_NOT_AVAILABLE || err == E_CLOUD_STORAGE_FULL ||
@@ -907,6 +888,7 @@ int32_t CloudMediaPhotosService::OnCopyRecords(std::vector<PhotosDto> &records, 
             err = this->photosDao_.OnCopyPhotoRecord(photo);
         } else {
             err = OnRecordFailed(photo);
+            CloudMediaDfxService::UpdateUploadDetailError(err);
         }
         if (err != E_OK) {
             int32_t fileId = photo.fileId;
@@ -915,7 +897,6 @@ int32_t CloudMediaPhotosService::OnCopyRecords(std::vector<PhotosDto> &records, 
                 this->photosDao_.InsertPhotoCopyFailedRecord(photo.fileId);
             }
             if (fileId == 0) {
-                // copyFailSet_.PushBack(to_string(fileId));
                 MEDIA_ERR_LOG("on copy record fail: file id %{private}d", fileId);
             }
         }
@@ -927,24 +908,8 @@ int32_t CloudMediaPhotosService::OnCopyRecords(std::vector<PhotosDto> &records, 
     return ret;
 }
 
-int32_t CloudMediaPhotosService::OnRecordFailed(PhotosDto &photo)
+int32_t CloudMediaPhotosService::OnRecordFailedErrorDetails(PhotosDto &photo)
 {
-    MEDIA_INFO_LOG("OnRecordFailed");
-    int32_t serverErrorCode = photo.serverErrorCode;
-    MEDIA_INFO_LOG("serverErrorCode %{public}d", serverErrorCode);
-    if ((static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::NETWORK_ERROR)) {
-        MEDIA_ERR_LOG("Network Error or Response Time Out");
-        return E_SYNC_FAILED_NETWORK_NOT_AVAILABLE;
-    } else if ((static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::UID_EMPTY) ||
-               (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::SWITCH_OFF)) {
-        MEDIA_ERR_LOG("switch off or uid empty");
-        return E_STOP;
-    } else if (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::INVALID_LOCK_PARAM) {
-        MEDIA_ERR_LOG("Invalid lock param ");
-        return E_STOP;
-    } else if (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::RESPONSE_TIME_OUT) {
-        MEDIA_ERR_LOG("on record failed response time out");
-    }
     ErrorType errorType = photo.errorType;
     if (photo.errorDetails.size() == 0 && errorType != ErrorType::TYPE_NOT_NEED_RETRY) {
         MEDIA_ERR_LOG("errorDetails is empty and errorType is invalid, errorType:%{public}d", errorType);
@@ -968,10 +933,7 @@ int32_t CloudMediaPhotosService::OnRecordFailed(PhotosDto &photo)
             return HandleNoContentUploadFail(photo);
         }
         if (errorType != ErrorType::TYPE_NOT_NEED_RETRY) {
-            MEDIA_ERR_LOG(
-                "unknown error code record failed, serverErrorCode = %{public}d, errorDetailcode = %{public}d",
-                serverErrorCode,
-                errorDetailcode);
+            MEDIA_ERR_LOG("unknown error code record failed, errorDetailcode = %{public}d", errorDetailcode);
             return HandleDetailcode(errorDetailcode);
         }
         MEDIA_ERR_LOG("errorDetailcode = %{public}d, errorType = %{public}d, no need retry",
@@ -983,6 +945,27 @@ int32_t CloudMediaPhotosService::OnRecordFailed(PhotosDto &photo)
         return E_STOP;
     }
     return E_UNKNOWN;
+}
+
+int32_t CloudMediaPhotosService::OnRecordFailed(PhotosDto &photo)
+{
+    MEDIA_INFO_LOG("OnRecordFailed");
+    int32_t serverErrorCode = photo.serverErrorCode;
+    MEDIA_INFO_LOG("serverErrorCode %{public}d", serverErrorCode);
+    if ((static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::NETWORK_ERROR)) {
+        MEDIA_ERR_LOG("Network Error or Response Time Out");
+        return E_SYNC_FAILED_NETWORK_NOT_AVAILABLE;
+    } else if ((static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::UID_EMPTY) ||
+               (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::SWITCH_OFF)) {
+        MEDIA_ERR_LOG("switch off or uid empty");
+        return E_STOP;
+    } else if (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::INVALID_LOCK_PARAM) {
+        MEDIA_ERR_LOG("Invalid lock param ");
+        return E_STOP;
+    } else if (static_cast<ServerErrorCode>(serverErrorCode) == ServerErrorCode::RESPONSE_TIME_OUT) {
+        MEDIA_ERR_LOG("on record failed response time out");
+    }
+    return this->OnRecordFailedErrorDetails(photo);
 }
 
 int32_t CloudMediaPhotosService::HandleNoContentUploadFail(const PhotosDto &photo)
@@ -1016,17 +999,24 @@ int32_t CloudMediaPhotosService::HandleSameNameUploadFail(const PhotosDto &photo
     std::string fileId = std::to_string(photo.fileId);
     std::string path = photo.data;
     int32_t ret = this->photosDao_.HandleSameNameRename(photo);
+    if (ret == E_OK) {
+        std::string uri = PhotoColumn::PHOTO_CLOUD_URI_PREFIX + to_string(photo.fileId);
+        MediaGallerySyncNotify::GetInstance().TryNotify(uri, ChangeType::UPDATE, to_string(photo.fileId));
+        MediaGallerySyncNotify::GetInstance().FinalNotify();
+    }
     return ret;
 }
 
 int32_t CloudMediaPhotosService::OnStartSync()
 {
+    CloudMediaDfxService::SyncStart("", 1);
     MediaGallerySyncNotify::GetInstance().NotifyProgressBegin();
     return this->photosDao_.ClearPhotoFailedRecords();
 }
 
 int32_t CloudMediaPhotosService::OnCompleteSync()
 {
+    CloudMediaDfxService::SyncEnd(0);
     MediaGallerySyncNotify::GetInstance().NotifyProgressEnd();
     return 0;
 }
@@ -1046,4 +1036,65 @@ int32_t CloudMediaPhotosService::OnCompleteCheck()
     MEDIA_INFO_LOG("enter CloudMediaPhotosService::OnCompleteCheck");
     return 0;
 }
+
+int32_t CloudMediaPhotosService::NotifyUploadErr(const int32_t errorCode, const std::string fileId)
+{
+    CloudSyncErrType errType;
+    switch (errorCode) {
+        case E_THM_SOURCE_BASIC + ENOENT: {
+            errType = CloudSyncErrType::THM_NOT_FOUND;
+            break;
+        }
+        case E_LCD_SOURCE_BASIC + ENOENT: {
+            errType = CloudSyncErrType::LCD_NOT_FOUND;
+            break;
+        }
+        case E_DB_SIZE_IS_ZERO: {
+            errType = CloudSyncErrType::CONTENT_SIZE_IS_ZERO;
+            break;
+        }
+        case E_LCD_IS_TOO_LARGE: {
+            errType = CloudSyncErrType::LCD_SIZE_IS_TOO_LARGE;
+            break;
+        }
+        default: {
+            errType = CloudSyncErrType::OTHER_ERROR;
+        }
+    }
+    // not suport
+    CHECK_AND_RETURN_RET_LOG(
+        errType != CloudSyncErrType::OTHER_ERROR, -1, "not support error type, errorCode: %{public}d", errorCode);
+    /* notify */
+    MediaGallerySyncNotify::GetInstance().TryNotify(
+        PhotoColumn::PHOTO_CLOUD_GALLERY_REBUILD_URI_PREFIX, static_cast<ChangeType>(errType), fileId);
+    MediaGallerySyncNotify::GetInstance().FinalNotify();
+    return E_OK;
+}
+
+int32_t CloudMediaPhotosService::ReportFailure(const ReportFailureDto &failureDto)
+{
+    int32_t apiCode = failureDto.apiCode;
+    MEDIA_INFO_LOG("enter CloudMediaPhotosService::ReportFailure: %{public}s", failureDto.ToString().c_str());
+    switch (apiCode) {
+        case static_cast<int32_t>(CloudMediaPhotoOperationCode::CMD_GET_CREATED_RECORDS):
+            this->photosDao_.InsertPhotoCreateFailedRecord(failureDto.fileId);
+            break;
+        case static_cast<int32_t>(CloudMediaPhotoOperationCode::CMD_GET_META_MODIFIED_RECORDS):
+            this->photosDao_.InsertPhotoModifyFailedRecord(failureDto.cloudId);
+            break;
+        case static_cast<int32_t>(CloudMediaPhotoOperationCode::CMD_GET_FILE_MODIFIED_RECORDS):
+            this->photosDao_.InsertPhotoModifyFailedRecord(failureDto.cloudId);
+            break;
+        case static_cast<int32_t>(CloudMediaPhotoOperationCode::CMD_GET_DELETED_RECORDS):
+            this->photosDao_.InsertPhotoModifyFailedRecord(failureDto.cloudId);
+            break;
+        case static_cast<int32_t>(CloudMediaPhotoOperationCode::CMD_GET_COPY_RECORDS):
+            this->photosDao_.RemovePhotoCopyFailedRecord(failureDto.fileId);
+            break;
+        default:
+            break;
+    }
+    return this->NotifyUploadErr(failureDto.errorCode, std::to_string(failureDto.fileId));
+}
+
 }  // namespace OHOS::Media::CloudSync

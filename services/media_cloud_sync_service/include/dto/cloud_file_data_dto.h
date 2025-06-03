@@ -18,9 +18,10 @@
 
 #include <string>
 #include <sstream>
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudFileDataDto {
+class EXPORT CloudFileDataDto {
 public:
     std::string fileName;  // 附件名称
     std::string path;      // 附件路径

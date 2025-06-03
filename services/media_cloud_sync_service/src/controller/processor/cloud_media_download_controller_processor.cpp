@@ -22,7 +22,7 @@
 namespace OHOS::Media::CloudSync {
 PhotosVo CloudMediaDownloadControllerProcessor::ConvertPhotosDtoToPhotosVo(const PhotosDto &photosDto)
 {
-    MEDIA_INFO_LOG("ConvertPhotosDtoToPhotosVo, photosDto: %{public}s.", photosDto.ToString().c_str());
+    MEDIA_DEBUG_LOG("ConvertPhotosDtoToPhotosVo, photosDto: %{public}s.", photosDto.ToString().c_str());
     PhotosVo photosVo;
     photosVo.fileId = photosDto.fileId;
     photosVo.cloudId = photosDto.cloudId;

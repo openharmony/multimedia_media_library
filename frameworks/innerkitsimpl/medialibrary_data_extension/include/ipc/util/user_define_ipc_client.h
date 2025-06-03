@@ -32,14 +32,17 @@ class UserDefineIPCClient {
 private:
     std::string traceId_;
     std::unordered_map<std::string, std::string> header_;
+    int32_t userId_ = UserFileClient::GetUserId();
 
 private:
-    int32_t InitClient();
+    int32_t InitClient(const int32_t &userId);
     int32_t HeaderMarshalling(MessageParcel &data);
 
 public:  // getters & setters
     UserDefineIPCClient &SetTraceId(const std::string &traceId);
     std::string GetTraceId() const;
+    UserDefineIPCClient &SetUserId(const int32_t &userId);
+    int32_t GetUserId() const;
     std::unordered_map<std::string, std::string> GetHeader() const;
     UserDefineIPCClient &SetHeader(const std::unordered_map<std::string, std::string> &header);
 
@@ -49,7 +52,7 @@ private:
     {
         MediaReqVo<REQ> reqVo;
         // user define command code.
-        reqVo.SetUserId(UserFileClient::GetUserId());
+        reqVo.SetUserId(userId_);
         reqVo.SetCode(code);
         reqVo.SetBody(reqBody);
         reqVo.SetTraceId(this->GetTraceId());
@@ -83,11 +86,11 @@ public:
         ret = this->BodyMarshalling<REQ>(data, code, reqBody);
         errConn = ret != E_OK;
         CHECK_AND_RETURN_RET(!errConn, ret);
-        ret = this->InitClient();
+        ret = this->InitClient(userId_);
         errConn = ret != E_OK;
         CHECK_AND_RETURN_RET(!errConn, ret);
         // post user define request to service.
-        ret = UserFileClient::UserDefineFunc(data, reply, option);
+        ret = UserFileClient::UserDefineFunc(userId_, data, reply, option);
         errConn = ret != E_OK;
         CHECK_AND_RETURN_RET_LOG(!errConn,
             ret,

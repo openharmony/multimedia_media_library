@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_ALBUM_CLIENT_H
-#define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_ALBUM_CLIENT_H
+#ifndef OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_ALBUM_HANDLER_H
+#define OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_ALBUM_HANDLER_H
 
 #include <map>
 #include <vector>
@@ -37,6 +37,7 @@ public:
 public:  // getter & setter
     void SetTraceId(const std::string &traceId) override;
     std::string GetTraceId() const override;
+    void SetUserId(const int32_t &userId) override;
 
 public:
     int32_t GetCheckRecords(const std::vector<std::string> &cloudIds,
@@ -64,6 +65,7 @@ public:
 
 private:
     std::string traceId_;
+    int32_t userId_;
 };
 }  // namespace OHOS::Media::CloudSync
-#endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_ALBUM_CLIENT_H
+#endif  // OHOS_MEDIA_CLOUD_SYNC_CLOUD_MEDIA_ALBUM_HANDLER_H

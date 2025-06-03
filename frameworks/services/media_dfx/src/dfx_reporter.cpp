@@ -586,6 +586,51 @@ int32_t DfxReporter::ReportPhotoError(const PhotoErrorCount& reportData)
     return ret;
 }
 
+int32_t DfxReporter::ReportSyncFault(const std::string& taskId, const std::string& position,
+    const SyncFaultEvent& event)
+{
+    int32_t ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_SYNC_FAULT",
+        HiviewDFX::HiSysEvent::EventType::FAULT,
+        "TASK_ID", taskId,
+        "FAULT_SCENARIO", static_cast<uint32_t>(event.scenario),
+        "FAULT_TYPE", static_cast<uint32_t>(event.type),
+        "FAULT_ERROR_CODE", event.errorCode,
+        "FUNCTION_NAME", position,
+        "MESSAGE", event.message);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("report ReportSyncFault error %{public}d", ret);
+    }
+    return ret;
+}
+
+int32_t DfxReporter::ReportSyncStat(const std::string& taskId, const CloudSyncInfo& info, const CloudSyncStat& stat,
+    const std::string& syncInfo)
+{
+    int32_t ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_SYNC_STAT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "TASK_ID", taskId,
+        "SYNC_REASON", info.syncReason,
+        "STOP_REASON", info.stopReason,
+        "START_TIME", info.startTime,
+        "DURATION", info.duration,
+        "UPLOAD_META", stat.uploadMeta,
+        "DOWNLOAD_META", stat.downloadMeta,
+        "DOWNLOAD_THM", stat.downloadThumb,
+        "DOWNLOAD_LCD", stat.downloadLcd,
+        "UPLOAD_ALBUM", stat.uploadAlbum,
+        "DOWNLOAD_ALBUM", stat.downloadAlbum,
+        "UPLOAD_META_ERR", stat.uploadMetaErr,
+        "SYNC_INFO", syncInfo);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("report ReportSyncStat error %{public}d", ret);
+    }
+    return ret;
+}
+
 void DfxReporter::ReportPhotoSizeAndResolutionInfo(const QuerySizeAndResolution& querySizeAndResolution,
     const std::string& photoMimeType)
 {

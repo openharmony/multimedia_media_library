@@ -66,6 +66,8 @@ public:
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns);
     EXPORT static std::string GetType(Uri &uri);
     EXPORT static int32_t UserDefineFunc(MessageParcel &data, MessageParcel &reply, MessageOption &option);
+    EXPORT static int32_t UserDefineFunc(const int32_t &userId, MessageParcel &data, MessageParcel &reply,
+        MessageOption &option);
     EXPORT static void SetUserId(const int32_t userId);
     EXPORT static int32_t GetUserId();
     EXPORT static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelperByUser(const int32_t userId);

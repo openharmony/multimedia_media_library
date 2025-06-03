@@ -26,8 +26,9 @@
 #include "cloud_media_pull_data_dto.h"
 
 namespace OHOS::Media::CloudSync {
+#define EXPORT __attribute__ ((visibility ("default")))
 using namespace OHOS::Media::ORM;
-class CloudMediaSyncUtils {
+class EXPORT CloudMediaSyncUtils {
 public:
     CloudMediaSyncUtils();
     ~CloudMediaSyncUtils();
@@ -54,6 +55,9 @@ public:
     static std::string GetEditDataPath(const std::string &localPath);
     static std::string GetMovingPhotoVideoPath(const std::string &localPath);
     static std::string GetMovingPhotoTmpPath(const std::string &localPath);
+    static std::string GetEditDataSourcePath(const std::string& photoPath);
+    static std::string GetSourceMovingPhotoImagePath(const std::string& photoPath);
+    static std::string GetSourceMovingPhotoVideoPath(const std::string& photoPath);
     static bool IsMovingPhoto(const PhotosPo &photosPo);
     static bool IsGraffiti(const PhotosPo &photosPo);
     static bool IsLivePhoto(const PhotosPo &photosPo);

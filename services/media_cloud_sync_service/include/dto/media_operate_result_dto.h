@@ -18,9 +18,10 @@
 
 #include <string>
 #include <vector>
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class MediaOperateResultDto {
+class EXPORT MediaOperateResultDto {
 public:
     std::string cloudId;
     int32_t errorCode;

@@ -23,7 +23,8 @@
 #include "cloud_media_pull_data_dto.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudSyncConvert {
+#define EXPORT __attribute__ ((visibility ("default")))
+class EXPORT CloudSyncConvert {
 public:
     static bool RecordToValueBucket(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t TryCompensateValue(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
@@ -33,7 +34,6 @@ public:
     // attributes
     static int32_t CompensateAttTitle(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateAttMediaType(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
-    static int32_t CompensateAttDuration(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateAttHidden(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateAttHiddenTime(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateAttRelativePath(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
@@ -60,7 +60,6 @@ public:
 
     // properties
     static int32_t CompensatePropTitle(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
-    static int32_t CompensatePropDuration(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropOrientation(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropPosition(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensatePropHeight(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
@@ -86,6 +85,7 @@ public:
     static int32_t CompensateBasicMetaDateModified(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicSubtype(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
     static int32_t CompensateBasicBurstCoverLevel(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
+    static int32_t CompensateDuration(const CloudMediaPullDataDto &data, NativeRdb::ValuesBucket &values);
 
 private:
     static std::string StrCreateTime(const std::string &format, int64_t time);

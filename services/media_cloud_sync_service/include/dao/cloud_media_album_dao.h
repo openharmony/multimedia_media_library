@@ -35,11 +35,12 @@
 #include "medialibrary_rdbstore.h"
 #include "safe_vector.h"
 #include "cloud_media_dao_const.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
 using namespace OHOS::Media::ORM;
 
-class CloudMediaAlbumDao {
+class EXPORT CloudMediaAlbumDao {
 public:
     CloudMediaAlbumDao() = default;
     ~CloudMediaAlbumDao() = default;

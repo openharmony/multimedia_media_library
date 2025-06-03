@@ -14,6 +14,7 @@
  */
 #define MLOG_TAG "DfxManager"
 
+#include <sstream>
 #include "dfx_manager.h"
 
 #include "dfx_cloud_manager.h"
@@ -59,7 +60,15 @@ shared_ptr<DfxManager> DfxManager::GetInstance()
     return dfxManagerInstance_;
 }
 
-DfxManager::DfxManager() : isInitSuccess_(false)
+DfxManager::DfxManager() : isInitSuccess_(false),
+    downloadMeta_(DOWNLOAD_META_LEN),
+    uploadMeta_(UPLOAD_META_LEN),
+    downloadThumb_(DOWNLOAD_THUMB_LEN),
+    downloadLcd_(DOWNLOAD_LCD_LEN),
+    uploadAlbum_(UPLOAD_ALBUM_LEN),
+    downloadAlbum_(DOWNLOAD_ALBUM_LEN),
+    updateDetails_(UPDATE_DETAILS_LEN),
+    uploadMetaErr_(UPLOAD_META_ERR_LEN)
 {
 }
 
@@ -369,8 +378,8 @@ void DfxManager::HandleHalfDayMissions()
         MEDIA_INFO_LOG("start handle statistic behavior");
         auto *taskData = new (nothrow) StatisticData(dfxReporter_);
         if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for Handle Half Day Missions!");
-        return;
+            MEDIA_ERR_LOG("Failed to alloc async data for Handle Half Day Missions!");
+            return;
         }
         auto statisticTask = make_shared<DfxTask>(HandleStatistic, taskData);
         if (statisticTask == nullptr) {
@@ -777,6 +786,174 @@ void CloudSyncDfxManager::SetStartTime()
     time = MediaFileUtils::UTCTimeSeconds();
     prefs->PutLong(CLOUD_SYNC_START_TIME, time);
     prefs->FlushSync();
+}
+
+void DfxManager::ResetStatistic()
+{
+    for (auto &value : downloadMeta_) {
+        value.store(0);
+    }
+    for (auto &value : uploadMeta_) {
+        value.store(0);
+    }
+    for (auto &value : downloadThumb_) {
+        value.store(0);
+    }
+    for (auto &value : downloadLcd_) {
+        value.store(0);
+    }
+    for (auto &value : uploadAlbum_) {
+        value.store(0);
+    }
+    for (auto &value : downloadAlbum_) {
+        value.store(0);
+    }
+    for (auto &value : updateDetails_) {
+        value.store(0);
+    }
+    for (auto &value : uploadMetaErr_) {
+        value.store(0);
+    }
+}
+
+void DfxManager::CopyStatistic(CloudSyncStat& stat)
+{
+    stat.downloadMeta.reserve(downloadMeta_.size());
+    for (auto &value : downloadMeta_) {
+        stat.downloadMeta.push_back(value.load());
+    }
+    stat.uploadMeta.reserve(uploadMeta_.size());
+    for (auto &value : uploadMeta_) {
+        stat.uploadMeta.push_back(value.load());
+    }
+    stat.downloadThumb.reserve(downloadThumb_.size());
+    for (auto &value : downloadThumb_) {
+        stat.downloadThumb.push_back(value.load());
+    }
+    stat.downloadLcd.reserve(downloadLcd_.size());
+    for (auto &value : downloadLcd_) {
+        stat.downloadLcd.push_back(value.load());
+    }
+
+    stat.uploadAlbum.reserve(uploadAlbum_.size());
+    for (auto &value : uploadAlbum_) {
+        stat.uploadAlbum.push_back(value.load());
+    }
+    stat.downloadAlbum.reserve(downloadAlbum_.size());
+    for (auto &value : downloadAlbum_) {
+        stat.downloadAlbum.push_back(value.load());
+    }
+
+    stat.updateDetails.reserve(updateDetails_.size());
+    for (auto &value : updateDetails_) {
+        stat.updateDetails.push_back(value.load());
+    }
+    stat.uploadMetaErr.reserve(uploadMetaErr_.size());
+    for (auto &value : uploadMetaErr_) {
+        stat.uploadMetaErr.push_back(value.load());
+    }
+}
+
+void DfxManager::HandleSyncStart(const std::string& taskId, const int32_t syncReason)
+{
+    ResetStatistic();
+    syncInfo_.startTime = static_cast<uint64_t>(MediaFileUtils::UTCTimeSeconds());
+    syncInfo_.syncReason = syncReason;
+    taskId_ = taskId;
+}
+
+void DfxManager::HandleUpdateMetaStat(uint32_t index, uint64_t diff, uint32_t syncType)
+{
+    if (index < DOWNLOAD_META_LEN) {
+        downloadMeta_[index].fetch_add(diff);
+    } else if (index - INDEX_UL_META_SUCCESS < UPLOAD_META_LEN) {
+        uploadMeta_[index - INDEX_UL_META_SUCCESS].fetch_add(diff);
+    } else {
+        MEDIA_DEBUG_LOG("HandleUpdateMetaStat get a invalid index");
+    }
+
+    if (syncType > 0 && syncType < UPDATE_DETAILS_LEN &&
+        (index == INDEX_UL_META_SUCCESS || index == INDEX_DL_META_SUCCESS)) {
+        updateDetails_[syncType].fetch_add(diff);
+    }
+}
+
+void DfxManager::HandleUpdateAttachmentStat(uint32_t index, uint64_t diff)
+{
+    if (index < DOWNLOAD_THUMB_LEN) {
+        downloadThumb_[index].fetch_add(diff);
+    } else if (index - INDEX_LCD_SUCCESS < DOWNLOAD_LCD_LEN) {
+        downloadLcd_[index - INDEX_LCD_SUCCESS].fetch_add(diff);
+    } else {
+        MEDIA_DEBUG_LOG("HandleUpdateAttachmentStat get a invalid index");
+    }
+}
+
+void DfxManager::HandleUpdateAlbumStat(uint32_t index, uint64_t diff)
+{
+    if (index < DOWNLOAD_ALBUM_LEN) {
+        downloadAlbum_[index].fetch_add(diff);
+    } else if (index - INDEX_UL_ALBUM_SUCCESS < UPLOAD_ALBUM_LEN) {
+        uploadAlbum_[index - INDEX_UL_ALBUM_SUCCESS].fetch_add(diff);
+    } else {
+        MEDIA_DEBUG_LOG("HandleUpdateAlbumStat get a invalid index");
+    }
+}
+
+void DfxManager::HandleUpdateUploadMetaStat(uint32_t index, uint64_t diff)
+{
+    if (index < UPLOAD_META_ERR_LEN) {
+        uploadMetaErr_[index].fetch_add(diff);
+    }
+}
+
+void DfxManager::HandleUpdateUploadDetailError(int32_t error)
+{
+    if (error == E_CLOUD_STORAGE_FULL) {
+        uploadMetaErr_[INDEX_UL_META_ERR_STORAGE].fetch_add(1);
+    }
+}
+
+static std::string VectorToString(const std::vector<uint64_t>& vec)
+{
+    std::ostringstream oss;
+    for (size_t i = 0; i < vec.size(); ++i) {
+        if (0 != i) {
+            oss << " ";
+        }
+        oss << vec[i];
+    }
+    return oss.str();
+}
+
+void DfxManager::HandleSyncEnd(const int32_t stopReason)
+{
+    int64_t endTime = MediaFileUtils::UTCTimeSeconds();
+    if (static_cast<uint64_t>(endTime) >= syncInfo_.startTime) {
+        syncInfo_.duration = static_cast<uint64_t>(endTime) - syncInfo_.startTime;
+    } else {
+        syncInfo_.duration = 0;
+    }
+    syncInfo_.stopReason = stopReason;
+    CloudSyncStat stat;
+    CopyStatistic(stat);
+
+    std::string syncInfo;
+    for (auto &detail : stat.updateDetails) {
+        if (detail > 0) {
+            stat.updateDetails[0] = static_cast<uint64_t>(MediaFileUtils::UTCTimeSeconds());
+            syncInfo = "[" + taskId_ + " " + std::to_string(syncInfo_.startTime) + " " +
+            VectorToString(stat.updateDetails) + "]";
+            break;
+        }
+    }
+
+    DfxReporter::ReportSyncStat(taskId_, syncInfo_, stat, syncInfo);
+}
+
+void DfxManager::HandleReportSyncFault(const std::string& position, const SyncFaultEvent& event)
+{
+    DfxReporter::ReportSyncFault(taskId_, position, event);
 }
 
 } // namespace Media

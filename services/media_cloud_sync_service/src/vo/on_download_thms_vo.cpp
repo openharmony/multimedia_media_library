@@ -49,13 +49,11 @@ std::string OnDownloadThmsReqBody::DownloadThmsData::ToString() const
 
 bool OnDownloadThmsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    MEDIA_INFO_LOG("enter vo Unmarshalling");
     return IPC::ITypeMediaUtil::UnmarshallingParcelable<DownloadThmsData>(this->downloadThmsDataList, parcel);
 }
 
 bool OnDownloadThmsReqBody::Marshalling(MessageParcel &parcel) const
 {
-    MEDIA_INFO_LOG("enter vo Marshalling");
     return IPC::ITypeMediaUtil::MarshallingParcelable<DownloadThmsData>(this->downloadThmsDataList, parcel);
 }
 

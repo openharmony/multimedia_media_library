@@ -22,6 +22,7 @@
 
 #include "message_parcel.h"
 #include "datashare_stub.h"
+#include "sys_utils.h"
 #include "i_media_controller_service.h"
 #include "cloud_media_operation_code.h"
 #include "medialibrary_errno.h"
@@ -30,9 +31,10 @@
 #include "user_define_ipc.h"
 #include "cloud_media_album_service.h"
 #include "cloud_media_album_controller_processor.h"
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaAlbumControllerService : public IPC::IMediaControllerService {
+class EXPORT CloudMediaAlbumControllerService : public IPC::IMediaControllerService {
 private:
     void OnFetchRecords(MessageParcel &data, MessageParcel &reply);
     void OnDentryFileInsert(MessageParcel &data, MessageParcel &reply);
@@ -100,6 +102,7 @@ public:
         if (!this->Accept(code) || it == this->HANDLERS.end()) {
             return IPC::UserDefineIPC().WriteResponseBody(reply, E_IPC_SEVICE_NOT_FOUND);
         }
+        SysUtils::SlowDown();
         return (this->*(it->second))(data, reply);
     }
 

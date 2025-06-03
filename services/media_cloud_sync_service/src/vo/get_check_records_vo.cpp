@@ -24,8 +24,7 @@
 namespace OHOS::Media::CloudSync {
 bool GetCheckRecordsReqBody::Unmarshalling(MessageParcel &parcel)
 {
-    IPC::ITypeMediaUtil::Unmarshalling(this->cloudIds, parcel);
-    return true;
+    return IPC::ITypeMediaUtil::Unmarshalling(this->cloudIds, parcel);
 }
 
 bool GetCheckRecordsReqBody::Marshalling(MessageParcel &parcel) const

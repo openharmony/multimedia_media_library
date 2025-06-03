@@ -48,6 +48,11 @@
 #include "media_operate_result_vo.h"
 
 namespace OHOS::Media::CloudSync {
+void CloudMediaDataClientHandler::SetUserId(const int32_t &userId)
+{
+    this->userId_ = userId;
+}
+
 void CloudMediaDataClientHandler::SetTraceId(const std::string &traceId)
 {
     this->traceId_ = traceId;
@@ -66,7 +71,8 @@ int32_t CloudMediaDataClientHandler::UpdateDirty(const std::string &cloudId, Dir
     UpdateDirtyReqBody reqBody;
     reqBody.cloudId = cloudId;
     reqBody.dirtyType = static_cast<int32_t>(dirtyType);
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to UpdateDirty, ret: %{public}d", ret);
     }
@@ -80,7 +86,8 @@ int32_t CloudMediaDataClientHandler::UpdatePosition(const std::vector<std::strin
     UpdatePositionReqBody reqBody;
     reqBody.cloudIds = cloudIds;
     reqBody.position = position;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to UpdatePosition, ret: %{public}d", ret);
     }
@@ -95,7 +102,8 @@ int32_t CloudMediaDataClientHandler::UpdateSyncStatus(const std::string &cloudId
     UpdateSyncStatusReqBody reqBody;
     reqBody.cloudId = cloudId;
     reqBody.syncStatus = syncStatus;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to UpdateSyncStatus, ret: %{public}d", ret);
     }
@@ -109,7 +117,7 @@ int32_t CloudMediaDataClientHandler::UpdateThmStatus(const std::string &cloudId,
     UpdateThmStatusReqBody reqBody;
     reqBody.cloudId = cloudId;
     reqBody.thmStatus = thmStatus;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody);
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to UpdateThmStatus, ret: %{public}d", ret);
     }
@@ -137,7 +145,8 @@ int32_t CloudMediaDataClientHandler::GetAgingFile(
 {
     MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetAgingFile begin, operationCode: %{public}d", operationCode);
     GetAgingFileRespBody respBody;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to GetAgingFile, ret: %{public}d", ret);
         return ret;
@@ -175,7 +184,8 @@ int32_t CloudMediaDataClientHandler::GetDownloadAsset(
     reqBody.pathList = uris;
     // parcel data.
     GetDownloadAssetRespBody respBody;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to GetDownloadAsset, ret: %{public}d", ret);
         return ret;
@@ -198,7 +208,8 @@ int32_t CloudMediaDataClientHandler::GetDownloadThmsByUri(
     reqBody.thmType = type;
     GetDownloadThmsByUriRespBody respBody;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DOWNLOAD_THM_BY_URI);
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to GetDownloadThmsByUri, ret: %{public}d", ret);
         return ret;
@@ -223,7 +234,8 @@ int32_t CloudMediaDataClientHandler::OnDownloadAsset(
     OnDownloadAssetReqBody reqBody;
     reqBody.cloudIds = cloudIds;
     MediaOperateResultRespBody respBody;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     result.clear();
     for (auto &resultVo : respBody.result) {
         MEDIA_INFO_LOG(
@@ -251,7 +263,8 @@ int32_t CloudMediaDataClientHandler::GetDownloadThms(
     reqBody.offset = param.offset;
     reqBody.isDownloadDisplayFirst = param.isDownloadDisplayFirst;
     GetDownloadThmRespBody respBody;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetDownloadThms IPC Err, ret: %{public}d", ret);
         return ret;
@@ -282,7 +295,8 @@ int32_t CloudMediaDataClientHandler::OnDownloadThms(
     reqBody.downloadThmsDataList = downloadThmsDataList;
     MEDIA_INFO_LOG("OnDownloadThmsReqBody: %{public}zu", reqBody.downloadThmsDataList.size());
     MediaOperateResultRespBody respBody;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, reqBody, respBody);
     failSize = respBody.GetFailSize();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to OnDownloadThms, ret: %{public}d", ret);
@@ -295,7 +309,8 @@ int32_t CloudMediaDataClientHandler::GetVideoToCache(std::vector<CloudMetaData> 
     MEDIA_INFO_LOG("CloudMediaDataClientHandler::GetVideoToCache begin");
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_VIDEO_TO_CACHE);
     GetVideoToCacheRespBody respBody;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Get(operationCode, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Get(operationCode, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to GetAgingFile, ret: %{public}d", ret);
         return ret;
@@ -317,7 +332,8 @@ int32_t CloudMediaDataClientHandler::GetFilePosStat(std::vector<uint64_t> &fileP
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_FILE_POS_STAT);
     GetFilePosStatRespBody respBody;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Get(operationCode, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Get(operationCode, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("GetFilePosStat Failed to GetAgingFile, ret: %{public}d", ret);
         return ret;
@@ -335,7 +351,8 @@ int32_t CloudMediaDataClientHandler::GetCloudThmStat(std::vector<uint64_t> &clou
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_CLOUD_THM_STAT);
     GetCloudThmStatRespBody respBody;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Get(operationCode, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Get(operationCode, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to GetCloudThmStat, ret: %{public}d", ret);
         return ret;
@@ -353,7 +370,8 @@ int32_t CloudMediaDataClientHandler::GetDirtyTypeStat(std::vector<uint64_t> &dir
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DIRTY_TYPE_STAT);
     GetDirtyTypeStatRespBody respBody;
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Get(operationCode, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Get(operationCode, respBody);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to GetDirtyTypeStat, ret: %{public}d", ret);
         return ret;
@@ -369,7 +387,8 @@ int32_t CloudMediaDataClientHandler::GetDownloadThmNum(int32_t &totalNum, int32_
     req.type = type;
     GetDownloadThmNumRespBody respBody;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_GET_DOWNLOAD_THM_NUM);
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, req, respBody);
+    int32_t ret =
+        IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, req, respBody);
     totalNum = respBody.totalNum;
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to GetDownloadThmNum, ret: %{public}d", ret);
@@ -394,7 +413,7 @@ int32_t CloudMediaDataClientHandler::UpdateLocalFileDirty(std::vector<MDKRecord>
     UpdateLocalFileDirtyReqBody req;
     req.cloudIds = cloudIds;
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaOperationCode::CMD_UPDATE_LOCAL_FILE_DIRTY);
-    int32_t ret = IPC::UserDefineIPCClient().SetTraceId(this->traceId_).Post(operationCode, req);
+    int32_t ret = IPC::UserDefineIPCClient().SetUserId(userId_).SetTraceId(this->traceId_).Post(operationCode, req);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to UpdateLocalFileDirty, ret: %{public}d", ret);
     }

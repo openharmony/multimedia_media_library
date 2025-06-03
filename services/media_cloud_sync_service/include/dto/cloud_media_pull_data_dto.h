@@ -19,9 +19,10 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include "cloud_media_define.h"
 
 namespace OHOS::Media::CloudSync {
-class CloudMediaPullDataDto {
+class EXPORT CloudMediaPullDataDto {
 public:
     // key
     std::string cloudId;
@@ -42,11 +43,11 @@ public:
     int32_t basicFileType{-1};
     std::string basicFileName;
     int64_t basicCloudVersion{-1};
+    int32_t duration{-1};                         /* duration */
     // "attributes"
     bool hasAttributes{false};
     std::string attributesTitle;                  /* title */
     int32_t attributesMediaType{-1};              /* media_type */
-    int32_t attributesDuration{-1};               /* duration */
     int32_t attributesHidden{-1};                 /* hidden */
     int64_t attributesHiddenTime{-1};             /* hidden_time */
     std::string attributesRelativePath;           /* relative_path */
@@ -81,7 +82,6 @@ public:
     bool hasProperties{false};
     std::string propertiesSourceFileName;
     std::string propertiesSourcePath;
-    int32_t propertiesDuration{-1};
     int32_t propertiesRotate{-1};
     std::string propertiesPosition;
     int32_t propertiesHeight{-1};
