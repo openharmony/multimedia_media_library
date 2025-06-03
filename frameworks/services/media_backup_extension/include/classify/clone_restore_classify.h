@@ -26,8 +26,10 @@ class CloneRestoreClassify {
 public:
     void Init(int32_t sceneCode, const std::string &taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
-    void RestoreMaps(std::vector<FileInfo> &fileInfos);
-    void RestoreVideoMaps(std::vector<FileInfo> &fileInfos);
+    void Restore(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+
+    void RestoreMaps();
+    void RestoreVideoMaps();
     void ReportClassifyRestoreTask();
 
     template<typename T>
@@ -39,6 +41,20 @@ public:
         const std::optional<T>& optionalValue, const std::unordered_set<std::string> &intersection);
 
 private:
+    enum AnalysisStatus : int32_t {
+        UNANALYZED = 0
+    };
+    enum RestoreStatus : int32_t {
+        SUCCESS = 0,
+        DUPLICATE,
+        FAILED
+    };
+    struct AnalysisTotalInfo {
+        int32_t fileIdOld {-1};
+        int32_t fileIdNew {-1};
+        int32_t status {AnalysisStatus::UNANALYZED};
+        int32_t restoreStatus {RestoreStatus::SUCCESS};
+    };
     struct ClassifyCloneInfo {
         std::optional<int64_t> id;
         std::optional<int64_t> fileIdOld;
@@ -51,6 +67,8 @@ private:
         std::optional<std::string> labelVersion;
         std::optional<std::string> saliencySubProb;
         std::optional<std::string> analysisVersion;
+        std::optional<std::string> captionResult;
+        std::optional<std::string> captionVersion;
     };
     struct ClassifyVideoCloneInfo {
         std::optional<int64_t> id;
@@ -71,17 +89,12 @@ private:
         std::optional<int64_t> triggerGenerateThumbnail;
     };
 
-    void GetClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfo,
-        std::vector<FileInfo> &fileInfos, size_t offset);
-    void GetClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfo,
-        std::vector<FileInfo> &fileInfos, size_t offset);
-    void DeduplicateClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfos,
-        std::vector<FileInfo> &fileInfos);
-    void DeduplicateClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos,
-        std::vector<FileInfo> &fileInfos);
-    void InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &classifyInfos, std::vector<FileInfo> &fileInfos);
-    void InsertClassifyVideoAlbums(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos,
-        std::vector<FileInfo> &fileInfos);
+    void GetClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfo, size_t offset);
+    void GetClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfo, size_t offset);
+    void DeduplicateClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfos);
+    void DeduplicateClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos);
+    void InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &classifyInfos);
+    void InsertClassifyVideoAlbums(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos);
 
     void GetClassifyInfo(ClassifyCloneInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void GetMapInsertValue(NativeRdb::ValuesBucket &value, ClassifyCloneInfo info,
@@ -94,6 +107,13 @@ private:
     std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
+    
+    std::vector<int32_t> GetMinIdsOfAnalysisTotal();
+    void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
+    void GetAnalysisTotalInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
+    void UpdateAnalysisTotal();
+    std::unordered_map<int32_t, std::vector<std::string>> GetAnalysisTotalStatusFileIdsMap();
+    int32_t UpdateAnalysisTotalByStatus(int32_t status, const std::vector<std::string> &fileIds);
 
 private:
     int32_t sceneCode_{-1};
@@ -104,6 +124,7 @@ private:
     std::atomic<int32_t> successInsertVideoLabelCnt_{0};
     std::atomic<int32_t> failInsertLabelCnt_{0};
     std::atomic<int32_t> failInsertVideoLabelCnt_{0};
+    std::vector<AnalysisTotalInfo> analysisTotalInfos_;
 };
 
 template<typename T>

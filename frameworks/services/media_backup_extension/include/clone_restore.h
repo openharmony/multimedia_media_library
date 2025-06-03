@@ -218,6 +218,7 @@ private:
     void ProcessCloudPhotosFailedOffsets(int32_t isRelatedToPhotoMap = 0);
     void RestoreAnalysisData();
     void RestoreSearchIndexData();
+    void RestoreAnalysisClassify();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -261,7 +262,6 @@ private:
     std::shared_ptr<MediaLibraryKvStore> newYearKvStorePtr_ = nullptr;
     std::vector<int> photosFailedOffsets_;
     ffrt::mutex photosFailedMutex_;
-    CloneRestoreClassify cloneRestoreClassify_;
     CloneRestoreGeo cloneRestoreGeo_;
     CloneRestoreHighlight cloneRestoreHighlight_;
     CloneRestoreCVAnalysis cloneRestoreCVAnalysis_;
