@@ -99,6 +99,16 @@ CompatibleMode NapiMediaAssetDataHandler::GetCompatibleMode()
     return compatibleMode_;
 }
 
+napi_ref NapiMediaAssetDataHandler::GetProgressHandlerRef()
+{
+    return progressHandlerRef_;
+}
+
+void NapiMediaAssetDataHandler::SetProgressHandlerRef(napi_ref &progressHandlerRef)
+{
+    progressHandlerRef_ = progressHandlerRef;
+}
+
 void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_env env, napi_value arg, napi_value extraInfo)
 {
     std::unique_lock<std::mutex> dataHandlerLock(dataHandlerRefMutex_);

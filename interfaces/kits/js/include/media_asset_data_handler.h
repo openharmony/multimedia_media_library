@@ -70,6 +70,9 @@ public:
     void SetCompatibleMode(const CompatibleMode &compatibleMode);
     std::string GetRequestId();
     void SetRequestId(std::string requestId);
+    napi_ref GetProgressHandlerRef();
+    void SetProgressHandlerRef(napi_ref &progressHandlerRef);
+
 private:
     napi_env env_ = nullptr;
     napi_ref dataHandlerRef_ = nullptr;
@@ -79,6 +82,7 @@ private:
     SourceMode sourceMode_;
     NotifyMode notifyMode_ = NotifyMode::FAST_NOTIFY;
     CompatibleMode compatibleMode_ {0};
+    napi_ref progressHandlerRef_ = nullptr;
     std::string requestId_;
     static std::mutex dataHandlerRefMutex_;
 };
