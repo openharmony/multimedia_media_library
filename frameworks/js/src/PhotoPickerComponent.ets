@@ -195,6 +195,7 @@ export struct PhotoPickerComponent {
             gridMargin: this.pickerOptions?.gridMargin as Margin,
             photoBrowserMargin: this.pickerOptions?.photoBrowserMargin as Margin,
             singleLineConfig: this.getSingleLineConfig(this.pickerOptions?.singleLineConfig as SingleLineConfig),
+            uiComponentColorMode: this.pickerOptions?.uiComponentColorMode as PickerColorMode,
           }
         })
           .height('100%')
@@ -730,6 +731,7 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   gridMargin?: Margin;
   photoBrowserMargin?: Margin;
   singleLineConfig?: SingleLineConfig;
+  uiComponentColorMode?: PickerColorMode;
 }
 
 export class BaseItemInfo {
