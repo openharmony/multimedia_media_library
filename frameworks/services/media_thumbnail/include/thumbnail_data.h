@@ -183,6 +183,7 @@ public:
     EXPORT bool isRegenerateStage {false};
     EXPORT bool needCheckWaitStatus {false};
     EXPORT bool needUpdateDb {true};
+    EXPORT bool createLowQulityLcd {false};
     EXPORT ThumbnailSource source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;

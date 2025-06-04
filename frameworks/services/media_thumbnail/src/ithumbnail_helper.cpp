@@ -639,15 +639,12 @@ bool IThumbnailHelper::StorePicture(ThumbnailData &data,
 bool IThumbnailHelper::StorePictureLowQuality(ThumbnailData &data,
     const std::shared_ptr<Picture>& picture, const bool isSourceEx, const size_t sizeLimit)
 {
-    MEDIA_INFO_LOG("Create low quality lcd");
-    size_t lastGeneratedSize;
-    if (ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize)) {
-        MEDIA_INFO_LOG("SizeLimit: %{public}zu, last generated lcd size: %{public}zu", sizeLimit, lastGeneratedSize);
-    } else {
-        MEDIA_INFO_LOG("SizeLimit: %{public}zu, GetThumbFileSize failed, continue generate.", sizeLimit);
-    }
-    vector<ThumbnailQulity> tryQualityList = { ThumbnailQulity::GOOD, ThumbnailQulity::MID,
-        ThumbnailQulity::NOT_BAD, ThumbnailQulity::POOR };
+    size_t lastGeneratedSize = -1;
+    ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize);
+    MEDIA_INFO_LOG("Create low quality lcd. SizeLimit: %{public}zu, lastGeneratedSize: %{public}zu",
+        sizeLimit, lastGeneratedSize);
+    vector<ThumbnailQulity> tryQualityList = { ThumbnailQulity::DEFAULT, ThumbnailQulity::GOOD,
+        ThumbnailQulity::MID, ThumbnailQulity::NOT_BAD, ThumbnailQulity::POOR };
     for (const ThumbnailQulity quality : tryQualityList) {
         data.thumbnailQuality = quality;
         CHECK_AND_RETURN_RET_LOG(StorePicture(data, picture, isSourceEx), false, "StorePicture failed.");
@@ -683,12 +680,13 @@ bool IThumbnailHelper::SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &da
         CHECK_AND_RETURN_RET_LOG(lcdSource != nullptr, false, "CopyAndScalePicture failed");
     }
     
-    if (data.thumbnailQuality == ThumbnailQulity::DEFAULT) {
+    if (!data.createLowQulityLcd) {
         CHECK_AND_RETURN_RET_LOG(StorePicture(data, lcdSource, isSourceEx),
             false, "StorePicture failed");
     } else {
         CHECK_AND_RETURN_RET_LOG(StorePictureLowQuality(data, lcdSource, isSourceEx, LCD_UPLOAD_LIMIT_SIZE),
             false, "StorePictureLowQuality with limit failed");
+        data.thumbnailQulity = ThumbnailQulity::DEFAULT;
     }
 
     if (!isSourceEx) {
@@ -703,14 +701,12 @@ bool IThumbnailHelper::StoreLcdPixelMapLowQuality(ThumbnailData& data, const std
     MEDIA_INFO_LOG("Create low quality lcd");
     CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "PixelMap is null, isSourceEx: %{public}d", isSourceEx);
 
-    size_t lastGeneratedSize;
-    if (ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize)) {
-        MEDIA_INFO_LOG("SizeLimit: %{public}zu, last generated lcd size: %{public}zu", sizeLimit, lastGeneratedSize);
-    } else {
-        MEDIA_INFO_LOG("SizeLimit: %{public}zu, GetThumbFileSize failed, continue generate.", sizeLimit);
-    }
-    vector<ThumbnailQulity> tryQualityList = { ThumbnailQulity::GOOD, ThumbnailQulity::MID,
-        ThumbnailQulity::NOT_BAD, ThumbnailQulity::POOR };
+    size_t lastGeneratedSize = -1;
+    ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize);
+    MEDIA_INFO_LOG("Create low quality lcd. SizeLimit: %{public}zu, lastGeneratedSize: %{public}zu",
+        sizeLimit, lastGeneratedSize);
+    vector<ThumbnailQulity> tryQualityList = { ThumbnailQulity::DEFAULT, ThumbnailQulity::GOOD,
+        ThumbnailQulity::MID, ThumbnailQulity::NOT_BAD, ThumbnailQulity::POOR };
     for (const ThumbnailQulity quality : tryQualityList) {
         CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CompressImage(pixelMap, data.lcd, false, false, quality),
             false, "CompressImage failed");
@@ -739,7 +735,7 @@ bool IThumbnailHelper::SaveLcdPixelMapSource(ThumbRdbOpt &opts, ThumbnailData &d
         CHECK_AND_RETURN_RET_LOG(lcdSource != nullptr, false, "CopyAndScalePixelMap failed");
     }
 
-    if (data.thumbnailQuality == ThumbnailQulity::DEFAULT) {
+    if (!data.createLowQulityLcd) {
         CHECK_AND_RETURN_RET_LOG(
             ThumbnailUtils::CompressImage(lcdSource, data.lcd, false, false, data.thumbnailQuality),
             false, "CompressImage failed");
