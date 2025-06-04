@@ -314,5 +314,59 @@ bool ThumbnailImageFrameWorkUtils::IsSupportGenAstc()
 {
     return ImageSource::IsSupportGenAstc();
 }
+
+bool ThumbnailImageFrameWorkUtils::IsPictureValid(const std::shared_ptr<Picture>& picture)
+{
+    CHECK_AND_RETURN_RET_LOG(picture != nullptr, false, "Picture is null");
+    CHECK_AND_RETURN_RET_LOG(picture->GetMainPixel() != nullptr, false, "Picture main pixel is null");
+    CHECK_AND_RETURN_RET_LOG(picture->GetGainmapPixelMap() != nullptr, false, "Picture gain pixel is null");
+    auto mainWidth = picture->GetMainPixel()->GetWidth();
+    auto mainHeight = picture->GetMainPixel()->GetHeight();
+    CHECK_AND_RETURN_RET_LOG(mainWidth > 0 && mainHeight > 0, false,
+        "Invalid main pixel map size: width %{public}d, height: %{public}d", mainWidth, mainHeight);
+    return true;
+}
+
+bool ThumbnailImageFrameWorkUtils::IsPixelMapValid(const std::shared_ptr<PixelMap>& pixelMap)
+{
+    CHECK_AND_RETURN_RET_LOG(pixelMap != nullptr, false, "Picture is null");
+    auto width = pixelMap->GetWidth();
+    auto height = pixelMap->GetHeight();
+    CHECK_AND_RETURN_RET_LOG(width > 0 && height > 0, false,
+        "Invalid pixel map size: width %{public}d, height: %{public}d", width, height);
+    return true;
+}
+
+std::shared_ptr<Picture> ThumbnailImageFrameWorkUtils::CopyAndScalePicture(const std::shared_ptr<Picture>& picture,
+    const Size& desiredSize)
+{
+    std::shared_ptr<Picture> copyPicture = nullptr;
+    CHECK_AND_RETURN_RET_LOG(desiredSize.width > 0 && desiredSize.height > 0, nullptr,
+        "Invalid desired size: width: %{public}d, height: %{publilc}d", desiredSize.width, desiredSize.height);
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPictureValid(picture), nullptr, "picture is invalid");
+
+    copyPicture = ThumbnailImageFrameWorkUtils::CopyPictureSource(picture);
+    CHECK_AND_RETURN_RET_LOG(copyPicture != nullptr, nullptr, "CopyPictureSource failed");
+
+    float widthScale = (1.0f * desiredSize.width) / picture->GetMainPixel()->GetWidth();
+    float heightScale = (1.0f * desiredSize.height) / picture->GetMainPixel()->GetHeight();
+    picture->GetMainPixel()->scale(widthScale, heightScale);
+    picture->GetGainmapPixelMap()->scale(widthScale, heightScale);
+    return copyPicture;
+}
+
+std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(const std::shared_ptr<PixelMap>& pixelMap,
+    const Size& desiredSize)
+{
+    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::IsPixelMapValid(pixelMap), nullptr, "PixelMap is invalid");
+    CHECK_AND_RETURN_RET_LOG(desiredSize.width > 0 && desiredSize.height > 0, nullptr,
+        "Invalid desired size: width: %{public}d, height: %{publilc}d", desiredSize.width, desiredSize.height);
+    auto copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);
+    float widthScale = (1.0f * desiredSize.width) / pixelMap->GetWidth();
+    float heightScale = (1.0f * desiredSize.height) / pixelMap->GetHeight();
+    pixelMap->scale(widthScale, heightScale);
+    return copySource;
+}
+
 } // namespace Media
 } // namespace OHOS

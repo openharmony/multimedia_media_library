@@ -292,5 +292,40 @@ HWTEST_F(MediaLibraryThumbnailImageFrameworkTest, SetPixelMapYuvInfo_test_003, T
     bool ret = ThumbnailImageFrameWorkUtils::SetPixelMapYuvInfo(surfaceBuffer, pixelMap, isHdr);
     EXPECT_EQ(ret, true);
 }
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsPictureValid_test_001, TestSize.Level0)
+{
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    bool ret = ThumbnailImageFrameWorkUtils::IsPictureValid(picture);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, IsPixelMapValid_test_001, TestSize.Level0)
+{
+    std::shared_ptr<PixelMap> PixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    bool ret = ThumbnailImageFrameWorkUtils::IsPixelMapValid(PixelMap);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, CopyAndScalePicture_test_001, TestSize.Level0)
+{
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
+    Size desiredSize = { TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2, TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2 };
+    auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePicture(picture, desiredSize);
+    EXPECT_NE(ret, nullptr);
+}
+
+HWTEST_F(MediaLibraryThumbnailUtilsTest, CopyAndScalePixelMap_001, TestSize.Level0)
+{
+    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
+    Size desiredSize = { TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2, TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2 };
+    auto ret = ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(pixelMap, desiredSize);
+    EXPECT_NE(ret, nullptr);
+}
+
 } // namespace Media
 } // namespace OHOS

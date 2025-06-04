@@ -118,13 +118,6 @@ public:
     EXPORT static void DropThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data);
     EXPORT static void BatchDropThumbnailSize(const ThumbnailDataBatch& dataBatch);
 
-    EXPORT static bool IsPictureValid(const std::shared_ptr<Picture>& picture);
-    EXPORT static bool IsPixelMapValid(const std::shared_ptr<PixelMap>& pixelMap);
-    EXPORT static std::shared_ptr<Picture> CopyAndScalePicture(const std::shared_ptr<Picture>& picture,
-        const Size& desiredSize);
-    EXPORT static std::shared_ptr<PixelMap> CopyAndScalePixelMap(const std::shared_ptr<PixelMap>& pixelMap,
-        const Size& desiredSize);
-
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
     EXPORT static int SaveThumbDataToLocalDir(ThumbnailData &data, const std::string &suffix,
