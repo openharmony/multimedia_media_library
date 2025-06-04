@@ -358,7 +358,7 @@ std::shared_ptr<Picture> ThumbnailImageFrameWorkUtils::CopyAndScalePicture(const
 std::shared_ptr<PixelMap> ThumbnailImageFrameWorkUtils::CopyAndScalePixelMap(const std::shared_ptr<PixelMap>& pixelMap,
     const Size& desiredSize)
 {
-    CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::IsPixelMapValid(pixelMap), nullptr, "PixelMap is invalid");
+    CHECK_AND_RETURN_RET_LOG(ThumbnailImageFrameWorkUtils::IsPixelMapValid(pixelMap), nullptr, "PixelMap is invalid");
     CHECK_AND_RETURN_RET_LOG(desiredSize.width > 0 && desiredSize.height > 0, nullptr,
         "Invalid desired size: width: %{public}d, height: %{publilc}d", desiredSize.width, desiredSize.height);
     auto copySource = ThumbnailImageFrameWorkUtils::CopyPixelMapSource(pixelMap);

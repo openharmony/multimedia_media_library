@@ -254,6 +254,7 @@ int32_t ThumbnailGenerateHelper::RegenerateThumbnailFromCloud(ThumbRdbOpt &opts)
 
     opts.row = data.id;
     data.isRegenerateStage = true;
+    data.createLowQulityLcd = true;
     data.loaderOpts.loadingStates = SourceLoader::CLOUD_ORIGIN_SOURCE_LOADING_STATES;
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
         opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);

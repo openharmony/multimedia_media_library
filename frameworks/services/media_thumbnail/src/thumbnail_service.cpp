@@ -303,7 +303,7 @@ int32_t ThumbnailService::CreateLcdPastDirtyDataFix(const std::string &fileId)
     };
     int err = 0;
     ThumbnailData data;
-    data.thumbnailQuality = ThumbnailQulity::GOOD;
+    data.createLowQulityLcd = true;
 
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, fileId, data, err);
     CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "QueryThumbnailDataFromFileId failed, path: %{public}s",
