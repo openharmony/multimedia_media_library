@@ -113,7 +113,7 @@ const int32_t EXPECTED_COUNT_0 = 0;
 const int32_t EXPECTED_ALBUM_TOTAL_COUNT = 4;
 const int32_t EXPECTED_AUDIO_COUNT = 3;
 const int32_t INVALID_ERROR_CODE = -1;
-const std::string DIRTY_FILE_ID_TO_SET_VISIBLE = "1000";
+const std::string DIRTY_FILE_ID = "1000";
 const std::string DIRTY_FILE_PATH = "/storage/cloud/files/Documents/1.jpg";
 
 const int PHONE_FIRST_NUMBER = 105;
@@ -2819,6 +2819,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clean_dirty_files_test
     MEDIA_INFO_LOG("Start medialibrary_backup_clean_dirty_files_test_002");
     PhotosDao::PhotosRowData dirtyFileNotExist;
     dirtyFileNotExist.data = "";
+    dirtyFileNotExist.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
 
     PhotosDataHandler photosDataHandler_;
     photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
@@ -2831,6 +2832,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clean_dirty_files_test
     MEDIA_INFO_LOG("Start medialibrary_backup_clean_dirty_files_test_003");
     PhotosDao::PhotosRowData dirtyFileNotSameSize;
     dirtyFileNotSameSize.data = DIRTY_FILE_PATH;
+    dirtyFileNotSameSize.position = static_cast<int32_t>(PhotoPositionType::LOCAL);
 
     PhotosDataHandler photosDataHandler_;
     photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
@@ -2838,18 +2840,50 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clean_dirty_files_test
     EXPECT_EQ(photosDataHandler_.setVisibleFiles_.size(), EXPECTED_COUNT_0);
 }
 
+void ClearPhotosData()
+{
+    MEDIA_INFO_LOG("Start clear Photos data");
+    ExecuteSqls(g_rdbStore->GetRaw(), { "DELETE FROM Photos" });
+}
+
+void InsertDirtyFile(const std::string &path)
+{
+    ClearPhotosData();
+    const std::string INSERT_SQL = "INSERT INTO Photos (file_id, data, sync_status) VALUES (?, ?, -1)";
+    int32_t errCode = g_rdbStore->GetRaw()->ExecuteSql(INSERT_SQL, { DIRTY_FILE_ID, path });
+    ASSERT_EQ(errCode, E_OK);
+}
+
+void QueryDirtyFileCount(int32_t &result)
+{
+    const std::string QUERY_SQL = "SELECT count(1) FROM Photos WHERE file_id = " + DIRTY_FILE_ID;
+    QueryInt(g_rdbStore->GetRaw(), QUERY_SQL, "count(1)", result);
+}
+
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_set_visible_files_in_db_test_001, TestSize.Level2)
 {
     MEDIA_INFO_LOG("Start medialibrary_backup_set_visible_files_in_db_test_001");
-    const std::string INSERT_SQL = "INSERT INTO Photos (file_id, data, sync_status) VALUES (1000, 'test', -1)";
-    int32_t errCode = g_rdbStore->GetRaw()->ExecuteSql(INSERT_SQL);
-    ASSERT_EQ(errCode, E_OK);
+    InsertDirtyFile("path_with_invalid_prefix");
 
     PhotosDataHandler photosDataHandler_;
     photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
-    photosDataHandler_.setVisibleFiles_.emplace_back(DIRTY_FILE_ID_TO_SET_VISIBLE);
+    photosDataHandler_.setVisibleFiles_.emplace_back(DIRTY_FILE_ID);
     int32_t count = photosDataHandler_.SetVisibleFilesInDb();
     EXPECT_GT(count, EXPECTED_COUNT_0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_delete_dirty_files_in_db_test_001, TestSize.Level2)
+{
+    MEDIA_INFO_LOG("Start medialibrary_backup_delete_dirty_files_in_db_test_001");
+    InsertDirtyFile("path_with_invalid_prefix");
+
+    PhotosDataHandler photosDataHandler_;
+    photosDataHandler_.OnStart(UPGRADE_RESTORE_ID, "", g_rdbStore->GetRaw());
+    photosDataHandler_.HandleDirtyFiles();
+
+    int32_t result = INVALID_COUNT;
+    QueryDirtyFileCount(result);
+    EXPECT_EQ(result, 0);
 }
 } // namespace Media
 } // namespace OHOS

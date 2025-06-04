@@ -122,7 +122,7 @@ bool PhotosDataHandler::DeleteDirtyFile(const PhotosDao::PhotosRowData &dirtyFil
     bool deleteThumbsRet = MediaFileUtils::DeleteFileOrFolder(thumbsFolder, false);
     if (!deleteFileRet || !deleteThumbsRet) {
         MEDIA_ERR_LOG("Clean file failed, path: %{public}s, deleteFileRet: %{public}d, deleteThumbsRet: %{public}d,"
-            " errno: %{public}d", BackupFileUtils::GarbleFilePath(dirtyFile.data, sceneCode_).c_str(),
+            " errno: %{public}d", BackupFileUtils::GarbleFilePath(dirtyFile.data, DEFAULT_RESTORE_ID).c_str(),
             static_cast<int32_t>(deleteFileRet), static_cast<int32_t>(deleteThumbsRet), errno);
         return false;
     }
@@ -158,7 +158,8 @@ int32_t PhotosDataHandler::SetVisibleFilesInDb()
 
 bool PhotosDataHandler::ShouldSetVisible(const PhotosDao::PhotosRowData &dirtyFile)
 {
-    return sceneCode_ == UPGRADE_RESTORE_ID && dirtyFile.position == static_cast<int32_t>(PhotoPositionType::LOCAL);
+    return sceneCode_ == UPGRADE_RESTORE_ID && dirtyFile.position == static_cast<int32_t>(PhotoPositionType::LOCAL) &&
+        IsLocalFileExist(dirtyFile);
 }
 
 void PhotosDataHandler::AddToCleanFailedFiles(const PhotosDao::PhotosRowData &dirtyFile)
@@ -174,11 +175,31 @@ void PhotosDataHandler::AddToSetVisibleFiles(const PhotosDao::PhotosRowData &dir
     setVisibleFiles_.emplace_back(std::to_string(dirtyFile.fileId));
 }
 
+bool PhotosDataHandler::IsLocalFileExist(const PhotosDao::PhotosRowData &dirtyFile)
+{
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::StartsWith(dirtyFile.data, RESTORE_FILES_CLOUD_DIR), false,
+        "Invalid prefix, path: %{public}s",
+        BackupFileUtils::GarbleFilePath(dirtyFile.data, DEFAULT_RESTORE_ID).c_str());
+    std::string localPath =
+        BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, dirtyFile.data);
+    return MediaFileUtils::IsFileExists(localPath);
+}
+
 bool PhotosDataHandler::IsFileExist(const PhotosDao::PhotosRowData &dirtyFile)
 {
-    if (dirtyFile.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        return BackupFileUtils::IsValidFile(dirtyFile.data);
-    }
-    return BackupFileUtils::IsValidFile(dirtyFile.data) && BackupFileUtils::IsMovingPhotoExist(dirtyFile.data);
+    bool ret = dirtyFile.subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ?
+        BackupFileUtils::IsValidFile(dirtyFile.data) :
+        BackupFileUtils::IsValidFile(dirtyFile.data) && BackupFileUtils::IsMovingPhotoExist(dirtyFile.data);
+    CHECK_AND_EXECUTE(ret, ReportDirtyFile("FILE_NOT_EXIST", dirtyFile));
+    return ret;
+}
+
+void PhotosDataHandler::ReportDirtyFile(const std::string &errorCode, const PhotosDao::PhotosRowData &dirtyFile)
+{
+    UpgradeRestoreTaskReport().SetSceneCode(sceneCode_).SetTaskId(taskId_)
+        .ReportInAudit("HANDLE_DIRTY_FILE", errorCode,
+            "Dirty file id: " + std::to_string(dirtyFile.fileId) +
+            ", subtype: " + std::to_string(dirtyFile.subtype) +
+            ", data: " + BackupFileUtils::GarbleFilePath(dirtyFile.data, DEFAULT_RESTORE_ID));
 }
 }  // namespace OHOS::Media
