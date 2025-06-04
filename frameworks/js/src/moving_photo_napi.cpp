@@ -159,7 +159,7 @@ napi_env MovingPhotoNapi::GetMediaAssetEnv()
     return media_asset_env_;
 }
 
-void MovingPhotoNapi::setMediaAssetEnv(napi_env mediaAssetEnv)
+void MovingPhotoNapi::SetMediaAssetEnv(napi_env mediaAssetEnv)
 {
     media_asset_env_ = mediaAssetEnv;
 }
@@ -433,10 +433,12 @@ int32_t MovingPhotoNapi::GetFdFromUri(const std::string &uri)
     return MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
 }
 
-static int32_t CallDoTranscoder(shared_ptr<OHOS::Media::MovingPhotoProgressHandler> movingPhotoProgressHandler)
+static int32_t CallDoTranscoder(shared_ptr<OHOS::Media::MovingPhotoProgressHandler> movingPhotoProgressHandler,
+    bool &isTranscoder)
 {
     if (!MovingPhotoCallTranscoder::DoTranscode(movingPhotoProgressHandler)) {
         NAPI_INFO_LOG("DoTranscode fail");
+        isTranscoder = false;
         return E_ERR;
     }
     return E_OK;
@@ -489,7 +491,8 @@ static int32_t ArrayBufferToTranscode(napi_env env, MovingPhotoAsyncContext* con
     movingPhotoProgressHandler->offset = offset;
     movingPhotoProgressHandler->size = videoSize;
     movingPhotoProgressHandler->contextData = context;
-    return CallDoTranscoder(std::move(movingPhotoProgressHandler));
+    movingPhotoProgressHandler->onProgressFunc = context->threadsafeFunction;
+    return CallDoTranscoder(std::move(movingPhotoProgressHandler), context->isTranscoder);
 }
 
 static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext* context)
@@ -578,17 +581,25 @@ static bool HasReadPermission()
     return result;
 }
 
+static void SetContextInfo(unique_ptr<MovingPhotoAsyncContext>& context, MovingPhotoNapi* thisArg)
+{
+    if (context != nullptr && thisArg != nullptr) {
+        context->movingPhotoUri = thisArg->GetUri();
+        context->sourceMode = thisArg->GetSourceMode();
+        context->compatibleMode = thisArg->GetCompatibleMode();
+        context->requestId = thisArg->GetRequestId();
+        context->progressHandlerRef = thisArg->GetProgressHandlerRef();
+        context->mediaAssetEnv = thisArg->GetMediaAssetEnv();
+        context->threadsafeFunction = thisArg->GetThreadsafeFunction();
+    }
+}
+
 static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const napi_value argv[],
     MovingPhotoNapi* thisArg, unique_ptr<MovingPhotoAsyncContext>& context)
 {
     CHECK_COND_WITH_MESSAGE(env, (argc == ARGS_ONE || argc == ARGS_TWO), "Invalid number of arguments");
     CHECK_COND(env, thisArg != nullptr, JS_INNER_FAIL);
-    context->movingPhotoUri = thisArg->GetUri();
-    context->sourceMode = thisArg->GetSourceMode();
-    context->compatibleMode = thisArg->GetCompatibleMode();
-    context->requestId = thisArg->GetRequestId();
-    context->progressHandlerRef = thisArg->GetProgressHandlerRef();
-    context->mediaAssetEnv = thisArg->GetMediaAssetEnv();
+    SetContextInfo(context, thisArg);
     int32_t resourceType = 0;
     if (argc == ARGS_ONE) {
         // return by array buffer
@@ -755,7 +766,8 @@ napi_value MovingPhotoNapi::NewMovingPhotoNapi(napi_env env, const string& photo
     movingPhotoNapi->SetRequestId(movingPhotoParam.requestId);
     movingPhotoNapi->SetCompatibleMode(movingPhotoParam.compatibleMode);
     movingPhotoNapi->SetProgressHandlerRef(movingPhotoParam.progressHandlerRef);
-    movingPhotoNapi->setMediaAssetEnv(env);
+    movingPhotoNapi->SetMediaAssetEnv(env);
+    movingPhotoNapi->SetThreadsafeFunction(movingPhotoParam.threadsafeFunction);
     return instance;
 }
 
@@ -828,7 +840,8 @@ int32_t MovingPhotoNapi::DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, 
     movingPhotoProgressHandler->offset = offset;
     movingPhotoProgressHandler->size = videoSize;
     movingPhotoProgressHandler->contextData = context;
-    return CallDoTranscoder(std::move(movingPhotoProgressHandler));
+    movingPhotoProgressHandler->onProgressFunc = context->threadsafeFunction;
+    return CallDoTranscoder(std::move(movingPhotoProgressHandler), context->isTranscoder);
 }
 
 void MovingPhotoNapi::RequestCloudContentArrayBuffer(int32_t fd, MovingPhotoAsyncContext* context)
@@ -973,10 +986,6 @@ void MovingPhotoNapi::CallRequestContentCallBack(napi_env env, void* context, in
     if (errorCode != E_OK) {
         NAPI_ERR_LOG("MovingPhotoNapi::CallRequestContentCallBack errorCode is %{public}d", errorCode);
         mContext->error = errorCode;
-    }
-    if (mContext->error == E_INVALID_MODE) {
-        mContext->isTranscoder = false;
-        return;
     }
 
     napi_status status;

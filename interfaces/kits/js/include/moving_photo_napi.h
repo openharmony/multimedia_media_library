@@ -40,6 +40,7 @@ struct MovingPhotoAsyncContext : public NapiError {
     napi_ref progressHandlerRef;
     napi_env mediaAssetEnv;
     bool isTranscoder = false;
+    napi_threadsafe_function threadsafeFunction;
     std::string requestId;
     ResourceType resourceType;
     std::string destImageUri;
@@ -56,8 +57,9 @@ struct MovingPhotoParam {
     std::string requestId;
     CompatibleMode compatibleMode;
     napi_ref progressHandlerRef;
+    napi_threadsafe_function threadsafeFunction;
     MovingPhotoParam() : requestId(""), compatibleMode(CompatibleMode::ORIGINAL_FORMAT_MODE),
-        progressHandlerRef(nullptr) {};
+        progressHandlerRef(nullptr), threadsafeFunction(nullptr) {};
 };
 
 class MovingPhotoNapi {
@@ -80,7 +82,15 @@ public:
     napi_ref GetProgressHandlerRef();
     void SetProgressHandlerRef(napi_ref &progressHandlerRef);
     napi_env GetMediaAssetEnv();
-    void setMediaAssetEnv(napi_env mediaAssetEnv);
+    void SetMediaAssetEnv(napi_env mediaAssetEnv);
+    napi_threadsafe_function GetThreadsafeFunction()
+    {
+        return threadsafeFunction_;
+    }
+    void SetThreadsafeFunction(napi_threadsafe_function threadsafeFunction)
+    {
+        threadsafeFunction_ = threadsafeFunction;
+    }
     static int32_t DoMovingPhotoTranscode(napi_env env, int32_t &videoFd, MovingPhotoAsyncContext* context);
     static void OnProgress(napi_env env, napi_value cb, void *context, void *data);
     static int32_t GetFdFromUri(const std::string &sandBoxUri);
@@ -101,6 +111,7 @@ private:
     std::string requestId_;
     napi_ref progressHandlerRef_ = nullptr;
     napi_env media_asset_env_ = nullptr;
+    napi_threadsafe_function threadsafeFunction_ = nullptr;
 };
 
 } // Media
