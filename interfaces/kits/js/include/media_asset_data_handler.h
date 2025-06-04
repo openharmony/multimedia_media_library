@@ -72,6 +72,14 @@ public:
     void SetRequestId(std::string requestId);
     napi_ref GetProgressHandlerRef();
     void SetProgressHandlerRef(napi_ref &progressHandlerRef);
+    napi_threadsafe_function GetThreadsafeFunction()
+    {
+        return threadsafeFunction_;
+    }
+    void SetThreadsafeFunction(napi_threadsafe_function &threadsafeFunction)
+    {
+        threadsafeFunction_ = threadsafeFunction;
+    }
 
 private:
     napi_env env_ = nullptr;
@@ -83,6 +91,7 @@ private:
     NotifyMode notifyMode_ = NotifyMode::FAST_NOTIFY;
     CompatibleMode compatibleMode_ {0};
     napi_ref progressHandlerRef_ = nullptr;
+    napi_threadsafe_function threadsafeFunction_ = nullptr;
     std::string requestId_;
     static std::mutex dataHandlerRefMutex_;
 };

@@ -43,6 +43,7 @@
 #include "medialibrary_napi_utils_ext.h"
 #include "medialibrary_tracer.h"
 #include "moving_photo_napi.h"
+#include "moving_photo_call_transcoder.h"
 #include "permission_utils.h"
 #include "picture_handle_client.h"
 #include "ui_extension_context.h"
@@ -262,6 +263,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
     mediaAssetDataHandler->SetNotifyMode(notifyMode);
     mediaAssetDataHandler->SetRequestId(asyncContext->requestId);
     mediaAssetDataHandler->SetProgressHandlerRef(asyncContext->progressHandlerRef);
+    mediaAssetDataHandler->SetThreadsafeFunction(asyncContext->onProgressPtr);
     AssetHandler *assetHandler = CreateAssetHandler(asyncContext->photoId, asyncContext->requestId,
         asyncContext->photoUri, mediaAssetDataHandler, threadSafeFunc);
     assetHandler->photoQuality = asyncContext->photoQuality;
@@ -1183,6 +1185,7 @@ static napi_value GetNapiValueOfMedia(napi_env env, const std::shared_ptr<NapiMe
         movingPhotoParam.compatibleMode =  dataHandler->GetCompatibleMode();
         movingPhotoParam.requestId = dataHandler->GetRequestId();
         movingPhotoParam.progressHandlerRef = dataHandler->GetProgressHandlerRef();
+        movingPhotoParam.threadsafeFunction = dataHandler->GetThreadsafeFunction();
         napiValueOfMedia = MovingPhotoNapi::NewMovingPhotoNapi(env, dataHandler->GetRequestUri(),
             dataHandler->GetSourceMode(), movingPhotoParam);
     } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_PICTURE) {
@@ -1632,6 +1635,51 @@ static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, cons
     RETURN_NAPI_TRUE(env);
 }
 
+napi_status MediaAssetManagerNapi::CreateMovingPhotoThreadSafeFunc(napi_env env,
+    unique_ptr<MediaAssetManagerAsyncContext> &context, napi_threadsafe_function &progressFunc)
+{
+    if (env == nullptr || context == nullptr) {
+        NAPI_ERR_LOG("env or context is nullptr");
+        return napi_invalid_arg;
+    }
+    napi_value workName = nullptr;
+    napi_create_string_utf8(env, "ProgressThread", NAPI_AUTO_LENGTH, &workName);
+    napi_status status = napi_ok;
+    status = napi_create_threadsafe_function(env, context->mediaAssetProgressHandler, NULL, workName, 0, 1,
+        NULL, NULL, NULL, MovingPhotoCallTranscoder::OnProgress, &progressFunc);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_create_threadsafe_function fail");
+        progressFunc = nullptr;
+        NapiError::ThrowError(env, JS_INNER_FAIL, "napi_create_threadsafe_function fail");
+    }
+    return status;
+}
+
+bool MediaAssetManagerNapi::CreateMovingPhotoHandlerInfo(napi_env env,
+    unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
+{
+    if (env == nullptr || asyncContext == nullptr) {
+        NAPI_ERR_LOG("env or asyncContext is nullptr");
+        return false;
+    }
+    if (asyncContext->compatibleMode != CompatibleMode::COMPATIBLE_FORMAT_MODE) {
+        return true;
+    }
+    if (asyncContext->mediaAssetProgressHandler == nullptr) {
+        if (CreateMovingPhotoThreadSafeFunc(env, asyncContext, asyncContext->onProgressPtr) != napi_ok) {
+            NAPI_ERR_LOG("CreateMovingPhotoThreadSafeFunc failed");
+            return false;
+        }
+        return true;
+    }
+    if (CreateProgressHandlerRef(env, asyncContext, asyncContext->progressHandlerRef) != napi_ok ||
+        CreateMovingPhotoThreadSafeFunc(env, asyncContext, asyncContext->onProgressPtr) != napi_ok) {
+        NAPI_ERR_LOG("CreateProgressHandlerRef or CreateMovingPhotoThreadSafeFunc failed");
+        return false;
+    }
+    return true;
+}
+
 napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -1652,11 +1700,9 @@ napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callba
         NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
         return nullptr;
     }
-    if (asyncContext->mediaAssetProgressHandler != nullptr) {
-        if (CreateProgressHandlerRef(env, asyncContext, asyncContext->progressHandlerRef) != napi_ok) {
-            NAPI_ERR_LOG("CreateProgressHandlerRef failed");
-            return nullptr;
-        }
+    if (!CreateMovingPhotoHandlerInfo(env, asyncContext)) {
+        NAPI_ERR_LOG("CreateMovingPhotoHandlerInfo failed");
+        return nullptr;
     }
     asyncContext->requestId = GenerateRequestId();
 
