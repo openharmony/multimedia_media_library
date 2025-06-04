@@ -78,7 +78,10 @@ bool MovingPhotoCallTranscoder::DoTranscode(const std::shared_ptr<MovingPhotoPro
 void MovingphotoTranscoderObserver::DoPrepareError()
 {
     isPrepareError.store(true);
-    ErrorExcute();
+    NAPI_ERR_LOG("MediaAssetManagerCallback DoPrepareError");
+    if (transCoder_ != nullptr) {
+        transCoder_->Release();
+    }
 }
 
 void MovingphotoTranscoderObserver::CallMovingProgressCallback(bool isComplete)
@@ -104,6 +107,7 @@ void MovingphotoTranscoderObserver::CallMovingProgressCallback(bool isComplete)
         asyncHandler->env = movingPhotoProgressHandler_->env;
         asyncHandler->contextData = movingPhotoProgressHandler_->contextData;
         asyncHandler->errCode = movingPhotoProgressHandler_->errCode;
+        asyncHandler->callbackFunc = movingPhotoProgressHandler_->callbackFunc;
     } else {
         asyncHandler->mediaAssetEnv = movingPhotoProgressHandler_->mediaAssetEnv;
         asyncHandler->extra = movingPhotoProgressHandler_->extra;
@@ -118,7 +122,7 @@ void MovingphotoTranscoderObserver::CallMovingProgressCallback(bool isComplete)
     (void)asyncHandler.release();
 }
 
-static void OnProgress(napi_env env, napi_value cb, void *context, void *data)
+void MovingPhotoCallTranscoder::OnProgress(napi_env env, napi_value cb, void *context, void *data)
 {
     NAPI_DEBUG_LOG("OnProgress");
     auto mpHandler = reinterpret_cast<MovingPhotoProgressHandler *>(data);
@@ -174,40 +178,6 @@ void MovingphotoTranscoderObserver::SetMovingPhotoProgress(
     const std::shared_ptr<MovingPhotoProgressHandler> &movingPhotoProgressHandler)
 {
     movingPhotoProgressHandler_ = movingPhotoProgressHandler;
-    if (movingPhotoProgressHandler_ == nullptr) {
-        NAPI_ERR_LOG("SetMovingPhotoProgress, movingPhotoProgressHandler_ is null");
-        return;
-    }
-    napi_value jsCallback = nullptr;
-    napi_status status = napi_get_reference_value(movingPhotoProgressHandler_->mediaAssetEnv,
-        movingPhotoProgressHandler_->progressHandlerRef, &jsCallback);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-        return;
-    }
-
-    napi_value workName = nullptr;
-    auto env = movingPhotoProgressHandler_->mediaAssetEnv;
-    napi_create_string_utf8(env, "OnProgress", NAPI_AUTO_LENGTH, &workName);
-    status = napi_create_threadsafe_function(env, jsCallback, NULL, workName, 0, 1, NULL, NULL, NULL,
-        OnProgress, &movingPhotoProgressHandler_->onProgressFunc);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("napi_create_threadsafe_function fail");
-        movingPhotoProgressHandler_->onProgressFunc = nullptr;
-    }
-}
-
-void MovingphotoTranscoderObserver::ErrorExcute()
-{
-    if (movingPhotoProgressHandler_ == nullptr) {
-        NAPI_ERR_LOG("ErrorExcute, movingPhotoProgressHandler_ is null");
-        return;
-    }
-    movingPhotoProgressHandler_->errCode = E_ERR;
-    if (isPrepareError.load()) {
-        movingPhotoProgressHandler_->errCode = E_INVALID_MODE;
-    }
-    CallMovingProgressCallback(true);
 }
 
 void MovingphotoTranscoderObserver::OnInfo(int32_t type, int32_t extra)
@@ -239,15 +209,16 @@ void MovingphotoTranscoderObserver::OnError(int32_t errCode, const std::string &
 {
     NAPI_ERR_LOG("MediaAssetManagerCallback OnError errCode:%{public}d errorMsg:%{public}s",
         errCode, errorMsg.c_str());
-    if (transCoder_ == nullptr) {
-        NAPI_ERR_LOG("transCoder_ is null, cannot release resources");
-        return;
+    if (transCoder_ != nullptr) {
+        transCoder_->Release();
     }
-    transCoder_->Release();
     if (isPrepareError.load()) {
         return;
     }
-    ErrorExcute();
+    if (movingPhotoProgressHandler_ != nullptr) {
+        movingPhotoProgressHandler_->errCode = E_ERR;
+    }
+    CallMovingProgressCallback(true);
 }
 } // namespace Media
 } // namespace OHOS

@@ -46,6 +46,7 @@ public:
     MovingPhotoCallTranscoder() = delete;
     ~MovingPhotoCallTranscoder() = delete;
     static bool DoTranscode(const std::shared_ptr<MovingPhotoProgressHandler> &MovingPhotoProgressHandler);
+    static void OnProgress(napi_env env, napi_value cb, void *context, void *data);
 };
 
 } // namespace Media

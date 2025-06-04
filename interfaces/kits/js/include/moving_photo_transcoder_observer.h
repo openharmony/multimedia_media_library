@@ -39,7 +39,6 @@ protected:
     void OnError(int32_t errCode, const std::string &errorMsg) override;
     void OnInfo(int32_t type, int32_t extra) override;
 private:
-    void ErrorExcute();
     std::shared_ptr<MovingPhotoProgressHandler> movingPhotoProgressHandler_ { nullptr };
     std::shared_ptr<TransCoder> transCoder_ { nullptr };
     std::atomic_bool isPrepareError { false };
