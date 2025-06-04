@@ -4095,7 +4095,7 @@ int32_t MediaLibraryPhotoOperations::UpdateSupportedWatermarkType(MediaLibraryCo
 
 struct LSOperationFileInfo {
     std::string permissions;
-    int links;
+    nlink_t links;
     std::string owner;
     std::string group;
     long size;
