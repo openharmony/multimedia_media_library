@@ -130,7 +130,7 @@ void LSCommand::PrintFileInfo(const string& fileInfoJSONString)
 
     for (const auto& file : jsonObj["files"]) {
         std::cout << file["permissions"].get<std::string>() << " ";
-        std::cout << file["links"].get<int>() << " ";
+        std::cout << file["links"].get<nlink_t>() << " ";
         std::cout << file["owner"].get<std::string>() << " ";
         std::cout << file["group"].get<std::string>() << " ";
         std::cout << file["size"].get<long>() << " ";
