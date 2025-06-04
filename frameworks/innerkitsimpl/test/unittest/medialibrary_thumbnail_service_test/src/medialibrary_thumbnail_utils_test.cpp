@@ -47,41 +47,6 @@ void MediaLibraryThumbnailUtilsTest::TearDownTestCase(void) {}
 void MediaLibraryThumbnailUtilsTest::SetUp() {}
      
 void MediaLibraryThumbnailUtilsTest::TearDown(void) {}
-
-const int32_t TEST_PIXELMAP_WIDTH_AND_HEIGHT = 100;
-
-static std::shared_ptr<PixelMap> CreateTestPixelMap(PixelFormat format, bool useDMA)
-{
-    InitializationOptions opts;
-    opts.size.width = TEST_PIXELMAP_WIDTH_AND_HEIGHT;
-    opts.size.height = TEST_PIXELMAP_WIDTH_AND_HEIGHT;
-    opts.srcPixelFormat = format;
-    opts.pixelFormat = format;
-    opts.useDMA = useDMA;
-    std::shared_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
-    return pixelMap;
-}
-
-static std::shared_ptr<Picture> CreateTestPicture(std::shared_ptr<PixelMap> pixelMap,
-    std::shared_ptr<PixelMap> gainMap)
-{
-    if (pixelMap == nullptr) {
-        return nullptr;
-    }
-
-    auto sourcePtr = Picture::Create(pixelMap);
-    std::shared_ptr<Picture> picture = std::move(sourcePtr);
-    if (gainMap == nullptr) {
-        return picture;
-    }
-
-    Size gainMapSize = {gainMap->GetWidth(), gainMap->GetHeight()};
-    auto auxiliaryPicturePtr = AuxiliaryPicture::Create(gainMap, AuxiliaryPictureType::GAINMAP, gainMapSize);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(auxiliaryPicturePtr);
-    CHECK_AND_RETURN_RET_LOG(auxiliaryPicture != nullptr, nullptr, "Create auxiliaryPicture failed");
-    picture->SetAuxiliaryPicture(auxiliaryPicture);
-    return picture;
-}
  
 HWTEST_F(MediaLibraryThumbnailUtilsTest, LoadAudioFileInfo_test_001, TestSize.Level0)
 {
@@ -283,40 +248,6 @@ HWTEST_F(MediaLibraryThumbnailUtilsTest, ConvertStrToInt32_test_001, TestSize.Le
     str = "100000000000000";
     res = ThumbnailUtils::ConvertStrToInt32(str, ret);
     EXPECT_EQ(res, false);
-}
-
-HWTEST_F(MediaLibraryThumbnailUtilsTest, ThumbnailUtils_IsPictureValid, TestSize.Level0)
-{
-    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
-    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
-    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
-    bool ret = ThumbnailUtils::IsPictureValid(picture);
-    EXPECT_EQ(ret, true);
-}
-
-HWTEST_F(MediaLibraryThumbnailUtilsTest, ThumbnailUtils_IsPixelMapValid, TestSize.Level0)
-{
-    std::shared_ptr<PixelMap> PixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
-    bool ret = ThumbnailUtils::IsPixelMapValid(PixelMap);
-    EXPECT_EQ(ret, true);
-}
-
-HWTEST_F(MediaLibraryThumbnailUtilsTest, ThumbnailUtils_CopyAndScalePicture, TestSize.Level0)
-{
-    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
-    std::shared_ptr<PixelMap> gainMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
-    std::shared_ptr<Picture> picture = CreateTestPicture(pixelMap, gainMap);
-    Size desiredSize = { TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2, TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2 };
-    auto ret = ThumbnailUtils::CopyAndScalePicture(picture, desiredSize);
-    EXPECT_NE(ret, nullptr);
-}
-
-HWTEST_F(MediaLibraryThumbnailUtilsTest, ThumbnailUtils_CopyAndScalePixelMap, TestSize.Level0)
-{
-    std::shared_ptr<PixelMap> pixelMap = CreateTestPixelMap(PixelFormat::RGBA_8888, false);
-    Size desiredSize = { TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2, TEST_PIXELMAP_WIDTH_AND_HEIGHT / 2 };
-    auto ret = ThumbnailUtils::CopyAndScalePixelMap(pixelMap, desiredSize);
-    EXPECT_NE(ret, nullptr);
 }
 
 } // namespace Media
