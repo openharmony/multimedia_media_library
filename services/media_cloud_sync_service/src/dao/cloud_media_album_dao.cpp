@@ -720,8 +720,11 @@ int32_t CloudMediaAlbumDao::GetMetaModifiedAlbum(int32_t size, std::vector<Photo
             // CloudAlbumDataConvert::HandleRecordId 先cloudId然后return,导致isInWhiteList无效,
             // 系统相册cloudId没有使用正确的WriteListMap中的cloudId
             record.isInWhiteList = true;
-            record.cloudId = writeListMap.at(lpath).cloudId;
-            record.albumPluginCloudId = writeListMap.at(lpath).cloudId;
+            std::string albumPluginCloudId = writeListMap.at(lpath).cloudId;
+            if (!albumPluginCloudId.empty()) {
+                record.cloudId = albumPluginCloudId;
+                record.albumPluginCloudId = albumPluginCloudId;
+            }
             record.albumNameEn = writeListMap.at(lpath).albumNameEn;
             record.dualAlbumName = writeListMap.at(lpath).dualAlbumName;
             record.priority = writeListMap.at(lpath).priority;
