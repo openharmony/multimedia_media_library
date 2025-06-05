@@ -189,6 +189,7 @@ int32_t CloudFileDataConvert::HandleUniqueFileds(
     map[PhotoColumn::PHOTO_EDIT_TIME] = MDKRecordField(upLoadRecord.editTime);
     map[PhotoColumn::PHOTO_ORIGINAL_SUBTYPE] = MDKRecordField(upLoadRecord.originalSubtype);
     map[PhotoColumn::PHOTO_COVER_POSITION] = MDKRecordField(upLoadRecord.coverPosition);
+    map[PhotoColumn::PHOTO_IS_RECTIFICATION_COVER] = MDKRecordField(upLoadRecord.isRectificationCover);
     map[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = MDKRecordField(upLoadRecord.movingPhotoEffectMode);
     map[PhotoColumn::SUPPORTED_WATERMARK_TYPE] = MDKRecordField(upLoadRecord.supportedWatermarkType);
     map[PhotoColumn::PHOTO_STRONG_ASSOCIATION] = MDKRecordField(upLoadRecord.strongAssociation);
@@ -916,6 +917,7 @@ void CloudFileDataConvert::ConvertAttributes(MDKRecordPhotosData &data, OnFetchP
     onFetchPhotoVo.movingPhotoEffectMode = data.GetMovingPhotoEffectMode().value_or(0);
     onFetchPhotoVo.editTime = data.GetEditTime().value_or(0);
     onFetchPhotoVo.coverPosition = data.GetCoverPosition().value_or(0);
+    onFetchPhotoVo.isRectificationCover = data.GetIsRectificationCover().value_or(0);
     onFetchPhotoVo.supportedWatermarkType = data.GetSupportedWatermarkType().value_or(0);
     onFetchPhotoVo.strongAssociation = data.GetStrongAssociation().value_or(0);
 }

@@ -63,6 +63,7 @@ public:
     std::optional<int64_t> editTime;                  // PhotoColumn::PHOTO_EDIT_TIME;
     std::optional<int32_t> originalSubtype;           // PhotoColumn::PHOTO_ORIGINAL_SUBTYPE;
     std::optional<int64_t> coverPosition;             // PhotoColumn::PHOTO_COVER_POSITION;
+    std::optional<int32_t> isRectificationCover;      // PhotoColumn::PHOTO_IS_RECTIFICATION_COVER;
     std::optional<int32_t> movingPhotoEffectMode;     // PhotoColumn::MOVING_PHOTO_EFFECT_MODE;
     std::optional<int32_t> ownerAlbumId;              // PhotoColumn::PHOTO_OWNER_ALBUM_ID;
     std::optional<std::string> originalAssetCloudId;  // PhotoColumn::PHOTO_ORIGINAL_ASSET_CLOUD_ID;
@@ -144,6 +145,7 @@ private:
            << "\"dynamicRangeType\": " << dynamicRangeType.value_or(0) << ", "
            << "\"frontCamera\": \"" << frontCamera.value_or("") << "\", "
            << "\"coverPosition\": " << coverPosition.value_or(0) << ", "
+           << "\"isRectificationCover\": " << isRectificationCover.value_or(0) << ", "
            << "\"movingPhotoEffectMode\": " << movingPhotoEffectMode.value_or(0) << ", "
            << "\"supportedWatermarkType\": " << supportedWatermarkType.value_or(0) << ", "
            << "\"strongAssociation\": " << strongAssociation.value_or(0) << ", ";

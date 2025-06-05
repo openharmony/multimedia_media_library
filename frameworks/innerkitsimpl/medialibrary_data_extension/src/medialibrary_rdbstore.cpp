@@ -4506,6 +4506,17 @@ static void CreateTabCustomRecords(RdbStore &store)
     MEDIA_INFO_LOG("create custom and records end");
 }
 
+static void AddIsRectificationCover(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_IS_RECTIFICATION_COVER +
+            " INT NOT NULL DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("start add is_rectification_cover column");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end add is_rectification_cover column");
+}
+
 static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_FIX_DB_UPGRADE_FROM_API15) {
@@ -4550,6 +4561,11 @@ static void UpgradeExtensionPart6(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_DC_ANALYSIS_INDEX_UPDATE) {
         AddDcAnalysisIndexUpdateColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_RECTIFICATION_COVER) {
+        AddIsRectificationCover(store);
+        UpdatePhotosMdirtyTrigger(store);
     }
 
     TableEventHandler().OnUpgrade(
