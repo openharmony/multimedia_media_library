@@ -428,6 +428,10 @@ static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, FileInfo &fileI
 {
     int64_t dateTaken = metadata->GetDateTaken();
     if (dateTaken != 0) {
+        bool hasDateTaken = value.HasColumn(PhotoColumn::MEDIA_DATE_TAKEN);
+        if (hasDateTaken) {
+            value.Delete(PhotoColumn::MEDIA_DATE_TAKEN);
+        }
         value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
         fileInfo.dateTaken = dateTaken;
         return;
@@ -443,6 +447,10 @@ static void InsertDateTaken(std::unique_ptr<Metadata> &metadata, FileInfo &fileI
         }
     } else {
         dateTaken = dateAdded;
+    }
+    bool hasDateTaken = value.HasColumn(PhotoColumn::MEDIA_DATE_TAKEN);
+    if (hasDateTaken) {
+        value.Delete(PhotoColumn::MEDIA_DATE_TAKEN);
     }
     value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, dateTaken);
     fileInfo.dateTaken = dateTaken;
@@ -547,6 +555,22 @@ static void InsertUserComment(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
     value.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
 }
 
+void BaseRestore::InsertDetailTime(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
+    FileInfo &fileInfo)
+{
+    if (fileInfo.detailTime.empty()) {
+        fileInfo.detailTime = MediaFileUtils::StrCreateTimeSafely(
+            PhotoColumn::PHOTO_DETAIL_TIME_FORMAT, fileInfo.dateTaken / MSEC_TO_SEC);
+    }
+
+    bool hasDetailTime = value.HasColumn(PhotoColumn::PHOTO_DETAIL_TIME);
+    if (hasDetailTime) {
+        value.Delete(PhotoColumn::PHOTO_DETAIL_TIME);
+    }
+    value.PutString(PhotoColumn::PHOTO_DETAIL_TIME, fileInfo.detailTime);
+}
+
+
 void BaseRestore::SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     uint64_t coverPosition = 0;
@@ -616,6 +640,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
     value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
     InsertDateTaken(data, fileInfo, value);
+    InsertDetailTime(data, value, fileInfo);
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());

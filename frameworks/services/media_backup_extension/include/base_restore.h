@@ -170,6 +170,8 @@ protected:
     bool IsCloudRestoreSatisfied();
     void SetCoverPosition(const FileInfo &fileInfo, NativeRdb::ValuesBucket &value);
     void AddToPhotoInfoMap(std::vector<FileInfo> &fileInfos);
+    void InsertDetailTime(const std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
+        FileInfo &fileInfo);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_{0};
