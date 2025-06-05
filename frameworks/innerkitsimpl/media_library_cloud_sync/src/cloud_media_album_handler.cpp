@@ -116,7 +116,7 @@ int32_t CloudMediaAlbumHandler::OnFetchRecords(const std::vector<MDKRecord> &rec
         data.isDelete = record.GetIsDelete();
         req.albums.emplace_back(data);
         MEDIA_INFO_LOG("OnFetchRecords AlbumReqData:%{public}s", data.ToString().c_str());
-        MEDIA_INFO_LOG("OnFetchRecords Record:%{public}s", json.c_str());
+        MEDIA_INFO_LOG("OnFetchRecords Record:%{private}s", json.c_str());
     }
     uint32_t operationCode = static_cast<uint32_t>(CloudMediaAlbumOperationCode::CMD_ON_FETCH_RECORDS);
     int32_t ret =
@@ -174,7 +174,7 @@ int32_t CloudMediaAlbumHandler::GetCreatedRecords(std::vector<MDKRecord> &record
             dkRecord->SetRecordData(data);
             Json::Value json = dkRecord->ToJsonValue();
             std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetCreatedRecords JSON: %{public}s", jsonStr.c_str());
+            MEDIA_INFO_LOG("GetCreatedRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(*dkRecord);
         } else {
             MEDIA_ERR_LOG("CloudMediaAlbumHandler::GetCreatedRecords ConvertToMdkRecord Error");
@@ -206,7 +206,7 @@ int32_t CloudMediaAlbumHandler::GetMetaModifiedRecords(std::vector<MDKRecord> &r
         if (dkRecord != nullptr) {
             Json::Value json = dkRecord->ToJsonValue();
             std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetMetaModifiedRecords JSON: %{public}s", jsonStr.c_str());
+            MEDIA_INFO_LOG("GetMetaModifiedRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(*dkRecord);
             dkRecord = nullptr;
         }
@@ -240,7 +240,7 @@ int32_t CloudMediaAlbumHandler::GetDeletedRecords(std::vector<MDKRecord> &record
         if (dkRecord != nullptr) {
             Json::Value json = dkRecord->ToJsonValue();
             std::string jsonStr = writer.write(json);
-            MEDIA_INFO_LOG("GetDeletedRecords JSON: %{public}s", jsonStr.c_str());
+            MEDIA_INFO_LOG("GetDeletedRecords JSON: %{private}s", jsonStr.c_str());
             records.push_back(*dkRecord);
             dkRecord = nullptr;
         }
