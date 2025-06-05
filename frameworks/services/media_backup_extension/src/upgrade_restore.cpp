@@ -1211,7 +1211,7 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
         "COALESCE(gm.albumId, '') NOT IN ('default-album-3', 'default-album-4') "
         "AND (mt.tag_name IS NOT NULL AND mt.tag_name != '') "
         "GROUP BY mf.hash, mf.face_id "
-        " HAVING gm._id IN (" + selection + ")";
+        "HAVING gm._id IN (" + selection + ")";
         
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, false, "Query resultSql is null.");
