@@ -19,6 +19,7 @@
 #include <string>
 
 #include "backup_const.h"
+#include "clone_restore_analysis_total.h"
 #include "rdb_store.h"
 
 namespace OHOS::Media {
@@ -27,9 +28,6 @@ public:
     void Init(int32_t sceneCode, const std::string &taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
     void Restore(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
-
-    void RestoreMaps();
-    void ReportRestoreTask();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -40,20 +38,6 @@ public:
         const std::optional<T>& optionalValue, const std::unordered_set<std::string> &intersection);
 
 private:
-    enum AnalysisStatus : int32_t {
-        UNANALYZED = 0
-    };
-    enum RestoreStatus : int32_t {
-        SUCCESS = 0,
-        DUPLICATE,
-        FAILED
-    };
-    struct AnalysisTotalInfo {
-        int32_t fileIdOld {-1};
-        int32_t fileIdNew {-1};
-        int32_t status {AnalysisStatus::UNANALYZED};
-        int32_t restoreStatus {RestoreStatus::SUCCESS};
-    };
     struct GeoCloneInfo {
         std::optional<double> latitude;
         std::optional<double> longitude;
@@ -83,12 +67,16 @@ private:
         
     };
 
+    void GetMaxIds();
+    void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void RestoreMaps();
+    void ReportRestoreTask();
+
     void GetInfos(std::vector<GeoCloneInfo> &infos);
     void DeduplicateInfos(std::vector<GeoCloneInfo> &infos);
     std::unordered_set<int32_t> GetExistingFileIds(const std::string &tableName);
     void RemoveDuplicateInfos(std::vector<GeoCloneInfo> &infos, const std::unordered_set<int32_t> &existingFileIds);
     void InsertIntoTable(std::vector<GeoCloneInfo> &infos);
-    void UpdateAnalysisTotalInfosRestoreStatus(int32_t restoreStatus);
 
     void GetInfo(GeoCloneInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void GetMapInsertValue(NativeRdb::ValuesBucket &value, GeoCloneInfo info,
@@ -99,17 +87,10 @@ private:
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
 
-    void GetMaxIds();
-    std::vector<int32_t> GetMinIdsOfAnalysisTotal();
-    void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
-    void GetAnalysisTotalInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
-    void UpdateAnalysisTotal();
-    std::unordered_map<int32_t, std::vector<std::string>> GetAnalysisTotalStatusFileIdsMap();
-    int32_t UpdateAnalysisTotalByStatus(int32_t status, const std::vector<std::string> &fileIds);
-
 private:
     int32_t sceneCode_{-1};
     std::string taskId_;
+    std::string analysisType_;
     std::string systemLanguage_{"zh-Hans"};
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
@@ -118,7 +99,7 @@ private:
     std::atomic<int32_t> failedCnt_{0};
     std::atomic<int32_t> duplicateCnt_{0};
     std::atomic<int64_t> restoreTimeCost_{0};
-    std::vector<AnalysisTotalInfo> analysisTotalInfos_;
+    CloneRestoreAnalysisTotal cloneRestoreAnalysisTotal_;
 };
 
 template<typename T>
