@@ -26,6 +26,7 @@
 #include "medialibrary_data_manager.h"
 #include "file_asset.h"
 #include "parameters.h"
+#include "media_db_permission_check.h"
 
 using namespace std;
 using namespace OHOS::Media;
@@ -137,14 +138,7 @@ void PermissionCheck::SetNeedPermissionCheck(bool needPermissionCheck)
 std::shared_ptr<PermissionCheck> PermissionCheck::BuildPermissionCheckChain(uint32_t businessCode,
     const PermissionHeaderReq &data)
 {
-    auto it = PermissionCheck::businessCodeToPermissions.find(businessCode);
-    std::vector<std::vector<PermissionType>> ruleLists;
-    if (it != PermissionCheck::businessCodeToPermissions.end()) {
-        ruleLists = it->second;
-    } else {
-        MEDIA_ERR_LOG("BuildPermissionCheckChain fail, API code=%{public}d not found", businessCode);
-        return nullptr;
-    }
+    std::vector<std::vector<PermissionType>> ruleLists = data.getPermissionPolicy();
 
     bool needPermissionCheck = true;
     if (ruleLists.empty()) {
@@ -185,9 +179,6 @@ std::shared_ptr<PermissionCheck> PermissionCheck::BuildPermissionCheckChain(uint
 int32_t PermissionCheck::VerifyPermissions(uint32_t businessCode, const PermissionHeaderReq &data)
 {
     MEDIA_INFO_LOG("VerifyPermissions API code=%{public}d", businessCode);
-    bool isSkip = businessCode >= static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_START);
-    isSkip &= businessCode <= static_cast<uint32_t>(MediaLibraryBusinessCode::MEDIA_CLOUD_CODE_END);
-    CHECK_AND_RETURN_RET(!isSkip, E_SUCCESS);
     if (businessCode == static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_OPEN)) {
         auto ret = VerifyOpenFilePermissions(businessCode, data);
         MEDIA_INFO_LOG("Verify OpenFile Permissions ret=%{public}d, API code=%{public}d", ret, businessCode);
@@ -207,6 +198,8 @@ int32_t PermissionCheck::VerifyPermissions(uint32_t businessCode, const Permissi
     auto ret = permissionCheck->CheckPermission(businessCode, data);
     if (ret != E_SUCCESS) {
         MEDIA_DEBUG_LOG("checkPermission API code=%{public}d fail, err=%{public}d", businessCode, ret);
+        // if bypass success, return E_PERMISSION_DB_BYPASS
+        CHECK_AND_RETURN_RET(!data.getIsDBBypass(), DbPermissionCheck::CheckDBPermissionBypass(businessCode, data));
     } else {
         MEDIA_INFO_LOG("VerifyPermissions API code=%{public}d success", businessCode);
     }

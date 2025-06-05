@@ -20,7 +20,7 @@ group("unittest") {
 }
 
 ohos_unittest("media_assets_controller_service_test") {
-  module_out_path = "media_library/medialibrary-asset"
+  module_out_path = "media_library/media_library-asset"
   include_dirs = [
     "${MEDIALIB_CLOUD_SYNC_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -53,10 +53,23 @@ ohos_unittest("media_assets_controller_service_test") {
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/commit_edited_asset_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/create_asset_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/delete_photos_completed_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/asset_change_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/submit_cache_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/add_image_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/save_camera_photo_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/delete_photos_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/form_info_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/revert_to_original_vo.cpp",
     "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/trash_photos_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cloud_enhancement_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/modify_assets_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/retain_cloud_media_asset_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_download_cloud_media_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/grant_photo_uri_permission_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/grant_photo_uris_permission_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/cancel_photo_uri_permission_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/start_thumbnail_creation_task_vo.cpp",
+    "${MEDIALIB_BUSINESS_PATH}/media_assets_manager/src/vo/stop_thumbnail_creation_task_vo.cpp",
     "${MEDIALIB_UTILS_PATH}/src/parameter_utils.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/clone_asset_test.cpp",
@@ -65,6 +78,24 @@ ohos_unittest("media_assets_controller_service_test") {
     "./src/delete_photos_completed_test.cpp",
     "./src/form_info_test.cpp",
     "./src/revert_to_original_test.cpp",
+    "./src/cloud_enhancement_test.cpp",
+    "./src/modify_assets_test.cpp",
+    "./src/delete_asset_test.cpp",
+    "./src/grant_photo_uri_permission_test.cpp",
+    "./src/grant_photo_uris_permission_test.cpp",
+    "./src/cancel_photo_uri_permission_test.cpp",
+    "./src/start_thumbnail_creation_task_test.cpp",
+    "./src/stop_thumbnail_creation_task_test.cpp",
+    "./src/asset_change_request_test.cpp",
+    "./src/save_camera_photo_test.cpp",
+    "./src/set_user_comment_test.cpp",
+    "./src/set_location_test.cpp",
+    "./src/set_title_test.cpp",
+    "./src/set_edit_data_test.cpp",
+    "./src/set_camera_shot_key_test.cpp",
+    "./src/cloud_media_change_test.cpp",
+    "./src/set_favorite_test.cpp",
+    "./src/set_hidden_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",

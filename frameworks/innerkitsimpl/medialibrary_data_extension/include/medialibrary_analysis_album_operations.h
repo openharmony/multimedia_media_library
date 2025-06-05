@@ -58,6 +58,12 @@ public:
     EXPORT static void UpdateGroupPhotoAlbumById(int32_t albumId);
     EXPORT static void UpdatePortraitAlbumCoverSatisfied(int32_t fileId);
     EXPORT static int32_t SetAnalysisAlbumOrderPosition(MediaLibraryCommand &cmd);
+    EXPORT static int32_t SetGroupAlbumName(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    EXPORT static int32_t SetGroupCoverUri(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
+    EXPORT static int32_t DismissGroupPhotoAlbum(const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates);
 };
 } // namespace Media
 } // namespace OHOS

@@ -85,6 +85,7 @@
 #include "commit_edited_asset_vo.h"
 #include "user_define_ipc_client.h"
 #include "medialibrary_business_code.h"
+#include "modify_assets_vo.h"
 #include "clone_asset_vo.h"
 #include "revert_to_original_vo.h"
 
@@ -1321,6 +1322,21 @@ static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
     return true;
 }
 
+static int32_t CallCommitModify(FileAssetAsyncContext *context)
+{
+    ModifyAssetsReqBody reqBody;
+    reqBody.title = context->objectPtr->GetTitle();
+    reqBody.fileIds.push_back(context->objectPtr->GetId());
+
+    std::unordered_map<std::string, std::string> headerMap;
+    headerMap[MediaColumn::MEDIA_ID] = to_string(context->objectPtr->GetId());
+    headerMap[URI_TPYE] = TPYE_PHOTOS;
+
+    IPC::UserDefineIPCClient client;
+    client.SetHeader(headerMap);
+    return client.Call(context->businessCode, reqBody);
+}
+
 static void JSCommitModifyExecute(napi_env env, void *data)
 {
     auto *context = static_cast<FileAssetAsyncContext*>(data);
@@ -1329,34 +1345,40 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     if (!CheckDisplayNameInCommitModify(context)) {
         return;
     }
-    string uri;
-    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
-        context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-        BuildCommitModifyUriApi10(context, uri);
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+
+    int32_t changedRows = 0;
+    if (context->businessCode != 0) {
+        changedRows = CallCommitModify(context);
     } else {
+        string uri;
+        if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
+            context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+            BuildCommitModifyUriApi10(context, uri);
+            MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
-        BuildCommitModifyUriApi9(context, uri);
+            BuildCommitModifyUriApi9(context, uri);
 #else
-        uri = URI_UPDATE_FILE;
+            uri = URI_UPDATE_FILE;
 #endif
+        }
+
+        Uri updateAssetUri(uri);
+        DataSharePredicates predicates;
+        DataShareValuesBucket valuesBucket;
+        BuildCommitModifyValuesBucket(context, valuesBucket);
+        predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
+        predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
+        changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     }
 
-    Uri updateAssetUri(uri);
-    MediaType mediaType = context->objectPtr->GetMediaType();
-    string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
-    DataSharePredicates predicates;
-    DataShareValuesBucket valuesBucket;
-    BuildCommitModifyValuesBucket(context, valuesBucket);
-    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
-    predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
-
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("File asset modification failed, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
+        MediaType mediaType = context->objectPtr->GetMediaType();
+        string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
         Uri modifyNotify(notifyUri);
         UserFileClient::NotifyChange(modifyNotify);
     }
@@ -4081,6 +4103,7 @@ napi_value FileAssetNapi::PhotoAccessHelperCommitModify(napi_env env, napi_callb
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_PUBLIC_SET_TITLE);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
@@ -4114,6 +4137,21 @@ static void PhotoAccessHelperFavoriteComplete(napi_env env, napi_status status, 
     delete context;
 }
 
+static int32_t CallModifyFavorite(FileAssetAsyncContext *context)
+{
+    ModifyAssetsReqBody reqBody;
+    reqBody.favorite = context->isFavorite ? 1 : 0;
+    reqBody.fileIds.push_back(context->objectPtr->GetId());
+
+    std::unordered_map<std::string, std::string> headerMap;
+    headerMap[MediaColumn::MEDIA_ID] = to_string(context->objectPtr->GetId());
+    headerMap[URI_TPYE] = TPYE_PHOTOS;
+
+    IPC::UserDefineIPCClient client;
+    client.SetHeader(headerMap);
+    return client.Call(context->businessCode, reqBody);
+}
+
 static void PhotoAccessHelperFavoriteExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -4129,18 +4167,23 @@ static void PhotoAccessHelperFavoriteExecute(napi_env env, void *data)
         return;
     }
 
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(uri);
-    DataSharePredicates predicates;
-    DataShareValuesBucket valuesBucket;
     int32_t changedRows = 0;
-    valuesBucket.Put(MediaColumn::MEDIA_IS_FAV, context->isFavorite ? IS_FAV : NOT_FAV);
-    NAPI_INFO_LOG("update asset %{public}d favorite to %{public}d", context->objectPtr->GetId(),
-        context->isFavorite ? IS_FAV : NOT_FAV);
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
+    if (context->businessCode != 0) {
+        changedRows = CallModifyFavorite(context);
+    } else {
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri updateAssetUri(uri);
+        DataSharePredicates predicates;
+        DataShareValuesBucket valuesBucket;
+        valuesBucket.Put(MediaColumn::MEDIA_IS_FAV, context->isFavorite ? IS_FAV : NOT_FAV);
+        NAPI_INFO_LOG("update asset %{public}d favorite to %{public}d", context->objectPtr->GetId(),
+            context->isFavorite ? IS_FAV : NOT_FAV);
+        predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+        predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
-    changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+        changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    }
+
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Failed to modify favorite state, err: %{public}d", changedRows);
@@ -4163,6 +4206,7 @@ napi_value FileAssetNapi::PhotoAccessHelperFavorite(napi_env env, napi_callback_
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_SET_FAVORITE);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     NAPI_ASSERT(
         env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isFavorite) == napi_ok,
@@ -4338,6 +4382,14 @@ napi_value FileAssetNapi::PhotoAccessHelperCancelPhotoRequest(napi_env env, napi
     return jsResult;
 }
 
+static int32_t CallModifyHidden(FileAssetAsyncContext *context)
+{
+    ModifyAssetsReqBody reqBody;
+    reqBody.hiddenStatus = context->isHidden ? 1 : 0;
+    reqBody.fileIds.push_back(context->objectPtr->GetId());
+    return IPC::UserDefineIPCClient().Call(context->businessCode, reqBody);
+}
+
 static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -4351,15 +4403,21 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
         return;
     }
 
-    string uri = PAH_HIDE_PHOTOS;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(uri);
-    DataSharePredicates predicates;
-    predicates.In(MediaColumn::MEDIA_ID, vector<string>({ context->objectPtr->GetUri() }));
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
+    int32_t changedRows = 0;
+    if (context->businessCode != 0) {
+        changedRows = CallModifyHidden(context);
+    } else {
+        string uri = PAH_HIDE_PHOTOS;
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri updateAssetUri(uri);
+        DataSharePredicates predicates;
+        predicates.In(MediaColumn::MEDIA_ID, vector<string>({ context->objectPtr->GetUri() }));
+        DataShareValuesBucket valuesBucket;
+        valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
 
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+        changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    }
+
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Failed to modify hidden state, err: %{public}d", changedRows);
@@ -4405,6 +4463,7 @@ napi_value FileAssetNapi::PhotoAccessHelperSetHidden(napi_env env, napi_callback
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_BATCH_SET_HIDDEN);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     NAPI_ASSERT(
         env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isHidden) == napi_ok,
@@ -4414,6 +4473,21 @@ napi_value FileAssetNapi::PhotoAccessHelperSetHidden(napi_env env, napi_callback
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperSetHidden",
         PhotoAccessHelperSetHiddenExecute, PhotoAccessHelperSetHiddenComplete);
+}
+
+static int32_t CallModifyPending(FileAssetAsyncContext *context)
+{
+    ModifyAssetsReqBody reqBody;
+    reqBody.pending = context->isPending ? 1 : 0;
+    reqBody.fileIds.push_back(context->objectPtr->GetId());
+
+    std::unordered_map<std::string, std::string> headerMap;
+    headerMap[MediaColumn::MEDIA_ID] = to_string(context->objectPtr->GetId());
+    headerMap[URI_TPYE] = TPYE_PHOTOS;
+
+    IPC::UserDefineIPCClient client;
+    client.SetHeader(headerMap);
+    return client.Call(context->businessCode, reqBody);
 }
 
 static void PhotoAccessHelperSetPendingExecute(napi_env env, void *data)
@@ -4431,16 +4505,21 @@ static void PhotoAccessHelperSetPendingExecute(napi_env env, void *data)
         return;
     }
 
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(uri);
-    DataSharePredicates predicates;
-    DataShareValuesBucket valuesBucket;
     int32_t changedRows = 0;
-    valuesBucket.Put(MediaColumn::MEDIA_TIME_PENDING, context->isPending ? 1 : 0);
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
+    if (context->businessCode != 0) {
+        changedRows = CallModifyPending(context);
+    } else {
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri updateAssetUri(uri);
+        DataSharePredicates predicates;
+        DataShareValuesBucket valuesBucket;
+        valuesBucket.Put(MediaColumn::MEDIA_TIME_PENDING, context->isPending ? 1 : 0);
+        predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+        predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
-    changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+        changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    }
+
     if (changedRows < 0) {
         if (changedRows == E_PERMISSION_DENIED) {
             context->error = OHOS_PERMISSION_DENIED_CODE;
@@ -4491,6 +4570,7 @@ napi_value FileAssetNapi::PhotoAccessHelperSetPending(napi_env env, napi_callbac
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_SET_PENDING);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isPending) == napi_ok,
@@ -4550,22 +4630,42 @@ static void UserFileMgrGetJsonComplete(napi_env env, napi_status status, void *d
     delete context;
 }
 
+static int32_t CallModifyUserComment(FileAssetAsyncContext *context)
+{
+    ModifyAssetsReqBody reqBody;
+    reqBody.userComment = context->userComment;
+    reqBody.fileIds.push_back(context->objectPtr->GetId());
+
+    std::unordered_map<std::string, std::string> headerMap;
+    headerMap[MediaColumn::MEDIA_ID] = to_string(context->objectPtr->GetId());
+    headerMap[URI_TPYE] = TPYE_PHOTOS;
+
+    IPC::UserDefineIPCClient client;
+    client.SetHeader(headerMap);
+    return client.Call(context->businessCode, reqBody);
+}
+
 static void PhotoAccessHelperSetUserCommentExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperSetUserCommentExecute");
 
     auto *context = static_cast<FileAssetAsyncContext *>(data);
+    int32_t changedRows = 0;
+    if (context->businessCode != 0) {
+        changedRows = CallModifyUserComment(context);
+    } else {
+        string uri = PAH_EDIT_USER_COMMENT_PHOTO;
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri editUserCommentUri(uri);
+        DataSharePredicates predicates;
+        DataShareValuesBucket valuesBucket;
+        valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, context->userComment);
+        predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+        predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
+        changedRows = UserFileClient::Update(editUserCommentUri, predicates, valuesBucket);
+    }
 
-    string uri = PAH_EDIT_USER_COMMENT_PHOTO;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri editUserCommentUri(uri);
-    DataSharePredicates predicates;
-    DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, context->userComment);
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
-    int32_t changedRows = UserFileClient::Update(editUserCommentUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Failed to modify user comment, err: %{public}d", changedRows);
@@ -4586,6 +4686,7 @@ napi_value FileAssetNapi::PhotoAccessHelperSetUserComment(napi_env env, napi_cal
     }
 
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SYSTEM_SET_USER_COMMENT);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->userComment),
         JS_ERR_PARAMETER_INVALID);

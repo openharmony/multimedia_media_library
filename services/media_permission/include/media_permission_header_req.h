@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <string>
 #include <unordered_map>
+#include "media_permission_policy_type.h"
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -33,8 +34,13 @@ private:
     std::string openUri_ = "";
     std::string openMode_ = "";
 
+    std::vector<std::vector<PermissionType>> permissionPolicy_;
+    bool isDBBypass_ = false;
+
     std::unordered_map<std::string, std::string> headerReq_;
     void setUserId(int32_t userId);
+    void setPermissionPolicy(std::vector<std::vector<PermissionType>>& permissionPolicy);
+    void setDBBypass(bool isDBBypass);
 public:
     PermissionHeaderReq() = default;
     PermissionHeaderReq(int32_t userId) : userId_(userId) {}
@@ -43,16 +49,18 @@ public:
     PermissionHeaderReq(const std::string& fileId, int32_t uriType,
         const std::string& openUri, const std::string& openMode);
     EXPORT static PermissionHeaderReq convertToPermissionHeaderReq(const std::unordered_map<std::string,
-        std::string>& req, int32_t userId);
+        std::string>& req, int32_t userId, std::vector<std::vector<PermissionType>>& permissionPolicy, bool isDBBypass);
     std::string getFileId() const;
     int32_t getUriType() const;
     std::string getOpenUri() const;
     std::string getOpenMode() const;
     int32_t getUserId() const;
+    std::vector<std::vector<PermissionType>> getPermissionPolicy() const;
+    bool getIsDBBypass() const;
     EXPORT static const std::string FILE_ID_KEY;
     EXPORT static const std::string URI_TYPE_KEY;
     EXPORT static const std::string OPEN_URI_KEY;
     EXPORT static const std::string OPEN_MODE_KEY;
 };
 } // namespace OHOS::Media
-#endif  // OHOS_MEDIALIBRARY_PERMISSION_HEADER_REQ_H
+#endif  // OHOS_MEDIALIBRARY_PERMISSION_HEADER_REQ_H

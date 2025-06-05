@@ -28,6 +28,14 @@
 #include "result_set_utils.h"
 #include "userfile_client.h"
 #include "album_operation_uri.h"
+#include "user_define_ipc_client.h"
+#include "medialibrary_business_code.h"
+#include "delete_photos_vo.h"
+#include "album_commit_modify_vo.h"
+#include "album_add_assets_vo.h"
+#include "album_remove_assets_vo.h"
+#include "album_recover_assets_vo.h"
+#include "album_photo_query_vo.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -605,10 +613,43 @@ static napi_value ParseArgsCommitModify(napi_env env, napi_callback_info info,
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, photoAlbum->GetCoverUri());
+    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_COMMIT_MODIFY);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+static void JSCommitModifyIPCExecute(PhotoAlbumNapiAsyncContext *context)
+{
+    int32_t changedRows = 0;
+    auto objectInfo = context->objectInfo;
+    if (objectInfo == nullptr) {
+        NAPI_ERR_LOG("objectInfo is nullptr");
+        return;
+    }
+    auto photoAlbum = objectInfo->GetPhotoAlbumInstance();
+    AlbumCommitModifyReqBody reqBody;
+    reqBody.businessCode = context->businessCode;
+    if (reqBody.businessCode == static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_COMMIT_MODIFY)) {
+        reqBody.albumName = photoAlbum->GetAlbumName();
+        reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+        reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    }
+
+    bool isValid = false;
+    string coverUri = context->valuesBucket.Get(PhotoAlbumColumns::ALBUM_COVER_URI, isValid);
+    reqBody.coverUri = coverUri;
+    if (!isValid) {
+        NAPI_ERR_LOG("CommitModify get coveruri fail.");
+        context->SaveError(changedRows);
+        return;
+    }
+
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    changedRows = IPC::UserDefineIPCClient().Call(context->businessCode, reqBody);
+    context->SaveError(changedRows);
+    context->changedRows = changedRows;
 }
 
 static void JSCommitModifyExecute(napi_env env, void *data)
@@ -617,9 +658,12 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     tracer.Start("JSCommitModifyExecute");
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    string commitModifyUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-        UFM_UPDATE_PHOTO_ALBUM : PAH_UPDATE_PHOTO_ALBUM;
-    Uri uri(commitModifyUri);
+    if (context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) {
+        JSCommitModifyIPCExecute(context);
+        return;
+    }
+
+    Uri uri(UFM_UPDATE_PHOTO_ALBUM);
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
     context->SaveError(changedRows);
     context->changedRows = changedRows;
@@ -734,6 +778,7 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
     /* Parse the first argument */
     vector<string> assetsArray;
     CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
+    context->assetsArray = assetsArray;
     if (assetsArray.empty()) {
         napi_value result = nullptr;
         CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -790,6 +835,41 @@ static int32_t FetchNewCount(PhotoAlbumNapiAsyncContext *context)
     return 0;
 }
 
+static void JSPhotoAlbumAddAssetsIPCExecute(PhotoAlbumNapiAsyncContext *context)
+{
+    auto objectInfo = context->objectInfo;
+    if (objectInfo == nullptr) {
+        NAPI_ERR_LOG("objectInfo is nullptr");
+        return;
+    }
+    auto photoAlbum = objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum == nullptr) {
+        NAPI_ERR_LOG("photoAlbum is nullptr");
+        return;
+    }
+    AlbumPhotoQueryRespBody respBody;
+    AlbumAddAssetsReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    reqBody.assetsArray = context->assetsArray;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_ADD_ASSETS);
+
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        return;
+    }
+
+    bool hiddenOnly = objectInfo->GetHiddenOnly();
+    bool isSmartAlbum = photoAlbum->GetPhotoAlbumType() == PhotoAlbumType::SMART;
+
+    context->changedRows = changedRows;
+    context->newCount = respBody.newCount;
+    context->newImageCount = (hiddenOnly || isSmartAlbum) ? -1 : respBody.newImageCount;
+    context->newVideoCount = (hiddenOnly || isSmartAlbum) ? -1 : respBody.newVideoCount;
+}
+
 static void JSPhotoAlbumAddAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -798,10 +878,13 @@ static void JSPhotoAlbumAddAssetsExecute(napi_env env, void *data)
     if (context->valuesBuckets.empty()) {
         return;
     }
-    string addAssetsUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-        UFM_PHOTO_ALBUM_ADD_ASSET : PAH_PHOTO_ALBUM_ADD_ASSET;
-    Uri uri(addAssetsUri);
-    
+
+    if (context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) {
+        JSPhotoAlbumAddAssetsIPCExecute(context);
+        return;
+    }
+
+    Uri uri(UFM_PHOTO_ALBUM_ADD_ASSET);
     auto changedRows = UserFileClient::BatchInsert(uri, context->valuesBuckets);
     if (changedRows < 0) {
         context->SaveError(changedRows);
@@ -884,12 +967,44 @@ static napi_value ParseArgsRemoveAssets(napi_env env, napi_callback_info info,
         CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
         return result;
     }
+
+    context->assetsArray = assetsArray;
     context->predicates.EqualTo(PhotoColumn::PHOTO_OWNER_ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     context->predicates.And()->In(PhotoColumn::MEDIA_ID, assetsArray);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
+}
+
+static void JSPhotoAlbumRemoveAssetsIPCExecute(PhotoAlbumNapiAsyncContext *context)
+{
+    auto objectInfo = context->objectInfo;
+    CHECK_IF_EQUAL(objectInfo != nullptr, "objectInfo is nullptr");
+    auto photoAlbum = objectInfo->GetPhotoAlbumInstance();
+    CHECK_IF_EQUAL(photoAlbum != nullptr, "photoAlbum is nullptr");
+    AlbumPhotoQueryRespBody respBody;
+    AlbumRemoveAssetsReqBody reqBody;
+    reqBody.albumId = photoAlbum->GetAlbumId();
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    reqBody.assetsArray = context->assetsArray;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_REMOVE_ASSETS);
+
+    int32_t deletedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody, respBody);
+    if (deletedRows < 0) {
+        NAPI_ERR_LOG("Remove assets failed: %{public}d", deletedRows);
+        context->SaveError(deletedRows);
+        return;
+    }
+
+    bool hiddenOnly = objectInfo->GetHiddenOnly();
+    bool isSmartAlbum = photoAlbum->GetPhotoAlbumType() == PhotoAlbumType::SMART;
+
+    context->changedRows = deletedRows;
+    context->newCount = respBody.newCount;
+    context->newImageCount = (hiddenOnly || isSmartAlbum) ? -1 : respBody.newImageCount;
+    context->newVideoCount = (hiddenOnly || isSmartAlbum) ? -1 : respBody.newVideoCount;
 }
 
 static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
@@ -903,9 +1018,12 @@ static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
         return;
     }
 
-    string removeAssetsUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-        UFM_PHOTO_ALBUM_REMOVE_ASSET : PAH_PHOTO_ALBUM_REMOVE_ASSET;
-    Uri uri(removeAssetsUri);
+    if (context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) {
+        JSPhotoAlbumRemoveAssetsIPCExecute(context);
+        return;
+    }
+
+    Uri uri(UFM_PHOTO_ALBUM_REMOVE_ASSET);
     auto deletedRows = UserFileClient::Delete(uri, context->predicates);
     if (deletedRows < 0) {
         NAPI_ERR_LOG("Remove assets failed: %{public}d", deletedRows);
@@ -1270,6 +1388,7 @@ static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
         return result;
     }
 
+    context->uris = uris;
     context->predicates.In(MediaColumn::MEDIA_ID, uris);
     context->valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, 0);
 
@@ -1319,14 +1438,34 @@ static void TrashAlbumComplete(napi_env env, napi_status status, void *data)
 
 static void RecoverPhotosExecute(napi_env env, void *data)
 {
-    TrashAlbumExecuteOpt opt = {
-        .env = env,
-        .data = data,
-        .tracerLabel = "RecoverPhotosExecute",
-        .uri = (static_cast<PhotoAlbumNapiAsyncContext *>(data)->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-            UFM_RECOVER_PHOTOS : PAH_RECOVER_PHOTOS,
-    };
-    TrashAlbumExecute(opt);
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        TrashAlbumExecuteOpt opt = {
+            .env = env,
+            .data = data,
+            .tracerLabel = "RecoverPhotosExecute",
+            .uri = UFM_RECOVER_PHOTOS,
+        };
+        TrashAlbumExecute(opt);
+        return;
+    }
+
+    AlbumRecoverAssetsReqBody reqBody;
+    CHECK_IF_EQUAL(context->objectInfo != nullptr, "context->objectInfo is nullptr");
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    CHECK_IF_EQUAL(photoAlbum != nullptr, "photoAlbum is nullptr");
+    reqBody.albumType = photoAlbum->GetPhotoAlbumType();
+    reqBody.albumSubType = photoAlbum->GetPhotoAlbumSubType();
+    reqBody.uris = context->uris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_RECOVER_ASSETS);
+
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("changeRows: %{public}d.", changedRows);
+        return;
+    }
+    context->changedRows = changedRows;
 }
 
 static void RecoverPhotosComplete(napi_env env, napi_status status, void *data)
@@ -1425,15 +1564,82 @@ napi_value PhotoAlbumNapi::PrivateAlbumDeletePhotos(napi_env env, napi_callback_
         DeletePhotosExecute, DeletePhotosComplete);
 }
 
+static napi_value DeletePhotosParseArgs(
+    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_ARGS(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (!PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check trash album type");
+        return nullptr;
+    }
+
+    /* Parse the first argument */
+    vector<napi_value> napiValues;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM0], napiValues));
+    if (napiValues.empty()) {
+        return result;
+    }
+    napi_valuetype valueType = napi_undefined;
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_ERR_PARAMETER_INVALID);
+    vector<string> uris;
+    if (valueType == napi_string) {
+        // The input should be an array of asset uri.
+        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetStringArray(env, napiValues, uris));
+    } else if (valueType == napi_object) {
+        // The input should be an array of asset object.
+        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetUriArrayFromAssets(env, napiValues, uris));
+    }
+    if (uris.empty()) {
+        return result;
+    }
+    context->uris = uris;
+
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void PahDeletePhotosExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("DeletePhotosExecute");
+
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "context is null");
+    CHECK_IF_EQUAL(!context->uris.empty(), "uris is empty");
+
+    DeletePhotosReqBody reqBody;
+    reqBody.uris = context->uris;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_DELETE_PHOTOS);
+    int32_t changedRows = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("pah delete photos executed, changeRows: %{public}d.", changedRows);
+        return;
+    }
+    context->changedRows = changedRows;
+}
+
 napi_value PhotoAlbumNapi::PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info)
 {
     NAPI_INFO_LOG("enter");
     auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
-    CHECK_NULLPTR_RET(TrashAlbumParseArgs(env, info, asyncContext));
+    CHECK_NULLPTR_RET(DeletePhotosParseArgs(env, info, asyncContext));
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
 
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSDeletePhotos", DeletePhotosExecute,
-        DeletePhotosComplete);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+        env, asyncContext, "JSDeletePhotos", PahDeletePhotosExecute, DeletePhotosComplete);
 }
 
 static napi_value ParseArgsSetCoverUri(napi_env env, napi_callback_info info,
@@ -1448,6 +1654,7 @@ static napi_value ParseArgsSetCoverUri(napi_env env, napi_callback_info info,
         return nullptr;
     }
 
+    context->businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAH_SET_COVER_URI);
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
 

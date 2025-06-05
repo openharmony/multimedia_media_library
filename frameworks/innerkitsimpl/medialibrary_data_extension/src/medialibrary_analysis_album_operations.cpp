@@ -664,7 +664,8 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
     return UpdateForMergeGroupAlbums(uniStore, deleteId, updateMap);
 }
 
-static int32_t SetGroupAlbumName(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAnalysisAlbumOperations::SetGroupAlbumName(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
@@ -695,7 +696,8 @@ static int32_t SetGroupAlbumName(const ValuesBucket &values, const DataSharePred
     return err;
 }
 
-static int32_t SetGroupCoverUri(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAnalysisAlbumOperations::SetGroupCoverUri(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();
@@ -728,7 +730,8 @@ static int32_t SetGroupCoverUri(const ValuesBucket &values, const DataSharePredi
     return err;
 }
 
-static int32_t DismissGroupPhotoAlbum(const ValuesBucket &values, const DataSharePredicates &predicates)
+int32_t MediaLibraryAnalysisAlbumOperations::DismissGroupPhotoAlbum(const ValuesBucket &values,
+    const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, ANALYSIS_ALBUM_TABLE);
     auto whereArgs = rdbPredicates.GetWhereArgs();

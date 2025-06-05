@@ -26,13 +26,4 @@ bool CreateAlbumReqBody::Marshalling(MessageParcel &parcel) const
 {
     return parcel.WriteString(this->albumName);
 }
- 
-std::string CreateAlbumReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-        << "\"albumName\": \"" << this->albumName << "\""
-        << "}";
-    return ss.str();
-}
 } // namespace OHOS::Media

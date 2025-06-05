@@ -31,6 +31,10 @@
 #include "cloud_media_asset_types.h"
 #include "cloud_media_asset_status_napi.h"
 #include "cloud_media_asset_uri.h"
+#include "start_download_cloud_media_vo.h"
+#include "retain_cloud_media_asset_vo.h"
+#include "medialibrary_business_code.h"
+#include "user_define_ipc_client.h"
 
 using namespace std;
 namespace OHOS::Media {
@@ -198,21 +202,15 @@ static void StartDownloadCloudMediaExecute(napi_env env, void* data)
     NAPI_INFO_LOG("enter StartDownloadCloudMediaExecute");
 
     auto* context = static_cast<CloudMediaAssetAsyncContext*>(data);
-    auto downloadType = context->cloudMediaDownloadType;
-    string uriStr;
-    if (downloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_FORCE)) {
-        uriStr = CMAM_CLOUD_MEDIA_ASSET_TASK_START_FORCE;
-    } else if (downloadType == static_cast<int32_t>(CloudMediaDownloadType::DOWNLOAD_GENTLE)) {
-        uriStr = CMAM_CLOUD_MEDIA_ASSET_TASK_START_GENTLE;
-    } else {
-        NAPI_ERR_LOG("cloudMediaDownloadType error, err type: %{public}d", downloadType);
-        return;
-    }
-    Uri startUri(uriStr);
-    int32_t changedRows = UserFileClient::Update(startUri, context->predicates, context->valuesBucket);
-    if (changedRows < 0) {
-        context->SaveError(changedRows);
-        NAPI_ERR_LOG("Start download cloud media failed, err: %{public}d", changedRows);
+    StartDownloadCloudMediaReqBody reqBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::START_DOWNLOAD_CLOUDMEDIA);
+    reqBody.cloudMediaType = context->cloudMediaDownloadType;
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Start download cloud media failed, err: %{public}d", ret);
     }
 }
 
@@ -260,11 +258,13 @@ static void PauseDownloadCloudMediaExecute(napi_env env, void* data)
     NAPI_INFO_LOG("enter PauseDownloadCloudMediaExecute");
 
     auto* context = static_cast<CloudMediaAssetAsyncContext*>(data);
-    Uri pauseUri(CMAM_CLOUD_MEDIA_ASSET_TASK_PAUSE);
-    int32_t changedRows = UserFileClient::Update(pauseUri, context->predicates, context->valuesBucket);
-    if (changedRows < 0) {
-        context->SaveError(changedRows);
-        NAPI_ERR_LOG("Pause download cloud media failed, err: %{public}d", changedRows);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::PAUSE_DOWNLOAD_CLOUDMEDIA);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Pause download cloud media failed, err: %{public}d", ret);
     }
 }
 
@@ -310,11 +310,13 @@ static void CancelDownloadCloudMediaExecute(napi_env env, void* data)
     NAPI_INFO_LOG("enter CancelDownloadCloudMediaExecute");
 
     auto* context = static_cast<CloudMediaAssetAsyncContext*>(data);
-    Uri cancelUri(CMAM_CLOUD_MEDIA_ASSET_TASK_CANCEL);
-    int32_t changedRows = UserFileClient::Update(cancelUri, context->predicates, context->valuesBucket);
-    if (changedRows < 0) {
-        context->SaveError(changedRows);
-        NAPI_ERR_LOG("Cancel download cloud media failed, err: %{public}d", changedRows);
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::CANCEL_DOWNLOAD_CLOUDMEDIA);
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Cancel download cloud media failed, err: %{public}d", ret);
     }
 }
 
@@ -360,19 +362,15 @@ static void RetainCloudMediaAssetExecute(napi_env env, void* data)
     NAPI_INFO_LOG("enter RetainCloudMediaAssetExecute");
 
     auto* context = static_cast<CloudMediaAssetAsyncContext*>(data);
-    auto retainType = context->cloudMediaRetainType;
-    string uriStr;
-    if (retainType == static_cast<int32_t>(CloudMediaRetainType::RETAIN_FORCE)) {
-        uriStr = CMAM_CLOUD_MEDIA_ASSET_TASK_RETAIN_FORCE;
-    } else {
-        NAPI_ERR_LOG("cloudMediaRetainType error, err type: %{public}d", retainType);
-        return;
-    }
-    Uri retainUri(uriStr);
-    int32_t changedRows = UserFileClient::Update(retainUri, context->predicates, context->valuesBucket);
-    if (changedRows < 0) {
-        context->SaveError(changedRows);
-        NAPI_ERR_LOG("Retain cloud media asset failed, err: %{public}d", changedRows);
+    RetainCloudMediaAssetReqBody reqBody;
+    uint32_t businessCode = static_cast<uint32_t>(MediaLibraryBusinessCode::RETAIN_CLOUDMEDIA_ASSET);
+    reqBody.cloudMediaRetainType = context->cloudMediaRetainType;
+    NAPI_INFO_LOG("before IPC::UserDefineIPCClient().Call");
+    int32_t ret = IPC::UserDefineIPCClient().Call(businessCode, reqBody);
+    NAPI_INFO_LOG("after IPC::UserDefineIPCClient().Call");
+    if (ret < 0) {
+        context->SaveError(ret);
+        NAPI_ERR_LOG("Retain cloud media asset failed, err: %{public}d", ret);
     }
 }
 

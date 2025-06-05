@@ -93,7 +93,7 @@ static void InsertAssetIntoPhotosTable()
     // data, size, title, display_name, media_type,
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
     // height, width, edit_time, shooting_mode
-    g_rdbStore->ExecuteSql(SQL_INSERT_PHOTO + + "VALUES (" +
+    g_rdbStore->ExecuteSql(SQL_INSERT_PHOTO + "VALUES (" +
         "'/storage/cloud/files/Photo/16/IMG_1501924305_000.jpg', 175258, 'cam_pic', 'cam_pic.jpg', 1, " +
         "'com.ohos.camera', '相机', 1501924205218, 0, 1501924205, 0, 0, 0, 0, " +
         "1280, 960, 0, '1' )"); // cam, pic, shootingmode = 1

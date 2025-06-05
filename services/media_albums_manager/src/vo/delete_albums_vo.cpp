@@ -31,20 +31,4 @@ bool DeleteAlbumsReqBody::Marshalling(MessageParcel &parcel) const
 {
     return ITypesUtil::Marshalling(this->albumIds, parcel);
 }
-
-std::string DeleteAlbumsReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-       << "[";
-    for (size_t i = 0; i < this->albumIds.size(); i++) {
-        ss << this->albumIds[i];
-        if (i != this->albumIds.size() - 1) {
-            ss << ",";
-        }
-    }
-    ss << "]"
-       << "}";
-    return ss.str();
-}
 }  // namespace OHOS::Media

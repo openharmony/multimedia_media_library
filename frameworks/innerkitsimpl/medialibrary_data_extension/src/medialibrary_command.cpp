@@ -80,6 +80,11 @@ MediaLibraryCommand::MediaLibraryCommand(const OperationObject &oprnObject, cons
     ParseTableName();
 }
 
+MediaLibraryCommand::MediaLibraryCommand(const string& tableName)
+{
+    this->SetTableName(tableName);
+}
+
 MediaLibraryCommand::~MediaLibraryCommand() {}
 
 // set functions

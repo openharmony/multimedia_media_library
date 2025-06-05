@@ -18,7 +18,7 @@
 #include "clone_asset_vo.h"
  
 #include <sstream>
- 
+
 #include "media_log.h"
  
 namespace OHOS::Media {
@@ -43,16 +43,5 @@ bool CloneAssetReqBody::Marshalling(MessageParcel &parcel) const
     status = parcel.WriteString(this->displayName);
     CHECK_AND_RETURN_RET(status, status);
     return true;
-}
- 
-string CloneAssetReqBody::ToString() const
-{
-    std::stringstream ss;
-    ss << "{"
-        << "\"fileId\": \"" << std::to_string(this->fileId) << "\", "
-        << "\"title\": " << this->title << "\", "
-        << "\"displayName\": " << this->displayName
-        << "}";
-    return ss.str();
 }
 } // namespace OHOS::Media

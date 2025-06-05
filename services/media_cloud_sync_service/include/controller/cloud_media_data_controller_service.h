@@ -84,7 +84,8 @@ public:
     {
         return this->HANDLERS.find(code) != this->HANDLERS.end();
     }
-    void OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override
+    void OnRemoteRequest(
+        uint32_t code, MessageParcel &data, MessageParcel &reply, OHOS::Media::IPC::IPCContext &context) override
     {
         auto it = this->HANDLERS.find(code);
         if (!this->Accept(code) || it == this->HANDLERS.end()) {
@@ -92,6 +93,11 @@ public:
         }
         SysUtils::SlowDown();
         return (this->*(it->second))(data, reply);
+    }
+    int32_t GetPermissionPolicy(
+        uint32_t code, std::vector<std::vector<PermissionType>> &permissionPolicy, bool &isBypass) override
+    {
+        return E_SUCCESS;
     }
 
 private:
