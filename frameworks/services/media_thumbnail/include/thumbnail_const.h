@@ -92,7 +92,7 @@ const std::unordered_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
     { ThumbnailType::YEAR_ASTC, "YEAR_ASTC" },
 };
 
-enum class ThumbnailQulity : uint8_t {
+enum class ThumbnailQuality : uint8_t {
     ASTC_LOW_QUALITY = 20,
     POOR = 50,
     NOT_BAD = 60,
@@ -189,13 +189,13 @@ const size_t LCD_UPLOAD_LIMIT_SIZE = 2048000;
 // Only check the latest 3000 data to avoid opreation taking too long time
 const uint32_t MAXIMUM_LCD_CHECK_NUM = 3000;
 
-const std::unordered_set<ThumbnailQulity> THUMBNAIL_QUALITY_SET = {
-    ThumbnailQulity::POOR,
-    ThumbnailQulity::NOT_BAD,
-    ThumbnailQulity::MID,
-    ThumbnailQulity::GOOD,
-    ThumbnailQulity::DEFAULT,
-    ThumbnailQulity::HIGH,
+const std::unordered_set<ThumbnailQuality> THUMBNAIL_QUALITY_SET = {
+    ThumbnailQuality::POOR,
+    ThumbnailQuality::NOT_BAD,
+    ThumbnailQuality::MID,
+    ThumbnailQuality::GOOD,
+    ThumbnailQuality::DEFAULT,
+    ThumbnailQuality::HIGH,
 };
 
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)

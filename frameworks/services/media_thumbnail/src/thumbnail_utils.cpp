@@ -387,11 +387,11 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
 }
 
 bool ThumbnailUtils::CompressImage(const shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isAstc,
-    bool forceSdr, const ThumbnailQulity quality)
+    bool forceSdr, const ThumbnailQuality quality)
 {
     PackOption option = {
         .format = isAstc ? THUMBASTC_FORMAT : THUMBNAIL_FORMAT,
-        .quality = static_cast<uint8_t>(isAstc ? ThumbnailQulity::ASTC_LOW_QUALITY : quality),
+        .quality = static_cast<uint8_t>(isAstc ? ThumbnailQuality::ASTC_LOW_QUALITY : quality),
         .numberHint = NUMBER_HINT_1,
         .desiredDynamicRange = forceSdr ? EncodeDynamicRange::SDR :EncodeDynamicRange::AUTO
     };

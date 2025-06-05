@@ -643,9 +643,9 @@ bool IThumbnailHelper::StorePictureLowQuality(ThumbnailData &data,
     ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize);
     MEDIA_INFO_LOG("Create low quality lcd. SizeLimit: %{public}zu, lastGeneratedSize: %{public}zu",
         sizeLimit, lastGeneratedSize);
-    vector<ThumbnailQulity> tryQualityList = { ThumbnailQulity::DEFAULT, ThumbnailQulity::GOOD,
-        ThumbnailQulity::MID, ThumbnailQulity::NOT_BAD, ThumbnailQulity::POOR };
-    for (const ThumbnailQulity quality : tryQualityList) {
+    vector<ThumbnailQuality> tryQualityList = { ThumbnailQuality::DEFAULT, ThumbnailQuality::GOOD,
+        ThumbnailQuality::MID, ThumbnailQuality::NOT_BAD, ThumbnailQuality::POOR };
+    for (const ThumbnailQuality quality : tryQualityList) {
         data.thumbnailQuality = quality;
         CHECK_AND_RETURN_RET_LOG(StorePicture(data, picture, isSourceEx), false, "StorePicture failed.");
         CHECK_AND_RETURN_RET_LOG(ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize),
@@ -686,7 +686,7 @@ bool IThumbnailHelper::SaveLcdPictureSource(ThumbRdbOpt &opts, ThumbnailData &da
     } else {
         CHECK_AND_RETURN_RET_LOG(StorePictureLowQuality(data, lcdSource, isSourceEx, LCD_UPLOAD_LIMIT_SIZE),
             false, "StorePictureLowQuality with limit failed");
-        data.thumbnailQulity = ThumbnailQulity::DEFAULT;
+        data.thumbnailQuality = ThumbnailQuality::DEFAULT;
     }
 
     if (!isSourceEx) {
@@ -705,9 +705,9 @@ bool IThumbnailHelper::StoreLcdPixelMapLowQuality(ThumbnailData& data, const std
     ThumbnailFileUtils::GetThumbFileSize(data, ThumbnailType::LCD, lastGeneratedSize);
     MEDIA_INFO_LOG("Create low quality lcd. SizeLimit: %{public}zu, lastGeneratedSize: %{public}zu",
         sizeLimit, lastGeneratedSize);
-    vector<ThumbnailQulity> tryQualityList = { ThumbnailQulity::DEFAULT, ThumbnailQulity::GOOD,
-        ThumbnailQulity::MID, ThumbnailQulity::NOT_BAD, ThumbnailQulity::POOR };
-    for (const ThumbnailQulity quality : tryQualityList) {
+    vector<ThumbnailQuality> tryQualityList = { ThumbnailQuality::DEFAULT, ThumbnailQuality::GOOD,
+        ThumbnailQuality::MID, ThumbnailQuality::NOT_BAD, ThumbnailQuality::POOR };
+    for (const ThumbnailQuality quality : tryQualityList) {
         CHECK_AND_RETURN_RET_LOG(ThumbnailUtils::CompressImage(pixelMap, data.lcd, false, false, quality),
             false, "CompressImage failed");
         CHECK_AND_RETURN_RET_LOG(TrySavePixelMap(data, isSourceEx ? ThumbnailType::LCD_EX : ThumbnailType::LCD),
