@@ -211,7 +211,7 @@ static int32_t QueryUriSensitiveTableByFileId(int32_t fileId)
     int64_t srcToken = GetInt64Val(AppUriSensitiveColumn::SOURCE_TOKENID, resultSet);
     int64_t targetToken = GetInt64Val(AppUriSensitiveColumn::TARGET_TOKENID, resultSet);
     MEDIA_INFO_LOG("uriType: %{public}d, sensitiveType: %{public}d, srcToken: %{public}ld, targetToken: %{public}ld",
-            uriType, sensitiveType, srcToken, targetToken);
+        uriType, sensitiveType, srcToken, targetToken);
     return 0;
 }
 

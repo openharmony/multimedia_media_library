@@ -47,7 +47,8 @@ using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static constexpr int32_t SLEEP_SECONDS = 1;
+static constexpr int32_t SLEEP_ONE_SECOND = 1;
+static constexpr int32_t TEST_ALBUM_ID = 11;
 
 int32_t ChangeAssetsTest::ClearUserAlbums()
 {
@@ -79,7 +80,7 @@ void ChangeAssetsTest::TearDownTestCase(void)
 {
     ClearUserAlbums();
     MEDIA_INFO_LOG("TearDownTestCase");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_ONE_SECOND));
 }
 
 void ChangeAssetsTest::SetUp()
@@ -96,7 +97,7 @@ int32_t ServiceAddAssets(int isHighlight, int isHiddenOnly)
 {
     ChangeRequestAddAssetsReqBody reqBody;
 
-    reqBody.albumId = 11;
+    reqBody.albumId = TEST_ALBUM_ID;
     reqBody.isHighlight = isHighlight;
     reqBody.isHiddenOnly = isHiddenOnly;
     reqBody.assets = {"file://media/Photo/101", "file://media/Photo/102", "file://media/Photo/103"};
@@ -125,7 +126,7 @@ int32_t ServiceRemoveAssets(int isHiddenOnly)
     MessageParcel reply;
     ChangeRequestRemoveAssetsReqBody reqBody;
 
-    reqBody.albumId = 11;
+    reqBody.albumId = TEST_ALBUM_ID;
     reqBody.isHiddenOnly = isHiddenOnly;
     reqBody.assets = {"file://media/Photo/101", "file://media/Photo/102", "file://media/Photo/103"};
     if (reqBody.Marshalling(data) != true) {
@@ -167,8 +168,8 @@ HWTEST_F(ChangeAssetsTest, AddAssets_Test_001, TestSize.Level0)
  * @tc.number: RemoveAssetsTest_001
  * @tc.desc  : 测试 isHiddenOnly, RemoveAssets 函数应正确处理隐藏仅标志
  */
-HWTEST_F(ChangeAssetsTest,RemoveAssetsTest_001, TestSize.Level0) {
-
+HWTEST_F(ChangeAssetsTest,RemoveAssetsTest_001, TestSize.Level0)
+{
     int32_t result = ServiceRemoveAssets(0);
     ASSERT_LT(result, 0);
     result = ServiceRemoveAssets(1);

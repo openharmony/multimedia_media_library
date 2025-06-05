@@ -99,7 +99,7 @@ static void InsertTrashAssetIntoPhotosTable(const string& data, const string& ti
     // data, size, title, display_name, media_type,
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
     // height, width, edit_time, shooting_mode
-    g_rdbStore->ExecuteSql(SQL_INSERT_PHOTO + "VALUES ('" + data + "', 175258, '" + title + "', '" + 
+    g_rdbStore->ExecuteSql(SQL_INSERT_PHOTO + "VALUES ('" + data + "', 175258, '" + title + "', '" +
         title + ".jpg', 1, 'com.ohos.camera', '相机', 1748423617814, 1748424146785, 1748423617706, " +
         "0, 0, 1748488395008, 0, 1280, 960, 0, '1' )"); // cam, pic, shootingmode = 1
 }

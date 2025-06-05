@@ -138,7 +138,7 @@ int32_t GrantUrisPermission(std::vector<int32_t>& fileIds)
 
 static void InsertAsset(string displayName)
 {
-    // data, size, 
+    // data, size,
     // title, display_name, media_type,
     // owner_package, package_name, date_added, date_modified, date_taken, duration, is_favorite, date_trashed, hidden
     // height, width, edit_time, shooting_mode
@@ -193,7 +193,7 @@ static int32_t QueryUriPermissionTableByFileId(int32_t fileId)
     int64_t srcToken = GetInt64Val(AppUriPermissionColumn::SOURCE_TOKENID, resultSet);
     int64_t targetToken = GetInt64Val(AppUriPermissionColumn::TARGET_TOKENID, resultSet);
     MEDIA_INFO_LOG("uriType: %{public}d, permType: %{public}d, srcToken: %{public}ld, targetToken: %{public}ld",
-            uriType, permType, srcToken, targetToken);
+        uriType, permType, srcToken, targetToken);
     return 0;
 }
 
@@ -212,7 +212,7 @@ static int32_t QueryUriSensitiveTableByFileId(int32_t fileId)
     int64_t srcToken = GetInt64Val(AppUriSensitiveColumn::SOURCE_TOKENID, resultSet);
     int64_t targetToken = GetInt64Val(AppUriSensitiveColumn::TARGET_TOKENID, resultSet);
     MEDIA_INFO_LOG("uriType: %{public}d, sensitiveType: %{public}d, srcToken: %{public}ld, targetToken: %{public}ld",
-            uriType, sensitiveType, srcToken, targetToken);
+        uriType, sensitiveType, srcToken, targetToken);
     return 0;
 }
 

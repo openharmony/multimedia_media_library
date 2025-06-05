@@ -43,7 +43,7 @@ using namespace OHOS::NativeRdb;
 using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static constexpr int32_t SLEEP_SECONDS = 1;
+static constexpr int32_t SLEEP_ONE_SECOND = 1;
 static const string SQL_INSERT_PHOTO =
     "INSERT INTO " + PhotoColumn::PHOTOS_TABLE + "(" + MediaColumn::MEDIA_FILE_PATH + ", " + MediaColumn::MEDIA_SIZE +
     ", " + MediaColumn::MEDIA_TITLE + ", " + MediaColumn::MEDIA_NAME + ", " + MediaColumn::MEDIA_TYPE + ", " +
@@ -84,19 +84,19 @@ void AssetChangeRequestTest::TearDownTestCase(void)
 {
     ClearTable(PhotoColumn::PHOTOS_TABLE);
     MEDIA_INFO_LOG("TearDownTestCase");
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_ONE_SECOND));
 }
 
 void AssetChangeRequestTest::SetUp()
 {
     ClearTable(PhotoColumn::PHOTOS_TABLE);
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS));
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_ONE_SECOND));
     MEDIA_INFO_LOG("SetUp");
 }
 
 void AssetChangeRequestTest::TearDown(void)
 {
-    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_SECONDS * 2));
+    std::this_thread::sleep_for(std::chrono::seconds(SLEEP_ONE_SECOND * 2));
     MEDIA_INFO_LOG("TearDown");
 }
 

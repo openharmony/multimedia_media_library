@@ -493,7 +493,7 @@ static void SubmitCloudEnhancementTasksExecute(napi_env env, void* data)
         context->SaveError(ret);
         NAPI_ERR_LOG("Submit cloud enhancement tasks failed, err: %{public}d", ret);
         return;
-     }
+    }
     NAPI_INFO_LOG("SubmitCloudEnhancementTasksExecute Success");
 }
 
@@ -659,7 +659,7 @@ static void CancelCloudEnhancementTasksExecute(napi_env env, void* data)
         context->SaveError(ret);
         NAPI_ERR_LOG("cancel cloud enhancement tasks failed, err: %{public}d", ret);
         return;
-     }
+    }
     NAPI_INFO_LOG("CancelCloudEnhancementTasksExecute Success");
 }
 
