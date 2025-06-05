@@ -91,7 +91,7 @@ void AlbumAddAssetsTest::TearDown(void)
 // VALUES (0, 1, 'test01', 1748354341383, 1 , 1748354341383, '/Pictures/Users/test01', 1)
 // (albumType == PhotoAlbumType::USER) && (albumSubType == PhotoAlbumSubType::USER_GENERIC)
 static const string SQL_CREATE_ALBUM = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
-    PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + 
+    PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
     PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_DATE_MODIFIED + ", " +
     PhotoAlbumColumns::ALBUM_IS_LOCAL + ", " + PhotoAlbumColumns::ALBUM_DATE_ADDED + ", " +
     PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_PRIORITY + ")";
@@ -115,8 +115,10 @@ static shared_ptr<NativeRdb::ResultSet> QueryAsset(const string& album_name, con
     return resultSet;
 }
 
-// {"albumId": "13","albumType": "0","albumSubType": "1","assetsArray": " [file://media/Photo/3/IMG_1748423717_002/IMG_20250528_171337.jpg]}
-static int32_t AddAssetsToAlbum(int32_t albumId, int32_t albumType, int32_t albumSubType, const std::vector<std::string>& assetsArray)
+// {"albumId": "13","albumType": "0","albumSubType": "1",
+// "assetsArray": " [file://media/Photo/3/IMG_1748423717_002/IMG_20250528_171337.jpg]}
+static int32_t AddAssetsToAlbum(int32_t albumId, int32_t albumType, int32_t albumSubType,
+    const std::vector<std::string>& assetsArray)
 {
     AlbumAddAssetsReqBody reqBody;
     reqBody.albumId = albumId;

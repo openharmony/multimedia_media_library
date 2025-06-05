@@ -92,7 +92,7 @@ void AlbumRemoveAssetsTest::TearDown(void)
 }
 
 static const string SQL_CREATE_ALBUM = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
-    PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + 
+    PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
     PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_DATE_MODIFIED + ", " +
     PhotoAlbumColumns::ALBUM_IS_LOCAL + ", " + PhotoAlbumColumns::ALBUM_DATE_ADDED + ", " +
     PhotoAlbumColumns::ALBUM_LPATH + ", " + PhotoAlbumColumns::ALBUM_PRIORITY + ")";
@@ -169,9 +169,11 @@ static void RemoveAssetsPrepare(int32_t& albumId, string& uri)
     uri = MediaFileUri::GetPhotoUri(to_string(fileId), path, displayName);
 }
 
-// {"albumId": "13", "albumType": "0","albumSubType": "1","assetsArray": " [file://media/Photo/5/IMG_1748424853_004/IMG_20250528_171337.jpg]}
+// {"albumId": "13", "albumType": "0","albumSubType": "1",
+// "assetsArray": " [file://media/Photo/5/IMG_1748424853_004/IMG_20250528_171337.jpg]}
 // (albumType == PhotoAlbumType::USER) && (albumSubType == PhotoAlbumSubType::USER_GENERIC);
-static int32_t RemoveAssets(int32_t albumId, int32_t albumType, int32_t albumSubType, const std::vector<std::string> &assetsArray)
+static int32_t RemoveAssets(int32_t albumId, int32_t albumType, int32_t albumSubType,
+    const std::vector<std::string> &assetsArray)
 {
     AlbumRemoveAssetsReqBody reqBody;
     reqBody.albumId = albumId;
