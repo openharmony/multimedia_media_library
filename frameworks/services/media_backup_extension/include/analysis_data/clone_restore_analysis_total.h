@@ -18,27 +18,23 @@
 
 #include <string>
 
-// #include "backup_const.h"
-// #include "rdb_store.h"
+#include "backup_const.h"
+#include "rdb_store.h"
 
 namespace OHOS::Media {
 class CloneRestoreAnalysisTotal {
 public:
-    void Init(int32_t sceneCode, const std::string &taskId,
-        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
-    void Restore(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
-
-    void RestoreMaps();
-    void RestoreVideoMaps();
-    void ReportClassifyRestoreTask();
-
-    template<typename T>
-    static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
-        const std::optional<T>& optionalValue);
-
-    template<typename T>
-    static void PutIfInIntersection(NativeRdb::ValuesBucket& values, const std::string& columnName,
-        const std::optional<T>& optionalValue, const std::unordered_set<std::string> &intersection);
+    void Init(const std::string &type, int32_t pageSize, std::shared_ptr<NativeRdb::RdbStore> mediaRdb,
+        std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb);
+    int32_t GetTotalNumber();
+    void GetInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void SetPlaceHoldersAndParamsByFileIdOld(std::string &placeHolders, std::vector<NativeRdb::ValueObject> &params);
+    void SetPlaceHoldersAndParamsByFileIdNew(std::string &placeHolders, std::vector<NativeRdb::ValueObject> &params);
+    size_t FindIndexByFileIdOld(int32_t fileIdOld);
+    int32_t GetFileIdNewByIndex(size_t index);
+    void UpdateRestoreStatusAsDuplicateByIndex(size_t index);
+    void UpdateRestoreStatusAsFailed();
+    void UpdateDatabase();
 
 private:
     enum AnalysisStatus : int32_t {
@@ -55,82 +51,20 @@ private:
         int32_t status {AnalysisStatus::UNANALYZED};
         int32_t restoreStatus {RestoreStatus::SUCCESS};
     };
-    struct ClassifyCloneInfo {
-        std::optional<int32_t> id;
-        std::optional<int32_t> fileIdOld;
-        std::optional<int32_t> fileIdNew;
-        std::optional<int32_t> categoryId;
-        std::optional<std::string> subLabel;
-        std::optional<double> prob;
-        std::optional<std::string> feature;
-        std::optional<std::string> simResult;
-        std::optional<std::string> labelVersion;
-        std::optional<std::string> saliencySubProb;
-        std::optional<std::string> analysisVersion;
-        std::optional<std::string> captionResult;
-        std::optional<std::string> captionVersion;
-    };
-    struct ClassifyVideoCloneInfo {
-        std::optional<int32_t> id;
-        std::optional<int32_t> fileIdOld;
-        std::optional<int32_t> fileIdNew;
-        std::optional<std::string> categoryId;
-        std::optional<double> confidenceProbability;
-        std::optional<std::string> subCategory;
-        std::optional<double> subConfidenceProb;
-        std::optional<std::string> subLabel;
-        std::optional<double> subLabelProb;
-        std::optional<int32_t> subLabelType;
-        std::optional<std::string> tracks;
-        std::optional<std::vector<uint8_t>> videoPartFeature;
-        std::optional<std::string> filterTag;
-        std::optional<std::string> algoVersion;
-        std::optional<std::string> analysisVersion;
-        std::optional<int32_t> triggerGenerateThumbnail;
-    };
 
-    void GetClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfos);
-    void GetClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos);
-    void DeduplicateClassifyInfos(std::vector<ClassifyCloneInfo> &infos);
-    void DeduplicateClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &infos);
-    std::unordered_set<int32_t> GetExistingFileIds(const std::string &tableName);
-    void RemoveDuplicateClassifyInfos(std::vector<ClassifyCloneInfo> &infos,
-        const std::unordered_set<int32_t> &existingFileIds);
-    void RemoveDuplicateClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &infos,
-        const std::unordered_set<int32_t> &existingFileIds);
-    void InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &classifyInfos);
-    void InsertClassifyVideoAlbums(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos);
-    void UpdateAnalysisTotalInfosRestoreStatus(int32_t restoreStatus);
-
-    void GetClassifyInfo(ClassifyCloneInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    void GetMapInsertValue(NativeRdb::ValuesBucket &value, ClassifyCloneInfo info,
-        const std::unordered_set<std::string> &intersection);
-    void GetClassifyVideoInfo(ClassifyVideoCloneInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    void GetVideoMapInsertValue(NativeRdb::ValuesBucket &value, ClassifyVideoCloneInfo info,
-        const std::unordered_set<std::string> &intersection);
-
-    bool CheckTableColumns(const std::string& tableName, std::unordered_map<std::string, std::string>& columns);
-    std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
-    int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
-        int64_t &rowNum);
-    
-    void GetMaxIds();
-    std::vector<int32_t> GetMinIdsOfAnalysisTotal();
-    void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
-    void GetAnalysisTotalInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
-    void UpdateAnalysisTotal();
-    std::unordered_map<int32_t, std::vector<std::string>> GetAnalysisTotalStatusFileIdsMap();
-    int32_t UpdateAnalysisTotalByStatus(int32_t status, const std::vector<std::string> &fileIds);
+    std::unordered_map<int32_t, std::vector<std::string>> GetStatusFileIdsMap();
+    int32_t UpdateDatabaseByStatus(int32_t status, const std::vector<std::string> &fileIds);
 
 private:
-    int32_t sceneCode_{-1};
-    std::string taskId_;
+    int32_t lastId_ {0};
+    int32_t pageSize_ {0};
+    int32_t totalCnt_{0};
+    int32_t successCnt_{0};
+    int32_t failedCnt_{0};
+    int32_t duplicateCnt_{0};
+    std::string type_;
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
-    std::atomic<int32_t> successCnt_{0};
-    std::atomic<int32_t> failedCnt_{0};
-    std::atomic<int32_t> duplicateCnt_{0};
-    std::atomic<int64_t> restoreTimeCost_{0};
     std::vector<AnalysisTotalInfo> analysisTotalInfos_;
 };
 } // namespace OHOS::Media

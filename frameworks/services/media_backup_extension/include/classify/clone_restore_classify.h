@@ -19,6 +19,7 @@
 #include <string>
 
 #include "backup_const.h"
+#include "clone_restore_analysis_total.h"
 #include "rdb_store.h"
 
 namespace OHOS::Media {
@@ -27,10 +28,6 @@ public:
     void Init(int32_t sceneCode, const std::string &taskId,
         std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb, std::shared_ptr<NativeRdb::RdbStore> mediaRdb);
     void Restore(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
-
-    void RestoreMaps();
-    void RestoreVideoMaps();
-    void ReportClassifyRestoreTask();
 
     template<typename T>
     static void PutIfPresent(NativeRdb::ValuesBucket& values, const std::string& columnName,
@@ -41,20 +38,6 @@ public:
         const std::optional<T>& optionalValue, const std::unordered_set<std::string> &intersection);
 
 private:
-    enum AnalysisStatus : int32_t {
-        UNANALYZED = 0
-    };
-    enum RestoreStatus : int32_t {
-        SUCCESS = 0,
-        DUPLICATE,
-        FAILED
-    };
-    struct AnalysisTotalInfo {
-        int32_t fileIdOld {-1};
-        int32_t fileIdNew {-1};
-        int32_t status {AnalysisStatus::UNANALYZED};
-        int32_t restoreStatus {RestoreStatus::SUCCESS};
-    };
     struct ClassifyCloneInfo {
         std::optional<int32_t> id;
         std::optional<int32_t> fileIdOld;
@@ -89,6 +72,12 @@ private:
         std::optional<int32_t> triggerGenerateThumbnail;
     };
 
+    void GetMaxIds();
+    void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap);
+    void RestoreMaps();
+    void RestoreVideoMaps();
+    void ReportClassifyRestoreTask();
+
     void GetClassifyInfos(std::vector<ClassifyCloneInfo> &classifyInfos);
     void GetClassifyVideoInfos(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos);
     void DeduplicateClassifyInfos(std::vector<ClassifyCloneInfo> &infos);
@@ -100,7 +89,6 @@ private:
         const std::unordered_set<int32_t> &existingFileIds);
     void InsertClassifyAlbums(std::vector<ClassifyCloneInfo> &classifyInfos);
     void InsertClassifyVideoAlbums(std::vector<ClassifyVideoCloneInfo> &classifyVideoInfos);
-    void UpdateAnalysisTotalInfosRestoreStatus(int32_t restoreStatus);
 
     void GetClassifyInfo(ClassifyCloneInfo &info, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     void GetMapInsertValue(NativeRdb::ValuesBucket &value, ClassifyCloneInfo info,
@@ -113,18 +101,11 @@ private:
     std::unordered_set<std::string> GetCommonColumns(const std::string &tableName);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
         int64_t &rowNum);
-    
-    void GetMaxIds();
-    std::vector<int32_t> GetMinIdsOfAnalysisTotal();
-    void RestoreBatch(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
-    void GetAnalysisTotalInfos(const std::unordered_map<int32_t, PhotoInfo> &photoInfoMap, int32_t minId);
-    void UpdateAnalysisTotal();
-    std::unordered_map<int32_t, std::vector<std::string>> GetAnalysisTotalStatusFileIdsMap();
-    int32_t UpdateAnalysisTotalByStatus(int32_t status, const std::vector<std::string> &fileIds);
 
 private:
     int32_t sceneCode_{-1};
     std::string taskId_;
+    std::string analysisType_;
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     int32_t maxIdOfLabel_{0};
@@ -137,7 +118,7 @@ private:
     std::atomic<int32_t> duplicateVideoLabelCnt_{0};
     std::atomic<int64_t> restoreLabelTimeCost_{0};
     std::atomic<int64_t> restoreVideoLabelTimeCost_{0};
-    std::vector<AnalysisTotalInfo> analysisTotalInfos_;
+    CloneRestoreAnalysisTotal cloneRestoreAnalysisTotal_;
 };
 
 template<typename T>
