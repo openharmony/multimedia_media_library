@@ -169,15 +169,11 @@ bool OnFetchPhotosVo::Marshalling(MessageParcel &parcel) const
 void OnFetchPhotosVo::GetBasicInfo(std::stringstream &ss) const
 {
     ss << "\"cloudId\": \"" << cloudId << "\","
-       << "\"fileName\": \"" << fileName << "\","
-       << "\"localPath\": \"" << localPath << "\","
-       << "\"fileSourcePath\": \"" << fileSourcePath << "\","
        << "\"mimeType\": \"" << mimeType << "\","
        << "\"firstVisitTime\": \"" << firstVisitTime << "\","
        << "\"detailTime\": \"" << detailTime << "\","
        << "\"frontCamera\": \"" << frontCamera << "\","
        << "\"editDataCamera\": \"" << editDataCamera << "\","
-       << "\"title\": \"" << title << "\","
        << "\"relativePath\": \"" << relativePath << "\","
        << "\"virtualPath\": \"" << virtualPath << "\","
        << "\"dateYear\": \"" << dateYear << "\","
@@ -217,7 +213,6 @@ void OnFetchPhotosVo::GetAttributesInfo(std::stringstream &ss) const
        << "\"recycledTime\": \"" << recycledTime << "\","
        << "\"hiddenTime\": \"" << hiddenTime << "\","
        << "\"coverPosition\": \"" << coverPosition << "\","
-       << "\"position\": \"" << position << "\","
        << "\"isDelete\": \"" << isDelete << "\","
        << "\"hasAttributes\": \"" << hasAttributes << "\","
        << "\"hasproperties\": \"" << hasproperties << "\","

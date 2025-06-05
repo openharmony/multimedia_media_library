@@ -45,7 +45,6 @@ std::string OnCreateRecordsAlbumReqBodyAlbumData::ToString() const
     std::stringstream ss;
     ss << "{"
        << "\"isSuccess\": \"" << isSuccess << "\", "
-       << "\"localPath\": \"" << localPath << "\", "
        << "\"newCloudId\": \"" << newCloudId << "\""
        << "\"cloudId\": \"" << cloudId << "\""
        << "}";

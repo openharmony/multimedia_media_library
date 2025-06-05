@@ -73,8 +73,6 @@ std::string OnCopyRecord::ToString() const
        << "\"size\": " << size << ","
        << "\"createTime\": " << createTime << ","
        << "\"path\": \"" << path << "\","
-       << "\"fileName\": \"" << fileName << "\","
-       << "\"sourcePath\": \"" << sourcePath << "\","
        << "\"version\": " << version << ","
        << "\"serverErrorCode\": " << serverErrorCode << ","
        << "\"isSuccess\": " << std::to_string(isSuccess) << ","

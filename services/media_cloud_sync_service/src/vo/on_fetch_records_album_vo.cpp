@@ -63,8 +63,6 @@ std::string OnFetchRecordsAlbumReqBody::AlbumReqData::ToString() const
     std::stringstream ss;
     ss << "{"
        << "\"cloudId\": \"" << cloudId << "\","
-       << "\"localPath\": \"" << localPath << "\","
-       << "\"albumName\": \"" << albumName << "\","
        << "\"albumBundleName\": \"" << albumBundleName << "\","
        << "\"localLanguage\": \"" << localLanguage << "\","
        << "\"albumId\": \"" << albumId << "\","

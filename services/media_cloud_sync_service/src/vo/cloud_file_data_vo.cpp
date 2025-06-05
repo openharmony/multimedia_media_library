@@ -72,8 +72,6 @@ std::string CloudFileDataVo::ToString() const
 {
     std::stringstream ss;
     ss << "{"
-       << "\"fileName\": \"" << this->fileName << "\", "
-       << "\"filePath\": \"" << this->filePath << "\", "
        << "\"size\": " << this->size << "}";
     return ss.str();
 }
